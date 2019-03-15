@@ -11,8 +11,6 @@
   let points;
 
   function domLoaded() {
-    // const $force = document.querySelectorAll('#force')[0]
-    // const $touches = document.querySelectorAll('#touches')[0]
     const canvas = document.querySelectorAll('canvas')[0];
 
     context = canvas.getContext('2d');
@@ -40,7 +38,7 @@
 
   function onTouchEnd(e) {
     isMouseDown = false;
-    const { x, y, pressure } = xypFromTouchEvent(e);
+    const { x, y, _pressure } = xypFromTouchEvent(e);
     context.strokeStyle = 'black';
     context.lineCap = 'round';
     context.lineJoin = 'round';
@@ -61,9 +59,6 @@
     context.strokeStyle = 'black';
     context.lineCap = 'round';
     context.lineJoin = 'round';
-    // context.lineWidth   = lineWidth// pressure * 50;
-    // context.lineTo(x, y);
-    // context.moveTo(x, y);
     if (points.length >= 3) {
       const l = points.length - 1;
       const xc = (points[l].x + points[l - 1].x) / 2;
@@ -74,16 +69,15 @@
       context.beginPath();
       context.moveTo(xc, yc);
     }
-    // $force.innerHTML = 'force = ' + pressure
-    // $touches.innerHTML = 'touchev = ' + (e.touches ? JSON.stringify(e.touches[0]) : '')
+    // REVIEW: Are we trying to prevent the simulated mouse events?
+    //         If so, should this be on touch end instead?
     e.preventDefault();
   }
 
   function onTouchStart(e) {
     isMouseDown = true;
-    const { x, y, pressure } = xypFromTouchEvent(e);
-    // lineWidth = (pressure * 50 * 0.8 + lineWidth * 0.2)
-    context.lineWidth = lineWidth;// pressure * 50;
+    const { x, y, _pressure } = xypFromTouchEvent(e);
+    context.lineWidth = lineWidth;
     context.strokeStyle = 'black';
     context.lineCap = 'round';
     context.lineJoin = 'round';
