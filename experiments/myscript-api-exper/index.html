@@ -1,0 +1,140 @@
+<!doctype html>
+<!--doctype html is mandatory to have Katex (LATEX rendering on web page) work correctly -->
+<html>
+<head>
+  <!-- Those three meta make the capture of handwriting inputs easier on mobile devices -->
+  <meta name="viewport" content="width=device-width, minimum-scale=1.3, initial-scale=1.3, user-scalable=no">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="mobile-web-app-capable" content="yes">
+
+  <title>myscript-math-web demo</title>
+
+  <!-- As web components are not fully supported -->
+  <script src="node_modules/@webcomponents/webcomponentsjs/webcomponents-loader.js"></script>
+
+  <!-- myscript-math-web is imported to be used later -->
+  <script type="module" src="node_modules/myscript-math-web/myscript-math-web.js"></script>
+
+  <!-- mathjs may bring in symbolic computation we can use -->
+ <script src="https://unpkg.com/mathjs@5.7.0/dist/math.min.js"></script>  
+
+  <style>
+    body {
+      margin: 0;
+      height: 95vh;
+    }
+
+    myscript-math-web {
+    height: 100%;
+    width: 50%;
+    }
+            .check {
+            position: absolute;
+            bottom: 20px;
+            right: 20px;
+#            color: white !important;
+        }
+  </style>
+
+    <custom-style>
+        <style>
+            paper-fab {
+                --paper-button-ink-color: white;
+                --paper-fab-background: #1A9FFF;
+            }
+        </style>
+    </custom-style>
+</head>
+<body>
+    <label for="question">Question:><input type="text" id="question">
+      <label for="answer">Answer:><input type="text" id="answer">
+  <!-- Please change applicationkey and hmackey below with those sent by mail during your registration. You can re-access them by connecting to your dashboard at developer.myscript.com with your myscript account -->
+  <myscript-math-web
+    apiversion="V4"
+    disableconvertcontrol
+                   disablesolver
+                   hideexportzone
+                   ondemand
+                   scheme="https"
+    applicationkey="436fae21-c7f5-4651-8b25-fead717d46bc"
+    hmackey="30e89fc7-62e8-4df0-a5dd-3c2ee77d8a33"
+      solverfractionalpartdigit="5"
+  solverdecimalseparator=","
+    solverangleunit="rad">
+    
+    
+  </myscript-math-web>
+
+  <button class="check classic-btn">Check</button>
+
+  <!-- This is the Mathjs example script, it is only for testing and should be removed -->
+  <script>
+  function print(value) {
+    const precision = 14
+    document.write(math.format(value, precision) + '<br>')
+  }
+
+  // ROB ADDS THIS
+  print(math.simplify("x+x"));
+  
+  // functions and constants
+  print(math.round(math.e, 3))            // 2.718
+  print(math.atan2(3, -3) / math.pi)      // 0.75
+  print(math.log(10000, 10))              // 4
+  print(math.sqrt(-4))                    // 2i
+  print(math.pow([[-1, 2], [3, 1]], 2))   // [[7, 0], [0, 7]]
+  print(math.derivative('x^2 + x', 'x'))  // 2 * x + 1
+
+  // expressions
+  print(math.eval('12 / (2.3 + 0.7)'))    // 4
+  print(math.eval('12.7 cm to inch'))     // 5 inch
+  print(math.eval('9 / 3 + 2i'))          // 3 + 2i
+  print(math.eval('det([-1, 2; 3, 1])'))  // -7
+
+  // chained operations
+  const a = math.chain(3)
+      .add(4)
+      .multiply(2)
+      .done()
+  print(a)  // 14
+  </script>
+  
+  <script>
+    function matchLatexExport(latexExport,answer) {
+        return latexExport === answer;
+    }
+
+window.addEventListener('load', () => {
+    const myscriptMathWebElement = document.querySelector('myscript-math-web');
+    const checkElement = document.querySelector('.check.classic-btn');
+    myscriptMathWebElement.addEventListener('exported', (evt) => {
+        if (evt.detail.exports) {
+            const latexExport = evt.detail.exports['application/x-latex'] || '';
+            console.log('We got: ', latexExport);
+
+            // Now we will look up up the question and answer...
+            var question = document.getElementById('question').value;
+            var computed_answer = math.simplify(question).toString();
+            var answer = document.getElementById('answer').value;
+            var answer_to_check = answer || computed_answer;
+
+            // now we set the color green if we get the correct hand-written answer...
+            var correctP = matchLatexExport(latexExport,answer_to_check);
+            myscriptMathWebElement.themecolor =
+                correctP ? '#008000' : '#FF0000';
+            if (!correctP) {
+                console.log("question",question);
+                console.log("computed_answer",computed_answer);
+                console.log("answer",answer);                
+            }
+        }
+    });
+    checkElement.addEventListener('click', () => {
+        myscriptMathWebElement.convert();
+        const functionOutput = myscriptMathWebElement.export_();
+        console.log('Output :' + functionOutput);
+    });
+});
+    </script>
+</body>
+</html>

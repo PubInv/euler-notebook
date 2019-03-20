@@ -1,0 +1,2 @@
+# This is an attempt to ignore all node_modules below this directory
+node_modules/
