@@ -1,5 +1,5 @@
 extends layout
 
 block content
-  h1= title
-  p Welcome to #{title}
+  h1 Math Tablet
+  div#editor('data-applicationkey'=credentials.myscript.applicationKey, 'data-hmackey'=credentials.myscript.hmacKey)

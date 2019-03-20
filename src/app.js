@@ -15,6 +15,11 @@ app.set('views', path.join(__dirname, 'views'));
 app.set('view engine', 'pug');
 
 app.use(logger('dev'));
+
+app.get('/stylesheets/myscript.min.css', (req, res)=>res.sendFile(`${__dirname}/node_modules/myscript/dist/myscript.min.css`));
+app.get('/javascripts/myscript.min.js', (req, res)=>res.sendFile(`${__dirname}/node_modules/myscript/dist/myscript.min.js`));
+app.get('/javascripts/myscript.min.js.map', (req, res)=>res.sendFile(`${__dirname}/node_modules/myscript/dist/myscript.min.js.map`));
+
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 app.use(cookieParser());
