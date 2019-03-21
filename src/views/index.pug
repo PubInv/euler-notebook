@@ -1,5 +1,7 @@
 extends layout
 
 block content
-  h1 Math Tablet
-  div#editor('data-applicationkey'=credentials.myscript.applicationKey, 'data-hmackey'=credentials.myscript.hmacKey)
+  .page
+    .layer
+      div#textblock.editor
+      div#mathblock.editor
