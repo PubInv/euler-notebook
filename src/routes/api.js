@@ -9,7 +9,7 @@ const NEW_NOTEBOOK = {
       layers: [
         {
           blocks: [
-            { type: 'TEXT' },
+            { type: 'TEXT', height: '3in' },
             { type: 'MATH' },
           ]
         }

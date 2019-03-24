@@ -34,6 +34,11 @@ export function deserializeNotebook(pagesElt, notebook) {
       const layerElt = createDiv('layer');
       for (const blockData of layerData.blocks||[]) {
         const blockElt = createDiv('editor');
+        if (blockData.height) {
+          blockElt.style.height = blockData.height;
+        } else {
+          blockElt.style.flex = 1;
+        }
         blockElt.addEventListener('exported', onMyScriptExported);
         const blockConfig = {
           recognitionParams: { ...MYSCRIPT_RECO_PARAMS, server: getMyScriptKeys(), type: blockData.type }
@@ -79,16 +84,23 @@ export function serializeNotebook(pagesElt) {
             blocks: Array.prototype.map.call(blockElts, function(blockElt){
               const editor = blockElt.editor;
               const type = editor.configuration.recognitionParams.type;
+              let rval;
               switch(type) {
               case 'MATH':
                 const jiix = editor.exports && editor.exports['application/vnd.myscript.jiix'];
-                return { type, jiix };
+                rval = { type, jiix };
+                break;
               case 'TEXT':
                 const strokeGroups = editor.model.strokeGroups;
-                return { type, strokeGroups };
+                rval = { type, strokeGroups };
+                break;
               default:
                 throw new Error(`Unexpected block type in notebook: ${type}`);
               }
+              if (blockElt.style.height) {
+                rval.height = blockElt.style.height;
+              }
+              return rval;
             })
           }
         })
