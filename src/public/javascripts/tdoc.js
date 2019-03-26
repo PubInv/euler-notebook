@@ -1,23 +1,22 @@
 // LICENSE TBD
 // Copyright 2019, Robert L. Read
+// var math = require('math');
 
-const VERSION = 0.1;
-// WARNING! This file has been copied into ./src/public/javascripts,
-// creating a grave danger that this will diverge from the version here.
+const VERSION = 0.2; // DANGER! Version 0.1 still exists in a different directory
 
 // I believe this should be replace with: https://www.npmjs.com/package/uuid
 var n = 0;
 function getNewId() {
     return n++;
 }
-function tdoc() {
+export function tdoc() {
     this.id = getNewId();
     this.thoughts = [];
     this.styles = [];
     this.semversion = VERSION;
 }
 
-function thought() {
+export function thought() {
     this.id = getNewId();    
 }
 
@@ -28,12 +27,20 @@ function style(stylable,type,data) {
     this.data = data;
 }
 
-function mathStyle(thought,data) {
+export function mathStyle(thought,data) {
     style.call(this,thought,"MATH",data);
 }
 
-function textStyle(thought,data) {
+export function textStyle(thought,data) {
     style.call(this,thought,"TEXT",data);
+}
+
+export function jiixStyle(thought,data) {
+    style.call(this,thought,"JIIX",data);
+}
+
+export function strokeGroupsStyle(thought,data) {
+    style.call(this,thought,"STKG",data);
 }
 
 function makeStylableIterator(td,start = 0, end = Infinity, step = 1) {
@@ -44,7 +51,7 @@ function makeStylableIterator(td,start = 0, end = Infinity, step = 1) {
         next: function() {
             let result;
             let tl = td.thoughts.length;
-            let sl = td.thoughts.length;                        
+            let sl = td.styles.length;                        
             if (nextIndex < (tl+sl)) {
                 var v;
                 if (nextIndex < tl) {
@@ -79,36 +86,60 @@ function textCompiler(text) {
     return td;
 }
 
-// PRETTY PRINTER
+// PRETTY PRINTER AND INFORMATIONAL FUNCTIONS
 
-function prettyPrinter(td) {
+export function prettyPrinter(td) {
     return JSON.stringify(td,null,' ');
 }
 
+export function numMathStyles(td) {
+  return td.styles.reduce(
+    function(total,x){return x.type=="MATH" ? total+1 : total},
+    0);
+}
+export function numTextStyles(td) {
+  return td.styles.reduce(
+    function(total,x){return x.type=="TEXT" ? total+1 : total},
+    0);
+}
+
+
+export function summaryPrinter(td) {
+  var numMath = numMathStyles(td);
+  var numText = numTextStyles(td);
+  return `${td.thoughts.length} thoughts\n`
+    + `${td.styles.length} styles\n`
+    + `${numMath} math styles\n`
+    + `${numText} text styles\n`
+  ;
+}
+
 // STYLE APPLIER
-function applyStyle(td,rules) {
-    // I would prefer to make a deep copy
-    // here, but I don't want to insist
-    // on that functionality yet.
-    rules.forEach( r => {
-          let si = makeStylableIterator(td);
-          let result = si.next();
-          while (!result.done) {
-              console.log("result.value",result.value);
-              let rv = r(result.value);
-              if (rv) {
-                  td.styles.push(rv);
-              }
-              result = si.next();
-          }
-    });
-    return td;
+export function applyStyle(td,rules) {
+  // I would prefer to make a deep copy
+  // here, but I don't want to insist
+  // on that functionality yet.
+  var new_styles = [];
+  rules.forEach( r => {
+    let si = makeStylableIterator(td);
+    let result = si.next();
+    while (!result.done) {
+      console.log("result.value",result.value);
+      let rv = r(result.value);
+      if (rv) {
+        new_styles.push(rv);
+      }
+      result = si.next();
+    }
+  });
+  td.styles = td.styles.concat(new_styles);
+  return td;
 }
 
 // Attempt to apply a math simplification
 // based on the mathjs library
-const math = require('mathjs');
-function mathSimplifyRule(style) {
+// const math = require('mathjs');
+export function mathSimplifyRule(style) {
     console.log("style to simplify",style);
     if ((((typeof style.data) == 'undefined'))
         || (style.type != "MATH")) {
@@ -124,16 +155,18 @@ function mathSimplifyRule(style) {
         : null;
 }
 
-module.exports = {
-    tdoc: tdoc,
-    makeStylableIterator:makeStylableIterator,
-    thought: thought,
-    style: style,
-    textCompiler: textCompiler,
-    prettyPrinter: prettyPrinter,
-    mathStyle: mathStyle,
-    textStyle: textStyle,
-    applyStyle: applyStyle,
-    mathSimplifyRule: mathSimplifyRule
-}
+// This needs to be worked out as to what the best module
+// system is.
+// module.exports = {
+//     tdoc: tdoc,
+//     makeStylableIterator:makeStylableIterator,
+//     thought: thought,
+//     style: style,
+//     textCompiler: textCompiler,
+//     prettyPrinter: prettyPrinter,
+//     mathStyle: mathStyle,
+//     textStyle: textStyle,
+//     applyStyle: applyStyle,
+//     mathSimplifyRule: mathSimplifyRule
+// }
 

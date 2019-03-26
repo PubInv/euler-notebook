@@ -1,5 +1,7 @@
 
 // Requirements
+import { tdoc, prettyPrinter, summaryPrinter,
+         thought, textStyle, mathStyle, jiixStyle, strokeGroupsStyle } from './tdoc.js';
 
 // Constants
 
@@ -11,7 +13,9 @@ const MYSCRIPT_RECO_PARAMS = {
       jiix: { strokes: true }
     },
     math: {
-      mimeTypes: ['application/x-latex', 'application/vnd.myscript.jiix']
+      mimeTypes: ['application/x-latex',
+                  'application/vnd.myscript.jiix',
+                  'text/html']
     },
     text: {
       guides: { enable: false }
@@ -24,7 +28,9 @@ const MYSCRIPT_RECO_PARAMS = {
 // Exported Functions
 
 // Instantiates the HTML DOM structure from a notebook object.
-export function deserializeNotebook(pagesElt, notebook) {
+// A TDoc is passed in for the purpose of allowing the notebook
+// to be associated witha TDoc.
+export function deserializeNotebook(pagesElt, notebook, td) {
   // REVIEW: Assumes #pages element is empty. Assert or delete any existig children?
   // REVIEW: Error if notebook has no pages?
   for (const pageData of notebook.pages||[]) {
@@ -61,8 +67,12 @@ export function deserializeNotebook(pagesElt, notebook) {
           break;
         default:
           throw new Error(`Unexpected block type in notebook: ${type}`);
-      }
+        }
+        // Here Rob attempts to add a button to the blockElt for saving
+        // as a thought
         layerElt.appendChild(blockElt);
+        var saveButton = addEditorControls(td,blockElt.editor);
+        layerElt.appendChild(saveButton);        
       }
       pageElt.appendChild(layerElt);
     }
@@ -119,6 +129,47 @@ function onMyScriptExported(event) {
 
 // Helper Functions
 
+// Add some controls to the editor so that we can,
+// for example, save its content as a thought.
+function addSomethingToTDoc(td,editor) {
+  let th = new thought();
+
+  const type = editor.configuration.recognitionParams.type;
+  switch(type) {
+  case 'MATH':
+    const latex = editor.exports && editor.exports['application/x-latex'];
+    let stm = new mathStyle(th,latex);
+    td.styles.push(stm);
+    const jiix = editor.exports && editor.exports['application/vnd.myscript.jiix'];
+    let stji = new jiixStyle(th,jiix);
+    td.styles.push(stji);
+    break;
+  case 'TEXT':
+    const text = editor.exports && editor.exports['text/plain'];    
+    let stt = new textStyle(th,text);
+    td.styles.push(stt);
+    const strokeGroups = editor.model.strokeGroups;    
+    let stsg = new strokeGroupsStyle(th,strokeGroups);
+    td.styles.push(stsg);
+    break;
+  default:
+    throw new Error(`Unexpected block type in notebook: ${type}`);
+  }
+  td.thoughts.push(th);
+  const enhanceButtonElt = document.getElementById('enhanceButton');
+  enhanceButtonElt.disabled = false;
+  
+  let sp = summaryPrinter(td);
+  alert("Here is the TDoc: "+ sp);  
+}
+function addEditorControls(td,editor) {
+  const button = document.createElement('button');
+  button.classList.add('editor-save-thought-button');
+  button.type    = "button";
+  button.innerText   = "add to TDoc";
+  button.onclick = (() => addSomethingToTDoc(td,editor));
+  return button;
+}
 function createDiv(className) {
   const elt = document.createElement('div');
   elt.classList.add(className);
