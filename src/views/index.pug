@@ -1,8 +1,31 @@
 extends layout
 
 block content
-  #errorHeader
-  div
-    button#saveButton(disabled=true) Save
-    button#enhanceButton(disabled=true) Enhance    
-  #pages
+  #column
+    #banner
+      #bannerContent Welcome to Math Tablet!
+      button#bannerClose &#x2715;
+    #menu
+      button#saveButton(disabled=true) Save
+      button#enhanceButton(disabled=true) Enhance
+    #contentArea
+    #inputFooter
+      #inputSelector
+        button#textInputButton(disabled=true) T
+        button#mathInputButton M
+      #textInput.inputArea
+        #textEditor.editor
+        .inputControls
+          button.undo U
+          button.redo R
+          button.convert Co
+          button.clear Cl
+          button.insert I
+      #mathInput.inputArea(style='display:none')
+        #mathEditor.editor
+        .inputControls
+          button.undo U
+          button.redo R
+          button.convert Co
+          button.clear Cl
+          button.insert I

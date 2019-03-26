@@ -1,47 +1,87 @@
 
 // Specific elements
 
-#errorHeader
-  background-color red
-  color white
-  display none
-  font-family Arial, Helvetica, sans-serif
-  padding 2pt
-  width 100%
-
-#pages
+#banner
+  align-items center
+  background-color lightblue
+  color black
   display flex
   flex-direction row
-  flex-wrap wrap
+  font-family Arial, Helvetica, sans-serif
+  justify-content space-between
+  min-height 30pt
+  padding 0 8pt 0 8pt
 
-// Element classes
+#bannerClose
+  background-color transparent
+  border none
+  padding 0
 
-.editor
-  border 1px solid #cccccc
-  width 100%
-
-.editor-save-thought-button
-  height 30px
-  
-.layer
+#column
+  background-color purple
   display flex
   flex-direction column
   height 100%
+
+#contentArea
+  background-color orange
+
+#inputFooter
+  border-top 1px solid #cccccc
+  bottom 0
+  display flex
+  flex-direction row
+  left 0
+  position fixed
   width 100%
 
-.page
-  background-color white
-  border-top 1px solid #cccccc
-  border-right 2px solid #bbbbbb
-  border-bottom 2px solid #bbbbbb
+  button
+    width 30pt
+
+#inputSelector
+  border-right 1px solid #cccccc
+  display flex
+  flex-direction column
+
+// #mathInput
+
+#menu
+  background-color #cccccc
+  padding 2pt
+
+  button
+    background-color white
+    color #222222
+    height 20pt
+
+// #pages
+//   display flex
+//   flex-direction row
+//   flex-wrap wrap
+
+// #textInput
+
+// Element classes
+
+// .editor
+//   border 1px solid #cccccc
+//   width 100%
+.editor
+  height 3in
+  flex 1
+
+.inputArea
+  flex 1
+  display flex
+  flex-direction row
+
+.inputControls
   border-left 1px solid #cccccc
-  height 8in
-  margin 2pt
-  padding 0.25in
-  width 6in
+  display flex
+  flex-direction column
 
 // Element types
 
 body
-  background-color #eeeeee
+  height 100%
   margin 0
