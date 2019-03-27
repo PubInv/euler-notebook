@@ -31,6 +31,8 @@ const MYSCRIPT_RECO_PARAMS = {
 
 var GLOBAL_TDOC;
 
+let currentEditor;
+
 // Event Handlers
 
 async function onDomReady(_event){
@@ -40,30 +42,12 @@ async function onDomReady(_event){
     $('#textButton').addEventListener('click', switchToTextInput);
     $('#mathButton').addEventListener('click', switchToMathInput);
 
-    const editorElt = $('#inputText');
-    const editorConfig = getMyScriptConfig('TEXT');
-    MyScript.register(editorElt, editorConfig);
-    editorElt.addEventListener('changed', event=>{
-      $('#undoButton').disabled = !event.detail.canUndo;
-      $('#redoButton').disabled = !event.detail.canRedo;
-      $('#clearButton').disabled = !event.detail.canUndo;
-      $('#convertButton').disabled = !event.detail.canUndo;
-    });
-    editorElt.addEventListener('exported', event=>{
-      console.dir(event.detail);
-      if (event.detail.exports) {
-        $('#previewText').innerText = event.detail.exports['text/plain'];
-        $('#insertButton').disabled = false;
-      } else {
-        $('#previewText').innerText = '';
-        $('#insertButton').disabled = true;
-      }
-    });
+    currentEditor = initializeEditor($('#inputText'), 'TEXT');
 
-    $('#undoButton').addEventListener('click', _event=>editorElt.editor.undo());
-    $('#redoButton').addEventListener('click', _event=>editorElt.editor.redo());
-    $('#clearButton').addEventListener('click', _event=>editorElt.editor.clear());
-    $('#convertButton').addEventListener('click', _event=>editorElt.editor.convert());
+    $('#undoButton').addEventListener('click', _event=>currentEditor.undo());
+    $('#redoButton').addEventListener('click', _event=>currentEditor.redo());
+    $('#clearButton').addEventListener('click', _event=>currentEditor.clear());
+    $('#convertButton').addEventListener('click', _event=>currentEditor.convert());
 
     $('#insertButton').addEventListener('click', event=>{
       console.log("Insert clicked TODO");
@@ -95,6 +79,14 @@ async function onDomReady(_event){
   } catch (err) {
     showErrorHeader("Error initializing page", err);
   }
+}
+
+// Fires when either the text editor or math editor fire a 'change' event.
+function onEditorChanged(event) {
+  $('#undoButton').disabled = !event.detail.canUndo;
+  $('#redoButton').disabled = !event.detail.canRedo;
+  $('#clearButton').disabled = !event.detail.canUndo;
+  $('#convertButton').disabled = !event.detail.canUndo;
 }
 
 // async function onSaveButtonClicked(event) {
@@ -154,6 +146,23 @@ function hideBanner(_event) {
   $('#banner').style.display = 'none';
 }
 
+function initializeEditor(editorElt, editorType) {
+  const config = getMyScriptConfig(editorType);
+  MyScript.register(editorElt, config);
+  editorElt.addEventListener('changed', onEditorChanged);
+  editorElt.addEventListener('exported', event=>{
+    console.dir(event.detail);
+    if (event.detail.exports) {
+      $('#previewText').innerText = event.detail.exports['text/plain'];
+      $('#insertButton').disabled = false;
+    } else {
+      $('#previewText').innerText = '';
+      $('#insertButton').disabled = true;
+    }
+  });
+  return editorElt.editor;
+}
+
 function showErrorHeader(msg, err) {
   const errorHeader = $('#errorHeader');
   errorHeader.innerText = msg + (err ? ': ' + err.message : '');
@@ -166,16 +175,24 @@ function showStatusMessage(msg) {
 
 function switchToMathInput(_event) {
   $('#inputText').style.display = 'none';
+  $('#previewText').style.display = 'none';
   $('#textButton').disabled = false;
-  $('#inputMath').style.display = 'flex';
+  $('#inputMath').style.display = 'block';
+  $('#previewMath').style.display = 'block';
   $('#mathButton').disabled = true;
+
+  currentEditor = $('#inputMath').editor;
 }
 
 function switchToTextInput(_event) {
   $('#inputMath').style.display = 'none';
+  $('#previewMath').style.display = 'none';
   $('#mathButton').disabled = false;
-  $('#inputText').style.display = 'flex';
+  $('#inputText').style.display = 'block';
+  $('#previewText').style.display = 'block';
   $('#textButton').disabled = true;
+
+  currentEditor = $('#inputText').editor;
 }
 
 // Application Entry Point
