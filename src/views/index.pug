@@ -16,16 +16,16 @@ block content
       #textInput.inputArea
         #textEditor.editor
         .inputControls
-          button.undo U
-          button.redo R
-          button.convert Co
-          button.clear Cl
-          button.insert I
+          button#textUndo(disabled=true) U
+          button#textRedo(disabled=true) R
+          button#textClear(disabled=true) Cl
+          button#textConvert(disabled=true) Co
+          button#textInsert(disabled=true) I
       #mathInput.inputArea(style='display:none')
         #mathEditor.editor
         .inputControls
-          button.undo U
-          button.redo R
-          button.convert Co
-          button.clear Cl
-          button.insert I
+          button#mathUndo(disabled=true) U
+          button#mathRedo(disabled=true) R
+          button#mathClear(disabled=true) Cl
+          button#mathConvert(disabled=true) Co
+          button#mathInsert(disabled=true) I

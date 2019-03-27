@@ -21,7 +21,8 @@ const MYSCRIPT_RECO_PARAMS = {
                   'text/html']
     },
     text: {
-      guides: { enable: false }
+      guides: { enable: false },
+      smartGuide: false,
     },
   },
 };
@@ -34,23 +35,34 @@ var GLOBAL_TDOC;
 
 async function onDomReady(_event){
   try {
-    document.getElementById('bannerClose').addEventListener('click', hideBanner);
+    $('bannerClose').addEventListener('click', hideBanner);
 
-    document.getElementById('textInputButton').addEventListener('click', switchToTextInput);
-    document.getElementById('mathInputButton').addEventListener('click', switchToMathInput);
+    $('textInputButton').addEventListener('click', switchToTextInput);
+    $('mathInputButton').addEventListener('click', switchToMathInput);
 
-    const textEditorElt = document.getElementById('textEditor');
-    const textEditorConfig = getMyScriptConfig('TEXT');
-    MyScript.register(textEditorElt, textEditorConfig);
+    const editorElt = $('textEditor');
+    const editorConfig = getMyScriptConfig('TEXT');
+    MyScript.register(editorElt, editorConfig);
+    $('textUndo').addEventListener('click', _event=>editorElt.editor.undo());
+    $('textRedo').addEventListener('click', _event=>editorElt.editor.redo());
+    $('textClear').addEventListener('click', _event=>editorElt.editor.clear());
+    $('textConvert').addEventListener('click', _event=>editorElt.editor.convert());
+    editorElt.addEventListener('changed', event=>{
+      $('textUndo').disabled = !event.detail.canUndo;
+      $('textRedo').disabled = !event.detail.canRedo;
+      $('textClear').disabled = !event.detail.canUndo;
+      $('textConvert').disabled = !event.detail.canUndo;
+    });
+    editorElt.addEventListener('exported', console.dir);
 
-    const mathEditorElt = document.getElementById('mathEditor');
-    const mathEditorConfig = getMyScriptConfig('MATH');
-    MyScript.register(mathEditorElt, mathEditorConfig);
+    // const mathEditorElt = $('mathEditor');
+    // const mathEditorConfig = getMyScriptConfig('MATH');
+    // MyScript.register(mathEditorElt, mathEditorConfig);
 
     // // Open a notebook
     // const openResults = await apiGetRequest('open');
     // // TODO: check openResults.ok
-    // const pagesElt = document.getElementById('pages');
+    // const pagesElt = $('pages');
 
     // // Rob proposes that a notebook have a reference to a backing TDoc
     // // At the moment this TDoc is volatile, it is not persistent
@@ -61,10 +73,10 @@ async function onDomReady(_event){
     // deserializeNotebook(pagesElt, openResults.notebook, GLOBAL_TDOC);
     // showStatusMessage("Notebook opened successfully.");
 
-    // const saveButtonElt = document.getElementById('saveButton');
+    // const saveButtonElt = $('saveButton');
     // saveButtonElt.addEventListener('click', onSaveButtonClicked);
 
-    // const enhanceButtonElt = document.getElementById('enhanceButton');
+    // const enhanceButtonElt = $('enhanceButton');
     // enhanceButtonElt.addEventListener('click', onEnhanceButtonClicked);
   } catch (err) {
     showErrorHeader("Error initializing page", err);
@@ -73,7 +85,7 @@ async function onDomReady(_event){
 
 // async function onSaveButtonClicked(event) {
 //   try {
-//     const pagesElt = document.getElementById('pages');
+//     const pagesElt = $('pages');
 //     const notebook = serializeNotebook(pagesElt);
 //     await apiPostRequest('save', { notebook });
 //     this.disabled = true;
@@ -102,6 +114,10 @@ async function onDomReady(_event){
 
 // Helper Functions
 
+function $(id) {
+  return document.getElementById(id);
+}
+
 function getMyScriptConfig(editorType) {
   return {
     recognitionParams: {
@@ -121,11 +137,11 @@ function getMyScriptKeys() {
 }
 
 function hideBanner(_event) {
-  document.getElementById('banner').style.display = 'none';
+  $('banner').style.display = 'none';
 }
 
 function showErrorHeader(msg, err) {
-  const errorHeader = document.getElementById('errorHeader');
+  const errorHeader = $('errorHeader');
   errorHeader.innerText = msg + (err ? ': ' + err.message : '');
   errorHeader.style.display = 'block';
 }
@@ -135,17 +151,17 @@ function showStatusMessage(msg) {
 }
 
 function switchToMathInput(_event) {
-  document.getElementById('textInput').style.display = 'none';
-  document.getElementById('textInputButton').disabled = false;
-  document.getElementById('mathInput').style.display = 'flex';
-  document.getElementById('mathInputButton').disabled = true;
+  $('textInput').style.display = 'none';
+  $('textInputButton').disabled = false;
+  $('mathInput').style.display = 'flex';
+  $('mathInputButton').disabled = true;
 }
 
 function switchToTextInput(_event) {
-  document.getElementById('mathInput').style.display = 'none';
-  document.getElementById('mathInputButton').disabled = false;
-  document.getElementById('textInput').style.display = 'flex';
-  document.getElementById('textInputButton').disabled = true;
+  $('mathInput').style.display = 'none';
+  $('mathInputButton').disabled = false;
+  $('textInput').style.display = 'flex';
+  $('textInputButton').disabled = true;
 }
 
 // Application Entry Point
