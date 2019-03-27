@@ -1,15 +1,20 @@
 extends layout
 
 block content
-  #column
-    #banner
-      #bannerContent Welcome to Math Tablet!
-      button#bannerClose &#x2715;
-    #menu
-      button#saveButton(disabled=true) Save
-      button#enhanceButton(disabled=true) Enhance
-    #contentArea
-    #inputFooter
+  #banner
+    #bannerContent Welcome to Math Tablet!
+    button#bannerClose &#x2715;
+  #menu
+    button#saveButton(disabled=true) Save
+    button#enhanceButton(disabled=true) Enhance
+  #contentArea Lorem ipsum
+  #footer
+    #previewArea
+      #previewText
+      #previewMath(style='display:none')
+      #previewControls
+        button#insertButton(disabled=true) I
+    #inputArea
       #inputSelector
         button#textInputButton(disabled=true) T
         button#mathInputButton M
@@ -20,7 +25,6 @@ block content
           button#textRedo(disabled=true) R
           button#textClear(disabled=true) Cl
           button#textConvert(disabled=true) Co
-          button#textInsert(disabled=true) I
       #mathInput.inputArea(style='display:none')
         #mathEditor.editor
         .inputControls
@@ -28,4 +32,3 @@ block content
           button#mathRedo(disabled=true) R
           button#mathClear(disabled=true) Cl
           button#mathConvert(disabled=true) Co
-          button#mathInsert(disabled=true) I

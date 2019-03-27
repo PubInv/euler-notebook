@@ -35,34 +35,47 @@ var GLOBAL_TDOC;
 
 async function onDomReady(_event){
   try {
-    $('bannerClose').addEventListener('click', hideBanner);
+    $('#bannerClose').addEventListener('click', hideBanner);
 
-    $('textInputButton').addEventListener('click', switchToTextInput);
-    $('mathInputButton').addEventListener('click', switchToMathInput);
+    $('#textInputButton').addEventListener('click', switchToTextInput);
+    $('#mathInputButton').addEventListener('click', switchToMathInput);
 
-    const editorElt = $('textEditor');
+    const editorElt = $('#textEditor');
     const editorConfig = getMyScriptConfig('TEXT');
     MyScript.register(editorElt, editorConfig);
-    $('textUndo').addEventListener('click', _event=>editorElt.editor.undo());
-    $('textRedo').addEventListener('click', _event=>editorElt.editor.redo());
-    $('textClear').addEventListener('click', _event=>editorElt.editor.clear());
-    $('textConvert').addEventListener('click', _event=>editorElt.editor.convert());
+    $('#textUndo').addEventListener('click', _event=>editorElt.editor.undo());
+    $('#textRedo').addEventListener('click', _event=>editorElt.editor.redo());
+    $('#textClear').addEventListener('click', _event=>editorElt.editor.clear());
+    $('#textConvert').addEventListener('click', _event=>editorElt.editor.convert());
     editorElt.addEventListener('changed', event=>{
-      $('textUndo').disabled = !event.detail.canUndo;
-      $('textRedo').disabled = !event.detail.canRedo;
-      $('textClear').disabled = !event.detail.canUndo;
-      $('textConvert').disabled = !event.detail.canUndo;
+      $('#textUndo').disabled = !event.detail.canUndo;
+      $('#textRedo').disabled = !event.detail.canRedo;
+      $('#textClear').disabled = !event.detail.canUndo;
+      $('#textConvert').disabled = !event.detail.canUndo;
     });
-    editorElt.addEventListener('exported', console.dir);
+    editorElt.addEventListener('exported', event=>{
+      console.dir(event.detail);
+      if (event.detail.exports) {
+        $('#previewText').innerText = event.detail.exports['text/plain'];
+        $('#insertButton').disabled = false;
+      } else {
+        $('#previewText').innerText = '';
+        $('#insertButton').disabled = true;
+      }
+    });
 
-    // const mathEditorElt = $('mathEditor');
+    $('#insertButton').addEventListener('click', event=>{
+      console.log("Insert clicked TODO");
+    });
+
+    // const mathEditorElt = $('#mathEditor');
     // const mathEditorConfig = getMyScriptConfig('MATH');
     // MyScript.register(mathEditorElt, mathEditorConfig);
 
     // // Open a notebook
     // const openResults = await apiGetRequest('open');
     // // TODO: check openResults.ok
-    // const pagesElt = $('pages');
+    // const pagesElt = $('#pages');
 
     // // Rob proposes that a notebook have a reference to a backing TDoc
     // // At the moment this TDoc is volatile, it is not persistent
@@ -73,10 +86,10 @@ async function onDomReady(_event){
     // deserializeNotebook(pagesElt, openResults.notebook, GLOBAL_TDOC);
     // showStatusMessage("Notebook opened successfully.");
 
-    // const saveButtonElt = $('saveButton');
+    // const saveButtonElt = $('#saveButton');
     // saveButtonElt.addEventListener('click', onSaveButtonClicked);
 
-    // const enhanceButtonElt = $('enhanceButton');
+    // const enhanceButtonElt = $('#enhanceButton');
     // enhanceButtonElt.addEventListener('click', onEnhanceButtonClicked);
   } catch (err) {
     showErrorHeader("Error initializing page", err);
@@ -85,7 +98,7 @@ async function onDomReady(_event){
 
 // async function onSaveButtonClicked(event) {
 //   try {
-//     const pagesElt = $('pages');
+//     const pagesElt = $('#pages');
 //     const notebook = serializeNotebook(pagesElt);
 //     await apiPostRequest('save', { notebook });
 //     this.disabled = true;
@@ -115,7 +128,7 @@ async function onDomReady(_event){
 // Helper Functions
 
 function $(id) {
-  return document.getElementById(id);
+  return document.getElementById(id.substring(1));
 }
 
 function getMyScriptConfig(editorType) {
@@ -137,11 +150,11 @@ function getMyScriptKeys() {
 }
 
 function hideBanner(_event) {
-  $('banner').style.display = 'none';
+  $('#banner').style.display = 'none';
 }
 
 function showErrorHeader(msg, err) {
-  const errorHeader = $('errorHeader');
+  const errorHeader = $('#errorHeader');
   errorHeader.innerText = msg + (err ? ': ' + err.message : '');
   errorHeader.style.display = 'block';
 }
@@ -151,17 +164,17 @@ function showStatusMessage(msg) {
 }
 
 function switchToMathInput(_event) {
-  $('textInput').style.display = 'none';
-  $('textInputButton').disabled = false;
-  $('mathInput').style.display = 'flex';
-  $('mathInputButton').disabled = true;
+  $('#textInput').style.display = 'none';
+  $('#textInputButton').disabled = false;
+  $('#mathInput').style.display = 'flex';
+  $('#mathInputButton').disabled = true;
 }
 
 function switchToTextInput(_event) {
-  $('mathInput').style.display = 'none';
-  $('mathInputButton').disabled = false;
-  $('textInput').style.display = 'flex';
-  $('textInputButton').disabled = true;
+  $('#mathInput').style.display = 'none';
+  $('#mathInputButton').disabled = false;
+  $('#textInput').style.display = 'flex';
+  $('#textInputButton').disabled = true;
 }
 
 // Application Entry Point

@@ -17,26 +17,22 @@
   border none
   padding 0
 
-#column
-  background-color purple
-  display flex
-  flex-direction column
-  height 100%
-
 #contentArea
   background-color orange
 
-#inputFooter
-  border-top 1px solid #cccccc
+#footer
   bottom 0
-  display flex
-  flex-direction row
   left 0
   position fixed
   width 100%
 
   button
     width 30pt
+
+#inputArea
+  border-top 1px solid #cccccc
+  display flex
+  flex-direction row
 
 #inputSelector
   border-right 1px solid #cccccc
@@ -54,12 +50,17 @@
     color #222222
     height 20pt
 
-// #pages
-//   display flex
-//   flex-direction row
-//   flex-wrap wrap
+#previewArea
+  border-top 1px solid #cccccc
+  display flex
+  flex-direction row
 
-// #textInput
+#previewMath
+  flex 1
+
+#previewText
+  flex 1
+  padding 4pt
 
 // Element classes
 
@@ -85,3 +86,6 @@
 body
   height 100%
   margin 0
+
+html
+  height 100%
