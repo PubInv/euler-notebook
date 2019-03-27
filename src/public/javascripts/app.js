@@ -16,9 +16,7 @@ const MYSCRIPT_RECO_PARAMS = {
       jiix: { strokes: true }
     },
     math: {
-      mimeTypes: ['application/x-latex',
-                  'application/vnd.myscript.jiix',
-                  'text/html']
+      mimeTypes: [ 'application/x-latex', 'application/vnd.myscript.jiix' ]
     },
     text: {
       guides: { enable: false },
@@ -42,7 +40,8 @@ async function onDomReady(_event){
     $('#textButton').addEventListener('click', switchToTextInput);
     $('#mathButton').addEventListener('click', switchToMathInput);
 
-    currentEditor = initializeEditor($('#inputText'), 'TEXT');
+    // currentEditor = initializeEditor($('#inputText'), 'TEXT');
+    currentEditor = initializeEditor($('#inputMath'), 'MATH');
 
     $('#undoButton').addEventListener('click', _event=>currentEditor.undo());
     $('#redoButton').addEventListener('click', _event=>currentEditor.redo());
@@ -101,6 +100,28 @@ function onEditorChanged(event) {
 //   }
 // }
 
+function onMathExported(event) {
+  // console.dir(event.detail);
+  if (event.detail.exports) {
+    $('#previewMath').innerText = event.detail.exports['application/x-latex'];
+    $('#insertButton').disabled = false;
+  } else {
+    $('#previewMath').innerText = '';
+    $('#insertButton').disabled = true;
+  }
+}
+
+function onTextExported(event) {
+  // console.dir(event.detail);
+  if (event.detail.exports) {
+    $('#previewText').innerText = event.detail.exports['text/plain'];
+    $('#insertButton').disabled = false;
+  } else {
+    $('#previewText').innerText = '';
+    $('#insertButton').disabled = true;
+  }
+}
+
 // function onEnhanceButtonClicked(event) {
 //   try {
 //     let ms0 = numMathStyles(GLOBAL_TDOC);
@@ -150,16 +171,8 @@ function initializeEditor(editorElt, editorType) {
   const config = getMyScriptConfig(editorType);
   MyScript.register(editorElt, config);
   editorElt.addEventListener('changed', onEditorChanged);
-  editorElt.addEventListener('exported', event=>{
-    console.dir(event.detail);
-    if (event.detail.exports) {
-      $('#previewText').innerText = event.detail.exports['text/plain'];
-      $('#insertButton').disabled = false;
-    } else {
-      $('#previewText').innerText = '';
-      $('#insertButton').disabled = true;
-    }
-  });
+  const exportHandler = (editorType == 'MATH' ? onMathExported : onTextExported);
+  editorElt.addEventListener('exported', exportHandler);
   return editorElt.editor;
 }
 
