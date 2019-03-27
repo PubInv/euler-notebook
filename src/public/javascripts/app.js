@@ -43,10 +43,6 @@ async function onDomReady(_event){
     const editorElt = $('#inputText');
     const editorConfig = getMyScriptConfig('TEXT');
     MyScript.register(editorElt, editorConfig);
-    $('#undoButton').addEventListener('click', _event=>editorElt.editor.undo());
-    $('#redoButton').addEventListener('click', _event=>editorElt.editor.redo());
-    $('#clearButton').addEventListener('click', _event=>editorElt.editor.clear());
-    $('#convertButton').addEventListener('click', _event=>editorElt.editor.convert());
     editorElt.addEventListener('changed', event=>{
       $('#undoButton').disabled = !event.detail.canUndo;
       $('#redoButton').disabled = !event.detail.canRedo;
@@ -63,6 +59,11 @@ async function onDomReady(_event){
         $('#insertButton').disabled = true;
       }
     });
+
+    $('#undoButton').addEventListener('click', _event=>editorElt.editor.undo());
+    $('#redoButton').addEventListener('click', _event=>editorElt.editor.redo());
+    $('#clearButton').addEventListener('click', _event=>editorElt.editor.clear());
+    $('#convertButton').addEventListener('click', _event=>editorElt.editor.convert());
 
     $('#insertButton').addEventListener('click', event=>{
       console.log("Insert clicked TODO");
@@ -164,17 +165,17 @@ function showStatusMessage(msg) {
 }
 
 function switchToMathInput(_event) {
-  $('#textInput').style.display = 'none';
-  $('#textInputButton').disabled = false;
-  $('#mathInput').style.display = 'flex';
-  $('#mathInputButton').disabled = true;
+  $('#inputText').style.display = 'none';
+  $('#textButton').disabled = false;
+  $('#inputMath').style.display = 'flex';
+  $('#mathButton').disabled = true;
 }
 
 function switchToTextInput(_event) {
-  $('#mathInput').style.display = 'none';
-  $('#mathInputButton').disabled = false;
-  $('#textInput').style.display = 'flex';
-  $('#textInputButton').disabled = true;
+  $('#inputMath').style.display = 'none';
+  $('#mathButton').disabled = false;
+  $('#inputText').style.display = 'flex';
+  $('#textButton').disabled = true;
 }
 
 // Application Entry Point
