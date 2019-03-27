@@ -40,8 +40,11 @@ async function onDomReady(_event){
     $('#textButton').addEventListener('click', switchToTextInput);
     $('#mathButton').addEventListener('click', switchToMathInput);
 
-    // currentEditor = initializeEditor($('#inputText'), 'TEXT');
     currentEditor = initializeEditor($('#inputMath'), 'MATH');
+    // NOTE: We would like to initialize the text editor here, too, but
+    // if you initialize the editor when it is hidden it does not work
+    // properly once it is visible. So we initialize it the first time
+    // we switch to it.
 
     $('#undoButton').addEventListener('click', _event=>currentEditor.undo());
     $('#redoButton').addEventListener('click', _event=>currentEditor.redo());
@@ -145,6 +148,30 @@ function $(id) {
   return document.getElementById(id.substring(1));
 }
 
+function disableMathInput() {
+  $('#inputMath').style.display = 'none';
+  $('#previewMath').style.display = 'none';
+  $('#mathButton').disabled = false;
+}
+
+function disableTextInput() {
+  $('#inputText').style.display = 'none';
+  $('#previewText').style.display = 'none';
+  $('#textButton').disabled = false;
+}
+
+function enableMathInput() {
+  $('#inputMath').style.display = 'block';
+  $('#previewMath').style.display = 'block';
+  $('#mathButton').disabled = true;
+}
+
+function enableTextInput() {
+  $('#inputText').style.display = 'block';
+  $('#previewText').style.display = 'block';
+  $('#textButton').disabled = true;
+}
+
 function getMyScriptConfig(editorType) {
   return {
     recognitionParams: {
@@ -187,25 +214,17 @@ function showStatusMessage(msg) {
 }
 
 function switchToMathInput(_event) {
-  $('#inputText').style.display = 'none';
-  $('#previewText').style.display = 'none';
-  $('#textButton').disabled = false;
-  $('#inputMath').style.display = 'block';
-  $('#previewMath').style.display = 'block';
-  $('#mathButton').disabled = true;
-
+  disableTextInput();
+  enableMathInput();
   currentEditor = $('#inputMath').editor;
 }
 
 function switchToTextInput(_event) {
-  $('#inputMath').style.display = 'none';
-  $('#previewMath').style.display = 'none';
-  $('#mathButton').disabled = false;
-  $('#inputText').style.display = 'block';
-  $('#previewText').style.display = 'block';
-  $('#textButton').disabled = true;
-
-  currentEditor = $('#inputText').editor;
+  disableMathInput();
+  enableTextInput();
+  currentEditor = $('#inputText').editor || initializeEditor($('#inputText'), 'TEXT');
+  // NOTE: We initialize the text editor here, rather than at DOM Ready, because
+  //       it is hidden, and initializing a hidden editor doesn't work properly.
 }
 
 // Application Entry Point
