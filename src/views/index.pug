@@ -16,19 +16,12 @@ block content
         button#insertButton(disabled=true) I
     #inputArea
       #inputSelector
-        button#textInputButton(disabled=true) T
-        button#mathInputButton M
-      #textInput.inputArea
-        #textEditor.editor
-        .inputControls
-          button#textUndo(disabled=true) U
-          button#textRedo(disabled=true) R
-          button#textClear(disabled=true) Cl
-          button#textConvert(disabled=true) Co
-      #mathInput.inputArea(style='display:none')
-        #mathEditor.editor
-        .inputControls
-          button#mathUndo(disabled=true) U
-          button#mathRedo(disabled=true) R
-          button#mathClear(disabled=true) Cl
-          button#mathConvert(disabled=true) Co
+        button#textButton(disabled=true) T
+        button#mathButton M
+      #inputText
+      #inputMath(style='display:none')
+      #inputControls
+        button#undoButton(disabled=true) U
+        button#redoButton(disabled=true) R
+        button#clearButton(disabled=true) Cl
+        button#convertButton(disabled=true) Co

@@ -37,21 +37,21 @@ async function onDomReady(_event){
   try {
     $('#bannerClose').addEventListener('click', hideBanner);
 
-    $('#textInputButton').addEventListener('click', switchToTextInput);
-    $('#mathInputButton').addEventListener('click', switchToMathInput);
+    $('#textButton').addEventListener('click', switchToTextInput);
+    $('#mathButton').addEventListener('click', switchToMathInput);
 
-    const editorElt = $('#textEditor');
+    const editorElt = $('#inputText');
     const editorConfig = getMyScriptConfig('TEXT');
     MyScript.register(editorElt, editorConfig);
-    $('#textUndo').addEventListener('click', _event=>editorElt.editor.undo());
-    $('#textRedo').addEventListener('click', _event=>editorElt.editor.redo());
-    $('#textClear').addEventListener('click', _event=>editorElt.editor.clear());
-    $('#textConvert').addEventListener('click', _event=>editorElt.editor.convert());
+    $('#undoButton').addEventListener('click', _event=>editorElt.editor.undo());
+    $('#redoButton').addEventListener('click', _event=>editorElt.editor.redo());
+    $('#clearButton').addEventListener('click', _event=>editorElt.editor.clear());
+    $('#convertButton').addEventListener('click', _event=>editorElt.editor.convert());
     editorElt.addEventListener('changed', event=>{
-      $('#textUndo').disabled = !event.detail.canUndo;
-      $('#textRedo').disabled = !event.detail.canRedo;
-      $('#textClear').disabled = !event.detail.canUndo;
-      $('#textConvert').disabled = !event.detail.canUndo;
+      $('#undoButton').disabled = !event.detail.canUndo;
+      $('#redoButton').disabled = !event.detail.canRedo;
+      $('#clearButton').disabled = !event.detail.canUndo;
+      $('#convertButton').disabled = !event.detail.canUndo;
     });
     editorElt.addEventListener('exported', event=>{
       console.dir(event.detail);
