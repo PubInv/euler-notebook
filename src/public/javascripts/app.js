@@ -5,6 +5,7 @@
 // import { deserializeNotebook, serializeNotebook } from './notebook.js';
 // import { tdoc, numMathStyles, numTextStyles,
 //          mathSimplifyRule, applyStyle} from './tdoc.js';
+import katex from './katex-0.10.1.mjs';
 
 // Constants
 
@@ -106,7 +107,8 @@ function onEditorChanged(event) {
 function onMathExported(event) {
   // console.dir(event.detail);
   if (event.detail.exports) {
-    $('#previewMath').innerText = event.detail.exports['application/x-latex'];
+    const latex = event.detail.exports['application/x-latex'];
+    katex.render(latex, $('#previewMath'), { throwOnError: false });
     $('#insertButton').disabled = false;
   } else {
     $('#previewMath').innerText = '';
