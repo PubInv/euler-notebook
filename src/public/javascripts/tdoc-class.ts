@@ -27,17 +27,12 @@ export class TDoc {
 
   // Instance Properties
 
-  nextId: StylableId;
-  styles: Style[];
-  thoughts: Thought[];
-  version: string;
+  private nextId: StylableId;
+  private styles: Style[];
+  private thoughts: Thought[];
+  public version: string;
 
   // Instance Methods
-
-  addStyle<T extends Style>(style: T): T {
-    this.styles.push(style);
-    return style;
-  }
 
   // Applies each rule to each style of the TDoc
   // and returns an array of any new styles that were generated.
@@ -73,6 +68,14 @@ export class TDoc {
     this.thoughts.push(rval);
     return rval;
   }
+
+  // Private Instance Methods
+
+  private addStyle<T extends Style>(style: T): T {
+    this.styles.push(style);
+    return style;
+  }
+
 }
 
 class Thought {
