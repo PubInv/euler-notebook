@@ -99,20 +99,29 @@ function onInsertButtonClicked(_event) {
   try {
     // Create a Thought and attach styles depending on the type of input.
     const thought =  tDoc.createThought();
+    const thoughtElt = document.createElement('div');
+    thoughtElt.classList.add('thought');
+    $('#tDoc').appendChild(thoughtElt);
+
     const type = currentEditor.configuration.recognitionParams.type;
     switch(type) {
-    case 'MATH':
+    case 'MATH': {
       const latex = currentEditor.exports && currentEditor.exports['application/x-latex'];
       tDoc.createMathStyle(thought, latex);
       const jiix = currentEditor.exports && currentEditor.exports['application/vnd.myscript.jiix'];
       tDoc.createJiixStyle(thought, jiix);
+      // TODO: Catch and report katex errors
+      katex.render(latex, thoughtElt, { throwOnError: false });
       break;
-    case 'TEXT':
+    }
+    case 'TEXT': {
       const text = currentEditor.exports && currentEditor.exports['text/plain'];
       tDoc.createTextStyle(thought, text);
       const strokeGroups = currentEditor.model.strokeGroups;
       tDoc.createStrokeStyle(thought, strokeGroups);
+      thoughtElt.innerText = text;
       break;
+    }
     default:
       throw new Error(`Unexpected block type: ${type}`);
     }
@@ -143,6 +152,7 @@ function onMathExported(event) {
   try {
     if (event.detail.exports) {
       const latex = event.detail.exports['application/x-latex'];
+      // TODO: Catch and report katex errors
       katex.render(latex, $('#previewMath'), { throwOnError: false });
       $('#insertButton').disabled = false;
     } else {
