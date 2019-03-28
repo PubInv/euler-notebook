@@ -8,7 +8,7 @@ type MathData = string;
 type StrokeData = string;
 type Stylable = Thought|Style;
 type StylableId = number;
-type StyleRule = (TDoc, Style)=>Style|undefined;
+type StyleRule = (tdoc: TDoc, style: Style)=>Style|undefined;
 type TextData = string;
 type JiixData = string;
 
