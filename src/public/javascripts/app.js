@@ -97,6 +97,7 @@ function onEnhanceButtonClicked(_event) {
 
 function onInsertButtonClicked(_event) {
   try {
+    // Create a Thought and attach styles depending on the type of input.
     const thought =  tDoc.createThought();
     const type = currentEditor.configuration.recognitionParams.type;
     switch(type) {
@@ -115,9 +116,13 @@ function onInsertButtonClicked(_event) {
     default:
       throw new Error(`Unexpected block type: ${type}`);
     }
-    $('#enhanceButton').disabled = false;
 
+    // Clear the contents of the editor and
     currentEditor.clear();
+
+    $('#enhanceButton').disabled = false;
+    $('#saveButton').disabled = false;
+    $('#insertButton').disabled = true;
   } catch(err) {
     showErrorMessage("Error inserting input", err);
   }
@@ -154,7 +159,7 @@ async function onSaveButtonClicked(event) {
     console.log("Saving TDoc:");
     console.dir(tDoc);
     await apiPostRequest('save', { tDoc });
-    this.disabled = true;
+    $('#saveButton').disabled = true;
     showStatusMessage("TDoc saved successfully.");
   } catch(err) {
     showErrorMessage("Error saving notebook", err);
