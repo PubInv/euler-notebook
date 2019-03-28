@@ -1,6 +1,9 @@
 // LICENSE TBD
 // Copyright 2019, Robert L. Read & David Jeschke
-// var math = require('math');
+
+// External Globals
+
+declare var math: /* TYPESCRIPT: mathjs types? */ any;
 
 // Types
 
@@ -34,7 +37,13 @@ export class TDoc {
   // and returns an array of any new styles that were generated.
   public applyRules(rules: StyleRule[]): Style[] {
     const rval: Style[] = [];
-    for (const style of this.styles) {
+    // IMPORTANT: The rules may add new styles. So capture the current
+    //            length of the styles array, and only iterate over
+    //            the existing styles. Otherwise, we could get into
+    //            an infinite loop.
+    const len = this.styles.length;
+    for (let i=0; i<len; i++) {
+      const style = this.styles[i];
       for (const rule of rules) {
         const newStyle = rule(this, style);
         if (newStyle) { rval.push(newStyle); }
@@ -165,12 +174,13 @@ class TextStyle extends Style {
   data: TextData;
 }
 
-// Attempt to apply a math simplification
-// based on the mathjs library
-// const math = require('mathjs');
+// Attempt math.js-based simplification
+// TODO: math.js works on ascii math, whereas the
 export function mathSimplifyRule(tdoc: TDoc, style: Style): Style|undefined {
   if (!(style instanceof MathStyle)) { return undefined; }
-  const simpler = null // TODO: math.simplify(style.data);
+  const simpler = math.simplify(style.data);
   if (!simpler) { return undefined; }
+  // TODO: This creates math styles with mathjs node data,
+  //       whereas math style data elsewhere is a LaTeX string.
   return tdoc.createMathStyle(style, simpler);
 }
