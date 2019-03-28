@@ -3,6 +3,7 @@
   "version": "0.0.0",
   "private": true,
   "scripts": {
+    "build": "tsc -p tsconfig.json",
     "start": "node ./bin/www"
   },
   "dependencies": {

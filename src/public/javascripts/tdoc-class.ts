@@ -148,7 +148,7 @@ class StrokeStyle extends Style {
 // const math = require('mathjs');
 export function mathSimplifyRule(tdoc: TDoc, style: Style): Style|undefined {
   if (!(style instanceof MathStyle)) { return undefined; }
-  const simpler = math.simplify(style.data);
+  const simpler = null // TODO: math.simplify(style.data);
   if (!simpler) { return undefined; }
   return tdoc.createMathStyle(style, simpler);
 }
