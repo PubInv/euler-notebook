@@ -14,29 +14,25 @@ type JiixData = string;
 
 // Constants
 
-const VERSION = "0.3";
+const VERSION = "0.3.0";
 
 export class TDoc {
 
-  constructor() {
-    this.nextId = 1;
-    this.styles = [];
-    this.thoughts = [];
-    this.version = VERSION;
+  // Public Class Methods
+
+  public static create(): TDoc {
+    return new this();
   }
 
-  // Instance Properties
+  // Public Instance Properties
 
-  private nextId: StylableId;
-  private styles: Style[];
-  private thoughts: Thought[];
   public version: string;
 
-  // Instance Methods
+  // Public Instance Methods
 
   // Applies each rule to each style of the TDoc
   // and returns an array of any new styles that were generated.
-  applyRules(rules: StyleRule[]): Style[] {
+  public applyRules(rules: StyleRule[]): Style[] {
     const rval: Style[] = [];
     for (const style of this.styles) {
       for (const rule of rules) {
@@ -47,30 +43,48 @@ export class TDoc {
     return rval;
   }
 
-  createJiixStyle(stylable: Stylable, data: JiixData): JiixStyle {
+  public createJiixStyle(stylable: Stylable, data: JiixData): JiixStyle {
     return this.addStyle(new JiixStyle(this.nextId++, stylable, data));
-  } 
+  }
 
-  createMathStyle(stylable: Stylable, data: MathData): MathStyle {
+  public createMathStyle(stylable: Stylable, data: MathData): MathStyle {
     return this.addStyle(new MathStyle(this.nextId++, stylable, data));
-  } 
+  }
 
-  createStrokeStyle(stylable: Stylable, data: StrokeData): StrokeStyle {
+  public createStrokeStyle(stylable: Stylable, data: StrokeData): StrokeStyle {
     return this.addStyle(new StrokeStyle(this.nextId++, stylable, data));
-  } 
+  }
 
-  createTextStyle(stylable: Stylable, data: TextData): TextStyle {
+  public createTextStyle(stylable: Stylable, data: TextData): TextStyle {
     return this.addStyle(new TextStyle(this.nextId++, stylable, data));
-  } 
+  }
 
-  createThought(): Thought {
+  public createThought(): Thought {
     const rval = new Thought(this.nextId++);
     this.thoughts.push(rval);
     return rval;
   }
 
+  // --- PRIVATE ---
+
+  // Private Constructor
+
+  private constructor() {
+    this.nextId = 1;
+    this.styles = [];
+    this.thoughts = [];
+    this.version = VERSION;
+  }
+
+  // Private Instance Properties
+
+  private nextId: StylableId;
+  private styles: Style[];
+  private thoughts: Thought[];
+
   // Private Instance Methods
 
+  // Helper method for tDoc.create*Style.
   private addStyle<T extends Style>(style: T): T {
     this.styles.push(style);
     return style;
@@ -79,15 +93,16 @@ export class TDoc {
 }
 
 class Thought {
-  constructor(id: StylableId) {
+  // Call tDoc.createThought instead of calling this constructor directly.
+  /* private */ constructor(id: StylableId) {
     this.id = id;
   }
-  
-  // Instance Properties
-  id: StylableId;
+
+  // Public Instance Properties
+  public id: StylableId;
 }
 
-class Style {
+abstract class Style {
   constructor(id: StylableId, stylable: Stylable) {
     this.id = id;
     this.stylableId = stylable.id;
@@ -98,32 +113,9 @@ class Style {
   stylableId: number;
 }
 
-class MathStyle extends Style {
-  constructor(id: StylableId, stylable: Stylable, data: MathData) {
-    super(id, stylable);
-    this.type = 'MATH';
-    this.data = data;
-  }
-
-  // Instance Properties
-  type: 'MATH';
-  data: MathData;
-}
-
-class TextStyle extends Style {
-  constructor(id: StylableId, stylable: Stylable, data: TextData) {
-    super(id, stylable);
-    this.type = 'TEXT';
-    this.data = data;
-  }
-
-  // Instance Properties
-  type: 'TEXT';
-  data: TextData;
-}
-
 class JiixStyle extends Style {
-  constructor(id: StylableId, stylable: Stylable, data: JiixData) {
+  // Call tDoc.createJiixStyle instead of calling this constructor directly.
+  /* private */ constructor(id: StylableId, stylable: Stylable, data: JiixData) {
     super(id, stylable);
     this.type = 'JIIX';
     this.data = data;
@@ -134,8 +126,22 @@ class JiixStyle extends Style {
   data: JiixData;
 }
 
+class MathStyle extends Style {
+  // Call tDoc.createMathStyle instead of calling this constructor directly.
+  /* private */ constructor(id: StylableId, stylable: Stylable, data: MathData) {
+    super(id, stylable);
+    this.type = 'MATH';
+    this.data = data;
+  }
+
+  // Instance Properties
+  type: 'MATH';
+  data: MathData;
+}
+
 class StrokeStyle extends Style {
-  constructor(id: StylableId, stylable: Stylable, data: StrokeData) {
+  // Call tDoc.createStrokeStyle instead of calling this constructor directly.
+  /* private */ constructor(id: StylableId, stylable: Stylable, data: StrokeData) {
     super(id, stylable);
     this.type = 'STROKE';
     this.data = data;
@@ -144,6 +150,19 @@ class StrokeStyle extends Style {
   // Instance Properties
   type: 'STROKE';
   data: StrokeData;
+}
+
+class TextStyle extends Style {
+  // Call tDoc.createTextStyle instead of calling this constructor directly.
+  /* private */ constructor(id: StylableId, stylable: Stylable, data: TextData) {
+    super(id, stylable);
+    this.type = 'TEXT';
+    this.data = data;
+  }
+
+  // Instance Properties
+  type: 'TEXT';
+  data: TextData;
 }
 
 // Attempt to apply a math simplification

@@ -3,34 +3,25 @@ var router = express.Router();
 
 // Constants
 
-const NEW_NOTEBOOK = {
-  pages: [
-    {
-      layers: [
-        {
-          blocks: [
-            { type: 'TEXT', height: '3in' },
-            { type: 'MATH' },
-          ]
-        }
-      ]
-    },
-    { /* empty page */ },
-  ]
-};
+const NEW_TDOC = {
+  nextId: 1,
+  styles: [],
+  thoughts: [],
+  version: "0.3.0",
+}
 
 // Globals
 
-let notebook = NEW_NOTEBOOK;
+let tDoc = NEW_TDOC;
 
 // Routes
 
 router.get('/open', function(_req, res, _next) {
-  res.json({ ok: true, notebook });
+  res.json({ ok: true, tDoc });
 });
 
 router.post('/save', function(req, res, _next) {
-  notebook = req.body.notebook;
+  tDoc = req.body.tDoc;
   res.json({ ok: true });
 });
 
