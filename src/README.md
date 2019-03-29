@@ -28,6 +28,14 @@ Then, install the npm dependencies:
 npm install
 ```
 
+Some files are in TypeScript an need to be transpiled to JavaScript, so:
+
+```bash
+npm run-script build
+```
+
+You will need to re-run the build command if you modify any .ts files.
+
 Start the express server:
 
 ```bash
@@ -35,6 +43,13 @@ DEBUG=src:* npm start
 ```
 
 And open a browser to [localhost:3000](http://localhost:3000).
+
+You need to restart the express server if you modify any of the web-server JavaScript files.
+You do _not_ need to restart the server if you modify PUG HTML (<tt>.pug</tt>) or Stylus CSS (<tt>.styl</tt>) files.
+Just refresh the browser page.
+Nor do you need to restart the server if you modify a client-side JavaScript page.
+However, if you modify a TypeScript (<tt>.ts</tt>) file, you will need to <tt>npm run-script build</tt>
+before refreshing the browser.
 
 ## Modifying the code
 
