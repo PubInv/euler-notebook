@@ -9,7 +9,7 @@ To run a local version of the math-tablet web server you will need [node](https:
 You also need to create a [MyScript developer account](https://developer.myscript.com/getting-started/web)
 to obtain application keys for their handwriting recognition services.
 After you create an account, MyScript will send you an email message with an <tt>applicationKey</tt>and an <tt>hmacKey</tt>.
-In this <tt>src</tt>directory, create a <tt>.credentials.json</tt>file with your MyScript keys:
+In your HOME (<tt>echo $HOME</tt>) directory, create a <tt>.math-tablet-credentials.json</tt>file with your MyScript keys:
 
 ```json
 {
