@@ -7,7 +7,8 @@
 
 
 var express = require('express');
-var router = express.Router();
+
+export var router = express.Router();
 
 // Constants
 
@@ -30,10 +31,10 @@ router.get('/open', function(_req, res, _next) {
 
 router.post('/enhance', function(_req, res, _next) {
   console.log("SSSSSSSSSSSSSSSSSSSSS",_req.body);
-  let tdoc = _req.body.data;
-// TODO: a real TDoc needed here!!!
-//  const newStyles = tdoc.applyRules([mathSimplifyRule]);
-  //  console.log("NEW STYLES",newStyles);
+  // let tdoc = _req.body.data;
+  // TODO: a real TDoc needed here!!!
+  // const newStyles = tdoc.applyRules([mathSimplifyRule]);
+  // console.log("NEW STYLES",newStyles);
   var newStyles = [];
   res.json({ ok: true, newStyles });
 });
@@ -42,8 +43,3 @@ router.post('/save', function(req, res, _next) {
   tDoc = req.body.tDoc;
   res.json({ ok: true });
 });
-
-
-
-
-module.exports = router;

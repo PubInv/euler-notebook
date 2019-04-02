@@ -8,9 +8,9 @@ var cookieParser = require('cookie-parser');
 var logger = require('morgan');
 var stylus = require('stylus');
 
-var apiRouter = require('./routes/api');
-var indexRouter = require('./routes/index');
-var usersRouter = require('./routes/users');
+import { router as apiRouter } from './routes/api';
+import { router as indexRouter } from './routes/index';
+import { router as usersRouter } from './routes/users';
 
 // Helper Functions
 
