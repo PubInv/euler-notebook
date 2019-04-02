@@ -2,7 +2,7 @@
 // Requirements
 
 import { apiGetRequest, apiPostRequest } from './api.js';
-import { mathSimplifyRule, TDoc }  from './tdoc-class.js';
+import { TDoc, getKnownClientSideRules }  from './tdoc-class.js';
 import katex from './katex-0.10.1.mjs';
 
 // Constants
@@ -30,6 +30,7 @@ let tDoc /*: TDoc*/;
 let currentEditor;
 
 // Event Handlers
+
 
 async function onDomReady(_event){
   try {
@@ -70,6 +71,7 @@ async function onDomReady(_event){
     $('#clearButton').addEventListener('click', _event=>currentEditor.clear());
     $('#convertButton').addEventListener('click', _event=>currentEditor.convert());
 
+
   } catch (err) {
     showErrorMessage("Error initializing math tablet.", err);
   }
@@ -83,12 +85,21 @@ function onEditorChanged(event) {
   $('#convertButton').disabled = !event.detail.canUndo;
 }
 
-function onEnhanceButtonClicked(_event) {
+async function onEnhanceButtonClicked(_event) {
   try {
-    const newStyles = tDoc.applyRules([ mathSimplifyRule ]);
+    // Basically at this point there may be enhancements both client-side and
+    // server side. Since one of the main enhancemnts is in "math.js" which
+    // is a hard to include here (due to incompatibilities with our test system)
+    // We probably will need server-side enhancements anyway, so I will check here.
+    const newStyles = tDoc.applyRules( getKnownClientSideRules() );
     // TODO: update the display.
     console.log("New styles from applying mathSimplifyRule:");
     console.dir(newStyles);
+
+    // Rob is trying to a hello world request here:
+    const enhanceResults = await apiPostRequest('enhance',tDoc);
+    console.log("enhance results",enhanceResults);
+    
     $('#enhanceButton').disabled = true;
   } catch(err) {
     showErrorMessage("Error enhancing TDOC.", err);

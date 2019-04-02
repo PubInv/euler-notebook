@@ -2,8 +2,10 @@
 // Copyright 2019, Robert L. Read & David Jeschke
 
 // External Globals
+// var math = require("./math-5.8.0.js");
 
-declare var math: /* TYPESCRIPT: mathjs types? */ any;
+
+// declare var math: /* TYPESCRIPT: mathjs types? */ any;
 
 // Types
 
@@ -74,6 +76,56 @@ export class TDoc {
     return rval;
   }
 
+
+  // ENUMERATION AND INTERROGATION
+  // We need a way to interrogate a TDoc. There are lots of
+  // approaches here; I expect this to be constantly evolving.
+  // In particular, dej has suggested accessing styles via
+  // the thoughts they annotate; this seems like a good idea. -rlr
+  public getThoughts(): Thought[] {
+    return this.thoughts;
+  }
+  
+  public getStyles(): Style[] {
+    return this.styles;
+  }
+
+  public jsonPrinter(): string {
+    return JSON.stringify(this,null,' ');
+  }
+
+
+  public numStyles(tname: string) : number {
+    return this.styles.reduce(
+      function(total,x){
+        return (x.type == tname)
+          ?
+          total+1 : total},
+      0);
+  }
+
+  public summaryPrinter(): string {
+    var numMath = this.numStyles("MATH");
+    var numText = this.numStyles("TEXT");
+    return `${this.thoughts.length} thoughts\n`
+      + `${this.styles.length} styles\n`
+      + `${numMath} math styles\n`
+      + `${numText} text styles\n`
+    ;
+  }
+  // COMPILERS
+
+    // take a set of comma-separated-values and
+  // produce a tdoc full of thoughts; this is
+  // useful mostly for testing.
+  public addFromText(text: string): TDoc {
+    let ths = text.split(",");
+    ths.forEach(text => { let th = this.createThought();
+                          this.createTextStyle(th,text);
+                        });
+    return this;
+  }
+
   // --- PRIVATE ---
 
   // Private Constructor
@@ -111,15 +163,17 @@ class Thought {
   public id: StylableId;
 }
 
-abstract class Style {
+export abstract class Style {
   constructor(id: StylableId, stylable: Stylable) {
     this.id = id;
     this.stylableId = stylable.id;
+    this.type = 'abstract';
   }
 
   // Instance Properties
   id: number;
   stylableId: number;
+  type: string;
 }
 
 class JiixStyle extends Style {
@@ -135,7 +189,7 @@ class JiixStyle extends Style {
   data: JiixData;
 }
 
-class MathStyle extends Style {
+export class MathStyle extends Style {
   // Call tDoc.createMathStyle instead of calling this constructor directly.
   /* private */ constructor(id: StylableId, stylable: Stylable, data: MathData) {
     super(id, stylable);
@@ -174,13 +228,9 @@ class TextStyle extends Style {
   data: TextData;
 }
 
-// Attempt math.js-based simplification
-// TODO: math.js works on ascii math, whereas the
-export function mathSimplifyRule(tdoc: TDoc, style: Style): Style|undefined {
-  if (!(style instanceof MathStyle)) { return undefined; }
-  const simpler = math.simplify(style.data);
-  if (!simpler) { return undefined; }
-  // TODO: This creates math styles with mathjs node data,
-  //       whereas math style data elsewhere is a LaTeX string.
-  return tdoc.createMathStyle(style, simpler);
+
+// here we will place known client side rules;
+// server side rules will be handled differently.
+export function getKnownClientSideRules(): StyleRule[]  {
+  return [];
 }

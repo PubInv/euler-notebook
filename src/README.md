@@ -61,9 +61,53 @@ math-tablet is a single-page app.
 The page HTML inside the <tt><body></tt>of the page is defined in <tt>views/index.pug</tt>.
 The page HTML outside of that is defined in <tt>views/layout.pug</tt>.
 The main stylesheet is defined in <tt>public\stylesheets\style.styl</tt>.
-The HTML and CSS is generated from these templates on every page load in development, so you do not need to restart the web server if you make a change to a <tt>.pug</tt>or <tt>.styl</tt>file.
+The HTML and CSS is generated from these templates on every page load in development, so you do not need to restart the web server if you make a c
+hange to a <tt>.pug</tt>or <tt>.styl</tt>file.
 Just reload the page in your browser.
 
 Static assets to be served by the web server are placed in the <tt>public</tt>directory.
 
 The entry point of the app is the node script in <tt>bin\www</tt>. The <tt>express</tt>route that serves up the single-page app is in <tt>routes\index.js</tt>. Look for <tt>router.get('/',...)</tt>.
+
+## Running Mocha tests
+
+Running Mocha is a little awkward because it requires the system to be
+rebuilt with the "es5" option.
+
+To do this, modify the compilerOption in tsconfig.json by uncommenting
+"es5" and commenting out "es2017":
+
+
+```
+{
+  "compilerOptions": {
+    "strict": false,
+    "target": "es5",
+//    "target": "es6",        
+//    "target": "es2017",
+    "noFallthroughCasesInSwitch": true,
+    "noImplicitReturns": true,
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
+  }
+}
+```
+
+Then rebuild with:  <tt>npm run-script build</tt>. The Mocha test suite
+is then executed with  <tt>npm test</tt>.
+
+To rebuild for the redeployment, swap the feature back.
+
+There is probably a more elegant way to handle this.
+
+## TODOs in the Current Branch and Status
+
+The biggest problem in the current branch is the file api.js
+in the routes directory, which needs to import the TDoc and
+mathSimplifyRule objects into api.js. David is going to work on this.
+
+The current code (in the Mocha tests) does indeed use the math.js
+package correctly to execute a test. In that sense, some of our
+main functionality under test has been restored, but there
+remains some TDoc functionality that used to be under test which
+needs to be done.
