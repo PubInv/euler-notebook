@@ -1,9 +1,7 @@
 {
   "compilerOptions": {
     "strict": false,
-    "target": "es5",
-//    "target": "es6",        
-//    "target": "es2017",
+    "target": "es2017",
     "noFallthroughCasesInSwitch": true,
     "noImplicitReturns": true,
     "noUnusedLocals": true,

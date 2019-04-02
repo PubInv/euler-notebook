@@ -71,34 +71,16 @@ The entry point of the app is the node script in <tt>bin\www</tt>. The <tt>expre
 
 ## Running Mocha tests
 
-Running Mocha is a little awkward because it requires the system to be
-rebuilt with the "es5" option.
+Running Mocha is a little awkward because it requires the TypeScript files to be
+rebuilt with the <tt>es5</tt> target. Do:
 
-To do this, modify the compilerOption in tsconfig.json by uncommenting
-"es5" and commenting out "es2017":
-
-
-```
-{
-  "compilerOptions": {
-    "strict": false,
-    "target": "es5",
-//    "target": "es6",        
-//    "target": "es2017",
-    "noFallthroughCasesInSwitch": true,
-    "noImplicitReturns": true,
-    "noUnusedLocals": true,
-    "noUnusedParameters": true,
-  }
-}
+```bash
+npm run build-test
+npm test
 ```
 
-Then rebuild with:  <tt>npm run-script build</tt>. The Mocha test suite
-is then executed with  <tt>npm test</tt>.
-
-To rebuild for the redeployment, swap the feature back.
-
-There is probably a more elegant way to handle this.
+Switching back, you will need to <tt>npm run build</tt> to rebuild the TypeScript files to
+the <tt>es2017</tt> target.
 
 ## TODOs in the Current Branch and Status
 

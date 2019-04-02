@@ -1,4 +1,7 @@
 node_modules/
 public/javascripts/tdoc-class.js
+public/javascripts/tdoc-math.js
+public/javascripts/tdoc-text-comp.js
 public/stylesheets/*.css
 !public/stylesheets/katex*.css
+test/TDoc.spec.js
