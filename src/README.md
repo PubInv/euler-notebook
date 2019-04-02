@@ -66,15 +66,3 @@ There is a set of Mocha unit tests in the <tt>test</tt> subdirectory. To run the
 ```bash
 npm test
 ```
-
-## TODOs in the Current Branch and Status
-
-The biggest problem in the current branch is the file api.js
-in the routes directory, which needs to import the TDoc and
-mathSimplifyRule objects into api.js. David is going to work on this.
-
-The current code (in the Mocha tests) does indeed use the math.js
-package correctly to execute a test. In that sense, some of our
-main functionality under test has been restored, but there
-remains some TDoc functionality that used to be under test which
-needs to be done.
