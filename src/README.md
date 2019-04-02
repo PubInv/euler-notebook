@@ -71,16 +71,11 @@ The entry point of the app is the node script in <tt>bin\www</tt>. The <tt>expre
 
 ## Running Mocha tests
 
-Running Mocha is a little awkward because it requires the TypeScript files to be
-rebuilt with the <tt>es5</tt> target. Do:
+There is a set of Mocha unit tests in the <tt>test</tt> subdirectory. To run them:
 
 ```bash
-npm run build-test
 npm test
 ```
-
-Switching back, you will need to <tt>npm run build</tt> to rebuild the TypeScript files to
-the <tt>es2017</tt> target.
 
 ## TODOs in the Current Branch and Status
 

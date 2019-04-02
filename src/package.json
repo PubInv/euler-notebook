@@ -4,7 +4,6 @@
   "private": true,
   "scripts": {
     "build": "tsc -p tsconfig.json",
-    "build-test": "tsc -p tsconfig.test.json",
     "clean": "git clean -dfqx",
     "start": "node ./bin/www",
     "test": "mocha -r ts-node/register test/TDoc.spec.ts"

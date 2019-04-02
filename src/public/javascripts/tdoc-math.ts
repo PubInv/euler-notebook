@@ -1,7 +1,7 @@
 
 
 
-import { TDoc,Style,MathStyle }  from './tdoc-class.js';
+import { TDoc,Style,MathStyle }  from './tdoc-class';
 
 declare var math: /* TYPESCRIPT: mathjs types? */ any;
 
