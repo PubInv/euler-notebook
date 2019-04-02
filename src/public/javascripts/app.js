@@ -97,8 +97,8 @@ async function onEnhanceButtonClicked(_event) {
     console.dir(newStyles);
 
     // Rob is trying to a hello world request here:
-    const enhanceResults = await apiPostRequest('enhance',tDoc);
-    console.log("enhance results",enhanceResults);
+    const enhanceResults = await apiPostRequest('enhance', { tDoc });
+    console.log("enhance results", enhanceResults);
 
     $('#enhanceButton').disabled = true;
   } catch(err) {

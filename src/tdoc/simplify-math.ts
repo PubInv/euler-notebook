@@ -1,11 +1,7 @@
 
+import * as math from 'mathjs';
 
-
-import { TDoc,Style,MathStyle }  from './tdoc-class';
-
-declare var math: /* TYPESCRIPT: mathjs types? */ any;
-
-var math = require("./math-5.8.0.js");
+import { TDoc, Style, MathStyle }  from './tdoc-class';
 
 // Attempt math.js-based simplification
 // TODO: math.js works on ascii math, whereas the

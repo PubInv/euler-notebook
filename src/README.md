@@ -22,23 +22,13 @@ In your HOME (<tt>echo $HOME</tt>) directory, create a <tt>.math-tablet-credenti
 
 (The <tt>.gitignore</tt>file ensures the credentials file will not be commited to Git.)
 
-Then, install the npm dependencies:
+Then:
 
 ```bash
+npm clean
 npm install
-```
-
-Some files are in TypeScript an need to be transpiled to JavaScript, so:
-
-```bash
-npm run-script build
-```
-
-You will need to re-run the build command if you modify any .ts files.
-
-Start the express server:
-
-```bash
+npm run build
+npm test
 DEBUG=src:* npm start
 ```
 

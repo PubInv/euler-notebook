@@ -29,6 +29,10 @@ export class TDoc {
     return new this();
   }
 
+  public static fromJsonObject(_obj): TDoc {
+    throw new Error("TDoc fromJsonObject not yet implemented.");
+  }
+
   // Public Instance Properties
 
   public version: string;
@@ -85,7 +89,7 @@ export class TDoc {
   public getThoughts(): Thought[] {
     return this.thoughts;
   }
-  
+
   public getStyles(): Style[] {
     return this.styles;
   }

@@ -1,8 +1,8 @@
 // import { hello } from './hello-world';
-import { TDoc }  from '../public/javascripts/tdoc-class';
-import { mathSimplifyRule }  from '../public/javascripts/tdoc-math';
+import { TDoc }  from '../tdoc/tdoc-class';
+import { mathSimplifyRule }  from '../tdoc/simplify-math';
 
-// import { TDocTextCompiler } from '../public/javascripts/tdoc-text-comp';
+// import { TDocTextCompiler } from '../tdoc/tdoc-text-comp';
 
 // import { expect } from 'chai';
 import { assert } from 'chai';
