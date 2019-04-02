@@ -11,7 +11,6 @@ const credentialsPath = path.join(process.env.HOME, '.math-tablet-credentials.js
 const credentialsJson = fs.readFileSync(credentialsPath);
 const credentials = JSON.parse(credentialsJson);
 
-/* GET home page. */
 router.get('/', function(req, res, next) {
   res.render('index', { credentials });
 });

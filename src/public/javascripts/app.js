@@ -99,7 +99,7 @@ async function onEnhanceButtonClicked(_event) {
     // Rob is trying to a hello world request here:
     const enhanceResults = await apiPostRequest('enhance',tDoc);
     console.log("enhance results",enhanceResults);
-    
+
     $('#enhanceButton').disabled = true;
   } catch(err) {
     showErrorMessage("Error enhancing TDOC.", err);
@@ -217,8 +217,8 @@ function onTextExported(event) {
 
 // Helper Functions
 
-function $(id) {
-  return document.getElementById(id.substring(1));
+function $(selector) {
+  return document.querySelector(selector);
 }
 
 function disableMathInput() {
@@ -256,10 +256,10 @@ function getMyScriptConfig(editorType) {
 }
 
 function getMyScriptKeys() {
-  const htmlElement = document.documentElement;
+  const inputAreaElt = $('#inputArea');
   return {
-    applicationKey: htmlElement.dataset.applicationkey,
-    hmacKey: htmlElement.dataset.hmackey,
+    applicationKey: inputAreaElt.dataset.applicationkey,
+    hmacKey: inputAreaElt.dataset.hmackey,
   }
 }
 

@@ -14,7 +14,7 @@ block content
       #previewMath
       #previewControls
         button#insertButton(disabled=true) I
-    #inputArea
+    #inputArea('data-applicationkey'=credentials.myscript.applicationKey, 'data-hmackey'=credentials.myscript.hmacKey)
       #inputSelector
         button#textButton T
         button#mathButton(disabled=true) M
