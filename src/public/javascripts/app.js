@@ -45,11 +45,11 @@ async function onDomReady(_event){
 
     // Document
 
-    // TODO:
-    // const openResults = await apiGetRequest('open');
-    // tDoc = TDoc.fromPlainObject(openResults.tDoc);
-    // showStatusMessage("Notebook opened successfully.");
-    tDoc = TDoc.create();
+    const openResults = await apiGetRequest('open');
+    tDoc = TDoc.fromJsonObject(openResults.tDoc);
+    renderTDoc(tDoc)
+    showStatusMessage("Notebook opened successfully.");
+    console.dir(tDoc);
 
     // Preview Area
 
@@ -87,15 +87,8 @@ function onEditorChanged(event) {
 
 async function onEnhanceButtonClicked(_event) {
   try {
-    // Apply client-side rules
     const newStyles = tDoc.applyRules( getKnownClientSideRules() );
-
-    // Apply server-side rules
     const enhanceResults = await apiPostRequest('enhance', { tDoc });
-
-    // TODO: update the display.
-
-    // Don't allow another enhancement request until the document has been modified.
     $('#enhanceButton').disabled = true;
   } catch(err) {
     showErrorMessage("Error enhancing TDOC.", err);
@@ -104,43 +97,15 @@ async function onEnhanceButtonClicked(_event) {
 
 function onInsertButtonClicked(_event) {
   try {
-    // Create a Thought and attach styles depending on the type of input.
-    const thought =  tDoc.createThought();
-    const thoughtElt = document.createElement('div');
-    thoughtElt.classList.add('thought');
+    const thought = createThought(tDoc, currentEditor);
+    const thoughtElt = renderThought(tDoc, thought);
     $('#tDoc').appendChild(thoughtElt);
-
-    const type = currentEditor.configuration.recognitionParams.type;
-    switch(type) {
-    case 'MATH': {
-      const latex = currentEditor.exports && currentEditor.exports['application/x-latex'];
-      tDoc.createMathStyle(thought, latex);
-      const jiix = currentEditor.exports && currentEditor.exports['application/vnd.myscript.jiix'];
-      tDoc.createJiixStyle(thought, jiix);
-      // TODO: Catch and report katex errors
-      katex.render(latex, thoughtElt, { throwOnError: false });
-      break;
-    }
-    case 'TEXT': {
-      const text = currentEditor.exports && currentEditor.exports['text/plain'];
-      tDoc.createTextStyle(thought, text);
-      const strokeGroups = currentEditor.model.strokeGroups;
-      tDoc.createStrokeStyle(thought, strokeGroups);
-      thoughtElt.innerText = text;
-      break;
-    }
-    default:
-      throw new Error(`Unexpected block type: ${type}`);
-    }
-
-    // Clear the contents of the editor and
     currentEditor.clear();
-
     $('#enhanceButton').disabled = false;
     $('#saveButton').disabled = false;
     $('#insertButton').disabled = true;
   } catch(err) {
-    showErrorMessage("Error inserting input", err);
+    showErrorMessage("Error inserting input.", err);
   }
 }
 
@@ -177,7 +142,7 @@ async function onSaveButtonClicked(event) {
     $('#saveButton').disabled = true;
     showStatusMessage("TDoc saved successfully.");
   } catch(err) {
-    showErrorMessage("Error saving notebook", err);
+    showErrorMessage("Error saving notebook.", err);
   }
 }
 
@@ -212,6 +177,32 @@ function onTextExported(event) {
 
 function $(selector) {
   return document.querySelector(selector);
+}
+
+function createThought(tDoc, editor) {
+  const thought =  tDoc.createThought();
+
+  const type = editor.configuration.recognitionParams.type;
+  switch(type) {
+  case 'MATH': {
+    const latex = editor.exports && editor.exports['application/x-latex'];
+    tDoc.createMathStyle(thought, latex);
+    const jiix = editor.exports && editor.exports['application/vnd.myscript.jiix'];
+    // BUGBUG: temporarily disabled. tDoc.createJiixStyle(thought, jiix);
+    // TODO: Catch and report katex errors
+    break;
+  }
+  case 'TEXT': {
+    const text = editor.exports && editor.exports['text/plain'];
+    tDoc.createTextStyle(thought, text);
+    const strokeGroups = editor.model.strokeGroups;
+    // BUGBUG: temporarily disabled. tDoc.createStrokeStyle(thought, strokeGroups);
+    break;
+  }
+  default:
+    throw new Error(`Unexpected block type: ${type}`);
+  }
+  return thought;
 }
 
 function disableMathInput() {
@@ -267,6 +258,47 @@ function initializeEditor(editorElt, editorType) {
   const onExportedFn = (editorType == 'MATH' ? onMathExported : onTextExported);
   editorElt.addEventListener('exported', onExportedFn);
   return editorElt.editor;
+}
+
+function renderTDoc(tDoc) {
+  const $tDoc = $('#tDoc');
+  $tDoc.innerHTML = '';
+  const thoughts = tDoc.getThoughts();
+  for (const thought of thoughts) {
+    const thoughtElt = renderThought(tDoc, thought);
+    $tDoc.appendChild(thoughtElt);
+  }
+}
+
+function renderThought(tdoc, thought) {
+
+  // Create a DOM element
+  const thoughtElt = document.createElement('div');
+  thoughtElt.classList.add('thought');
+
+  // Get the styles attached to this thought.
+  const styles = tdoc.getStyles().filter(s=>(s.stylableId == thought.id));
+
+  // Iterate through the styles
+  let rendered = false;
+  for (const style of styles) {
+    switch(style.type) {
+    case 'MATH': {
+      const latex = style.data;
+      // TODO: Deal with error case.
+      katex.render(latex, thoughtElt, { throwOnError: false });
+      rendered = true;
+      break;
+    }
+    case 'TEXT': {
+      const text = style.data;
+      thoughtElt.innerText = text;
+      break;
+    }}
+  }
+  if (!rendered) { thoughtElt.innerText = "ERROR: No renderable styles found."; }
+
+  return thoughtElt;
 }
 
 function showErrorMessage(msg, err) {
