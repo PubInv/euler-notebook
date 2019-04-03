@@ -188,15 +188,14 @@ function createThought(tDoc, editor) {
     const latex = editor.exports && editor.exports['application/x-latex'];
     tDoc.createMathStyle(thought, latex);
     const jiix = editor.exports && editor.exports['application/vnd.myscript.jiix'];
-    // BUGBUG: temporarily disabled. tDoc.createJiixStyle(thought, jiix);
-    // TODO: Catch and report katex errors
+    tDoc.createJiixStyle(thought, jiix);
     break;
   }
   case 'TEXT': {
     const text = editor.exports && editor.exports['text/plain'];
     tDoc.createTextStyle(thought, text);
     const strokeGroups = editor.model.strokeGroups;
-    // BUGBUG: temporarily disabled. tDoc.createStrokeStyle(thought, strokeGroups);
+    tDoc.createStrokeStyle(thought, strokeGroups);
     break;
   }
   default:
