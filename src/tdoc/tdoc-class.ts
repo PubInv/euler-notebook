@@ -29,8 +29,22 @@ export class TDoc {
     return new this();
   }
 
-  public static fromJsonObject(_obj): TDoc {
-    throw new Error("TDoc fromJsonObject not yet implemented.");
+  public static fromJsonObject(obj): TDoc {
+    console.log("TDoc fromJsonObject");
+    console.dir(obj);
+
+    // Validate the object
+    if (!obj.nextId) { throw new Error("Invalid TDoc object JSON."); }
+    if (obj.version != VERSION) { throw new Error("TDoc in unexpected version."); }
+
+    // Reanimate the thoughts and styles
+    const thoughts: Thought[] = obj.thoughts.map(Thought.fromJsonObject);
+    const styles: Style[] = obj.styles.map(Style.fromJsonObject);
+
+    // Create the TDoc object from its properties and reanimated thoughts and styles.
+    const tDoc = Object.assign(Object.create(TDoc.prototype), { ...obj, styles, thoughts });
+    console.dir(tDoc);
+    return tDoc;
   }
 
   // Public Instance Properties
@@ -158,6 +172,13 @@ export class TDoc {
 }
 
 class Thought {
+
+  public static fromJsonObject(obj): Thought {
+    // NOTE: This will throw for id === 0.
+    if (!obj.id) { throw new Error("Invalid Thought object JSON"); }
+    return Object.assign(Object.create(Thought.prototype), obj);
+  }
+
   // Call tDoc.createThought instead of calling this constructor directly.
   /* private */ constructor(id: StylableId) {
     this.id = id;
@@ -168,6 +189,13 @@ class Thought {
 }
 
 export abstract class Style {
+
+  public static fromJsonObject(obj): Style {
+    if (!obj.type) { throw new Error("Invalid Style object JSON"); }
+    const cl = STYLE_CLASSES[obj.type];
+    return Object.assign(Object.create(cl.prototype), obj);
+  }
+
   constructor(id: StylableId, stylable: Stylable) {
     this.id = id;
     this.stylableId = stylable.id;
@@ -232,6 +260,12 @@ class TextStyle extends Style {
   data: TextData;
 }
 
+const STYLE_CLASSES = {
+  'JIIX': JiixStyle,
+  'MATH': MathStyle,
+  'STROKE': StrokeStyle,
+  'TEXT': TextStyle,
+}
 
 // here we will place known client side rules;
 // server side rules will be handled differently.

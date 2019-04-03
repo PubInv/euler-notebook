@@ -87,19 +87,16 @@ function onEditorChanged(event) {
 
 async function onEnhanceButtonClicked(_event) {
   try {
-    // Basically at this point there may be enhancements both client-side and
-    // server side. Since one of the main enhancemnts is in "math.js" which
-    // is a hard to include here (due to incompatibilities with our test system)
-    // We probably will need server-side enhancements anyway, so I will check here.
+    // Apply client-side rules
     const newStyles = tDoc.applyRules( getKnownClientSideRules() );
-    // TODO: update the display.
-    console.log("New styles from applying mathSimplifyRule:");
-    console.dir(newStyles);
 
-    // Rob is trying to a hello world request here:
+    // Apply server-side rules
     const enhanceResults = await apiPostRequest('enhance', { tDoc });
     console.log("enhance results", enhanceResults);
 
+    // TODO: update the display.
+
+    // Don't allow another enhancement request until the document has been modified.
     $('#enhanceButton').disabled = true;
   } catch(err) {
     showErrorMessage("Error enhancing TDOC.", err);
