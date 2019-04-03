@@ -1,9 +1,10 @@
 {
   "name": "src",
   "version": "0.0.0",
-  "private": true,
+  "private": false,
   "scripts": {
-    "build": "tsc -p tsconfig.json",
+    "build": "tsc -p tsconfig.client.json",
+    "check-types": "tsc -p tsconfig.json",
     "clean": "git clean -dfqx",
     "start": "ts-node ./app.ts",
     "test": "mocha -r ts-node/register test/TDoc.spec.ts"
