@@ -30,9 +30,6 @@ export class TDoc {
   }
 
   public static fromJsonObject(obj): TDoc {
-    console.log("TDoc fromJsonObject");
-    console.dir(obj);
-
     // Validate the object
     if (!obj.nextId) { throw new Error("Invalid TDoc object JSON."); }
     if (obj.version != VERSION) { throw new Error("TDoc in unexpected version."); }
@@ -43,7 +40,6 @@ export class TDoc {
 
     // Create the TDoc object from its properties and reanimated thoughts and styles.
     const tDoc = Object.assign(Object.create(TDoc.prototype), { ...obj, styles, thoughts });
-    console.dir(tDoc);
     return tDoc;
   }
 

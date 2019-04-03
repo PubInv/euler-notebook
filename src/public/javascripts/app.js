@@ -92,7 +92,6 @@ async function onEnhanceButtonClicked(_event) {
 
     // Apply server-side rules
     const enhanceResults = await apiPostRequest('enhance', { tDoc });
-    console.log("enhance results", enhanceResults);
 
     // TODO: update the display.
 
@@ -174,8 +173,6 @@ function onMathExported(event) {
 
 async function onSaveButtonClicked(event) {
   try {
-    console.log("Saving TDoc:");
-    console.dir(tDoc);
     await apiPostRequest('save', { tDoc });
     $('#saveButton').disabled = true;
     showStatusMessage("TDoc saved successfully.");
@@ -199,7 +196,6 @@ function onTextButtonClicked(_event) {
 
 function onTextExported(event) {
   try {
-    // console.dir(event.detail);
     if (event.detail.exports) {
       $('#previewText').innerText = event.detail.exports['text/plain'];
       $('#insertButton').disabled = false;

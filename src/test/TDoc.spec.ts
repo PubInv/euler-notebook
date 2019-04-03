@@ -84,7 +84,6 @@ describe('style applier', function() {
       td0.createMathStyle(th,"2+9");
       td0.createMathStyle(th,"4+5");
       let newStyles = td0.applyRules([mathSimplifyRule]);
-      // console.log(newStyles);
       assert.equal(newStyles.length,2);
       assert.equal(td0.numStyles("MATH"),4);
     });
