@@ -24,6 +24,11 @@ Step 2: Create a directory to store user notebooks.
 In your HOME directory, create a subdirectory <tt>math-tablet-usr</tt>.
 Then, create a subdirectory of that directory named after a user,
 e.g. <tt>~/math-tablet-usr/david</tt>.
+The following command should do the trick on Mac and Linux:
+
+```bash
+mkdir -p ~/math-tablet-usr/$USER
+```
 
 Step 3: Build and run math-tablet.
 
