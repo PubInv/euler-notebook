@@ -1,27 +1,16 @@
 extends layout
 
 block content
-  #banner
-    #bannerContent Welcome to Math Tablet!
-    button#bannerClose &#x2715;
-  #menu
-    button#saveButton(disabled=true) Save
-    button#enhanceButton(disabled=true) Enhance
-  #tDoc
-  #footer
-    #previewArea
-      #previewText(style='display:none')
-      #previewMath
-      #previewControls
-        button#insertButton(disabled=true) I
-    #inputArea('data-applicationkey'=credentials.myscript.applicationKey, 'data-hmackey'=credentials.myscript.hmacKey)
-      #inputSelector
-        button#textButton T
-        button#mathButton(disabled=true) M
-      #inputText(style='display:none')
-      #inputMath
-      #inputControls
-        button#undoButton(disabled=true) U
-        button#redoButton(disabled=true) R
-        button#clearButton(disabled=true) Cl
-        button#convertButton(disabled=true) Co
+  h1 Math Tablet Users
+  if (userEntries.length>0)
+    ul
+      each entry in userEntries
+        li
+          a(href=`/${entry.userName}`)= entry.userName
+  else
+    p
+      | No users found.
+      | Run the following Mac/Linux shell command and and refresh the page:
+      br
+      br
+      tt mkdir -p ~/math-tablet-usr/$USER

@@ -1,7 +1,7 @@
 
 // Requirements
 
-import { apiGetRequest, apiPostRequest } from './api.js';
+import { /* apiGetRequest, */ apiPostRequest } from './api.js';
 import { TDoc, getKnownClientSideRules }  from './tdoc-class.js';
 import katex from './katex-0.10.1.mjs';
 
@@ -26,11 +26,12 @@ const MYSCRIPT_RECO_PARAMS = {
 
 // Global Variables
 
-let tDoc /*: TDoc*/;
-let currentEditor;
+let gUserName;
+let gNotebookName;
+let gNotebook;
+let gEditor;
 
 // Event Handlers
-
 
 async function onDomReady(_event){
   try {
@@ -44,12 +45,17 @@ async function onDomReady(_event){
     $('#enhanceButton').addEventListener('click', onEnhanceButtonClicked);
 
     // Document
-
-    const openResults = await apiGetRequest('open');
-    tDoc = TDoc.fromJsonObject(openResults.tDoc);
-    renderTDoc(tDoc)
+    const pathname = window.location.pathname;
+    const pathnameComponents = pathname.split('/');
+    // TODO: verify pathname is of length 3
+    gUserName = pathnameComponents[1];
+    gNotebookName = pathnameComponents[2];
+    // TODO: ensure only safe characters in user notebookName
+    const params = { userName: gUserName, notebookName: gNotebookName }
+    const openResults = await apiPostRequest('open', params);
+    gNotebook = TDoc.fromJsonObject(openResults.tDoc);
+    renderNotebook(gNotebook)
     showStatusMessage("Notebook opened successfully.");
-    console.dir(tDoc);
 
     // Preview Area
 
@@ -60,16 +66,16 @@ async function onDomReady(_event){
     $('#textButton').addEventListener('click', onTextButtonClicked);
     $('#mathButton').addEventListener('click', onMathButtonClicked);
 
-    currentEditor = initializeEditor($('#inputMath'), 'MATH');
+    gEditor = initializeEditor($('#inputMath'), 'MATH');
     // NOTE: We would like to initialize the text editor here, too, but
     // if you initialize the editor when it is hidden it does not work
     // properly once it is visible. So we initialize it the first time
     // we switch to it.
 
-    $('#undoButton').addEventListener('click', _event=>currentEditor.undo());
-    $('#redoButton').addEventListener('click', _event=>currentEditor.redo());
-    $('#clearButton').addEventListener('click', _event=>currentEditor.clear());
-    $('#convertButton').addEventListener('click', _event=>currentEditor.convert());
+    $('#undoButton').addEventListener('click', _event=>gEditor.undo());
+    $('#redoButton').addEventListener('click', _event=>gEditor.redo());
+    $('#clearButton').addEventListener('click', _event=>gEditor.clear());
+    $('#convertButton').addEventListener('click', _event=>gEditor.convert());
 
 
   } catch (err) {
@@ -87,20 +93,20 @@ function onEditorChanged(event) {
 
 async function onEnhanceButtonClicked(_event) {
   try {
-    const newStyles = tDoc.applyRules( getKnownClientSideRules() );
-    const enhanceResults = await apiPostRequest('enhance', { tDoc });
+    const newStyles = gNotebook.applyRules( getKnownClientSideRules() );
+    const enhanceResults = await apiPostRequest('enhance', { tDoc: gNotebook });
     $('#enhanceButton').disabled = true;
   } catch(err) {
-    showErrorMessage("Error enhancing TDOC.", err);
+    showErrorMessage("Error enhancing notebook.", err);
   }
 }
 
 function onInsertButtonClicked(_event) {
   try {
-    const thought = createThought(tDoc, currentEditor);
-    const thoughtElt = renderThought(tDoc, thought);
+    const thought = createThought(gNotebook, gEditor);
+    const thoughtElt = renderThought(gNotebook, thought);
     $('#tDoc').appendChild(thoughtElt);
-    currentEditor.clear();
+    gEditor.clear();
     $('#enhanceButton').disabled = false;
     $('#saveButton').disabled = false;
     $('#insertButton').disabled = true;
@@ -113,7 +119,7 @@ function onMathButtonClicked(_event) {
   try {
     disableTextInput();
     enableMathInput();
-    currentEditor = $('#inputMath').editor;
+    gEditor = $('#inputMath').editor;
     // TODO: Update state of undo/redo/etc buttons based on new editor.
   } catch(err) {
     showErrorMessage("Error switching to math input.", err);
@@ -138,9 +144,10 @@ function onMathExported(event) {
 
 async function onSaveButtonClicked(event) {
   try {
-    await apiPostRequest('save', { tDoc });
+    const params = { userName: gUserName, notebookName: gNotebookName, tDoc: gNotebook };
+    await apiPostRequest('save', params);
     $('#saveButton').disabled = true;
-    showStatusMessage("TDoc saved successfully.");
+    showStatusMessage("Notebook saved successfully.");
   } catch(err) {
     showErrorMessage("Error saving notebook.", err);
   }
@@ -150,7 +157,7 @@ function onTextButtonClicked(_event) {
   try {
     disableMathInput();
     enableTextInput();
-    currentEditor = $('#inputText').editor || initializeEditor($('#inputText'), 'TEXT');
+    gEditor = $('#inputText').editor || initializeEditor($('#inputText'), 'TEXT');
     // NOTE: We initialize the text editor here, rather than at DOM Ready, because
     //       it is hidden, and initializing a hidden editor doesn't work properly.
     // TODO: Update state of undo/redo/etc buttons based on new editor.
@@ -259,7 +266,7 @@ function initializeEditor(editorElt, editorType) {
   return editorElt.editor;
 }
 
-function renderTDoc(tDoc) {
+function renderNotebook(tDoc) {
   const $tDoc = $('#tDoc');
   $tDoc.innerHTML = '';
   const thoughts = tDoc.getThoughts();
@@ -292,6 +299,7 @@ function renderThought(tdoc, thought) {
     case 'TEXT': {
       const text = style.data;
       thoughtElt.innerText = text;
+      rendered = true;
       break;
     }}
   }

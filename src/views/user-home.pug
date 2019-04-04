@@ -1,0 +1,13 @@
+extends layout
+
+block content
+  h1 #{user}'s Documents
+  if (tDocEntries.length>0)
+    ul
+      each entry in tDocEntries
+        li
+          a(href=`/${user}/${entry.name}`)= entry.name
+  else
+    p
+      | No notebooks found.
+      | Add &ldquo;<tt>/&lt;document name&gt;</tt>&rdquo; to the end of the current URL to create a new document.

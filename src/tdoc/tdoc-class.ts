@@ -19,7 +19,7 @@ type JiixData = string;
 
 // Constants
 
-const VERSION = "0.3.0";
+const VERSION = "0.0.1";
 
 export class TDoc {
 

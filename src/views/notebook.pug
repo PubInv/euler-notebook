@@ -1,0 +1,44 @@
+extends layout
+
+block metatags
+  //- These meta tags are copied from MyScript samples.
+  meta(name="viewport", content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no")
+  meta(name="apple-mobile-web-app-capable", content="yes")
+  meta(name="mobile-web-app-capable", content="yes")
+  meta(name="HandheldFriendly", content="true")
+
+block styles
+  link(rel='stylesheet', href='/stylesheets/myscript.min.css')
+  link(rel='stylesheet', href='/stylesheets/katex-0.10.1.css')
+  link(rel='stylesheet', href='/stylesheets/style.css')
+
+block scripts
+  script(src='/javascripts/pep-0.4.3.js')
+  script(src='/javascripts/myscript.min.js')
+  script(type='module', src='/javascripts/app.js')
+
+block content
+  #banner(style=`display: ${showBanner?'block':'none'}`)
+    #bannerContent Welcome to Math Tablet!
+    button#bannerClose &#x2715;
+  #menu
+    button#saveButton(disabled=true) Save
+    button#enhanceButton(disabled=true) Enhance
+  #tDoc
+  #footer
+    #previewArea
+      #previewText(style='display:none')
+      #previewMath
+      #previewControls
+        button#insertButton(disabled=true) I
+    #inputArea('data-applicationkey'=credentials.myscript.applicationKey, 'data-hmackey'=credentials.myscript.hmacKey)
+      #inputSelector
+        button#textButton T
+        button#mathButton(disabled=true) M
+      #inputText(style='display:none')
+      #inputMath
+      #inputControls
+        button#undoButton(disabled=true) U
+        button#redoButton(disabled=true) R
+        button#clearButton(disabled=true) Cl
+        button#convertButton(disabled=true) Co
