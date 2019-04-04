@@ -10,7 +10,6 @@ var stylus = require('stylus');
 
 import { router as apiRouter } from './routes/api';
 import { router as indexRouter } from './routes/index';
-import { router as usersRouter } from './routes/users';
 
 // Helper Functions
 
@@ -45,7 +44,6 @@ function main() {
 
   app.use('/', indexRouter);
   app.use('/api', apiRouter);
-  app.use('/users', usersRouter);
 
   // catch 404 and forward to error handler
   app.use(function(_req, _res, next) {
