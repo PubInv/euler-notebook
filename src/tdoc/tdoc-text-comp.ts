@@ -10,6 +10,7 @@ import { TDoc }  from './tdoc-class';
 const VERSION = "0.1.0";
 
 export class TDocTextCompiler {
+
   public static create(): TDocTextCompiler {
     return new this();
   }
@@ -18,11 +19,8 @@ export class TDocTextCompiler {
   // produce a tdoc full of thoughts; this is
   // useful mostly for testing.
   public createTDocFromText(text: string): TDoc {
-    let td =  TDoc.create();
-    let ths = text.split(",");
-    ths.forEach(text => { let th = td.createThought();
-                          td.createTextStyle(th,text);
-                        });
+    let td0 =  TDoc.create();
+    let td = td0.addFromText(text);
     return td;
   }
 

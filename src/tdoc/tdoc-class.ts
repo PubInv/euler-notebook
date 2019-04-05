@@ -13,7 +13,7 @@ type MathData = string;
 type StrokeData = string;
 type Stylable = Thought|Style;
 type StylableId = number;
-type StyleRule = (tdoc: TDoc, style: Style)=>Style|undefined;
+type StyleRule = (tdoc: TDoc, style: Style)=>Style[];
 type TextData = string;
 type JiixData = string;
 
@@ -52,7 +52,7 @@ export class TDoc {
   // Applies each rule to each style of the TDoc
   // and returns an array of any new styles that were generated.
   public applyRules(rules: StyleRule[]): Style[] {
-    const rval: Style[] = [];
+    let rval: Style[] = [];
     // IMPORTANT: The rules may add new styles. So capture the current
     //            length of the styles array, and only iterate over
     //            the existing styles. Otherwise, we could get into
@@ -61,8 +61,8 @@ export class TDoc {
     for (let i=0; i<len; i++) {
       const style = this.styles[i];
       for (const rule of rules) {
-        const newStyle = rule(this, style);
-        if (newStyle) { rval.push(newStyle); }
+        const newStyles = rule(this, style);
+        rval = rval.concat(newStyles);
       }
     }
     return rval;
@@ -74,6 +74,10 @@ export class TDoc {
 
   public createMathStyle(stylable: Stylable, data: MathData): MathStyle {
     return this.addStyle(new MathStyle(this.nextId++, stylable, data));
+  }
+
+  public createSymbolStyle(stylable: Stylable, data: MathData): SymbolStyle {
+    return this.addStyle(new SymbolStyle(this.nextId++, stylable, data));
   }
 
   public createStrokeStyle(stylable: Stylable, data: StrokeData): StrokeStyle {
@@ -230,6 +234,19 @@ export class MathStyle extends Style {
   data: MathData;
 }
 
+export class SymbolStyle extends Style {
+  // Call tDoc.createSymbolStyle instead of calling this constructor directly.
+  /* private */ constructor(id: StylableId, stylable: Stylable, data: MathData) {
+    super(id, stylable);
+    this.type = 'SYMBOL';
+    this.data = data;
+  }
+
+  // Instance Properties
+  type: 'SYMBOL';
+  data: MathData;
+}
+
 class StrokeStyle extends Style {
   // Call tDoc.createStrokeStyle instead of calling this constructor directly.
   /* private */ constructor(id: StylableId, stylable: Stylable, data: StrokeData) {
@@ -261,6 +278,7 @@ const STYLE_CLASSES = {
   'MATH': MathStyle,
   'STROKE': StrokeStyle,
   'TEXT': TextStyle,
+  'SYMBOL': SymbolStyle
 }
 
 // here we will place known client side rules;

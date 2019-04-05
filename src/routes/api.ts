@@ -6,7 +6,7 @@
 
 import { NotebookName, readNotebook, writeNotebook, UserName } from '../users-and-files';
 import { TDoc } from '../tdoc/tdoc-class';
-import { mathSimplifyRule } from '../tdoc/simplify-math';
+import { mathSimplifyRule, mathExtractVariablesRule } from '../tdoc/simplify-math';
 
 var express = require('express');
 
@@ -71,7 +71,7 @@ router.post('/enhance', function(req, res, _next) {
   try {
     const params: EnhanceParams = req.body;
     const tdoc = TDoc.fromJsonObject(params.tDoc);
-    const newStyles = tdoc.applyRules([mathSimplifyRule]);
+    const newStyles = tdoc.applyRules([mathSimplifyRule, mathExtractVariablesRule]);
     res.json({ ok: true, newStyles });
   } catch (err) {
     console.error(`Error in /enhance API: ${err.message}`)
