@@ -9,7 +9,8 @@
 
 // Types
 
-type MathData = string;
+type LaTeXString = string;
+type MathJsExpression = object;
 type StrokeData = string;
 type Stylable = Thought|Style;
 type StylableId = number;
@@ -72,11 +73,15 @@ export class TDoc {
     return this.addStyle(new JiixStyle(this.nextId++, stylable, data));
   }
 
-  public createMathStyle(stylable: Stylable, data: MathData): MathStyle {
+  public createMathStyle(stylable: Stylable, data: LaTeXString): MathStyle {
     return this.addStyle(new MathStyle(this.nextId++, stylable, data));
   }
 
-  public createSymbolStyle(stylable: Stylable, data: MathData): SymbolStyle {
+  public createMathJsStyle(stylable: Stylable, data: MathJsExpression): MathJsStyle {
+    return this.addStyle(new MathJsStyle(this.nextId++, stylable, data));
+  }
+
+  public createSymbolStyle(stylable: Stylable, data: LaTeXString): SymbolStyle {
     return this.addStyle(new SymbolStyle(this.nextId++, stylable, data));
   }
 
@@ -171,7 +176,7 @@ export class TDoc {
 
 }
 
-class Thought {
+export class Thought {
 
   public static fromJsonObject(obj): Thought {
     // NOTE: This will throw for id === 0.
@@ -223,7 +228,7 @@ class JiixStyle extends Style {
 
 export class MathStyle extends Style {
   // Call tDoc.createMathStyle instead of calling this constructor directly.
-  /* private */ constructor(id: StylableId, stylable: Stylable, data: MathData) {
+  /* private */ constructor(id: StylableId, stylable: Stylable, data: LaTeXString) {
     super(id, stylable);
     this.type = 'MATH';
     this.data = data;
@@ -231,12 +236,25 @@ export class MathStyle extends Style {
 
   // Instance Properties
   type: 'MATH';
-  data: MathData;
+  data: LaTeXString;
+}
+
+export class MathJsStyle extends Style {
+  // Call tDoc.createMathStyle instead of calling this constructor directly.
+  /* private */ constructor(id: StylableId, stylable: Stylable, data: MathJsExpression) {
+    super(id, stylable);
+    this.type = 'MATHJS';
+    this.data = data;
+  }
+
+  // Instance Properties
+  type: 'MATHJS';
+  data: MathJsExpression;
 }
 
 export class SymbolStyle extends Style {
   // Call tDoc.createSymbolStyle instead of calling this constructor directly.
-  /* private */ constructor(id: StylableId, stylable: Stylable, data: MathData) {
+  /* private */ constructor(id: StylableId, stylable: Stylable, data: LaTeXString) {
     super(id, stylable);
     this.type = 'SYMBOL';
     this.data = data;
@@ -244,7 +262,7 @@ export class SymbolStyle extends Style {
 
   // Instance Properties
   type: 'SYMBOL';
-  data: MathData;
+  data: LaTeXString;
 }
 
 class StrokeStyle extends Style {
@@ -276,6 +294,7 @@ class TextStyle extends Style {
 const STYLE_CLASSES = {
   'JIIX': JiixStyle,
   'MATH': MathStyle,
+  'MATHJS': MathJsStyle,
   'STROKE': StrokeStyle,
   'TEXT': TextStyle,
   'SYMBOL': SymbolStyle
