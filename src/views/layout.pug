@@ -4,7 +4,28 @@ html(lang='en')
     meta(charset="UTF-8")
     block metatags
     title Math Tablet
+    link(rel='stylesheet', href='/stylesheets/global.css')
     block styles
+    script(type='module', src='/javascripts/global.js')
     block scripts
   body
+    #fixedHeader
+      block fixedHeaderContent
+      //- Examples of fixedHeaderContent:
+      //- .banner
+      //-   | Welcome to Math Tablet!
+      //-   button.close &#x2715;
+      //- .error
+      //-   | This is an error message.
+      //-   button.close &#x2715;
+      //- .error
+      //-   | This is another error message.
+      //-   button.close &#x2715;
+      //- .warning
+      //-   | This is a warning message.
+      //-   button.close &#x2715;
+      //- .success
+      //-   | This is a success message.
+      //-   button.close &#x2715;
+
     block content

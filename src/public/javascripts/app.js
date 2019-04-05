@@ -1,6 +1,7 @@
 
 // Requirements
 
+import { addErrorMessageToHeader, addSuccessMessageToHeader } from './global.js';
 import { /* apiGetRequest, */ apiPostRequest } from './api.js';
 import { TDoc, getKnownClientSideRules }  from './tdoc-class.js';
 import katex from './katex-0.10.1.mjs';
@@ -36,9 +37,6 @@ let gEditor;
 async function onDomReady(_event){
   try {
 
-    // Banner
-    $('#bannerClose').addEventListener('click', hideBanner);
-
     // Menu
 
     $('#saveButton').addEventListener('click', onSaveButtonClicked);
@@ -55,7 +53,7 @@ async function onDomReady(_event){
     const openResults = await apiPostRequest('open', params);
     gNotebook = TDoc.fromJsonObject(openResults.tDoc);
     renderNotebook(gNotebook)
-    showStatusMessage("Notebook opened successfully.");
+    showSuccessMessage("Notebook opened successfully.");
 
     // Preview Area
 
@@ -147,7 +145,7 @@ async function onSaveButtonClicked(event) {
     const params = { userName: gUserName, notebookName: gNotebookName, tDoc: gNotebook };
     await apiPostRequest('save', params);
     $('#saveButton').disabled = true;
-    showStatusMessage("Notebook saved successfully.");
+    showSuccessMessage("Notebook saved successfully.");
   } catch(err) {
     showErrorMessage("Error saving notebook.", err);
   }
@@ -253,10 +251,6 @@ function getMyScriptKeys() {
   }
 }
 
-function hideBanner(_event) {
-  $('#banner').style.display = 'none';
-}
-
 function initializeEditor(editorElt, editorType) {
   const config = getMyScriptConfig(editorType);
   MyScript.register(editorElt, config);
@@ -308,15 +302,15 @@ function renderThought(tdoc, thought) {
   return thoughtElt;
 }
 
-function showErrorMessage(msg, err) {
-  // TODO: Display on page.
-  console.error(msg);
-  console.dir(err);
+function showErrorMessage(html, err) {
+  if (err) {
+    html += `<br/><pre>${err.message}</pre>`;
+  }
+  addErrorMessageToHeader(html);
 }
 
-function showStatusMessage(msg) {
-  // TODO: Display on page.
-  console.log(msg);
+function showSuccessMessage(html) {
+  addSuccessMessageToHeader(html);
 }
 
 // Application Entry Point
