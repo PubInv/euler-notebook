@@ -1,4 +1,6 @@
 
+// TODO: Strict declaration needed?
+
 // Requirements
 
 import { addErrorMessageToHeader, addSuccessMessageToHeader } from './global.js';
@@ -38,7 +40,6 @@ async function onDomReady(_event){
   try {
 
     // Menu
-
     $('#saveButton').addEventListener('click', onSaveButtonClicked);
     $('#enhanceButton').addEventListener('click', onEnhanceButtonClicked);
 
@@ -55,26 +56,21 @@ async function onDomReady(_event){
     renderNotebook(gNotebook)
     showSuccessMessage("Notebook opened successfully.");
 
-    // Preview Area
-
+    // Preview area
     $('#insertButton').addEventListener('click', onInsertButtonClicked);
 
-    // Input Area
-
+    // Input area
     $('#textButton').addEventListener('click', onTextButtonClicked);
     $('#mathButton').addEventListener('click', onMathButtonClicked);
-
     gEditor = initializeEditor($('#inputMath'), 'MATH');
     // NOTE: We would like to initialize the text editor here, too, but
     // if you initialize the editor when it is hidden it does not work
     // properly once it is visible. So we initialize it the first time
     // we switch to it.
-
     $('#undoButton').addEventListener('click', _event=>gEditor.undo());
     $('#redoButton').addEventListener('click', _event=>gEditor.redo());
     $('#clearButton').addEventListener('click', _event=>gEditor.clear());
     $('#convertButton').addEventListener('click', _event=>gEditor.convert());
-
 
   } catch (err) {
     showErrorMessage("Error initializing math tablet.", err);
@@ -83,16 +79,21 @@ async function onDomReady(_event){
 
 // Fires when either the text editor or math editor fire a 'change' event.
 function onEditorChanged(event) {
-  $('#undoButton').disabled = !event.detail.canUndo;
-  $('#redoButton').disabled = !event.detail.canRedo;
-  $('#clearButton').disabled = !event.detail.canUndo;
-  $('#convertButton').disabled = !event.detail.canUndo;
+  try {
+    $('#undoButton').disabled = !event.detail.canUndo;
+    $('#redoButton').disabled = !event.detail.canRedo;
+    $('#clearButton').disabled = !event.detail.canUndo;
+    $('#convertButton').disabled = !event.detail.canUndo;
+  } catch(err) {
+    showErrorMessage("Error on editor change event handling.", err);
+  }
 }
 
 async function onEnhanceButtonClicked(_event) {
   try {
     const newStyles = gNotebook.applyRules( getKnownClientSideRules() );
     const enhanceResults = await apiPostRequest('enhance', { tDoc: gNotebook });
+    console.dir(enhanceResults);
     $('#enhanceButton').disabled = true;
   } catch(err) {
     showErrorMessage("Error enhancing notebook.", err);
@@ -180,8 +181,21 @@ function onTextExported(event) {
 
 // Helper Functions
 
+// Duplicated in global.js
 function $(selector) {
   return document.querySelector(selector);
+}
+
+// Duplicated in global.js
+function $new(tag, classes, innerHTML) {
+  const $elt = document.createElement(tag);
+  for (const cls of classes) {
+    $elt.classList.add(cls);
+  }
+  if (innerHTML) {
+    $elt.innerHTML = innerHTML;
+  }
+  return $elt;
 }
 
 function createThought(tDoc, editor) {
@@ -265,41 +279,51 @@ function renderNotebook(tDoc) {
   $tDoc.innerHTML = '';
   const thoughts = tDoc.getThoughts();
   for (const thought of thoughts) {
-    const thoughtElt = renderThought(tDoc, thought);
-    $tDoc.appendChild(thoughtElt);
+    const $elt = renderThought(tDoc, thought);
+    $tDoc.appendChild($elt);
+  }
+}
+
+function renderStyle(tdoc, style) {
+  const $elt = $new('div', ['style']);
+  switch(style.type) {
+  case 'MATH': {
+    const latex = style.data;
+    // TODO: Deal with error case.
+    katex.render(latex, $elt, { throwOnError: false });
+    break;
+  }
+  case 'TEXT': {
+    const text = style.data;
+    $elt.innerText = text;
+    break;
+  }
+  default:
+    $elt.innerHTML = `<i>${style.type} style is not rendered</i>`
+  }
+
+  // Render styles attached to this style.
+  // TODO: Prevent infinite loop with recursion limit.
+  const styles = tdoc.getStyles().filter(s=>(s.stylableId == style.id));
+  renderStyles($elt, tdoc, styles);
+
+  return $elt;
+}
+
+function renderStyles($elt, tdoc, styles) {
+  // Iterate through the styles
+  for (const style of styles) {
+    const $styleElt = renderStyle(tdoc, style);
+    $elt.appendChild($styleElt);
   }
 }
 
 function renderThought(tdoc, thought) {
-
-  // Create a DOM element
-  const thoughtElt = document.createElement('div');
-  thoughtElt.classList.add('thought');
-
-  // Get the styles attached to this thought.
+  const $elt = $new('div', ['thought']);
   const styles = tdoc.getStyles().filter(s=>(s.stylableId == thought.id));
-
-  // Iterate through the styles
-  let rendered = false;
-  for (const style of styles) {
-    switch(style.type) {
-    case 'MATH': {
-      const latex = style.data;
-      // TODO: Deal with error case.
-      katex.render(latex, thoughtElt, { throwOnError: false });
-      rendered = true;
-      break;
-    }
-    case 'TEXT': {
-      const text = style.data;
-      thoughtElt.innerText = text;
-      rendered = true;
-      break;
-    }}
-  }
-  if (!rendered) { thoughtElt.innerText = "ERROR: No renderable styles found."; }
-
-  return thoughtElt;
+  renderStyles($elt, tdoc, styles);
+  if (styles.length == 0) { $elt.innerHTML = `<i>Thought ${thought.id} has no styles attached.</i>`; }
+  return $elt;
 }
 
 function showErrorMessage(html, err) {

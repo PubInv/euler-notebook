@@ -27,16 +27,20 @@ function onFixedHeaderClick(event) {
 
 // Helper functions
 
+// Duplicated in app.js
 function $(selector) {
   return document.querySelector(selector);
 }
 
+// Duplicated in app.js
 function $new(tag, classes, innerHTML) {
   const $elt = document.createElement(tag);
   for (const cls of classes) {
     $elt.classList.add(cls);
   }
-  $elt.innerHTML = innerHTML;
+  if (innerHTML) {
+    $elt.innerHTML = innerHTML;
+  }
   return $elt;
 }
 
