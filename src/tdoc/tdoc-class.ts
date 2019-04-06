@@ -69,6 +69,16 @@ export class TDoc {
     return rval;
   }
 
+  // This can be asymptotically improved later.
+  public stylableHasChildOfType(style: Style, tname: string): boolean {
+    const id = style.id;
+    return this.styles.reduce(
+      function(hasOne,x){
+        return (x.stylableId == id) && (x.type == tname) || hasOne;
+          },
+      false);
+  }
+
   public createJiixStyle(stylable: Stylable, data: JiixData): JiixStyle {
     return this.addStyle(new JiixStyle(this.nextId++, stylable, data));
   }
@@ -79,6 +89,10 @@ export class TDoc {
 
   public createMathJsStyle(stylable: Stylable, data: MathJsExpression): MathJsStyle {
     return this.addStyle(new MathJsStyle(this.nextId++, stylable, data));
+  }
+
+  public createMathJsSimplificationStyle(stylable: Stylable, data: MathJsExpression): MathJsSimplificationStyle {
+    return this.addStyle(new MathJsSimplificationStyle(this.nextId++, stylable, data));
   }
 
   public createSymbolStyle(stylable: Stylable, data: LaTeXString): SymbolStyle {
@@ -249,6 +263,19 @@ export class MathJsStyle extends Style {
 
   // Instance Properties
   type: 'MATHJS';
+  data: MathJsExpression;
+}
+
+export class MathJsSimplificationStyle extends Style {
+  // Call tDoc.createMathJsSimplificationStyle instead of calling this constructor directly.
+  /* private */ constructor(id: StylableId, stylable: Stylable, data: MathJsExpression) {
+    super(id, stylable);
+    this.type = 'MATHJSSIMPLIFICATION';
+    this.data = data;
+  }
+
+  // Instance Properties
+  type: 'MATHJSSIMPLIFICATION';
   data: MathJsExpression;
 }
 

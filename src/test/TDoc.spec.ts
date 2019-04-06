@@ -70,6 +70,18 @@ describe('tdoctextcompiler', function() {
 });
 
 
+describe('utility computations', function() {
+     it('we can create a tdoc from a csv', function() {
+       let tdtc = TDocTextCompiler.create();
+       let td = tdtc.createTDocFromText("x = 4, y = 5, x + y = 3");
+       let s0 = td.getStyles()[0];
+       td.createTextStyle(s0,"this is a style on a style");
+       assert.ok(td.stylableHasChildOfType(s0,"TEXT"));
+       assert.ok(!td.stylableHasChildOfType(s0,"MATH"));
+     });
+});
+
+
 describe('style applier', function() {
   describe('math js rule', function() {
     it('we can add a style with a mathjs rule', function() {
@@ -81,7 +93,24 @@ describe('style applier', function() {
       let newStyles = td0.applyRules([mathSimplifyRule,
                                       mathExtractVariablesRule]);
       assert.equal(newStyles.length,2);
-      assert.equal(td0.numStyles("MATH"),4);
+      assert.equal(td0.numStyles("MATH"),2);
+      assert.equal(td0.numStyles("MATHJSSIMPLIFICATION"),2);
+    });
+    it('simplifying is idempotent.', function() {
+      // TODO: Simplify with the text compiler
+      let td0 = TDoc.create();
+      let th = td0.createThought();
+      td0.createMathStyle(th,"2+9");
+      td0.createMathStyle(th,"4+5");
+      let firstStyles = td0.applyRules([mathSimplifyRule,
+                                        mathExtractVariablesRule]);
+      assert.equal(firstStyles.length,2);
+      assert.equal(td0.numStyles("MATHJSSIMPLIFICATION"),2);
+
+      let secondStyles = td0.applyRules([mathSimplifyRule,
+                                         mathExtractVariablesRule]);
+      assert.equal(secondStyles.length,0,"no new styles");
+      assert.equal(td0.numStyles("MATHJSSIMPLIFICATION"),2,"simplifcations");
     });
     it('we can do two rules', function() {
       // TODO: Simplify with the text compiler
@@ -130,6 +159,5 @@ describe('variable extraction', function() {
     let newStyles = td.applyRules([mathExtractVariablesRule]);
     assert.equal(newStyles.length,5);
     assert.equal(td.numStyles("SYMBOL"),5);
-    console.log(td);
     });
 });
