@@ -35,8 +35,10 @@ function $(selector) {
 // Duplicated in app.js
 function $new(tag, classes, innerHTML) {
   const $elt = document.createElement(tag);
-  for (const cls of classes) {
-    $elt.classList.add(cls);
+  if (classes) {
+    for (const cls of classes) {
+      $elt.classList.add(cls);
+    }
   }
   if (innerHTML) {
     $elt.innerHTML = innerHTML;

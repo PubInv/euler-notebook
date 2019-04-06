@@ -206,8 +206,10 @@ function $(selector) {
 // Duplicated in global.js
 function $new(tag, classes, innerHTML) {
   const $elt = document.createElement(tag);
-  for (const cls of classes) {
-    $elt.classList.add(cls);
+  if (classes) {
+    for (const cls of classes) {
+      $elt.classList.add(cls);
+    }
   }
   if (innerHTML) {
     $elt.innerHTML = innerHTML;
@@ -302,13 +304,15 @@ function renderNotebook(tDoc) {
 }
 
 function renderMathStyle(style) {
-  const $elt = $new('div', ['style']);
-  katex.render(style.data, $elt, { throwOnError: false });
+  const $elt = $new('div', ['style'], `<div class="styleId">S-${style.id} ${style.type} => ${style.stylableId}</div>`);
+  const $subElt = $new('div');
+  katex.render(style.data, $subElt, { throwOnError: false });
+  $elt.appendChild($subElt);
   return $elt;
 }
 
 function renderMathJsStyle(style) {
-  return $new('div', ['style'], `MathJS: <tt>${JSON.stringify(style.data)}</tt>`);
+  return $new('div', ['style'], `<div class="styleId">S-${style.id} ${style.type} => ${style.stylableId}</div><div><tt>${JSON.stringify(style.data)}</tt></div>`);
 }
 
 function renderStyle(tdoc, style) {
@@ -318,7 +322,7 @@ function renderStyle(tdoc, style) {
   if (renderFn) {
     $elt = renderFn(style);
   } else {
-    $elt = $new('div', ['style'], `<i>${style.type} style is not rendered</i>`);
+    $elt = $new('div', ['style'], `<div class="styleId">S-${style.id} ${style.type}  => ${style.stylableId}: Not rendered</div>`);
   }
 
   // Render styles attached to this style.
@@ -329,10 +333,6 @@ function renderStyle(tdoc, style) {
   return $elt;
 }
 
-function renderTextStyle(style) {
-  return $new('div', ['style'], style.data);
-}
-
 function renderStyles($elt, tdoc, styles) {
   // Iterate through the styles
   for (const style of styles) {
@@ -341,8 +341,12 @@ function renderStyles($elt, tdoc, styles) {
   }
 }
 
+function renderTextStyle(style) {
+  return $new('div', ['style'], `<div class="styleId">S-${style.id} ${style.type} => ${style.stylableId}</div><div>${style.data}</div>`);
+}
+
 function renderThought(tdoc, thought) {
-  const $elt = $new('div', ['thought']);
+  const $elt = $new('div', ['thought'], `<div class="thoughtId">T-${thought.id}</div>`);
   const styles = tdoc.getStyles().filter(s=>(s.stylableId == thought.id));
   renderStyles($elt, tdoc, styles);
   if (styles.length == 0) { $elt.innerHTML = `<i>Thought ${thought.id} has no styles attached.</i>`; }
