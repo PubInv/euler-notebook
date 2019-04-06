@@ -42,6 +42,17 @@ export function mathExtractVariablesRule(tdoc: TDoc, style: Style): Style[]
   if (!(style instanceof MathStyle)) {
     return [];
   }
+  // This is a little fragile...right now, we
+  // get any number of symbols from math.parse in a fell swoop.
+  // So having a single one reliably suggest that all are present.
+  // If we changed the way symbols were extracted, we would need to
+  // change this test to test for all symbols by doing an equality
+  // test against existing symbols attached to the style. Since
+  // we don't even want to do that processing right now, I'm leaving
+  // this as is.
+  if (tdoc.stylableHasChildOfType(style,"SYMBOL")) {
+    return [];
+  }
   const parse = math.parse(style.data);
 
   if (!parse) return [];

@@ -322,6 +322,7 @@ const STYLE_CLASSES = {
   'JIIX': JiixStyle,
   'MATH': MathStyle,
   'MATHJS': MathJsStyle,
+  'MATHJSSIMPLIFICATION': MathJsSimplificationStyle,
   'STROKE': StrokeStyle,
   'TEXT': TextStyle,
   'SYMBOL': SymbolStyle
