@@ -111,7 +111,7 @@ async function onEnhanceButtonClicked(_event) {
     // TODO: More efficient way than re-rendering the entire notebook.
     renderNotebook(gNotebook);
 
-    $('#enhanceButton').disabled = true;
+    // TEMPORARY: $('#enhanceButton').disabled = true;
   } catch(err) {
     showErrorMessage("Error enhancing notebook.", err);
   }
