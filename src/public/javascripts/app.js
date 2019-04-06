@@ -27,6 +27,12 @@ const MYSCRIPT_RECO_PARAMS = {
   },
 };
 
+const STYLE_RENDERERS = {
+  'MATH': renderMathStyle,
+  'MATHJS': renderMathJsStyle,
+  'TEXT': renderTextStyle,
+};
+
 // Global Variables
 
 let gUserName;
@@ -94,6 +100,17 @@ async function onEnhanceButtonClicked(_event) {
     const newStyles = gNotebook.applyRules( getKnownClientSideRules() );
     const enhanceResults = await apiPostRequest('enhance', { tDoc: gNotebook });
     console.dir(enhanceResults);
+
+    // Add the new styles to the TDoc
+    for (const style of enhanceResults.newStyles) {
+      // TEMPORARY: Have bug with null styles:
+      if (!style) { continue; }
+      gNotebook.styles.push(style);
+    }
+
+    // TODO: More efficient way than re-rendering the entire notebook.
+    renderNotebook(gNotebook);
+
     $('#enhanceButton').disabled = true;
   } catch(err) {
     showErrorMessage("Error enhancing notebook.", err);
@@ -284,22 +301,24 @@ function renderNotebook(tDoc) {
   }
 }
 
-function renderStyle(tdoc, style) {
+function renderMathStyle(style) {
   const $elt = $new('div', ['style']);
-  switch(style.type) {
-  case 'MATH': {
-    const latex = style.data;
-    // TODO: Deal with error case.
-    katex.render(latex, $elt, { throwOnError: false });
-    break;
-  }
-  case 'TEXT': {
-    const text = style.data;
-    $elt.innerText = text;
-    break;
-  }
-  default:
-    $elt.innerHTML = `<i>${style.type} style is not rendered</i>`
+  katex.render(style.data, $elt, { throwOnError: false });
+  return $elt;
+}
+
+function renderMathJsStyle(style) {
+  return $new('div', ['style'], `MathJS: <tt>${JSON.stringify(style.data)}</tt>`);
+}
+
+function renderStyle(tdoc, style) {
+  // Render the style itself using a style renderer.
+  const renderFn = STYLE_RENDERERS[style.type];
+  let $elt;
+  if (renderFn) {
+    $elt = renderFn(style);
+  } else {
+    $elt = $new('div', ['style'], `<i>${style.type} style is not rendered</i>`);
   }
 
   // Render styles attached to this style.
@@ -308,6 +327,10 @@ function renderStyle(tdoc, style) {
   renderStyles($elt, tdoc, styles);
 
   return $elt;
+}
+
+function renderTextStyle(style) {
+  return $new('div', ['style'], style.data);
 }
 
 function renderStyles($elt, tdoc, styles) {
