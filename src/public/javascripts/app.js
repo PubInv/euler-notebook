@@ -30,6 +30,7 @@ const MYSCRIPT_RECO_PARAMS = {
 const STYLE_RENDERERS = {
   'MATH': renderMathStyle,
   'MATHJS': renderMathJsStyle,
+  'MATHJSSIMPLIFICATION': renderMathJsSimplificationStyle,
   'TEXT': renderTextStyle,
 };
 
@@ -312,6 +313,10 @@ function renderMathStyle(style) {
 }
 
 function renderMathJsStyle(style) {
+  return $new('div', ['style'], `<div class="styleId">S-${style.id} ${style.type} => ${style.stylableId}</div><div><tt>${JSON.stringify(style.data)}</tt></div>`);
+}
+
+function renderMathJsSimplificationStyle(style) {
   return $new('div', ['style'], `<div class="styleId">S-${style.id} ${style.type} => ${style.stylableId}</div><div><tt>${JSON.stringify(style.data)}</tt></div>`);
 }
 
