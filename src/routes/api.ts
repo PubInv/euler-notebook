@@ -5,29 +5,13 @@
 
 import * as express from 'express';
 
-import { NotebookName, readNotebook, writeNotebook, UserName } from '../users-and-files';
-import { TDoc, TDocObject } from '../tdoc/tdoc-class';
+import { EnhanceParams, EnhanceResults, OpenParams, OpenResults, SaveParams, SaveResults } from '../client/math-tablet-api';
+import { readNotebook, writeNotebook } from '../users-and-files';
+import { TDoc } from '../tdoc/tdoc-class';
 import { mathSimplifyRule, mathExtractVariablesRule } from '../tdoc/simplify-math';
 
 
 // Types
-
-// TODO: Share these *Params types with client.
-
-interface EnhanceParams {
-  tDoc: TDocObject;
-}
-
-interface OpenParams {
-  userName: UserName;
-  notebookName: NotebookName;
-}
-
-interface SaveParams {
-  userName: UserName;
-  notebookName: NotebookName;
-  tDoc: TDocObject;
-}
 
 // Constants
 
@@ -45,7 +29,7 @@ router.post('/open', async function(req: express.Request, res: express.Response,
     const userName = params.userName;
     const notebookName = params.notebookName;
     console.log(`Opening notebook ${userName}/${notebookName}`);
-    let tDoc;
+    let tDoc: TDoc;
     try {
       tDoc = await readNotebook(userName, notebookName);
     } catch(err) {
@@ -59,7 +43,8 @@ router.post('/open', async function(req: express.Request, res: express.Response,
         throw err;
       }
     }
-    res.json({ ok: true, tDoc });
+    const results: OpenResults = { ok: true, tDoc: tDoc.toObject() };
+    res.json(results);
   } catch (err) {
     console.error(`Error in /open API: ${err.message}`)
     console.log(err.stack);
@@ -71,8 +56,9 @@ router.post('/enhance', function(req: express.Request, res: express.Response, _n
   try {
     const params: EnhanceParams = req.body;
     const tdoc = TDoc.fromJsonObject(params.tDoc);
-    const newStyles = tdoc.applyRules([mathSimplifyRule, mathExtractVariablesRule]);
-    res.json({ ok: true, newStyles });
+    const newStyles = tdoc.applyRules([mathSimplifyRule, mathExtractVariablesRule]).map(s=>s.toObject());
+    const results: EnhanceResults = { ok: true, newStyles };
+    res.json(results);
   } catch (err) {
     console.error(`Error in /enhance API: ${err.message}`)
     console.log(err.stack);
@@ -88,7 +74,8 @@ router.post('/save', async function(req: express.Request, res: express.Response,
     console.log(`Saving notebook ${userName}/${notebookName}`);
     const tDoc = TDoc.fromJsonObject(params.tDoc);
     await writeNotebook(userName, notebookName, tDoc);
-    res.json({ ok: true });
+    const results: SaveResults = { ok: true };
+    res.json(results);
   } catch (err) {
     console.error(`Error in /save API: ${err.message}`)
     console.log(err.stack);

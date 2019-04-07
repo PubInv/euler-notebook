@@ -3,7 +3,8 @@
 
 import * as express from 'express';
 
-import { getCredentials, getListOfUsers, getListOfUsersNotebooks, NotebookEntry, UserEntry, UserName } from '../users-and-files';
+import { UserName } from '../client/math-tablet-api';
+import { getCredentials, getListOfUsers, getListOfUsersNotebooks, NotebookEntry, UserEntry } from '../users-and-files';
 
 
 // Exports

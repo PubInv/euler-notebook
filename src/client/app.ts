@@ -3,31 +3,24 @@
 
 // Requirements
 
+import { $, $new, Html } from './dom.js';
+import { getKatex } from './katex-types.js';
+import { getMyScript, MyScriptConfiguration, MyScriptEditor, MyScriptEditorElement, MyScriptEditorChangedEvent, MyScriptEditorExportedEvent, MyScriptEditorType, MyScriptServerKeys } from './myscript-types.js';
 import { addErrorMessageToHeader, addSuccessMessageToHeader } from './global.js';
-import { /* apiGetRequest, */ apiPostRequest } from './api.js';
-import { TDoc, getKnownClientSideRules }  from './tdoc-class.js';
-import katex from './katex-0.10.1.mjs';
+import { apiPostRequest } from './api.js';
+import { EnhanceParams, EnhanceResults, NotebookName, OpenParams, OpenResults, SaveParams, StyleObject, TDocObject, ThoughtObject, UserName }  from './math-tablet-api.js';
+
+// Types
+
+type StyleRenderer = (s: StyleObject)=>HTMLElement;
+
+interface StyleRendererMap {
+  [ styleType: string ]: StyleRenderer;
+}
 
 // Constants
 
-const MYSCRIPT_RECO_PARAMS = {
-  protocol: 'WEBSOCKET',
-  apiVersion: 'V4',
-  v4: {
-    export: {
-      jiix: { strokes: true }
-    },
-    math: {
-      mimeTypes: [ 'application/x-latex', 'application/vnd.myscript.jiix' ]
-    },
-    text: {
-      guides: { enable: false },
-      smartGuide: false,
-    },
-  },
-};
-
-const STYLE_RENDERERS = {
+const STYLE_RENDERERS: StyleRendererMap = {
   'MATH': renderMathStyle,
   'MATHJS': renderMathJsStyle,
   'MATHJSSIMPLIFICATION': renderMathJsSimplificationStyle,
@@ -36,19 +29,19 @@ const STYLE_RENDERERS = {
 
 // Global Variables
 
-let gUserName;
-let gNotebookName;
-let gNotebook;
-let gEditor;
+let gUserName: UserName;
+let gNotebookName: NotebookName;
+let gNotebook: TDocObject;
+let gEditor: MyScriptEditor;
 
 // Event Handlers
 
-async function onDomReady(_event){
+async function onDomReady(_event: Event){
   try {
 
     // Menu
-    $('#saveButton').addEventListener('click', onSaveButtonClicked);
-    $('#enhanceButton').addEventListener('click', onEnhanceButtonClicked);
+    $('#saveButton').addEventListener<'click'>('click', onSaveButtonClicked);
+    $('#enhanceButton').addEventListener<'click'>('click', onEnhanceButtonClicked);
 
     // Document
     const pathname = window.location.pathname;
@@ -58,26 +51,26 @@ async function onDomReady(_event){
     gNotebookName = pathnameComponents[2];
     // TODO: ensure only safe characters in user notebookName
     const params = { userName: gUserName, notebookName: gNotebookName }
-    const openResults = await apiPostRequest('open', params);
-    gNotebook = TDoc.fromJsonObject(openResults.tDoc);
+    const openResults = await apiPostRequest<OpenParams, OpenResults>('open', params);
+    gNotebook = openResults.tDoc;
     renderNotebook(gNotebook)
     showSuccessMessage("Notebook opened successfully.");
 
     // Preview area
-    $('#insertButton').addEventListener('click', onInsertButtonClicked);
+    $('#insertButton').addEventListener<'click'>('click', onInsertButtonClicked);
 
     // Input area
-    $('#textButton').addEventListener('click', onTextButtonClicked);
-    $('#mathButton').addEventListener('click', onMathButtonClicked);
+    $('#textButton').addEventListener<'click'>('click', onTextButtonClicked);
+    $('#mathButton').addEventListener<'click'>('click', onMathButtonClicked);
     gEditor = initializeEditor($('#inputMath'), 'MATH');
     // NOTE: We would like to initialize the text editor here, too, but
     // if you initialize the editor when it is hidden it does not work
     // properly once it is visible. So we initialize it the first time
     // we switch to it.
-    $('#undoButton').addEventListener('click', _event=>gEditor.undo());
-    $('#redoButton').addEventListener('click', _event=>gEditor.redo());
-    $('#clearButton').addEventListener('click', _event=>gEditor.clear());
-    $('#convertButton').addEventListener('click', _event=>gEditor.convert());
+    $('#undoButton').addEventListener<'click'>('click', _event=>gEditor.undo());
+    $('#redoButton').addEventListener<'click'>('click', _event=>gEditor.redo());
+    $('#clearButton').addEventListener<'click'>('click', _event=>gEditor.clear());
+    $('#convertButton').addEventListener<'click'>('click', _event=>gEditor.convert());
 
   } catch (err) {
     showErrorMessage("Error initializing math tablet.", err);
@@ -85,21 +78,21 @@ async function onDomReady(_event){
 }
 
 // Fires when either the text editor or math editor fire a 'change' event.
-function onEditorChanged(event) {
+function onEditorChanged(event: MyScriptEditorChangedEvent) {
   try {
-    $('#undoButton').disabled = !event.detail.canUndo;
-    $('#redoButton').disabled = !event.detail.canRedo;
-    $('#clearButton').disabled = !event.detail.canUndo;
-    $('#convertButton').disabled = !event.detail.canUndo;
+    $<HTMLButtonElement>('#undoButton').disabled = !event.detail.canUndo;
+    $<HTMLButtonElement>('#redoButton').disabled = !event.detail.canRedo;
+    $<HTMLButtonElement>('#clearButton').disabled = !event.detail.canUndo;
+    $<HTMLButtonElement>('#convertButton').disabled = !event.detail.canUndo;
   } catch(err) {
     showErrorMessage("Error on editor change event handling.", err);
   }
 }
 
-async function onEnhanceButtonClicked(_event) {
+async function onEnhanceButtonClicked(_event: Event) {
   try {
-    const newStyles = gNotebook.applyRules( getKnownClientSideRules() );
-    const enhanceResults = await apiPostRequest('enhance', { tDoc: gNotebook });
+    const params = { tDoc: gNotebook };
+    const enhanceResults = await apiPostRequest<EnhanceParams, EnhanceResults>('enhance', params);
     console.dir(enhanceResults);
 
     // Add the new styles to the TDoc
@@ -118,63 +111,63 @@ async function onEnhanceButtonClicked(_event) {
   }
 }
 
-function onInsertButtonClicked(_event) {
+function onInsertButtonClicked(_event: Event) {
   try {
     const thought = createThought(gNotebook, gEditor);
     const thoughtElt = renderThought(gNotebook, thought);
     $('#tDoc').appendChild(thoughtElt);
     gEditor.clear();
-    $('#enhanceButton').disabled = false;
-    $('#saveButton').disabled = false;
-    $('#insertButton').disabled = true;
+    $<HTMLButtonElement>('#enhanceButton').disabled = false;
+    $<HTMLButtonElement>('#saveButton').disabled = false;
+    $<HTMLButtonElement>('#insertButton').disabled = true;
   } catch(err) {
     showErrorMessage("Error inserting input.", err);
   }
 }
 
-function onMathButtonClicked(_event) {
+function onMathButtonClicked(_event: Event) {
   try {
     disableTextInput();
     enableMathInput();
-    gEditor = $('#inputMath').editor;
+    gEditor = $<MyScriptEditorElement>('#inputMath').editor
     // TODO: Update state of undo/redo/etc buttons based on new editor.
   } catch(err) {
     showErrorMessage("Error switching to math input.", err);
   }
 }
 
-function onMathExported(event) {
+function onMathExported(event: MyScriptEditorExportedEvent) {
   try {
     if (event.detail.exports) {
       const latex = event.detail.exports['application/x-latex'];
       // TODO: Catch and report katex errors
-      katex.render(latex, $('#previewMath'), { throwOnError: false });
-      $('#insertButton').disabled = false;
+      getKatex().render(latex, $('#previewMath'), { throwOnError: false });
+      $<HTMLButtonElement>('#insertButton').disabled = false;
     } else {
-      $('#previewMath').innerText = '';
-      $('#insertButton').disabled = true;
+      $<HTMLButtonElement>('#previewMath').innerText = '';
+      $<HTMLButtonElement>('#insertButton').disabled = true;
     }
   } catch(err) {
     showErrorMessage("Error updating math preview.", err);
   }
 }
 
-async function onSaveButtonClicked(event) {
+async function onSaveButtonClicked(_event: Event) {
   try {
-    const params = { userName: gUserName, notebookName: gNotebookName, tDoc: gNotebook };
+    const params: SaveParams = { userName: gUserName, notebookName: gNotebookName, tDoc: gNotebook };
     await apiPostRequest('save', params);
-    $('#saveButton').disabled = true;
+    $<HTMLButtonElement>('#saveButton').disabled = true;
     showSuccessMessage("Notebook saved successfully.");
   } catch(err) {
     showErrorMessage("Error saving notebook.", err);
   }
 }
 
-function onTextButtonClicked(_event) {
+function onTextButtonClicked(_event: Event) {
   try {
     disableMathInput();
     enableTextInput();
-    gEditor = $('#inputText').editor || initializeEditor($('#inputText'), 'TEXT');
+    gEditor = $<MyScriptEditorElement>('#inputText').editor || initializeEditor($('#inputText'), 'TEXT');
     // NOTE: We initialize the text editor here, rather than at DOM Ready, because
     //       it is hidden, and initializing a hidden editor doesn't work properly.
     // TODO: Update state of undo/redo/etc buttons based on new editor.
@@ -183,14 +176,14 @@ function onTextButtonClicked(_event) {
   }
 }
 
-function onTextExported(event) {
+function onTextExported(event: MyScriptEditorExportedEvent) {
   try {
     if (event.detail.exports) {
       $('#previewText').innerText = event.detail.exports['text/plain'];
-      $('#insertButton').disabled = false;
+      $<HTMLButtonElement>('#insertButton').disabled = false;
     } else {
       $('#previewText').innerText = '';
-      $('#insertButton').disabled = true;
+      $<HTMLButtonElement>('#insertButton').disabled = true;
     }
   } catch(err) {
     showErrorMessage("Error updating text preview.", err);
@@ -199,42 +192,31 @@ function onTextExported(event) {
 
 // Helper Functions
 
-// Duplicated in global.js
-function $(selector) {
-  return document.querySelector(selector);
-}
+function createThought(tDoc: TDocObject, editor: MyScriptEditor): ThoughtObject {
 
-// Duplicated in global.js
-function $new(tag, classes, innerHTML) {
-  const $elt = document.createElement(tag);
-  if (classes) {
-    for (const cls of classes) {
-      $elt.classList.add(cls);
-    }
-  }
-  if (innerHTML) {
-    $elt.innerHTML = innerHTML;
-  }
-  return $elt;
-}
-
-function createThought(tDoc, editor) {
-  const thought =  tDoc.createThought();
+  const thought: ThoughtObject =  { id: tDoc.nextId++ };
+  tDoc.thoughts.push(thought);
 
   const type = editor.configuration.recognitionParams.type;
   switch(type) {
   case 'MATH': {
     const latex = editor.exports && editor.exports['application/x-latex'];
-    tDoc.createMathStyle(thought, latex);
+    const mStyle = { id: tDoc.nextId++, stylableId: thought.id, type: 'MATH', data: latex };
+    tDoc.styles.push(mStyle);
+
     const jiix = editor.exports && editor.exports['application/vnd.myscript.jiix'];
-    tDoc.createJiixStyle(thought, jiix);
+    const jStyle = { id: tDoc.nextId++, stylableId: thought.id, type: 'JIIX', data: jiix };
+    tDoc.styles.push(jStyle);
     break;
   }
   case 'TEXT': {
     const text = editor.exports && editor.exports['text/plain'];
-    tDoc.createTextStyle(thought, text);
+    const tStyle = { id: tDoc.nextId++, stylableId: thought.id, type: 'TEXT', data: text };
+    tDoc.styles.push(tStyle);
+
     const strokeGroups = editor.model.strokeGroups;
-    tDoc.createStrokeStyle(thought, strokeGroups);
+    const sStyle = { id: tDoc.nextId++, stylableId: thought.id, type: 'STROKE', data: strokeGroups };
+    tDoc.styles.push(sStyle);
     break;
   }
   default:
@@ -246,81 +228,94 @@ function createThought(tDoc, editor) {
 function disableMathInput() {
   $('#inputMath').style.display = 'none';
   $('#previewMath').style.display = 'none';
-  $('#mathButton').disabled = false;
+  $<HTMLButtonElement>('#mathButton').disabled = false;
 }
 
 function disableTextInput() {
   $('#inputText').style.display = 'none';
   $('#previewText').style.display = 'none';
-  $('#textButton').disabled = false;
+  $<HTMLButtonElement>('#textButton').disabled = false;
 }
 
 function enableMathInput() {
   $('#inputMath').style.display = 'block';
   $('#previewMath').style.display = 'block';
-  $('#mathButton').disabled = true;
+  $<HTMLButtonElement>('#mathButton').disabled = true;
 }
 
 function enableTextInput() {
   $('#inputText').style.display = 'block';
   $('#previewText').style.display = 'block';
-  $('#textButton').disabled = true;
+  $<HTMLButtonElement>('#textButton').disabled = true;
 }
 
-function getMyScriptConfig(editorType) {
+function getMyScriptConfig(editorType: MyScriptEditorType): MyScriptConfiguration {
   return {
     recognitionParams: {
-      ...MYSCRIPT_RECO_PARAMS,
+      apiVersion: 'V4',
+      protocol: 'WEBSOCKET',
       server: getMyScriptKeys(),
       type: editorType,
+      v4: {
+        export: {
+          jiix: { strokes: true }
+        },
+        math: {
+          mimeTypes: [ 'application/x-latex', 'application/vnd.myscript.jiix' ]
+        },
+        text: {
+          guides: { enable: false },
+          smartGuide: false,
+        },
+      },
     },
   };
 }
 
-function getMyScriptKeys() {
+function getMyScriptKeys(): MyScriptServerKeys {
   const inputAreaElt = $('#inputArea');
-  return {
-    applicationKey: inputAreaElt.dataset.applicationkey,
-    hmacKey: inputAreaElt.dataset.hmackey,
-  }
+  const applicationKey = inputAreaElt.dataset.applicationkey;
+  const hmacKey = inputAreaElt.dataset.hmackey;
+  if (!applicationKey || !hmacKey) { throw new Error(); }
+  return { applicationKey, hmacKey }
 }
 
-function initializeEditor(editorElt, editorType) {
+function initializeEditor($elt: MyScriptEditorElement, editorType: MyScriptEditorType) {
   const config = getMyScriptConfig(editorType);
-  MyScript.register(editorElt, config);
-  editorElt.addEventListener('changed', onEditorChanged);
+  getMyScript().register($elt, config);
+  $elt.addEventListener('changed', </* TYPESCRIPT: */EventListener>onEditorChanged);
   const onExportedFn = (editorType == 'MATH' ? onMathExported : onTextExported);
-  editorElt.addEventListener('exported', onExportedFn);
-  return editorElt.editor;
+  $elt.addEventListener('exported', </* TYPESCRIPT: */EventListener>onExportedFn);
+  return $elt.editor;
 }
 
-function renderNotebook(tDoc) {
+function renderNotebook(tDoc: TDocObject) {
   const $tDoc = $('#tDoc');
   $tDoc.innerHTML = '';
-  const thoughts = tDoc.getThoughts();
+  const thoughts = tDoc.thoughts;
   for (const thought of thoughts) {
     const $elt = renderThought(tDoc, thought);
     $tDoc.appendChild($elt);
   }
 }
 
-function renderMathStyle(style) {
+function renderMathStyle(style: StyleObject) {
   const $elt = $new('div', ['style'], `<div class="styleId">S-${style.id} ${style.type} => ${style.stylableId}</div>`);
   const $subElt = $new('div');
-  katex.render(style.data, $subElt, { throwOnError: false });
+  getKatex().render(style.data, $subElt, { throwOnError: false });
   $elt.appendChild($subElt);
   return $elt;
 }
 
-function renderMathJsStyle(style) {
+function renderMathJsStyle(style: StyleObject) {
   return $new('div', ['style'], `<div class="styleId">S-${style.id} ${style.type} => ${style.stylableId}</div><div><tt>${JSON.stringify(style.data)}</tt></div>`);
 }
 
-function renderMathJsSimplificationStyle(style) {
+function renderMathJsSimplificationStyle(style: StyleObject) {
   return $new('div', ['style'], `<div class="styleId">S-${style.id} ${style.type} => ${style.stylableId}</div><div><tt>${JSON.stringify(style.data)}</tt></div>`);
 }
 
-function renderStyle(tdoc, style) {
+function renderStyle(tdoc: TDocObject, style: StyleObject) {
   // Render the style itself using a style renderer.
   const renderFn = STYLE_RENDERERS[style.type];
   let $elt;
@@ -332,13 +327,13 @@ function renderStyle(tdoc, style) {
 
   // Render styles attached to this style.
   // TODO: Prevent infinite loop with recursion limit.
-  const styles = tdoc.getStyles().filter(s=>(s.stylableId == style.id));
+  const styles = tdoc.styles.filter(s=>(s.stylableId == style.id));
   renderStyles($elt, tdoc, styles);
 
   return $elt;
 }
 
-function renderStyles($elt, tdoc, styles) {
+function renderStyles($elt: HTMLElement, tdoc: TDocObject, styles: StyleObject[]) {
   // Iterate through the styles
   for (const style of styles) {
     const $styleElt = renderStyle(tdoc, style);
@@ -346,26 +341,26 @@ function renderStyles($elt, tdoc, styles) {
   }
 }
 
-function renderTextStyle(style) {
+function renderTextStyle(style: StyleObject) {
   return $new('div', ['style'], `<div class="styleId">S-${style.id} ${style.type} => ${style.stylableId}</div><div>${style.data}</div>`);
 }
 
-function renderThought(tdoc, thought) {
+function renderThought(tdoc: TDocObject, thought: ThoughtObject) {
   const $elt = $new('div', ['thought'], `<div class="thoughtId">T-${thought.id}</div>`);
-  const styles = tdoc.getStyles().filter(s=>(s.stylableId == thought.id));
+  const styles = tdoc.styles.filter(s=>(s.stylableId == thought.id));
   renderStyles($elt, tdoc, styles);
   if (styles.length == 0) { $elt.innerHTML = `<i>Thought ${thought.id} has no styles attached.</i>`; }
   return $elt;
 }
 
-function showErrorMessage(html, err) {
+function showErrorMessage(html: Html, err: Error) {
   if (err) {
     html += `<br/><pre>${err.message}</pre>`;
   }
   addErrorMessageToHeader(html);
 }
 
-function showSuccessMessage(html) {
+function showSuccessMessage(html: Html) {
   addSuccessMessageToHeader(html);
 }
 

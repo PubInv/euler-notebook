@@ -5,6 +5,7 @@ import { readdir, readFile, readFileSync, writeFile } from 'fs';
 import { join } from 'path';
 import { promisify } from 'util';
 
+import { UserName, NotebookName } from './client/math-tablet-api';
 import { TDoc } from './tdoc/tdoc-class';
 
 const readdir2 = promisify(readdir);
@@ -13,9 +14,7 @@ const writeFile2 = promisify(writeFile);
 
 // Types
 
-export type NotebookName = string;
 type NotebookFileName = string;
-export type UserName = string;
 
 // An entry in a list of notebooks.
 // NOT an entry in a notebook.

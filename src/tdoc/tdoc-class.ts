@@ -1,11 +1,9 @@
 // LICENSE TBD
 // Copyright 2019, Robert L. Read & David Jeschke
 
-// External Globals
-// var math = require("./math-5.8.0.js");
+// Requirement
 
-
-// declare var math: /* TYPESCRIPT: mathjs types? */ any;
+import { StyleObject, TDocObject, ThoughtObject } from '../client/math-tablet-api';
 
 // Types
 
@@ -17,26 +15,6 @@ type StylableId = number;
 type StyleRule = (tdoc: TDoc, style: Style)=>Style[];
 type TextData = string;
 type JiixData = string;
-
-// Plain object version of TDoc
-
-interface StyleObject {
-  id: number;
-  stylableId: number;
-  type: string;
-  data: any;
-}
-
-export interface TDocObject {
-  nextId: number;
-  version: string;
-  thoughts: ThoughtObject[];
-  styles: StyleObject[];
-}
-
-interface ThoughtObject {
-  id: number;
-}
 
 // Constants
 
@@ -170,6 +148,13 @@ export class TDoc {
       + `${numText} text styles\n`
     ;
   }
+
+  public toObject(): TDocObject {
+    // TYPESCRIPT: We are counting on the fact that a StyleObject that has
+    // been stringified and then parsed is a StyleObject.
+    return <any>this;
+  }
+
   // COMPILERS
 
     // take a set of comma-separated-values and
@@ -246,6 +231,14 @@ export abstract class Style {
   id: number;
   stylableId: number;
   type: string;
+
+  // Instance Methods
+
+  public toObject(): StyleObject {
+    // TYPESCRIPT: We are counting on the fact that a StyleObject that has
+    // been stringified and then parsed is a StyleObject.
+    return <any>this;
+  }
 }
 
 class JiixStyle extends Style {
@@ -347,10 +340,4 @@ const STYLE_CLASSES /* : { [type: string]: } */ = {
   'STROKE': StrokeStyle,
   'TEXT': TextStyle,
   'SYMBOL': SymbolStyle
-}
-
-// here we will place known client side rules;
-// server side rules will be handled differently.
-export function getKnownClientSideRules(): StyleRule[]  {
-  return [];
 }

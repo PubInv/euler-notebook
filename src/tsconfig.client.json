@@ -4,5 +4,5 @@
     "noEmit": false,
     "outDir": "public/javascripts"
   },
-  "include": [ "tdoc/tdoc*" ]
+  "include": [ "client/*" ]
 }

@@ -1,5 +1,7 @@
 .vscode/
 node_modules/
-public/javascripts/tdoc-*.js
+public/javascripts/*
+!public/javascripts/katex-0.10.1.js
+!public/javascripts/pop-0.4.3.js
 public/stylesheets/*.css
 !public/stylesheets/katex*.css
