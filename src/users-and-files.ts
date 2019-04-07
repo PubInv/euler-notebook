@@ -57,7 +57,7 @@ export async function getListOfUsers(): Promise<UserEntry[]> {
 }
 
 export async function getListOfUsersNotebooks(userName: UserName): Promise<NotebookEntry[]> {
-  const userDirectory: /* TYPESCRIPT: FilePath */string = join(USR_DIR, userName)
+  const userDirectory: /* TYPESCRIPT: FilePath */string = join(homeDir(), USR_DIR, userName)
   const filenames: string[] = await readdir2(userDirectory);
   const notebookFilenames = filenames.filter(f=>f.toLowerCase().endsWith(NOTEBOOK_FILENAME_SUFFIX));
   const notebookEntries: NotebookEntry[] = notebookFilenames.map(f=>{
@@ -71,7 +71,7 @@ export async function readNotebook(userName: UserName, notebookName: NotebookNam
   validateUserName(userName);
   validateNotebookName(notebookName);
   const fileName = `${notebookName}${NOTEBOOK_FILENAME_SUFFIX}`;
-  const filePath = join(USR_DIR, userName, fileName);
+  const filePath = join(homeDir(), USR_DIR, userName, fileName);
   const json = await readFile2(filePath, 'utf8');
   const obj = JSON.parse(json); // TODO: catch errors
   const tDoc = TDoc.fromJsonObject(obj);
@@ -82,7 +82,7 @@ export async function writeNotebook(userName: UserName, notebookName: NotebookNa
   validateUserName(userName);
   validateNotebookName(notebookName);
   const fileName = `${notebookName}${NOTEBOOK_FILENAME_SUFFIX}`;
-  const filePath = join(USR_DIR, userName, fileName);
+  const filePath = join(homeDir(), USR_DIR, userName, fileName);
   const json = JSON.stringify(notebook);
   await writeFile2(filePath, json, 'utf8');
 }
