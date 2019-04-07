@@ -19,20 +19,19 @@ export type UserName = string;
 
 // An entry in a list of notebooks.
 // NOT an entry in a notebook.
-interface NotebookEntry {
+export interface NotebookEntry {
   name: NotebookName;
   fileName: NotebookFileName;
 }
 
-interface UserEntry {
+export interface UserEntry {
   userName: UserName;
 }
 
 // Constants
 
 const CREDENTIALS_FILENAME = '.math-tablet-credentials.json';
-// LATER: Allow USR_DIR to be specified by environment variable.
-const USR_DIR = join(process.env.HOME, 'math-tablet-usr');
+const USR_DIR = 'math-tablet-usr';
 
 const NOTEBOOK_FILENAME_SUFFIX = '.tdoc.json';
 const NOTEBOOK_FILENAME_SUFFIX_LENGTH = NOTEBOOK_FILENAME_SUFFIX.length;
@@ -45,14 +44,14 @@ const NOTEBOOK_NAME_RE = /^\w+$/; // REVIEW: aslo allow hyphens?
 
 // LATER: s/b async
 export function getCredentials() {
-  const credentialsPath = join(process.env.HOME, CREDENTIALS_FILENAME);
+  const credentialsPath = join(homeDir(), CREDENTIALS_FILENAME);
   const credentialsJson = readFileSync(credentialsPath, 'utf8');
   const credentials = JSON.parse(credentialsJson);
   return credentials;
 }
 
 export async function getListOfUsers(): Promise<UserEntry[]> {
-  const directoryNames: string[] = await readdir2(USR_DIR);
+  const directoryNames: string[] = await readdir2(join(homeDir(), USR_DIR));
   // TODO: Check which are actually directories.
   const userEntries: UserEntry[] = directoryNames.map(d=>({ userName: d }));
   return userEntries;
@@ -90,6 +89,12 @@ export async function writeNotebook(userName: UserName, notebookName: NotebookNa
 }
 
 // HELPER FUNCTIONS
+
+function homeDir(): string {
+  const rval = process.env.HOME;
+  if (!rval) { throw new Error("HOME environment variable not set."); }
+  return rval;
+}
 
 function validateUserName(userName: UserName): void {
   if (!USER_NAME_RE.test(userName)) {

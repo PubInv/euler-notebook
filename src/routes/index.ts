@@ -1,13 +1,23 @@
 
 // Requirements
 
-import { getCredentials, getListOfUsers, getListOfUsersNotebooks, UserName } from '../users-and-files';
+import * as express from 'express';
 
-var express = require('express');
+import { getCredentials, getListOfUsers, getListOfUsersNotebooks, NotebookEntry, UserEntry, UserName } from '../users-and-files';
+
 
 // Exports
 
 export var router = express.Router();
+
+// Types
+
+interface PageMessages {
+  banner: string[];
+  error: string[];
+  warning: string[];
+  success: string[];
+}
 
 // Constants
 
@@ -18,8 +28,8 @@ const credentials = getCredentials();
 
 router.get('/', async function(_req, res, _next) {
   try {
-    const messages = { banner: [ "Welcome to Math Tablet!" ], error: [] };
-    let userEntries = [];
+    const messages: PageMessages = { banner: [ "Welcome to Math Tablet!" ], error: [], success: [], warning: [] };
+    let userEntries: UserEntry[] = [];
     try {
       userEntries = await getListOfUsers();
     } catch(err) {
@@ -41,9 +51,9 @@ router.get('/', async function(_req, res, _next) {
 
 router.get('/:user', async function(req, res, _next) {
   try {
-    const messages = { error: [] };
+    const messages: PageMessages = { banner: [], error: [], success: [], warning: [] };
     const user: UserName = req.params.user;
-    let tDocEntries = [];
+    let tDocEntries: NotebookEntry[] = [];
     try {
       tDocEntries = await getListOfUsersNotebooks(user);
     } catch(err) {

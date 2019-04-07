@@ -27,11 +27,11 @@ export function mathSimplifyRule(tdoc: TDoc, style: Style): Style[]
   return [tdoc.createMathJsSimplificationStyle(style, simpler)];
 }
 
-function collectSymbols(node) : string[] {
+function collectSymbols(node: math.MathNode) : string[] {
   var symbols: string[] = [];
   node.traverse(function (node, _path, _parent) {
     if (node.type == 'SymbolNode') {
-      symbols.push(node.name);
+      symbols.push(node.name || "Unknown node");
     }
   });
   return symbols;

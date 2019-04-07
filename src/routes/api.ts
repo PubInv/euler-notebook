@@ -1,21 +1,21 @@
 
-
 // TODO: Distinguish 400 from 500 responses
 
 // Requirements
 
+import * as express from 'express';
+
 import { NotebookName, readNotebook, writeNotebook, UserName } from '../users-and-files';
-import { TDoc } from '../tdoc/tdoc-class';
+import { TDoc, TDocObject } from '../tdoc/tdoc-class';
 import { mathSimplifyRule, mathExtractVariablesRule } from '../tdoc/simplify-math';
 
-var express = require('express');
 
 // Types
 
 // TODO: Share these *Params types with client.
 
 interface EnhanceParams {
-  tDoc: /* TYPESCRIPT: JSON object */ object;
+  tDoc: TDocObject;
 }
 
 interface OpenParams {
@@ -26,7 +26,7 @@ interface OpenParams {
 interface SaveParams {
   userName: UserName;
   notebookName: NotebookName;
-  tDoc: /* TYPESCRIPT: JSON object */ object;
+  tDoc: TDocObject;
 }
 
 // Constants
@@ -39,7 +39,7 @@ export var router = express.Router();
 
 // Routes
 
-router.post('/open', async function(req, res, _next) {
+router.post('/open', async function(req: express.Request, res: express.Response, _next: express.NextFunction) {
   try {
     const params: OpenParams = req.body;
     const userName = params.userName;
@@ -67,7 +67,7 @@ router.post('/open', async function(req, res, _next) {
   }
 });
 
-router.post('/enhance', function(req, res, _next) {
+router.post('/enhance', function(req: express.Request, res: express.Response, _next: express.NextFunction) {
   try {
     const params: EnhanceParams = req.body;
     const tdoc = TDoc.fromJsonObject(params.tDoc);
@@ -80,7 +80,7 @@ router.post('/enhance', function(req, res, _next) {
   }
 });
 
-router.post('/save', async function(req, res, _next) {
+router.post('/save', async function(req: express.Request, res: express.Response, _next: express.NextFunction) {
   try {
     const params: SaveParams = req.body;
     const userName = params.userName;

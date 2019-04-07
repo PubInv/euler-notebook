@@ -18,6 +18,26 @@ type StyleRule = (tdoc: TDoc, style: Style)=>Style[];
 type TextData = string;
 type JiixData = string;
 
+// Plain object version of TDoc
+
+interface StyleObject {
+  id: number;
+  stylableId: number;
+  type: string;
+  data: any;
+}
+
+export interface TDocObject {
+  nextId: number;
+  version: string;
+  thoughts: ThoughtObject[];
+  styles: StyleObject[];
+}
+
+interface ThoughtObject {
+  id: number;
+}
+
 // Constants
 
 const VERSION = "0.0.1";
@@ -30,7 +50,7 @@ export class TDoc {
     return new this();
   }
 
-  public static fromJsonObject(obj): TDoc {
+  public static fromJsonObject(obj: TDocObject): TDoc {
     // Validate the object
     if (!obj.nextId) { throw new Error("Invalid TDoc object JSON."); }
     if (obj.version != VERSION) { throw new Error("TDoc in unexpected version."); }
@@ -192,7 +212,7 @@ export class TDoc {
 
 export class Thought {
 
-  public static fromJsonObject(obj): Thought {
+  public static fromJsonObject(obj: ThoughtObject): Thought {
     // NOTE: This will throw for id === 0.
     if (!obj.id) { throw new Error("Invalid Thought object JSON"); }
     return Object.assign(Object.create(Thought.prototype), obj);
@@ -209,8 +229,9 @@ export class Thought {
 
 export abstract class Style {
 
-  public static fromJsonObject(obj): Style {
+  public static fromJsonObject(obj: StyleObject): Style {
     if (!obj.type) { throw new Error("Invalid Style object JSON"); }
+    // @ts-ignore // TYPESCRIPT:
     const cl = STYLE_CLASSES[obj.type];
     return Object.assign(Object.create(cl.prototype), obj);
   }
@@ -318,7 +339,7 @@ class TextStyle extends Style {
   data: TextData;
 }
 
-const STYLE_CLASSES = {
+const STYLE_CLASSES /* : { [type: string]: } */ = {
   'JIIX': JiixStyle,
   'MATH': MathStyle,
   'MATHJS': MathJsStyle,
