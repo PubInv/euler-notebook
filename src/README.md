@@ -33,16 +33,29 @@ mkdir -p ~/math-tablet-usr/$USER
 Step 3: Build and run math-tablet.
 
 ```bash
-npm run clean
-npm install
-npm run build
-npm test
-npm start
+npm install && npm run build && npm start
 ```
 
 Step 4: Open a browser to [localhost:3000](http://localhost:3000) and enjoy!
 
 ## Development
+
+Here are the commands that you will need, in the order you will typically need them:
+
+```bash
+npm run clean
+npm install
+npm run check-types
+npm test
+npm run build
+npm start
+```
+
+All in one line:
+
+```bash
+npm run clean && npm install && npm run check-types && npm test && npm run build && npm start
+```
 
 The server is an [express](https://expressjs.com/) server, so it would be helpful to be familiar with that.
 Along with <tt>express</tt>, we use [Pug](https://pugjs.org/) for HTML templating and [Stylus](http://stylus-lang.com/)
