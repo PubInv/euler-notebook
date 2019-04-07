@@ -1,12 +1,12 @@
 {
   "compilerOptions": {
-    "strict": false,
+    "strict": true,
     "target": "es2017",
+    "moduleResolution": "node",
     "noEmit": true,
     "noFallthroughCasesInSwitch": true,
     "noImplicitReturns": true,
     "noUnusedLocals": true,
-    "noUnusedParameters": true,
-    "outDir": "public/javascripts"
+    "noUnusedParameters": true
   }
 }
