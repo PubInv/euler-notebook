@@ -37,7 +37,7 @@ npm run clean
 npm install
 npm run build
 npm test
-DEBUG=src:* npm start
+npm start
 ```
 
 Step 4: Open a browser to [localhost:3000](http://localhost:3000) and enjoy!
