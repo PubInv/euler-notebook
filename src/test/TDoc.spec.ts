@@ -161,3 +161,31 @@ describe('variable extraction', function() {
     assert.equal(td.numStyles("SYMBOL"),5);
     });
 });
+
+describe('manipulate plain ascii styles', function() {
+  // This is just to exercise the style createMathJsPlain
+  it('we can create and simplify plain ascii styles', function() {
+    let td = TDoc.create();
+    let th0 = td.createThought();
+    let th1 = td.createThought();
+    // Here we create new styles
+    td.createMathJsPlainStyle(th0,"3x + 4x");
+    td.createMathJsPlainStyle(th1,"4 + 5");
+    let newStyles = td.applyRules([mathSimplifyRule,
+                                  ]);
+    assert.equal(newStyles.length,2,"JsPlainStyle was not simplifiable");
+  });
+  it('the MathJsPlainStyle style produces the same reults as the LatexStyle', function() {
+    let td0 = TDoc.create();
+    let td1= TDoc.create();
+    let th0 = td0.createThought();
+    let th1 = td1.createThought();
+    td0.createMathJsPlainStyle(th0,"3x+10x");
+    td1.createLatexStyle(th1,"3x+10x");
+    let newStylesMathJs = td0.applyRules([mathSimplifyRule,
+                                         mathExtractVariablesRule]);
+    let newStylesLatex = td1.applyRules([mathSimplifyRule,
+                                        mathExtractVariablesRule]);
+    assert.equal(newStylesMathJs.length,newStylesLatex.length);
+  });
+});
