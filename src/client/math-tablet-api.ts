@@ -1,6 +1,15 @@
 
 
 export type NotebookName = string;
+export type StyleType =
+  // TYPE   // DATA
+  'JIIX'|   // MyScript JIIX export from 'MATH' editor.
+  'MATH'|   // LaTeX string
+  'MATHJS'| // Math JS Node Tree
+  'MATHJSSIMPLIFICATION'|
+  'STROKE'| // MyScript strokeGroups export from 'TEXT' editor.
+  'TEXT'|   // Plain text
+  'SYMBOL'; // LaTeX string
 export type UserName = string;
 
 // Plain object version of TDoc
@@ -8,7 +17,7 @@ export type UserName = string;
 export interface StyleObject {
   id: number;
   stylableId: number;
-  type: string;
+  type: StyleType;
   data: any;
 }
 

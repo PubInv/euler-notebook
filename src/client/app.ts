@@ -15,7 +15,7 @@ import { EnhanceParams, EnhanceResults, NotebookName, OpenParams, OpenResults, S
 type StyleRenderer = (s: StyleObject)=>HTMLElement;
 
 interface StyleRendererMap {
-  [ styleType: string ]: StyleRenderer;
+  [ styleType: /* StyleType */ string ]: StyleRenderer;
 }
 
 // Constants
@@ -201,21 +201,21 @@ function createThought(tDoc: TDocObject, editor: MyScriptEditor): ThoughtObject 
   switch(type) {
   case 'MATH': {
     const latex = editor.exports && editor.exports['application/x-latex'];
-    const mStyle = { id: tDoc.nextId++, stylableId: thought.id, type: 'MATH', data: latex };
+    const mStyle: StyleObject = { id: tDoc.nextId++, stylableId: thought.id, type: 'MATH', data: latex };
     tDoc.styles.push(mStyle);
 
     const jiix = editor.exports && editor.exports['application/vnd.myscript.jiix'];
-    const jStyle = { id: tDoc.nextId++, stylableId: thought.id, type: 'JIIX', data: jiix };
+    const jStyle: StyleObject = { id: tDoc.nextId++, stylableId: thought.id, type: 'JIIX', data: jiix };
     tDoc.styles.push(jStyle);
     break;
   }
   case 'TEXT': {
     const text = editor.exports && editor.exports['text/plain'];
-    const tStyle = { id: tDoc.nextId++, stylableId: thought.id, type: 'TEXT', data: text };
+    const tStyle: StyleObject = { id: tDoc.nextId++, stylableId: thought.id, type: 'TEXT', data: text };
     tDoc.styles.push(tStyle);
 
     const strokeGroups = editor.model.strokeGroups;
-    const sStyle = { id: tDoc.nextId++, stylableId: thought.id, type: 'STROKE', data: strokeGroups };
+    const sStyle: StyleObject = { id: tDoc.nextId++, stylableId: thought.id, type: 'STROKE', data: strokeGroups };
     tDoc.styles.push(sStyle);
     break;
   }

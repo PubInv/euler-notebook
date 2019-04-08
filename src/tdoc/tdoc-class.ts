@@ -3,7 +3,7 @@
 
 // Requirement
 
-import { StyleObject, TDocObject, ThoughtObject } from '../client/math-tablet-api';
+import { StyleObject, StyleType, TDocObject, ThoughtObject } from '../client/math-tablet-api';
 
 // Types
 
@@ -93,6 +93,7 @@ export class TDoc {
     return this.addStyle(new MathJsSimplificationStyle(this.nextId++, stylable, data));
   }
 
+  // REVIEW: Is this used?
   public createSymbolStyle(stylable: Stylable, data: LaTeXString): SymbolStyle {
     return this.addStyle(new SymbolStyle(this.nextId++, stylable, data));
   }
@@ -224,13 +225,13 @@ export abstract class Style {
   constructor(id: StylableId, stylable: Stylable) {
     this.id = id;
     this.stylableId = stylable.id;
-    this.type = 'abstract';
   }
 
   // Instance Properties
-  id: number;
-  stylableId: number;
-  type: string;
+  public id: number;
+  public stylableId: number;
+  public abstract type: StyleType;
+  public abstract data: any;
 
   // Instance Methods
 
