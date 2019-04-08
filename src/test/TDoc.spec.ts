@@ -77,7 +77,7 @@ describe('utility computations', function() {
        let s0 = td.getStyles()[0];
        td.createTextStyle(s0,"this is a style on a style");
        assert.ok(td.stylableHasChildOfType(s0,"TEXT"));
-       assert.ok(!td.stylableHasChildOfType(s0,"MATH"));
+       assert.ok(!td.stylableHasChildOfType(s0,"LATEX"));
      });
 });
 
@@ -88,20 +88,20 @@ describe('style applier', function() {
       // TODO: Simplify with the text compiler
       let td0 = TDoc.create();
       let th = td0.createThought();
-      td0.createMathStyle(th,"2+9");
-      td0.createMathStyle(th,"4+5");
+      td0.createLatexStyle(th,"2+9");
+      td0.createLatexStyle(th,"4+5");
       let newStyles = td0.applyRules([mathSimplifyRule,
                                       mathExtractVariablesRule]);
       assert.equal(newStyles.length,2);
-      assert.equal(td0.numStyles("MATH"),2);
+      assert.equal(td0.numStyles("LATEX"),2);
       assert.equal(td0.numStyles("MATHJSSIMPLIFICATION"),2);
     });
     it('simplifying is idempotent.', function() {
       // TODO: Simplify with the text compiler
       let td0 = TDoc.create();
       let th = td0.createThought();
-      td0.createMathStyle(th,"2+9");
-      td0.createMathStyle(th,"4+5");
+      td0.createLatexStyle(th,"2+9");
+      td0.createLatexStyle(th,"4+5");
       let firstStyles = td0.applyRules([mathSimplifyRule,
                                         mathExtractVariablesRule]);
       assert.equal(firstStyles.length,2);
@@ -118,14 +118,14 @@ describe('style applier', function() {
       let th0 = td0.createThought();
       let th1 = td0.createThought();
       let th2 = td0.createThought();
-      td0.createMathStyle(th0,"x = 2");
-      td0.createMathStyle(th1,"y = 4");
-      td0.createMathStyle(th2,"z = x + y");
+      td0.createLatexStyle(th0,"x = 2");
+      td0.createLatexStyle(th1,"y = 4");
+      td0.createLatexStyle(th2,"z = x + y");
       let newStyles = td0.applyRules(
         [mathSimplifyRule,
          mathExtractVariablesRule]);
       assert.equal(newStyles.length,5);
-      assert.equal(td0.numStyles("MATH"),3);
+      assert.equal(td0.numStyles("LATEX"),3);
       assert.equal(td0.numStyles("SYMBOL"),5);
     });
   });
@@ -136,8 +136,8 @@ describe('variable extraction', function() {
   it('we can extract single variables', function() {
     let td = TDoc.create();
     let th = td.createThought();
-    td.createMathStyle(th,"x = 4");
-    td.createMathStyle(th,"y = 5");
+    td.createLatexStyle(th,"x = 4");
+    td.createLatexStyle(th,"y = 5");
     let newStyles = td.applyRules([mathExtractVariablesRule]);
     assert.equal(newStyles.length,2);
     assert.equal(td.numStyles("SYMBOL"),2);
@@ -150,9 +150,9 @@ describe('variable extraction', function() {
     let th0 = td.createThought();
     let th1 = td.createThought();
     let th2 = td.createThought();
-    td.createMathStyle(th0,"x = 4");
-    td.createMathStyle(th1,"y = 5");
-    td.createMathStyle(th2,"z = x + y");
+    td.createLatexStyle(th0,"x = 4");
+    td.createLatexStyle(th1,"y = 5");
+    td.createLatexStyle(th2,"z = x + y");
     // at present, we will be extracting all of these symbols,
     // without regard to the face that some of theme should
     // be treated as the same.

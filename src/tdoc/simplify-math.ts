@@ -1,12 +1,12 @@
 
 import * as math from 'mathjs';
 
-import { TDoc, Style, MathStyle }  from './tdoc-class';
+import { TDoc, Style, LatexStyle }  from './tdoc-class';
 
 // Attempt math.js-based simplification
 export function mathSimplifyRule(tdoc: TDoc, style: Style): Style[]
 {
-  if (!(style instanceof MathStyle)) { return []; }
+  if (!(style instanceof LatexStyle)) { return []; }
   // Although this might not be true of every simplification, it
   // only makes sense to have one mathjs simplification on a
   // stylable. So if we there is already a simplication stylable
@@ -39,7 +39,7 @@ function collectSymbols(node: math.MathNode) : string[] {
 
 export function mathExtractVariablesRule(tdoc: TDoc, style: Style): Style[]
 {
-  if (!(style instanceof MathStyle)) {
+  if (!(style instanceof LatexStyle)) {
     return [];
   }
   // This is a little fragile...right now, we

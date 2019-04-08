@@ -4,7 +4,7 @@ export type NotebookName = string;
 export type StyleType =
   // TYPE   // DATA
   'JIIX'|   // MyScript JIIX export from 'MATH' editor.
-  'MATH'|   // LaTeX string
+  'LATEX'|   // LaTeX string
   'MATHJS'| // Math JS Node Tree
   'MATHJSSIMPLIFICATION'|
   'STROKE'| // MyScript strokeGroups export from 'TEXT' editor.

@@ -81,8 +81,8 @@ export class TDoc {
     return this.addStyle(new JiixStyle(this.nextId++, stylable, data));
   }
 
-  public createMathStyle(stylable: Stylable, data: LaTeXString): MathStyle {
-    return this.addStyle(new MathStyle(this.nextId++, stylable, data));
+  public createLatexStyle(stylable: Stylable, data: LaTeXString): LatexStyle {
+    return this.addStyle(new LatexStyle(this.nextId++, stylable, data));
   }
 
   public createMathJsStyle(stylable: Stylable, data: MathJsExpression): MathJsStyle {
@@ -255,21 +255,21 @@ class JiixStyle extends Style {
   data: JiixData;
 }
 
-export class MathStyle extends Style {
-  // Call tDoc.createMathStyle instead of calling this constructor directly.
+export class LatexStyle extends Style {
+  // Call tDoc.createLatexStyle instead of calling this constructor directly.
   /* private */ constructor(id: StylableId, stylable: Stylable, data: LaTeXString) {
     super(id, stylable);
-    this.type = 'MATH';
+    this.type = 'LATEX';
     this.data = data;
   }
 
   // Instance Properties
-  type: 'MATH';
+  type: 'LATEX';
   data: LaTeXString;
 }
 
 export class MathJsStyle extends Style {
-  // Call tDoc.createMathStyle instead of calling this constructor directly.
+  // Call tDoc.createLatexStyle instead of calling this constructor directly.
   /* private */ constructor(id: StylableId, stylable: Stylable, data: MathJsExpression) {
     super(id, stylable);
     this.type = 'MATHJS';
@@ -335,7 +335,7 @@ class TextStyle extends Style {
 
 const STYLE_CLASSES /* : { [type: string]: } */ = {
   'JIIX': JiixStyle,
-  'MATH': MathStyle,
+  'LATEX': LatexStyle,
   'MATHJS': MathJsStyle,
   'MATHJSSIMPLIFICATION': MathJsSimplificationStyle,
   'STROKE': StrokeStyle,

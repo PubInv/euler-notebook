@@ -21,7 +21,7 @@ interface StyleRendererMap {
 // Constants
 
 const STYLE_RENDERERS: StyleRendererMap = {
-  'MATH': renderMathStyle,
+  'LATEX': renderLatexStyle,
   'MATHJS': renderMathJsStyle,
   'MATHJSSIMPLIFICATION': renderMathJsSimplificationStyle,
   'TEXT': renderTextStyle,
@@ -201,7 +201,7 @@ function createThought(tDoc: TDocObject, editor: MyScriptEditor): ThoughtObject 
   switch(type) {
   case 'MATH': {
     const latex = editor.exports && editor.exports['application/x-latex'];
-    const mStyle: StyleObject = { id: tDoc.nextId++, stylableId: thought.id, type: 'MATH', data: latex };
+    const mStyle: StyleObject = { id: tDoc.nextId++, stylableId: thought.id, type: 'LATEX', data: latex };
     tDoc.styles.push(mStyle);
 
     const jiix = editor.exports && editor.exports['application/vnd.myscript.jiix'];
@@ -299,7 +299,7 @@ function renderNotebook(tDoc: TDocObject) {
   }
 }
 
-function renderMathStyle(style: StyleObject) {
+function renderLatexStyle(style: StyleObject) {
   const $elt = $new('div', ['style'], `<div class="styleId">S-${style.id} ${style.type} => ${style.stylableId}</div>`);
   const $subElt = $new('div');
   getKatex().render(style.data, $subElt, { throwOnError: false });
