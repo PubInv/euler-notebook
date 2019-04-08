@@ -9,6 +9,7 @@ import { StyleObject, StyleType, TDocObject, ThoughtObject } from '../client/mat
 
 type LaTeXString = string;
 type MathJsExpression = object;
+type MathJsPlain = string;
 type StrokeData = string;
 type Stylable = Thought|Style;
 type StylableId = number;
@@ -87,6 +88,10 @@ export class TDoc {
 
   public createMathJsStyle(stylable: Stylable, data: MathJsExpression): MathJsStyle {
     return this.addStyle(new MathJsStyle(this.nextId++, stylable, data));
+  }
+
+  public createMathJsPlainStyle(stylable: Stylable, data: MathJsPlain): MathJsPlainStyle {
+    return this.addStyle(new MathJsPlainStyle(this.nextId++, stylable, data));
   }
 
   public createMathJsSimplificationStyle(stylable: Stylable, data: MathJsExpression): MathJsSimplificationStyle {
@@ -269,7 +274,7 @@ export class LatexStyle extends Style {
 }
 
 export class MathJsStyle extends Style {
-  // Call tDoc.createLatexStyle instead of calling this constructor directly.
+  // Call tDoc.createMathJsStyle instead of calling this constructor directly.
   /* private */ constructor(id: StylableId, stylable: Stylable, data: MathJsExpression) {
     super(id, stylable);
     this.type = 'MATHJS';
@@ -279,6 +284,19 @@ export class MathJsStyle extends Style {
   // Instance Properties
   type: 'MATHJS';
   data: MathJsExpression;
+}
+
+export class MathJsPlainStyle extends Style {
+  // Call tDoc.createMathJsPlainStyle instead of calling this constructor directly.
+  /* private */ constructor(id: StylableId, stylable: Stylable, data: MathJsPlain) {
+    super(id, stylable);
+    this.type = 'MATHJS-PLAIN';
+    this.data = data;
+  }
+
+  // Instance Properties
+  type: 'MATHJS-PLAIN';
+  data: MathJsPlain;
 }
 
 export class MathJsSimplificationStyle extends Style {

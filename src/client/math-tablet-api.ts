@@ -5,7 +5,8 @@ export type StyleType =
   // TYPE   // DATA
   'JIIX'|   // MyScript JIIX export from 'MATH' editor.
   'LATEX'|   // LaTeX string
-  'MATHJS'| // Math JS Node Tree
+  'MATHJS'| // MathJS Node Tree
+  'MATHJS-PLAIN' | // MathJS plain text expression
   'MATHJSSIMPLIFICATION'|
   'STROKE'| // MyScript strokeGroups export from 'TEXT' editor.
   'TEXT'|   // Plain text
@@ -14,6 +15,7 @@ export type UserName = string;
 
 // Plain object version of TDoc
 
+// TYPESCRIPT: Separate out styles by datatype.
 export interface StyleObject {
   id: number;
   stylableId: number;
