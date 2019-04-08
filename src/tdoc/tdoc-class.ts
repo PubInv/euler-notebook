@@ -78,37 +78,37 @@ export class TDoc {
       false);
   }
 
-  public createJiixStyle(stylable: Stylable, data: JiixData): JiixStyle {
-    return this.addStyle(new JiixStyle(this.nextId++, stylable, data));
+  public createJiixStyle(stylable: Stylable, data: JiixData, meaning: string|null = null): JiixStyle {
+    return this.addStyle(new JiixStyle(this.nextId++, stylable, data, meaning));
   }
 
-  public createLatexStyle(stylable: Stylable, data: LaTeXString): LatexStyle {
-    return this.addStyle(new LatexStyle(this.nextId++, stylable, data));
+  public createLatexStyle(stylable: Stylable, data: LaTeXString, meaning: string|null = null): LatexStyle {
+    return this.addStyle(new LatexStyle(this.nextId++, stylable, data, meaning));
   }
 
-  public createMathJsStyle(stylable: Stylable, data: MathJsExpression): MathJsStyle {
-    return this.addStyle(new MathJsStyle(this.nextId++, stylable, data));
+  public createMathJsStyle(stylable: Stylable, data: MathJsExpression, meaning: string|null = null): MathJsStyle {
+    return this.addStyle(new MathJsStyle(this.nextId++, stylable, data, meaning));
   }
 
-  public createMathJsPlainStyle(stylable: Stylable, data: MathJsPlain): MathJsPlainStyle {
-    return this.addStyle(new MathJsPlainStyle(this.nextId++, stylable, data));
+  public createMathJsPlainStyle(stylable: Stylable, data: MathJsPlain, meaning: string|null = null): MathJsPlainStyle {
+    return this.addStyle(new MathJsPlainStyle(this.nextId++, stylable, data, meaning));
   }
 
-  public createMathJsSimplificationStyle(stylable: Stylable, data: MathJsExpression): MathJsSimplificationStyle {
-    return this.addStyle(new MathJsSimplificationStyle(this.nextId++, stylable, data));
+  public createMathJsSimplificationStyle(stylable: Stylable, data: MathJsExpression, meaning: string|null = null): MathJsSimplificationStyle {
+    return this.addStyle(new MathJsSimplificationStyle(this.nextId++, stylable, data, meaning));
   }
 
   // REVIEW: Is this used?
-  public createSymbolStyle(stylable: Stylable, data: LaTeXString): SymbolStyle {
-    return this.addStyle(new SymbolStyle(this.nextId++, stylable, data));
+  public createSymbolStyle(stylable: Stylable, data: LaTeXString, meaning: string|null = null): SymbolStyle {
+    return this.addStyle(new SymbolStyle(this.nextId++, stylable, data, meaning));
   }
 
-  public createStrokeStyle(stylable: Stylable, data: StrokeData): StrokeStyle {
-    return this.addStyle(new StrokeStyle(this.nextId++, stylable, data));
+  public createStrokeStyle(stylable: Stylable, data: StrokeData, meaning: string|null = null): StrokeStyle {
+    return this.addStyle(new StrokeStyle(this.nextId++, stylable, data, meaning));
   }
 
-  public createTextStyle(stylable: Stylable, data: TextData): TextStyle {
-    return this.addStyle(new TextStyle(this.nextId++, stylable, data));
+  public createTextStyle(stylable: Stylable, data: TextData, meaning: string|null = null): TextStyle {
+    return this.addStyle(new TextStyle(this.nextId++, stylable, data, meaning));
   }
 
   public createThought(): Thought {
@@ -238,6 +238,7 @@ export abstract class Style {
   public stylableId: number;
   public abstract type: StyleType;
   public abstract data: any;
+  public abstract meaning: string|null;
 
   // Instance Methods
 
@@ -250,106 +251,122 @@ export abstract class Style {
 
 class JiixStyle extends Style {
   // Call tDoc.createJiixStyle instead of calling this constructor directly.
-  /* private */ constructor(id: StylableId, stylable: Stylable, data: JiixData) {
+  /* private */ constructor(id: StylableId, stylable: Stylable, data: JiixData, meaning: string|null) {
     super(id, stylable);
     this.type = 'JIIX';
     this.data = data;
+    this.meaning = meaning;
   }
 
   // Instance Properties
   type: 'JIIX';
   data: JiixData;
+  meaning: string|null;
 }
 
 export class LatexStyle extends Style {
   // Call tDoc.createLatexStyle instead of calling this constructor directly.
-  /* private */ constructor(id: StylableId, stylable: Stylable, data: LaTeXString) {
+  /* private */ constructor(id: StylableId, stylable: Stylable, data: LaTeXString, meaning: string|null) {
     super(id, stylable);
     this.type = 'LATEX';
     this.data = data;
+    this.meaning = meaning;
   }
 
   // Instance Properties
   type: 'LATEX';
   data: LaTeXString;
+  meaning: string|null;
 }
 
 export class MathJsStyle extends Style {
   // Call tDoc.createMathJsStyle instead of calling this constructor directly.
-  /* private */ constructor(id: StylableId, stylable: Stylable, data: MathJsExpression) {
+  /* private */ constructor(id: StylableId, stylable: Stylable, data: MathJsExpression, meaning: string|null) {
     super(id, stylable);
     this.type = 'MATHJS';
     this.data = data;
+    this.meaning = meaning;
   }
 
   // Instance Properties
   type: 'MATHJS';
   data: MathJsExpression;
+  meaning: string|null;
 }
 
 export class MathJsPlainStyle extends Style {
   // Call tDoc.createMathJsPlainStyle instead of calling this constructor directly.
-  /* private */ constructor(id: StylableId, stylable: Stylable, data: MathJsPlain) {
+  /* private */ constructor(id: StylableId, stylable: Stylable, data: MathJsPlain, meaning: string|null) {
     super(id, stylable);
     this.type = 'MATHJS-PLAIN';
     this.data = data;
+    this.meaning = meaning;
   }
 
   // Instance Properties
   type: 'MATHJS-PLAIN';
   data: MathJsPlain;
+  meaning: string|null;
 }
 
 export class MathJsSimplificationStyle extends Style {
   // Call tDoc.createMathJsSimplificationStyle instead of calling this constructor directly.
-  /* private */ constructor(id: StylableId, stylable: Stylable, data: MathJsExpression) {
+  /* private */ constructor(id: StylableId, stylable: Stylable, data: MathJsExpression, meaning: string|null) {
     super(id, stylable);
     this.type = 'MATHJSSIMPLIFICATION';
     this.data = data;
+    this.meaning = meaning;
   }
 
   // Instance Properties
   type: 'MATHJSSIMPLIFICATION';
   data: MathJsExpression;
+  meaning: string|null;
 }
 
 export class SymbolStyle extends Style {
   // Call tDoc.createSymbolStyle instead of calling this constructor directly.
-  /* private */ constructor(id: StylableId, stylable: Stylable, data: LaTeXString) {
+  /* private */ constructor(id: StylableId, stylable: Stylable, data: LaTeXString, meaning: string|null) {
     super(id, stylable);
     this.type = 'SYMBOL';
     this.data = data;
+    this.meaning = meaning;
   }
 
   // Instance Properties
   type: 'SYMBOL';
   data: LaTeXString;
+  meaning: string|null;
 }
 
 class StrokeStyle extends Style {
   // Call tDoc.createStrokeStyle instead of calling this constructor directly.
-  /* private */ constructor(id: StylableId, stylable: Stylable, data: StrokeData) {
+  /* private */ constructor(id: StylableId, stylable: Stylable, data: StrokeData, meaning: string|null) {
     super(id, stylable);
     this.type = 'STROKE';
     this.data = data;
+    this.meaning = meaning;
   }
 
   // Instance Properties
   type: 'STROKE';
   data: StrokeData;
+  meaning: string|null;
 }
 
 class TextStyle extends Style {
   // Call tDoc.createTextStyle instead of calling this constructor directly.
-  /* private */ constructor(id: StylableId, stylable: Stylable, data: TextData) {
+  /* private */ constructor(id: StylableId, stylable: Stylable, data: TextData, meaning: string|null) {
     super(id, stylable);
     this.type = 'TEXT';
     this.data = data;
+    this.meaning = meaning;
   }
 
   // Instance Properties
   type: 'TEXT';
   data: TextData;
+  meaning: string|null;
 }
 
 const STYLE_CLASSES /* : { [type: string]: } */ = {

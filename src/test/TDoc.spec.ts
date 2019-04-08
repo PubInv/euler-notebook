@@ -3,6 +3,7 @@ import { TDoc }  from '../tdoc/tdoc-class';
 import { mathSimplifyRule }  from '../tdoc/simplify-math';
 import { mathExtractVariablesRule }  from '../tdoc/simplify-math';
 import { TDocTextCompiler } from '../tdoc/tdoc-text-comp';
+import * as math from 'mathjs';
 
 // import { TDocTextCompiler } from '../tdoc/tdoc-text-comp';
 
@@ -187,5 +188,66 @@ describe('manipulate plain ascii styles', function() {
     let newStylesLatex = td1.applyRules([mathSimplifyRule,
                                         mathExtractVariablesRule]);
     assert.equal(newStylesMathJs.length,newStylesLatex.length);
+  });
+  it('we can do basic things with mathjs parser', function() {
+    // create a parser
+    const parser = math.parser()
+
+    // evaluate expressions
+    console.log(parser.eval('sqrt(3^2 + 4^2)'));          // 5
+    console.log(parser.eval('sqrt(-4)'));                 // 2i
+    console.log(parser.eval('2 inch to cm'));             // 5.08 cm
+    console.log(parser.eval('cos(45 deg)'));              // 0.7071067811865476
+
+  });
+  it('we can operate on multiple expressions with mathjs parser', function() {
+    // create a parser
+    const parser = math.parser()
+
+    // semicolons return last!
+    let semi = parser.eval('sqrt(3^2 + 4^2);sqrt(-4);4'); // 5,2i
+    console.log("semicolons:",semi.entries[0]);
+    assert.equal(semi.entries[0],4);
+
+    // commas fail!
+    try {
+      let multiple = parser.eval('sqrt(3^2 + 4^2),sqrt(-4),4');
+      console.log(multiple);
+      assert.fail();
+    } catch {
+      assert.ok(true);
+    }
+
+    // define variables and functions
+    console.log('\ndefine variables and functions')
+    console.log(parser.eval('x = 7 / 2')) // 3.5
+    console.log(parser.eval('x + 3')) // 6.5
+    console.log(parser.eval('f2(x, y) = x^y')) // f2(x, y)
+    console.log(parser.eval('f2(2, 3)')) // 8
+
+    assert.equal(parser.eval('f2(2, 3)'),8);
+
+
+    // now let's try to leave some variables underdefined
+    parser.clear();
+    try {
+      console.log('BEGUN A');
+      console.log('Z = X + Y',parser.eval('z = x + y'));
+      console.log('FINISHED A');
+    } catch {
+    }
+    try {
+      console.log('BEGUN B');
+      console.log('Z = X + 4',parser.eval('z = x + 4'));
+      console.log('FINISHED B');
+    } catch {
+    }
+    console.log('X = 4',parser.eval('x = 4'));
+    try {
+      console.log('Z',parser.eval('z'));
+    } catch {
+      assert.ok(true);
+    }
+
   });
 });

@@ -24,6 +24,7 @@ export function mathSimplifyRule(tdoc: TDoc, style: Style): Style[]
   try {
     simpler = math.simplify(style.data);
   } catch {
+    console.log("math.simplify failed on",style.data);
     return [];
   }
   if (!simpler) { return []; }
