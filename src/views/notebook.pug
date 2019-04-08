@@ -26,15 +26,19 @@ block content
   #footer
     #previewArea
       #previewText(style='display:none')
-      #previewMath
+      #previewMath(style='display:none')
+      #previewMathJsPlain(style='display:none')
       #previewControls
         button#insertButton(disabled=true) I
     #inputArea('data-applicationkey'=credentials.myscript.applicationKey, 'data-hmackey'=credentials.myscript.hmacKey)
       #inputSelector
-        button#mathButton(disabled=true) HM
-        button#textButton HT
+        button#inputMathButton HM
+        button#inputTextButton HT
+        button#inputMathJsPlainButton MJP
       #inputText(style='display:none')
-      #inputMath
+      #inputMath(style='display:none')
+      #inputMathJsPlain(style='display:none')
+        textarea(placeholder="e.g. r = x^2 + y^2")
       #inputControls
         button#undoButton(disabled=true) U
         button#redoButton(disabled=true) R

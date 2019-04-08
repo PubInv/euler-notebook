@@ -12,6 +12,8 @@ import { EnhanceParams, EnhanceResults, NotebookName, OpenParams, OpenResults, S
 
 // Types
 
+type InputMethod = 'Math'|'MathJsPlain'|'Text';
+
 type StyleRenderer = (s: StyleObject)=>HTMLElement;
 
 interface StyleRendererMap {
@@ -23,6 +25,7 @@ interface StyleRendererMap {
 const STYLE_RENDERERS: StyleRendererMap = {
   'LATEX': renderLatexStyle,
   'MATHJS': renderMathJsStyle,
+  'MATHJS-PLAIN': renderMathJsPlainStyle,
   'MATHJSSIMPLIFICATION': renderMathJsSimplificationStyle,
   'TEXT': renderTextStyle,
 };
@@ -32,7 +35,8 @@ const STYLE_RENDERERS: StyleRendererMap = {
 let gUserName: UserName;
 let gNotebookName: NotebookName;
 let gNotebook: TDocObject;
-let gEditor: MyScriptEditor;
+let gEditor: MyScriptEditor|undefined;
+let gInputMethod: InputMethod|undefined;
 
 // Event Handlers
 
@@ -60,17 +64,19 @@ async function onDomReady(_event: Event){
     $('#insertButton').addEventListener<'click'>('click', onInsertButtonClicked);
 
     // Input area
-    $('#textButton').addEventListener<'click'>('click', onTextButtonClicked);
-    $('#mathButton').addEventListener<'click'>('click', onMathButtonClicked);
-    gEditor = initializeEditor($('#inputMath'), 'MATH');
-    // NOTE: We would like to initialize the text editor here, too, but
-    // if you initialize the editor when it is hidden it does not work
-    // properly once it is visible. So we initialize it the first time
-    // we switch to it.
-    $('#undoButton').addEventListener<'click'>('click', _event=>gEditor.undo());
-    $('#redoButton').addEventListener<'click'>('click', _event=>gEditor.redo());
-    $('#clearButton').addEventListener<'click'>('click', _event=>gEditor.clear());
-    $('#convertButton').addEventListener<'click'>('click', _event=>gEditor.convert());
+    $('#inputMathButton').addEventListener<'click'>('click', _event=>switchInput('Math'));
+    $('#inputMathJsPlainButton').addEventListener<'click'>('click', _event=>switchInput('MathJsPlain'));
+    $('#inputTextButton').addEventListener<'click'>('click', _event=>switchInput('Text'));
+
+    $('#inputMathJsPlain>textarea').addEventListener<'input'>('input', onMathJsPlainInputInput)
+
+    // TODO: Make undo, redo etc work with MathJsPlain input.
+    $('#undoButton').addEventListener<'click'>('click', _event=>gEditor && gEditor.undo());
+    $('#redoButton').addEventListener<'click'>('click', _event=>gEditor && gEditor.redo());
+    $('#clearButton').addEventListener<'click'>('click', _event=>gEditor && gEditor.clear());
+    $('#convertButton').addEventListener<'click'>('click', _event=>gEditor && gEditor.convert());
+
+    switchInput('MathJsPlain');
 
   } catch (err) {
     showErrorMessage("Error initializing math tablet.", err);
@@ -112,11 +118,57 @@ async function onEnhanceButtonClicked(_event: Event) {
 }
 
 function onInsertButtonClicked(_event: Event) {
+
+  const tDoc = gNotebook;
+
+  const thought: ThoughtObject =  { id: tDoc.nextId++ };
+  gNotebook.thoughts.push(thought);
+
   try {
-    const thought = createThought(gNotebook, gEditor);
+    switch(gInputMethod) {
+    case 'Math': {
+      const editor = gEditor; // TODO: grab from DOM.editor instead
+      if (!editor) { throw new Error(); }
+      const latex = editor.exports && editor.exports['application/x-latex'];
+      const mStyle: StyleObject = { id: tDoc.nextId++, stylableId: thought.id, type: 'LATEX', data: latex };
+      tDoc.styles.push(mStyle);
+
+      const jiix = editor.exports && editor.exports['application/vnd.myscript.jiix'];
+      const jStyle: StyleObject = { id: tDoc.nextId++, stylableId: thought.id, type: 'JIIX', data: jiix };
+      tDoc.styles.push(jStyle);
+
+      editor.clear();
+
+      break;
+    }
+    case 'MathJsPlain': {
+      const text = $<HTMLTextAreaElement>('#inputMathJsPlain>textarea').value;
+      const style: StyleObject = { id: tDoc.nextId++, stylableId: thought.id, type: 'MATHJS-PLAIN', data: text };
+      tDoc.styles.push(style);
+      break;
+    }
+    case 'Text': {
+      const editor = gEditor; // TODO: grab from DOM.editor instead
+      if (!editor) { throw new Error(); }
+      const text = editor.exports && editor.exports['text/plain'];
+      const tStyle: StyleObject = { id: tDoc.nextId++, stylableId: thought.id, type: 'TEXT', data: text };
+      tDoc.styles.push(tStyle);
+
+      const strokeGroups = editor.model.strokeGroups;
+      const sStyle: StyleObject = { id: tDoc.nextId++, stylableId: thought.id, type: 'STROKE', data: strokeGroups };
+      tDoc.styles.push(sStyle);
+
+      editor.clear();
+
+      break;
+    }
+    default:
+      // TODO: shouldn't happen.
+    }
+
     const thoughtElt = renderThought(gNotebook, thought);
     $('#tDoc').appendChild(thoughtElt);
-    gEditor.clear();
+
     $<HTMLButtonElement>('#enhanceButton').disabled = false;
     $<HTMLButtonElement>('#saveButton').disabled = false;
     $<HTMLButtonElement>('#insertButton').disabled = true;
@@ -125,14 +177,17 @@ function onInsertButtonClicked(_event: Event) {
   }
 }
 
-function onMathButtonClicked(_event: Event) {
+function onMathJsPlainInputInput(this: HTMLElement, _event: Event) {
   try {
-    disableTextInput();
-    enableMathInput();
-    gEditor = $<MyScriptEditorElement>('#inputMath').editor
-    // TODO: Update state of undo/redo/etc buttons based on new editor.
+    console.log("INPUT:");
+    const textArea: HTMLTextAreaElement = this /* TYPESCRIPT: */ as HTMLTextAreaElement;
+    const text: string = textArea.value;
+    console.log(text);
+    const isValid = (text.length>0); // LATER: Validate expression.
+    $('#previewMathJsPlain').innerText = text;
+    $<HTMLButtonElement>('#insertButton').disabled = !isValid;
   } catch(err) {
-    showErrorMessage("Error switching to math input.", err);
+    showErrorMessage("Error updating mathJsPlain preview.", err);
   }
 }
 
@@ -163,19 +218,6 @@ async function onSaveButtonClicked(_event: Event) {
   }
 }
 
-function onTextButtonClicked(_event: Event) {
-  try {
-    disableMathInput();
-    enableTextInput();
-    gEditor = $<MyScriptEditorElement>('#inputText').editor || initializeEditor($('#inputText'), 'TEXT');
-    // NOTE: We initialize the text editor here, rather than at DOM Ready, because
-    //       it is hidden, and initializing a hidden editor doesn't work properly.
-    // TODO: Update state of undo/redo/etc buttons based on new editor.
-  } catch(err) {
-    showErrorMessage("Error switching to text input.", err);
-  }
-}
-
 function onTextExported(event: MyScriptEditorExportedEvent) {
   try {
     if (event.detail.exports) {
@@ -191,63 +233,6 @@ function onTextExported(event: MyScriptEditorExportedEvent) {
 }
 
 // Helper Functions
-
-function createThought(tDoc: TDocObject, editor: MyScriptEditor): ThoughtObject {
-
-  const thought: ThoughtObject =  { id: tDoc.nextId++ };
-  tDoc.thoughts.push(thought);
-
-  const type = editor.configuration.recognitionParams.type;
-  switch(type) {
-  case 'MATH': {
-    const latex = editor.exports && editor.exports['application/x-latex'];
-    const mStyle: StyleObject = { id: tDoc.nextId++, stylableId: thought.id, type: 'LATEX', data: latex };
-    tDoc.styles.push(mStyle);
-
-    const jiix = editor.exports && editor.exports['application/vnd.myscript.jiix'];
-    const jStyle: StyleObject = { id: tDoc.nextId++, stylableId: thought.id, type: 'JIIX', data: jiix };
-    tDoc.styles.push(jStyle);
-    break;
-  }
-  case 'TEXT': {
-    const text = editor.exports && editor.exports['text/plain'];
-    const tStyle: StyleObject = { id: tDoc.nextId++, stylableId: thought.id, type: 'TEXT', data: text };
-    tDoc.styles.push(tStyle);
-
-    const strokeGroups = editor.model.strokeGroups;
-    const sStyle: StyleObject = { id: tDoc.nextId++, stylableId: thought.id, type: 'STROKE', data: strokeGroups };
-    tDoc.styles.push(sStyle);
-    break;
-  }
-  default:
-    throw new Error(`Unexpected block type: ${type}`);
-  }
-  return thought;
-}
-
-function disableMathInput() {
-  $('#inputMath').style.display = 'none';
-  $('#previewMath').style.display = 'none';
-  $<HTMLButtonElement>('#mathButton').disabled = false;
-}
-
-function disableTextInput() {
-  $('#inputText').style.display = 'none';
-  $('#previewText').style.display = 'none';
-  $<HTMLButtonElement>('#textButton').disabled = false;
-}
-
-function enableMathInput() {
-  $('#inputMath').style.display = 'block';
-  $('#previewMath').style.display = 'block';
-  $<HTMLButtonElement>('#mathButton').disabled = true;
-}
-
-function enableTextInput() {
-  $('#inputText').style.display = 'block';
-  $('#previewText').style.display = 'block';
-  $<HTMLButtonElement>('#textButton').disabled = true;
-}
 
 function getMyScriptConfig(editorType: MyScriptEditorType): MyScriptConfiguration {
   return {
@@ -311,6 +296,10 @@ function renderMathJsStyle(style: StyleObject) {
   return $new('div', ['style'], `<div class="styleId">S-${style.id} ${style.type} => ${style.stylableId}</div><div><tt>${JSON.stringify(style.data)}</tt></div>`);
 }
 
+function renderMathJsPlainStyle(style: StyleObject) {
+  return $new('div', ['style'], `<div class="styleId">S-${style.id} ${style.type} => ${style.stylableId}</div><div><tt>${style.data}</tt></div>`);
+}
+
 function renderMathJsSimplificationStyle(style: StyleObject) {
   return $new('div', ['style'], `<div class="styleId">S-${style.id} ${style.type} => ${style.stylableId}</div><div><tt>${JSON.stringify(style.data)}</tt></div>`);
 }
@@ -353,15 +342,45 @@ function renderThought(tdoc: TDocObject, thought: ThoughtObject) {
   return $elt;
 }
 
-function showErrorMessage(html: Html, err: Error) {
+function showErrorMessage(html: Html, err: Error): void {
   if (err) {
     html += `<br/><pre>${err.message}</pre>`;
   }
   addErrorMessageToHeader(html);
 }
 
-function showSuccessMessage(html: Html) {
+function showSuccessMessage(html: Html): void {
   addSuccessMessageToHeader(html);
+}
+
+function switchInput(method: InputMethod): void {
+  try {
+    // Disable the current input method
+    if (gInputMethod) {
+      $(`#input${gInputMethod}`).style.display = 'none';
+      $(`#preview${gInputMethod}`).style.display = 'none';
+      $<HTMLButtonElement>(`#input${gInputMethod}`).disabled = false;
+    }
+
+    // Enable the new input method
+    gInputMethod = method;
+    $(`#input${gInputMethod}`).style.display = 'block';
+    $(`#preview${gInputMethod}`).style.display = 'block';
+    $<HTMLButtonElement>(`#input${gInputMethod}`).disabled = true;
+
+    switch(gInputMethod) {
+    case 'Math':
+      gEditor = $<MyScriptEditorElement>('#inputMath').editor  || initializeEditor($('#inputMath'), 'MATH');
+      break;
+    case 'Text':
+      gEditor = $<MyScriptEditorElement>('#inputText').editor || initializeEditor($('#inputText'), 'TEXT');
+      break;
+    default:
+      gEditor = undefined;
+    }
+  } catch(err) {
+    showErrorMessage("Error switching input method.", err);
+  }
 }
 
 // Application Entry Point

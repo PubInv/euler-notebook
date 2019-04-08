@@ -224,6 +224,7 @@ export abstract class Style {
     if (!obj.type) { throw new Error("Invalid Style object JSON"); }
     // @ts-ignore // TYPESCRIPT:
     const cl = STYLE_CLASSES[obj.type];
+    if (!cl) { throw new Error(`Style class not found in STYLE_CLASSES: ${obj.type}`); }
     return Object.assign(Object.create(cl.prototype), obj);
   }
 
@@ -355,6 +356,7 @@ const STYLE_CLASSES /* : { [type: string]: } */ = {
   'JIIX': JiixStyle,
   'LATEX': LatexStyle,
   'MATHJS': MathJsStyle,
+  'MATHJS-PLAIN': MathJsPlainStyle,
   'MATHJSSIMPLIFICATION': MathJsSimplificationStyle,
   'STROKE': StrokeStyle,
   'TEXT': TextStyle,
