@@ -105,6 +105,8 @@ async function onEnhanceButtonClicked(_event: Event) {
     for (const style of enhanceResults.newStyles) {
       // TEMPORARY: Have bug with null styles:
       if (!style) { continue; }
+
+      gNotebook.nextId++;
       gNotebook.styles.push(style);
     }
 

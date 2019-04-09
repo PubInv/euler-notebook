@@ -40,12 +40,20 @@ export class TDoc {
 
     // Create the TDoc object from its properties and reanimated thoughts and styles.
     const tDoc = Object.assign(Object.create(TDoc.prototype), { ...obj, styles, thoughts });
+
+    // WARNING: This was not David's original code---I don't know if this is correct or not.
+    tDoc.nextId = (tDoc.getStyles().length + tDoc.getThoughts().length) + 1;
     return tDoc;
   }
 
   // Public Instance Properties
 
   public version: string;
+
+  // To be used for providing dynamic TDoc scope. Any client may
+  // attach data to this object, which is considered volatile (not part
+  // of permanent state.
+  public clientData: any;
 
   // Public Instance Methods
 
@@ -69,11 +77,15 @@ export class TDoc {
   }
 
   // This can be asymptotically improved later.
-  public stylableHasChildOfType(style: Style, tname: string): boolean {
+  public stylableHasChildOfType(style: Style, tname: string, meaning: string|null = null): boolean {
     const id = style.id;
     return this.styles.reduce(
       function(hasOne,x){
-        return (x.stylableId == id) && (x.type == tname) || hasOne;
+        return hasOne ||
+          ((x.stylableId == id) &&
+           (x.type == tname) &&
+           (!meaning || x.meaning == meaning)
+          );
           },
       false);
   }
@@ -166,11 +178,23 @@ export class TDoc {
     // take a set of comma-separated-values and
   // produce a tdoc full of thoughts; this is
   // useful mostly for testing.
-  public addFromText(text: string): TDoc {
+  public addFromText(type: string,text: string): TDoc {
     let ths = text.split(",");
-    ths.forEach(text => { let th = this.createThought();
-                          this.createTextStyle(th,text);
-                        });
+    // @ts-ignore
+    let styleType = STYLE_CLASSES[type];
+    ths.forEach(text => {
+      let th = this.createThought();
+
+      // TODO: I believe there should be a more elegant way to do this.
+      let newst =
+          Object.create(styleType.prototype);
+      newst.type = type;
+      newst.data = text;
+      newst.meaning = "CREATED";
+      newst.stylableId = th.id;
+      newst.id = this.nextId++;
+      return this.addStyle(newst);
+    });
     return this;
   }
 
@@ -183,6 +207,7 @@ export class TDoc {
     this.styles = [];
     this.thoughts = [];
     this.version = VERSION;
+    this.clientData = [];
   }
 
   // Private Instance Properties

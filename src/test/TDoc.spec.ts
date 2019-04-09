@@ -2,6 +2,7 @@
 import { TDoc }  from '../tdoc/tdoc-class';
 import { mathSimplifyRule }  from '../tdoc/simplify-math';
 import { mathExtractVariablesRule }  from '../tdoc/simplify-math';
+import { mathEvaluateRule }  from '../tdoc/simplify-math';
 import { TDocTextCompiler } from '../tdoc/tdoc-text-comp';
 import * as math from 'mathjs';
 
@@ -44,7 +45,7 @@ describe('tdoc', function() {
   describe('tdoc Structure', function() {
     it('we can generate a tdoc with a compiler', function() {
       let td0 = TDoc.create();
-      let td = td0.addFromText("x = 4, y = 5, x + y = 3");
+      let td = td0.addFromText("TEXT","x = 4, y = 5, x + y = 3");
       assert.equal(td.getThoughts().length,3);
     });
   });
@@ -64,17 +65,21 @@ describe('tdoctextcompiler', function() {
      it('we can create a tdoc from a csv', function() {
        let tdtc = TDocTextCompiler.create();
        assert(tdtc);
-       let td = tdtc.createTDocFromText("x = 4, y = 5, x + y = 3");
+       let td = tdtc.createTDocFromText("TEXT",
+                                        "x = 4, y = 5, x + y = 3");
+       let s0s = td.getStyles();
        assert.equal(td.numStyles("TEXT"),3);
+       assert.equal(s0s.length,3);
+
        assert.ok(td);
      });
 });
 
 
 describe('utility computations', function() {
-     it('we can create a tdoc from a csv', function() {
+     it('we can create a tdoc from a csv (case 2)', function() {
        let tdtc = TDocTextCompiler.create();
-       let td = tdtc.createTDocFromText("x = 4, y = 5, x + y = 3");
+       let td = tdtc.createTDocFromText("TEXT","x = 4, y = 5, x + y = 3");
        let s0 = td.getStyles()[0];
        td.createTextStyle(s0,"this is a style on a style");
        assert.ok(td.stylableHasChildOfType(s0,"TEXT"));
@@ -189,6 +194,14 @@ describe('manipulate plain ascii styles', function() {
                                         mathExtractVariablesRule]);
     assert.equal(newStylesMathJs.length,newStylesLatex.length);
   });
+  it('the MathJsPlainStyle style simplifies 3 + 7', function() {
+    let td0 = TDoc.create();
+    let th0 = td0.createThought();
+    td0.createMathJsPlainStyle(th0,"3+7");
+    let newStylesMathJs = td0.applyRules([mathSimplifyRule]);
+    assert.equal(newStylesMathJs.length,1);
+
+  });
   it('we can do basic things with mathjs parser', function() {
     // create a parser
     const parser = math.parser()
@@ -249,5 +262,23 @@ describe('manipulate plain ascii styles', function() {
       assert.ok(true);
     }
 
+  });
+  it('we can meaningly perform an evaluation against an entire tdoc', function() {
+    {
+      let tdtc = TDocTextCompiler.create();
+      let td = tdtc.createTDocFromText("MATHJS-PLAIN","x = 4, y = 5, z = x + y");
+      let evaluations = td.applyRules([mathEvaluateRule]);
+      assert.equal(evaluations[2].data,9);
+    }
+  });
+
+  it.skip('we can meaningly perform an entire tdoc without any special order!', function() {
+    {
+      let tdtc = TDocTextCompiler.create();
+      // NOTE THE ORDER HERE!!!
+      let td = tdtc.createTDocFromText("MATHJS-PLAIN","x = 4, z = x + y, y = 5");
+      let evaluations = td.applyRules([mathEvaluateRule]);
+      assert.equal(evaluations[2].data,9);
+    }
   });
 });
