@@ -41,6 +41,9 @@ export class TDoc {
     // Create the TDoc object from its properties and reanimated thoughts and styles.
     const tDoc = Object.assign(Object.create(TDoc.prototype), { ...obj, styles, thoughts });
 
+    // WARNING: This was not David's original code---I don't know if this is correct or not.
+    // TODO: nextId should be restored from the JSON object. Doubt this is the correct fix.
+    tDoc.nextId = (tDoc.getStyles().length + tDoc.getThoughts().length) + 1;
     return tDoc;
   }
 
