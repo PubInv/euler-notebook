@@ -6,7 +6,7 @@ block content
     ul
       each entry in notebookEntries
         li
-          a(href=`/${user}/${entry.name}`)= entry.name
+          a(href=`/${userName}/${entry.name}`)= entry.name
   else
     p
       | No notebooks found.
