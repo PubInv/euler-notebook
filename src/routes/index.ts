@@ -25,15 +25,9 @@ let gCredentials: Credentials|undefined;
 
 // Routes
 
-router.get('/', async function(_req: Request, res: Response, _next: NextFunction) {
+router.get('/', async function(req: Request, res: Response, next: NextFunction) {
   try {
-    if (await checkUsrDirExists()) {
-      const messages: PageMessages = { banner: [ "Welcome to Math Tablet!" ], error: [], success: [], warning: [] };
-      const userEntries = await getListOfUsers();
-      res.render('index', { messages, userEntries });
-    } else {
-      res.status(404).send(`Math Tablet usr directory doesn't exist.`);
-    }
+    await onIndexPage(req, res, next);
   } catch(err) {
     console.error(err.message);
     console.log(err.stack);
@@ -43,16 +37,7 @@ router.get('/', async function(_req: Request, res: Response, _next: NextFunction
 
 router.get('/:userName', async function(req: Request, res: Response, next: NextFunction) {
   try {
-    const userName: UserName = req.params.userName;
-    if (!isValidUserName(userName)) { return next(); }
-    if (await checkUserExists(userName)) {
-      // const messages: PageMessages = { banner: [], error: [], success: [], warning: [] };
-      const notebookEntries = await getListOfUsersNotebooks(userName);
-      res.render('user-home', { /* messages, */ notebookEntries, userName });
-    } else {
-      // LATER: Redirect back to home page and show an error message.
-      res.status(404).send(`User ${userName} doesn't exist.`);
-    }
+    await onUserPage(req, res, next);
   } catch(err) {
     console.error(err.message);
     console.log(err.stack);
@@ -62,27 +47,54 @@ router.get('/:userName', async function(req: Request, res: Response, next: NextF
 
 router.get('/:userName/:notebookName', async function(req: Request, res: Response, next: NextFunction) {
   try {
-    const userName = req.params.userName;
-    if (!isValidUserName(userName)) { return next(); }
-    const notebookName = req.params.notebookName;
-    if (!isValidNotebookName(notebookName)) { return next(); }
-    if (await checkNotebookExists(userName, notebookName)) {
-      // const messages: PageMessages = { banner: [], error: [], success: [], warning: [] };
-      // Load credentials on demand
-      if (!gCredentials) { gCredentials = await getCredentials(); }
-      res.render('notebook', { credentials: gCredentials, /* messages, */ userName, notebookName });
-    } else {
-      if (await checkUserExists(userName)) {
-        // LATER: Redirect back to user home page and show an error message.
-        res.status(404).send(`User ${userName} doesn't have notebook '${notebookName}'.`);
-      } else {
-        // LATER: Redirect back to home page and show an error message.
-        res.status(404).send(`User ${userName} doesn't exist.`);
-      }
-    }
+    await onNotebookPage(req, res, next);
   } catch(err) {
     console.error(err.message);
     console.log(err.stack);
     res.send(`Server crash: ${err.message}`);
   }
 });
+
+async function onIndexPage(_req: Request, res: Response, _next: NextFunction): Promise<void> {
+  if (await checkUsrDirExists()) {
+    const messages: PageMessages = { banner: [ "Welcome to Math Tablet!" ], error: [], success: [], warning: [] };
+    const userEntries = await getListOfUsers();
+    res.render('index', { messages, userEntries });
+  } else {
+    res.status(404).send(`Math Tablet usr directory doesn't exist.`);
+  }
+}
+
+async function onNotebookPage(req: Request, res: Response, next: NextFunction): Promise<void> {
+  const userName = req.params.userName;
+  if (!isValidUserName(userName)) { return next(); }
+  const notebookName = req.params.notebookName;
+  if (!isValidNotebookName(notebookName)) { return next(); }
+  if (await checkNotebookExists(userName, notebookName)) {
+    // const messages: PageMessages = { banner: [], error: [], success: [], warning: [] };
+    // Load credentials on demand
+    if (!gCredentials) { gCredentials = await getCredentials(); }
+    res.render('notebook', { credentials: gCredentials, /* messages, */ userName, notebookName });
+  } else {
+    if (await checkUserExists(userName)) {
+      // LATER: Redirect back to user home page and show an error message.
+      res.status(404).send(`User ${userName} doesn't have notebook '${notebookName}'.`);
+    } else {
+      // LATER: Redirect back to home page and show an error message.
+      res.status(404).send(`User ${userName} doesn't exist.`);
+    }
+  }
+}
+
+async function onUserPage(req: Request, res: Response, next: NextFunction): Promise<void> {
+  const userName: UserName = req.params.userName;
+  if (!isValidUserName(userName)) { return next(); }
+  if (await checkUserExists(userName)) {
+    // const messages: PageMessages = { banner: [], error: [], success: [], warning: [] };
+    const notebookEntries = await getListOfUsersNotebooks(userName);
+    res.render('user-home', { /* messages, */ notebookEntries, userName });
+  } else {
+    // LATER: Redirect back to home page and show an error message.
+    res.status(404).send(`User ${userName} doesn't exist.`);
+  }
+}
