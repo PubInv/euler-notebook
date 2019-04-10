@@ -1,11 +1,13 @@
 
 // Requirements
 
-import { readdir, readFile, readFileSync, stat, Stats, writeFile } from 'fs';
+import { readdir, readFile, stat, Stats, writeFile } from 'fs';
 import { join } from 'path';
 import { promisify } from 'util';
 
 import { UserName, NotebookName } from './client/math-tablet-api';
+import { MyScriptServerKeys } from './client/myscript-types';
+
 import { TDoc } from './tdoc/tdoc-class';
 
 const readdir2 = promisify(readdir);
@@ -16,6 +18,10 @@ const writeFile2 = promisify(writeFile);
 // Types
 
 type NotebookFileName = string;
+
+export interface Credentials {
+  myscript: MyScriptServerKeys;
+}
 
 // An entry in a list of notebooks.
 // NOT an entry in a notebook.
@@ -67,18 +73,27 @@ export async function checkUserExists(userName: UserName): Promise<boolean> {
   return !!stats;
 }
 
-// LATER: s/b async
-export function getCredentials() {
+export async function checkUsrDirExists(): Promise<boolean> {
+  const usrDirectory = join(homeDir(), USR_DIR);
+  let stats: Stats|undefined;
+  try {
+    stats = await stat2(usrDirectory);
+  } catch(err) {
+    if (err.code != 'ENOENT') { throw err; }
+  }
+  return !!stats;
+}
+
+export async function getCredentials(): Promise<Credentials> {
   const credentialsPath = join(homeDir(), CREDENTIALS_FILENAME);
-  const credentialsJson = readFileSync(credentialsPath, 'utf8');
-  const credentials = JSON.parse(credentialsJson);
-  return credentials;
+  const credentialsJson = await readFile2(credentialsPath, 'utf8');
+  return JSON.parse(credentialsJson);
 }
 
 export async function getListOfUsers(): Promise<UserEntry[]> {
   const directoryNames: string[] = await readdir2(join(homeDir(), USR_DIR));
   // TODO: Check which are actually directories.
-  const userEntries: UserEntry[] = directoryNames.map(d=>({ userName: d }));
+  const userEntries: UserEntry[] = directoryNames.filter(isValidUserName).map(d=>({ userName: d }));
   return userEntries;
 }
 
@@ -89,8 +104,16 @@ export async function getListOfUsersNotebooks(userName: UserName): Promise<Noteb
   const notebookEntries: NotebookEntry[] = notebookFilenames.map(f=>{
     const rval: NotebookEntry = { name: f.slice(0, -NOTEBOOK_FILENAME_SUFFIX_LENGTH), fileName: f };
     return rval;
-  });
+  }).filter(e=>isValidNotebookName(e.name));
   return notebookEntries;
+}
+
+export function isValidUserName(userName: UserName): boolean {
+  return USER_NAME_RE.test(userName);
+}
+
+export function isValidNotebookName(notebookName: NotebookName): boolean {
+  return NOTEBOOK_NAME_RE.test(notebookName);
 }
 
 export async function readNotebook(userName: UserName, notebookName: NotebookName): Promise<TDoc> {
@@ -122,13 +145,13 @@ function homeDir(): string {
 }
 
 function validateUserName(userName: UserName): void {
-  if (!USER_NAME_RE.test(userName)) {
+  if (!isValidUserName(userName)) {
     throw new Error(`Invalid math tablet user name: ${userName}`);
   }
 }
 
 function validateNotebookName(notebookName: NotebookName): void {
-  if (!NOTEBOOK_NAME_RE.test(notebookName)) {
+  if (!isValidNotebookName(notebookName)) {
     throw new Error(`Invalid math tablet notebook name: ${notebookName}`);
   }
 }

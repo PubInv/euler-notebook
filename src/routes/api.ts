@@ -3,13 +3,12 @@
 
 // Requirements
 
-import * as express from 'express';
+import { NextFunction, Request, Response, Router } from 'express';
 
 import { EnhanceParams, EnhanceResults, OpenParams, OpenResults, SaveParams, SaveResults } from '../client/math-tablet-api';
 import { readNotebook, writeNotebook } from '../users-and-files';
 import { TDoc } from '../tdoc/tdoc-class';
 import { mathSimplifyRule, mathExtractVariablesRule, mathEvaluateRule } from '../tdoc/simplify-math';
-
 
 // Types
 
@@ -19,11 +18,11 @@ import { mathSimplifyRule, mathExtractVariablesRule, mathEvaluateRule } from '..
 
 // Exports
 
-export var router = express.Router();
+export var router = Router();
 
 // Routes
 
-router.post('/open', async function(req: express.Request, res: express.Response, _next: express.NextFunction) {
+router.post('/open', async function(req: Request, res: Response, _next: NextFunction) {
   try {
     const params: OpenParams = req.body;
     const userName = params.userName;
@@ -52,7 +51,7 @@ router.post('/open', async function(req: express.Request, res: express.Response,
   }
 });
 
-router.post('/enhance', function(req: express.Request, res: express.Response, _next: express.NextFunction) {
+router.post('/enhance', function(req: Request, res: Response, _next: NextFunction) {
   try {
     const params: EnhanceParams = req.body;
     const tdoc = TDoc.fromJsonObject(params.tDoc);
@@ -70,7 +69,7 @@ router.post('/enhance', function(req: express.Request, res: express.Response, _n
   }
 });
 
-router.post('/save', async function(req: express.Request, res: express.Response, _next: express.NextFunction) {
+router.post('/save', async function(req: Request, res: Response, _next: NextFunction) {
   try {
     const params: SaveParams = req.body;
     const userName = params.userName;

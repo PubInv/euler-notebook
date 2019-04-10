@@ -1,10 +1,10 @@
 extends layout
 
 block content
-  h1 #{user}'s Documents
-  if (tDocEntries.length>0)
+  h1 #{userName}'s Documents
+  if (notebookEntries.length>0)
     ul
-      each entry in tDocEntries
+      each entry in notebookEntries
         li
           a(href=`/${user}/${entry.name}`)= entry.name
   else
