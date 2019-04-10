@@ -1,7 +1,7 @@
 
 // Requirements
 
-import { readdir, readFile, readFileSync, writeFile } from 'fs';
+import { readdir, readFile, readFileSync, stat, Stats, writeFile } from 'fs';
 import { join } from 'path';
 import { promisify } from 'util';
 
@@ -10,6 +10,7 @@ import { TDoc } from './tdoc/tdoc-class';
 
 const readdir2 = promisify(readdir);
 const readFile2 = promisify(readFile);
+const stat2 = promisify(stat);
 const writeFile2 = promisify(writeFile);
 
 // Types
@@ -40,6 +41,31 @@ const USER_NAME_RE = /^\w+$/;
 const NOTEBOOK_NAME_RE = /^\w+$/; // REVIEW: aslo allow hyphens?
 
 // Exported functions
+
+export async function checkNotebookExists(userName: UserName, notebookName: NotebookName): Promise<boolean> {
+  validateUserName(userName);
+  validateNotebookName(userName);
+  const notebookFilePath = join(homeDir(), USR_DIR, userName, `${notebookName}${NOTEBOOK_FILENAME_SUFFIX}`);
+  let stats: Stats|undefined;
+  try {
+    stats = await stat2(notebookFilePath);
+  } catch(err) {
+    if (err.code != 'ENOENT') { throw err; }
+  }
+  return !!stats;
+}
+
+export async function checkUserExists(userName: UserName): Promise<boolean> {
+  validateUserName(userName);
+  const userDirectory = join(homeDir(), USR_DIR, userName);
+  let stats: Stats|undefined;
+  try {
+    stats = await stat2(userDirectory);
+  } catch(err) {
+    if (err.code != 'ENOENT') { throw err; }
+  }
+  return !!stats;
+}
 
 // LATER: s/b async
 export function getCredentials() {
