@@ -58,7 +58,6 @@ async function onDomReady(_event: Event){
     const openResults = await apiPostRequest<OpenParams, OpenResults>('open', params);
     gNotebook = openResults.tDoc;
     renderNotebook(gNotebook)
-    showSuccessMessage("Notebook opened successfully.");
 
     // Preview area
     $('#insertButton').addEventListener<'click'>('click', onInsertButtonClicked);

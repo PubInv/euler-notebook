@@ -20,8 +20,12 @@ block scripts
 
 block content
   #menu
-    button#saveButton(disabled=true) Save
-    button#enhanceButton(disabled=true) Enhance
+    div
+      button#saveButton(disabled=true) Save
+      button#enhanceButton(disabled=true) Enhance
+    div= notebookName
+    div
+      a(href=`/${userName}`)= userName
   #tDoc.tdoc
   #footer
     #previewArea
