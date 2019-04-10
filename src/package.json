@@ -6,6 +6,7 @@
     "build": "tsc -p tsconfig.client.json",
     "check-types": "tsc -p tsconfig.json",
     "clean": "git clean -dfqx",
+    "restart": "npm run build && npm start",
     "start": "ts-node ./app.ts",
     "test": "mocha -r ts-node/register test/TDoc.spec.ts",
     "verify": "npm run clean && npm install && npm run check-types && npm test && npm run build && npm start"
