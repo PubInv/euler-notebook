@@ -7,7 +7,8 @@
     "check-types": "tsc -p tsconfig.json",
     "clean": "git clean -dfqx",
     "start": "ts-node ./app.ts",
-    "test": "mocha -r ts-node/register test/TDoc.spec.ts"
+    "test": "mocha -r ts-node/register test/TDoc.spec.ts",
+    "verify": "npm run clean && npm install && npm run check-types && npm test && npm run build && npm start"
   },
   "dependencies": {
     "cookie-parser": "~1.4.3",

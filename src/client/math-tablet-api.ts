@@ -1,6 +1,7 @@
 
 
 export type NotebookName = string;
+export type StyleMeaning = string;
 export type StyleType =
   // TYPE   // DATA
   'JIIX'|   // MyScript JIIX export from 'MATH' editor.
@@ -20,6 +21,7 @@ export interface StyleObject {
   id: number;
   stylableId: number;
   type: StyleType;
+  meaning?: StyleMeaning;
   data: any;
 }
 
