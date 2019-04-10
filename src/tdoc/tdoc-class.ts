@@ -50,6 +50,8 @@ export class TDoc {
 
   public version: string;
 
+  public nextId: StylableId;
+
   // To be used for providing dynamic TDoc scope. Any client may
   // attach data to this object, which is considered volatile (not part
   // of permanent state.
@@ -212,7 +214,6 @@ export class TDoc {
 
   // Private Instance Properties
 
-  private nextId: StylableId;
   private styles: Style[];
   private thoughts: Thought[];
 

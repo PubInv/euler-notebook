@@ -61,7 +61,7 @@ router.post('/enhance', function(req: express.Request, res: express.Response, _n
                                        mathExtractVariablesRule,
                                        mathEvaluateRule]).map(s=>s.toObject());
 
-    const results: EnhanceResults = { ok: true, newStyles };
+    const results: EnhanceResults = { ok: true, newNextId: tdoc.nextId, newStyles };
     res.json(results);
   } catch (err) {
     console.error(`Error in /enhance API: ${err.message}`)

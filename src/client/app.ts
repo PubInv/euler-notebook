@@ -99,16 +99,14 @@ async function onEnhanceButtonClicked(_event: Event) {
   try {
     const params = { tDoc: gNotebook };
     const enhanceResults = await apiPostRequest<EnhanceParams, EnhanceResults>('enhance', params);
-    console.dir(enhanceResults);
 
     // Add the new styles to the TDoc
     for (const style of enhanceResults.newStyles) {
       // TEMPORARY: Have bug with null styles:
       if (!style) { continue; }
-
-      gNotebook.nextId++;
       gNotebook.styles.push(style);
     }
+    gNotebook.nextId = enhanceResults.newNextId;
 
     // TODO: More efficient way than re-rendering the entire notebook.
     renderNotebook(gNotebook);

@@ -44,6 +44,7 @@ export interface EnhanceParams {
 
 export interface EnhanceResults {
   ok: true;
+  newNextId: number;
   newStyles: StyleObject[];
 }
 
