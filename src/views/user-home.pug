@@ -2,6 +2,11 @@ extends layout
 
 block content
   h1 #{userName}'s Documents
+
+  form(method='POST')
+    input(type='text', name='notebookName')
+    button(type='submit', name='action', value='newNotebook') New Notebook
+
   if (notebookEntries.length>0)
     ul
       each entry in notebookEntries

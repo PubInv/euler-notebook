@@ -3,8 +3,10 @@
 
 import { NextFunction, Request, Response, Router } from 'express';
 
-import { UserName } from '../client/math-tablet-api';
-import { checkNotebookExists, checkUserExists, checkUsrDirExists, Credentials, getCredentials, getListOfUsers, getListOfUsersNotebooks, isValidUserName, isValidNotebookName } from '../users-and-files';
+import { NotebookName, UserName } from '../client/math-tablet-api';
+
+import { TDoc } from '../tdoc/tdoc-class';
+import { checkNotebookExists, checkUserExists, checkUsrDirExists, Credentials, getCredentials, getListOfUsers, getListOfUsersNotebooks, isValidUserName, isValidNotebookName, writeNotebook } from '../users-and-files';
 
 // Exports
 
@@ -26,9 +28,8 @@ let gCredentials: Credentials|undefined;
 // Routes
 
 router.get('/', async function(req: Request, res: Response, next: NextFunction) {
-  try {
-    await onIndexPage(req, res, next);
-  } catch(err) {
+  try { await onIndexPage(req, res, next); }
+  catch(err) {
     console.error(err.message);
     console.log(err.stack);
     res.send(`Server crash: ${err.message}`);
@@ -36,9 +37,17 @@ router.get('/', async function(req: Request, res: Response, next: NextFunction) 
 });
 
 router.get('/:userName', async function(req: Request, res: Response, next: NextFunction) {
-  try {
-    await onUserPage(req, res, next);
-  } catch(err) {
+  try { await onUserPage(req, res, next); }
+  catch(err) {
+    console.error(err.message);
+    console.log(err.stack);
+    res.send(`Server crash: ${err.message}`);
+  }
+});
+
+router.post('/:userName', async function(req: Request, res: Response, next: NextFunction) {
+  try { await onUserPage(req, res, next); }
+  catch(err) {
     console.error(err.message);
     console.log(err.stack);
     res.send(`Server crash: ${err.message}`);
@@ -46,9 +55,8 @@ router.get('/:userName', async function(req: Request, res: Response, next: NextF
 });
 
 router.get('/:userName/:notebookName', async function(req: Request, res: Response, next: NextFunction) {
-  try {
-    await onNotebookPage(req, res, next);
-  } catch(err) {
+  try { await onNotebookPage(req, res, next); }
+  catch(err) {
     console.error(err.message);
     console.log(err.stack);
     res.send(`Server crash: ${err.message}`);
@@ -90,11 +98,43 @@ async function onUserPage(req: Request, res: Response, next: NextFunction): Prom
   const userName: UserName = req.params.userName;
   if (!isValidUserName(userName)) { return next(); }
   if (await checkUserExists(userName)) {
-    // const messages: PageMessages = { banner: [], error: [], success: [], warning: [] };
+    const messages: PageMessages = { banner: [], error: [], success: [], warning: [] };
+
+    if (req.method == 'POST') {
+      const action = req.body.action;
+      switch (action) {
+      case 'newNotebook': {
+        const notebookName = req.body.notebookName.trim();
+        await newNotebook(userName, notebookName, messages);
+        break;
+      }
+      default:
+        messages.error.push(`Unknown form action: ${req.body.action}`);
+        break;
+      }
+    }
+
     const notebookEntries = await getListOfUsersNotebooks(userName);
-    res.render('user-home', { /* messages, */ notebookEntries, userName });
+    res.render('user-home', { messages, notebookEntries, userName });
   } else {
     // LATER: Redirect back to home page and show an error message.
     res.status(404).send(`User ${userName} doesn't exist.`);
+  }
+}
+
+// Helper Functions
+
+async function newNotebook(userName: UserName, notebookName: NotebookName, messages: PageMessages): Promise<void> {
+  if (!notebookName) {
+    messages.error.push(`Please specify a notebook name.`);
+  } else if (!isValidNotebookName(notebookName)) {
+    messages.error.push(`'${notebookName}' is not a valid notebook name.`);
+  } else if (await checkNotebookExists(userName, notebookName)) {
+    messages.error.push(`A notebook named '${notebookName}' already exists.`);
+  } else {
+    const tDoc = TDoc.create();
+    await writeNotebook(userName, notebookName, tDoc);
+    // LATER: Redirect to notebook itself.
+    messages.success.push(`Notebook '${notebookName} created successfully.`);
   }
 }

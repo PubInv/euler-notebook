@@ -28,20 +28,7 @@ router.post('/open', async function(req: Request, res: Response, _next: NextFunc
     const userName = params.userName;
     const notebookName = params.notebookName;
     console.log(`Opening notebook ${userName}/${notebookName}`);
-    let tDoc: TDoc;
-    try {
-      tDoc = await readNotebook(userName, notebookName);
-    } catch(err) {
-      switch (err.code) {
-      case 'ENOENT': // file not found
-        // REVIEW: For now we are handling a missing file as an implicit 'new' operation.
-        // REVIEW: May want to return an error instead and handle new files differently.
-        tDoc = TDoc.create();
-        break;
-      default:
-        throw err;
-      }
-    }
+    const tDoc = await readNotebook(userName, notebookName);
     const results: OpenResults = { ok: true, tDoc: tDoc.toObject() };
     res.json(results);
   } catch (err) {
