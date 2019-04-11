@@ -1,0 +1,6 @@
+#!/usr/bin/env bash
+scripts/clean
+scripts/install
+scripts/build
+scripts/test
+scripts/run

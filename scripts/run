@@ -1,0 +1,4 @@
+#!/usr/bin/env bash
+pushd server
+npm start
+popd

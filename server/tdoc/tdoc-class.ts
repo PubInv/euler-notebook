@@ -3,7 +3,7 @@
 
 // Requirement
 
-import { StyleObject, StyleMeaning, StyleType, TDocObject, ThoughtObject } from '../client/math-tablet-api';
+import { StyleObject, StyleMeaning, StyleType, TDocObject, ThoughtObject } from '../../client/math-tablet-api';
 
 // Types
 

@@ -1,0 +1,7 @@
+#!/usr/bin/env bash
+pushd client
+npm install
+popd
+pushd server
+npm install
+popd

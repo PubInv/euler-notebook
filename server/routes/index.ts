@@ -3,7 +3,7 @@
 
 import { NextFunction, Request, Response, Router } from 'express';
 
-import { NotebookName, UserName } from '../client/math-tablet-api';
+import { NotebookName, UserName } from '../../client/math-tablet-api';
 
 import { TDoc } from '../tdoc/tdoc-class';
 import { checkNotebookExists, checkUserExists, checkUsrDirExists, Credentials, getCredentials, getListOfUsers, getListOfUsersNotebooks, isValidUserName, isValidNotebookName, writeNotebook } from '../users-and-files';

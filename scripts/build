@@ -1,0 +1,4 @@
+#!/usr/bin/env bash
+pushd client/
+npm run build
+popd

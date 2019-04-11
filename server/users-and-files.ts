@@ -5,8 +5,8 @@ import { readdir, readFile, stat, Stats, writeFile } from 'fs';
 import { join } from 'path';
 import { promisify } from 'util';
 
-import { UserName, NotebookName } from './client/math-tablet-api';
-import { MyScriptServerKeys } from './client/myscript-types';
+import { UserName, NotebookName } from '../client/math-tablet-api';
+import { MyScriptServerKeys } from '../client/myscript-types';
 
 import { TDoc } from './tdoc/tdoc-class';
 

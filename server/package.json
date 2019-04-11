@@ -1,15 +1,13 @@
 {
-  "name": "src",
-  "version": "0.0.0",
+  "name": "math-tablet-server",
+  "version": "0.0.1",
   "private": false,
   "scripts": {
-    "build": "tsc -p tsconfig.client.json",
     "check-types": "tsc -p tsconfig.json",
     "clean": "git clean -dfqx",
-    "restart": "npm run build && npm start",
     "start": "ts-node ./app.ts",
     "test": "mocha -r ts-node/register test/TDoc.spec.ts",
-    "verify": "npm run clean && npm install && npm run check-types && npm test && npm run build && npm start"
+    "verify": "npm run clean && npm install && npm run check-types && npm test && npm start"
   },
   "dependencies": {
     "cookie-parser": "~1.4.3",
@@ -38,7 +36,7 @@
     "ts-node": "^8.0.3",
     "typescript": "^3.3.4000"
   },
-  "description": "This directory contains the source code for the math tablet web server and client.",
+  "description": "Math Tablet Server.",
   "main": "app.js",
   "directories": {
     "test": "test"

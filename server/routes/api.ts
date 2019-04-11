@@ -5,7 +5,7 @@
 
 import { NextFunction, Request, Response, Router } from 'express';
 
-import { EnhanceParams, EnhanceResults, OpenParams, OpenResults, SaveParams, SaveResults } from '../client/math-tablet-api';
+import { EnhanceParams, EnhanceResults, OpenParams, OpenResults, SaveParams, SaveResults } from '../../client/math-tablet-api';
 import { readNotebook, writeNotebook } from '../users-and-files';
 import { TDoc } from '../tdoc/tdoc-class';
 import { mathSimplifyRule, mathExtractVariablesRule, mathEvaluateRule } from '../tdoc/simplify-math';
