@@ -140,7 +140,7 @@ async function newNotebook(userName: UserName, notebookName: NotebookName, messa
     const tDoc = TDoc.create();
     await writeNotebook(userName, notebookName, tDoc);
     // LATER: Redirect to notebook itself.
-    messages.success.push(`Notebook '${notebookName} created successfully.`);
+    messages.success.push(`Notebook '${notebookName}' created successfully.`);
   }
 }
 
