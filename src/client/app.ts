@@ -1,5 +1,4 @@
 
-// TODO: Strict declaration needed?
 
 // Requirements
 
@@ -50,10 +49,9 @@ async function onDomReady(_event: Event){
     // Document
     const pathname = window.location.pathname;
     const pathnameComponents = pathname.split('/');
-    // TODO: verify pathname is of length 3
+    if (pathnameComponents.length!=3) { throw new Error("Unexpected URL path."); }
     gUserName = pathnameComponents[1];
     gNotebookName = pathnameComponents[2];
-    // TODO: ensure only safe characters in user notebookName
     const params = { userName: gUserName, notebookName: gNotebookName }
     const openResults = await apiPostRequest<OpenParams, OpenResults>('open', params);
     gNotebook = openResults.tDoc;
@@ -162,7 +160,7 @@ function onInsertButtonClicked(_event: Event) {
       break;
     }
     default:
-      // TODO: shouldn't happen.
+      throw new Error(`Unexpected input method: ${gInputMethod}`);
     }
 
     const thoughtElt = renderThought(gNotebook, thought);
@@ -303,7 +301,7 @@ function renderMathJsSimplificationStyle(style: StyleObject) {
   return $new('div', ['style'], `<div class="styleId">S-${style.id} ${style.type} => ${style.stylableId}</div><div><tt>${JSON.stringify(style.data)}</tt></div>`);
 }
 
-function renderStyle(tdoc: TDocObject, style: StyleObject) {
+function renderStyle(tdoc: TDocObject, style: StyleObject, recursionLevel: number) {
   // Render the style itself using a style renderer.
   const renderFn = STYLE_RENDERERS[style.type];
   let $elt;
@@ -314,17 +312,16 @@ function renderStyle(tdoc: TDocObject, style: StyleObject) {
   }
 
   // Render styles attached to this style.
-  // TODO: Prevent infinite loop with recursion limit.
   const styles = tdoc.styles.filter(s=>(s.stylableId == style.id));
-  renderStyles($elt, tdoc, styles);
+  renderStyles($elt, tdoc, styles, recursionLevel+1);
 
   return $elt;
 }
 
-function renderStyles($elt: HTMLElement, tdoc: TDocObject, styles: StyleObject[]) {
-  // Iterate through the styles
+function renderStyles($elt: HTMLElement, tdoc: TDocObject, styles: StyleObject[], recursionLevel: number=0) {
+  if (recursionLevel>10) { throw new Error("Recursion limit reached. Styles nested too deeply or circular."); }
   for (const style of styles) {
-    const $styleElt = renderStyle(tdoc, style);
+    const $styleElt = renderStyle(tdoc, style, recursionLevel);
     $elt.appendChild($styleElt);
   }
 }
