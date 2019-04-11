@@ -124,10 +124,19 @@ async function onUserPage(req: Request, res: Response, next: NextFunction): Prom
 
 // Helper Functions
 
+function zeroPad(n: number): string {
+  return ('0'+n).slice(-2);
+}
+
+function getScratchNotebookName(): string {
+  var d = new Date();
+  return `Scratch${d.getFullYear()}${zeroPad(d.getMonth()+1)}${zeroPad(d.getDate())}${zeroPad(d.getHours())}${zeroPad(d.getMinutes())}`;
+}
+
 async function newNotebook(userName: UserName, notebookName: NotebookName, messages: PageMessages): Promise<void> {
-  if (!notebookName) {
-    messages.error.push(`Please specify a notebook name.`);
-  } else if (!isValidNotebookName(notebookName)) {
+  if (!notebookName) { notebookName = getScratchNotebookName(); }
+  
+  if (!isValidNotebookName(notebookName)) {
     messages.error.push(`'${notebookName}' is not a valid notebook name.`);
   } else if (await checkNotebookExists(userName, notebookName)) {
     messages.error.push(`A notebook named '${notebookName}' already exists.`);
