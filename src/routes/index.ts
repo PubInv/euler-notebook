@@ -124,10 +124,6 @@ async function onUserPage(req: Request, res: Response, next: NextFunction): Prom
 
 // Helper Functions
 
-function zeroPad(n: number): string {
-  return ('0'+n).slice(-2);
-}
-
 function getScratchNotebookName(): string {
   var d = new Date();
   return `Scratch${d.getFullYear()}${zeroPad(d.getMonth()+1)}${zeroPad(d.getDate())}${zeroPad(d.getHours())}${zeroPad(d.getMinutes())}`;
@@ -147,3 +143,8 @@ async function newNotebook(userName: UserName, notebookName: NotebookName, messa
     messages.success.push(`Notebook '${notebookName} created successfully.`);
   }
 }
+
+function zeroPad(n: number): string {
+  return ('0'+n).slice(-2);
+}
+

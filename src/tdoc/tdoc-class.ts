@@ -178,19 +178,18 @@ export class TDoc {
 
   // COMPILERS
 
-    // take a set of comma-separated-values and
+  // take a set of comma-separated-values and
   // produce a tdoc full of thoughts; this is
   // useful mostly for testing.
-  public addFromText(type: string,text: string): TDoc {
+  public addFromText(type: string, text: string): TDoc {
     let ths = text.split(",");
     // @ts-ignore
     let styleType = STYLE_CLASSES[type];
     ths.forEach(text => {
       let th = this.createThought();
 
-      // TODO: I believe there should be a more elegant way to do this.
-      let newst =
-          Object.create(styleType.prototype);
+      // REVIEW: I believe there should be a more elegant way to do this.
+      let newst = Object.create(styleType.prototype);
       newst.type = type;
       newst.data = text;
       newst.meaning = "CREATED";

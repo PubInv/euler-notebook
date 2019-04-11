@@ -3,7 +3,6 @@ import { $, $new, Html, HtmlElementClass } from './dom.js';
 
 // Types
 
-// TODO: Success messages should self-dismiss.
 // Exported functions
 
 export function addBannerMessageToHeader(html: Html) { addMessageToHeader('banner', html); }
@@ -14,9 +13,12 @@ export function addWarningMessageToHeader(html: Html) { addMessageToHeader('warn
 
 // Event handlers
 
-function onDomReady(_event: Event){
-  // TODO: try/catch and display error
-  $('#fixedHeader').addEventListener('click', onFixedHeaderClick);
+function onDomReady(_event: Event) {
+  try {
+    $('#fixedHeader').addEventListener('click', onFixedHeaderClick);
+  } catch(err) {
+    addErrorMessageToHeader("Error in global page initialization.");
+  }
 }
 
 // Event handlers

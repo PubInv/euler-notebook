@@ -35,8 +35,6 @@ export function mathSimplifyRule(tdoc: TDoc, style: Style): Style[]
     return [];
   }
   if (!simpler) { return []; }
-  // TODO: This creates math styles with mathjs node data,
-  //       whereas math style data elsewhere is a LaTeX string.
   return [tdoc.createMathJsSimplificationStyle(style, simpler)];
   }
 

@@ -92,7 +92,6 @@ export async function getCredentials(): Promise<Credentials> {
 
 export async function getListOfUsers(): Promise<UserEntry[]> {
   const directoryNames: string[] = await readdir2(join(homeDir(), USR_DIR));
-  // TODO: Check which are actually directories.
   const userEntries: UserEntry[] = directoryNames.filter(isValidUserName).map(d=>({ userName: d }));
   return userEntries;
 }
@@ -122,7 +121,7 @@ export async function readNotebook(userName: UserName, notebookName: NotebookNam
   const fileName = `${notebookName}${NOTEBOOK_FILENAME_SUFFIX}`;
   const filePath = join(homeDir(), USR_DIR, userName, fileName);
   const json = await readFile2(filePath, 'utf8');
-  const obj = JSON.parse(json); // TODO: catch errors
+  const obj = JSON.parse(json);
   const tDoc = TDoc.fromJsonObject(obj);
   return tDoc;
 }
