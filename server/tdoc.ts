@@ -3,6 +3,8 @@
 
 // Requirement
 
+import { EventEmitter } from 'events';
+
 import { Jiix, StrokeGroups } from '../client/myscript-types';
 import { LatexMath, MathJsText, StyleObject, StyleMeaning, StyleType, TDocObject, ThoughtObject } from '../client/math-tablet-api';
 
@@ -20,7 +22,14 @@ type TextData = string;
 // 0.0.2 - Made meaning required on styles.
 const VERSION = "0.0.2";
 
-export class TDoc {
+// See https://stackoverflow.com/questions/39142858/declaring-events-in-a-typescript-class-which-extends-eventemitter
+export declare interface TDoc {
+  on(event: 'styleInserted', listener: (style: Style) => void): this;
+  on(event: 'thoughtInserted', listener: (thought: Thought) => void): this;
+  on(event: string, listener: Function): this;
+}
+
+export class TDoc extends EventEmitter {
 
   // Public Class Methods
 
@@ -92,32 +101,25 @@ export class TDoc {
       }, false);
   }
 
-  public createJiixStyle(stylable: Stylable, data: Jiix, meaning: StyleMeaning): JiixStyle {
-    return this.addStyle(new JiixStyle(this.nextId++, stylable, data, meaning));
+  public insertJiixStyle(stylable: Stylable, data: Jiix, meaning: StyleMeaning): JiixStyle {
+    return this.insertStyle(new JiixStyle(this.nextId++, stylable, data, meaning));
   }
 
-  public createLatexStyle(stylable: Stylable, data: LatexMath, meaning: StyleMeaning): LatexStyle {
-    return this.addStyle(new LatexStyle(this.nextId++, stylable, data, meaning));
+  public insertLatexStyle(stylable: Stylable, data: LatexMath, meaning: StyleMeaning): LatexStyle {
+    return this.insertStyle(new LatexStyle(this.nextId++, stylable, data, meaning));
   }
 
-  public createMathJsStyle(stylable: Stylable, data: MathJsText, meaning: StyleMeaning): MathJsStyle {
-    return this.addStyle(new MathJsStyle(this.nextId++, stylable, data, meaning));
+  public insertMathJsStyle(stylable: Stylable, data: MathJsText, meaning: StyleMeaning): MathJsStyle {
+    return this.insertStyle(new MathJsStyle(this.nextId++, stylable, data, meaning));
   }
 
-  public createStrokeStyle(stylable: Stylable, data: StrokeGroups, meaning: StyleMeaning): StrokeStyle {
-    return this.addStyle(new StrokeStyle(this.nextId++, stylable, data, meaning));
+  public insertStrokeStyle(stylable: Stylable, data: StrokeGroups, meaning: StyleMeaning): StrokeStyle {
+    return this.insertStyle(new StrokeStyle(this.nextId++, stylable, data, meaning));
   }
 
   public createTextStyle(stylable: Stylable, data: TextData, meaning: StyleMeaning): TextStyle {
-    return this.addStyle(new TextStyle(this.nextId++, stylable, data, meaning));
+    return this.insertStyle(new TextStyle(this.nextId++, stylable, data, meaning));
   }
-
-  public createThought(): Thought {
-    const rval = new Thought(this.nextId++);
-    this.thoughts.push(rval);
-    return rval;
-  }
-
 
   // ENUMERATION AND INTERROGATION
   // We need a way to interrogate a TDoc. There are lots of
@@ -130,6 +132,13 @@ export class TDoc {
 
   public getStyles(): Style[] {
     return this.styles;
+  }
+
+  public insertThought(): Thought {
+    const thought = new Thought(this.nextId++);
+    this.thoughts.push(thought);
+    this.emit('thoughtInserted', thought);''
+    return thought;
   }
 
   public jsonPrinter(): string {
@@ -174,7 +183,7 @@ export class TDoc {
     // @ts-ignore
     let styleType = STYLE_CLASSES[type];
     ths.forEach(text => {
-      let th = this.createThought();
+      let th = this.insertThought();
 
       // REVIEW: I believe there should be a more elegant way to do this.
       let newst = Object.create(styleType.prototype);
@@ -183,7 +192,7 @@ export class TDoc {
       newst.meaning = 'INPUT';
       newst.stylableId = th.id;
       newst.id = this.nextId++;
-      return this.addStyle(newst);
+      return this.insertStyle(newst);
     });
     return this;
   }
@@ -193,6 +202,8 @@ export class TDoc {
   // Private Constructor
 
   private constructor() {
+    super();
+
     this.nextId = 1;
     this.styles = [];
     this.thoughts = [];
@@ -208,8 +219,9 @@ export class TDoc {
   // Private Instance Methods
 
   // Helper method for tDoc.create*Style.
-  private addStyle<T extends Style>(style: T): T {
+  private insertStyle<T extends Style>(style: T): T {
     this.styles.push(style);
+    this.emit('styleInserted', style)
     return style;
   }
 

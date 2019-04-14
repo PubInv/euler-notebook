@@ -43,6 +43,9 @@ export class OpenTDoc {
     this.tDoc = tDoc;
     this.userName = userName;
     this.webSockets = new Set<WebSocket>();
+
+    tDoc.on('styleInserted', s=>this.onStyleInserted(s));
+    tDoc.on('thoughtInserted', t=>this.onThoughtInserted(t));
   }
 
   // Private Instance Properties
@@ -53,10 +56,6 @@ export class OpenTDoc {
   // ENHANCEMENT:
   //     const newStyles = tdoc.applyRules([mathSimplifyRule, mathExtractVariablesRule, mathEvaluateRule]).map(s=>s.toObject());
 
-  // SAVING:
-  // const tDoc = TDoc.fromJsonObject(params.tDoc);
-  // await writeNotebook(userName, notebookName, tDoc);
-
   private async onMessage(_ws: WebSocket, message: string) {
     try {
       const msg: ClientMessage = JSON.parse(message);
@@ -64,32 +63,24 @@ export class OpenTDoc {
       // console.dir(msg);
       switch(msg.action) {
       case 'insertHandwrittenMath': {
-        const thought = this.tDoc.createThought();
-        this.sendInsertThought(thought);
-        const style1 = this.tDoc.createLatexStyle(thought, msg.latexMath, 'INPUT');
-        this.sendInsertStyle(style1);
-        const style2 = this.tDoc.createJiixStyle(thought, msg.jiix, 'HANDWRITING');
-        this.sendInsertStyle(style2);
+        const thought = this.tDoc.insertThought();
+        this.tDoc.insertLatexStyle(thought, msg.latexMath, 'INPUT');
+        this.tDoc.insertJiixStyle(thought, msg.jiix, 'HANDWRITING');
         // TODO: enhance
         this.save();
         break;
       }
       case 'insertHandwrittenText': {
-        const thought = this.tDoc.createThought();
-        this.sendInsertThought(thought);
-        const style1 = this.tDoc.createTextStyle(thought, msg.text, 'INPUT');
-        this.sendInsertStyle(style1);
-        const style2 = this.tDoc.createStrokeStyle(thought, msg.strokeGroups, 'HANDWRITING');
-        this.sendInsertStyle(style2);
+        const thought = this.tDoc.insertThought();
+        this.tDoc.createTextStyle(thought, msg.text, 'INPUT');
+        this.tDoc.insertStrokeStyle(thought, msg.strokeGroups, 'HANDWRITING');
         // TODO: enhance
         this.save();
         break;
       }
       case 'insertMathJsText': {
-        const thought = this.tDoc.createThought();
-        this.sendInsertThought(thought);
-        const style1 = this.tDoc.createMathJsStyle(thought, msg.mathJsText, 'INPUT');
-        this.sendInsertStyle(style1);
+        const thought = this.tDoc.insertThought();
+        this.tDoc.insertMathJsStyle(thought, msg.mathJsText, 'INPUT');
         // TODO: enhance
         this.save();
         break;
@@ -101,6 +92,14 @@ export class OpenTDoc {
     } catch(err) {
       console.error("Unexpected error handling web-socket message event.");
     }
+  }
+
+  private onStyleInserted(style: Style): void {
+    this.sendMessage({ action: 'insertStyle', style });
+  }
+
+  private onThoughtInserted(thought: Thought): void {
+    this.sendMessage({ action: 'insertThought', thought });
   }
 
   // Private Instance Methods
@@ -115,14 +114,6 @@ export class OpenTDoc {
   //        Instead we should just write deltas on to the end of a file or something.
   private async save(): Promise<void> {
     await writeNotebook(this.userName, this.notebookName, this.tDoc);
-  }
-
-  private sendInsertStyle(style: Style): void {
-    this.sendMessage({ action: 'insertStyle', style });
-  }
-
-  private sendInsertThought(thought: Thought): void {
-    this.sendMessage({ action: 'insertThought', thought });
   }
 
   private sendRefresh(ws?: WebSocket): void {

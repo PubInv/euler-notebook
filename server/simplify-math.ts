@@ -24,7 +24,7 @@ export function mathSimplifyRule(tdoc: TDoc, style: Style): Style[] {
   }
 
   if (!simpler) { return []; }
-  return [tdoc.createMathJsStyle(style, simpler.toString(), 'SIMPLIFICATION')];
+  return [tdoc.insertMathJsStyle(style, simpler.toString(), 'SIMPLIFICATION')];
 }
 
 function collectSymbols(node: math.MathNode) : string[] {
@@ -52,7 +52,7 @@ export function mathExtractVariablesRule(tdoc: TDoc, style: Style): Style[] {
   if (!parse) return [];
 
   const symbolNodes = collectSymbols(parse);
-  const styles =  symbolNodes.map(s => tdoc.createMathJsStyle(style, s, 'SYMBOL'));
+  const styles =  symbolNodes.map(s => tdoc.insertMathJsStyle(style, s, 'SYMBOL'));
   return styles;
 }
 
@@ -102,7 +102,7 @@ export function mathEvaluateRule(tdoc: TDoc, style: Style): Style[] {
 
   // REVIEW: Should we introduce a number style?
   let eString = ""+ e;
-  let st = tdoc.createMathJsStyle(style, eString, "EVALUATION");
+  let st = tdoc.insertMathJsStyle(style, eString, "EVALUATION");
 
   return [st];
 }
