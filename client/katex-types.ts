@@ -1,10 +1,14 @@
 
 // TYPESCRIPT: Can we get this from the katex library?
 
+import { LatexMath } from './math-tablet-api.js'
+
 // Types
 
+export type Latex = string;
+
 interface KatexGlobal {
-  render(latex: string, $elt: HTMLElement, options: KatexOptions): void;
+  render(latex: LatexMath, $elt: HTMLElement, options: KatexOptions): void;
 }
 
 interface KatexOptions {

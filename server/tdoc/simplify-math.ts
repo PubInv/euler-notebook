@@ -1,42 +1,31 @@
 
 import * as math from 'mathjs';
 
-import { TDoc, Style, LatexStyle, MathJsPlainStyle }  from './tdoc-class';
+import { TDoc, Style }  from './tdoc-class';
 
 // Attempt math.js-based simplification
-export function mathSimplifyRule(tdoc: TDoc, style: Style): Style[]
-{
-  if (!((style instanceof LatexStyle) ||
-        (style instanceof MathJsPlainStyle)))
-  {
+export function mathSimplifyRule(tdoc: TDoc, style: Style): Style[] {
+  // We only apply MathJS simplifications so MathJS styles that are user input.
+  if (style.type != 'MATHJS' || style.meaning != 'INPUT') {
     return [];
   }
 
-  // Although this might not be true of every simplification, it
-  // only makes sense to have one mathjs simplification on a
-  // stylable. So if we there is already a simplication stylable
-  // attached to this stylable, we will punt.
-  if (tdoc.stylableHasChildOfType(style,"MATHJSSIMPLIFICATION") ||
-      tdoc.stylableHasChildOfType(style,"MATHJS-PLAIN","EVALUATION") ||
-      tdoc.stylableHasChildOfType(style,"MATHJS-PLAIN","BAD EVALUATION"))
-    {
-      return [];
-    }
+  // Do not apply simplification more than once.
+  if (tdoc.stylableHasChildOfType(style, 'MATHJS', 'SIMPLIFICATION')) {
+    return [];
+  }
 
-  if ((style.meaning == "EVALUATION") || (style.meaning == "BAD EVALUATION"))
-    {
-      return [];
-    }
   let simpler;
   try {
     simpler = math.simplify(style.data);
   } catch {
-    console.log("math.simplify failed on",style.data);
+    console.log("math.simplify failed on", style.data);
     return [];
   }
+
   if (!simpler) { return []; }
-  return [tdoc.createMathJsSimplificationStyle(style, simpler)];
-  }
+  return [tdoc.createMathJsStyle(style, simpler.toString(), 'SIMPLIFICATION')];
+}
 
 function collectSymbols(node: math.MathNode) : string[] {
   var symbols: string[] = [];
@@ -48,36 +37,22 @@ function collectSymbols(node: math.MathNode) : string[] {
   return symbols;
 }
 
-export function mathExtractVariablesRule(tdoc: TDoc, style: Style): Style[]
-{
-  if (!((style instanceof LatexStyle) ||
-        (style instanceof MathJsPlainStyle)))
-  {
+export function mathExtractVariablesRule(tdoc: TDoc, style: Style): Style[] {
+  // We only extract symbols from MathJS expressions that are user input.
+  if (style.type != 'MATHJS' || style.meaning != 'INPUT') {
     return [];
   }
-  if ((style.meaning == "EVALUATION") || (style.meaning == "BAD EVALUATION"))
-    {
-      return [];
-    }
 
-  // This is a little fragile...right now, we
-  // get any number of symbols from math.parse in a fell swoop.
-  // So having a single one reliably suggest that all are present.
-  // If we changed the way symbols were extracted, we would need to
-  // change this test to test for all symbols by doing an equality
-  // test against existing symbols attached to the style. Since
-  // we don't even want to do that processing right now, I'm leaving
-  // this as is.
-  if (tdoc.stylableHasChildOfType(style,"SYMBOL")) {
+  // Do not extract symbols more than once.
+  if (tdoc.stylableHasChildOfType(style, 'MATHJS', 'SYMBOL')) {
     return [];
   }
+
   const parse = math.parse(style.data);
-
   if (!parse) return [];
 
-  let symbolNodes = collectSymbols(parse);
-  let styles =  symbolNodes.map(
-    s => tdoc.createSymbolStyle(style,s));
+  const symbolNodes = collectSymbols(parse);
+  const styles =  symbolNodes.map(s => tdoc.createMathJsStyle(style, s, 'SYMBOL'));
   return styles;
 }
 
@@ -88,8 +63,7 @@ export function mathExtractVariablesRule(tdoc: TDoc, style: Style): Style[]
 // of this haphazard at present; that will create mysterious errors if we
 // don't fix it. -- rlr
 
-export function mathEvaluateRule(tdoc: TDoc, style: Style): Style[]
-{
+export function mathEvaluateRule(tdoc: TDoc, style: Style): Style[] {
   // This provides a terrible lack of control over the parser;
   // we cannot, for example, sensibly clear the parser. This should
   // probably be rethought.
@@ -99,39 +73,36 @@ export function mathEvaluateRule(tdoc: TDoc, style: Style): Style[]
   if (!tdoc.clientData.mathEvaluateRule) {
     tdoc.clientData.mathEvaluateRule = math.parser();
   }
-  const parser =
-        tdoc.clientData.mathEvaluateRule;
+  const parser = tdoc.clientData.mathEvaluateRule;
 
-  if (!((style instanceof LatexStyle) ||
-        (style instanceof MathJsPlainStyle)))
-  {
+  // We only evaluate MathJS expressions that are user input.
+  if (style.type != 'MATHJS' || style.meaning != 'INPUT') {
     return [];
   }
-  if ((style.meaning == "EVALUATION") || (style.meaning == "BAD EVALUATION"))
-    {
-      return [];
-    }
-  if ((tdoc.stylableHasChildOfType(style,"MATHJS-PLAIN","EVALUATION")) ||
-      (tdoc.stylableHasChildOfType(style,"MATHJS-PLAIN","BAD EVALUATION"))) {
+
+  // Do not evaluate more than once.
+  if ((tdoc.stylableHasChildOfType(style, 'MATHJS', "EVALUATION")) ||
+      (tdoc.stylableHasChildOfType(style, 'TEXT', "EVALUATION-ERROR"))) {
     return [];
   }
+
   var e;
   try {
     e = (parser) ?
       parser.eval(style.data) :
       math.eval(style.data);
   } catch (err) {
-    console.log("error in eval",style.data,err.messsage);
+    console.log("error in eval", style.data, err.messsage);
     const firstLine = err.message;
-    let st = tdoc.createMathJsPlainStyle(style,firstLine,"BAD EVALUATION");
+    let st = tdoc.createTextStyle(style, firstLine, "EVALUATION-ERROR");
     return [st];
   }
 
   if (typeof e != 'number') return [];
 
-  // We don't currently have a style that supports numbers...
+  // REVIEW: Should we introduce a number style?
   let eString = ""+ e;
-  let st = tdoc.createMathJsPlainStyle(style,eString,"EVALUATION");
+  let st = tdoc.createMathJsStyle(style, eString, "EVALUATION");
 
   return [st];
 }

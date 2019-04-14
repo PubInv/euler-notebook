@@ -20,7 +20,7 @@ export class TDocTextCompiler {
   // useful mostly for testing.
   public createTDocFromText(styleTypeName: string, text: string): TDoc {
     let td0 =  TDoc.create();
-    let td = td0.addFromText(styleTypeName,text);
+    let td = td0.addFromText(styleTypeName, text);
     return td;
   }
 

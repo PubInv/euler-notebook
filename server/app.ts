@@ -10,6 +10,7 @@ import { middleware as stylusMiddleware } from 'stylus';
 
 import { router as apiRouter } from './routes/api';
 import { router as indexRouter } from './routes/index';
+import { initialize as initializeWebSockets } from './web-socket';
 
 // Helper Functions
 
@@ -89,6 +90,8 @@ function main() {
     const bind = (typeof addr === 'string' ? `pipe ${addr}` : `port ${addr && addr.port}`);
     console.log('Listening on ' + bind);
   });
+
+  initializeWebSockets(server);
 }
 
 main();

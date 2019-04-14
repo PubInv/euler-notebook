@@ -1,71 +1,82 @@
 
+
+// NOTE: This is not a complete set of types for the MyScript library.
+//       Just the stuff that we use.
 // REVIEW: Should the be a .d.ts declaration file instead?
 
 // Requirements
 
 // Exported Types
 
-export type MyScriptEditorType = 'TEXT'|'MATH';
+export type EditorType = 'TEXT'|'MATH';
 
-export interface MyScriptConfiguration {
-  recognitionParams: MyScriptRecognitionParams;
+export interface Configuration {
+  recognitionParams: RecognitionParams;
 }
 
-export interface MyScriptEditor {
-  configuration: MyScriptConfiguration;
-  exports: MyScriptExports;
-  model: MyScriptModel;
+export interface Editor {
+  configuration: Configuration;
+  exports: Exports;
+  model: Model;
   clear(): void;
   convert(): void;
   redo(): void;
   undo(): void;
 }
 
-export interface MyScriptEditorChangedEvent extends Event {
+export interface EditorChangedEvent extends Event {
   detail: {
     canRedo: boolean;
     canUndo: boolean;
   };
 }
 
-export interface MyScriptEditorElement extends HTMLElement {
-  editor: MyScriptEditor;
+export interface EditorElement extends HTMLElement {
+  editor: Editor;
 }
 
-export interface MyScriptEditorExportedEvent extends Event {
+export interface EditorExportedEvent extends Event {
   detail: {
-    exports: MyScriptExports
+    exports: Exports
   };
 }
 
-export interface MyScriptServerKeys {
+export interface Jiix {
+
+}
+
+export interface ServerKeys {
   applicationKey: string;
   hmacKey: string;
 }
 
+export interface StrokeGroups {
+
+}
+
 // Private Types
 
-interface MyScriptExports {
+interface Exports {
   [ mimeType: string]: any;
 }
 
 interface MyScriptGlobal {
-  register($elt: HTMLElement, config: MyScriptConfiguration): void;
+  register($elt: HTMLElement, config: Configuration): void;
 }
 
-interface MyScriptModel {
+interface Model {
   strokeGroups: /* TYPESCRIPT: */ any;
 }
 
-interface MyScriptRecognitionParams {
+interface RecognitionParams {
   apiVersion: 'V4';
   protocol: 'WEBSOCKET';
-  server: MyScriptServerKeys;
-  type: MyScriptEditorType;
-  v4: MyScriptRecognitionParamsV4;
+  server: ServerKeys;
+  type: EditorType;
+  v4: RecognitionParamsV4;
 }
 
-interface MyScriptRecognitionParamsV4 {
+interface RecognitionParamsV4 {
   // TYPESCRIPT:
 }
 

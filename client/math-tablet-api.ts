@@ -1,17 +1,27 @@
 
+// Requirements
 
+import { Jiix, StrokeGroups } from "./myscript-types";
+
+// Types
+
+export type LatexMath = string;
+export type MathJsText = string;
 export type NotebookName = string;
-export type StyleMeaning = string;
+export type StyleMeaning =
+  'EVALUATION'|       // CAS evaluation of an expression.
+  'EVALUATION-ERROR'| // Error in CAS evaluation of an expression
+  'INPUT'|            // Primary representation of something that the user has input.
+  'HANDWRITING'|      // Stroke information for the user's handwriting.
+  'SIMPLIFICATION'|   // CAS simplification of expression or equation.
+  'SYMBOL';           // Symbols extracted from an expression.
 export type StyleType =
   // TYPE   // DATA
   'JIIX'|   // MyScript JIIX export from 'MATH' editor.
-  'LATEX'|   // LaTeX string
-  'MATHJS'| // MathJS Node Tree
-  'MATHJS-PLAIN' | // MathJS plain text expression
-  'MATHJSSIMPLIFICATION'|
+  'LATEX'|  // LaTeX string
+  'MATHJS'| // MathJS plain text expression
   'STROKE'| // MyScript strokeGroups export from 'TEXT' editor.
-  'TEXT'|   // Plain text
-  'SYMBOL'; // LaTeX string
+  'TEXT';   // Plain text
 export type UserName = string;
 
 // Plain object version of TDoc
@@ -21,7 +31,7 @@ export interface StyleObject {
   id: number;
   stylableId: number;
   type: StyleType;
-  meaning?: StyleMeaning;
+  meaning: StyleMeaning;
   data: any;
 }
 
@@ -36,35 +46,41 @@ export interface ThoughtObject {
   id: number;
 }
 
-// API Calls
+// Messages from the server
 
-export interface EnhanceParams {
+export type ServerMessage = AppendThought|RefreshNotebook;
+
+interface AppendThought {
+  action: 'appendThought';
+  thought: ThoughtObject;
+  styles: StyleObject[];
+}
+
+interface RefreshNotebook {
+  action: 'refreshNotebook';
   tDoc: TDocObject;
 }
 
-export interface EnhanceResults {
-  ok: true;
-  newNextId: number;
-  newStyles: StyleObject[];
+// Messages from the client
+
+export type ClientMessage = InsertHandwrittenMath|InsertHandwrittenText|InsertMathJsText;
+
+interface InsertHandwrittenMath {
+  action: 'insertHandwrittenMath';
+  latexMath: LatexMath;
+  jiix: Jiix;
 }
 
-export interface OpenParams {
-  userName: UserName;
-  notebookName: NotebookName;
+interface InsertHandwrittenText {
+action: 'insertHandwrittenText';
+text: string;
+strokeGroups: StrokeGroups;
 }
 
-export interface OpenResults {
-  ok: true,
-  tDoc: TDocObject,
+interface InsertMathJsText {
+  action: 'insertMathJsText';
+  mathJsText: MathJsText;
 }
 
-export interface SaveParams {
-  userName: UserName;
-  notebookName: NotebookName;
-  tDoc: TDocObject;
-}
 
-export interface SaveResults {
-  ok: true;
-}
 
