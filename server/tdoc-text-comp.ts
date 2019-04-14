@@ -5,7 +5,7 @@
 // produce a tdoc full of thoughts; this is
 // useful mostly for testing.
 
-import { TDoc }  from './tdoc-class';
+import { TDoc }  from './tdoc';
 
 const VERSION = "0.1.0";
 

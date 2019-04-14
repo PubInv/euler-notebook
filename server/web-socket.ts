@@ -18,14 +18,14 @@ export function initialize(server: Server) {
 // Event Handlers
 
 async function onConnection(ws: WebSocket, req: Request): Promise<void> {
-  try {
+  // try {
     console.log(`New socket connection to: ${req.url}`);
     const urlComponents = req.url.split('/');
     if (urlComponents.length!=3) { throw new Error("Unexpected path in socket connection URL."); }
     const userName = urlComponents[1];
     const notebookName = urlComponents[2];
     await OpenTDoc.connect(userName, notebookName, ws);
-  } catch(err) {
-    console.error("Unexpected error handling web-socket connection event.");
-  }
+  // } catch(err) {
+  //   console.error("Unexpected error handling web-socket connection event.");
+  // }
 }

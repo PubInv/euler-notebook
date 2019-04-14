@@ -1,8 +1,10 @@
 
 import * as WebSocket from 'ws';
 
+// TODO: Handle websocket lifecycle: closing, unexpected disconnects, errors, etc.
+
 import { ClientMessage, UserName, NotebookName, ServerMessage } from '../client/math-tablet-api';
-import { Style, TDoc, Thought } from './tdoc/tdoc-class';
+import { Style, TDoc, Thought } from './tdoc';
 import { readNotebook, writeNotebook } from './users-and-files';
 
 export class OpenTDoc {
@@ -14,6 +16,7 @@ export class OpenTDoc {
     let rval = this.openTDocs.get(key);
     if (!rval) {
       // REVIEW: What if messages come in while we are reading the notebook?
+      // TODO: Gracefully handle error if readNotebook throws error. (e.g. invalid version)
       const tDoc = await readNotebook(userName, notebookName);
       rval = new this(userName, notebookName, tDoc);
       this.openTDocs.set(key, rval);

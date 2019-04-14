@@ -1,7 +1,7 @@
 
 import * as math from 'mathjs';
 
-import { TDoc, Style }  from './tdoc-class';
+import { TDoc, Style }  from './tdoc';
 
 // Attempt math.js-based simplification
 export function mathSimplifyRule(tdoc: TDoc, style: Style): Style[] {

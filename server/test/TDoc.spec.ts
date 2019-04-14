@@ -1,12 +1,12 @@
 // import { hello } from './hello-world';
-import { TDoc }  from '../tdoc/tdoc-class';
-import { mathSimplifyRule }  from '../tdoc/simplify-math';
-import { mathExtractVariablesRule }  from '../tdoc/simplify-math';
-import { mathEvaluateRule }  from '../tdoc/simplify-math';
-import { TDocTextCompiler } from '../tdoc/tdoc-text-comp';
+import { TDoc }  from '../tdoc';
+import { mathSimplifyRule }  from '../simplify-math';
+import { mathExtractVariablesRule }  from '../simplify-math';
+import { mathEvaluateRule }  from '../simplify-math';
+import { TDocTextCompiler } from '../tdoc-text-comp';
 import * as math from 'mathjs';
 
-// import { TDocTextCompiler } from '../tdoc/tdoc-text-comp';
+// import { TDocTextCompiler } from '../tdoc-text-comp';
 
 // import { expect } from 'chai';
 import { assert } from 'chai';

@@ -8,7 +8,7 @@ import { promisify } from 'util';
 import { UserName, NotebookName } from '../client/math-tablet-api';
 import { ServerKeys } from '../client/myscript-types';
 
-import { TDoc } from './tdoc/tdoc-class';
+import { TDoc } from './tdoc';
 
 const readdir2 = promisify(readdir);
 const readFile2 = promisify(readFile);
