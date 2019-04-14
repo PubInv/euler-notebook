@@ -4,6 +4,8 @@ import * as WebSocket from 'ws';
 // TODO: Handle websocket lifecycle: closing, unexpected disconnects, errors, etc.
 
 import { ClientMessage, UserName, NotebookName, ServerMessage } from '../client/math-tablet-api';
+
+import { mathJsCas } from './mathjs-cas';
 import { Style, TDoc, Thought } from './tdoc';
 import { readNotebook, writeNotebook } from './users-and-files';
 
@@ -18,6 +20,7 @@ export class OpenTDoc {
       // REVIEW: What if messages come in while we are reading the notebook?
       // TODO: Gracefully handle error if readNotebook throws error. (e.g. invalid version)
       const tDoc = await readNotebook(userName, notebookName);
+      await mathJsCas.onTDocOpened(tDoc);
       rval = new this(userName, notebookName, tDoc);
       this.openTDocs.set(key, rval);
     }
@@ -94,12 +97,14 @@ export class OpenTDoc {
     }
   }
 
-  private onStyleInserted(style: Style): void {
+  private async onStyleInserted(style: Style): Promise<void> {
     this.sendMessage({ action: 'insertStyle', style });
+    await mathJsCas.onStyleInserted(this.tDoc, style);
   }
 
-  private onThoughtInserted(thought: Thought): void {
+  private async onThoughtInserted(thought: Thought): Promise<void> {
     this.sendMessage({ action: 'insertThought', thought });
+    await mathJsCas.onThoughtInserted(this.tDoc, thought);
   }
 
   // Private Instance Methods

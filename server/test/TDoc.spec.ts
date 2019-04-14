@@ -1,8 +1,8 @@
 // import { hello } from './hello-world';
 import { TDoc }  from '../tdoc';
-import { mathSimplifyRule }  from '../simplify-math';
-import { mathExtractVariablesRule }  from '../simplify-math';
-import { mathEvaluateRule }  from '../simplify-math';
+import { mathSimplifyRule }  from '../mathjs-cas';
+import { mathExtractVariablesRule }  from '../mathjs-cas';
+import { mathEvaluateRule }  from '../mathjs-cas';
 import { TDocTextCompiler } from '../tdoc-text-comp';
 import * as math from 'mathjs';
 
