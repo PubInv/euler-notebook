@@ -35,7 +35,9 @@ async function onDomReady(_event: Event){
     $('#inputMathJsPlainButton').addEventListener<'click'>('click', _event=>switchInput('MathJsPlain'));
     $('#inputTextButton').addEventListener<'click'>('click', _event=>switchInput('Text'));
 
-    $('#inputMathJsPlain>textarea').addEventListener<'input'>('input', onMathJsPlainInputInput)
+    const mathJsInputField = $('#inputMathJsPlain>input');
+    mathJsInputField.addEventListener<'input'>('input', onMathJsPlainInputInput);
+    mathJsInputField.addEventListener<'keyup'>('keyup', onMathJsPlainInputKeyup);
 
     // TODO: Make undo, redo etc work with MathJsPlain input.
     $('#undoButton').addEventListener<'click'>('click', _event=>gEditor && gEditor.undo());
@@ -86,10 +88,10 @@ function onInsertButtonClicked(_event: Event) {
       break;
     }
     case 'MathJsPlain': {
-      const textArea = $<HTMLTextAreaElement>('#inputMathJsPlain>textarea');
-      const text = textArea.value;
+      const $field = $<HTMLInputElement>('#inputMathJsPlain>input');
+      const text = $field.value;
       gNotebookConnection.insertMathJsText(text);
-      textArea.value = $('#previewMathJsPlain').innerText = '';
+      $field.value = $('#previewMathJsPlain').innerText = '';
       break;
     }
     case 'Text': {
@@ -111,15 +113,24 @@ function onInsertButtonClicked(_event: Event) {
   }
 }
 
-function onMathJsPlainInputInput(this: HTMLElement, _event: Event) {
+function onMathJsPlainInputInput(this: HTMLElement, _event: Event): void {
   try {
-    const textArea: HTMLTextAreaElement = this /* TYPESCRIPT: */ as HTMLTextAreaElement;
-    const text: string = textArea.value;
+    const $field: HTMLInputElement = this /* TYPESCRIPT: */ as HTMLInputElement;
+    const text: string = $field.value;
     const isValid = (text.length>0); // LATER: Validate expression.
     $('#previewMathJsPlain').innerText = text;
     $<HTMLButtonElement>('#insertButton').disabled = !isValid;
   } catch(err) {
     showErrorMessage("Error updating mathJsPlain preview.", err);
+  }
+}
+
+function onMathJsPlainInputKeyup(this: HTMLElement, event: KeyboardEvent): void {
+  try {
+    console.log("ENTER PRESSED!");
+    if (event.keyCode == 13) { onInsertButtonClicked.call(this, event); }
+  } catch(err) {
+    showErrorMessage("Error on mathJsPlain keyup event.", err);
   }
 }
 

@@ -3,7 +3,7 @@ import * as WebSocket from 'ws';
 
 // TODO: Handle websocket lifecycle: closing, unexpected disconnects, errors, etc.
 
-import { ClientMessage, UserName, NotebookName, ServerMessage, MathJsText, LatexMath } from '../client/math-tablet-api';
+import { ClientMessage, UserName, NotebookName, ServerMessage } from '../client/math-tablet-api';
 
 import { mathJsCas, parseMathJsExpression, ParseResults } from './mathjs-cas';
 import { Style, TDoc, Thought } from './tdoc';
