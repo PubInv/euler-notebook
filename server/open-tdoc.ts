@@ -3,9 +3,9 @@ import * as WebSocket from 'ws';
 
 // TODO: Handle websocket lifecycle: closing, unexpected disconnects, errors, etc.
 
-import { ClientMessage, UserName, NotebookName, ServerMessage } from '../client/math-tablet-api';
+import { ClientMessage, UserName, NotebookName, ServerMessage, MathJsText, LatexMath } from '../client/math-tablet-api';
 
-import { mathJsCas } from './mathjs-cas';
+import { mathJsCas, parseMathJsExpression, ParseResults } from './mathjs-cas';
 import { Style, TDoc, Thought } from './tdoc';
 import { readNotebook, writeNotebook } from './users-and-files';
 
@@ -69,7 +69,6 @@ export class OpenTDoc {
         const thought = this.tDoc.insertThought();
         this.tDoc.insertLatexStyle(thought, msg.latexMath, 'INPUT');
         this.tDoc.insertJiixStyle(thought, msg.jiix, 'HANDWRITING');
-        // TODO: enhance
         this.save();
         break;
       }
@@ -82,9 +81,16 @@ export class OpenTDoc {
         break;
       }
       case 'insertMathJsText': {
+        let parseResults: ParseResults|undefined = undefined;
+        try {
+          parseResults = parseMathJsExpression(msg.mathJsText);
+        } catch(err) {
+          console.error(`insertMathJsText parse error: ${err.message}`);
+          break;
+        }
         const thought = this.tDoc.insertThought();
-        this.tDoc.insertMathJsStyle(thought, msg.mathJsText, 'INPUT');
-        // TODO: enhance
+        const style = this.tDoc.insertMathJsStyle(thought, parseResults.mathJsText, 'INPUT');
+        this.tDoc.insertLatexStyle(style, parseResults.latexMath, 'PRETTY');
         this.save();
         break;
       }

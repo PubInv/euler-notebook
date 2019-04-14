@@ -1,6 +1,7 @@
 
 import * as math from 'mathjs';
 
+import { LatexMath, MathJsText } from '../client/math-tablet-api';
 import { TDoc, Style, Thought }  from './tdoc';
 
 // Types
@@ -11,6 +12,12 @@ interface Cas {
   onStyleInserted(tDoc: TDoc, style: Style): Promise<void>;
 }
 
+export interface ParseResults {
+  latexMath: LatexMath;
+  mathJsText: MathJsText;
+}
+
+// Exported Interface
 export const mathJsCas: Cas = {
   onTDocOpened,
   onThoughtInserted,
@@ -32,6 +39,11 @@ async function onStyleInserted(tDoc: TDoc, style: Style): Promise<void> {
   mathExtractVariablesRule(tDoc, style);
   mathEvaluateRule(tDoc, style);
   mathSimplifyRule(tDoc, style);
+}
+
+export function parseMathJsExpression(s: string): ParseResults {
+  const node = math.parse(s);
+  return { mathJsText: node.toString(), latexMath: node.toTex() };
 }
 
 // Helper Functions
@@ -100,14 +112,10 @@ export function mathEvaluateRule(tdoc: TDoc, style: Style): Style[] {
 
 export function mathExtractVariablesRule(tdoc: TDoc, style: Style): Style[] {
   // We only extract symbols from MathJS expressions that are user input.
-  if (style.type != 'MATHJS' || style.meaning != 'INPUT') {
-    return [];
-  }
+  if (style.type != 'MATHJS' || style.meaning != 'INPUT') { return []; }
 
   // Do not extract symbols more than once.
-  if (tdoc.stylableHasChildOfType(style, 'MATHJS', 'SYMBOL')) {
-    return [];
-  }
+  if (tdoc.stylableHasChildOfType(style, 'MATHJS', 'SYMBOL')) { return []; }
 
   const parse = math.parse(style.data);
   if (!parse) return [];
@@ -120,14 +128,10 @@ export function mathExtractVariablesRule(tdoc: TDoc, style: Style): Style[] {
 // Attempt math.js-based simplification
 export function mathSimplifyRule(tdoc: TDoc, style: Style): Style[] {
   // We only apply MathJS simplifications so MathJS styles that are user input.
-  if (style.type != 'MATHJS' || style.meaning != 'INPUT') {
-    return [];
-  }
+  if (style.type != 'MATHJS' || style.meaning != 'INPUT') { return []; }
 
   // Do not apply simplification more than once.
-  if (tdoc.stylableHasChildOfType(style, 'MATHJS', 'SIMPLIFICATION')) {
-    return [];
-  }
+  if (tdoc.stylableHasChildOfType(style, 'MATHJS', 'SIMPLIFICATION')) { return []; }
 
   let simpler;
   try {
@@ -136,8 +140,14 @@ export function mathSimplifyRule(tdoc: TDoc, style: Style): Style[] {
     console.log("math.simplify failed on", style.data);
     return [];
   }
-
   if (!simpler) { return []; }
-  return [tdoc.insertMathJsStyle(style, simpler.toString(), 'SIMPLIFICATION')];
+
+  // If the simplification hasn't changed anything then don't add it.
+  const simplerText = simpler.toString();
+  if (simplerText == style.data) { return []; }
+
+  const s1 = tdoc.insertMathJsStyle(style, simplerText, 'SIMPLIFICATION');
+  const s2 = tdoc.insertLatexStyle(s1, simpler.toTex(), 'PRETTY');
+  return [ s1, s2 ];
 }
 

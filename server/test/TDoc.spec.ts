@@ -95,9 +95,8 @@ describe('style applier', function() {
       let th = td0.insertThought();
       td0.insertMathJsStyle(th, "2+9", 'INPUT');
       td0.insertMathJsStyle(th, "4+5", 'INPUT');
-      let newStyles = td0.applyRules([mathSimplifyRule,
-                                      mathExtractVariablesRule]);
-      assert.equal(newStyles.length, 2);
+      let newStyles = td0.applyRules([mathSimplifyRule, mathExtractVariablesRule]);
+      assert.equal(newStyles.length, 4);
       assert.equal(td0.numStyles('MATHJS', 'INPUT'), 2);
       assert.equal(td0.numStyles('MATHJS', 'SIMPLIFICATION'), 2);
     });
@@ -109,7 +108,7 @@ describe('style applier', function() {
       td0.insertMathJsStyle(th, "4+5", 'INPUT');
       let firstStyles = td0.applyRules([mathSimplifyRule,
                                         mathExtractVariablesRule]);
-      assert.equal(firstStyles.length, 2);
+      assert.equal(firstStyles.length, 4);
       assert.equal(td0.numStyles('MATHJS', 'INPUT'), 2);
       assert.equal(td0.numStyles('MATHJS', 'SIMPLIFICATION'), 2);
 
@@ -177,17 +176,15 @@ describe('manipulate plain ascii styles', function() {
     // Here we create new styles
     td.insertMathJsStyle(th0, "3x + 4x", 'INPUT');
     td.insertMathJsStyle(th1, "4 + 5", 'INPUT');
-    let newStyles = td.applyRules([mathSimplifyRule,
-                                  ]);
-    assert.equal(newStyles.length, 2, "JsPlainStyle was not simplifiable");
+    let newStyles = td.applyRules([ mathSimplifyRule ]);
+    assert.equal(newStyles.length, 4);
   });
   it('the MathJsPlainStyle style simplifies 3 + 7', function() {
     let td0 = TDoc.create();
     let th0 = td0.insertThought();
     td0.insertMathJsStyle(th0, "3+7", 'INPUT');
     let newStylesMathJs = td0.applyRules([mathSimplifyRule]);
-    assert.equal(newStylesMathJs.length, 1);
-
+    assert.equal(newStylesMathJs.length, 2);
   });
   it('we can do basic things with mathjs parser', function() {
     // create a parser

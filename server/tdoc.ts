@@ -76,9 +76,7 @@ export class TDoc extends EventEmitter {
     //            length of the styles array, and only iterate over
     //            the existing styles. Otherwise, we could get into
     //            an infinite loop.
-    const len = this.styles.length;
-    for (let i=0; i<len; i++) {
-      const style = this.styles[i];
+    for (const style of this.styles) {
       for (const rule of rules) {
         const newStyles = rule(this, style);
         rval = rval.concat(newStyles);
@@ -312,7 +310,6 @@ export class LatexStyle extends Style {
   meaning: StyleMeaning;
 }
 
-// TODO: Rename MathJsTextStyle
 export class MathJsStyle extends Style {
   // Call tDoc.createMathJsPlainStyle instead of calling this constructor directly.
   /* private */ constructor(id: StylableId, stylable: Stylable, data: MathJsText, meaning: StyleMeaning) {

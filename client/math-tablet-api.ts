@@ -11,9 +11,10 @@ export type NotebookName = string;
 export type StyleMeaning =
   'EVALUATION'|       // CAS evaluation of an expression.
   'EVALUATION-ERROR'| // Error in CAS evaluation of an expression
-  'INPUT'|            // Primary representation of something that the user has input.
   'HANDWRITING'|      // Stroke information for the user's handwriting.
-  'SIMPLIFICATION'|   // CAS simplification of expression or equation.
+  'INPUT'|            // Primary representation of something that the user has input.
+  'PRETTY' |          // A more visually-pleasing representation. e.g. LaTeX version of plain-text math.
+  'SIMPLIFICATION' |  // CAS simplification of expression or equation.
   'SYMBOL';           // Symbols extracted from an expression.
 export type StyleType =
   // TYPE   // DATA
