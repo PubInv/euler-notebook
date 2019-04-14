@@ -2,7 +2,7 @@
 import * as WebSocket from 'ws';
 
 import { ClientMessage, UserName, NotebookName, ServerMessage } from '../client/math-tablet-api';
-import { TDoc } from './tdoc/tdoc-class';
+import { Style, TDoc, Thought } from './tdoc/tdoc-class';
 import { readNotebook, writeNotebook } from './users-and-files';
 
 export class OpenTDoc {
@@ -47,31 +47,33 @@ export class OpenTDoc {
       switch(msg.action) {
       case 'insertHandwrittenMath': {
         const thought = this.tDoc.createThought();
+        this.sendInsertThought(ws, thought);
         const style1 = this.tDoc.createLatexStyle(thought, msg.latexMath, 'INPUT');
+        this.sendInsertStyle(ws, style1);
         const style2 = this.tDoc.createJiixStyle(thought, msg.jiix, 'HANDWRITING');
+        this.sendInsertStyle(ws, style2);
         // TODO: enhance
         this.save();
-        // TODO: send to all sockets.
-        this.sendMessage(ws, { action: 'appendThought', thought: thought.toObject(), styles: [ style1.toObject(), style2.toObject() ] })
         break;
       }
       case 'insertHandwrittenText': {
         const thought = this.tDoc.createThought();
+        this.sendInsertThought(ws, thought);
         const style1 = this.tDoc.createTextStyle(thought, msg.text, 'INPUT');
+        this.sendInsertStyle(ws, style1);
         const style2 = this.tDoc.createStrokeStyle(thought, msg.strokeGroups, 'HANDWRITING');
+        this.sendInsertStyle(ws, style2);
         // TODO: enhance
         this.save();
-        // TODO: send to all sockets.
-        this.sendMessage(ws, { action: 'appendThought', thought: thought.toObject(), styles: [ style1.toObject(), style2.toObject() ] })
         break;
       }
       case 'insertMathJsText': {
         const thought = this.tDoc.createThought();
+        this.sendInsertThought(ws, thought);
         const style1 = this.tDoc.createMathJsStyle(thought, msg.mathJsText, 'INPUT');
+        this.sendInsertStyle(ws, style1);
         // TODO: enhance
         this.save();
-        // TODO: send to all sockets.
-        this.sendMessage(ws, { action: 'appendThought', thought: thought.toObject(), styles: [ style1.toObject() ] })
         break;
       }
       default:
@@ -94,6 +96,14 @@ export class OpenTDoc {
   //        Instead we should just write deltas on to the end of a file or something.
   private async save(): Promise<void> {
     await writeNotebook(this.userName, this.notebookName, this.tDoc);
+  }
+
+  private sendInsertStyle(ws: WebSocket, style: Style): void {
+    this.sendMessage(ws, { action: 'insertStyle', style });
+  }
+
+  private sendInsertThought(ws: WebSocket, thought: Thought): void {
+    this.sendMessage(ws, { action: 'insertThought', thought });
   }
 
   private sendRefresh(ws: WebSocket): void {

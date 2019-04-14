@@ -48,12 +48,26 @@ export interface ThoughtObject {
 
 // Messages from the server
 
-export type ServerMessage = AppendThought|RefreshNotebook;
+export type ServerMessage = DeleteStyle|DeleteThought|InsertStyle|InsertThought|RefreshNotebook;
 
-interface AppendThought {
-  action: 'appendThought';
+interface DeleteStyle {
+  action: 'deleteStyle';
+  styleId: number;
+}
+
+interface InsertStyle {
+  action: 'insertStyle';
+  style: StyleObject;
+}
+
+interface DeleteThought {
+  action: 'deleteThought';
+  thoughtId: number;
+}
+
+interface InsertThought {
+  action: 'insertThought';
   thought: ThoughtObject;
-  styles: StyleObject[];
 }
 
 interface RefreshNotebook {

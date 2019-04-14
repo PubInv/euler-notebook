@@ -11,12 +11,11 @@ export function $<T extends HTMLElement>(selector: CssSelector): T {
   return <T>$elt;
 }
 
-export function $new(tag: HtmlElementTag, classes?: HtmlElementClass[], html?: Html): HTMLElement {
+export function $new(tag: HtmlElementTag, id?: string, classes?: HtmlElementClass[], html?: Html): HTMLElement {
   const $elt = document.createElement(tag);
+  if (id) { $elt.setAttribute('id', id); }
   if (classes) {
-    for (const cls of classes) {
-      $elt.classList.add(cls);
-    }
+    for (const cls of classes) { $elt.classList.add(cls); }
   }
   if (html) { $elt.innerHTML = html; }
   return $elt;

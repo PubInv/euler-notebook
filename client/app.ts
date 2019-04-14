@@ -53,7 +53,7 @@ async function onDomReady(_event: Event){
     const notebookName = urlComponents[2];
     // TODO: get URL from window.location
     const wsUrl = `ws://localhost:3000/${userName}/${notebookName}`;
-    gNotebookConnection = await NotebookConnection.connect(wsUrl, userName, notebookName);
+    gNotebookConnection = await NotebookConnection.connect(wsUrl, userName, notebookName, $('#tDoc'));
 
   } catch (err) {
     showErrorMessage("Error initializing math tablet.", err);

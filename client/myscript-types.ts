@@ -1,7 +1,7 @@
 
 
-// NOTE: This is not a complete set of types for the MyScript library.
-//       Just the stuff that we use.
+// NOTE: This is not a complete set of types for the library.
+//       Just the stuff that we have used.
 // REVIEW: Should the be a .d.ts declaration file instead?
 
 // Requirements

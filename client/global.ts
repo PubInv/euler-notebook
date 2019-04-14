@@ -40,8 +40,8 @@ function onFixedHeaderClick(event: Event): void {
 // Helper functions
 
 function addMessageToHeader(type: HtmlElementClass, html: Html, autoDismiss?: boolean): void {
-  const $elt = $new('div', [type], html);
-  const $button = $new('button', ['close'], "&#x2715;");
+  const $elt = $new('div', undefined, [type], html);
+  const $button = $new('button', undefined, ['close'], "&#x2715;");
   $elt.appendChild($button);
   const $header = $('#fixedHeader');
   $header.appendChild($elt);
