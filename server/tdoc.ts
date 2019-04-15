@@ -181,12 +181,15 @@ export class TDoc extends EventEmitter {
       let th = this.insertThought();
 
       // REVIEW: I believe there should be a more elegant way to do this.
-      let newst = Object.create(styleType.prototype);
-      newst.type = type;
-      newst.data = text;
-      newst.meaning = 'INPUT';
-      newst.stylableId = th.id;
-      newst.id = this.nextId++;
+      let newst = Object.assign(
+        Object.create(styleType.prototype),
+        {
+          type = type;
+          data = text;
+          meaning = 'INPUT';
+          stylableId = th.id;
+          id = this.nextId++;
+        });
       return this.insertStyle(newst);
     });
     return this;
