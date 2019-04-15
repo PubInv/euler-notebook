@@ -1,16 +1,13 @@
 
+// Requirements
+
 import * as math from 'mathjs';
 
 import { LatexMath, MathJsText } from '../client/math-tablet-api';
 import { TDoc, Style, Thought }  from './tdoc';
+import { Cas } from './open-tdoc';
 
 // Types
-
-interface Cas {
-  onTDocOpened(tDoc: TDoc): Promise<void>;
-  onThoughtInserted(tDoc: TDoc, thought: Thought): Promise<void>;
-  onStyleInserted(tDoc: TDoc, style: Style): Promise<void>;
-}
 
 export interface ParseResults {
   latexMath: LatexMath;
@@ -18,6 +15,7 @@ export interface ParseResults {
 }
 
 // Exported Interface
+
 export const mathJsCas: Cas = {
   onTDocOpened,
   onThoughtInserted,

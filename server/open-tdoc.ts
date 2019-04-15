@@ -6,8 +6,20 @@ import * as WebSocket from 'ws';
 import { ClientMessage, UserName, NotebookName, ServerMessage } from '../client/math-tablet-api';
 
 import { mathJsCas, parseMathJsExpression, ParseResults } from './mathjs-cas';
+import { mathStepsCas } from './math-steps-cas';
+
 import { Style, TDoc, Thought } from './tdoc';
 import { readNotebook, writeNotebook } from './users-and-files';
+
+// Types
+
+export interface Cas {
+  onTDocOpened(tDoc: TDoc): Promise<void>;
+  onThoughtInserted(tDoc: TDoc, thought: Thought): Promise<void>;
+  onStyleInserted(tDoc: TDoc, style: Style): Promise<void>;
+}
+
+// Class
 
 export class OpenTDoc {
 
@@ -21,6 +33,7 @@ export class OpenTDoc {
       // TODO: Gracefully handle error if readNotebook throws error. (e.g. invalid version)
       const tDoc = await readNotebook(userName, notebookName);
       await mathJsCas.onTDocOpened(tDoc);
+      await mathStepsCas.onTDocOpened(tDoc);
       rval = new this(userName, notebookName, tDoc);
       this.openTDocs.set(key, rval);
     }
@@ -106,11 +119,13 @@ export class OpenTDoc {
   private async onStyleInserted(style: Style): Promise<void> {
     this.sendMessage({ action: 'insertStyle', style });
     await mathJsCas.onStyleInserted(this.tDoc, style);
+    await mathStepsCas.onStyleInserted(this.tDoc, style);
   }
 
   private async onThoughtInserted(thought: Thought): Promise<void> {
     this.sendMessage({ action: 'insertThought', thought });
     await mathJsCas.onThoughtInserted(this.tDoc, thought);
+    await mathStepsCas.onThoughtInserted(this.tDoc, thought);
   }
 
   // Private Instance Methods

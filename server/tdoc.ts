@@ -5,8 +5,7 @@
 
 import { EventEmitter } from 'events';
 
-import { Jiix, StrokeGroups } from '../client/myscript-types';
-import { LatexMath, MathJsText, StyleObject, StyleMeaning, StyleType, TDocObject, ThoughtObject } from '../client/math-tablet-api';
+import { Jiix, LatexMath, MathJsText, StrokeGroups, StyleObject, StyleMeaning, StyleType, TDocObject, ThoughtObject } from '../client/math-tablet-api';
 
 // Types
 

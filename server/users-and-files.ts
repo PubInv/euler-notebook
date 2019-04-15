@@ -5,8 +5,7 @@ import { readdir, readFile, stat, Stats, writeFile } from 'fs';
 import { join } from 'path';
 import { promisify } from 'util';
 
-import { UserName, NotebookName } from '../client/math-tablet-api';
-import { ServerKeys } from '../client/myscript-types';
+import { UserName, NotebookName, MyScriptServerKeys } from '../client/math-tablet-api';
 
 import { TDoc } from './tdoc';
 
@@ -20,7 +19,7 @@ const writeFile2 = promisify(writeFile);
 type NotebookFileName = string;
 
 export interface Credentials {
-  myscript: ServerKeys;
+  myscript: MyScriptServerKeys;
 }
 
 // An entry in a list of notebooks.

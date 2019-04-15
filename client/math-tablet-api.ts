@@ -1,8 +1,6 @@
 
 // Requirements
 
-import { Jiix, StrokeGroups } from "./myscript-types";
-
 // Types
 
 export type LatexMath = string;
@@ -24,6 +22,21 @@ export type StyleType =
   'STROKE'| // MyScript strokeGroups export from 'TEXT' editor.
   'TEXT';   // Plain text
 export type UserName = string;
+
+// MyScript Types
+
+export interface Jiix {
+
+}
+
+export interface MyScriptServerKeys {
+  applicationKey: string;
+  hmacKey: string;
+}
+
+export interface StrokeGroups {
+
+}
 
 // Plain object version of TDoc
 
