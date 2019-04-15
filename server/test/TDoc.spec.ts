@@ -191,10 +191,10 @@ describe('manipulate plain ascii styles', function() {
     const parser = math.parser()
 
     // evaluate expressions
-    console.log(parser.eval('sqrt(3^2 + 4^2)'));          // 5
-    console.log(parser.eval('sqrt(-4)'));                 // 2i
-    console.log(parser.eval('2 inch to cm'));             // 5.08 cm
-    console.log(parser.eval('cos(45 deg)'));              // 0.7071067811865476
+    assert.equal(parser.eval('sqrt(3^2 + 4^2)'),5);
+    assert.equal(parser.eval('sqrt(-4)'),"2i");
+    assert.equal(parser.eval('2 inch to cm'),"5.08 cm");
+    assert.equal(parser.eval('cos(45 deg)'),"0.7071067811865476");
 
   });
   it('we can operate on multiple expressions with mathjs parser', function() {
@@ -203,43 +203,37 @@ describe('manipulate plain ascii styles', function() {
 
     // semicolons return last!
     let semi = parser.eval('sqrt(3^2 + 4^2);sqrt(-4);4'); // 5, 2i
-    console.log("semicolons:", semi.entries[0]);
+
     assert.equal(semi.entries[0], 4);
 
     // commas fail!
     try {
-      let multiple = parser.eval('sqrt(3^2 + 4^2), sqrt(-4), 4');
-      console.log(multiple);
+      parser.eval('sqrt(3^2 + 4^2), sqrt(-4), 4');
       assert.fail();
     } catch {
       assert.ok(true);
     }
 
     // define variables and functions
-    console.log('\ndefine variables and functions')
-    console.log(parser.eval('x = 7 / 2')) // 3.5
-    console.log(parser.eval('x + 3')) // 6.5
-    console.log(parser.eval('f2(x, y) = x^y')) // f2(x, y)
-    console.log(parser.eval('f2(2, 3)')) // 8
-
-    assert.equal(parser.eval('f2(2, 3)'), 8);
-
+    assert.equal(parser.eval('x = 7 / 2'), 3.5); // 3.5
+    assert.equal(parser.eval('x + 3'), 6.5); // 6.5
+    // This does in fact produce a return value, but it is
+    // easier to test the result below...
+    parser.eval('f2(x, y) = x^y');
+    assert.equal(parser.eval('f2(2, 3)'),8); // 8
 
     // now let's try to leave some variables underdefined
     parser.clear();
     try {
-      console.log('BEGUN A');
-      console.log('Z = X + Y', parser.eval('z = x + y'));
-      console.log('FINISHED A');
+      parser.eval('z = x + y');
     } catch {
+      assert.ok(true);
     }
     try {
-      console.log('BEGUN B');
       console.log('Z = X + 4', parser.eval('z = x + 4'));
-      console.log('FINISHED B');
     } catch {
+      assert.ok(true);
     }
-    console.log('X = 4', parser.eval('x = 4'));
     try {
       console.log('Z', parser.eval('z'));
     } catch {
