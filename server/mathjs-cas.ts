@@ -135,7 +135,9 @@ export function mathSimplifyRule(tdoc: TDoc, style: Style): Style[] {
   try {
     simpler = math.simplify(style.data);
   } catch {
-    console.log("math.simplify failed on", style.data);
+    // This is useful for debugging, but it is not error to fail to
+    // be able to simplify something.
+    //    console.log("math.simplify failed on", style.data);
     return [];
   }
   if (!simpler) { return []; }
@@ -148,4 +150,3 @@ export function mathSimplifyRule(tdoc: TDoc, style: Style): Style[] {
   const s2 = tdoc.insertLatexStyle(s1, simpler.toTex(), 'PRETTY');
   return [ s1, s2 ];
 }
-

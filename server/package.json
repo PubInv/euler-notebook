@@ -48,7 +48,7 @@
   "author": "",
   "license": "ISC",
   "repository": {
-    "type" : "git",
-    "url" : "https://github.com/davidjeschke/math-tablet.git"
+    "type": "git",
+    "url": "https://github.com/davidjeschke/math-tablet.git"
   }
 }

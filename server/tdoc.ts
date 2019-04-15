@@ -67,6 +67,10 @@ export class TDoc extends EventEmitter {
 
   // Public Instance Methods
 
+  // NOTE: David and Rob suggested moving this out of this file.
+  // However, it is more general than someting to go int mathjs-cas.ts.
+  // Possibly it should be in its own class.  I intened to move
+  // it when I figure that out.
   // Applies each rule to each style of the TDoc
   // and returns an array of any new styles that were generated.
   public applyRules(rules: StyleRule[]): Style[] {
@@ -87,15 +91,9 @@ export class TDoc extends EventEmitter {
   // This can be asymptotically improved later.
   public stylableHasChildOfType(style: Style, tname: StyleType, meaning?: StyleMeaning): boolean {
     const id = style.id;
-    // ROB REVIEW: How about "return !!this.styles.find(s=>...)"
-    return this.styles.reduce(
-      function(hasOne: boolean, style: Style){
-        return hasOne ||
-          ((style.stylableId == id) &&
-           (style.type == tname) &&
-           (!meaning || style.meaning == meaning)
-          );
-      }, false);
+    return !!this.styles.find(s => s.stylableId == id &&
+                            s.type == tname &&
+                            (!meaning || s.meaning == meaning));
   }
 
   public insertJiixStyle(stylable: Stylable, data: Jiix, meaning: StyleMeaning): JiixStyle {
