@@ -114,7 +114,7 @@ export class TDoc extends EventEmitter {
     return this.insertStyle(new StrokeStyle(this.nextId++, stylable, data, meaning));
   }
 
-  public createTextStyle(stylable: Stylable, data: TextData, meaning: StyleMeaning): TextStyle {
+  public insertTextStyle(stylable: Stylable, data: TextData, meaning: StyleMeaning): TextStyle {
     return this.insertStyle(new TextStyle(this.nextId++, stylable, data, meaning));
   }
 
@@ -280,7 +280,7 @@ export abstract class Style {
 }
 
 class JiixStyle extends Style {
-  // Call tDoc.createJiixStyle instead of calling this constructor directly.
+  // Call tDoc.insertJiixStyle instead of calling this constructor directly.
   /* private */ constructor(id: StylableId, stylable: Stylable, data: Jiix, meaning: StyleMeaning) {
     super(id, stylable);
     this.type = 'JIIX';
@@ -295,7 +295,7 @@ class JiixStyle extends Style {
 }
 
 export class LatexStyle extends Style {
-  // Call tDoc.createLatexStyle instead of calling this constructor directly.
+  // Call tDoc.insertLatexStyle instead of calling this constructor directly.
   /* private */ constructor(id: StylableId, stylable: Stylable, data: LatexMath, meaning: StyleMeaning) {
     super(id, stylable);
     this.type = 'LATEX';
@@ -310,7 +310,7 @@ export class LatexStyle extends Style {
 }
 
 export class MathJsStyle extends Style {
-  // Call tDoc.createMathJsPlainStyle instead of calling this constructor directly.
+  // Call tDoc.insertMathJsPlainStyle instead of calling this constructor directly.
   /* private */ constructor(id: StylableId, stylable: Stylable, data: MathJsText, meaning: StyleMeaning) {
     super(id, stylable);
     this.type = 'MATHJS';
@@ -325,7 +325,7 @@ export class MathJsStyle extends Style {
 }
 
 class StrokeStyle extends Style {
-  // Call tDoc.createStrokeStyle instead of calling this constructor directly.
+  // Call tDoc.insertStrokeStyle instead of calling this constructor directly.
   /* private */ constructor(id: StylableId, stylable: Stylable, data: StrokeGroups, meaning: StyleMeaning) {
     super(id, stylable);
     this.type = 'STROKE';
@@ -340,7 +340,7 @@ class StrokeStyle extends Style {
 }
 
 class TextStyle extends Style {
-  // Call tDoc.createTextStyle instead of calling this constructor directly.
+  // Call tDoc.insertTextStyle instead of calling this constructor directly.
   /* private */ constructor(id: StylableId, stylable: Stylable, data: TextData, meaning: StyleMeaning) {
     super(id, stylable);
     this.type = 'TEXT';

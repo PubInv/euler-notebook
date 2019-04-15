@@ -32,7 +32,7 @@ describe('tdoc', function() {
     it('a thought can add and retrieve a style', function() {
       let td0 = TDoc.create();
       let th = td0.insertThought();
-      let st = td0.createTextStyle(th, "spud boy", 'INPUT');
+      let st = td0.insertTextStyle(th, "spud boy", 'INPUT');
       assert.equal(td0.getThoughts().length, 1);
       assert.equal(td0.getThoughts()[0].id, th.id);
       assert.equal(td0.getStyles().length, 1);
@@ -80,7 +80,7 @@ describe('utility computations', function() {
        let tdtc = TDocTextCompiler.create();
        let td = tdtc.createTDocFromText('TEXT', "x = 4; y = 5; x + y = 3");
        let s0 = td.getStyles()[0];
-       td.createTextStyle(s0, "this is a style on a style", 'EVALUATION');
+       td.insertTextStyle(s0, "this is a style on a style", 'EVALUATION');
        assert.ok(td.stylableHasChildOfType(s0, 'TEXT'));
        assert.ok(!td.stylableHasChildOfType(s0, 'LATEX'));
      });
