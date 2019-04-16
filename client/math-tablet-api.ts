@@ -13,6 +13,7 @@ export type StyleMeaning =
   'INPUT'|            // Primary representation of something that the user has input.
   'PRETTY' |          // A more visually-pleasing representation. e.g. LaTeX version of plain-text math.
   'SIMPLIFICATION' |  // CAS simplification of expression or equation.
+  'INDENTED'|// Indented text for the purpose of exposition.
   'SYMBOL';           // Symbols extracted from an expression.
 export type StyleType =
   // TYPE   // DATA
@@ -24,8 +25,8 @@ export type StyleType =
 export type StyleSource =
   'TESTSOURCE'| // An example source used only hour test system
   'USER'|       // Directly enterred by user
-  'MATHJS'|     // The Mathjs CAS system (DAVID -- What does CAS stand for?)
-  'MATHSTEP'|   // The Mathstep CAS system
+  'MATHJS'|     // The Mathjs Computer Algebra System system
+  'MATHSTEPS'|   // The Mathsteps CAS system
   undefined;   // This alows us to have an optional parameter type
 export type UserName = string;
 

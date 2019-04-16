@@ -5,6 +5,9 @@ import { mathEvaluateRule }  from '../mathjs-cas';
 import { applyCasRules }  from '../mathjs-cas';
 import { TDocTextCompiler } from '../tdoc-text-comp';
 import * as math from 'mathjs';
+import * as mathsteps from 'mathsteps';
+import { dumpEquationSteps }  from '../math-steps-cas';
+// import { MathStep }  from '../math-steps-cas';
 
 // import { expect } from 'chai';
 import { assert } from 'chai';
@@ -266,5 +269,17 @@ describe('manipulate plain ascii styles', function() {
       let evaluations = applyCasRules(td,[mathEvaluateRule]);
       assert.equal(evaluations[2].data, 9);
     }
+  });
+  describe('mathsteps is usable', function() {
+    it('we can simplify an expression', function() {
+      const s = "z = 3x + 3x";
+      const steps = mathsteps.solveEquation(s);
+      var equationStringStream = "";
+      dumpEquationSteps(((stepDescriptor: string) =>
+                        equationStringStream =
+                         equationStringStream + stepDescriptor),
+                        steps);
+      assert.ok(equationStringStream.includes("TO: z = 6x"));
+    });
   });
 });
