@@ -36,6 +36,12 @@ async function onThoughtInserted(_tDoc: TDoc, _thought: Thought): Promise<void> 
 
 async function onStyleInserted(tDoc: TDoc, style: Style): Promise<void> {
   // console.log(`MathJS onStyleInserted ${style.id} ${style.stylableId} ${style.type} ${style.meaning}`);
+  // NOTE: I think in the end it will be slightly better to execute
+  // applyCasRules against the entire TDoc here, to cover the chance
+  // that a new style support a simplication to other styles (a propagation
+  // via a cascade, if you will.) However, until that arises,
+  // we can do this simpler thing. --rlr
+
   mathExtractVariablesRule(tDoc, style);
   mathEvaluateRule(tDoc, style);
   mathSimplifyRule(tDoc, style);
