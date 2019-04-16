@@ -103,7 +103,7 @@ export function mathEvaluateRule(tdoc: TDoc, style: Style): Style[] {
   } catch (err) {
     console.log("error in eval", style.data, err.messsage);
     const firstLine = err.message;
-    let st = tdoc.insertTextStyle(style, firstLine, "EVALUATION-ERROR");
+    let st = tdoc.insertTextStyle(style, firstLine, "EVALUATION-ERROR", 'MATHJS');
     return [st];
   }
 
@@ -111,7 +111,7 @@ export function mathEvaluateRule(tdoc: TDoc, style: Style): Style[] {
 
   // REVIEW: Should we introduce a number style?
   let eString = ""+ e;
-  let st = tdoc.insertMathJsStyle(style, eString, "EVALUATION");
+  let st = tdoc.insertMathJsStyle(style, eString, "EVALUATION", 'MATHJS');
 
   return [st];
 }
@@ -127,7 +127,7 @@ export function mathExtractVariablesRule(tdoc: TDoc, style: Style): Style[] {
   if (!parse) return [];
 
   const symbolNodes = collectSymbols(parse);
-  const styles =  symbolNodes.map(s => tdoc.insertMathJsStyle(style, s, 'SYMBOL'));
+  const styles =  symbolNodes.map(s => tdoc.insertMathJsStyle(style, s, 'SYMBOL', 'MATHJS'));
   return styles;
 }
 
@@ -154,8 +154,8 @@ export function mathSimplifyRule(tdoc: TDoc, style: Style): Style[] {
   const simplerText = simpler.toString();
   if (simplerText == style.data) { return []; }
 
-  const s1 = tdoc.insertMathJsStyle(style, simplerText, 'SIMPLIFICATION');
-  const s2 = tdoc.insertLatexStyle(s1, simpler.toTex(), 'PRETTY');
+  const s1 = tdoc.insertMathJsStyle(style, simplerText, 'SIMPLIFICATION','MATHJS');
+  const s2 = tdoc.insertLatexStyle(s1, simpler.toTex(), 'PRETTY','MATHJS');
   return [ s1, s2 ];
 }
 

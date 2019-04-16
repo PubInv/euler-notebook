@@ -36,6 +36,17 @@ describe('tdoc', function() {
       assert.equal(td0.getStyles().length, 1);
       assert.equal(td0.getStyles()[0].id, st.id);
     });
+    it('a style with a source can be added', function() {
+      let td0 = TDoc.create();
+      let th = td0.insertThought();
+      let st = td0.insertTextStyle(th, "spud boy", 'INPUT','TESTSOURCE');
+      assert.equal(td0.getThoughts().length, 1);
+      assert.equal(td0.getThoughts()[0].id, th.id);
+      assert.equal(td0.getStyles().length, 1);
+      assert.equal(td0.getStyles()[0].id, st.id);
+      assert.equal(td0.getStyles()[0].source, 'TESTSOURCE');
+    });
+
   });
 });
 

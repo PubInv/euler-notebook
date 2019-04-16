@@ -21,6 +21,12 @@ export type StyleType =
   'MATHJS'| // MathJS plain text expression
   'STROKE'| // MyScript strokeGroups export from 'TEXT' editor.
   'TEXT';   // Plain text
+export type StyleSource =
+  'TESTSOURCE'| // An example source used only hour test system
+  'USER'|       // Directly enterred by user
+  'MATHJS'|     // The Mathjs CAS system (DAVID -- What does CAS stand for?)
+  'MATHSTEP'|   // The Mathstep CAS system
+  undefined;   // This alows us to have an optional parameter type
 export type UserName = string;
 
 // MyScript Types
@@ -109,6 +115,3 @@ interface InsertMathJsText {
   action: 'insertMathJsText';
   mathJsText: MathJsText;
 }
-
-
-

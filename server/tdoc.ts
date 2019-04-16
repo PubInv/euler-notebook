@@ -5,7 +5,7 @@
 
 import { EventEmitter } from 'events';
 
-import { Jiix, LatexMath, MathJsText, StrokeGroups, StyleObject, StyleMeaning, StyleType, TDocObject, ThoughtObject } from '../client/math-tablet-api';
+import { Jiix, LatexMath, MathJsText, StrokeGroups, StyleObject, StyleMeaning, StyleSource, StyleType, TDocObject, ThoughtObject } from '../client/math-tablet-api';
 
 // Types
 
@@ -75,24 +75,24 @@ export class TDoc extends EventEmitter {
                             (!meaning || s.meaning == meaning));
   }
 
-  public insertJiixStyle(stylable: Stylable, data: Jiix, meaning: StyleMeaning): JiixStyle {
-    return this.insertStyle(new JiixStyle(this.nextId++, stylable, data, meaning));
+  public insertJiixStyle(stylable: Stylable, data: Jiix, meaning: StyleMeaning, source?: StyleSource): JiixStyle {
+    return this.insertStyle(new JiixStyle(this.nextId++, stylable, data, meaning, source));
   }
 
-  public insertLatexStyle(stylable: Stylable, data: LatexMath, meaning: StyleMeaning): LatexStyle {
-    return this.insertStyle(new LatexStyle(this.nextId++, stylable, data, meaning));
+  public insertLatexStyle(stylable: Stylable, data: LatexMath, meaning: StyleMeaning, source?: StyleSource): LatexStyle {
+    return this.insertStyle(new LatexStyle(this.nextId++, stylable, data, meaning, source));
   }
 
-  public insertMathJsStyle(stylable: Stylable, data: MathJsText, meaning: StyleMeaning): MathJsStyle {
-    return this.insertStyle(new MathJsStyle(this.nextId++, stylable, data, meaning));
+  public insertMathJsStyle(stylable: Stylable, data: MathJsText, meaning: StyleMeaning, source?: StyleSource): MathJsStyle {
+    return this.insertStyle(new MathJsStyle(this.nextId++, stylable, data, meaning, source));
   }
 
-  public insertStrokeStyle(stylable: Stylable, data: StrokeGroups, meaning: StyleMeaning): StrokeStyle {
-    return this.insertStyle(new StrokeStyle(this.nextId++, stylable, data, meaning));
+  public insertStrokeStyle(stylable: Stylable, data: StrokeGroups, meaning: StyleMeaning, source?: StyleSource): StrokeStyle {
+    return this.insertStyle(new StrokeStyle(this.nextId++, stylable, data, meaning, source));
   }
 
-  public insertTextStyle(stylable: Stylable, data: TextData, meaning: StyleMeaning): TextStyle {
-    return this.insertStyle(new TextStyle(this.nextId++, stylable, data, meaning));
+  public insertTextStyle(stylable: Stylable, data: TextData, meaning: StyleMeaning, source?: StyleSource): TextStyle {
+    return this.insertStyle(new TextStyle(this.nextId++, stylable, data, meaning, source));
   }
 
   // ENUMERATION AND INTERROGATION
@@ -248,6 +248,7 @@ export abstract class Style {
   public abstract type: StyleType;
   public abstract data: any;
   public abstract meaning: StyleMeaning;
+  public abstract source?: StyleSource;
 
   // Instance Methods
 
@@ -260,77 +261,87 @@ export abstract class Style {
 
 class JiixStyle extends Style {
   // Call tDoc.insertJiixStyle instead of calling this constructor directly.
-  /* private */ constructor(id: StylableId, stylable: Stylable, data: Jiix, meaning: StyleMeaning) {
+  /* private */ constructor(id: StylableId, stylable: Stylable, data: Jiix, meaning: StyleMeaning, source: StyleSource) {
     super(id, stylable);
     this.type = 'JIIX';
     this.data = data;
     this.meaning = meaning;
+    this.source = source;
   }
 
   // Instance Properties
   type: 'JIIX';
   data: Jiix;
   meaning: StyleMeaning;
+  source: StyleSource;
 }
 
 export class LatexStyle extends Style {
   // Call tDoc.insertLatexStyle instead of calling this constructor directly.
-  /* private */ constructor(id: StylableId, stylable: Stylable, data: LatexMath, meaning: StyleMeaning) {
+  /* private */ constructor(id: StylableId, stylable: Stylable, data: LatexMath, meaning: StyleMeaning, source: StyleSource) {
     super(id, stylable);
     this.type = 'LATEX';
     this.data = data;
     this.meaning = meaning;
+    this.source = source;
   }
 
   // Instance Properties
   type: 'LATEX';
   data: LatexMath;
   meaning: StyleMeaning;
+  source: StyleSource;
 }
 
 export class MathJsStyle extends Style {
   // Call tDoc.insertMathJsPlainStyle instead of calling this constructor directly.
-  /* private */ constructor(id: StylableId, stylable: Stylable, data: MathJsText, meaning: StyleMeaning) {
+  /* private */ constructor(id: StylableId, stylable: Stylable, data: MathJsText, meaning: StyleMeaning, source: StyleSource) {
     super(id, stylable);
     this.type = 'MATHJS';
     this.data = data;
     this.meaning = meaning;
+    this.source = source;
   }
 
   // Instance Properties
   type: 'MATHJS';
   data: MathJsText;
   meaning: StyleMeaning;
+  source: StyleSource;
 }
 
 class StrokeStyle extends Style {
   // Call tDoc.insertStrokeStyle instead of calling this constructor directly.
-  /* private */ constructor(id: StylableId, stylable: Stylable, data: StrokeGroups, meaning: StyleMeaning) {
+  /* private */ constructor(id: StylableId, stylable: Stylable, data: StrokeGroups, meaning: StyleMeaning, source: StyleSource) {
     super(id, stylable);
     this.type = 'STROKE';
     this.data = data;
     this.meaning = meaning;
+    this.source = source;
   }
 
   // Instance Properties
   type: 'STROKE';
   data: StrokeGroups;
   meaning: StyleMeaning;
+  source: StyleSource;
 }
 
 class TextStyle extends Style {
   // Call tDoc.insertTextStyle instead of calling this constructor directly.
-  /* private */ constructor(id: StylableId, stylable: Stylable, data: TextData, meaning: StyleMeaning) {
+  /* private */ constructor(id: StylableId, stylable: Stylable, data: TextData, meaning: StyleMeaning, source: StyleSource) {
     super(id, stylable);
     this.type = 'TEXT';
     this.data = data;
     this.meaning = meaning;
+    this.source = source;
   }
 
   // Instance Properties
   type: 'TEXT';
   data: TextData;
   meaning: StyleMeaning;
+  source: StyleSource;
 }
 
 const STYLE_CLASSES /* : { [type: string]: } */ = {

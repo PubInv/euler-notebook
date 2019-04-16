@@ -80,15 +80,15 @@ export class OpenTDoc {
       switch(msg.action) {
       case 'insertHandwrittenMath': {
         const thought = this.tDoc.insertThought();
-        this.tDoc.insertLatexStyle(thought, msg.latexMath, 'INPUT');
-        this.tDoc.insertJiixStyle(thought, msg.jiix, 'HANDWRITING');
+        this.tDoc.insertLatexStyle(thought, msg.latexMath, 'INPUT', 'USER');
+        this.tDoc.insertJiixStyle(thought, msg.jiix, 'HANDWRITING', 'USER');
         this.save();
         break;
       }
       case 'insertHandwrittenText': {
         const thought = this.tDoc.insertThought();
-        this.tDoc.insertTextStyle(thought, msg.text, 'INPUT');
-        this.tDoc.insertStrokeStyle(thought, msg.strokeGroups, 'HANDWRITING');
+        this.tDoc.insertTextStyle(thought, msg.text, 'INPUT', 'USER');
+        this.tDoc.insertStrokeStyle(thought, msg.strokeGroups, 'HANDWRITING', 'USER');
         // TODO: enhance
         this.save();
         break;
@@ -102,8 +102,8 @@ export class OpenTDoc {
           break;
         }
         const thought = this.tDoc.insertThought();
-        const style = this.tDoc.insertMathJsStyle(thought, parseResults.mathJsText, 'INPUT');
-        this.tDoc.insertLatexStyle(style, parseResults.latexMath, 'PRETTY');
+        const style = this.tDoc.insertMathJsStyle(thought, parseResults.mathJsText, 'INPUT', 'USER');
+        this.tDoc.insertLatexStyle(style, parseResults.latexMath, 'PRETTY', 'USER');
         this.save();
         break;
       }

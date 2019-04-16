@@ -49,6 +49,8 @@ async function onStyleInserted(_tDoc: TDoc, style: Style): Promise<void> {
   dumpMathSteps(steps2);
 }
 
+// WARNING: Input "a = 3/27","b = 6/27", "c = a + b" appears
+// to cause an error here.
 function dumpMathSteps(steps: MathStep[], level: number = 0) {
   const indent = '  '.repeat(level);
   if (steps.length == 0) { console.log(`${indent}NO STEPS`); }
