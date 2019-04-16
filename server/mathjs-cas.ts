@@ -9,6 +9,8 @@ import { Cas } from './open-tdoc';
 
 // Types
 
+type StyleRule = (tdoc: TDoc, style: Style)=>Style[];
+
 export interface ParseResults {
   latexMath: LatexMath;
   mathJsText: MathJsText;
@@ -149,4 +151,27 @@ export function mathSimplifyRule(tdoc: TDoc, style: Style): Style[] {
   const s1 = tdoc.insertMathJsStyle(style, simplerText, 'SIMPLIFICATION');
   const s2 = tdoc.insertLatexStyle(s1, simpler.toTex(), 'PRETTY');
   return [ s1, s2 ];
+}
+
+
+// NOTE: David and Rob suggested moving this out of this file.
+// However, it is more general than someting to go int mathjs-cas.ts.
+// Possibly it should be in its own class.  I intened to move
+// it when I figure that out.
+// Applies each rule to each style of the TDoc
+// and returns an array of any new styles that were generated.
+export function applyCasRules(tdoc: TDoc, rules: StyleRule[]): Style[] {
+  let rval: Style[] = [];
+  // IMPORTANT: The rules may add new styles. So capture the current
+  //            length of the styles array, and only iterate over
+  //            the existing styles. Otherwise, we could get into
+  //            an infinite loop.
+  let origStyles = tdoc.getStyles().slice();
+  for (const style of origStyles) {
+    for (const rule of rules) {
+      const newStyles = rule(tdoc, style);
+      rval = rval.concat(newStyles);
+    }
+  }
+  return rval;
 }

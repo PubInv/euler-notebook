@@ -11,7 +11,7 @@ import { Jiix, LatexMath, MathJsText, StrokeGroups, StyleObject, StyleMeaning, S
 
 type Stylable = Thought|Style;
 type StylableId = number;
-type StyleRule = (tdoc: TDoc, style: Style)=>Style[];
+// type StyleRule = (tdoc: TDoc, style: Style)=>Style[];
 type TextData = string;
 
 // Constants
@@ -66,27 +66,6 @@ export class TDoc extends EventEmitter {
   public clientData: any;
 
   // Public Instance Methods
-
-  // NOTE: David and Rob suggested moving this out of this file.
-  // However, it is more general than someting to go int mathjs-cas.ts.
-  // Possibly it should be in its own class.  I intened to move
-  // it when I figure that out.
-  // Applies each rule to each style of the TDoc
-  // and returns an array of any new styles that were generated.
-  public applyRules(rules: StyleRule[]): Style[] {
-    let rval: Style[] = [];
-    // IMPORTANT: The rules may add new styles. So capture the current
-    //            length of the styles array, and only iterate over
-    //            the existing styles. Otherwise, we could get into
-    //            an infinite loop.
-    for (const style of this.styles) {
-      for (const rule of rules) {
-        const newStyles = rule(this, style);
-        rval = rval.concat(newStyles);
-      }
-    }
-    return rval;
-  }
 
   // This can be asymptotically improved later.
   public stylableHasChildOfType(style: Style, tname: StyleType, meaning?: StyleMeaning): boolean {
@@ -180,15 +159,14 @@ export class TDoc extends EventEmitter {
     ths.forEach(text => {
       let th = this.insertThought();
 
-      // REVIEW: I believe there should be a more elegant way to do this.
       let newst = Object.assign(
         Object.create(styleType.prototype),
         {
-          type = type;
-          data = text;
-          meaning = 'INPUT';
-          stylableId = th.id;
-          id = this.nextId++;
+          type: type,
+          data: text,
+          meaning: 'INPUT',
+          stylableId: th.id,
+          id: this.nextId++
         });
       return this.insertStyle(newst);
     });

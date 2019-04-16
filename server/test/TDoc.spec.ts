@@ -1,12 +1,10 @@
-// import { hello } from './hello-world';
 import { TDoc }  from '../tdoc';
 import { mathSimplifyRule }  from '../mathjs-cas';
 import { mathExtractVariablesRule }  from '../mathjs-cas';
 import { mathEvaluateRule }  from '../mathjs-cas';
+import { applyCasRules }  from '../mathjs-cas';
 import { TDocTextCompiler } from '../tdoc-text-comp';
 import * as math from 'mathjs';
-
-// import { TDocTextCompiler } from '../tdoc-text-comp';
 
 // import { expect } from 'chai';
 import { assert } from 'chai';
@@ -51,16 +49,18 @@ describe('tdoc', function() {
   });
 });
 
-// describe('renderer', function() {
-//   describe('jsonPrinter', function() {
-//     it('we can jsonPrint a tdoc', function() {
-//       let tdtc = TDocTextCompiler.create();
-//       assert(tdtc);
-//       let td = tdtc.createTDocFromText("x = 4; y = 5; x + y = 3");
-//       let jp = td.jsonPrinter();
-//       assert.ok(jp);
-//     });
-//   });
+describe('renderer', function() {
+  describe('jsonPrinter', function() {
+    it('we can jsonPrint a tdoc', function() {
+      let tdtc = TDocTextCompiler.create();
+      assert(tdtc);
+      let td = tdtc.createTDocFromText('TEXT',"x = 4; y = 5; x + y = 3");
+      let jp = td.jsonPrinter();
+      assert.ok(jp);
+    });
+  });
+});
+
 describe('tdoctextcompiler', function() {
      it('we can create a tdoc from a csv', function() {
        let tdtc = TDocTextCompiler.create();
@@ -69,11 +69,9 @@ describe('tdoctextcompiler', function() {
        let s0s = td.getStyles();
        assert.equal(td.numStyles('TEXT'), 3);
        assert.equal(s0s.length, 3);
-
        assert.ok(td);
      });
 });
-
 
 describe('utility computations', function() {
      it('we can create a tdoc from a csv (case 2)', function() {
@@ -86,7 +84,6 @@ describe('utility computations', function() {
      });
 });
 
-
 describe('style applier', function() {
   describe('math js rule', function() {
     it('we can add a style with a mathjs rule', function() {
@@ -95,7 +92,7 @@ describe('style applier', function() {
       let th = td0.insertThought();
       td0.insertMathJsStyle(th, "2+9", 'INPUT');
       td0.insertMathJsStyle(th, "4+5", 'INPUT');
-      let newStyles = td0.applyRules([mathSimplifyRule, mathExtractVariablesRule]);
+      let newStyles = applyCasRules(td0,[mathSimplifyRule, mathExtractVariablesRule]);
       assert.equal(newStyles.length, 4);
       assert.equal(td0.numStyles('MATHJS', 'INPUT'), 2);
       assert.equal(td0.numStyles('MATHJS', 'SIMPLIFICATION'), 2);
@@ -106,13 +103,13 @@ describe('style applier', function() {
       let th = td0.insertThought();
       td0.insertMathJsStyle(th, "2+9", 'INPUT');
       td0.insertMathJsStyle(th, "4+5", 'INPUT');
-      let firstStyles = td0.applyRules([mathSimplifyRule,
+      let firstStyles = applyCasRules(td0,[mathSimplifyRule,
                                         mathExtractVariablesRule]);
       assert.equal(firstStyles.length, 4);
       assert.equal(td0.numStyles('MATHJS', 'INPUT'), 2);
       assert.equal(td0.numStyles('MATHJS', 'SIMPLIFICATION'), 2);
 
-      let secondStyles = td0.applyRules([mathSimplifyRule,
+      let secondStyles = applyCasRules(td0,[mathSimplifyRule,
                                          mathExtractVariablesRule]);
       assert.equal(secondStyles.length, 0, "no new styles");
       assert.equal(td0.numStyles('MATHJS', 'SIMPLIFICATION'), 2);
@@ -126,7 +123,7 @@ describe('style applier', function() {
       td0.insertMathJsStyle(th0, "x = 2", 'INPUT');
       td0.insertMathJsStyle(th1, "y = 4", 'INPUT');
       td0.insertMathJsStyle(th2, "z = x + y", 'INPUT');
-      let newStyles = td0.applyRules(
+      let newStyles = applyCasRules(td0,
         [mathSimplifyRule,
          mathExtractVariablesRule]);
       assert.equal(newStyles.length, 5);
@@ -143,7 +140,7 @@ describe('variable extraction', function() {
     let th = td.insertThought();
     td.insertMathJsStyle(th, "x = 4", 'INPUT');
     td.insertMathJsStyle(th, "y = 5", 'INPUT');
-    let newStyles = td.applyRules([mathExtractVariablesRule]);
+    let newStyles = applyCasRules(td,[mathExtractVariablesRule]);
     assert.equal(newStyles.length, 2);
     assert.equal(td.numStyles('MATHJS', "SYMBOL"), 2);
   });
@@ -161,7 +158,7 @@ describe('variable extraction', function() {
     // at present, we will be extracting all of these symbols,
     // without regard to the face that some of theme should
     // be treated as the same.
-    let newStyles = td.applyRules([mathExtractVariablesRule]);
+    let newStyles = applyCasRules(td,[mathExtractVariablesRule]);
     assert.equal(newStyles.length, 5);
     assert.equal(td.numStyles('MATHJS', "SYMBOL"), 5);
     });
@@ -176,14 +173,14 @@ describe('manipulate plain ascii styles', function() {
     // Here we create new styles
     td.insertMathJsStyle(th0, "3x + 4x", 'INPUT');
     td.insertMathJsStyle(th1, "4 + 5", 'INPUT');
-    let newStyles = td.applyRules([ mathSimplifyRule ]);
+    let newStyles = applyCasRules(td,[ mathSimplifyRule ]);
     assert.equal(newStyles.length, 4);
   });
   it('the MathJsPlainStyle style simplifies 3 + 7', function() {
     let td0 = TDoc.create();
     let th0 = td0.insertThought();
     td0.insertMathJsStyle(th0, "3+7", 'INPUT');
-    let newStylesMathJs = td0.applyRules([mathSimplifyRule]);
+    let newStylesMathJs = applyCasRules(td0,[mathSimplifyRule]);
     assert.equal(newStylesMathJs.length, 2);
   });
   it('we can do basic things with mathjs parser', function() {
@@ -245,7 +242,7 @@ describe('manipulate plain ascii styles', function() {
     {
       let tdtc = TDocTextCompiler.create();
       let td = tdtc.createTDocFromText("MATHJS", "x = 4; y = 5; z = x + y");
-      let evaluations = td.applyRules([mathEvaluateRule]);
+      let evaluations = applyCasRules(td,[mathEvaluateRule]);
       assert.equal(evaluations[2].data, 9);
     }
   });
@@ -255,7 +252,7 @@ describe('manipulate plain ascii styles', function() {
       let tdtc = TDocTextCompiler.create();
       // NOTE THE ORDER HERE!!!
       let td = tdtc.createTDocFromText("MATHJS", "x = 4; z = x + y; y = 5");
-      let evaluations = td.applyRules([mathEvaluateRule]);
+      let evaluations = applyCasRules(td,[mathEvaluateRule]);
       assert.equal(evaluations[2].data, 9);
     }
   });
