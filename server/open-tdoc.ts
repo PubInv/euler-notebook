@@ -87,7 +87,7 @@ export class OpenTDoc {
       }
       case 'insertHandwrittenText': {
         const thought = this.tDoc.insertThought();
-        this.tDoc.createTextStyle(thought, msg.text, 'INPUT');
+        this.tDoc.insertTextStyle(thought, msg.text, 'INPUT');
         this.tDoc.insertStrokeStyle(thought, msg.strokeGroups, 'HANDWRITING');
         // TODO: enhance
         this.save();

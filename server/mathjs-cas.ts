@@ -103,7 +103,7 @@ export function mathEvaluateRule(tdoc: TDoc, style: Style): Style[] {
   } catch (err) {
     console.log("error in eval", style.data, err.messsage);
     const firstLine = err.message;
-    let st = tdoc.createTextStyle(style, firstLine, "EVALUATION-ERROR");
+    let st = tdoc.insertTextStyle(style, firstLine, "EVALUATION-ERROR");
     return [st];
   }
 
