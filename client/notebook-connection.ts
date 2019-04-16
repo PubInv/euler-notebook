@@ -148,7 +148,9 @@ function renderMathJsStyle(style: /* TYPESCRIPT: MathJsStyleObject */ StyleObjec
 }
 
 function renderTextStyle(style: /* TYPESCRIPT: TextStyleObject */ StyleObject): Html {
-  return `<div>${style.data}</div>`;
+  if (style.meaning == 'INDENTED') {
+    return `<pre>${style.data}</pre>`;
+  } else {
+    return `<div>${style.data}</div>`;
+  }
 }
-
-

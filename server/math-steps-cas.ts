@@ -51,7 +51,7 @@ async function onStyleInserted(tDoc: TDoc, style: Style): Promise<void> {
   const steps2 = mathsteps.solveEquation(style.data);
   let equationStringStream = "";
   dumpEquationSteps((step) => equationStringStream =
-                     equationStringStream + step,
+                     equationStringStream + step + "\n",
                     steps2);
   // should we return the new style here? I suppose not.
 //  const s1 =
