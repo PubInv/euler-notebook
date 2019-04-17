@@ -65,24 +65,28 @@ export interface StrokeGroups {
 
 // Plain object version of TDoc
 
+export type ThoughtId = number;
+export type StyleId = number;
+export type StylableId = ThoughtId|StyleId;
+
 // TYPESCRIPT: Separate out styles by datatype.
 export interface StyleObject {
-  id: number;
-  stylableId: number;
+  id: ThoughtId;
+  stylableId: StylableId;
   type: StyleType;
   meaning: StyleMeaning;
   data: any;
 }
 
 export interface TDocObject {
-  nextId: number;
+  nextId: StylableId;
   version: string;
   thoughts: ThoughtObject[];
   styles: StyleObject[];
 }
 
 export interface ThoughtObject {
-  id: number;
+  id: ThoughtId;
 }
 
 // Messages from the server

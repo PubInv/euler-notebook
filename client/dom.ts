@@ -32,8 +32,8 @@ export function $<T extends HTMLElement>(selector: CssSelector): T {
   return <T>$elt;
 }
 
-export function $new(tag: HtmlElementTag, id?: string, classes?: HtmlElementClass[], html?: Html): HTMLElement {
-  const $elt = document.createElement(tag);
+export function $new<T extends HTMLElement>(tag: HtmlElementTag, id?: string, classes?: HtmlElementClass[], html?: Html): T {
+  const $elt = <T>document.createElement(tag);
   if (id) { $elt.setAttribute('id', id); }
   if (classes) {
     for (const cls of classes) { $elt.classList.add(cls); }

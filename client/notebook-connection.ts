@@ -19,28 +19,13 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 // Requirements
 
-import { $new, Html, } from './dom.js';
-import { getKatex } from './katex-types.js';
 import { Jiix, StrokeGroups } from './myscript-types.js';
-import { ClientMessage, LatexMath, MathJsText, NotebookName, ServerMessage, StyleObject,
-         TDocObject, ThoughtObject, UserName } from './math-tablet-api.js';
+import { ClientMessage, LatexMath, MathJsText, NotebookName, ServerMessage, StyleId, StyleObject,
+         TDocObject, ThoughtId, ThoughtObject, UserName } from './math-tablet-api.js';
+import { ThoughtElement } from './thought-element.js';
+import { StyleElement } from './style-element.js';
 
 // Types
-
-type StyleRenderer = (s: StyleObject)=>Html;
-
-interface StyleRendererMap {
-  [ styleType: /* StyleType */ string ]: StyleRenderer;
-}
-
-// Constants
-
-const STYLE_RENDERERS: StyleRendererMap = {
-  'LATEX': renderLatexStyle,
-  'MATHJS': renderMathJsStyle,
-  'TEXT': renderTextStyle,
-};
-
 
 // Class
 
@@ -80,7 +65,9 @@ export class NotebookConnection {
   private constructor(userName: UserName, notebookName: NotebookName, $tDocElt: HTMLElement, ws: WebSocket) {
     this.userName = userName;
     this.notebookName = notebookName;
+    this.styleElements = new Map();
     this.$tDocElt = $tDocElt;
+    this.thoughtElements = new Map();
     this.ws = ws;
 
     ws.addEventListener('open', ()=>{ this.onOpen() });
@@ -90,6 +77,8 @@ export class NotebookConnection {
 
   // Private Instance Properties
 
+  private styleElements: Map<StyleId, StyleElement>;
+  private thoughtElements: Map<ThoughtId, ThoughtElement>;
   private ws: WebSocket;
 
   // Private Event Handlers
@@ -125,24 +114,30 @@ export class NotebookConnection {
 
   // Private Instance Methods
 
+  private clear(): void {
+    this.$tDocElt.innerHTML = '';
+    this.thoughtElements.clear();
+    this.styleElements.clear();
+  }
+
   private insertStyle(style: StyleObject): void {
-    let html: Html = `<div class="styleId">S-${style.id} ${style.type} ${style.meaning} => ${style.stylableId}</div>`;
-    const renderFn = STYLE_RENDERERS[style.type];
-    if (renderFn) { html += renderFn(style); }
-    const $elt = $new('div', `S${style.id}`, ['style'], html);
-    const selector = `#S${style.stylableId}`;
-    const $parentElt = this.$tDocElt.querySelector(selector);
-    if (!$parentElt) { throw new Error(`Style parent element '${selector}' not found.`); }
-    $parentElt.appendChild($elt);
+    let elt: ThoughtElement|StyleElement|undefined;
+    elt = this.thoughtElements.get(style.stylableId);
+    if (!elt) {
+      elt = this.styleElements.get(style.stylableId);
+    }
+    if (!elt) { throw new Error("Style attached to unknown thought or style."); }
+    const styleElt = elt.insertStyle(style);
+    this.styleElements.set(style.id, styleElt);
   }
 
   private insertThought(thought: ThoughtObject): void {
-    const $elt = $new('div', `S${thought.id}`, ['thought'], `<div class="thoughtId">T-${thought.id}</div>`);
-    this.$tDocElt.appendChild($elt);
+    const thoughtElt = ThoughtElement.insert(this.$tDocElt, thought);
+    this.thoughtElements.set(thought.id, thoughtElt);
   }
 
   private refreshNotebook(tDoc: TDocObject): void {
-    this.$tDocElt.innerHTML = '';
+    this.clear();
     const thoughts = tDoc.thoughts;
     for (const thought of thoughts) { this.insertThought(thought); }
     for (const style of tDoc.styles) { this.insertStyle(style); }
@@ -153,24 +148,4 @@ export class NotebookConnection {
     this.ws.send(json);
   }
 
-}
-
-// Helper Functions
-
-function renderLatexStyle(style: /* TYPESCRIPT: LatexMathStyleObject */ StyleObject): Html {
-  // TODO: Catch errors and display.
-  const latexHtml = getKatex().renderToString(style.data, { throwOnError: false });
-  return `<div>${latexHtml}</div>`
-}
-
-function renderMathJsStyle(style: /* TYPESCRIPT: MathJsStyleObject */ StyleObject): Html {
-  return `<div><tt>${style.data}</tt></div>`;
-}
-
-function renderTextStyle(style: /* TYPESCRIPT: TextStyleObject */ StyleObject): Html {
-  if (style.meaning == 'INDENTED') {
-    return `<pre>${style.data}</pre>`;
-  } else {
-    return `<div>${style.data}</div>`;
-  }
 }
