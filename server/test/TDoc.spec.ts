@@ -6,7 +6,7 @@ import { applyCasRules }  from '../mathjs-cas';
 import { TDocTextCompiler } from '../tdoc-text-comp';
 import * as math from 'mathjs';
 import * as mathsteps from 'mathsteps';
-import { dumpEquationSteps }  from '../math-steps-cas';
+import { dumpEquationSteps, dumpExpressionSteps }  from '../math-steps-cas';
 // import { MathStep }  from '../math-steps-cas';
 
 // import { expect } from 'chai';
@@ -271,7 +271,7 @@ describe('manipulate plain ascii styles', function() {
     }
   });
   describe('mathsteps is usable', function() {
-    it('we can simplify an expression', function() {
+    it('we can simplify an equation', function() {
       const s = "z = 3x + 3x";
       const steps = mathsteps.solveEquation(s);
       var equationStringStream = "";
@@ -280,6 +280,25 @@ describe('manipulate plain ascii styles', function() {
                          equationStringStream + stepDescriptor),
                         steps);
       assert.ok(equationStringStream.includes("TO: z = 6x"));
+    });
+    it('we can simplify an expression', function() {
+      const s = "3x + 4x";
+      const steps = mathsteps.simplifyExpression(s);
+      var expressionStringStream = "";
+      dumpExpressionSteps(((stepDescriptor: string) =>
+                        expressionStringStream =
+                         expressionStringStream + stepDescriptor),
+                          steps);
+      assert.ok(expressionStringStream.includes("TO: 7 x"));
+    });
+    it('we get only one simplications', function() {
+      const s = ["3x + 4x","z = 3x +4x"];
+      for (let x of s) {
+        const stepsExp = mathsteps.simplifyExpression(x);
+        const stepsEqu = mathsteps.solveEquation(x);
+        assert.ok(stepsExp.length == 0 || stepsEqu.length == 0);
+        assert.ok((stepsExp.length +  stepsEqu.length) > 0);
+      }
     });
   });
 });

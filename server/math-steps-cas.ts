@@ -42,64 +42,82 @@ async function onStyleInserted(tDoc: TDoc, style: Style): Promise<void> {
 
   // if (tDoc.stylableHasChildOfType(style, 'MATHJS', 'SIMPLIFICATION-STEPS')) { return; }
 
-  console.log("MATHSTEPS SIMPLIFY");
   const steps = mathsteps.simplifyExpression(style.data);
-  dumpExpressionSteps(steps);
+  let expressionStringStream = "";
+  dumpExpressionSteps((step) => expressionStringStream =
+                      expressionStringStream + step + "\n",
+                      steps);
 
-  console.log("MATHSTEPS SOLVE");
+  if (steps.length > 0) {
+    let expressionStringStream = "";
+    dumpExpressionSteps((step) => expressionStringStream =
+                      expressionStringStream + step + "\n",
+                      steps);
+
+    // should we return the new style here? I suppose not.
+    tDoc.insertTextStyle(style,expressionStringStream,
+                         'INDENTED',
+                         'MATHSTEPS');
+
+  }
   // @ts-ignore // TYPESCRIPT:
   const steps2 = mathsteps.solveEquation(style.data);
-  let equationStringStream = "";
-  dumpEquationSteps((step) => equationStringStream =
-                     equationStringStream + step + "\n",
-                    steps2);
-  // should we return the new style here? I suppose not.
-//  const s1 =
-  tDoc.insertTextStyle(style,equationStringStream,
-                       'INDENTED',
-                       'MATHSTEPS');
+  if (steps2.length > 0) {
+    let equationStringStream = "";
+    dumpEquationSteps((step) => equationStringStream =
+                      equationStringStream + step + "\n",
+                      steps2);
+
+    // should we return the new style here? I suppose not.
+    tDoc.insertTextStyle(style,equationStringStream,
+                         'INDENTED',
+                         'MATHSTEPS');
+  }
 }
 
 // WARNING: Input "a = 3/27","b = 6/27", "c = a + b" appears
 // to cause an error here.
-function dumpExpressionSteps(steps: MathStep[], level: number = 0) {
+export function dumpExpressionSteps(writer: (step: string) => void,
+                                    steps: MathStep[],
+                                    level: number = 0) {
   const indent = '  '.repeat(level);
-  if (steps.length == 0) { console.log(`${indent}NO STEPS`); }
+  if (steps.length == 0) {
+    writer(`${indent}NO STEPS`);
+  }
   for (const step of steps) {
-//    console.log("expression steps",step);
-    console.log(`${indent}${step.changeType}`);
+    writer(`${indent}${step.changeType}`);
     if (step.oldNode) {
-      console.log(`${indent}FROM: ${step.oldNode.toString()}`);
+      writer(`${indent}FROM: ${step.oldNode.toString()}`);
     }
     if (step.newNode) {
-      console.log(`${indent}  TO: ${step.newNode.toString()}`);
+      writer(`${indent}  TO: ${step.newNode.toString()}`);
     }
-    console.log();
-    if (step.substeps.length>0) { dumpExpressionSteps(step.substeps, level+1); }
+    if (step.substeps.length>0) {
+      dumpExpressionSteps(writer,step.substeps, level+1);
+    }
   }
 }
-export function dumpEquationSteps(writer: (step: string) => void, steps: MathStep[], level: number = 0) {
+export function dumpEquationSteps(writer: (step: string) => void,
+                                  steps: MathStep[],
+                                  level: number = 0) {
   const indent = '  '.repeat(level);
-  if (steps.length == 0) { console.log(`${indent}NO STEPS`); }
+  if (steps.length == 0) {
+    writer(`${indent}NO STEPS`);
+  }
   for (const step of steps) {
-//    console.log("Equational steps",step);
-    console.log(`${indent}${step.changeType}`);
     writer(`${indent}${step.changeType}`);
     // @ts-ignore // TYPESCRIPT:
     if (step.oldEquation) {
-    // @ts-ignore // TYPESCRIPT:
-      console.log(`${indent}FROM: ${step.oldEquation.ascii()}`);
     // @ts-ignore // TYPESCRIPT:
       writer(`${indent}FROM: ${step.oldEquation.ascii()}`);
     }
     // @ts-ignore // TYPESCRIPT:
     if (step.newEquation) {
     // @ts-ignore // TYPESCRIPT:
-      console.log(`${indent}  TO: ${step.newEquation.ascii()}`);
-    // @ts-ignore // TYPESCRIPT:
       writer(`${indent}  TO: ${step.newEquation.ascii()}`);
     }
-    console.log();
-    if (step.substeps.length>0) { dumpEquationSteps(writer,step.substeps, level+1); }
+    if (step.substeps.length>0) {
+      dumpEquationSteps(writer,step.substeps, level+1);
+    }
   }
 }
