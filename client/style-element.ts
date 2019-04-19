@@ -71,10 +71,10 @@ export class StyleElement {
   private constructor(style: StyleObject) {
     const id = `S${style.id}`;
     const classes = ['style'];
-    let html: Html = `S-${style.id} ${style.type} ${style.meaning} => ${style.stylableId}`;
+    let headerHtml: Html = `<div class="header">S-${style.id} ${style.type} ${style.meaning} => ${style.stylableId}</div>`;
     const renderFn = STYLE_RENDERERS[style.type];
-    if (renderFn) { html += renderFn(style); }
-    this.$elt = $new<HTMLDivElement>('div', id, classes, html);
+    const contentHtml = renderFn && renderFn(style);
+    this.$elt = $new<HTMLDivElement>('div', id, classes, headerHtml + contentHtml);
   }
 
   // Private Instance Properties

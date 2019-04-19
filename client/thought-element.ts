@@ -55,12 +55,13 @@ export class ThoughtElement {
     const id = `S${thought.id}`;
     const classes = ['thought'];
     const deleteButtonHtml: Html = `<button class="deleteThought">&#x2715;</button>`;
-    const html: Html = `${deleteButtonHtml}T-${thought.id}`;
+    const headerHtml: Html = `<div class="header">${deleteButtonHtml}T-${thought.id}</div>`
+    const html: Html = `${headerHtml}`;
     this.$elt = $new<HTMLDivElement>('div', id, classes, html);
   }
 
   // Private Instance Properties
-  
+
   private $elt: HTMLDivElement;
 
 }
