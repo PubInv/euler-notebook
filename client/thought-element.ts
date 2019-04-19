@@ -55,8 +55,8 @@ export class ThoughtElement {
     const id = `S${thought.id}`;
     const classes = ['thought'];
     const deleteButtonHtml: Html = `<button class="deleteThought">&#x2715;</button>`;
-    const headerHtml: Html = `<div class="header">${deleteButtonHtml}T-${thought.id}</div>`
-    const html: Html = `${headerHtml}`;
+    const headerHtml: Html = `<div class="header">T-${thought.id}</div>`
+    const html: Html = `${deleteButtonHtml}${headerHtml}`;
     this.$elt = $new<HTMLDivElement>('div', id, classes, html);
   }
 

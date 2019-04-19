@@ -31,7 +31,7 @@ export type StyleMeaning =
   'INPUT'|            // Primary representation of something that the user has input.
   'PRETTY' |          // A more visually-pleasing representation. e.g. LaTeX version of plain-text math.
   'SIMPLIFICATION' |  // CAS simplification of expression or equation.
-  'INDENTED'|// Indented text for the purpose of exposition.
+  'INDENTED'|         // Indented text for the purpose of exposition.
   'SYMBOL';           // Symbols extracted from an expression.
 export type StyleType =
   // TYPE   // DATA
@@ -41,11 +41,10 @@ export type StyleType =
   'STROKE'| // MyScript strokeGroups export from 'TEXT' editor.
   'TEXT';   // Plain text
 export type StyleSource =
-  'TESTSOURCE'| // An example source used only hour test system
+  'TEST'|       // An example source used only hour test system
   'USER'|       // Directly enterred by user
   'MATHJS'|     // The Mathjs Computer Algebra System system
-  'MATHSTEPS'|   // The Mathsteps CAS system
-  undefined;   // This alows us to have an optional parameter type
+  'MATHSTEPS'   // The Mathsteps CAS system
 export type UserName = string;
 
 // MyScript Types
@@ -71,11 +70,12 @@ export type StylableId = ThoughtId|StyleId;
 
 // TYPESCRIPT: Separate out styles by datatype.
 export interface StyleObject {
+  data: any;
   id: ThoughtId;
+  meaning: StyleMeaning;
+  source: StyleSource;
   stylableId: StylableId;
   type: StyleType;
-  meaning: StyleMeaning;
-  data: any;
 }
 
 export interface TDocObject {

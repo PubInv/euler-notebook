@@ -54,7 +54,7 @@ describe('tdoc', function() {
     it('a thought can add and retrieve a style', function() {
       let td0 = TDoc.create();
       let th = td0.insertThought();
-      let st = td0.insertTextStyle(th, "spud boy", 'INPUT');
+      let st = td0.insertTextStyle(th, "spud boy", 'INPUT', 'TEST');
       assert.equal(td0.getThoughts().length, 1);
       assert.equal(td0.getThoughts()[0].id, th.id);
       assert.equal(td0.getStyles().length, 1);
@@ -63,12 +63,12 @@ describe('tdoc', function() {
     it('a style with a source can be added', function() {
       let td0 = TDoc.create();
       let th = td0.insertThought();
-      let st = td0.insertTextStyle(th, "spud boy", 'INPUT','TESTSOURCE');
+      let st = td0.insertTextStyle(th, "spud boy", 'INPUT','TEST');
       assert.equal(td0.getThoughts().length, 1);
       assert.equal(td0.getThoughts()[0].id, th.id);
       assert.equal(td0.getStyles().length, 1);
       assert.equal(td0.getStyles()[0].id, st.id);
-      assert.equal(td0.getStyles()[0].source, 'TESTSOURCE');
+      assert.equal(td0.getStyles()[0].source, 'TEST');
     });
 
   });
@@ -113,7 +113,7 @@ describe('utility computations', function() {
        let tdtc = TDocTextCompiler.create();
        let td = tdtc.createTDocFromText('TEXT', "x = 4; y = 5; x + y = 3");
        let s0 = td.getStyles()[0];
-       td.insertTextStyle(s0, "this is a style on a style", 'EVALUATION');
+       td.insertTextStyle(s0, "this is a style on a style", 'EVALUATION', 'TEST');
        assert.ok(td.stylableHasChildOfType(s0, 'TEXT'));
        assert.ok(!td.stylableHasChildOfType(s0, 'LATEX'));
      });
@@ -125,8 +125,8 @@ describe('style applier', function() {
       // TODO: Simplify with the text compiler
       let td0 = TDoc.create();
       let th = td0.insertThought();
-      td0.insertMathJsStyle(th, "2+9", 'INPUT');
-      td0.insertMathJsStyle(th, "4+5", 'INPUT');
+      td0.insertMathJsStyle(th, "2+9", 'INPUT', 'TEST');
+      td0.insertMathJsStyle(th, "4+5", 'INPUT', 'TEST');
       let newStyles = applyCasRules(td0,[mathSimplifyRule, mathExtractVariablesRule]);
       assert.equal(newStyles.length, 4);
       assert.equal(td0.numStyles('MATHJS', 'INPUT'), 2);
@@ -136,8 +136,8 @@ describe('style applier', function() {
       // TODO: Simplify with the text compiler
       let td0 = TDoc.create();
       let th = td0.insertThought();
-      td0.insertMathJsStyle(th, "2+9", 'INPUT');
-      td0.insertMathJsStyle(th, "4+5", 'INPUT');
+      td0.insertMathJsStyle(th, "2+9", 'INPUT', 'TEST');
+      td0.insertMathJsStyle(th, "4+5", 'INPUT', 'TEST');
       let firstStyles = applyCasRules(td0,[mathSimplifyRule,
                                         mathExtractVariablesRule]);
       assert.equal(firstStyles.length, 4);
@@ -155,9 +155,9 @@ describe('style applier', function() {
       let th0 = td0.insertThought();
       let th1 = td0.insertThought();
       let th2 = td0.insertThought();
-      td0.insertMathJsStyle(th0, "x = 2", 'INPUT');
-      td0.insertMathJsStyle(th1, "y = 4", 'INPUT');
-      td0.insertMathJsStyle(th2, "z = x + y", 'INPUT');
+      td0.insertMathJsStyle(th0, "x = 2", 'INPUT', 'TEST');
+      td0.insertMathJsStyle(th1, "y = 4", 'INPUT', 'TEST');
+      td0.insertMathJsStyle(th2, "z = x + y", 'INPUT', 'TEST');
       let newStyles = applyCasRules(td0,
         [mathSimplifyRule,
          mathExtractVariablesRule]);
@@ -173,8 +173,8 @@ describe('variable extraction', function() {
   it('we can extract single variables', function() {
     let td = TDoc.create();
     let th = td.insertThought();
-    td.insertMathJsStyle(th, "x = 4", 'INPUT');
-    td.insertMathJsStyle(th, "y = 5", 'INPUT');
+    td.insertMathJsStyle(th, "x = 4", 'INPUT', 'TEST');
+    td.insertMathJsStyle(th, "y = 5", 'INPUT', 'TEST');
     let newStyles = applyCasRules(td,[mathExtractVariablesRule]);
     assert.equal(newStyles.length, 2);
     assert.equal(td.numStyles('MATHJS', "SYMBOL"), 2);
@@ -187,9 +187,9 @@ describe('variable extraction', function() {
     let th0 = td.insertThought();
     let th1 = td.insertThought();
     let th2 = td.insertThought();
-    td.insertMathJsStyle(th0, "x = 4", 'INPUT');
-    td.insertMathJsStyle(th1, "y = 5", 'INPUT');
-    td.insertMathJsStyle(th2, "z = x + y", 'INPUT');
+    td.insertMathJsStyle(th0, "x = 4", 'INPUT', 'TEST');
+    td.insertMathJsStyle(th1, "y = 5", 'INPUT', 'TEST');
+    td.insertMathJsStyle(th2, "z = x + y", 'INPUT', 'TEST');
     // at present, we will be extracting all of these symbols,
     // without regard to the face that some of theme should
     // be treated as the same.
@@ -206,15 +206,15 @@ describe('manipulate plain ascii styles', function() {
     let th0 = td.insertThought();
     let th1 = td.insertThought();
     // Here we create new styles
-    td.insertMathJsStyle(th0, "3x + 4x", 'INPUT');
-    td.insertMathJsStyle(th1, "4 + 5", 'INPUT');
+    td.insertMathJsStyle(th0, "3x + 4x", 'INPUT', 'TEST');
+    td.insertMathJsStyle(th1, "4 + 5", 'INPUT', 'TEST');
     let newStyles = applyCasRules(td,[ mathSimplifyRule ]);
     assert.equal(newStyles.length, 4);
   });
   it('the MathJsPlainStyle style simplifies 3 + 7', function() {
     let td0 = TDoc.create();
     let th0 = td0.insertThought();
-    td0.insertMathJsStyle(th0, "3+7", 'INPUT');
+    td0.insertMathJsStyle(th0, "3+7", 'INPUT', 'TEST');
     let newStylesMathJs = applyCasRules(td0,[mathSimplifyRule]);
     assert.equal(newStylesMathJs.length, 2);
   });

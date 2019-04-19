@@ -113,23 +113,23 @@ export class TDoc extends EventEmitter {
     //console.dir(this);
   }
 
-  public insertJiixStyle(stylable: Stylable, data: Jiix, meaning: StyleMeaning, source?: StyleSource): JiixStyle {
+  public insertJiixStyle(stylable: Stylable, data: Jiix, meaning: StyleMeaning, source: StyleSource): JiixStyle {
     return this.insertStyle(new JiixStyle(this.nextId++, stylable, data, meaning, source));
   }
 
-  public insertLatexStyle(stylable: Stylable, data: LatexMath, meaning: StyleMeaning, source?: StyleSource): LatexStyle {
+  public insertLatexStyle(stylable: Stylable, data: LatexMath, meaning: StyleMeaning, source: StyleSource): LatexStyle {
     return this.insertStyle(new LatexStyle(this.nextId++, stylable, data, meaning, source));
   }
 
-  public insertMathJsStyle(stylable: Stylable, data: MathJsText, meaning: StyleMeaning, source?: StyleSource): MathJsStyle {
+  public insertMathJsStyle(stylable: Stylable, data: MathJsText, meaning: StyleMeaning, source: StyleSource): MathJsStyle {
     return this.insertStyle(new MathJsStyle(this.nextId++, stylable, data, meaning, source));
   }
 
-  public insertStrokeStyle(stylable: Stylable, data: StrokeGroups, meaning: StyleMeaning, source?: StyleSource): StrokeStyle {
+  public insertStrokeStyle(stylable: Stylable, data: StrokeGroups, meaning: StyleMeaning, source: StyleSource): StrokeStyle {
     return this.insertStyle(new StrokeStyle(this.nextId++, stylable, data, meaning, source));
   }
 
-  public insertTextStyle(stylable: Stylable, data: TextData, meaning: StyleMeaning, source?: StyleSource): TextStyle {
+  public insertTextStyle(stylable: Stylable, data: TextData, meaning: StyleMeaning, source: StyleSource): TextStyle {
     return this.insertStyle(new TextStyle(this.nextId++, stylable, data, meaning, source));
   }
 
@@ -287,7 +287,7 @@ export abstract class Style {
   public abstract type: StyleType;
   public abstract data: any;
   public abstract meaning: StyleMeaning;
-  public abstract source?: StyleSource;
+  public abstract source: StyleSource;
 
   // Instance Methods
 

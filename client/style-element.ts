@@ -70,11 +70,14 @@ export class StyleElement {
 
   private constructor(style: StyleObject) {
     const id = `S${style.id}`;
-    const classes = ['style'];
-    let headerHtml: Html = `<div class="header">S-${style.id} ${style.type} ${style.meaning} => ${style.stylableId}</div>`;
+    const classes = ['style' ];
+    if (style.source) { classes.push(style.source); }
+    // const showButtonHtml: Html = `<button class="showStyle">&#x1F5E8;</button>`;
+    let headerHtml: Html = `<div class="header">S-${style.id} ${style.source} ${style.type} ${style.meaning} => ${style.stylableId}</div>`;
     const renderFn = STYLE_RENDERERS[style.type];
     const contentHtml = renderFn && renderFn(style);
-    this.$elt = $new<HTMLDivElement>('div', id, classes, headerHtml + contentHtml);
+    const html = /* ${showButtonHtml} */ `${headerHtml}${contentHtml}`;
+    this.$elt = $new<HTMLDivElement>('div', id, classes, html);
   }
 
   // Private Instance Properties
