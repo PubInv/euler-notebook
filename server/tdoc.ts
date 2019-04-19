@@ -21,7 +21,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 import { EventEmitter } from 'events';
 
-import { Jiix, LatexMath, MathJsText, StrokeGroups, StyleObject, StyleMeaning, StyleSource, StyleType, TDocObject, ThoughtObject } from '../client/math-tablet-api';
+import { Jiix, LatexMath, MathJsText, StrokeGroups, StyleObject, StyleMeaning, StyleSource, StyleType, TDocObject, ThoughtObject, ThoughtId, StyleId } from '../client/math-tablet-api';
 
 // Types
 
@@ -91,6 +91,28 @@ export class TDoc extends EventEmitter {
                             (!meaning || s.meaning == meaning));
   }
 
+  // IMPORTANT: Only deletes the specific style. Does not delete attached styles.
+  public deleteStyle(styleId: StyleId): void {
+    console.log(`Before deleting style ${styleId}:`);
+    //console.dir(this);
+    const index = this.styles.findIndex(s=>(s.id==styleId));
+    if (index<0) { throw new Error(`Deleting unknown style ${styleId}`); }
+    this.styles.splice(index, 1);
+    console.log(`After deleting style ${styleId}:`);
+    //console.dir(this);
+  }
+
+  // IMPORTANT: Only deletes the specific thought. Does not delete attached styles.
+  public deleteThought(thoughtId: ThoughtId): void {
+    console.log(`Before deleting thought ${thoughtId}:`);
+    //console.dir(this);
+    const index = this.thoughts.findIndex(t=>(t.id==thoughtId));
+    if (index<0) { throw new Error(`Deleting unknown thought ${thoughtId}`); }
+    this.thoughts.splice(index, 1);
+    console.log(`After deleting thought ${thoughtId}:`);
+    //console.dir(this);
+  }
+
   public insertJiixStyle(stylable: Stylable, data: Jiix, meaning: StyleMeaning, source?: StyleSource): JiixStyle {
     return this.insertStyle(new JiixStyle(this.nextId++, stylable, data, meaning, source));
   }
@@ -116,12 +138,14 @@ export class TDoc extends EventEmitter {
   // approaches here; I expect this to be constantly evolving.
   // In particular, dej has suggested accessing styles via
   // the thoughts they annotate; this seems like a good idea. -rlr
+
   public getThoughts(): Thought[] {
     return this.thoughts;
   }
 
-  public getStyles(): Style[] {
-    return this.styles;
+  public getStyles(stylableId?: StylableId): Style[] {
+    if (stylableId) { return this.styles.filter(s=>(s.stylableId==stylableId)); }
+    else { return this.styles; }
   }
 
   public insertThought(): Thought {
@@ -134,7 +158,6 @@ export class TDoc extends EventEmitter {
   public jsonPrinter(): string {
     return JSON.stringify(this,null,' ');
   }
-
 
   public numStyles(tname: StyleType, meaning?: StyleMeaning) : number {
     return this.styles.reduce(

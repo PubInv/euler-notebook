@@ -34,7 +34,6 @@ export class NotebookConnection {
   // Class Methods
 
   public static connect(url: string, userName: UserName, notebookName: NotebookName, $tDocElt: HTMLElement): NotebookConnection {
-
     const ws = new WebSocket(url);
     const notebookConnection = new NotebookConnection(userName, notebookName, $tDocElt, ws);
     return notebookConnection;
@@ -70,9 +69,10 @@ export class NotebookConnection {
     this.thoughtElements = new Map();
     this.ws = ws;
 
-    ws.addEventListener('open', ()=>{ this.onOpen() });
+    ws.addEventListener('open', ()=>{ this.onOpen(); });
     ws.addEventListener('message', (event: MessageEvent)=>this.onMessage(event));
 
+    $tDocElt.addEventListener('click', (event: MouseEvent)=>{ this.onClick(event); })
   }
 
   // Private Instance Properties
@@ -83,23 +83,34 @@ export class NotebookConnection {
 
   // Private Event Handlers
 
+  private onClick(event: MouseEvent): void {
+    const $target = <HTMLElement>event.target;
+    if (!$target) { throw new Error("TDoc click event has no target!"); }
+    if ($target.nodeName == 'BUTTON' && $target.classList.contains('deleteThought')) {
+      const $parent = $target.parentElement;
+      if (!$parent) { throw new Error("TDoc button has no parent!"); }
+      const thoughtId = parseInt($parent.id.slice(1));
+      this.sendMessage({ action: 'deleteThought', thoughtId });
+    }
+  }
+
   private onMessage(event: MessageEvent): void {
     try {
       const msg: ServerMessage = JSON.parse(event.data);
       console.log(`Received socket message: ${msg.action}`);
       // console.dir(msg);
       switch(msg.action) {
-      case 'deleteStyle': throw new Error("TODO: deleteStyle not implemented");
-      case 'deleteThought': throw new Error("TODO: deleteThought not implemented");
-      case 'insertThought': this.insertThought(msg.thought); break;
+      case 'deleteStyle': this.deleteStyle(msg.styleId); break;
+      case 'deleteThought': this.deleteThought(msg.thoughtId); break;
       case 'insertStyle': this.insertStyle(msg.style); break;
+      case 'insertThought': this.insertThought(msg.thought); break;
       case 'refreshNotebook': this.refreshNotebook(msg.tDoc); break;
       default:
         console.error(`Unexpected action '${(<any>msg).action}' in WebSocket message`);
         break;
       }
     } catch(err) {
-      console.error("Unexpected client error handling WebSocket message event.");
+      console.error("Unexpected client error handling `WebSocket message event.");
       console.dir(err);
     }
   }
@@ -118,6 +129,31 @@ export class NotebookConnection {
     this.$tDocElt.innerHTML = '';
     this.thoughtElements.clear();
     this.styleElements.clear();
+  }
+
+  private sendMessage(obj: ClientMessage): void {
+    const json = JSON.stringify(obj);
+    try {
+      this.ws.send(json);
+    } catch(err) {
+      console.error(`Error sending websocket message: ${this.ws.readyState} ${(<any>err).code} ${err.message}`)
+    }
+  }
+
+  // Server Message Handlers
+
+  private deleteStyle(styleId: StyleId): void {
+    const styleElt = this.styleElements.get(styleId);
+    if (!styleElt) { throw new Error("Delete style message for unknown style"); }
+    styleElt.delete();
+    this.styleElements.delete(styleId);
+  }
+
+  private deleteThought(thoughtId: ThoughtId): void {
+    const thoughtElt = this.thoughtElements.get(thoughtId);
+    if (!thoughtElt) { throw new Error("Delete thought message for unknown thought"); }
+    thoughtElt.delete();
+    this.thoughtElements.delete(thoughtId);
   }
 
   private insertStyle(style: StyleObject): void {
@@ -141,11 +177,6 @@ export class NotebookConnection {
     const thoughts = tDoc.thoughts;
     for (const thought of thoughts) { this.insertThought(thought); }
     for (const style of tDoc.styles) { this.insertStyle(style); }
-  }
-
-  private sendMessage(obj: ClientMessage): void {
-    const json = JSON.stringify(obj);
-    this.ws.send(json);
   }
 
 }

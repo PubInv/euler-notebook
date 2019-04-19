@@ -1,3 +1,21 @@
+/*
+Math Tablet
+Copyright (C) 2019 Public Invention
+https://pubinv.github.io/PubInv/
+
+This program is free software: you can redistribute it and/or modify
+it under the terms of the GNU Affero General Public License as published by
+the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU Affero General Public License for more details.
+
+You should have received a copy of the GNU Affero General Public License
+along with this program.  If not, see <http://www.gnu.org/licenses/>.
+*/
 
 // Requirements
 
@@ -36,6 +54,12 @@ export class StyleElement {
 
   // Instance Methods
 
+  delete(): void {
+    const $parent = this.$elt.parentElement;
+    if (!$parent) { throw new Error("Style element has no parent in delete."); }
+    $parent.removeChild(this.$elt);
+  }
+
   insertStyle(style: StyleObject): StyleElement {
     return StyleElement.insert(this.$elt, style);
   }
@@ -47,7 +71,7 @@ export class StyleElement {
   private constructor(style: StyleObject) {
     const id = `S${style.id}`;
     const classes = ['style'];
-    let html: Html = `<div class="styleId">S-${style.id} ${style.type} ${style.meaning} => ${style.stylableId}</div>`;
+    let html: Html = `S-${style.id} ${style.type} ${style.meaning} => ${style.stylableId}`;
     const renderFn = STYLE_RENDERERS[style.type];
     if (renderFn) { html += renderFn(style); }
     this.$elt = $new<HTMLDivElement>('div', id, classes, html);

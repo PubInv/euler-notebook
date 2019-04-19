@@ -92,7 +92,6 @@ function onEditorChanged(event: EditorChangedEvent) {
 }
 
 function onInsertButtonClicked(_event: Event) {
-
   try {
     switch(gInputMethod) {
     case 'Math': {

@@ -103,6 +103,7 @@ interface InsertStyle {
   style: StyleObject;
 }
 
+// Also a client message
 interface DeleteThought {
   action: 'deleteThought';
   thoughtId: number;
@@ -120,7 +121,7 @@ interface RefreshNotebook {
 
 // Messages from the client
 
-export type ClientMessage = InsertHandwrittenMath|InsertHandwrittenText|InsertMathJsText;
+export type ClientMessage = DeleteThought|InsertHandwrittenMath|InsertHandwrittenText|InsertMathJsText;
 
 interface InsertHandwrittenMath {
   action: 'insertHandwrittenMath';
