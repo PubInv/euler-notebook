@@ -79,7 +79,7 @@ export class TDoc extends EventEmitter {
   // To be used for providing dynamic TDoc scope. Any client may
   // attach data to this object, which is considered volatile (not part
   // of permanent state.
-  public clientData: any;
+  public _clientData: any;
 
   // Public Instance Methods
 
@@ -183,7 +183,7 @@ export class TDoc extends EventEmitter {
   public toJSON(): TDocObject {
     const obj = { ...this };
     for (const key in obj) {
-      if (key.startsWith('_')) { delete obj[key]; }
+      if (key.startsWith('_') || key == 'domain') { delete obj[key]; }
     }
     return <TDocObject><unknown>obj;
   }
@@ -225,7 +225,7 @@ export class TDoc extends EventEmitter {
     this.styles = [];
     this.thoughts = [];
     this.version = VERSION;
-    this.clientData = [];
+    this._clientData = [];
   }
 
   // Private Instance Properties

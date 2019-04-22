@@ -98,11 +98,11 @@ export function mathEvaluateRule(tdoc: TDoc, style: Style): Style[] {
   // probably be rethought.
 
   // I need to add clientData to the deserialization, I guess.
-  if (!tdoc.clientData) tdoc.clientData = {};
-  if (!tdoc.clientData.mathEvaluateRule) {
-    tdoc.clientData.mathEvaluateRule = math.parser();
+  if (!tdoc._clientData) tdoc._clientData = {};
+  if (!tdoc._clientData.mathEvaluateRule) {
+    tdoc._clientData.mathEvaluateRule = math.parser();
   }
-  const parser = tdoc.clientData.mathEvaluateRule;
+  const parser = tdoc._clientData.mathEvaluateRule;
 
   // We only evaluate MathJS expressions that are user input.
   if (style.type != 'MATHJS' || style.meaning != 'INPUT') {
