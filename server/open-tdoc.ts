@@ -213,7 +213,8 @@ export class OpenTDoc {
   }
 
   private sendRefresh(ws?: WebSocket): void {
-    const msg: ServerMessage = { action: 'refreshNotebook', tDoc: this.tDoc.toObject() };
+    // TODO: Instead, end empty 'refresh' message, followed by insert-thought and insert-style messages
+    const msg: ServerMessage = { action: 'refreshNotebook', tDoc: this.tDoc.toJSON() };
     this.sendMessage(msg, ws);
   }
 

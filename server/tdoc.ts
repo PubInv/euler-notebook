@@ -52,7 +52,7 @@ export class TDoc extends EventEmitter {
     return new this();
   }
 
-  public static fromJsonObject(obj: TDocObject): TDoc {
+  public static fromJSON(obj: TDocObject): TDoc {
     // Validate the object
     if (!obj.nextId) { throw new Error("Invalid TDoc object JSON."); }
     if (obj.version != VERSION) { throw new Error("TDoc in unexpected version."); }
@@ -180,10 +180,12 @@ export class TDoc extends EventEmitter {
     ;
   }
 
-  public toObject(): TDocObject {
-    // TYPESCRIPT: We are counting on the fact that a StyleObject that has
-    // been stringified and then parsed is a StyleObject.
-    return <any>this;
+  public toJSON(): TDocObject {
+    const obj = { ...this };
+    for (const key in obj) {
+      if (key.startsWith('_')) { delete obj[key]; }
+    }
+    return <TDocObject><unknown>obj;
   }
 
   // COMPILERS

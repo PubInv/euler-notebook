@@ -143,7 +143,6 @@ function onMathJsPlainInputInput(this: HTMLElement, _event: Event): void {
 
 function onMathJsPlainInputKeyup(this: HTMLElement, event: KeyboardEvent): void {
   try {
-    console.log("ENTER PRESSED!");
     if (event.keyCode == 13) { onInsertButtonClicked.call(this, event); }
   } catch(err) {
     showErrorMessage("Error on mathJsPlain keyup event.", err);

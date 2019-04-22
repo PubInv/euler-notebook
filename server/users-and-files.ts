@@ -139,7 +139,7 @@ export async function readNotebook(userName: UserName, notebookName: NotebookNam
   const filePath = join(homeDir(), USR_DIR, userName, fileName);
   const json = await readFile2(filePath, 'utf8');
   const obj = JSON.parse(json);
-  const tDoc = TDoc.fromJsonObject(obj);
+  const tDoc = TDoc.fromJSON(obj);
   return tDoc;
 }
 
