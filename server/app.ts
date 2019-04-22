@@ -28,6 +28,9 @@ import * as cookieParser from 'cookie-parser';
 import * as morgan from 'morgan';
 import { middleware as stylusMiddleware } from 'stylus';
 
+import { initialize as initializeMathJsCas } from './mathjs-cas';
+import { initialize as initializeMathStepsCas } from './math-steps-cas';
+
 import { router as apiRouter } from './routes/api';
 import { router as indexRouter } from './routes/index';
 import { initialize as initializeWebSockets } from './web-socket';
@@ -43,7 +46,12 @@ function normalizePort(val: string): string|number|boolean {
 
 // Application Entry Point
 
-function main() {
+async function main() {
+
+  await Promise.all([
+    initializeMathJsCas(),
+    initializeMathStepsCas(),
+  ]);
 
   const app: express.Express = express();
 
@@ -114,4 +122,7 @@ function main() {
   initializeWebSockets(server);
 }
 
-main();
+main().then(
+  ()=>{ console.log("Main promise resolved."); },
+  (err)=>{ console.error(`Error initializing app: ${err.message}`); },
+);

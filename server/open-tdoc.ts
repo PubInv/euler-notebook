@@ -23,19 +23,12 @@ import * as WebSocket from 'ws';
 
 import { ClientMessage, UserName, NotebookName, ServerMessage, ThoughtId, StyleId } from '../client/math-tablet-api';
 
-import { mathJsCas, parseMathJsExpression, ParseResults } from './mathjs-cas';
-import { mathStepsCas } from './math-steps-cas';
+import { parseMathJsExpression, ParseResults } from './mathjs-cas';
 
 import { Style, TDoc, Thought } from './tdoc';
 import { readNotebook, writeNotebook } from './users-and-files';
 
 // Types
-
-export interface Cas {
-  onTDocOpened(tDoc: TDoc): Promise<void>;
-  onThoughtInserted(tDoc: TDoc, thought: Thought): Promise<void>;
-  onStyleInserted(tDoc: TDoc, style: Style): Promise<void>;
-}
 
 // Class
 
@@ -50,8 +43,6 @@ export class OpenTDoc {
       // REVIEW: What if messages come in while we are reading the notebook?
       // TODO: Gracefully handle error if readNotebook throws error. (e.g. invalid version)
       const tDoc = await readNotebook(userName, notebookName);
-      await mathJsCas.onTDocOpened(tDoc);
-      await mathStepsCas.onTDocOpened(tDoc);
       rval = new this(userName, notebookName, tDoc);
       this.openTDocs.set(key, rval);
     }
@@ -71,11 +62,9 @@ export class OpenTDoc {
   // Also, notifies all clients to delete the style.
   // Does not save the TDoc!
   public deleteThought(thoughtId: ThoughtId): void {
-    console.log(`Deleting thought ${thoughtId}`);
 
     // Delete all of the styles attached to the thought.
     const styles = this.tDoc.getStyles(thoughtId);
-    console.log(`${styles.length} styles attached to thought ${thoughtId}`);
     for(const style of styles) {
       this.deleteStyle(style.id);
     }
@@ -186,14 +175,10 @@ export class OpenTDoc {
 
   private async onStyleInserted(style: Style): Promise<void> {
     this.sendMessage({ action: 'insertStyle', style });
-    await mathJsCas.onStyleInserted(this.tDoc, style);
-    await mathStepsCas.onStyleInserted(this.tDoc, style);
   }
 
   private async onThoughtInserted(thought: Thought): Promise<void> {
     this.sendMessage({ action: 'insertThought', thought });
-    await mathJsCas.onThoughtInserted(this.tDoc, thought);
-    await mathStepsCas.onThoughtInserted(this.tDoc, thought);
   }
 
   // Private Instance Methods

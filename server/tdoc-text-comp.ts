@@ -40,8 +40,8 @@ export class TDocTextCompiler {
   // take a set of comma-separated-values and
   // produce a tdoc full of thoughts; this is
   // useful mostly for testing.
-  public createTDocFromText(styleTypeName: string, text: string): TDoc {
-    let td0 =  TDoc.create();
+  public createTDocFromText(styleTypeName: string, text: string, name: string): TDoc {
+    let td0 =  TDoc.create(name);
     let td = td0.addFromText(styleTypeName, text);
     return td;
   }

@@ -155,7 +155,7 @@ async function newNotebook(userName: UserName, notebookName: NotebookName, messa
   } else if (await checkNotebookExists(userName, notebookName)) {
     messages.error.push(`A notebook named '${notebookName}' already exists.`);
   } else {
-    const tDoc = TDoc.create();
+    const tDoc = TDoc.create(notebookName);
     await writeNotebook(userName, notebookName, tDoc);
     // LATER: Redirect to notebook itself.
     messages.success.push(`Notebook '${notebookName}' created successfully.`);

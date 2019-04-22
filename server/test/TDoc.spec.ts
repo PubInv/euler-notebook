@@ -37,22 +37,22 @@ import 'mocha';
 describe('tdoc', function() {
   describe('tdoc Structure', function() {
     it('Can create a tdoc', function() {
-      let td = TDoc.create();
+      let td = TDoc.create('test');
       assert.ok(td);
     });
     it('tdocs have the same version', function() {
-      let td0 = TDoc.create();
-      let td1 = TDoc.create();
+      let td0 = TDoc.create('test');
+      let td1 = TDoc.create('test');
       assert.equal(td0.version, td1.version);
     });
     it('tdocs can add and retrieve a thought', function() {
-      let td0 = TDoc.create();
+      let td0 = TDoc.create('test');
       let th = td0.insertThought();
       assert.equal(td0.getThoughts().length, 1);
       assert.equal(td0.getThoughts()[0].id, th.id);
     });
     it('a thought can add and retrieve a style', function() {
-      let td0 = TDoc.create();
+      let td0 = TDoc.create('test');
       let th = td0.insertThought();
       let st = td0.insertTextStyle(th, "spud boy", 'INPUT', 'TEST');
       assert.equal(td0.getThoughts().length, 1);
@@ -61,7 +61,7 @@ describe('tdoc', function() {
       assert.equal(td0.getStyles()[0].id, st.id);
     });
     it('a style with a source can be added', function() {
-      let td0 = TDoc.create();
+      let td0 = TDoc.create('test');
       let th = td0.insertThought();
       let st = td0.insertTextStyle(th, "spud boy", 'INPUT','TEST');
       assert.equal(td0.getThoughts().length, 1);
@@ -77,7 +77,7 @@ describe('tdoc', function() {
 describe('tdoc', function() {
   describe('tdoc Structure', function() {
     it('we can generate a tdoc with a compiler', function() {
-      let td0 = TDoc.create();
+      let td0 = TDoc.create('test');
       let td = td0.addFromText('TEXT', "x = 4; y = 5; x + y = 3");
       assert.equal(td.getThoughts().length, 3);
     });
@@ -89,7 +89,7 @@ describe('renderer', function() {
     it('we can jsonPrint a tdoc', function() {
       let tdtc = TDocTextCompiler.create();
       assert(tdtc);
-      let td = tdtc.createTDocFromText('TEXT',"x = 4; y = 5; x + y = 3");
+      let td = tdtc.createTDocFromText('TEXT',"x = 4; y = 5; x + y = 3", 'test');
       let jp = td.jsonPrinter();
       assert.ok(jp);
     });
@@ -100,7 +100,7 @@ describe('tdoctextcompiler', function() {
      it('we can create a tdoc from a csv', function() {
        let tdtc = TDocTextCompiler.create();
        assert(tdtc);
-       let td = tdtc.createTDocFromText('TEXT', "x = 4; y = 5; x + y = 3");
+       let td = tdtc.createTDocFromText('TEXT', "x = 4; y = 5; x + y = 3", 'test');
        let s0s = td.getStyles();
        assert.equal(td.numStyles('TEXT'), 3);
        assert.equal(s0s.length, 3);
@@ -111,7 +111,7 @@ describe('tdoctextcompiler', function() {
 describe('utility computations', function() {
      it('we can create a tdoc from a csv (case 2)', function() {
        let tdtc = TDocTextCompiler.create();
-       let td = tdtc.createTDocFromText('TEXT', "x = 4; y = 5; x + y = 3");
+       let td = tdtc.createTDocFromText('TEXT', "x = 4; y = 5; x + y = 3", 'test');
        let s0 = td.getStyles()[0];
        td.insertTextStyle(s0, "this is a style on a style", 'EVALUATION', 'TEST');
        assert.ok(td.stylableHasChildOfType(s0, 'TEXT'));
@@ -123,7 +123,7 @@ describe('style applier', function() {
   describe('math js rule', function() {
     it('we can add a style with a mathjs rule', function() {
       // TODO: Simplify with the text compiler
-      let td0 = TDoc.create();
+      let td0 = TDoc.create('test');
       let th = td0.insertThought();
       td0.insertMathJsStyle(th, "2+9", 'INPUT', 'TEST');
       td0.insertMathJsStyle(th, "4+5", 'INPUT', 'TEST');
@@ -134,7 +134,7 @@ describe('style applier', function() {
     });
     it('simplifying is idempotent.', function() {
       // TODO: Simplify with the text compiler
-      let td0 = TDoc.create();
+      let td0 = TDoc.create('test');
       let th = td0.insertThought();
       td0.insertMathJsStyle(th, "2+9", 'INPUT', 'TEST');
       td0.insertMathJsStyle(th, "4+5", 'INPUT', 'TEST');
@@ -151,7 +151,7 @@ describe('style applier', function() {
     });
     it('we can do two rules', function() {
       // TODO: Simplify with the text compiler
-      let td0 = TDoc.create();
+      let td0 = TDoc.create('test');
       let th0 = td0.insertThought();
       let th1 = td0.insertThought();
       let th2 = td0.insertThought();
@@ -171,7 +171,7 @@ describe('style applier', function() {
 
 describe('variable extraction', function() {
   it('we can extract single variables', function() {
-    let td = TDoc.create();
+    let td = TDoc.create('test');
     let th = td.insertThought();
     td.insertMathJsStyle(th, "x = 4", 'INPUT', 'TEST');
     td.insertMathJsStyle(th, "y = 5", 'INPUT', 'TEST');
@@ -183,7 +183,7 @@ describe('variable extraction', function() {
 
 describe('variable extraction', function() {
   it('we extract multiple variables', function() {
-        let td = TDoc.create();
+        let td = TDoc.create('test');
     let th0 = td.insertThought();
     let th1 = td.insertThought();
     let th2 = td.insertThought();
@@ -202,7 +202,7 @@ describe('variable extraction', function() {
 describe('manipulate plain ascii styles', function() {
   // This is just to exercise the style createMathJsPlain
   it('we can create and simplify plain ascii styles', function() {
-    let td = TDoc.create();
+    let td = TDoc.create('test');
     let th0 = td.insertThought();
     let th1 = td.insertThought();
     // Here we create new styles
@@ -212,7 +212,7 @@ describe('manipulate plain ascii styles', function() {
     assert.equal(newStyles.length, 4);
   });
   it('the MathJsPlainStyle style simplifies 3 + 7', function() {
-    let td0 = TDoc.create();
+    let td0 = TDoc.create('test');
     let th0 = td0.insertThought();
     td0.insertMathJsStyle(th0, "3+7", 'INPUT', 'TEST');
     let newStylesMathJs = applyCasRules(td0,[mathSimplifyRule]);
@@ -276,7 +276,7 @@ describe('manipulate plain ascii styles', function() {
   it('we can meaningly perform an evaluation against an entire tdoc', function() {
     {
       let tdtc = TDocTextCompiler.create();
-      let td = tdtc.createTDocFromText("MATHJS", "x = 4; y = 5; z = x + y");
+      let td = tdtc.createTDocFromText("MATHJS", "x = 4; y = 5; z = x + y", 'test');
       let evaluations = applyCasRules(td,[mathEvaluateRule]);
       assert.equal(evaluations[2].data, 9);
     }
@@ -286,7 +286,7 @@ describe('manipulate plain ascii styles', function() {
     {
       let tdtc = TDocTextCompiler.create();
       // NOTE THE ORDER HERE!!!
-      let td = tdtc.createTDocFromText("MATHJS", "x = 4; z = x + y; y = 5");
+      let td = tdtc.createTDocFromText("MATHJS", "x = 4; z = x + y; y = 5", 'test');
       let evaluations = applyCasRules(td,[mathEvaluateRule]);
       assert.equal(evaluations[2].data, 9);
     }

@@ -22,8 +22,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 import * as mathsteps from 'mathsteps';
 import * as math from 'mathjs';
 
-import { TDoc, Style, Thought }  from './tdoc';
-import { Cas } from './open-tdoc';
+import { Change as TDocChange, TDoc, Style }  from './tdoc';
 
 // Types
 
@@ -36,21 +35,31 @@ export interface MathStep {
   substeps: MathStep[];
 }
 
-// Exported Interface
+// Exported Functions
 
-export const mathStepsCas: Cas = {
-  onTDocOpened,
-  onThoughtInserted,
-  onStyleInserted,
+export async function initialize(): Promise<void> {
+  TDoc.on('open', (tDoc: TDoc)=>{
+    tDoc.on('change', function(this: TDoc, change: TDocChange){ onChange(this, change); });
+    // tDoc.on('close', function(this: TDoc){ onClose(this); });
+    // onOpen(tDoc);
+  });
 }
 
-async function onTDocOpened(_tDoc: TDoc): Promise<void> {
-  // console.log("MathSteps onTDocOpened");
+// Event Handler Functions
+
+function onChange(tDoc: TDoc, change: TDocChange): void {
+  switch (change.type) {
+  case 'styleInserted':
+    console.log(`MathSteps tDoc ${tDoc._name}/${change.type} change: `);
+    onStyleInserted(tDoc, change.style);
+    break;
+  default:
+    console.log(`MathSteps tDoc ignored change: ${tDoc._name} ${(<any>change).type}`);
+    break;
+  }
 }
 
-async function onThoughtInserted(_tDoc: TDoc, _thought: Thought): Promise<void> {
-  // console.log(`MathSteps onThoughtInserted ${thought.id}`);
-}
+// Helper Functions
 
 async function onStyleInserted(tDoc: TDoc, style: Style): Promise<void> {
   // console.log(`MathStep onStyleInserted ${style.id} ${style.stylableId} ${style.type} ${style.meaning}`);

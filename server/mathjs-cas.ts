@@ -22,8 +22,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 import * as math from 'mathjs';
 
 import { LatexMath, MathJsText } from '../client/math-tablet-api';
-import { TDoc, Style, Thought }  from './tdoc';
-import { Cas } from './open-tdoc';
+import { Change as TDocChange, TDoc, Style }  from './tdoc';
 
 // Types
 
@@ -34,40 +33,35 @@ export interface ParseResults {
   mathJsText: MathJsText;
 }
 
-// Exported Interface
+// Exported Functions
 
-export const mathJsCas: Cas = {
-  onTDocOpened,
-  onThoughtInserted,
-  onStyleInserted,
-}
-
-// "Exported" Functions
-
-async function onTDocOpened(_tDoc: TDoc): Promise<void> {
-  // console.log("MathJS onTDocOpened");
-}
-
-async function onThoughtInserted(_tDoc: TDoc, _thought: Thought): Promise<void> {
-  // console.log(`MathJS onThoughtInserted ${thought.id}`);
-}
-
-async function onStyleInserted(tDoc: TDoc, style: Style): Promise<void> {
-  // console.log(`MathJS onStyleInserted ${style.id} ${style.stylableId} ${style.type} ${style.meaning}`);
-  // NOTE: I think in the end it will be slightly better to execute
-  // applyCasRules against the entire TDoc here, to cover the chance
-  // that a new style support a simplication to other styles (a propagation
-  // via a cascade, if you will.) However, until that arises,
-  // we can do this simpler thing. --rlr
-
-  mathExtractVariablesRule(tDoc, style);
-  mathEvaluateRule(tDoc, style);
-  mathSimplifyRule(tDoc, style);
+export async function initialize(): Promise<void> {
+  TDoc.on('open', (tDoc: TDoc)=>{
+    tDoc.on('change', function(this: TDoc, change: TDocChange){ onChange(this, change); });
+    // tDoc.on('close', function(this: TDoc){ onClose(this); });
+    // onOpen(tDoc);
+  });
 }
 
 export function parseMathJsExpression(s: string): ParseResults {
   const node = math.parse(s);
   return { mathJsText: node.toString(), latexMath: node.toTex() };
+}
+
+// Event Handler Functions
+
+function onChange(tDoc: TDoc, change: TDocChange): void {
+  switch (change.type) {
+  case 'styleInserted':
+    console.log(`MathJs tDoc ${tDoc._name}/${change.type} change: `);
+    mathExtractVariablesRule(tDoc, change.style);
+    mathEvaluateRule(tDoc, change.style);
+    mathSimplifyRule(tDoc, change.style);
+      break;
+  default:
+    console.log(`MathJs tDoc ignored change: ${tDoc._name} ${(<any>change).type}`);
+    break;
+  }
 }
 
 // Helper Functions
