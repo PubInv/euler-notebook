@@ -28,6 +28,7 @@ import * as cookieParser from 'cookie-parser';
 import * as morgan from 'morgan';
 import { middleware as stylusMiddleware } from 'stylus';
 
+import { initialize as initializeMathematicaCas } from './mathematica-cas';
 import { initialize as initializeMathJsCas } from './mathjs-cas';
 import { initialize as initializeMathStepsCas } from './math-steps-cas';
 
@@ -49,6 +50,7 @@ function normalizePort(val: string): string|number|boolean {
 async function main() {
 
   await Promise.all([
+    initializeMathematicaCas(),
     initializeMathJsCas(),
     initializeMathStepsCas(),
   ]);
