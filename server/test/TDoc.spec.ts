@@ -282,6 +282,10 @@ describe('manipulate plain ascii styles', function() {
     }
   });
 
+  // REVIEW: Not sure how this test ever worked. We always pass expressions to MathJS in the order
+  // they are inserted. In this example, the "x=4" evaluates to "4", "z = x+y" evaluates to
+  // "y is undefined", and "y=5" evaluates to "5". So the assertion should be evaluations[2].data == 5.
+  // And we cannot meaningfully ignore order with out current MathJS implementation. -- DJ
   it.skip('we can meaningly perform an entire tdoc without any special order!', function() {
     {
       let tdtc = TDocTextCompiler.create();
@@ -291,6 +295,7 @@ describe('manipulate plain ascii styles', function() {
       assert.equal(evaluations[2].data, 9);
     }
   });
+
   describe('mathsteps is usable', function() {
     it('we can simplify an equation', function() {
       const s = "z = 3x + 3x";

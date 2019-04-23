@@ -112,13 +112,7 @@ export class TDoc extends EventEmitter {
   // Public Instance Properties
 
   public version: string;
-
   public nextId: StylableId;
-
-  // To be used for providing dynamic TDoc scope. Any client may
-  // attach data to this object, which is considered volatile (not part
-  // of permanent state.
-  public _clientData: any;
   public _name: string;
 
   // Public Instance Property Functions
@@ -278,7 +272,6 @@ export class TDoc extends EventEmitter {
     this.styles = [];
     this.thoughts = [];
     this.version = VERSION;
-    this._clientData = [];
     this._name = name;
   }
 
