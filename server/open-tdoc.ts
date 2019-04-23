@@ -21,11 +21,11 @@ import * as WebSocket from 'ws';
 
 // TODO: Handle websocket lifecycle: closing, unexpected disconnects, errors, etc.
 
-import { ClientMessage, UserName, NotebookName, ServerMessage, ThoughtId, StyleId } from '../client/math-tablet-api';
+import { ClientMessage, UserName, NotebookName, ServerMessage } from '../client/math-tablet-api';
 
 import { parseMathJsExpression, ParseResults } from './mathjs-cas';
 
-import { Style, TDoc, Thought } from './tdoc';
+import { TDoc, Change as TDocChange } from './tdoc';
 import { readNotebook, writeNotebook } from './users-and-files';
 
 // Types
@@ -58,40 +58,6 @@ export class OpenTDoc {
 
   // Instance Methods
 
-  // Deletes the specified style and any styles attached to it recursively.
-  // Also, notifies all clients to delete the style.
-  // Does not save the TDoc!
-  public deleteThought(thoughtId: ThoughtId): void {
-
-    // Delete all of the styles attached to the thought.
-    const styles = this.tDoc.getStyles(thoughtId);
-    for(const style of styles) {
-      this.deleteStyle(style.id);
-    }
-
-    // Delete the thought itself.
-    this.tDoc.deleteThought(thoughtId);
-    this.sendMessage({ action: 'deleteThought', thoughtId });
-  }
-
-  // Deletes the specified style and any styles attached to it recursively.
-  // Also, notifies all clients to delete the style.
-  // Does not save the TDoc!
-  public deleteStyle(styleId: StyleId): void {
-    console.log(`Deleting style ${styleId}`);
-
-    // Delete all of the styles attached to the style.
-    const styles = this.tDoc.getStyles(styleId);
-    console.log(`${styles.length} styles attached to thought ${styleId}`);
-    for(const style of styles) {
-      this.deleteStyle(style.id);
-    }
-
-    // Delete the style itself.
-    this.tDoc.deleteStyle(styleId);
-    this.sendMessage({ action: 'deleteStyle', styleId });
-  }
-
   // PRIVATE
 
   // Private Class Properties
@@ -105,8 +71,14 @@ export class OpenTDoc {
     this.userName = userName;
     this.webSockets = new Set<WebSocket>();
 
-    tDoc.on('styleInserted', s=>this.onStyleInserted(s));
-    tDoc.on('thoughtInserted', t=>this.onThoughtInserted(t));
+    // IMPORTANT: We prepend the 'change' listener because we need to send
+    // style and thought insert messsage to the client in the order the
+    // styles and thoughts are created.
+    // Because CAS modules can synchronously create new thoughts and styles
+    // in response to 'change' events, if we are not first on the list of listeners,
+    // we may get the events out of creation order.
+    tDoc.prependListener('change', d=>this.onTDocChange(d));
+    tDoc.on('close', ()=>this.onTDocClose());
   }
 
   // Private Instance Properties
@@ -114,25 +86,47 @@ export class OpenTDoc {
 
   // Private Event Handlers
 
-  private onClose(ws: WebSocket, code: number, reason: string): void {
+  private onTDocChange(change: TDocChange): void {
+    // REVIEW: We could just have a single 'changeTDoc' action.
+    switch (change.type) {
+    case 'styleDeleted':
+      this.sendMessage({ action: 'deleteStyle', styleId: change.styleId });
+      break;
+    case 'styleInserted':
+      this.sendMessage({ action: 'insertStyle', style: change.style.toJSON() });
+      break;
+    case 'thoughtDeleted':
+      this.sendMessage({ action: 'deleteThought', thoughtId: change.thoughtId });
+      break;
+    case 'thoughtInserted':
+      this.sendMessage({ action: 'insertThought', thought: change.thought.toJSON() });
+      break;
+    }
+  }
+
+  private onTDocClose(): void {
+    // TODO!
+  }
+
+  private onWsClose(ws: WebSocket, code: number, reason: string): void {
     // Normal close appears to be code 1001, reason empty string.
     console.log(`Web socket closed: ${code} - ${reason}`);
     this.webSockets.delete(ws);
+    // TODO: If the number of webSockets drops to zero then set a timer a close ourself.
   }
 
-  private onError(_ws: WebSocket, err: Error): void {
+  private onWsError(_ws: WebSocket, err: Error): void {
     console.error(`Web socket error: ${(<any>err).code} ${err.message}`);
     // REVIEW: is the error recoverable? is the websocket closed? will we get a closed event?
   }
 
-  private async onMessage(_ws: WebSocket, message: string) {
+  private async onWsMessage(_ws: WebSocket, message: string) {
     try {
       const msg: ClientMessage = JSON.parse(message);
       console.log(`Received socket message: ${msg.action}`);
-      // console.dir(msg);
       switch(msg.action) {
       case 'deleteThought': {
-        this.deleteThought(msg.thoughtId);
+        this.tDoc.deleteThought(msg.thoughtId);
         await this.save();
         break;
       }
@@ -140,7 +134,7 @@ export class OpenTDoc {
         const thought = this.tDoc.insertThought();
         this.tDoc.insertLatexStyle(thought, msg.latexMath, 'INPUT', 'USER');
         this.tDoc.insertJiixStyle(thought, msg.jiix, 'HANDWRITING', 'USER');
-        this.save();
+        await this.save();
         break;
       }
       case 'insertHandwrittenText': {
@@ -173,21 +167,13 @@ export class OpenTDoc {
     }
   }
 
-  private async onStyleInserted(style: Style): Promise<void> {
-    this.sendMessage({ action: 'insertStyle', style });
-  }
-
-  private async onThoughtInserted(thought: Thought): Promise<void> {
-    this.sendMessage({ action: 'insertThought', thought });
-  }
-
   // Private Instance Methods
 
   private addSocket(ws: WebSocket): void {
     this.webSockets.add(ws);
-    ws.on('close', (code: number, reason: string) => this.onClose(ws, code, reason))
-    ws.on('error', (err: Error) => this.onError(ws, err))
-    ws.on('message', (message: string) => this.onMessage(ws, message));
+    ws.on('close', (code: number, reason: string) => this.onWsClose(ws, code, reason))
+    ws.on('error', (err: Error) => this.onWsError(ws, err))
+    ws.on('message', (message: string) => this.onWsMessage(ws, message));
     this.sendRefresh(ws);
   }
 
@@ -216,7 +202,5 @@ export class OpenTDoc {
       }
     }
   }
-
-  // Client Message Handlers
 
 }

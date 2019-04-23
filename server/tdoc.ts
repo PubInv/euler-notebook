@@ -72,8 +72,6 @@ const VERSION = "0.0.2";
 export declare interface TDoc {
   on(event: 'change', listener: (change: Change)=> void): this;
   on(event: 'close', listener: ()=> void): this;
-  on(event: 'styleInserted', listener: (style: Style) => void): this;
-  on(event: 'thoughtInserted', listener: (thought: Thought) => void): this;
   on(event: string, listener: Function): this;
 }
 
@@ -93,8 +91,8 @@ export class TDoc extends EventEmitter {
     if (obj.version != VERSION) { throw new Error("TDoc in unexpected version."); }
 
     // Reanimate the thoughts and styles
-    const thoughts: Thought[] = obj.thoughts.map(Thought.fromJsonObject);
-    const styles: Style[] = obj.styles.map(Style.fromJsonObject);
+    const thoughts: Thought[] = obj.thoughts.map(Thought.fromJSON);
+    const styles: Style[] = obj.styles.map(Style.fromJSON);
 
     // Create the TDoc object from its properties and reanimated thoughts and styles.
     const tDoc = Object.assign(Object.create(TDoc.prototype), { ...obj, styles, thoughts });
@@ -103,10 +101,9 @@ export class TDoc extends EventEmitter {
     return tDoc;
   }
 
-  public static on(event: 'open', listener: (tDoc: TDoc)=>void): void {
-    // TODO: The "this" in the event listener should be the TDoc class, not the event emitter.
-    // TODO: Should return the TDoc class so calls can be chained.
-    this.eventEmitter.on(event, listener);
+  public static on(event: 'open', listener: (tDoc: TDoc)=>void): typeof TDoc {
+    this.eventEmitter.on(event, listener.bind(this));
+    return this;
   }
 
   // Public Instance Properties
@@ -180,25 +177,20 @@ export class TDoc extends EventEmitter {
     this.emit('close');
   }
 
-  // IMPORTANT: Only deletes the specific style. Does not delete attached styles.
+  // Deletes the specified style and any styles attached to it recursively.
+  // Emits 'change' events in a depth-first postorder.
   public deleteStyle(styleId: StyleId): void {
-    this.assertNotClosed('deleteStyle');
-    const index = this.styles.findIndex(s=>(s.id==styleId));
-    const style = this.styles[index];
-    if (index<0) { throw new Error(`Deleting unknown style ${styleId}`); }
-    this.styles.splice(index, 1);
-    const change: Change = { type: 'styleDeleted', styleId, stylableId: style.stylableId };
-    this.emit('change', change);
+    const styles = this.getStyles(styleId);
+    for(const style of styles) { this.deleteStyle(style.id); }
+    this.deleteStyleEntryAndEmit(styleId);
   }
 
-  // IMPORTANT: Only deletes the specific thought. Does not delete attached styles.
+  // Deletes the specified thought and any styles attached to it recursively.
+  // Emits 'change' events in a depth-first postorder.
   public deleteThought(thoughtId: ThoughtId): void {
-    this.assertNotClosed('deleteThought');
-    const index = this.thoughts.findIndex(t=>(t.id==thoughtId));
-    if (index<0) { throw new Error(`Deleting unknown thought ${thoughtId}`); }
-    this.thoughts.splice(index, 1);
-    const change: Change = { type: 'thoughtDeleted', thoughtId };
-    this.emit('change', change);
+    const styles = this.getStyles(thoughtId);
+    for(const style of styles) { this.deleteStyle(style.id); }
+    this.deleteThoughtEntryAndEmit(thoughtId);
   }
 
   public insertJiixStyle(stylable: Stylable, data: Jiix, meaning: StyleMeaning, source: StyleSource): JiixStyle {
@@ -225,7 +217,6 @@ export class TDoc extends EventEmitter {
     this.assertNotClosed('insertThought');
     const thought = new Thought(this.nextId++);
     this.thoughts.push(thought);
-    /* DEPRECATED: */ this.emit('thoughtInserted', thought);
     const change: Change = { type: 'thoughtInserted', thought };
     this.emit('change', change);
     return thought;
@@ -287,11 +278,33 @@ export class TDoc extends EventEmitter {
 
   // Private Instance Methods
 
+  // Delete a specific style entry and emits a 'change' event.
+  // IMPORTANT: All attached styles should be deleted first!
+  private deleteStyleEntryAndEmit(styleId: StyleId): void {
+    this.assertNotClosed('deleteStyle');
+    const index = this.styles.findIndex(s=>(s.id==styleId));
+    const style = this.styles[index];
+    if (index<0) { throw new Error(`Deleting unknown style ${styleId}`); }
+    this.styles.splice(index, 1);
+    const change: Change = { type: 'styleDeleted', styleId, stylableId: style.stylableId };
+    this.emit('change', change);
+  }
+
+  // Delete a specific thought entry and emits a 'change' event.
+  // IMPORTANT: All attached styles should be deleted first!
+  private deleteThoughtEntryAndEmit(thoughtId: ThoughtId): void {
+    this.assertNotClosed('deleteThought');
+    const index = this.thoughts.findIndex(t=>(t.id==thoughtId));
+    if (index<0) { throw new Error(`Deleting unknown thought ${thoughtId}`); }
+    this.thoughts.splice(index, 1);
+    const change: Change = { type: 'thoughtDeleted', thoughtId };
+    this.emit('change', change);
+  }
+
   // Helper method for tDoc.create*Style.
   private insertStyle<T extends Style>(style: T): T {
     this.assertNotClosed('insertStyle');
     this.styles.push(style);
-    /* DEPRECATED: */ this.emit('styleInserted', style)
     const change: Change = { type: 'styleInserted', style };
     this.emit('change', change);
     return style;
@@ -301,7 +314,7 @@ export class TDoc extends EventEmitter {
 
 export class Thought {
 
-  public static fromJsonObject(obj: ThoughtObject): Thought {
+  public static fromJSON(obj: ThoughtObject): Thought {
     // NOTE: This will throw for id === 0.
     if (!obj.id) { throw new Error("Invalid Thought object JSON"); }
     return Object.assign(Object.create(Thought.prototype), obj);
@@ -316,7 +329,7 @@ export class Thought {
   public id: StylableId;
 
   // Public Instance Methods
-  public toObject(): ThoughtObject {
+  public toJSON(): ThoughtObject {
     // TYPESCRIPT: We are counting on the fact that a Thought that has
     // been stringified and then parsed is a ThoughtObject.
     return <any>this;
@@ -325,7 +338,7 @@ export class Thought {
 
 export abstract class Style {
 
-  public static fromJsonObject(obj: StyleObject): Style {
+  public static fromJSON(obj: StyleObject): Style {
     if (!obj.type) { throw new Error("Invalid Style object JSON"); }
     // @ts-ignore // TYPESCRIPT:
     const cl = STYLE_CLASSES[obj.type];
@@ -348,7 +361,7 @@ export abstract class Style {
 
   // Instance Methods
 
-  public toObject(): StyleObject {
+  public toJSON(): StyleObject {
     // TYPESCRIPT: We are counting on the fact that a Style that has
     // been stringified and then parsed is a StyleObject.
     return <any>this;
