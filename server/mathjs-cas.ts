@@ -88,6 +88,7 @@ function onClose(tDoc: TDoc): void {
 function onOpen(tDoc: TDoc): void {
   const session: SessionData = { parser: math.parser() };
   gTDocSessions.set(tDoc, session);
+  // TODO: Run an evaluation over the entire TDoc so our parser has the full context.
 }
 
 // Helper Functions

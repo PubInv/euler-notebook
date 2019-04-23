@@ -91,7 +91,7 @@ export interface ThoughtObject {
 
 // Messages from the server
 
-export type ServerMessage = DeleteStyle|DeleteThought|InsertStyle|InsertThought|RefreshNotebook;
+export type ServerMessage = DeleteStyle|DeleteThought|InsertStyle|InsertThought;
 
 interface DeleteStyle {
   action: 'deleteStyle';
@@ -114,14 +114,9 @@ interface InsertThought {
   thought: ThoughtObject;
 }
 
-interface RefreshNotebook {
-  action: 'refreshNotebook';
-  tDoc: TDocObject;
-}
-
 // Messages from the client
 
-export type ClientMessage = DeleteThought|InsertHandwrittenMath|InsertHandwrittenText|InsertMathJsText;
+export type ClientMessage = DeleteThought|InsertHandwrittenMath|InsertHandwrittenText|InsertMathJsText|RefreshNotebook;
 
 interface InsertHandwrittenMath {
   action: 'insertHandwrittenMath';
@@ -138,4 +133,8 @@ strokeGroups: StrokeGroups;
 interface InsertMathJsText {
   action: 'insertMathJsText';
   mathJsText: MathJsText;
+}
+
+interface RefreshNotebook {
+  action: 'refreshNotebook';
 }

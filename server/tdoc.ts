@@ -110,6 +110,7 @@ export class TDoc extends EventEmitter {
 
   public version: string;
   public nextId: StylableId;
+  // NOTE: Properties with an underscore prefix are not persisted.
   public _name: string;
 
   // Public Instance Property Functions
@@ -170,9 +171,7 @@ export class TDoc extends EventEmitter {
   // Public Instance Methods
 
   public close() {
-    if (this._closed) {
-      throw new Error("Closing TDoc that is already closed.");
-    }
+    if (this._closed) { throw new Error("Closing TDoc that is already closed."); }
     this._closed = true;
     this.emit('close');
   }
@@ -268,9 +267,10 @@ export class TDoc extends EventEmitter {
 
   // Private Instance Properties
 
-  private _closed?: boolean;
   private styles: Style[];
   private thoughts: Thought[];
+  // NOTE: Properties with an underscore prefix are not persisted.
+  private _closed?: boolean;
 
   private assertNotClosed(action: string): void {
     if (this._closed) { throw new Error(`Attempting ${action} on closed TDoc.`); }

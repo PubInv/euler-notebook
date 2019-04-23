@@ -21,7 +21,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 import { Jiix, StrokeGroups } from './myscript-types.js';
 import { ClientMessage, LatexMath, MathJsText, NotebookName, ServerMessage, StyleId, StyleObject,
-         TDocObject, ThoughtId, ThoughtObject, UserName } from './math-tablet-api.js';
+         ThoughtId, ThoughtObject, UserName } from './math-tablet-api.js';
 import { ThoughtElement } from './thought-element.js';
 import { StyleElement } from './style-element.js';
 
@@ -104,7 +104,6 @@ export class NotebookConnection {
       case 'deleteThought': this.deleteThought(msg.thoughtId); break;
       case 'insertStyle': this.insertStyle(msg.style); break;
       case 'insertThought': this.insertThought(msg.thought); break;
-      case 'refreshNotebook': this.refreshNotebook(msg.tDoc); break;
       default:
         console.error(`Unexpected action '${(<any>msg).action}' in WebSocket message`);
         break;
@@ -118,6 +117,8 @@ export class NotebookConnection {
   private onOpen(): void {
     try {
       console.log("WebSocket opened.");
+      this.clear();
+      this.sendMessage({ action: 'refreshNotebook' });
     } catch(err) {
       console.error("Unexpected client error handling WebSocket open event.");
     }
@@ -170,13 +171,6 @@ export class NotebookConnection {
   private insertThought(thought: ThoughtObject): void {
     const thoughtElt = ThoughtElement.insert(this.$tDocElt, thought);
     this.thoughtElements.set(thought.id, thoughtElt);
-  }
-
-  private refreshNotebook(tDoc: TDocObject): void {
-    this.clear();
-    const thoughts = tDoc.thoughts;
-    for (const thought of thoughts) { this.insertThought(thought); }
-    for (const style of tDoc.styles) { this.insertStyle(style); }
   }
 
 }

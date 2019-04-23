@@ -158,6 +158,15 @@ export class OpenTDoc {
         await this.save();
         break;
       }
+      case 'refreshNotebook': {
+        for (const thought of this.tDoc.getThoughts()) {
+          this.sendMessage({ action: 'insertThought', thought: thought.toJSON() });
+        }
+        for (const style of this.tDoc.getStyles()) {
+          this.sendMessage({ action: 'insertStyle', style: style.toJSON() });
+        }
+        break;
+      }
       default:
         console.error(`Unexpected WebSocket message action ${(<any>msg).action}. Ignoring.`);
         break;
@@ -174,19 +183,12 @@ export class OpenTDoc {
     ws.on('close', (code: number, reason: string) => this.onWsClose(ws, code, reason))
     ws.on('error', (err: Error) => this.onWsError(ws, err))
     ws.on('message', (message: string) => this.onWsMessage(ws, message));
-    this.sendRefresh(ws);
   }
 
   // LATER: We need something more efficient that saving the whole notebook every time there is a change.
   //        Instead we should just write deltas on to the end of a file or something.
   private async save(): Promise<void> {
     await writeNotebook(this.userName, this.notebookName, this.tDoc);
-  }
-
-  private sendRefresh(ws?: WebSocket): void {
-    // TODO: Instead, end empty 'refresh' message, followed by insert-thought and insert-style messages
-    const msg: ServerMessage = { action: 'refreshNotebook', tDoc: this.tDoc.toJSON() };
-    this.sendMessage(msg, ws);
   }
 
   private sendMessage(msg: ServerMessage, ws?: WebSocket): void {
