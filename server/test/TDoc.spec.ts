@@ -24,7 +24,6 @@ import { mathSimplifyRule }  from '../mathjs-cas';
 import { mathExtractVariablesRule }  from '../mathjs-cas';
 import { mathEvaluateRule }  from '../mathjs-cas';
 import { applyCasRules }  from '../mathjs-cas';
-import { TDocTextCompiler } from '../tdoc-text-comp';
 import * as math from 'mathjs';
 import * as mathsteps from 'mathsteps';
 import { dumpEquationSteps, dumpExpressionSteps }  from '../math-steps-cas';
@@ -87,9 +86,7 @@ describe('tdoc', function() {
 describe('renderer', function() {
   describe('jsonPrinter', function() {
     it('we can jsonPrint a tdoc', function() {
-      let tdtc = TDocTextCompiler.create();
-      assert(tdtc);
-      let td = tdtc.createTDocFromText('TEXT',"x = 4; y = 5; x + y = 3", 'test');
+      let td = createTDocFromText('TEXT',"x = 4; y = 5; x + y = 3", 'test');
       let jp = td.jsonPrinter();
       assert.ok(jp);
     });
@@ -98,9 +95,7 @@ describe('renderer', function() {
 
 describe('tdoctextcompiler', function() {
      it('we can create a tdoc from a csv', function() {
-       let tdtc = TDocTextCompiler.create();
-       assert(tdtc);
-       let td = tdtc.createTDocFromText('TEXT', "x = 4; y = 5; x + y = 3", 'test');
+       let td = createTDocFromText('TEXT', "x = 4; y = 5; x + y = 3", 'test');
        let s0s = td.getStyles();
        assert.equal(td.numStyles('TEXT'), 3);
        assert.equal(s0s.length, 3);
@@ -110,8 +105,7 @@ describe('tdoctextcompiler', function() {
 
 describe('utility computations', function() {
      it('we can create a tdoc from a csv (case 2)', function() {
-       let tdtc = TDocTextCompiler.create();
-       let td = tdtc.createTDocFromText('TEXT', "x = 4; y = 5; x + y = 3", 'test');
+       let td = createTDocFromText('TEXT', "x = 4; y = 5; x + y = 3", 'test');
        let s0 = td.getStyles()[0];
        td.insertTextStyle(s0, "this is a style on a style", 'EVALUATION', 'TEST');
        assert.ok(td.stylableHasChildOfType(s0, 'TEXT'));
@@ -275,8 +269,7 @@ describe('manipulate plain ascii styles', function() {
   });
   it('we can meaningly perform an evaluation against an entire tdoc', function() {
     {
-      let tdtc = TDocTextCompiler.create();
-      let td = tdtc.createTDocFromText("MATHJS", "x = 4; y = 5; z = x + y", 'test');
+      let td = createTDocFromText("MATHJS", "x = 4; y = 5; z = x + y", 'test');
       let evaluations = applyCasRules(td,[mathEvaluateRule]);
       assert.equal(evaluations[2].data, 9);
     }
@@ -288,9 +281,8 @@ describe('manipulate plain ascii styles', function() {
   // And we cannot meaningfully ignore order with out current MathJS implementation. -- DJ
   it.skip('we can meaningly perform an entire tdoc without any special order!', function() {
     {
-      let tdtc = TDocTextCompiler.create();
       // NOTE THE ORDER HERE!!!
-      let td = tdtc.createTDocFromText("MATHJS", "x = 4; z = x + y; y = 5", 'test');
+      let td = createTDocFromText("MATHJS", "x = 4; z = x + y; y = 5", 'test');
       let evaluations = applyCasRules(td,[mathEvaluateRule]);
       assert.equal(evaluations[2].data, 9);
     }
@@ -328,3 +320,12 @@ describe('manipulate plain ascii styles', function() {
     });
   });
 });
+
+// Helper Functions
+
+function createTDocFromText(styleTypeName: string, text: string, name: string): TDoc {
+  let td =  TDoc.create(name);
+  td.addFromText(styleTypeName, text);
+  return td;
+}
+
