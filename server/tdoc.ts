@@ -221,31 +221,6 @@ export class TDoc extends EventEmitter {
     return thought;
   }
 
-  // COMPILERS
-
-  // take a set of comma-separated-values and
-  // produce a tdoc full of thoughts; this is
-  // useful mostly for testing.
-  public addFromText(type: string, text: string): TDoc {
-    let ths = text.split(";").map(s=>s.trim());
-    // @ts-ignore
-    let styleType = STYLE_CLASSES[type];
-    ths.forEach(text => {
-      let th = this.insertThought();
-
-      let newst = Object.assign(
-        Object.create(styleType.prototype),
-        {
-          type: type,
-          data: text,
-          meaning: 'INPUT',
-          stylableId: th.id,
-          id: this.nextId++
-        });
-      return this.insertStyle(newst);
-    });
-    return this;
-  }
 
   // --- PRIVATE ---
 

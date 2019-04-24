@@ -76,8 +76,7 @@ describe('tdoc', function() {
 describe('tdoc', function() {
   describe('tdoc Structure', function() {
     it('we can generate a tdoc with a compiler', function() {
-      let td0 = TDoc.create('test');
-      let td = td0.addFromText('TEXT', "x = 4; y = 5; x + y = 3");
+      let td = createTDocFromText('TEXT', "x = 4; y = 5; x + y = 3", 'test');
       assert.equal(td.getThoughts().length, 3);
     });
   });
@@ -269,7 +268,7 @@ describe('manipulate plain ascii styles', function() {
   });
   it('we can meaningly perform an evaluation against an entire tdoc', function() {
     {
-      let td = createTDocFromText("MATHJS", "x = 4; y = 5; z = x + y", 'test');
+      let td = createTDocFromText('MATHJS', "x = 4; y = 5; z = x + y", 'test');
       let evaluations = applyCasRules(td,[mathEvaluateRule]);
       assert.equal(evaluations[2].data, 9);
     }
@@ -282,7 +281,7 @@ describe('manipulate plain ascii styles', function() {
   it.skip('we can meaningly perform an entire tdoc without any special order!', function() {
     {
       // NOTE THE ORDER HERE!!!
-      let td = createTDocFromText("MATHJS", "x = 4; z = x + y; y = 5", 'test');
+      let td = createTDocFromText('MATHJS', "x = 4; z = x + y; y = 5", 'test');
       let evaluations = applyCasRules(td,[mathEvaluateRule]);
       assert.equal(evaluations[2].data, 9);
     }
@@ -323,9 +322,16 @@ describe('manipulate plain ascii styles', function() {
 
 // Helper Functions
 
-function createTDocFromText(styleTypeName: string, text: string, name: string): TDoc {
-  let td =  TDoc.create(name);
-  td.addFromText(styleTypeName, text);
+function createTDocFromText(type: 'MATHJS'|'TEXT', text: string, name: string): TDoc {
+  const td =  TDoc.create(name);
+  const ths = text.split(";").map(s=>s.trim());
+  for (text of ths) {
+    const th = td.insertThought();
+    switch(type){
+    case 'TEXT': td.insertTextStyle(th, text, 'INPUT', 'TEST'); break;
+    case 'MATHJS': td.insertMathJsStyle(th, text, 'INPUT', 'TEST'); break;
+    }
+  }
   return td;
 }
 
