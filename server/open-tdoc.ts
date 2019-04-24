@@ -26,11 +26,10 @@ import { ClientMessage, UserName, NotebookName, ServerMessage } from '../client/
 import { parseMathJsExpression, ParseResults } from './mathjs-cas';
 
 import { TDoc, Change as TDocChange } from './tdoc';
-import { readNotebook, writeNotebook } from './users-and-files';
 
 // Types
 
-// Class
+// Exported Class
 
 export class OpenTDoc {
 
@@ -42,7 +41,7 @@ export class OpenTDoc {
     if (!rval) {
       // REVIEW: What if messages come in while we are reading the notebook?
       // TODO: Gracefully handle error if readNotebook throws error. (e.g. invalid version)
-      const tDoc = await readNotebook(userName, notebookName);
+      const tDoc = await TDoc.open(key);
       rval = new this(userName, notebookName, tDoc);
       this.openTDocs.set(key, rval);
     }
@@ -58,7 +57,7 @@ export class OpenTDoc {
 
   // Instance Methods
 
-  // PRIVATE
+  // --- PRIVATE ---
 
   // Private Class Properties
 
@@ -127,21 +126,21 @@ export class OpenTDoc {
       switch(msg.action) {
       case 'deleteThought': {
         this.tDoc.deleteThought(msg.thoughtId);
-        await this.save();
+        await this.tDoc.save();
         break;
       }
       case 'insertHandwrittenMath': {
         const thought = this.tDoc.insertThought();
         this.tDoc.insertLatexStyle(thought, msg.latexMath, 'INPUT', 'USER');
         this.tDoc.insertJiixStyle(thought, msg.jiix, 'HANDWRITING', 'USER');
-        await this.save();
+        await this.tDoc.save();
         break;
       }
       case 'insertHandwrittenText': {
         const thought = this.tDoc.insertThought();
         this.tDoc.insertTextStyle(thought, msg.text, 'INPUT', 'USER');
         this.tDoc.insertStrokeStyle(thought, msg.strokeGroups, 'HANDWRITING', 'USER');
-        await this.save();
+        await this.tDoc.save();
         break;
       }
       case 'insertMathJsText': {
@@ -155,7 +154,7 @@ export class OpenTDoc {
         const thought = this.tDoc.insertThought();
         const style = this.tDoc.insertMathJsStyle(thought, parseResults.mathJsText, 'INPUT', 'USER');
         this.tDoc.insertLatexStyle(style, parseResults.latexMath, 'PRETTY', 'USER');
-        await this.save();
+        await this.tDoc.save();
         break;
       }
       case 'refreshNotebook': {
@@ -183,12 +182,6 @@ export class OpenTDoc {
     ws.on('close', (code: number, reason: string) => this.onWsClose(ws, code, reason))
     ws.on('error', (err: Error) => this.onWsError(ws, err))
     ws.on('message', (message: string) => this.onWsMessage(ws, message));
-  }
-
-  // LATER: We need something more efficient that saving the whole notebook every time there is a change.
-  //        Instead we should just write deltas on to the end of a file or something.
-  private async save(): Promise<void> {
-    await writeNotebook(this.userName, this.notebookName, this.tDoc);
   }
 
   private sendMessage(msg: ServerMessage, ws?: WebSocket): void {

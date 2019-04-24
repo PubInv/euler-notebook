@@ -20,8 +20,14 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 // Requirement
 
 import { EventEmitter } from 'events';
+import { readFile, writeFile } from 'fs';
+import { join } from 'path';
+import { promisify } from 'util';
 
 import { Jiix, LatexMath, MathJsText, StrokeGroups, StyleObject, StyleMeaning, StyleSource, StyleType, TDocObject, ThoughtObject, ThoughtId, StyleId } from '../client/math-tablet-api';
+
+const readFile2 = promisify(readFile);
+const writeFile2 = promisify(writeFile);
 
 // Types
 
@@ -29,6 +35,7 @@ type Stylable = Thought|Style;
 type StylableId = number;
 // type StyleRule = (tdoc: TDoc, style: Style)=>Style[];
 type TextData = string;
+type TDocName = string;
 
 // Change event types:
 
@@ -63,6 +70,10 @@ interface ThoughtInserted {
 
 // Constants
 
+const NAME_RE = /^[A-Za-z0-9_/-]+$/;   // DO NOT ALLOW PERIODS (.) IN NAMES!
+export const NOTEBOOK_FILENAME_SUFFIX = '.tdoc.json';
+export const USR_DIR = 'math-tablet-usr';
+
 // VERSION CHANGES:
 // 0.0.1 - Initial version.
 // 0.0.2 - Made meaning required on styles.
@@ -79,13 +90,13 @@ export class TDoc extends EventEmitter {
 
   // Public Class Methods
 
-  public static create(name: string): TDoc {
+  public static create(name: TDocName): TDoc {
     const tDoc = new this(name);
     this.eventEmitter.emit('open', tDoc);
     return tDoc;
   }
 
-  public static fromJSON(obj: TDocObject, name: string): TDoc {
+  public static fromJSON(obj: TDocObject, name: TDocName): TDoc {
     // Validate the object
     if (!obj.nextId) { throw new Error("Invalid TDoc object JSON."); }
     if (obj.version != VERSION) { throw new Error("TDoc in unexpected version."); }
@@ -106,12 +117,22 @@ export class TDoc extends EventEmitter {
     return this;
   }
 
+  public static async open(name: TDocName): Promise<TDoc> {
+    if (!NAME_RE.test(name)) { throw new Error(`Illegal TDoc name: ${name}`)}
+    const fileName = `${name}${NOTEBOOK_FILENAME_SUFFIX}`;
+    const filePath = join(homeDir(), USR_DIR, fileName);
+    const json = await readFile2(filePath, 'utf8');
+    const obj = JSON.parse(json);
+    const tDoc = this.fromJSON(obj, name);
+    return tDoc;
+  }
+
   // Public Instance Properties
 
   public version: string;
   public nextId: StylableId;
   // NOTE: Properties with an underscore prefix are not persisted.
-  public _name: string;
+  public _name: TDocName;
 
   // Public Instance Property Functions
 
@@ -221,6 +242,12 @@ export class TDoc extends EventEmitter {
     return thought;
   }
 
+  public async save(): Promise<void> {
+    const fileName = `${this._name}${NOTEBOOK_FILENAME_SUFFIX}`;
+    const filePath = join(homeDir(), USR_DIR, fileName);
+    const json = JSON.stringify(this);
+    await writeFile2(filePath, json, 'utf8');
+  }
 
   // --- PRIVATE ---
 
@@ -230,7 +257,7 @@ export class TDoc extends EventEmitter {
 
   // Private Constructor
 
-  private constructor(name: string) {
+  private constructor(name: TDocName) {
     super();
 
     this.nextId = 1;
@@ -434,4 +461,13 @@ const STYLE_CLASSES /* : { [type: string]: } */ = {
   'MATHJS': MathJsStyle,
   'STROKE': StrokeStyle,
   'TEXT': TextStyle,
+}
+
+// HELPER FUNCTIONS
+
+// Duplicated in users-and-files.ts.
+function homeDir(): string {
+  const rval = process.env.HOME;
+  if (!rval) { throw new Error("HOME environment variable not set."); }
+  return rval;
 }

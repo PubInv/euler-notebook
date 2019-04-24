@@ -24,7 +24,7 @@ import { NextFunction, Request, Response, Router } from 'express';
 import { NotebookName, UserName } from '../../client/math-tablet-api';
 
 import { TDoc } from '../tdoc';
-import { checkNotebookExists, checkUserExists, checkUsrDirExists, Credentials, getCredentials, getListOfUsers, getListOfUsersNotebooks, isValidUserName, isValidNotebookName, writeNotebook } from '../users-and-files';
+import { checkNotebookExists, checkUserExists, checkUsrDirExists, Credentials, getCredentials, getListOfUsers, getListOfUsersNotebooks, isValidUserName, isValidNotebookName } from '../users-and-files';
 
 // Exports
 
@@ -155,8 +155,9 @@ async function newNotebook(userName: UserName, notebookName: NotebookName, messa
   } else if (await checkNotebookExists(userName, notebookName)) {
     messages.error.push(`A notebook named '${notebookName}' already exists.`);
   } else {
-    const tDoc = TDoc.create(notebookName);
-    await writeNotebook(userName, notebookName, tDoc);
+    const name = `${userName}/${notebookName}`;
+    const tDoc = TDoc.create(name);
+    await tDoc.save();
     // LATER: Redirect to notebook itself.
     messages.success.push(`Notebook '${notebookName}' created successfully.`);
   }

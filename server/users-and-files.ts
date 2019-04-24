@@ -19,18 +19,16 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 // Requirements
 
-import { readdir, readFile, stat, Stats, writeFile } from 'fs';
+import { readdir, readFile, stat, Stats } from 'fs';
 import { join } from 'path';
 import { promisify } from 'util';
 
+import { NOTEBOOK_FILENAME_SUFFIX, USR_DIR } from './tdoc';
 import { UserName, NotebookName, MyScriptServerKeys } from '../client/math-tablet-api';
-
-import { TDoc } from './tdoc';
 
 const readdir2 = promisify(readdir);
 const readFile2 = promisify(readFile);
 const stat2 = promisify(stat);
-const writeFile2 = promisify(writeFile);
 
 // Types
 
@@ -54,9 +52,6 @@ export interface UserEntry {
 // Constants
 
 const CREDENTIALS_FILENAME = '.math-tablet-credentials.json';
-const USR_DIR = 'math-tablet-usr';
-
-const NOTEBOOK_FILENAME_SUFFIX = '.tdoc.json';
 const NOTEBOOK_FILENAME_SUFFIX_LENGTH = NOTEBOOK_FILENAME_SUFFIX.length;
 
 // SECURITY: DO NOT ALLOW PERIODS OR SLASHES OR BACKSLASHES IN USER NAMES OR NOTEBOOK NAMES!!!
@@ -132,28 +127,9 @@ export function isValidNotebookName(notebookName: NotebookName): boolean {
   return NOTEBOOK_NAME_RE.test(notebookName);
 }
 
-export async function readNotebook(userName: UserName, notebookName: NotebookName): Promise<TDoc> {
-  validateUserName(userName);
-  validateNotebookName(notebookName);
-  const fileName = `${notebookName}${NOTEBOOK_FILENAME_SUFFIX}`;
-  const filePath = join(homeDir(), USR_DIR, userName, fileName);
-  const json = await readFile2(filePath, 'utf8');
-  const obj = JSON.parse(json);
-  const tDoc = TDoc.fromJSON(obj, notebookName);
-  return tDoc;
-}
-
-export async function writeNotebook(userName: UserName, notebookName: NotebookName, notebook: TDoc): Promise<void> {
-  validateUserName(userName);
-  validateNotebookName(notebookName);
-  const fileName = `${notebookName}${NOTEBOOK_FILENAME_SUFFIX}`;
-  const filePath = join(homeDir(), USR_DIR, userName, fileName);
-  const json = JSON.stringify(notebook);
-  await writeFile2(filePath, json, 'utf8');
-}
-
 // HELPER FUNCTIONS
 
+// Duplicated in tdoc.ts.
 function homeDir(): string {
   const rval = process.env.HOME;
   if (!rval) { throw new Error("HOME environment variable not set."); }
