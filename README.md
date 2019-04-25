@@ -15,6 +15,12 @@ Math Tablet was create by David Jeschke, and he is the Invention Coach and "Bene
 The project is currently licensed under the [Affero GPL](https://www.gnu.org/licenses/agpl-3.0.en.html).
 We are actively seeking volunteers and contributors.
 
+## Current Screenshot
+
+Our current code can accept handwriting and put togetether simple mathematical assertions to perform calculations.
+
+![Screen Shot 2019-04-25 at 12 49 54 PM](https://user-images.githubusercontent.com/5296671/56757194-3e827c80-6759-11e9-969d-e0a49395ce0d.png)
+
 ## Running locally
 
 Step 1: Create a [MyScript developer account](https://developer.myscript.com/getting-started/web)
