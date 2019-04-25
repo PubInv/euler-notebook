@@ -1,6 +1,19 @@
 # Math Tablet
 
-This directory contains the source code for the math tablet project.
+This directory contains the source code for the Math Tablet, a project of
+[Public Invention](https://pubinv.github.io/PubInv/).
+
+## Purpose
+
+Math Tablet seeks to make a useful math assistant for stylus-based tablets and other hand-written input means.
+Our goal is have a genius looking over our shoulder and magically helping as we do math the way we normally do,
+including drawing diagrams, performing calculations, and producing proofs.
+
+## Governance
+
+Math Tablet was create by David Jeschke, and he is the Invention Coach and "Benevelont Dictator For Now" of this project.
+The project is currently licensed under the [Affero GPL](https://www.gnu.org/licenses/agpl-3.0.en.html).
+We are actively seeking volunteers and contributors.
 
 ## Running locally
 
