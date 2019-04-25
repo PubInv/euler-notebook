@@ -37,6 +37,10 @@ type StylableId = number;
 type TextData = string;
 type TDocName = string;
 
+export interface TDocOptions {
+  anonymous?: boolean;
+}
+
 // Change event types:
 
 export type Change = StyleDeleted|StyleInserted|ThoughtDeleted|ThoughtInserted;
@@ -70,8 +74,10 @@ interface ThoughtInserted {
 
 // Constants
 
+const DEFAULT_OPTIONS: TDocOptions = { anonymous: false };
 const NAME_RE = /^[A-Za-z0-9_/-]+$/;   // DO NOT ALLOW PERIODS (.) IN NAMES!
 export const NOTEBOOK_FILENAME_SUFFIX = '.tdoc.json';
+const SAVE_TIMEOUT_MS = 5000;
 export const USR_DIR = 'math-tablet-usr';
 
 // VERSION CHANGES:
@@ -90,40 +96,46 @@ export class TDoc extends EventEmitter {
 
   // Public Class Methods
 
-  public static create(name: TDocName): TDoc {
-    const tDoc = new this(name);
-    this.eventEmitter.emit('open', tDoc);
+  public static async create(name: TDocName, options: TDocOptions): Promise<TDoc> {
+
+    if (options.anonymous) { throw new Error(`Cannot use anonymous option with named tdoc.`); }
+
+    // If the document is already open, then return the existing instance.
+    const openTDoc = this.sOpenDocs.get(name);
+    if (openTDoc) { throw new Error(`A TDoc with that name already exists: ${name}`); }
+
+    const tDoc = new this(name, options);
+    tDoc.initialize();
+    await tDoc.save();
     return tDoc;
   }
 
-  public static fromJSON(obj: TDocObject, name: TDocName): TDoc {
-    // Validate the object
-    if (!obj.nextId) { throw new Error("Invalid TDoc object JSON."); }
-    if (obj.version != VERSION) { throw new Error("TDoc in unexpected version."); }
-
-    // Reanimate the thoughts and styles
-    const thoughts: Thought[] = obj.thoughts.map(Thought.fromJSON);
-    const styles: Style[] = obj.styles.map(Style.fromJSON);
-
-    // Create the TDoc object from its properties and reanimated thoughts and styles.
-    const tDoc = Object.assign(Object.create(TDoc.prototype), { ...obj, styles, thoughts });
-    tDoc._name = name;
-    this.eventEmitter.emit('open', tDoc);
+  public static createAnonymous(): TDoc {
+    const tDoc = new this('anonymous', { anonymous: true });
+    tDoc.initialize();
     return tDoc;
   }
 
   public static on(event: 'open', listener: (tDoc: TDoc)=>void): typeof TDoc {
-    this.eventEmitter.on(event, listener.bind(this));
+    this.sEventEmitter.on(event, listener.bind(this));
     return this;
   }
 
-  public static async open(name: TDocName): Promise<TDoc> {
+  public static async open(name: TDocName, options: TDocOptions): Promise<TDoc> {
+
+    if (options.anonymous) { throw new Error(`Cannot open anonymous tdoc. Use create.`); }
+
+    // If the document is already open, then return the existing instance.
+    const openTDoc = this.sOpenDocs.get(name);
+    if (openTDoc) { return openTDoc; }
+
     if (!NAME_RE.test(name)) { throw new Error(`Illegal TDoc name: ${name}`)}
     const fileName = `${name}${NOTEBOOK_FILENAME_SUFFIX}`;
     const filePath = join(homeDir(), USR_DIR, fileName);
+    // TODO: Another open call could come in while this one is executing!
     const json = await readFile2(filePath, 'utf8');
     const obj = JSON.parse(json);
-    const tDoc = this.fromJSON(obj, name);
+    const tDoc = this.fromJSON(obj, name, options);
     return tDoc;
   }
 
@@ -193,6 +205,7 @@ export class TDoc extends EventEmitter {
 
   public close() {
     if (this._closed) { throw new Error("Closing TDoc that is already closed."); }
+    if (!this._options.anonymous) { TDoc.sOpenDocs.delete(this._name); }
     this._closed = true;
     this.emit('close');
   }
@@ -238,26 +251,40 @@ export class TDoc extends EventEmitter {
     const thought = new Thought(this.nextId++);
     this.thoughts.push(thought);
     const change: Change = { type: 'thoughtInserted', thought };
-    this.emit('change', change);
+    this.notifyChange(change);
     return thought;
-  }
-
-  public async save(): Promise<void> {
-    const fileName = `${this._name}${NOTEBOOK_FILENAME_SUFFIX}`;
-    const filePath = join(homeDir(), USR_DIR, fileName);
-    const json = JSON.stringify(this);
-    await writeFile2(filePath, json, 'utf8');
   }
 
   // --- PRIVATE ---
 
   // Private Class Properties
 
-  private static eventEmitter = new EventEmitter();
+  private static sEventEmitter = new EventEmitter();
+  private static sOpenDocs = new Map<TDocName, TDoc>();
+
+  // Private Class Methods
+
+  private static fromJSON(obj: TDocObject, name: TDocName, options: TDocOptions): TDoc {
+    // Validate the object
+    if (!obj.nextId) { throw new Error("Invalid TDoc object JSON."); }
+    if (obj.version != VERSION) { throw new Error("TDoc in unexpected version."); }
+
+    // Reanimate the thoughts and styles
+    const thoughts: Thought[] = obj.thoughts.map(Thought.fromJSON);
+    const styles: Style[] = obj.styles.map(Style.fromJSON);
+
+    // Create the TDoc object from its properties and reanimated thoughts and styles.
+    // REVIEW: We never call the constructor. Maybe we should?
+    const tDoc = Object.assign(Object.create(TDoc.prototype), { ...obj, styles, thoughts });
+    tDoc._name = name;
+    tDoc._options = { ...DEFAULT_OPTIONS, ...options };
+    tDoc.initialize();
+    return tDoc;
+  }
 
   // Private Constructor
 
-  private constructor(name: TDocName) {
+  private constructor(name: TDocName, options: TDocOptions) {
     super();
 
     this.nextId = 1;
@@ -265,6 +292,7 @@ export class TDoc extends EventEmitter {
     this.thoughts = [];
     this.version = VERSION;
     this._name = name;
+    this._options = { ...DEFAULT_OPTIONS, ...options };
   }
 
   // Private Instance Properties
@@ -273,6 +301,9 @@ export class TDoc extends EventEmitter {
   private thoughts: Thought[];
   // NOTE: Properties with an underscore prefix are not persisted.
   private _closed?: boolean;
+  private _options: TDocOptions;
+  private _saveTimeout?: NodeJS.Timeout|undefined;
+  private _saving?: boolean;
 
   private assertNotClosed(action: string): void {
     if (this._closed) { throw new Error(`Attempting ${action} on closed TDoc.`); }
@@ -289,7 +320,7 @@ export class TDoc extends EventEmitter {
     if (index<0) { throw new Error(`Deleting unknown style ${styleId}`); }
     this.styles.splice(index, 1);
     const change: Change = { type: 'styleDeleted', styleId, stylableId: style.stylableId };
-    this.emit('change', change);
+    this.notifyChange(change);
   }
 
   // Delete a specific thought entry and emits a 'change' event.
@@ -300,7 +331,16 @@ export class TDoc extends EventEmitter {
     if (index<0) { throw new Error(`Deleting unknown thought ${thoughtId}`); }
     this.thoughts.splice(index, 1);
     const change: Change = { type: 'thoughtDeleted', thoughtId };
-    this.emit('change', change);
+    this.notifyChange(change);
+  }
+
+  // This should be called on any newly created TDoc immediately after the constructor. 
+  private initialize(): void {
+    if (!this._options.anonymous) {
+      if (TDoc.sOpenDocs.has(this._name)) { throw new Error(`Initializing a TDoc with a name that already exists.`); }
+      TDoc.sOpenDocs.set(this._name, this);
+    }
+    TDoc.sEventEmitter.emit('open', this);
   }
 
   // Helper method for tDoc.create*Style.
@@ -308,8 +348,50 @@ export class TDoc extends EventEmitter {
     this.assertNotClosed('insertStyle');
     this.styles.push(style);
     const change: Change = { type: 'styleInserted', style };
-    this.emit('change', change);
+    this.notifyChange(change);
     return style;
+  }
+
+  // Call this method whenever you modify the tdoc.
+  private notifyChange(change: Change) {
+    this.emit('change', change);
+    if (!this._options.anonymous) { this.scheduleSave(); }
+  }
+
+  // Do not call this directly.
+  // Methods that change the document should call notifyChange.
+  // notifyChange will call this method if the TDoc is persistent.
+  private scheduleSave(): void {
+    if (this._saveTimeout) {
+      console.log(`Postponing save timeout: ${this._name}`);
+      clearTimeout(this._saveTimeout); 
+    } else {
+      console.log(`Scheduling save timeout: ${this._name}`);
+    }
+    this._saveTimeout = setTimeout(async ()=>{
+      try {
+        // TODO: Handle this in a more robust way.
+        if (this._saving) { throw new Error(`Taking longer that ${SAVE_TIMEOUT_MS}ms to save.`); }
+        console.log(`Saving ${this._name}`);
+        delete this._saveTimeout;
+        this._saving = true;
+        await this.save();
+        this._saving = false;
+      } catch(err) {
+        console.error(`Error saving ${this._name}: ${err.message}`);
+        // TODO: What else should we do besides log an error?
+      }
+    }, SAVE_TIMEOUT_MS);
+  }
+
+  // Do not call this directly.
+  // Changes to the document should result in calls to notifyChange,
+  // which will schedule a save, eventually getting here.
+  private async save(): Promise<void> {
+    const fileName = `${this._name}${NOTEBOOK_FILENAME_SUFFIX}`;
+    const filePath = join(homeDir(), USR_DIR, fileName);
+    const json = JSON.stringify(this);
+    await writeFile2(filePath, json, 'utf8');
   }
 
 }

@@ -41,7 +41,7 @@ export class OpenTDoc {
     if (!rval) {
       // REVIEW: What if messages come in while we are reading the notebook?
       // TODO: Gracefully handle error if readNotebook throws error. (e.g. invalid version)
-      const tDoc = await TDoc.open(key);
+      const tDoc = await TDoc.open(key, {/* default options */});
       rval = new this(userName, notebookName, tDoc);
       this.openTDocs.set(key, rval);
     }
@@ -119,28 +119,25 @@ export class OpenTDoc {
     // REVIEW: is the error recoverable? is the websocket closed? will we get a closed event?
   }
 
-  private async onWsMessage(_ws: WebSocket, message: string) {
+  private onWsMessage(_ws: WebSocket, message: string) {
     try {
       const msg: ClientMessage = JSON.parse(message);
       console.log(`Received socket message: ${msg.action}`);
       switch(msg.action) {
       case 'deleteThought': {
         this.tDoc.deleteThought(msg.thoughtId);
-        await this.tDoc.save();
         break;
       }
       case 'insertHandwrittenMath': {
         const thought = this.tDoc.insertThought();
         this.tDoc.insertLatexStyle(thought, msg.latexMath, 'INPUT', 'USER');
         this.tDoc.insertJiixStyle(thought, msg.jiix, 'HANDWRITING', 'USER');
-        await this.tDoc.save();
         break;
       }
       case 'insertHandwrittenText': {
         const thought = this.tDoc.insertThought();
         this.tDoc.insertTextStyle(thought, msg.text, 'INPUT', 'USER');
         this.tDoc.insertStrokeStyle(thought, msg.strokeGroups, 'HANDWRITING', 'USER');
-        await this.tDoc.save();
         break;
       }
       case 'insertMathJsText': {
@@ -154,7 +151,6 @@ export class OpenTDoc {
         const thought = this.tDoc.insertThought();
         const style = this.tDoc.insertMathJsStyle(thought, parseResults.mathJsText, 'INPUT', 'USER');
         this.tDoc.insertLatexStyle(style, parseResults.latexMath, 'PRETTY', 'USER');
-        await this.tDoc.save();
         break;
       }
       case 'refreshNotebook': {

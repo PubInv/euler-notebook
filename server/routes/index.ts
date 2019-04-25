@@ -156,8 +156,7 @@ async function newNotebook(userName: UserName, notebookName: NotebookName, messa
     messages.error.push(`A notebook named '${notebookName}' already exists.`);
   } else {
     const name = `${userName}/${notebookName}`;
-    const tDoc = TDoc.create(name);
-    await tDoc.save();
+    await TDoc.create(name, {/* default options */});
     // LATER: Redirect to notebook itself.
     messages.success.push(`Notebook '${notebookName}' created successfully.`);
   }
