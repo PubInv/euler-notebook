@@ -144,7 +144,7 @@ socketEventHandler[data_] := Block[
         dataString = ByteArrayToString[data];
         Print[dataString];
         Print["spud"];
-	expr = EvaluationData[dataString];
+	expr = EvaluationData[ToExpression[dataString]];
 	(* Produce inline InputForm string messages. *)
 	AssociateTo[
 		expr,
@@ -160,9 +160,13 @@ socketEventHandler[data_] := Block[
         exprString = ToString[ExportString[expr,"ExpressionJSON"]]
         Print[ExportString[expr,"ExpressionJSON"]];
         Print["xxx"];
-        WriteString[
+        (*        WriteString[
 		$OutputSocket,
                 exprString
+                              ]; *)
+        SocketWriteByteArrayFunc[
+		$OutputSocket,
+		BinarySerialize[exprString]
 	];
 	ClientLibrary`debug["Done responding."];
         (*        SendAck[]; *)
