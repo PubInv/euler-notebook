@@ -1,0 +1,31 @@
+
+// To use this file, first invoke Mathematica with the following line:
+// /Applications/Mathematica.app/Contents/MacOS/WolframKernel -noprompt -initfile /Users/robertread/PubInv/math-tablet/experiments/wolframClientForPython-exper/WolframClientForPython/wolframclient/evaluation/kernel/initkernel_pln.m -run 'ClientLibrary`Private`SlaveKernelPrivateStart["tcp://127.0.0.1:52817", "tcp://127.0.0.1:52818"]';.
+
+
+var socket_uri_A = 'tcp://127.0.0.1:52817';
+var socket_uri_B = 'tcp://127.0.0.1:52818';
+
+// producer.js
+var zmq = require('zeromq');
+var sockPush = zmq.socket('push');
+
+sockPush.bindSync(socket_uri_A);
+console.log('Producer bound to port 3000');
+
+var i = 0;
+// EX: sockPush.send('x = 6');
+
+// worker.js
+var sockPull = zmq.socket('pull');
+
+// sock.connect(socket_uri_B);
+sockPull.bindSync(socket_uri_B);
+console.log('Worker connected to port 3000');
+
+sockPull.on('message', function(msg){
+
+  gmsg = msg;
+  console.log('work: %s', msg.toString());
+  console.log('raw: %s', msg);
+});
