@@ -35,7 +35,7 @@ type Stylable = Thought|Style;
 type StylableId = number;
 // type StyleRule = (tdoc: TDoc, style: Style)=>Style[];
 type TextData = string;
-type TDocName = string;
+export type TDocName = string;
 
 export interface TDocOptions {
   anonymous?: boolean;
@@ -203,11 +203,20 @@ export class TDoc extends EventEmitter {
 
   // Public Instance Methods
 
-  public close() {
+  public async close(): Promise<void> {
     if (this._closed) { throw new Error("Closing TDoc that is already closed."); }
-    if (!this._options.anonymous) { TDoc.sOpenDocs.delete(this._name); }
+    console.log(`TDoc: closing: ${this._name}`);
     this._closed = true;
+    if (!this._options.anonymous) { TDoc.sOpenDocs.delete(this._name); }
     this.emit('close');
+
+    // If the tdoc is waiting to be saved, then save it now.
+    if (this._saveTimeout) {
+      clearTimeout(this._saveTimeout);
+      delete this._saveTimeout;
+      await this.save();
+    }
+    console.log(`TDoc: closed: ${this._name}`);
   }
 
   // Deletes the specified style and any styles attached to it recursively.
@@ -260,6 +269,7 @@ export class TDoc extends EventEmitter {
   // Private Class Properties
 
   private static sEventEmitter = new EventEmitter();
+  // TODO: inspector page where we can see a list of the open TDocs.
   private static sOpenDocs = new Map<TDocName, TDoc>();
 
   // Private Class Methods
@@ -363,22 +373,17 @@ export class TDoc extends EventEmitter {
   // notifyChange will call this method if the TDoc is persistent.
   private scheduleSave(): void {
     if (this._saveTimeout) {
-      console.log(`Postponing save timeout: ${this._name}`);
+      console.log(`TDoc: postponing save timeout: ${this._name}`);
       clearTimeout(this._saveTimeout); 
     } else {
-      console.log(`Scheduling save timeout: ${this._name}`);
+      console.log(`TDoc: scheduling save timeout: ${this._name}`);
     }
     this._saveTimeout = setTimeout(async ()=>{
+      delete this._saveTimeout;
       try {
-        // TODO: Handle this in a more robust way.
-        if (this._saving) { throw new Error(`Taking longer that ${SAVE_TIMEOUT_MS}ms to save.`); }
-        console.log(`Saving ${this._name}`);
-        delete this._saveTimeout;
-        this._saving = true;
         await this.save();
-        this._saving = false;
       } catch(err) {
-        console.error(`Error saving ${this._name}: ${err.message}`);
+        console.error(`TDoc: error saving ${this._name}: ${err.message}`);
         // TODO: What else should we do besides log an error?
       }
     }, SAVE_TIMEOUT_MS);
@@ -388,10 +393,15 @@ export class TDoc extends EventEmitter {
   // Changes to the document should result in calls to notifyChange,
   // which will schedule a save, eventually getting here.
   private async save(): Promise<void> {
+    // TODO: Handle this in a more robust way.
+    if (this._saving) { throw new Error(`Taking longer that ${SAVE_TIMEOUT_MS}ms to save.`); }
+    console.log(`TDoc: saving ${this._name}`);
+    this._saving = true;
     const fileName = `${this._name}${NOTEBOOK_FILENAME_SUFFIX}`;
     const filePath = join(homeDir(), USR_DIR, fileName);
     const json = JSON.stringify(this);
     await writeFile2(filePath, json, 'utf8');
+    this._saving = false;
   }
 
 }

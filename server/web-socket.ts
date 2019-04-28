@@ -25,10 +25,12 @@ import { Request } from 'express';
 import * as WebSocket from 'ws';
 
 import { OpenTDoc } from './open-tdoc';
+import { TDocName } from './tdoc';
 
 // Exported Functions
 
 export function initialize(server: Server) {
+  console.log("Web Socket: initialize");
   const wss = new WebSocket.Server({ server });
   wss.on('connection', onConnection);
 }
@@ -36,14 +38,13 @@ export function initialize(server: Server) {
 // Event Handlers
 
 async function onConnection(ws: WebSocket, req: Request): Promise<void> {
-  // try {
-    console.log(`New socket connection to: ${req.url}`);
+  try {
+    console.log(`Web Socket: connection to: ${req.url}`);
     const urlComponents = req.url.split('/');
     if (urlComponents.length!=3) { throw new Error("Unexpected path in socket connection URL."); }
-    const userName = urlComponents[1];
-    const notebookName = urlComponents[2];
-    await OpenTDoc.connect(userName, notebookName, ws);
-  // } catch(err) {
-  //   console.error("Unexpected error handling web-socket connection event.");
-  // }
+    const name: TDocName = `${urlComponents[1]}/${urlComponents[2]}`;
+    await OpenTDoc.connect(name, ws);
+  } catch(err) {
+     console.error(`Web Socket: unexpected error handling web-socket connection event: ${err.message}`);
+  }
 }

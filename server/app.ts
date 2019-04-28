@@ -31,10 +31,11 @@ import { middleware as stylusMiddleware } from 'stylus';
 import { initialize as initializeMathematicaCas } from './mathematica-cas';
 import { initialize as initializeMathJsCas } from './mathjs-cas';
 import { initialize as initializeMathStepsCas } from './math-steps-cas';
+import { initialize as initializeWebSockets } from './web-socket';
+import { OpenTDoc } from './open-tdoc';
 
 import { router as apiRouter } from './routes/api';
 import { router as indexRouter } from './routes/index';
-import { initialize as initializeWebSockets } from './web-socket';
 
 // Helper Functions
 
@@ -54,6 +55,8 @@ async function main() {
     initializeMathJsCas(),
     initializeMathStepsCas(),
   ]);
+
+  OpenTDoc.initialize();
 
   const app: express.Express = express();
 
