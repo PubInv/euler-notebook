@@ -71,7 +71,8 @@ async function main() {
   app.get('/javascripts/myscript.min.js.map', (_req: express.Request, res: express.Response)=>res.sendFile(`${__dirname}/node_modules/myscript/dist/myscript.min.js.map`));
 
   app.use(express.json());
-  app.use(express.urlencoded({ extended: false }));
+  // REVIEW: There seems to be some reason not to use extended flag. Investigate.
+  app.use(express.urlencoded({ extended: true }));
   app.use(cookieParser());
   app.use(stylusMiddleware(join(__dirname, 'public')));
   app.use(express.static(join(__dirname, 'public')));

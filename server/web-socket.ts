@@ -39,7 +39,7 @@ export function initialize(server: Server) {
 
 async function onConnection(ws: WebSocket, req: Request): Promise<void> {
   try {
-    console.log(`Web Socket: connection to: ${req.url}`);
+    console.log(`Web Socket: new connection: ${req.url}`);
     const urlComponents = req.url.split('/');
     if (urlComponents.length!=3) { throw new Error("Unexpected path in socket connection URL."); }
     const name: TDocName = `${urlComponents[1]}/${urlComponents[2]}`;

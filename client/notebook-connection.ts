@@ -19,6 +19,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 // Requirements
 
+import { addErrorMessageToHeader } from './global.js';
 import { Jiix, StrokeGroups } from './myscript-types.js';
 import { ClientMessage, LatexMath, MathJsText, NotebookName, ServerMessage, StyleId, StyleObject,
          ThoughtId, ThoughtObject, UserName } from './math-tablet-api.js';
@@ -69,8 +70,10 @@ export class NotebookConnection {
     this.thoughtElements = new Map();
     this.ws = ws;
 
-    ws.addEventListener('open', ()=>{ this.onOpen(); });
-    ws.addEventListener('message', (event: MessageEvent)=>this.onMessage(event));
+    ws.addEventListener('close', (event: CloseEvent)=>this.onWsClose(event));
+    ws.addEventListener('error', (event: Event)=>this.onWsError(event));
+    ws.addEventListener('message', (event: MessageEvent)=>this.onWsMessage(event));
+    ws.addEventListener('open', ()=>{ this.onWsOpen(); });
 
     $tDocElt.addEventListener('click', (event: MouseEvent)=>{ this.onClick(event); })
   }
@@ -94,10 +97,25 @@ export class NotebookConnection {
     }
   }
 
-  private onMessage(event: MessageEvent): void {
+  private onWsClose(event: CloseEvent): void {
+    // For terminating server: code = 1006, reason = "";
+    console.log(`Notebook Conn: socket closed: ${event.code} ${event.reason}`);
+    console.dir(event);
+    addErrorMessageToHeader(`Socket closed by server. Refresh this page in your browser to reconnect.`);
+    // LATER: Attempt to reconnect after a few seconds with exponential backoff.
+  }
+
+  private onWsError(event: Event): void {
+    console.error(`Notebook Conn: socket error.`);
+    console.dir(event);
+    // REVIEW: Is the socket stull usable? Is the socket closed? Will we also get a close event?
+    addErrorMessageToHeader(`Socket error. Refresh this page in your browser to reconnect.`);
+  }
+
+  private onWsMessage(event: MessageEvent): void {
     try {
       const msg: ServerMessage = JSON.parse(event.data);
-      console.log(`Received socket message: ${msg.action}`);
+      console.log(`Notebook Conn: socket message: ${msg.action}`);
       // console.dir(msg);
       switch(msg.action) {
       case 'deleteStyle': this.deleteStyle(msg.styleId); break;
@@ -114,9 +132,9 @@ export class NotebookConnection {
     }
   }
 
-  private onOpen(): void {
+  private onWsOpen(): void {
     try {
-      console.log("WebSocket opened.");
+      console.log("Notebook Conn: socket opened.");
       this.clear();
       this.sendMessage({ action: 'refreshNotebook' });
     } catch(err) {

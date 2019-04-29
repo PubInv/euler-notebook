@@ -94,14 +94,27 @@ export declare interface TDoc {
 
 export class TDoc extends EventEmitter {
 
+  // Public Class Properties
+
+  public static allTDocs(): IterableIterator<TDoc> {
+    return this.sTDocs.values();
+  }
+
   // Public Class Methods
+
+  public static async closeAll(): Promise<void> {
+    console.log(`TDoc: closing all: ${this.sTDocs.size}`);
+    const tDocs = Array.from(this.sTDocs.values());
+    const promises = tDocs.map(td=>td.close());
+    await Promise.all(promises);
+  }
 
   public static async create(name: TDocName, options: TDocOptions): Promise<TDoc> {
 
     if (options.anonymous) { throw new Error(`Cannot use anonymous option with named tdoc.`); }
 
     // If the document is already open, then return the existing instance.
-    const openTDoc = this.sOpenDocs.get(name);
+    const openTDoc = this.sTDocs.get(name);
     if (openTDoc) { throw new Error(`A TDoc with that name already exists: ${name}`); }
 
     const tDoc = new this(name, options);
@@ -126,7 +139,7 @@ export class TDoc extends EventEmitter {
     if (options.anonymous) { throw new Error(`Cannot open anonymous tdoc. Use create.`); }
 
     // If the document is already open, then return the existing instance.
-    const openTDoc = this.sOpenDocs.get(name);
+    const openTDoc = this.sTDocs.get(name);
     if (openTDoc) { return openTDoc; }
 
     if (!NAME_RE.test(name)) { throw new Error(`Illegal TDoc name: ${name}`)}
@@ -207,7 +220,7 @@ export class TDoc extends EventEmitter {
     if (this._closed) { throw new Error("Closing TDoc that is already closed."); }
     console.log(`TDoc: closing: ${this._name}`);
     this._closed = true;
-    if (!this._options.anonymous) { TDoc.sOpenDocs.delete(this._name); }
+    if (!this._options.anonymous) { TDoc.sTDocs.delete(this._name); }
     this.emit('close');
 
     // If the tdoc is waiting to be saved, then save it now.
@@ -270,7 +283,7 @@ export class TDoc extends EventEmitter {
 
   private static sEventEmitter = new EventEmitter();
   // TODO: inspector page where we can see a list of the open TDocs.
-  private static sOpenDocs = new Map<TDocName, TDoc>();
+  private static sTDocs = new Map<TDocName, TDoc>();
 
   // Private Class Methods
 
@@ -344,11 +357,11 @@ export class TDoc extends EventEmitter {
     this.notifyChange(change);
   }
 
-  // This should be called on any newly created TDoc immediately after the constructor. 
+  // This should be called on any newly created TDoc immediately after the constructor.
   private initialize(): void {
     if (!this._options.anonymous) {
-      if (TDoc.sOpenDocs.has(this._name)) { throw new Error(`Initializing a TDoc with a name that already exists.`); }
-      TDoc.sOpenDocs.set(this._name, this);
+      if (TDoc.sTDocs.has(this._name)) { throw new Error(`Initializing a TDoc with a name that already exists.`); }
+      TDoc.sTDocs.set(this._name, this);
     }
     TDoc.sEventEmitter.emit('open', this);
   }
@@ -374,7 +387,7 @@ export class TDoc extends EventEmitter {
   private scheduleSave(): void {
     if (this._saveTimeout) {
       console.log(`TDoc: postponing save timeout: ${this._name}`);
-      clearTimeout(this._saveTimeout); 
+      clearTimeout(this._saveTimeout);
     } else {
       console.log(`TDoc: scheduling save timeout: ${this._name}`);
     }

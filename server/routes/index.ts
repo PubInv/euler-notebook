@@ -54,6 +54,9 @@ router.get('/', async function(req: Request, res: Response, next: NextFunction) 
   }
 });
 
+router.get('/dashboard', onDashboard);
+router.post('/dashboard', onDashboard);
+
 router.get('/:userName', async function(req: Request, res: Response, next: NextFunction) {
   try { await onUserPage(req, res, next); }
   catch(err) {
@@ -137,6 +140,26 @@ async function onUserPage(req: Request, res: Response, next: NextFunction): Prom
   } else {
     // LATER: Redirect back to home page and show an error message.
     res.status(404).send(`User ${userName} doesn't exist.`);
+  }
+}
+
+// Route Functions
+
+async function onDashboard(req: Request, res: Response) {
+  try {
+    // REVIEW: Does Pug support iteration over iterables? If so, then we don't need to convert to an array.
+    //         Pug issue 2559 (https://github.com/pugjs/pug/issues/2559), last updated Mar 2017, says no.
+    const tDocs: TDoc[] = Array.from(TDoc.allTDocs());
+
+    if (req.method == 'POST') {
+      console.dir(req.body);
+    }
+
+    res.render('dashboard', { tDocs });
+  } catch(err) {
+    console.error(err.message);
+    console.log(err.stack);
+    res.send(`Server crash in onDashboard: ${err.message}`);
   }
 }
 
