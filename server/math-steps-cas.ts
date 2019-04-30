@@ -22,7 +22,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 import * as mathsteps from 'mathsteps';
 import * as math from 'mathjs';
 
-import { Change as TDocChange, TDoc, Style }  from './tdoc';
+import { TDoc, TDocChange, Style }  from './tdoc';
 
 // Types
 
@@ -82,9 +82,7 @@ async function onStyleInserted(tDoc: TDoc, style: Style): Promise<void> {
                       steps);
 
     // should we return the new style here? I suppose not.
-    tDoc.insertTextStyle(style,expressionStringStream,
-                         'INDENTED',
-                         'MATHSTEPS');
+    tDoc.insertTextStyle(style, expressionStringStream, 'INDENTED', 'MATHSTEPS');
 
   }
   // @ts-ignore // TYPESCRIPT:
@@ -96,9 +94,7 @@ async function onStyleInserted(tDoc: TDoc, style: Style): Promise<void> {
                       steps2);
 
     // should we return the new style here? I suppose not.
-    tDoc.insertTextStyle(style,equationStringStream,
-                         'INDENTED',
-                         'MATHSTEPS');
+    tDoc.insertTextStyle(style, equationStringStream, 'INDENTED', 'MATHSTEPS');
   }
 }
 

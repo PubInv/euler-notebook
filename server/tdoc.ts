@@ -24,7 +24,7 @@ import { readFile, writeFile } from 'fs';
 import { join } from 'path';
 import { promisify } from 'util';
 
-import { Jiix, LatexMath, MathJsText, StrokeGroups, StyleObject, StyleMeaning, StyleSource, StyleType, TDocObject, ThoughtObject, ThoughtId, StyleId } from '../client/math-tablet-api';
+import { NotebookChange, Jiix, LatexMath, MathJsText, StrokeGroups, StyleObject, StyleMeaning, StyleSource, StyleType, TDocObject, ThoughtObject, ThoughtId, StyleId } from '../client/math-tablet-api';
 
 const readFile2 = promisify(readFile);
 const writeFile2 = promisify(writeFile);
@@ -41,9 +41,9 @@ export interface TDocOptions {
   anonymous?: boolean;
 }
 
-// Change event types:
+// TDocChange. Keep in sync with NotebookChange
 
-export type Change = StyleDeleted|StyleInserted|ThoughtDeleted|ThoughtInserted;
+export type TDocChange = StyleDeleted|StyleInserted|ThoughtDeleted|ThoughtInserted;
 
 interface StyleDeleted {
   type: 'styleDeleted';
@@ -85,9 +85,10 @@ export const USR_DIR = 'math-tablet-usr';
 // 0.0.2 - Made meaning required on styles.
 const VERSION = "0.0.2";
 
+// REVIEW: Are there other event emitters in our project that need similar declarations?
 // See https://stackoverflow.com/questions/39142858/declaring-events-in-a-typescript-class-which-extends-eventemitter
 export declare interface TDoc {
-  on(event: 'change', listener: (change: Change)=> void): this;
+  on(event: 'change', listener: (change: NotebookChange)=> void): this;
   on(event: 'close', listener: ()=> void): this;
   on(event: string, listener: Function): this;
 }
@@ -272,7 +273,7 @@ export class TDoc extends EventEmitter {
     this.assertNotClosed('insertThought');
     const thought = new Thought(this.nextId++);
     this.thoughts.push(thought);
-    const change: Change = { type: 'thoughtInserted', thought };
+    const change: NotebookChange = { type: 'thoughtInserted', thought: thought.toJSON() };
     this.notifyChange(change);
     return thought;
   }
@@ -342,7 +343,7 @@ export class TDoc extends EventEmitter {
     const style = this.styles[index];
     if (index<0) { throw new Error(`Deleting unknown style ${styleId}`); }
     this.styles.splice(index, 1);
-    const change: Change = { type: 'styleDeleted', styleId, stylableId: style.stylableId };
+    const change: NotebookChange = { type: 'styleDeleted', styleId, stylableId: style.stylableId };
     this.notifyChange(change);
   }
 
@@ -353,7 +354,7 @@ export class TDoc extends EventEmitter {
     const index = this.thoughts.findIndex(t=>(t.id==thoughtId));
     if (index<0) { throw new Error(`Deleting unknown thought ${thoughtId}`); }
     this.thoughts.splice(index, 1);
-    const change: Change = { type: 'thoughtDeleted', thoughtId };
+    const change: NotebookChange = { type: 'thoughtDeleted', thoughtId };
     this.notifyChange(change);
   }
 
@@ -370,13 +371,13 @@ export class TDoc extends EventEmitter {
   private insertStyle<T extends Style>(style: T): T {
     this.assertNotClosed('insertStyle');
     this.styles.push(style);
-    const change: Change = { type: 'styleInserted', style };
+    const change: NotebookChange = { type: 'styleInserted', style: style.toJSON() };
     this.notifyChange(change);
     return style;
   }
 
   // Call this method whenever you modify the tdoc.
-  private notifyChange(change: Change) {
+  private notifyChange(change: NotebookChange) {
     this.emit('change', change);
     if (!this._options.anonymous) { this.scheduleSave(); }
   }

@@ -31,8 +31,7 @@ import { middleware as stylusMiddleware } from 'stylus';
 import { initialize as initializeMathematicaCas } from './mathematica-cas';
 import { initialize as initializeMathJsCas } from './mathjs-cas';
 import { initialize as initializeMathStepsCas } from './math-steps-cas';
-import { initialize as initializeWebSockets } from './web-socket';
-import { OpenTDoc } from './open-tdoc';
+import { ClientSocket } from './client-socket';
 
 import { router as apiRouter } from './routes/api';
 import { router as indexRouter } from './routes/index';
@@ -55,8 +54,6 @@ async function main() {
     initializeMathJsCas(),
     initializeMathStepsCas(),
   ]);
-
-  OpenTDoc.initialize();
 
   const app: express.Express = express();
 
@@ -125,7 +122,7 @@ async function main() {
     console.log('Listening on ' + bind);
   });
 
-  initializeWebSockets(server);
+  ClientSocket.initialize(server);
 }
 
 main().then(

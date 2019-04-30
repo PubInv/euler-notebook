@@ -22,7 +22,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 import * as math from 'mathjs';
 
 import { LatexMath, MathJsText } from '../client/math-tablet-api';
-import { Change as TDocChange, TDoc, Style }  from './tdoc';
+import { Style, TDoc, TDocChange }  from './tdoc';
 
 // Types
 

@@ -89,52 +89,94 @@ export interface ThoughtObject {
   id: ThoughtId;
 }
 
-// Messages from the server
+// Notebook Change types:
 
-export type ServerMessage = DeleteStyle|DeleteThought|InsertStyle|InsertThought;
+export type NotebookChange = StyleDeleted|StyleInserted|ThoughtDeleted|ThoughtInserted;
 
-interface DeleteStyle {
-  action: 'deleteStyle';
-  styleId: number;
+interface StyleDeleted {
+  type: 'styleDeleted';
+  // REVIEW: This is probably not sufficient info,
+  //         as the style has already been deleted from
+  //         the TDoc when this event is fired.
+  stylableId: StylableId;
+  styleId: StyleId;
 }
 
-interface InsertStyle {
-  action: 'insertStyle';
+interface StyleInserted {
+  type: 'styleInserted';
   style: StyleObject;
 }
 
-// Also a client message
-interface DeleteThought {
-  action: 'deleteThought';
-  thoughtId: number;
+interface ThoughtDeleted {
+  type: 'thoughtDeleted';
+  // REVIEW: This is probably not sufficient info,
+  //         as the thought has already been deleted from
+  //         the TDoc when this event is fired.
+  thoughtId: ThoughtId;
 }
 
-interface InsertThought {
-  action: 'insertThought';
+interface ThoughtInserted {
+  type: 'thoughtInserted';
   thought: ThoughtObject;
+}
+
+// Messages from the server
+
+export type ServerMessage = NotebookChanged|NotebookClosed|NotebookOpened;
+
+interface NotebookChanged {
+  action: 'notebookChanged';
+  notebookName: NotebookName;
+  change: NotebookChange;
+}
+
+interface NotebookClosed {
+  action: 'notebookClosed';
+  notebookName: NotebookName;
+}
+
+interface NotebookOpened {
+  action: 'notebookOpened';
+  notebookName: NotebookName;
+  notebook: TDocObject;
 }
 
 // Messages from the client
 
-export type ClientMessage = DeleteThought|InsertHandwrittenMath|InsertHandwrittenText|InsertMathJsText|RefreshNotebook;
+export type ClientMessage = CloseNotebook|DeleteThought|InsertHandwrittenMath|InsertHandwrittenText|InsertMathJsText|OpenNotebook;
+
+interface CloseNotebook {
+  action: 'closeNotebook';
+  notebookName: NotebookName;
+}
+
+interface DeleteThought {
+  action: 'deleteThought';
+  notebookName: NotebookName;
+  thoughtId: number;
+}
 
 interface InsertHandwrittenMath {
   action: 'insertHandwrittenMath';
+  notebookName: NotebookName;
   latexMath: LatexMath;
   jiix: Jiix;
 }
 
 interface InsertHandwrittenText {
-action: 'insertHandwrittenText';
-text: string;
-strokeGroups: StrokeGroups;
+  action: 'insertHandwrittenText';
+  notebookName: NotebookName;
+  text: string;
+  strokeGroups: StrokeGroups;
 }
 
 interface InsertMathJsText {
   action: 'insertMathJsText';
+  notebookName: NotebookName;
   mathJsText: MathJsText;
 }
 
-interface RefreshNotebook {
-  action: 'refreshNotebook';
+interface OpenNotebook {
+  action: 'openNotebook';
+  notebookName: NotebookName;
 }

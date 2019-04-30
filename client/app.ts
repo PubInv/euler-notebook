@@ -25,7 +25,8 @@ import { getMyScript, Configuration, Editor, EditorElement, EditorChangedEvent, 
 import { addErrorMessageToHeader, /* addSuccessMessageToHeader */} from './global.js';
 // import { apiPostRequest } from './api.js';
 // import { StyleObject, ThoughtObject }  from './math-tablet-api.js';
-import { NotebookConnection } from './notebook-connection.js';
+import { Notebook } from './notebook.js';
+import { ServerSocket } from './server-socket.js';
 
 // Types
 
@@ -33,7 +34,8 @@ type InputMethod = 'Math'|'MathJsPlain'|'Text';
 
 // Global Variables
 
-let gNotebookConnection: NotebookConnection;
+let gSocket: ServerSocket;
+let gNotebook: Notebook;
 let gEditor: Editor|undefined;
 let gInputMethod: InputMethod|undefined;
 
@@ -65,14 +67,14 @@ async function onDomReady(_event: Event){
     switchInput('MathJsPlain');
 
     // Make websocket connection to the notebook.
-    const url = window.location.pathname;
-    const urlComponents = url.split('/');
-    if (urlComponents.length!=3) { throw new Error("Unexpected URL path."); }
-    const userName = urlComponents[1];
-    const notebookName = urlComponents[2];
-    // TODO: get URL from window.location
-    const wsUrl = `ws://localhost:3000/${userName}/${notebookName}`;
-    gNotebookConnection = await NotebookConnection.connect(wsUrl, userName, notebookName, $('#tDoc'));
+    const wsUrl = `ws://${window.location.host}/`;
+    gSocket = await ServerSocket.connect(wsUrl);
+
+    // Open the notebook specified in our URL.
+    const notebookName = window.location.pathname.slice(1);
+    gNotebook = await gSocket.openNotebook(notebookName);
+
+    $('#tdoc').appendChild(gNotebook.$elt);
 
   } catch (err) {
     showErrorMessage("Error initializing math tablet.", err);
@@ -99,14 +101,14 @@ function onInsertButtonClicked(_event: Event) {
       if (!editor) { throw new Error(); }
       const latex = editor.exports && editor.exports['application/x-latex'];
       const jiix = editor.exports && editor.exports['application/vnd.myscript.jiix'];
-      gNotebookConnection.insertHandwrittenMath(latex, jiix);
+      gNotebook.insertHandwrittenMath(latex, jiix);
       editor.clear();
       break;
     }
     case 'MathJsPlain': {
       const $field = $<HTMLInputElement>('#inputMathJsPlain>input');
       const text = $field.value;
-      gNotebookConnection.insertMathJsText(text);
+      gNotebook.insertMathJsText(text);
       $field.value = $('#previewMathJsPlain').innerText = '';
       break;
     }
@@ -115,7 +117,7 @@ function onInsertButtonClicked(_event: Event) {
       if (!editor) { throw new Error(); }
       const text = editor.exports && editor.exports['text/plain'];
       const strokeGroups = editor.model.strokeGroups;
-      gNotebookConnection.insertHandwrittenText(text, strokeGroups);
+      gNotebook.insertHandwrittenText(text, strokeGroups);
       editor.clear();
       break;
     }

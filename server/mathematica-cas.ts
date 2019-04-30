@@ -19,7 +19,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 // Requirements
 
-import { TDoc, Change as TDocChange } from './tdoc';
+import { TDoc, TDocChange } from './tdoc';
 
 // Exports
 
