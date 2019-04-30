@@ -62,6 +62,45 @@ var gmsg;
 var gmsg_str;
 var gobj;
 
+async function f() {
+
+  let promise = new Promise((resolve, reject) => {
+    setTimeout(() => resolve("done!"), 1000)
+  });
+
+  let result = await promise; // wait till the promise resolves (*)
+
+  console.log("DONE!",result); // "done!"
+}
+
+
+async function evaluateExpressionPromise(expr) {
+  return new Promise(function(resolve,reject) {
+    sockPull.on('message', function(msg) {
+      console.log('work: %s', msg.toString());
+
+      gmsg = msg;
+      // WARNING!!! This seems to work, but is a fragile
+      // about the way zeromq is serilalizing a message.
+      // Probably a careful analysis of the Wolfram Client Python
+      // library would allow us to duplciate the deserialization
+      // fully in Node, rather than this crummy hack, which
+      // seems to work.
+      let preamble_len = "8:fsTimesS�".length+3;
+      gmsg_str = gmsg.toString().substring(preamble_len);
+      console.log('gmsg_str: %s', gmsg_str);
+
+      // WARNING!!! yet another hack to remove the
+      // some trailing data.
+      gmsg_str = gmsg_str.replace('s\u0004Null','');
+      console.log('Replaced gmsg_str: %s', gmsg_str);
+      gobj = JSON.parse(gmsg_str);
+      resolve(gmsg_str);
+    });
+  }
+                    );
+}
+
 sockPull.on('message', function(msg){
 
   console.log('work: %s', msg.toString());
@@ -84,3 +123,9 @@ sockPull.on('message', function(msg){
   console.log('Replaced gmsg_str: %s', gmsg_str);
   gobj = JSON.parse(gmsg_str);
 });
+
+async function e_expr(str) {
+  sockPush.send(str);
+  var result = await(evaluateExpressionPromise(str));
+  console.log("EXRESSION RESULT = ", result);
+}

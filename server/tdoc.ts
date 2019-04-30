@@ -533,6 +533,23 @@ export class MathJsStyle extends Style {
   source: StyleSource;
 }
 
+export class MthMtcaStyle extends Style {
+  // Call tDoc.insertMathJsPlainStyle instead of calling this constructor directly.
+  /* private */ constructor(id: StylableId, stylable: Stylable, data: MathJsText, meaning: StyleMeaning, source: StyleSource) {
+    super(id, stylable);
+    this.type = 'MATHEMATICA';
+    this.data = data;
+    this.meaning = meaning;
+    this.source = source;
+  }
+
+  // Instance Properties
+  type: 'MATHEMATICA';
+  data: MathJsText;
+  meaning: StyleMeaning;
+  source: StyleSource;
+}
+
 class StrokeStyle extends Style {
   // Call tDoc.insertStrokeStyle instead of calling this constructor directly.
   /* private */ constructor(id: StylableId, stylable: Stylable, data: StrokeGroups, meaning: StyleMeaning, source: StyleSource) {
