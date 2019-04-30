@@ -17,40 +17,10 @@ You should have received a copy of the GNU Affero General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#fixedHeader
-  background-color yellow
-  left 0
-  position fixed
-  top 0
-  width 100%
+// BE VERY SPARING OF WHAT YOU PUT IN HERE!
+// THIS SHOULD *NOT* DEPEND ON OTHER FILES OR LIBRARIES!
 
-  > *
-    padding 8pt
-    border-bottom 1px solid black
-
-  .banner
-    background-color lightblue
-    color black
-
-  .close
-    color inherit
-    background-color transparent
-    border none
-    padding 0
-    float right
-
-  .error
-    background-color red
-    color white
-
-  .success
-    background-color green
-    color white
-
-  .warning
-    background-color yellow
-    color black
-
-body
-  font-family Arial, Helvetica, sans-serif
-
+export interface UnsettledPromise<T> {
+  resolve: (s: T)=>void;
+  reject: (err: Error)=>void
+}

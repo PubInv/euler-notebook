@@ -28,10 +28,10 @@ import { Notebook } from './notebook.js';
 
 // Types
 
-type ConnectPromise = OutstandingPromise<ServerSocket>;
-type OpenPromise = OutstandingPromise<Notebook>;
+type ConnectPromise = UnsettledPromise<ServerSocket>;
+type OpenPromise = UnsettledPromise<Notebook>;
 
-interface OutstandingPromise<T> {
+interface UnsettledPromise<T> {
   resolve: (s: T)=>void;
   reject: (err: Error)=>void
 }
@@ -94,6 +94,7 @@ export class ServerSocket {
 
   // Private Event Handlers
 
+  // See https://github.com/Luka967/websocket-close-codes.
   private onWsClose(event: CloseEvent): void {
     // For terminating server: code = 1006, reason = "";
     console.log(`Notebook Conn: socket closed: ${event.code} ${event.reason}`);

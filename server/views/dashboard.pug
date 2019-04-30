@@ -18,27 +18,42 @@
 
 extends layout
 
+//- block metatags
+//-   meta(http-equiv='refresh' content=5)
+
+block styles
+  link(rel='stylesheet', href='/stylesheets/dashboard.css')
+
 block content
+
+  h1 Math Tablet Dashboard
 
   form(method='post')
     table
       tr
-        td(colspan=2) Client Sockets
+        th(colspan=3) Client Sockets
+      tr
+        th
+        th Socket
+        th Notebooks
       if clientSockets.length == 0
         tr
-          td(colspan=2)
+          td(colspan=3)
             i No open client sockets.
       each clientSocket in clientSockets
         tr
           td
             input(type='checkbox', name=`clientSockets[${clientSocket.id}]`)
           td= clientSocket.id
-    button(type='submit', name='action', value='closeClient') Close
+          td= Array.from(clientSocket.allNotebooks()).map(n=>n._name).join(", ")
+      tr
+        td(colspan=3)
+          button(type='submit', name='action', value='closeClient') Close
 
   form(method='post')
     table
       tr
-        td(colspan=2) Notebooks
+        th(colspan=2) Notebooks
       if tDocs.length == 0
         tr
           td(colspan=2)
@@ -48,4 +63,6 @@ block content
           td
             input(type='checkbox', name=`notebooks[${tDoc._name}]`)
           td= tDoc._name
-    button(type='submit', name='action', value='closeNotebook') Close
+      tr
+        td(colspan=2)
+          button(type='submit', name='action', value='closeNotebook') Close

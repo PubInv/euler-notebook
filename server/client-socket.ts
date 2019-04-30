@@ -26,8 +26,8 @@ import * as WebSocket from 'ws';
 
 import { ClientMessage, NotebookName, NotebookChange, ServerMessage, ThoughtId, LatexMath, Jiix, StrokeGroups, MathJsText } from '../client/math-tablet-api';
 
+import { UnsettledPromise } from './common';
 import { parseMathJsExpression, ParseResults } from './mathjs-cas';
-
 import { TDoc, TDocName } from './tdoc';
 
 // Types
@@ -55,10 +55,10 @@ export class ClientSocket {
 
   // Class Methods
 
-  public static close(id: ClientId): void {
+  public static close(id: ClientId, code?: number, reason?: string): Promise<void> {
     const instance = this.clientSockets.get(id);
     if (!instance) { throw new Error(`Unknown client socket ${id} requested in close.`); }
-    instance.close();
+    return instance.close(code, reason);
   }
 
   public static initialize(server: Server): void {
@@ -74,16 +74,21 @@ export class ClientSocket {
 
   // Instance Property Functions
 
-  public allTDocs(): IterableIterator<TDoc> {
+  public allNotebooks(): IterableIterator<TDoc> {
     return this.tDocs.values();
   }
 
   // Instance Methods
 
   // See https://github.com/Luka967/websocket-close-codes.
-  public close(): void {
+  public close(code?: number, reason?: string): Promise<void> {
+    // REVIEW: Should we check ws.readyState
+    if (this.closePromise) { throw new Error(`Attempting to close socket that has already been closed.`); }
     console.log(`Client Socket ${this.id}: socket close requested.`);
-    this.socket.close(4000, 'dashboard');
+    return new Promise((resolve, reject)=>{
+      this.closePromise = { resolve, reject };
+      this.socket.close(code, reason);
+    });
   }
 
   // --- PRIVATE ---
@@ -146,6 +151,7 @@ export class ClientSocket {
 
   // Private Instance Properties
   // private closeTimeout?: NodeJS.Timeout;
+  private closePromise?: UnsettledPromise<void>;
   private socket: WebSocket;
   private tDocs: Map<TDocName,TDoc>;
   private tDocListeners: Map<TDocName, TDocListeners>;
@@ -176,7 +182,10 @@ export class ClientSocket {
       // Normal close appears to be code 1001, reason empty string.
       console.log(`Client Socket: web socket closed: ${code} ${reason} ${this.tDocs.size}`);
 
-      for (const tDoc of this.allTDocs()) { this.closeNotebook(tDoc); }
+      if (this.closePromise) { this.closePromise.resolve(); }
+      // REVIEW: If not, then this close was initiated on the client side.
+
+      for (const tDoc of this.allNotebooks()) { this.closeNotebook(tDoc); }
       ClientSocket.clientSockets.delete(this.id);
 
     } catch(err) {
@@ -338,6 +347,7 @@ export class ClientSocket {
     console.log(`Client Socket: sending socket message ${msg.action}.`);
     try {
       // REVIEW: Should we check ws.readyState
+      // REVIEW: Should we use the callback to see if the message went through?
       this.socket.send(json);
     } catch(err) {
       console.error(`ERROR: OpenTDoc sending websocket message: ${this.socket.readyState} ${(<any>err).code} ${err.message}`)

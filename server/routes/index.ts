@@ -156,7 +156,7 @@ async function onDashboard(req: Request, res: Response) {
       case 'closeClient': {
         for (const clientId of Object.keys(req.body.clientSockets)) {
           console.log(`Closing client ${clientId}`);
-          ClientSocket.close(clientId);
+          await ClientSocket.close(clientId, 4000, 'dashboard');
         }
         break;
       }
