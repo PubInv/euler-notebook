@@ -26,7 +26,7 @@ import * as WebSocket from 'ws';
 
 import { ClientMessage, NotebookName, NotebookChange, ServerMessage, ThoughtId, LatexMath, Jiix, StrokeGroups, MathJsText } from '../client/math-tablet-api';
 
-import { UnsettledPromise } from './common';
+import { PromiseResolver } from './common';
 import { parseMathJsExpression, ParseResults } from './mathjs-cas';
 import { TDoc, TDocName } from './tdoc';
 
@@ -82,13 +82,27 @@ export class ClientSocket {
 
   // See https://github.com/Luka967/websocket-close-codes.
   public close(code?: number, reason?: string): Promise<void> {
-    // REVIEW: Should we check ws.readyState
-    if (this.closePromise) { throw new Error(`Attempting to close socket that has already been closed.`); }
-    console.log(`Client Socket ${this.id}: socket close requested.`);
-    return new Promise((resolve, reject)=>{
-      this.closePromise = { resolve, reject };
-      this.socket.close(code, reason);
-    });
+    // REVIEW: Can a close fail? That is, can we make a socket.close() call
+    //         and never receive a 'close' event? (e.g. get 'error' event instead.)
+    if (!this.closePromise) {
+      if (this.socket.readyState != WebSocket.CLOSED) {
+        this.closePromise = new Promise((resolve, reject)=>{ this.closeResolver = { resolve, reject }; });
+        if (this.socket.readyState != WebSocket.CLOSING) {
+          console.log(`Client Socket ${this.id}: socket close requested.`);
+          this.socket.close(code, reason);
+        } else {
+          console.warn(`WARNING: Client Socket ${this.id}: closing socket that is closing.`)
+        }
+      } else {
+        console.warn(`WARNING: Client Socket ${this.id}: closing socket that is already closed.`)
+        this.closePromise = Promise.resolve(); 
+      }
+    } else { 
+      // REVIEW: This may not be an error.
+      console.warn(`WARNING: Client Socket ${this.id}: repeat close call.`);
+      return this.closePromise;
+    }
+    return this.closePromise;
   }
 
   // --- PRIVATE ---
@@ -102,35 +116,10 @@ export class ClientSocket {
   private static async onConnection(ws: WebSocket, req: Request): Promise<void> {
     try {
       console.log(`Client Socket: new connection: ${req.url}`);
-      // REVIEW: Better way to generate client id?
+      // TODO: Client generate ID and send it with connection.
       const id: ClientId = Date.now().toString();
       const instance = new this(id, ws);
       this.clientSockets.set(id, instance);
-      // const urlComponents = req.url.split('/');
-      // if (urlComponents.length!=3) { throw new Error("Unexpected path in socket connection URL."); }
-      // const name: TDocName = `${urlComponents[1]}/${urlComponents[2]}`;
-
-      // Opening the TDoc is asynchronous, and messages can come in during that time.
-      // We queue up any messages that come in during that time and dispatch them after
-      // the TDoc is opened.
-      // const msgQueue: WebSocket.Data[] = [];
-      // const listener = (m: WebSocket.Data)=>msgQueue.push(m);
-      // ws.addListener('message', listener);
-      // // REVIEW: What about listening for 'error' and 'close' events, etc.
-
-      // let rval = this.sClientSockets.get(name);
-      // if (!rval) {
-      //   await TDoc.open(name, {/* Default Options */});
-      //   // We will get a synchronous TDoc 'open' event, which will create the OpenTDoc instance.
-      //   rval = this.sClientSockets.get(name);
-      //   if (!rval) { throw new Error(`Client Socket: cannot find OpenTDoc after TDoc is opened: ${name}`) }
-      // }
-      // rval.(ws);
-
-      // // Dispatch any messages that came in.
-      // ws.removeListener('message', listener);
-      // for (const msg of msgQueue) { rval.onWsMessage(ws, msg); }
-
     } catch(err) {
        console.error(`Web Socket: unexpected error handling web-socket connection event: ${err.message}`);
     }
@@ -150,8 +139,8 @@ export class ClientSocket {
   }
 
   // Private Instance Properties
-  // private closeTimeout?: NodeJS.Timeout;
-  private closePromise?: UnsettledPromise<void>;
+  private closePromise?: Promise<void>;
+  private closeResolver?: PromiseResolver<void>;
   private socket: WebSocket;
   private tDocs: Map<TDocName,TDoc>;
   private tDocListeners: Map<TDocName, TDocListeners>;
@@ -182,7 +171,7 @@ export class ClientSocket {
       // Normal close appears to be code 1001, reason empty string.
       console.log(`Client Socket: web socket closed: ${code} ${reason} ${this.tDocs.size}`);
 
-      if (this.closePromise) { this.closePromise.resolve(); }
+      if (this.closeResolver) { this.closeResolver.resolve(); }
       // REVIEW: If not, then this close was initiated on the client side.
 
       for (const tDoc of this.allNotebooks()) { this.closeNotebook(tDoc); }
@@ -281,29 +270,6 @@ export class ClientSocket {
 
   // Private Instance Methods
 
-  // private addSocket(ws: WebSocket): void {
-  //   console.log(`Client Socket: adding web socket`);
-  //   if (this.closeTimeout) {
-  //     console.log(`Client Socket: aborting close timeout: ${this.tDoc._name}`);
-  //     clearTimeout(this.closeTimeout);
-  //     delete this.closeTimeout;
-  //   }
-  //   this.sockets.add(ws);
-  // }
-
-  // // This is called by a setTimeout call a few seconds after the last socket has closed.
-  // private close(): void {
-  //   console.log(`Client Socket: CLOSE TIMEOUT EXPIRED: ${this.tDoc._name}`)
-  //   if (this.sockets.size>0) {
-  //     console.error(`ERROR: OpenTDoc close timeout expired with sockets remaining.`);
-  //     return;
-  //   }
-  //   // REVIEW: Only close if we opened?
-  //   this.tDoc.close();
-  //   // NOTE: tDoc.close will emit the 'close' event, which will invoke this.onTDocClose,
-  //   //       which will remove us from the sOpenTDocs map.
-  // }
-
   private closeNotebook(tDoc: TDoc) {
     const notebookName = tDoc._name;
     /* const exists = */this.tDocs.delete(notebookName);
@@ -320,7 +286,6 @@ export class ClientSocket {
   }
 
   private async openNotebook(notebookName: NotebookName): Promise<void> {
-
     const tDoc = await TDoc.open(notebookName, {/* default options*/});
     const listeners: TDocListeners = {
       change: (ch: NotebookChange)=>this.onTDocChange(tDoc,ch),

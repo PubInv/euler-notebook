@@ -28,10 +28,11 @@ import { Notebook } from './notebook.js';
 
 // Types
 
-type ConnectPromise = UnsettledPromise<ServerSocket>;
-type OpenPromise = UnsettledPromise<Notebook>;
+type ConnectPromise = PromiseResolver<ServerSocket>;
+type OpenPromise = PromiseResolver<Notebook>;
 
-interface UnsettledPromise<T> {
+// REVIEW: This is also defined in server/common.ts.
+interface PromiseResolver<T> {
   resolve: (s: T)=>void;
   reject: (err: Error)=>void
 }
