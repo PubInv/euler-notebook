@@ -19,15 +19,33 @@
 extends layout
 
 block content
-  h1 Open TDocs
-  if tDocs.length>0
-    form(method='post')
-      table
-        each tDoc in tDocs
-          tr
-            td= tDoc._name
-            td
-              input(type='checkbox', name=`tDoc[${tDoc._name}]`)
-      button(type='submit', name='action', value='close') Close
-  else
-    i No open TDocs.
+
+  form(method='post')
+    table
+      tr
+        td(colspan=2) Client Sockets
+      if clientSockets.length == 0
+        tr
+          td(colspan=2)
+            i No open client sockets.
+      each clientSocket in clientSockets
+        tr
+          td
+            input(type='checkbox', name=`clientSockets[${clientSocket.id}]`)
+          td= clientSocket.id
+    button(type='submit', name='action', value='closeClient') Close
+
+  form(method='post')
+    table
+      tr
+        td(colspan=2) Notebooks
+      if tDocs.length == 0
+        tr
+          td(colspan=2)
+            i No open notebooks.
+      each tDoc in tDocs
+        tr
+          td
+            input(type='checkbox', name=`notebooks[${tDoc._name}]`)
+          td= tDoc._name
+    button(type='submit', name='action', value='closeNotebook') Close

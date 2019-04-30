@@ -47,16 +47,25 @@ interface TDocListeners {
 
 export class ClientSocket {
 
+  // Class Properties
+
+  public static allSockets(): IterableIterator<ClientSocket> {
+    return this.clientSockets.values();
+  }
+
   // Class Methods
+
+  public static close(id: ClientId): void {
+    const instance = this.clientSockets.get(id);
+    if (!instance) { throw new Error(`Unknown client socket ${id} requested in close.`); }
+    instance.close();
+  }
 
   public static initialize(server: Server): void {
     console.log("Client Socket: initialize");
     const wss = new WebSocket.Server({ server });
     wss.on('connection', (ws: WebSocket, req: Request)=>{ this.onConnection(ws, req); });
   }
-
-  // public static async connect(name: TDocName, ws: WebSocket): Promise<ClientSocket> {
-  // }
 
   // Instance Properties
 
@@ -71,11 +80,17 @@ export class ClientSocket {
 
   // Instance Methods
 
+  // See https://github.com/Luka967/websocket-close-codes.
+  public close(): void {
+    console.log(`Client Socket ${this.id}: socket close requested.`);
+    this.socket.close(4000, 'dashboard');
+  }
+
   // --- PRIVATE ---
 
   // Private Class Properties
 
-  private static sClientSockets = new Map<ClientId, ClientSocket>();
+  private static clientSockets = new Map<ClientId, ClientSocket>();
 
   // Private Class Methods
 
@@ -85,7 +100,7 @@ export class ClientSocket {
       // REVIEW: Better way to generate client id?
       const id: ClientId = Date.now().toString();
       const instance = new this(id, ws);
-      this.sClientSockets.set(id, instance);
+      this.clientSockets.set(id, instance);
       // const urlComponents = req.url.split('/');
       // if (urlComponents.length!=3) { throw new Error("Unexpected path in socket connection URL."); }
       // const name: TDocName = `${urlComponents[1]}/${urlComponents[2]}`;
@@ -162,7 +177,7 @@ export class ClientSocket {
       console.log(`Client Socket: web socket closed: ${code} ${reason} ${this.tDocs.size}`);
 
       for (const tDoc of this.allTDocs()) { this.closeNotebook(tDoc); }
-      ClientSocket.sClientSockets.delete(this.id);
+      ClientSocket.clientSockets.delete(this.id);
 
     } catch(err) {
       console.error(`Client Socket: Unexpected error handling web-socket close: ${err.message}`);

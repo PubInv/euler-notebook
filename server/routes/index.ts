@@ -23,6 +23,7 @@ import { NextFunction, Request, Response, Router } from 'express';
 
 import { NotebookName, UserName } from '../../client/math-tablet-api';
 
+import { ClientSocket } from '../client-socket';
 import { TDoc } from '../tdoc';
 import { checkNotebookExists, checkUserExists, checkUsrDirExists, Credentials, getCredentials, getListOfUsers, getListOfUsersNotebooks, isValidUserName, isValidNotebookName } from '../users-and-files';
 
@@ -147,15 +148,37 @@ async function onUserPage(req: Request, res: Response, next: NextFunction): Prom
 
 async function onDashboard(req: Request, res: Response) {
   try {
-    // REVIEW: Does Pug support iteration over iterables? If so, then we don't need to convert to an array.
-    //         Pug issue 2559 (https://github.com/pugjs/pug/issues/2559), last updated Mar 2017, says no.
-    const tDocs: TDoc[] = Array.from(TDoc.allTDocs());
 
     if (req.method == 'POST') {
       console.dir(req.body);
+      const action = req.body.action;
+      switch(action) {
+      case 'closeClient': {
+        for (const clientId of Object.keys(req.body.clientSockets)) {
+          console.log(`Closing client ${clientId}`);
+          ClientSocket.close(clientId);
+        }
+        break;
+      }
+      case 'closeNotebook': {
+        for (const notebookName of Object.keys(req.body.notebooks)) {
+          console.log(`Closing client ${notebookName}`);
+          await TDoc.close(notebookName);
+        }
+        break;
+      }
+      default: {
+        console.error(`Unknown dashboard post action: ${action}`);
+        break;
+      }}
     }
 
-    res.render('dashboard', { tDocs });
+    // REVIEW: Does Pug support iteration over iterables? If so, then we don't need to convert to an array.
+    //         Pug issue 2559 (https://github.com/pugjs/pug/issues/2559), last updated Mar 2017, says no.
+    const clientSockets: ClientSocket[] = Array.from(ClientSocket.allSockets());
+    const tDocs: TDoc[] = Array.from(TDoc.allTDocs());
+
+    res.render('dashboard', { clientSockets, tDocs });
   } catch(err) {
     console.error(err.message);
     console.log(err.stack);
