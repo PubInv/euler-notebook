@@ -86,9 +86,11 @@ export class ClientSocket {
     //         and never receive a 'close' event? (e.g. get 'error' event instead.)
     if (!this.closePromise) {
       if (this.socket.readyState != WebSocket.CLOSED) {
+        const notify = (this.socket.readyState == WebSocket.OPEN);
+        this.closeAllNotebooks(notify);
         this.closePromise = new Promise((resolve, reject)=>{ this.closeResolver = { resolve, reject }; });
         if (this.socket.readyState != WebSocket.CLOSING) {
-          console.log(`Client Socket ${this.id}: socket close requested.`);
+          console.log(`Client Socket ${this.id}: closing.`);
           this.socket.close(code, reason);
         } else {
           console.warn(`WARNING: Client Socket ${this.id}: closing socket that is closing.`)
@@ -159,7 +161,7 @@ export class ClientSocket {
   private onTDocClose(tDoc: TDoc): void {
     try {
       console.log(`Client Socket: tDoc closed: ${tDoc._name}`);
-      this.closeNotebook(tDoc);
+      this.closeNotebook(tDoc._name, true);
     } catch(err) {
       console.error(`Client Socket: Unexpected error handling tdoc close: ${err.message}`);
     }
@@ -167,16 +169,15 @@ export class ClientSocket {
 
   private onWsClose(_ws: WebSocket, code: number, reason: string): void {
     try {
-
       // Normal close appears to be code 1001, reason empty string.
-      console.log(`Client Socket: web socket closed: ${code} ${reason} ${this.tDocs.size}`);
-
-      if (this.closeResolver) { this.closeResolver.resolve(); }
-      // REVIEW: If not, then this close was initiated on the client side.
-
-      for (const tDoc of this.allNotebooks()) { this.closeNotebook(tDoc); }
+      if (this.closeResolver) { 
+        console.log(`Client Socket: web socket closed by server: ${code} '${reason}' ${this.tDocs.size}`);
+        this.closeResolver.resolve(); 
+      } else {
+        console.log(`Client Socket: web socket closed by client: ${code} '${reason}' ${this.tDocs.size}`);
+        this.closeAllNotebooks(false);
+      }
       ClientSocket.clientSockets.delete(this.id);
-
     } catch(err) {
       console.error(`Client Socket: Unexpected error handling web-socket close: ${err.message}`);
     }
@@ -195,22 +196,23 @@ export class ClientSocket {
     try {
       const msg: ClientMessage = JSON.parse(message.toString());
       console.log(`Client Socket: received socket message: ${msg.action} ${msg.notebookName}`);
-      if (msg.action == 'openNotebook') {
-        this.cmOpenNotebook(msg.notebookName);
-      } else {
+      switch(msg.action) {
+      case 'openNotebook': this.cmOpenNotebook(msg.notebookName); break;
+      case 'closeNotebook': this.cmCloseNotebook(msg.notebookName); break;
+      default: {
         const tDoc = this.tDocs.get(msg.notebookName);
         if (!tDoc) { throw new Error(`Client Socket unknown notebook: ${msg.action} ${msg.notebookName}`); }
         switch(msg.action) {
-          case 'closeNotebook':         this.cmCloseNotebook(tDoc); break;
-          case 'deleteThought':         this.cmDeleteThought(tDoc, msg.thoughtId); break;
-          case 'insertHandwrittenMath': this.cmInsertHandwrittenMath(tDoc, msg.latexMath, msg.latexMath); break;
-          case 'insertHandwrittenText': this.cmInsertHandwrittenText(tDoc, msg.text, msg.strokeGroups); break;
-          case 'insertMathJsText':      this.cmInsertMathJsText(tDoc, msg.mathJsText); break;
-          default:
-            console.error(`Client Socket: unexpected WebSocket message action ${(<any>msg).action}. Ignoring.`);
-            break;
-          }
-        }
+        case 'deleteThought':         this.cmDeleteThought(tDoc, msg.thoughtId); break;
+        case 'insertHandwrittenMath': this.cmInsertHandwrittenMath(tDoc, msg.latexMath, msg.latexMath); break;
+        case 'insertHandwrittenText': this.cmInsertHandwrittenText(tDoc, msg.text, msg.strokeGroups); break;
+        case 'insertMathJsText':      this.cmInsertMathJsText(tDoc, msg.mathJsText); break;
+        default: {
+          console.error(`Client Socket: unexpected WebSocket message action ${(<any>msg).action}. Ignoring.`);
+          break;
+        }}
+        break;
+      }}
     } catch(err) {
       console.error(`Client Socket: unexpected error handling web-socket message: ${err.message}`);
     }
@@ -218,8 +220,8 @@ export class ClientSocket {
 
   // Private Client Message Handlers
 
-  private cmCloseNotebook(tDoc: TDoc): void {
-    this.closeNotebook(tDoc);
+  private cmCloseNotebook(notebookName: NotebookName): void {
+    this.closeNotebook(notebookName, true);
   }
 
   private cmDeleteThought(tDoc: TDoc, thoughtId: ThoughtId): void {
@@ -270,19 +272,28 @@ export class ClientSocket {
 
   // Private Instance Methods
 
-  private closeNotebook(tDoc: TDoc) {
-    const notebookName = tDoc._name;
-    /* const exists = */this.tDocs.delete(notebookName);
-    // TODO: assert exists
-    const listeners = this.tDocListeners.get(notebookName);
-    this.tDocListeners.delete(notebookName);
-    if (!listeners) {
-      console.error(`ERROR: Client Socket: listeners don't exist for tDoc: ${this.id} ${notebookName}`)
+  private closeAllNotebooks(notify: boolean): void {
+    for (const notebookName of this.tDocs.keys()) { this.closeNotebook(notebookName, notify); }
+  }
+
+  private closeNotebook(notebookName: NotebookName, notify: boolean): void {
+    const tDoc = this.tDocs.get(notebookName);
+    if (!tDoc) {
+      console.warn(`Client Socket ${this.id}: closing notebook that is already closed: ${notebookName}`);
       return;
     }
-    tDoc.removeListener('change', listeners.change);
-    tDoc.removeListener('close', listeners.close);
-    this.sendMessage({ action: 'notebookClosed', notebookName: tDoc._name });
+    this.tDocs.delete(notebookName);
+    const listeners = this.tDocListeners.get(notebookName);
+    if (listeners) {
+      this.tDocListeners.delete(notebookName);
+      tDoc.removeListener('close', listeners.close);
+      tDoc.removeListener('change', listeners.change);
+    } else {
+      console.error(`ERROR: Client Socket: listeners don't exist for tDoc: ${this.id} ${notebookName}`)
+    }
+    if (notify) {
+      this.sendMessage({ action: 'notebookClosed', notebookName: tDoc._name });
+    }
   }
 
   private async openNotebook(notebookName: NotebookName): Promise<void> {
