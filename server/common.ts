@@ -20,7 +20,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 // BE VERY SPARING OF WHAT YOU PUT IN HERE!
 // THIS SHOULD *NOT* DEPEND ON OTHER FILES OR LIBRARIES!
 
-export interface UnsettledPromise<T> {
+export interface PromiseResolver<T> {
   resolve: (s: T)=>void;
   reject: (err: Error)=>void
 }

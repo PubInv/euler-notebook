@@ -323,6 +323,7 @@ export class TDoc extends EventEmitter {
     this.version = VERSION;
     this._name = name;
     this._options = { ...DEFAULT_OPTIONS, ...options };
+    this.on('removeListener', this.onRemoveListener);
   }
 
   // Private Instance Properties
@@ -337,6 +338,16 @@ export class TDoc extends EventEmitter {
 
   private assertNotClosed(action: string): void {
     if (this._closed) { throw new Error(`Attempting ${action} on closed TDoc.`); }
+  }
+
+  // Private Event Handlers
+
+  private onRemoveListener(eventName: string) {
+    if (eventName == 'change') {
+      if (this.listenerCount('change') == 0) {
+        console.log("LAST CHANGE LISTENER REMOVED");
+      }
+    }
   }
 
   // Private Instance Methods

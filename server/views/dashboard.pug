@@ -31,7 +31,7 @@ block content
   form(method='post')
     table
       tr
-        th(colspan=3) Client Sockets
+        th(colspan=3) Open Sockets
       tr
         th
         th Socket
@@ -53,7 +53,7 @@ block content
   form(method='post')
     table
       tr
-        th(colspan=2) Notebooks
+        th(colspan=2) Open Notebooks
       if tDocs.length == 0
         tr
           td(colspan=2)
@@ -62,7 +62,8 @@ block content
         tr
           td
             input(type='checkbox', name=`notebooks[${tDoc._name}]`)
-          td= tDoc._name
+          td
+            a(href=`/${tDoc._name}`)= tDoc._name
       tr
         td(colspan=2)
           button(type='submit', name='action', value='closeNotebook') Close
