@@ -22,7 +22,8 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 import * as mathsteps from 'mathsteps';
 import * as math from 'mathjs';
 
-import { TDoc, TDocChange, Style }  from './tdoc';
+import { StyleObject } from '../client/math-tablet-api';
+import { TDoc, TDocChange }  from './tdoc';
 
 // Types
 
@@ -61,7 +62,7 @@ function onChange(tDoc: TDoc, change: TDocChange): void {
 
 // Helper Functions
 
-async function onStyleInserted(tDoc: TDoc, style: Style): Promise<void> {
+async function onStyleInserted(tDoc: TDoc, style: StyleObject): Promise<void> {
   // console.log(`MathStep onStyleInserted ${style.id} ${style.stylableId} ${style.type} ${style.meaning}`);
 
   // Only try to simplify/solve MathJS expressions
@@ -82,7 +83,7 @@ async function onStyleInserted(tDoc: TDoc, style: Style): Promise<void> {
                       steps);
 
     // should we return the new style here? I suppose not.
-    tDoc.insertTextStyle(style, expressionStringStream, 'INDENTED', 'MATHSTEPS');
+    tDoc.insertStyle({ type: 'TEXT', id: 0, stylableId: style.id, data: expressionStringStream, meaning: 'INDENTED', source: 'MATHSTEPS' });
 
   }
   // @ts-ignore // TYPESCRIPT:
@@ -94,7 +95,7 @@ async function onStyleInserted(tDoc: TDoc, style: Style): Promise<void> {
                       steps2);
 
     // should we return the new style here? I suppose not.
-    tDoc.insertTextStyle(style, equationStringStream, 'INDENTED', 'MATHSTEPS');
+    tDoc.insertStyle({ type: 'TEXT', id: 0, stylableId: style.id, data: equationStringStream, meaning: 'INDENTED', source: 'MATHSTEPS' });
   }
 }
 

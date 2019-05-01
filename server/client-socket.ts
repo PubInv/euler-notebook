@@ -24,7 +24,7 @@ import * as WebSocket from 'ws';
 
 // TODO: Handle websocket lifecycle: closing, unexpected disconnects, errors, etc.
 
-import { ClientMessage, NotebookName, NotebookChange, ServerMessage, ThoughtId, LatexMath, Jiix, StrokeGroups, MathJsText } from '../client/math-tablet-api';
+import { ClientMessage, NotebookName, NotebookChange, ServerMessage, ThoughtId, LatexText, Jiix, StrokeGroups, MathJsText } from '../client/math-tablet-api';
 
 import { PromiseResolver } from './common';
 import { parseMathJsExpression, ParseResults } from './mathjs-cas';
@@ -97,9 +97,9 @@ export class ClientSocket {
         }
       } else {
         console.warn(`WARNING: Client Socket ${this.id}: closing socket that is already closed.`)
-        this.closePromise = Promise.resolve(); 
+        this.closePromise = Promise.resolve();
       }
-    } else { 
+    } else {
       // REVIEW: This may not be an error.
       console.warn(`WARNING: Client Socket ${this.id}: repeat close call.`);
       return this.closePromise;
@@ -170,9 +170,9 @@ export class ClientSocket {
   private onWsClose(_ws: WebSocket, code: number, reason: string): void {
     try {
       // Normal close appears to be code 1001, reason empty string.
-      if (this.closeResolver) { 
+      if (this.closeResolver) {
         console.log(`Client Socket: web socket closed by server: ${code} '${reason}' ${this.tDocs.size}`);
-        this.closeResolver.resolve(); 
+        this.closeResolver.resolve();
       } else {
         console.log(`Client Socket: web socket closed by client: ${code} '${reason}' ${this.tDocs.size}`);
         this.closeAllNotebooks(false);
@@ -228,16 +228,16 @@ export class ClientSocket {
     tDoc.deleteThought(thoughtId);
   }
 
-  private cmInsertHandwrittenMath(tDoc: TDoc, latexMath: LatexMath, jiix: Jiix): void {
+  private cmInsertHandwrittenMath(tDoc: TDoc, latexMath: LatexText, jiix: Jiix): void {
     const thought = tDoc.insertThought();
-    tDoc.insertLatexStyle(thought, latexMath, 'INPUT', 'USER');
-    tDoc.insertJiixStyle(thought, jiix, 'HANDWRITING', 'USER');
+    tDoc.insertStyle({ type: 'LATEX', id: 0, stylableId: thought.id, data: latexMath, meaning: 'INPUT', source: 'USER' });
+    tDoc.insertStyle({ type: 'JIIX', id: 0, stylableId: thought.id, data: jiix, meaning: 'HANDWRITING', source: 'USER' });
   }
 
   private cmInsertHandwrittenText(tDoc: TDoc, text: string, strokeGroups: StrokeGroups): void {
     const thought = tDoc.insertThought();
-    tDoc.insertTextStyle(thought, text, 'INPUT', 'USER');
-    tDoc.insertStrokeStyle(thought, strokeGroups, 'HANDWRITING', 'USER');
+    tDoc.insertStyle({ type: 'TEXT', id: 0, stylableId: thought.id, data: text, meaning: 'INPUT', source: 'USER' });
+    tDoc.insertStyle({ type: 'STROKE', id: 0, stylableId: thought.id, data: strokeGroups, meaning: 'HANDWRITING', source: 'USER' });
   }
 
   private cmInsertMathJsText(tDoc: TDoc, mathJsText: MathJsText): void {
@@ -250,8 +250,8 @@ export class ClientSocket {
       return;
     }
     const thought = tDoc.insertThought();
-    const style = tDoc.insertMathJsStyle(thought, parseResults.mathJsText, 'INPUT', 'USER');
-    tDoc.insertLatexStyle(style, parseResults.latexMath, 'PRETTY', 'USER');
+    const style = tDoc.insertStyle({ type: 'MATHJS', id: 0, stylableId: thought.id, data: parseResults.mathJsText, meaning: 'INPUT', source: 'USER' });
+    tDoc.insertStyle({ type: 'MATHJS', id: 0, stylableId: style.id, data: parseResults.latexMath, meaning: 'PRETTY', source: 'USER' });
   }
 
   private cmOpenNotebook(notebookName: NotebookName): void {

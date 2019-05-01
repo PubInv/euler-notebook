@@ -21,7 +21,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 // Types
 
-export type LatexMath = string;
+export type LatexText = string;
 export type MathJsText = string;
 export type NotebookName = string;
 export type MthMtcaText = string;
@@ -48,12 +48,13 @@ export type StyleSource =
   'MATHJS'|     // The Mathjs Computer Algebra System system
   'MATHEMATICA'| // Mathematica style (evaluation)
   'MATHSTEPS'   // The Mathsteps CAS system
+type TextData = string;
 export type UserName = string;
 
 // MyScript Types
 
 export interface Jiix {
-
+  // TYPESCRIPT: TODO
 }
 
 export interface MyScriptServerKeys {
@@ -62,7 +63,7 @@ export interface MyScriptServerKeys {
 }
 
 export interface StrokeGroups {
-
+  // TYPESCRIPT: TODO
 }
 
 // Plain object version of TDoc
@@ -70,15 +71,45 @@ export interface StrokeGroups {
 export type ThoughtId = number;
 export type StyleId = number;
 export type StylableId = ThoughtId|StyleId;
+export type StyleObject = JiixStyle|LatexStyle|MathJsStyle|MathematicaStyle|StrokeStyle|TextStyle;
 
-// TYPESCRIPT: Separate out styles by datatype.
-export interface StyleObject {
-  data: any;
+interface BaseStyle {
   id: ThoughtId;
   meaning: StyleMeaning;
   source: StyleSource;
   stylableId: StylableId;
   type: StyleType;
+}
+
+// TYPESCRIPT: Separate out styles by datatype.
+interface JiixStyle extends BaseStyle {
+  type: 'JIIX'
+  data: Jiix;
+}
+
+export interface LatexStyle extends BaseStyle {
+  type: 'LATEX'
+  data: LatexText;
+}
+
+export interface MathJsStyle extends BaseStyle {
+  type: 'MATHJS'
+  data: MathJsText;
+}
+
+export interface MathematicaStyle extends BaseStyle {
+  type: 'MATHEMATICA'
+  data: string; // TYPESCRIPT: TODO
+}
+
+interface StrokeStyle extends BaseStyle {
+  type: 'STROKE'
+  data: StrokeGroups;
+}
+
+export interface TextStyle extends BaseStyle {
+  type: 'TEXT'
+  data: TextData;
 }
 
 export interface TDocObject {
@@ -162,7 +193,7 @@ interface DeleteThought {
 interface InsertHandwrittenMath {
   action: 'insertHandwrittenMath';
   notebookName: NotebookName;
-  latexMath: LatexMath;
+  latexMath: LatexText;
   jiix: Jiix;
 }
 

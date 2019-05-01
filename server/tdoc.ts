@@ -24,17 +24,15 @@ import { readFile, writeFile } from 'fs';
 import { join } from 'path';
 import { promisify } from 'util';
 
-import { NotebookChange, Jiix, LatexMath, MathJsText, StrokeGroups, StyleObject, StyleMeaning, StyleSource, StyleType, TDocObject, ThoughtObject, ThoughtId, StyleId } from '../client/math-tablet-api';
+import { NotebookChange, StyleObject, StyleMeaning, StyleType, TDocObject, ThoughtObject, ThoughtId, StyleId } from '../client/math-tablet-api';
 
 const readFile2 = promisify(readFile);
 const writeFile2 = promisify(writeFile);
 
 // Types
 
-type Stylable = Thought|Style;
 type StylableId = number;
 // type StyleRule = (tdoc: TDoc, style: Style)=>Style[];
-type TextData = string;
 export type TDocName = string;
 
 export interface TDocOptions {
@@ -56,7 +54,7 @@ interface StyleDeleted {
 
 interface StyleInserted {
   type: 'styleInserted';
-  style: Style;
+  style: StyleObject;
 }
 
 interface ThoughtDeleted {
@@ -69,7 +67,7 @@ interface ThoughtDeleted {
 
 interface ThoughtInserted {
   type: 'thoughtInserted';
-  thought: Thought;
+  thought: ThoughtObject;
 }
 
 // Constants
@@ -168,11 +166,11 @@ export class TDoc extends EventEmitter {
 
   // Public Instance Property Functions
 
-  public getThoughts(): Thought[] {
+  public getThoughts(): ThoughtObject[] {
     return this.thoughts;
   }
 
-  public getStyles(stylableId?: StylableId): Style[] {
+  public getStyles(stylableId?: StylableId): StyleObject[] {
     if (stylableId) { return this.styles.filter(s=>(s.stylableId==stylableId)); }
     else { return this.styles; }
   }
@@ -191,7 +189,7 @@ export class TDoc extends EventEmitter {
   }
 
   // This can be asymptotically improved later.
-  public stylableHasChildOfType(style: Style, tname: StyleType, meaning?: StyleMeaning): boolean {
+  public stylableHasChildOfType(style: StyleObject, tname: StyleType, meaning?: StyleMeaning): boolean {
     const id = style.id;
     return !!this.styles.find(s => s.stylableId == id &&
                             s.type == tname &&
@@ -255,35 +253,20 @@ export class TDoc extends EventEmitter {
     this.deleteThoughtEntryAndEmit(thoughtId);
   }
 
-  public insertJiixStyle(stylable: Stylable, data: Jiix, meaning: StyleMeaning, source: StyleSource): JiixStyle {
-    return this.insertStyle(new JiixStyle(this.nextId++, stylable, data, meaning, source));
+  public insertStyle(obj: StyleObject): StyleObject {
+    this.assertNotClosed('insertStyle');
+    const style: StyleObject = { ...obj, id: this.nextId++ };
+    this.styles.push(style);
+    const change: NotebookChange = { type: 'styleInserted', style: style };
+    this.notifyChange(change);
+    return style;
   }
 
-  public insertLatexStyle(stylable: Stylable, data: LatexMath, meaning: StyleMeaning, source: StyleSource): LatexStyle {
-    return this.insertStyle(new LatexStyle(this.nextId++, stylable, data, meaning, source));
-  }
-
-  public insertMathJsStyle(stylable: Stylable, data: MathJsText, meaning: StyleMeaning, source: StyleSource): MathJsStyle {
-    return this.insertStyle(new MathJsStyle(this.nextId++, stylable, data, meaning, source));
-  }
-
-  public insertMthMtcaStyle(stylable: Stylable, data: MathJsText, meaning: StyleMeaning, source: StyleSource): MthMtcaStyle {
-    return this.insertStyle(new MthMtcaStyle(this.nextId++, stylable, data, meaning, source));
-  }
-
-  public insertStrokeStyle(stylable: Stylable, data: StrokeGroups, meaning: StyleMeaning, source: StyleSource): StrokeStyle {
-    return this.insertStyle(new StrokeStyle(this.nextId++, stylable, data, meaning, source));
-  }
-
-  public insertTextStyle(stylable: Stylable, data: TextData, meaning: StyleMeaning, source: StyleSource): TextStyle {
-    return this.insertStyle(new TextStyle(this.nextId++, stylable, data, meaning, source));
-  }
-
-  public insertThought(): Thought {
+  public insertThought(): ThoughtObject {
     this.assertNotClosed('insertThought');
-    const thought = new Thought(this.nextId++);
+    const thought: ThoughtObject = { id: this.nextId++ };
     this.thoughts.push(thought);
-    const change: NotebookChange = { type: 'thoughtInserted', thought: thought.toJSON() };
+    const change: NotebookChange = { type: 'thoughtInserted', thought: thought };
     this.notifyChange(change);
     return thought;
   }
@@ -303,13 +286,9 @@ export class TDoc extends EventEmitter {
     if (!obj.nextId) { throw new Error("Invalid TDoc object JSON."); }
     if (obj.version != VERSION) { throw new Error("TDoc in unexpected version."); }
 
-    // Reanimate the thoughts and styles
-    const thoughts: Thought[] = obj.thoughts.map(Thought.fromJSON);
-    const styles: Style[] = obj.styles.map(Style.fromJSON);
-
     // Create the TDoc object from its properties and reanimated thoughts and styles.
     // REVIEW: We never call the constructor. Maybe we should?
-    const tDoc = Object.assign(Object.create(TDoc.prototype), { ...obj, styles, thoughts });
+    const tDoc = Object.assign(Object.create(TDoc.prototype), obj);
     tDoc._name = name;
     tDoc._options = { ...DEFAULT_OPTIONS, ...options };
     tDoc.initialize();
@@ -332,8 +311,8 @@ export class TDoc extends EventEmitter {
 
   // Private Instance Properties
 
-  private styles: Style[];
-  private thoughts: Thought[];
+  private styles: StyleObject[];
+  private thoughts: ThoughtObject[];
   // NOTE: Properties with an underscore prefix are not persisted.
   private _closed?: boolean;
   private _options: TDocOptions;
@@ -388,15 +367,6 @@ export class TDoc extends EventEmitter {
     TDoc.eventEmitter.emit('open', this);
   }
 
-  // Helper method for tDoc.create*Style.
-  private insertStyle<T extends Style>(style: T): T {
-    this.assertNotClosed('insertStyle');
-    this.styles.push(style);
-    const change: NotebookChange = { type: 'styleInserted', style: style.toJSON() };
-    this.notifyChange(change);
-    return style;
-  }
-
   // Call this method whenever you modify the tdoc.
   private notifyChange(change: NotebookChange) {
     this.emit('change', change);
@@ -439,173 +409,6 @@ export class TDoc extends EventEmitter {
     this._saving = false;
   }
 
-}
-
-export class Thought {
-
-  public static fromJSON(obj: ThoughtObject): Thought {
-    // NOTE: This will throw for id === 0.
-    if (!obj.id) { throw new Error("Invalid Thought object JSON"); }
-    return Object.assign(Object.create(Thought.prototype), obj);
-  }
-
-  // Call tDoc.createThought instead of calling this constructor directly.
-  /* private */ constructor(id: StylableId) {
-    this.id = id;
-  }
-
-  // Public Instance Properties
-  public id: StylableId;
-
-  // Public Instance Methods
-  public toJSON(): ThoughtObject {
-    // TYPESCRIPT: We are counting on the fact that a Thought that has
-    // been stringified and then parsed is a ThoughtObject.
-    return <any>this;
-  }
-}
-
-export abstract class Style {
-
-  public static fromJSON(obj: StyleObject): Style {
-    if (!obj.type) { throw new Error("Invalid Style object JSON"); }
-    // @ts-ignore // TYPESCRIPT:
-    const cl = STYLE_CLASSES[obj.type];
-    if (!cl) { throw new Error(`Style class not found in STYLE_CLASSES: ${obj.type}`); }
-    return Object.assign(Object.create(cl.prototype), obj);
-  }
-
-  constructor(id: StylableId, stylable: Stylable) {
-    this.id = id;
-    this.stylableId = stylable.id;
-  }
-
-  // Instance Properties
-  public id: number;
-  public stylableId: number;
-  public abstract type: StyleType;
-  public abstract data: any;
-  public abstract meaning: StyleMeaning;
-  public abstract source: StyleSource;
-
-  // Instance Methods
-
-  public toJSON(): StyleObject {
-    // TYPESCRIPT: We are counting on the fact that a Style that has
-    // been stringified and then parsed is a StyleObject.
-    return <any>this;
-  }
-}
-
-class JiixStyle extends Style {
-  // Call tDoc.insertJiixStyle instead of calling this constructor directly.
-  /* private */ constructor(id: StylableId, stylable: Stylable, data: Jiix, meaning: StyleMeaning, source: StyleSource) {
-    super(id, stylable);
-    this.type = 'JIIX';
-    this.data = data;
-    this.meaning = meaning;
-    this.source = source;
-  }
-
-  // Instance Properties
-  type: 'JIIX';
-  data: Jiix;
-  meaning: StyleMeaning;
-  source: StyleSource;
-}
-
-export class LatexStyle extends Style {
-  // Call tDoc.insertLatexStyle instead of calling this constructor directly.
-  /* private */ constructor(id: StylableId, stylable: Stylable, data: LatexMath, meaning: StyleMeaning, source: StyleSource) {
-    super(id, stylable);
-    this.type = 'LATEX';
-    this.data = data;
-    this.meaning = meaning;
-    this.source = source;
-  }
-
-  // Instance Properties
-  type: 'LATEX';
-  data: LatexMath;
-  meaning: StyleMeaning;
-  source: StyleSource;
-}
-
-export class MathJsStyle extends Style {
-  // Call tDoc.insertMathJsPlainStyle instead of calling this constructor directly.
-  /* private */ constructor(id: StylableId, stylable: Stylable, data: MathJsText, meaning: StyleMeaning, source: StyleSource) {
-    super(id, stylable);
-    this.type = 'MATHJS';
-    this.data = data;
-    this.meaning = meaning;
-    this.source = source;
-  }
-
-  // Instance Properties
-  type: 'MATHJS';
-  data: MathJsText;
-  meaning: StyleMeaning;
-  source: StyleSource;
-}
-
-export class MthMtcaStyle extends Style {
-  // Call tDoc.insertMathJsPlainStyle instead of calling this constructor directly.
-  /* private */ constructor(id: StylableId, stylable: Stylable, data: MathJsText, meaning: StyleMeaning, source: StyleSource) {
-    super(id, stylable);
-    this.type = 'MATHEMATICA';
-    this.data = data;
-    this.meaning = meaning;
-    this.source = source;
-  }
-
-  // Instance Properties
-  type: 'MATHEMATICA';
-  data: MathJsText;
-  meaning: StyleMeaning;
-  source: StyleSource;
-}
-
-class StrokeStyle extends Style {
-  // Call tDoc.insertStrokeStyle instead of calling this constructor directly.
-  /* private */ constructor(id: StylableId, stylable: Stylable, data: StrokeGroups, meaning: StyleMeaning, source: StyleSource) {
-    super(id, stylable);
-    this.type = 'STROKE';
-    this.data = data;
-    this.meaning = meaning;
-    this.source = source;
-  }
-
-  // Instance Properties
-  type: 'STROKE';
-  data: StrokeGroups;
-  meaning: StyleMeaning;
-  source: StyleSource;
-}
-
-class TextStyle extends Style {
-  // Call tDoc.insertTextStyle instead of calling this constructor directly.
-  /* private */ constructor(id: StylableId, stylable: Stylable, data: TextData, meaning: StyleMeaning, source: StyleSource) {
-    super(id, stylable);
-    this.type = 'TEXT';
-    this.data = data;
-    this.meaning = meaning;
-    this.source = source;
-  }
-
-  // Instance Properties
-  type: 'TEXT';
-  data: TextData;
-  meaning: StyleMeaning;
-  source: StyleSource;
-}
-
-const STYLE_CLASSES /* : { [type: string]: } */ = {
-  'JIIX': JiixStyle,
-  'LATEX': LatexStyle,
-  'MATHJS': MathJsStyle,
-  'MATHEMATICA': MthMtcaStyle,
-  'STROKE': StrokeStyle,
-  'TEXT': TextStyle,
 }
 
 // HELPER FUNCTIONS

@@ -20,7 +20,8 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 // Requirements
 
 // import { MthMtcaText } from '../client/math-tablet-api';
-import { Style, TDoc, TDocChange } from './tdoc';
+import { StyleObject } from '../client/math-tablet-api';
+import { TDoc, TDocChange } from './tdoc';
 
 // Exports
 
@@ -120,7 +121,7 @@ async function evaluateExpressionPromise(expr: string) {
   });
 }
 
-export async function mathMathematicaRule(tdoc: TDoc, style: Style): Promise<Style[]> {
+export async function mathMathematicaRule(tdoc: TDoc, style: StyleObject): Promise<StyleObject[]> {
 
   console.log("INSIDE RULE :",style);
   // We only extract symbols from MathJS expressions that are user input.
@@ -139,7 +140,7 @@ export async function mathMathematicaRule(tdoc: TDoc, style: Style): Promise<Sty
   // @ts-ignore --- I don't know how to type this.
   let result = assoc[1][2]; // "magic" for Mathematica
   console.log(" RESULT STRING :",result);
-  var exemplar = tdoc.insertMthMtcaStyle(style, <string>result, 'EVALUATION', 'MATHEMATICA')
+  var exemplar = tdoc.insertStyle({ type: 'MATHEMATICA', id: 0, stylableId: style.id, data: <string>result, meaning: 'EVALUATION', source: 'MATHEMATICA' })
 
   styles.push(exemplar);
   return styles;

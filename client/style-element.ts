@@ -22,11 +22,11 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 import { getKatex } from './katex-types.js';
 
 import { $new, Html } from './dom.js';
-import { StyleObject } from './math-tablet-api.js';
+import { StyleObject, LatexStyle, MathematicaStyle, MathJsStyle, TextStyle } from './math-tablet-api.js';
 
 // Types
 
-type StyleRenderer = (s: StyleObject)=>Html;
+type StyleRenderer = (s: any /* TYPESCRIPT: */)=>Html;
 
 interface StyleRendererMap {
   [ styleType: /* StyleType */ string ]: StyleRenderer;
@@ -89,21 +89,21 @@ export class StyleElement {
 
 // Helper Functions
 
-function renderLatexStyle(style: /* TYPESCRIPT: LatexMathStyleObject */ StyleObject): Html {
+function renderLatexStyle(style: LatexStyle): Html {
   // TODO: Catch errors and display.
   const latexHtml = getKatex().renderToString(style.data, { throwOnError: false });
   return `<div>${latexHtml}</div>`
 }
 
-function renderMathJsStyle(style: /* TYPESCRIPT: MathJsStyleObject */ StyleObject): Html {
+function renderMathJsStyle(style: MathJsStyle): Html {
   return `<div><tt>${style.data}</tt></div>`;
 }
 
-function renderMthMtcaStyle(style: /* TYPESCRIPT: MthMtcaStyleObject */ StyleObject): Html {
+function renderMthMtcaStyle(style: MathematicaStyle): Html {
   return `<div><tt>${style.data}</tt></div>`;
 }
 
-function renderTextStyle(style: /* TYPESCRIPT: TextStyleObject */ StyleObject): Html {
+function renderTextStyle(style: TextStyle): Html {
   if (style.meaning == 'INDENTED') {
     return `<pre>${style.data}</pre>`;
   } else {
