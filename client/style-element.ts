@@ -22,7 +22,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 import { getKatex } from './katex-types.js';
 
 import { $new, Html } from './dom.js';
-import { StyleObject, LatexStyle, MathematicaStyle, MathJsStyle, TextStyle } from './math-tablet-api.js';
+import { StyleObject, LatexStyle, MathematicaStyle, MathJsStyle, TextStyle, MathMlStyle, JiixStyle } from './math-tablet-api.js';
 
 // Types
 
@@ -35,9 +35,11 @@ interface StyleRendererMap {
 // Constants
 
 const STYLE_RENDERERS: StyleRendererMap = {
+  'JIIX': renderJiixStyle,
   'LATEX': renderLatexStyle,
   'MATHJS': renderMathJsStyle,
-  'MATHEMATICA': renderMthMtcaStyle,
+  'MATHML': renderMathMlStyle,
+  'MATHEMATICA': renderMathematicaStyle,
   'TEXT': renderTextStyle,
 };
 
@@ -76,7 +78,7 @@ export class StyleElement {
     // const showButtonHtml: Html = `<button class="showStyle">&#x1F5E8;</button>`;
     let headerHtml: Html = `<div class="header">S-${style.id} ${style.source} ${style.type} ${style.meaning} => ${style.stylableId}</div>`;
     const renderFn = STYLE_RENDERERS[style.type];
-    const contentHtml = renderFn && renderFn(style);
+    const contentHtml = renderFn ? renderFn(style) : renderOtherStyle(style);
     const html = /* ${showButtonHtml} */ `${headerHtml}${contentHtml}`;
     this.$elt = $new<HTMLDivElement>('div', id, classes, html);
   }
@@ -89,17 +91,37 @@ export class StyleElement {
 
 // Helper Functions
 
+// From: http://shebang.brandonmintern.com/foolproof-html-escaping-in-javascript/
+function escapeHtml(str: string): Html {
+  var div = document.createElement('div');
+  div.appendChild(document.createTextNode(str));
+  return div.innerHTML;
+}
+
+function renderJiixStyle(_style: JiixStyle): Html {
+  return `<div><i>JIIX data</i></div>`;
+}
+
 function renderLatexStyle(style: LatexStyle): Html {
   // TODO: Catch errors and display.
   const latexHtml = getKatex().renderToString(style.data, { throwOnError: false });
-  return `<div>${latexHtml}</div>`
+  return `<div>${latexHtml}</div>`;
+}
+
+function renderMathematicaStyle(style: MathematicaStyle): Html {
+  return `<div><tt>${style.data}</tt></div>`;
 }
 
 function renderMathJsStyle(style: MathJsStyle): Html {
   return `<div><tt>${style.data}</tt></div>`;
 }
 
-function renderMthMtcaStyle(style: MathematicaStyle): Html {
+function renderMathMlStyle(style: MathMlStyle): Html {
+  console.dir(style.data);
+  return `<div><pre>${escapeHtml(style.data)}</pre></div>`;
+}
+
+function renderOtherStyle(style: StyleObject): Html {
   return `<div><tt>${style.data}</tt></div>`;
 }
 

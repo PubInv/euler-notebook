@@ -23,6 +23,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 export type LatexText = string;
 export type MathJsText = string;
+export type MathMlXml = string;
 export type NotebookName = string;
 export type MthMtcaText = string;
 export type StyleMeaning =
@@ -35,19 +36,19 @@ export type StyleMeaning =
   'INDENTED'|         // Indented text for the purpose of exposition.
   'SYMBOL';           // Symbols extracted from an expression.
 export type StyleType =
-  // TYPE   // DATA
-  'JIIX'|   // MyScript JIIX export from 'MATH' editor.
-  'LATEX'|  // LaTeX string
-  'MATHJS'| // MathJS plain text expression
-  'MATHEMATICA'| // Mathematica style (evaluation)
-  'STROKE'| // MyScript strokeGroups export from 'TEXT' editor.
-  'TEXT';   // Plain text
+  'JIIX'|             // MyScript JIIX export from 'MATH' editor.
+  'LATEX'|            // LaTeX string
+  'MATHEMATICA'|      // Mathematica style (evaluation)
+  'MATHJS'|           // MathJS plain text expression
+  'MATHML'|           // MathML Presentation XML
+  'STROKE'|           // MyScript strokeGroups export from 'TEXT' editor.
+  'TEXT';             // Plain text
 export type StyleSource =
-  'TEST'|       // An example source used only hour test system
-  'USER'|       // Directly enterred by user
-  'MATHJS'|     // The Mathjs Computer Algebra System system
-  'MATHEMATICA'| // Mathematica style (evaluation)
-  'MATHSTEPS'   // The Mathsteps CAS system
+  'TEST'|             // An example source used only hour test system
+  'USER'|             // Directly enterred by user
+  'MATHJS'|           // The Mathjs Computer Algebra System system
+  'MATHEMATICA'|      // Mathematica style (evaluation)
+  'MATHSTEPS'         // The Mathsteps CAS system
 type TextData = string;
 export type UserName = string;
 
@@ -71,7 +72,7 @@ export interface StrokeGroups {
 export type ThoughtId = number;
 export type StyleId = number;
 export type StylableId = ThoughtId|StyleId;
-export type StyleObject = JiixStyle|LatexStyle|MathJsStyle|MathematicaStyle|StrokeStyle|TextStyle;
+export type StyleObject = JiixStyle|LatexStyle|MathematicaStyle|MathJsStyle|MathMlStyle|StrokeStyle|TextStyle;
 
 interface BaseStyle {
   id: ThoughtId;
@@ -82,33 +83,38 @@ interface BaseStyle {
 }
 
 // TYPESCRIPT: Separate out styles by datatype.
-interface JiixStyle extends BaseStyle {
-  type: 'JIIX'
+export interface JiixStyle extends BaseStyle {
+  type: 'JIIX';
   data: Jiix;
 }
 
 export interface LatexStyle extends BaseStyle {
-  type: 'LATEX'
+  type: 'LATEX';
   data: LatexText;
 }
 
-export interface MathJsStyle extends BaseStyle {
-  type: 'MATHJS'
-  data: MathJsText;
-}
-
 export interface MathematicaStyle extends BaseStyle {
-  type: 'MATHEMATICA'
+  type: 'MATHEMATICA';
   data: string; // TYPESCRIPT: TODO
 }
 
-interface StrokeStyle extends BaseStyle {
-  type: 'STROKE'
+export interface MathJsStyle extends BaseStyle {
+  type: 'MATHJS';
+  data: MathJsText;
+}
+
+export interface MathMlStyle extends BaseStyle {
+  type: 'MATHML';
+  data: MathMlXml;
+}
+
+export interface StrokeStyle extends BaseStyle {
+  type: 'STROKE';
   data: StrokeGroups;
 }
 
 export interface TextStyle extends BaseStyle {
-  type: 'TEXT'
+  type: 'TEXT';
   data: TextData;
 }
 
@@ -195,6 +201,7 @@ interface InsertHandwrittenMath {
   notebookName: NotebookName;
   latexMath: LatexText;
   jiix: Jiix;
+  mathMl: MathMlXml;
 }
 
 interface InsertHandwrittenText {

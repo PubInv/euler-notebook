@@ -27,6 +27,7 @@ import { addErrorMessageToHeader, /* addSuccessMessageToHeader */} from './globa
 // import { StyleObject, ThoughtObject }  from './math-tablet-api.js';
 import { Notebook } from './notebook.js';
 import { ServerSocket } from './server-socket.js';
+import { Jiix, LatexText, MathMlXml } from './math-tablet-api.js';
 
 // Types
 
@@ -99,9 +100,11 @@ function onInsertButtonClicked(_event: Event) {
     case 'Math': {
       const editor = gEditor; // TODO: grab from DOM.editor instead
       if (!editor) { throw new Error(); }
-      const latex = editor.exports && editor.exports['application/x-latex'];
-      const jiix = editor.exports && editor.exports['application/vnd.myscript.jiix'];
-      gNotebook.insertHandwrittenMath(latex, jiix);
+      console.dir(editor.exports);
+      const jiix: Jiix = editor.exports && editor.exports['application/vnd.myscript.jiix'];
+      const latex: LatexText = editor.exports && editor.exports['application/x-latex'];
+      const mathMl: MathMlXml = editor.exports && editor.exports['application/mathml+xml'];
+      gNotebook.insertHandwrittenMath(latex, jiix, mathMl);
       editor.clear();
       break;
     }
@@ -195,7 +198,7 @@ function getMyScriptConfig(editorType: EditorType): Configuration {
           jiix: { strokes: true }
         },
         math: {
-          mimeTypes: [ 'application/x-latex', 'application/vnd.myscript.jiix' ]
+          mimeTypes: [ 'application/vnd.myscript.jiix', 'application/x-latex', 'application/mathml+xml' ]
         },
         text: {
           guides: { enable: false },

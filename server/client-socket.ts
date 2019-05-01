@@ -24,7 +24,7 @@ import * as WebSocket from 'ws';
 
 // TODO: Handle websocket lifecycle: closing, unexpected disconnects, errors, etc.
 
-import { ClientMessage, NotebookName, NotebookChange, ServerMessage, ThoughtId, LatexText, Jiix, StrokeGroups, MathJsText } from '../client/math-tablet-api';
+import { ClientMessage, NotebookName, NotebookChange, ServerMessage, ThoughtId, LatexText, Jiix, StrokeGroups, MathJsText, MathMlXml } from '../client/math-tablet-api';
 
 import { PromiseResolver } from './common';
 import { parseMathJsExpression, ParseResults } from './mathjs-cas';
@@ -204,7 +204,7 @@ export class ClientSocket {
         if (!tDoc) { throw new Error(`Client Socket unknown notebook: ${msg.action} ${msg.notebookName}`); }
         switch(msg.action) {
         case 'deleteThought':         this.cmDeleteThought(tDoc, msg.thoughtId); break;
-        case 'insertHandwrittenMath': this.cmInsertHandwrittenMath(tDoc, msg.latexMath, msg.latexMath); break;
+        case 'insertHandwrittenMath': this.cmInsertHandwrittenMath(tDoc, msg.jiix, msg.latexMath, msg.mathMl); break;
         case 'insertHandwrittenText': this.cmInsertHandwrittenText(tDoc, msg.text, msg.strokeGroups); break;
         case 'insertMathJsText':      this.cmInsertMathJsText(tDoc, msg.mathJsText); break;
         default: {
@@ -228,10 +228,11 @@ export class ClientSocket {
     tDoc.deleteThought(thoughtId);
   }
 
-  private cmInsertHandwrittenMath(tDoc: TDoc, latexMath: LatexText, jiix: Jiix): void {
+  private cmInsertHandwrittenMath(tDoc: TDoc, jiix: Jiix, latexMath: LatexText, mathMl: MathMlXml): void {
     const thought = tDoc.insertThought();
-    tDoc.insertStyle({ type: 'LATEX', id: 0, stylableId: thought.id, data: latexMath, meaning: 'INPUT', source: 'USER' });
     tDoc.insertStyle({ type: 'JIIX', id: 0, stylableId: thought.id, data: jiix, meaning: 'HANDWRITING', source: 'USER' });
+    tDoc.insertStyle({ type: 'LATEX', id: 0, stylableId: thought.id, data: latexMath, meaning: 'INPUT', source: 'USER' });
+    tDoc.insertStyle({ type: 'MATHML', id: 0, stylableId: thought.id, data: mathMl, meaning: 'INPUT', source: 'USER' });
   }
 
   private cmInsertHandwrittenText(tDoc: TDoc, text: string, strokeGroups: StrokeGroups): void {
