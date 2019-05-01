@@ -24,6 +24,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 export type LatexMath = string;
 export type MathJsText = string;
 export type NotebookName = string;
+export type MthMtcaText = string;
 export type StyleMeaning =
   'EVALUATION'|       // CAS evaluation of an expression.
   'EVALUATION-ERROR'| // Error in CAS evaluation of an expression
@@ -38,12 +39,14 @@ export type StyleType =
   'JIIX'|   // MyScript JIIX export from 'MATH' editor.
   'LATEX'|  // LaTeX string
   'MATHJS'| // MathJS plain text expression
+  'MATHEMATICA'| // Mathematica style (evaluation)
   'STROKE'| // MyScript strokeGroups export from 'TEXT' editor.
   'TEXT';   // Plain text
 export type StyleSource =
   'TEST'|       // An example source used only hour test system
   'USER'|       // Directly enterred by user
   'MATHJS'|     // The Mathjs Computer Algebra System system
+  'MATHEMATICA'| // Mathematica style (evaluation)
   'MATHSTEPS'   // The Mathsteps CAS system
 export type UserName = string;
 

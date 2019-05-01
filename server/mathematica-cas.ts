@@ -19,7 +19,8 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 // Requirements
 
-import { TDoc, TDocChange } from './tdoc';
+// import { MthMtcaText } from '../client/math-tablet-api';
+import { Style, TDoc, TDocChange } from './tdoc';
 
 // Exports
 
@@ -89,23 +90,20 @@ var zmq = require('zeromq');
 var sockPush = zmq.socket('push');
 var sockPull = zmq.socket('pull');
 
-var gmsg;
-var gmsg_str;
-var gobj;
-
 function initiateQueue() {
   sockPush.bindSync(socket_uri_A);
   sockPull.bindSync(socket_uri_B);
 
 }
 
-async function evaluateExpressionPromise(expr) {
-  return new Promise(function(resolve,reject) {
-    sockPull.on('message', function(msg) {
-
-      console.log('work: %s', msg.toString());
-
-      gmsg = msg;
+async function evaluateExpressionPromise(expr: string) {
+  return new Promise(function(resolve,_reject) {
+    sockPush.send(expr);
+    // QUESTION: Here I am re-assigning the "on" handler
+    // with each call, which cost us little, but is inelegant.
+    // However, this is the noly obvious way to embed the "resolve"
+    // object in it.
+    sockPull.on('message', function(msg: any) {
       // WARNING!!! This seems to work, but is a fragile
       // about the way zeromq is serilalizing a message.
       // Probably a careful analysis of the Wolfram Client Python
@@ -113,40 +111,37 @@ async function evaluateExpressionPromise(expr) {
       // fully in Node, rather than this crummy hack, which
       // seems to work.
       let preamble_len = "8:fsTimesS�".length+3;
-      gmsg_str = gmsg.toString().substring(preamble_len);
-      console.log('gmsg_str: %s', gmsg_str);
-
+      var gmsg_str = msg.toString().substring(preamble_len);
       // WARNING!!! yet another hack to remove the
       // some trailing data.
       gmsg_str = gmsg_str.replace('s\u0004Null','');
-      console.log('Replaced gmsg_str: %s', gmsg_str);
-      gobj = JSON.parse(gmsg_str);
-      resolve(gmsg_str);
+      resolve(JSON.parse(gmsg_str));
     });
-
   });
 }
 
-async function evaluateExpression(expr) {
-  sockPush.send(expr);
-  var value = await evaluateExpressionPromise(expr);
-}
+export async function mathMathematicaRule(tdoc: TDoc, style: Style): Promise<Style[]> {
 
-
-export function mathMathematicaRule(tdoc: TDoc, style: Style): Style[] {
+  console.log("INSIDE RULE :",style);
   // We only extract symbols from MathJS expressions that are user input.
-  if (style.type != 'MATHEMATICA' || style.meaning != 'INPUT') { return []; }
+  if (style.type != 'MATHJS' || style.meaning != 'INPUT') { return []; }
 
   var styles = [];
 
-  let result = await evaluateExpression(style.data);
+  let assoc = await evaluateExpressionPromise(style.data);
 
-  const s = "DUMMY TEXT";
+  console.log("RESULT :", assoc);
+  // Mathematica returns an "association" with a lot of
+  // information. We will eventually wish to place all of
+  // this in a style. For the time being, we will extract
+  // only the most concise result.
 
-  var exemplar = tdoc.insertMthMtcaStyle(style, result, 'SYMBOL', 'MATHEMATICA')
+  // @ts-ignore --- I don't know how to type this.
+  let result = assoc[1][2]; // "magic" for Mathematica
+  console.log(" RESULT STRING :",result);
+  var exemplar = tdoc.insertMthMtcaStyle(style, <string>result, 'EVALUATION', 'MATHEMATICA')
 
   styles.push(exemplar);
-
   return styles;
 }
 

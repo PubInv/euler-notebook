@@ -57,6 +57,23 @@ scripts/go
 
 Step 4: Open a browser to [localhost:3000](http://localhost:3000) and enjoy!
 
+## Mathematica Integration
+
+We are currently experimenting with integrating with Mathematica.
+A goal is to be able to render Mathematica plots. We currently have
+integration at the most basic level of expression evaluation working, although it
+is fragile.
+
+For this to work, you need to have a running local WolframKernel, which
+probably means you need a Mathematica license. This
+must be started with the script
+> ./scripts/start_wolfram_kernel
+which must be begun before the server is started. This executes an init file,
+and produces a simple log.
+
+This work is preliminary and actively under development. There is not
+good way to kill the kernel except by hand at present.
+
 ## Development
 
 The scripts/go command runs the following bash scripts:

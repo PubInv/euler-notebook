@@ -267,6 +267,10 @@ export class TDoc extends EventEmitter {
     return this.insertStyle(new MathJsStyle(this.nextId++, stylable, data, meaning, source));
   }
 
+  public insertMthMtcaStyle(stylable: Stylable, data: MathJsText, meaning: StyleMeaning, source: StyleSource): MthMtcaStyle {
+    return this.insertStyle(new MthMtcaStyle(this.nextId++, stylable, data, meaning, source));
+  }
+
   public insertStrokeStyle(stylable: Stylable, data: StrokeGroups, meaning: StyleMeaning, source: StyleSource): StrokeStyle {
     return this.insertStyle(new StrokeStyle(this.nextId++, stylable, data, meaning, source));
   }
@@ -599,6 +603,7 @@ const STYLE_CLASSES /* : { [type: string]: } */ = {
   'JIIX': JiixStyle,
   'LATEX': LatexStyle,
   'MATHJS': MathJsStyle,
+  'MATHEMATICA': MthMtcaStyle,
   'STROKE': StrokeStyle,
   'TEXT': TextStyle,
 }

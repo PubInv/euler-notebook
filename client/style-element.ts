@@ -37,6 +37,7 @@ interface StyleRendererMap {
 const STYLE_RENDERERS: StyleRendererMap = {
   'LATEX': renderLatexStyle,
   'MATHJS': renderMathJsStyle,
+  'MATHEMATICA': renderMthMtcaStyle,
   'TEXT': renderTextStyle,
 };
 
@@ -95,6 +96,10 @@ function renderLatexStyle(style: /* TYPESCRIPT: LatexMathStyleObject */ StyleObj
 }
 
 function renderMathJsStyle(style: /* TYPESCRIPT: MathJsStyleObject */ StyleObject): Html {
+  return `<div><tt>${style.data}</tt></div>`;
+}
+
+function renderMthMtcaStyle(style: /* TYPESCRIPT: MthMtcaStyleObject */ StyleObject): Html {
   return `<div><tt>${style.data}</tt></div>`;
 }
 
