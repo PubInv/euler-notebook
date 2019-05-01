@@ -12,5 +12,5 @@
 # some other library, I have to use the full path:
 export WOLFRAM_KERNEL_LOCATION="/Applications/Mathematica.app/Contents/MacOS/WolframKernel"
 pushd server
-$WOLFRAM_KERNEL_LOCATION -noprompt -initfile ./server_scripts/initkernel_pln.m -run 'ClientLibrary`Private`SlaveKernelPrivateStart["tcp://127.0.0.1:52817", "tcp://127.0.0.1:52818"]'
+$WOLFRAM_KERNEL_LOCATION -noprompt -initfile ./server_scripts/initkernel_pln.m -run 'ClientLibrary`Private`SlaveKernelPrivateStart["tcp://127.0.0.1:52817", "tcp://127.0.0.1:52818"]' >> ../log/mathematica.log 2>&1
 popd
