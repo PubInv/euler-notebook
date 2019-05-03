@@ -23,7 +23,7 @@ import { EventEmitter } from 'events';
 
 import { NotebookChange, NotebookPath, StyleObject, StyleMeaning, StyleType, TDocObject, ThoughtObject, ThoughtId, StyleId } from '../client/math-tablet-api';
 
-import { readNotebookFile, writeNotebookFile } from './users-and-files';
+import { readNotebookFile, writeNotebookFile, AbsDirectoryPath, absDirPathFromNotebookPath } from './users-and-files';
 
 // Types
 
@@ -165,6 +165,10 @@ export class TDoc extends EventEmitter {
 
   public jsonPrinter(): string {
     return JSON.stringify(this,null,' ');
+  }
+
+  public absoluteDirectoryPath(): AbsDirectoryPath {
+    return absDirPathFromNotebookPath(this._path);
   }
 
   public numStyles(tname: StyleType, meaning?: StyleMeaning) : number {
