@@ -22,6 +22,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 // import { MthMtcaText } from '../client/math-tablet-api';
 import { StyleObject } from '../client/math-tablet-api';
 import { TDoc, TDocChange } from './tdoc';
+import * as fs from 'fs';
 
 // Exports
 
@@ -134,7 +135,13 @@ export async function mathMathematicaRule(tdoc: TDoc, style: StyleObject): Promi
 
   var styles = [];
 
-  let assoc = await evaluateExpressionPromise(style.data);
+  var assoc;
+  try {
+    assoc = await evaluateExpressionPromise(style.data);
+  } catch (e) {
+    console.log("MATHEMATICA EVALUATION FAILED :",e);
+    return [];
+  }
 
   console.log("RESULT :", assoc);
   // Mathematica returns an "association" with a lot of
@@ -148,6 +155,44 @@ export async function mathMathematicaRule(tdoc: TDoc, style: StyleObject): Promi
   var exemplar = tdoc.insertStyle({ type: 'MATHEMATICA', id: 0, stylableId: style.id, data: <string>result, meaning: 'EVALUATION', source: 'MATHEMATICA' })
 
   styles.push(exemplar);
+
+  // now we will attempt to discern if a .gif file was created,
+  // and if so, move it into the notebook directory and create
+  // a style.  This is a bit of a hacky means that allows
+  // us to avoid having to understand too much about the expression.
+  var path = tdoc.absoluteDirectoryPath();
+  console.log("path",path);
+  // we do not yet have the code to use the tdoc path quite ready, so instead we are going to use
+  // public/tmp as a place for images until we are ready.
+  const targetPath = "./public/tmp";
+  const urlPath = "/tmp";
+  path = ".";
+
+  try {
+    fs.readdir(path, function(_err, items) {
+      console.log(items);
+      for (var i=0; i <items.length; i++) {
+        console.log(items[i]);
+        const ext = items[i].split('.').pop();
+        if (ext == "gif") {
+          const fn = items[i]
+          var dest = targetPath+"/"+fn;
+          fs.copyFile(fn, dest, err => {
+            if (err) return console.error(err);
+            console.log('success!');
+            var imageStyle =
+                tdoc.insertStyle({ type: 'IMAGE', id: 0, stylableId: style.id,
+                                   data: urlPath+"/"+fn,
+                                   meaning: 'PLOT',
+                                   source: 'MATHEMATICA' })
+            styles.push(imageStyle);
+          });
+        }
+      }
+    });
+  } catch(e) {
+    console.log("ERROR Trying to read: ",e);
+  }
   return styles;
 }
 

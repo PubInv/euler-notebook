@@ -37,6 +37,7 @@ export type StyleMeaning =
   'PRETTY' |          // A more visually-pleasing representation. e.g. LaTeX version of plain-text math.
   'SIMPLIFICATION' |  // CAS simplification of expression or equation.
   'INDENTED'|         // Indented text for the purpose of exposition.
+  'PLOT'|         // Indented text for the purpose of exposition.
   'SYMBOL';           // Symbols extracted from an expression.
 export type StyleType =
   'IMAGE'|            // URL of image relative to notebook folder.
