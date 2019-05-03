@@ -39,6 +39,7 @@ export type StyleMeaning =
   'INDENTED'|         // Indented text for the purpose of exposition.
   'SYMBOL';           // Symbols extracted from an expression.
 export type StyleType =
+  'IMAGE'|            // URL of image relative to notebook folder.
   'JIIX'|             // MyScript JIIX export from 'MATH' editor.
   'LATEX'|            // LaTeX string
   'MATHEMATICA'|      // Mathematica style (evaluation)
@@ -74,7 +75,8 @@ export interface StrokeGroups {
 export type ThoughtId = number;
 export type StyleId = number;
 export type StylableId = ThoughtId|StyleId;
-export type StyleObject = JiixStyle|LatexStyle|MathematicaStyle|MathJsStyle|MathMlStyle|StrokeStyle|TextStyle;
+
+export type StyleObject = ImageStyle|JiixStyle|LatexStyle|MathematicaStyle|MathJsStyle|MathMlStyle|StrokeStyle|TextStyle;
 
 interface BaseStyle {
   id: ThoughtId;
@@ -84,7 +86,11 @@ interface BaseStyle {
   type: StyleType;
 }
 
-// TYPESCRIPT: Separate out styles by datatype.
+export interface ImageStyle extends BaseStyle {
+  type: 'IMAGE';
+  data: string; // path relative to notebook folder.
+}
+
 export interface JiixStyle extends BaseStyle {
   type: 'JIIX';
   data: Jiix;

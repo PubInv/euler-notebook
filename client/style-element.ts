@@ -35,6 +35,7 @@ interface StyleRendererMap {
 // Constants
 
 const STYLE_RENDERERS: StyleRendererMap = {
+  'IMAGE': renderImageStyle,
   'JIIX': renderJiixStyle,
   'LATEX': renderLatexStyle,
   'MATHJS': renderMathJsStyle,
@@ -96,6 +97,10 @@ function escapeHtml(str: string): Html {
   var div = document.createElement('div');
   div.appendChild(document.createTextNode(str));
   return div.innerHTML;
+}
+
+function renderImageStyle(style: JiixStyle): Html {
+  return `<div><img src="${style.data}"/></div>`;
 }
 
 function renderJiixStyle(_style: JiixStyle): Html {
