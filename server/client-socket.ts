@@ -24,11 +24,12 @@ import * as WebSocket from 'ws';
 
 // TODO: Handle websocket lifecycle: closing, unexpected disconnects, errors, etc.
 
-import { ClientMessage, NotebookName, NotebookChange, ServerMessage, ThoughtId, LatexText, Jiix, StrokeGroups, MathJsText, MathMlXml } from '../client/math-tablet-api';
+import { ClientMessage, NotebookChange, NotebookName, NotebookPath, ServerMessage,
+         ThoughtId, LatexText, Jiix, StrokeGroups, MathJsText, MathMlXml } from '../client/math-tablet-api';
 
 import { PromiseResolver } from './common';
 import { parseMathJsExpression, ParseResults } from './mathjs-cas';
-import { TDoc, TDocName } from './tdoc';
+import { TDoc } from './tdoc';
 
 // Types
 
@@ -144,15 +145,15 @@ export class ClientSocket {
   private closePromise?: Promise<void>;
   private closeResolver?: PromiseResolver<void>;
   private socket: WebSocket;
-  private tDocs: Map<TDocName,TDoc>;
-  private tDocListeners: Map<TDocName, TDocListeners>;
+  private tDocs: Map<NotebookPath,TDoc>;
+  private tDocListeners: Map<NotebookPath, TDocListeners>;
 
   // Private Event Handlers
 
   private onTDocChange(tDoc: TDoc, change: NotebookChange): void {
     try {
-      console.log(`Client Socket: tDoc changed: ${tDoc._name} ${change.type}`);
-      this.sendMessage({ action: 'notebookChanged', notebookName: tDoc._name, change });
+      console.log(`Client Socket: tDoc changed: ${tDoc._path} ${change.type}`);
+      this.sendMessage({ action: 'notebookChanged', notebookName: tDoc._path, change });
     } catch(err) {
       console.error(`Client Socket: unexpected error handling tDoc change: ${err.message}`);
     }
@@ -160,8 +161,8 @@ export class ClientSocket {
 
   private onTDocClose(tDoc: TDoc): void {
     try {
-      console.log(`Client Socket: tDoc closed: ${tDoc._name}`);
-      this.closeNotebook(tDoc._name, true);
+      console.log(`Client Socket: tDoc closed: ${tDoc._path}`);
+      this.closeNotebook(tDoc._path, true);
     } catch(err) {
       console.error(`Client Socket: Unexpected error handling tdoc close: ${err.message}`);
     }
@@ -293,7 +294,7 @@ export class ClientSocket {
       console.error(`ERROR: Client Socket: listeners don't exist for tDoc: ${this.id} ${notebookName}`)
     }
     if (notify) {
-      this.sendMessage({ action: 'notebookClosed', notebookName: tDoc._name });
+      this.sendMessage({ action: 'notebookClosed', notebookName: tDoc._path });
     }
   }
 
@@ -304,8 +305,8 @@ export class ClientSocket {
       close: ()=>this.onTDocClose(tDoc),
     }
 
-    this.tDocs.set(tDoc._name, tDoc);
-    this.tDocListeners.set(tDoc._name, listeners);
+    this.tDocs.set(tDoc._path, tDoc);
+    this.tDocListeners.set(tDoc._path, listeners);
 
     // IMPORTANT: We prepend the 'change' listener because we need to send
     // style and thought insert messsage to the client in the order the

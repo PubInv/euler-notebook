@@ -24,8 +24,11 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 export type LatexText = string;
 export type MathJsText = string;
 export type MathMlXml = string;
-export type NotebookName = string;
 export type MthMtcaText = string;
+
+export type NotebookName = string; // Just the name of the notebook, no .mtnb extension.
+export type NotebookPath = string; // relative path from ~/math-tablet-usr/ plus name plus .mtnb extension.
+
 export type StyleMeaning =
   'EVALUATION'|       // CAS evaluation of an expression.
   'EVALUATION-ERROR'| // Error in CAS evaluation of an expression
@@ -50,7 +53,6 @@ export type StyleSource =
   'MATHEMATICA'|      // Mathematica style (evaluation)
   'MATHSTEPS'         // The Mathsteps CAS system
 type TextData = string;
-export type UserName = string;
 
 // MyScript Types
 

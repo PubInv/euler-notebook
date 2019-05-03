@@ -20,20 +20,15 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 // Requirement
 
 import { EventEmitter } from 'events';
-import { readFile, writeFile } from 'fs';
-import { join } from 'path';
-import { promisify } from 'util';
 
-import { NotebookChange, StyleObject, StyleMeaning, StyleType, TDocObject, ThoughtObject, ThoughtId, StyleId } from '../client/math-tablet-api';
+import { NotebookChange, NotebookPath, StyleObject, StyleMeaning, StyleType, TDocObject, ThoughtObject, ThoughtId, StyleId } from '../client/math-tablet-api';
 
-const readFile2 = promisify(readFile);
-const writeFile2 = promisify(writeFile);
+import { readNotebookFile, writeNotebookFile } from './users-and-files';
 
 // Types
 
 type StylableId = number;
 // type StyleRule = (tdoc: TDoc, style: Style)=>Style[];
-export type TDocName = string;
 
 export interface TDocOptions {
   anonymous?: boolean;
@@ -73,10 +68,7 @@ interface ThoughtInserted {
 // Constants
 
 const DEFAULT_OPTIONS: TDocOptions = { anonymous: false };
-const NAME_RE = /^[A-Za-z0-9_/-]+$/;   // DO NOT ALLOW PERIODS (.) IN NAMES!
-export const NOTEBOOK_FILENAME_SUFFIX = '.tdoc.json';
 const SAVE_TIMEOUT_MS = 5000;
-export const USR_DIR = 'math-tablet-usr';
 
 // VERSION CHANGES:
 // 0.0.1 - Initial version.
@@ -101,7 +93,7 @@ export class TDoc extends EventEmitter {
 
   // Public Class Methods
 
-  public static async close(notebookName: TDocName): Promise<void> {
+  public static async close(notebookName: NotebookPath): Promise<void> {
     const instance = this.tDocs.get(notebookName);
     if (!instance) { throw new Error(`Unknown notebook ${notebookName} requested in close.`); }
     await instance.close();
@@ -114,15 +106,15 @@ export class TDoc extends EventEmitter {
     await Promise.all(promises);
   }
 
-  public static async create(name: TDocName, options: TDocOptions): Promise<TDoc> {
+  public static async create(notebookPath: NotebookPath, options: TDocOptions): Promise<TDoc> {
 
     if (options.anonymous) { throw new Error(`Cannot use anonymous option with named tdoc.`); }
 
     // If the document is already open, then return the existing instance.
-    const openTDoc = this.tDocs.get(name);
-    if (openTDoc) { throw new Error(`A TDoc with that name already exists: ${name}`); }
+    const openTDoc = this.tDocs.get(notebookPath);
+    if (openTDoc) { throw new Error(`A TDoc with that name already exists: ${notebookPath}`); }
 
-    const tDoc = new this(name, options);
+    const tDoc = new this(notebookPath, options);
     tDoc.initialize();
     await tDoc.save();
     return tDoc;
@@ -139,21 +131,17 @@ export class TDoc extends EventEmitter {
     return this;
   }
 
-  public static async open(name: TDocName, options: TDocOptions): Promise<TDoc> {
+  public static async open(notebookPath: NotebookPath, options: TDocOptions): Promise<TDoc> {
 
     if (options.anonymous) { throw new Error(`Cannot open anonymous tdoc. Use create.`); }
 
     // If the document is already open, then return the existing instance.
-    const openTDoc = this.tDocs.get(name);
+    const openTDoc = this.tDocs.get(notebookPath);
     if (openTDoc) { return openTDoc; }
 
-    if (!NAME_RE.test(name)) { throw new Error(`Illegal TDoc name: ${name}`)}
-    const fileName = `${name}${NOTEBOOK_FILENAME_SUFFIX}`;
-    const filePath = join(homeDir(), USR_DIR, fileName);
-    // TODO: Another open call could come in while this one is executing!
-    const json = await readFile2(filePath, 'utf8');
+    const json = await readNotebookFile(notebookPath);
     const obj = JSON.parse(json);
-    const tDoc = this.fromJSON(obj, name, options);
+    const tDoc = this.fromJSON(obj, notebookPath, options);
     return tDoc;
   }
 
@@ -162,7 +150,7 @@ export class TDoc extends EventEmitter {
   public version: string;
   public nextId: StylableId;
   // NOTE: Properties with an underscore prefix are not persisted.
-  public _name: TDocName;
+  public _path: NotebookPath;
 
   // Public Instance Property Functions
 
@@ -223,9 +211,9 @@ export class TDoc extends EventEmitter {
 
   public async close(): Promise<void> {
     if (this._closed) { throw new Error("Closing TDoc that is already closed."); }
-    console.log(`TDoc: closing: ${this._name}`);
+    console.log(`TDoc: closing: ${this._path}`);
     this._closed = true;
-    if (!this._options.anonymous) { TDoc.tDocs.delete(this._name); }
+    if (!this._options.anonymous) { TDoc.tDocs.delete(this._path); }
     this.emit('close');
 
     // If the tdoc is waiting to be saved, then save it now.
@@ -234,7 +222,7 @@ export class TDoc extends EventEmitter {
       delete this._saveTimeout;
       await this.save();
     }
-    console.log(`TDoc: closed: ${this._name}`);
+    console.log(`TDoc: closed: ${this._path}`);
   }
 
   // Deletes the specified style and any styles attached to it recursively.
@@ -277,11 +265,11 @@ export class TDoc extends EventEmitter {
 
   private static eventEmitter = new EventEmitter();
   // TODO: inspector page where we can see a list of the open TDocs.
-  private static tDocs = new Map<TDocName, TDoc>();
+  private static tDocs = new Map<NotebookPath, TDoc>();
 
   // Private Class Methods
 
-  private static fromJSON(obj: TDocObject, name: TDocName, options: TDocOptions): TDoc {
+  private static fromJSON(obj: TDocObject, name: NotebookPath, options: TDocOptions): TDoc {
     // Validate the object
     if (!obj.nextId) { throw new Error("Invalid TDoc object JSON."); }
     if (obj.version != VERSION) { throw new Error("TDoc in unexpected version."); }
@@ -297,14 +285,14 @@ export class TDoc extends EventEmitter {
 
   // Private Constructor
 
-  private constructor(name: TDocName, options: TDocOptions) {
+  private constructor(notebookPath: NotebookPath, options: TDocOptions) {
     super();
 
     this.nextId = 1;
     this.styles = [];
     this.thoughts = [];
     this.version = VERSION;
-    this._name = name;
+    this._path = notebookPath;
     this._options = { ...DEFAULT_OPTIONS, ...options };
     this.on('removeListener', this.onRemoveListener);
   }
@@ -361,8 +349,8 @@ export class TDoc extends EventEmitter {
   // This should be called on any newly created TDoc immediately after the constructor.
   private initialize(): void {
     if (!this._options.anonymous) {
-      if (TDoc.tDocs.has(this._name)) { throw new Error(`Initializing a TDoc with a name that already exists.`); }
-      TDoc.tDocs.set(this._name, this);
+      if (TDoc.tDocs.has(this._path)) { throw new Error(`Initializing a TDoc with a name that already exists.`); }
+      TDoc.tDocs.set(this._path, this);
     }
     TDoc.eventEmitter.emit('open', this);
   }
@@ -378,17 +366,17 @@ export class TDoc extends EventEmitter {
   // notifyChange will call this method if the TDoc is persistent.
   private scheduleSave(): void {
     if (this._saveTimeout) {
-      console.log(`TDoc: postponing save timeout: ${this._name}`);
+      console.log(`TDoc: postponing save timeout: ${this._path}`);
       clearTimeout(this._saveTimeout);
     } else {
-      console.log(`TDoc: scheduling save timeout: ${this._name}`);
+      console.log(`TDoc: scheduling save timeout: ${this._path}`);
     }
     this._saveTimeout = setTimeout(async ()=>{
       delete this._saveTimeout;
       try {
         await this.save();
       } catch(err) {
-        console.error(`TDoc: error saving ${this._name}: ${err.message}`);
+        console.error(`TDoc: error saving ${this._path}: ${err.message}`);
         // TODO: What else should we do besides log an error?
       }
     }, SAVE_TIMEOUT_MS);
@@ -400,22 +388,13 @@ export class TDoc extends EventEmitter {
   private async save(): Promise<void> {
     // TODO: Handle this in a more robust way.
     if (this._saving) { throw new Error(`Taking longer that ${SAVE_TIMEOUT_MS}ms to save.`); }
-    console.log(`TDoc: saving ${this._name}`);
+    console.log(`TDoc: saving ${this._path}`);
     this._saving = true;
-    const fileName = `${this._name}${NOTEBOOK_FILENAME_SUFFIX}`;
-    const filePath = join(homeDir(), USR_DIR, fileName);
     const json = JSON.stringify(this);
-    await writeFile2(filePath, json, 'utf8');
+    await writeNotebookFile(this._path, json);
     this._saving = false;
   }
 
 }
 
 // HELPER FUNCTIONS
-
-// Duplicated in users-and-files.ts.
-function homeDir(): string {
-  const rval = process.env.HOME;
-  if (!rval) { throw new Error("HOME environment variable not set."); }
-  return rval;
-}
