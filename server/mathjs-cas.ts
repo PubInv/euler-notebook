@@ -71,9 +71,13 @@ function onChange(tDoc: TDoc, change: TDocChange): void {
   switch (change.type) {
   case 'styleInserted':
     console.log(`MathJs tDoc ${tDoc._name}/${change.type} change: `);
-    mathExtractVariablesRule(tDoc, session, change.style);
-    mathEvaluateRule(tDoc, session, change.style);
-    mathSimplifyRule(tDoc, session, change.style);
+    try {
+      mathExtractVariablesRule(tDoc, session, change.style);
+      mathEvaluateRule(tDoc, session, change.style);
+      mathSimplifyRule(tDoc, session, change.style);
+    } catch (e) {
+      console.log("MATHJS ERROR OCCCURED: ",e);
+    }
       break;
   default:
     console.log(`MathJs tDoc ignored change: ${tDoc._name} ${(<any>change).type}`);

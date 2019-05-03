@@ -98,7 +98,7 @@ function initiateQueue() {
 }
 
 async function evaluateExpressionPromise(expr: string) {
-  return new Promise(function(resolve,_reject) {
+  return new Promise(function(resolve,reject) {
     sockPush.send(expr);
     // QUESTION: Here I am re-assigning the "on" handler
     // with each call, which cost us little, but is inelegant.
@@ -116,7 +116,12 @@ async function evaluateExpressionPromise(expr: string) {
       // WARNING!!! yet another hack to remove the
       // some trailing data.
       gmsg_str = gmsg_str.replace('s\u0004Null','');
-      resolve(JSON.parse(gmsg_str));
+      try {
+        var obj = JSON.parse(gmsg_str);
+        resolve(obj);
+      } catch (e) {
+        reject(e);
+      }
     });
   });
 }

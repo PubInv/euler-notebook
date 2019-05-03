@@ -248,6 +248,12 @@ export class ClientSocket {
     } catch(err) {
       // REVIEW: Is this error handled properly?
       console.error(`Client Socket: insertMathJsText parse error: ${err.message}`);
+
+      // DAVID: I believe if JS parse fails we must
+      // move into this.
+      const thought = tDoc.insertThought();
+      tDoc.insertStyle({ type: 'MATHJS', id: 0, stylableId: thought.id, data: mathJsText, meaning: 'INPUT', source: 'USER' });
+
       return;
     }
     const thought = tDoc.insertThought();
