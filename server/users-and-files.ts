@@ -33,8 +33,8 @@ const stat2 = promisify(stat);
 
 // Types
 
-type AbsDirectoryPath = string; // Absolute path to a directory in the file system.
-type AbsFilePath = string; // Absolute path to a file in the file system.
+export type AbsDirectoryPath = string; // Absolute path to a directory in the file system.
+export type AbsFilePath = string; // Absolute path to a file in the file system.
 
 // Folder paths are always relative to root dir.
 export type FolderName = string;
@@ -77,6 +77,10 @@ const NOTEBOOK_NAME_RE = /^(\w+)$/;
 const NOTEBOOK_PATH_RE = /^(\w+)(\/\w+)*.mtnb$/;
 
 // Exported functions
+
+export function absDirPathFromNotebookPath(notebookPath: NotebookPath): AbsDirectoryPath {
+  return join(rootDir(), notebookPath);
+}
 
 export async function createFolder(folderPath: FolderPath): Promise<void> {
   const fullPath = join(rootDir(), folderPath);
@@ -151,7 +155,7 @@ export async function writeNotebookFile(notebookPath: NotebookPath, json: string
 // HELPER FUNCTIONS
 
 function absFilePathFromNotebookPath(notebookPath: NotebookPath): AbsFilePath {
-  return join(rootDir(), notebookPath, NOTEBOOK_FILE_NAME);
+  return join(absDirPathFromNotebookPath(notebookPath), NOTEBOOK_FILE_NAME);
 }
 
 // REVIEW: Memoize or save in global?
