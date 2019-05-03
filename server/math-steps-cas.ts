@@ -51,11 +51,11 @@ export async function initialize(): Promise<void> {
 function onChange(tDoc: TDoc, change: TDocChange): void {
   switch (change.type) {
   case 'styleInserted':
-    console.log(`MathSteps tDoc ${tDoc._name}/${change.type} change: `);
+    console.log(`MathSteps tDoc ${tDoc._path}/${change.type} change: `);
     onStyleInserted(tDoc, change.style);
     break;
   default:
-    console.log(`MathSteps tDoc ignored change: ${tDoc._name} ${(<any>change).type}`);
+    console.log(`MathSteps tDoc ignored change: ${tDoc._path} ${(<any>change).type}`);
     break;
   }
 }

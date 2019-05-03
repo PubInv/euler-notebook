@@ -19,81 +19,68 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 // Requirements
 
-import { readdir, readFile, stat, Stats } from 'fs';
+import { mkdir, readdir, readFile, stat, writeFile } from 'fs';
 import { join } from 'path';
 import { promisify } from 'util';
 
-import { NOTEBOOK_FILENAME_SUFFIX, USR_DIR } from './tdoc';
-import { UserName, NotebookName, MyScriptServerKeys } from '../client/math-tablet-api';
+import { NotebookName, NotebookPath, MyScriptServerKeys } from '../client/math-tablet-api';
 
+const mkdir2 = promisify(mkdir);
 const readdir2 = promisify(readdir);
 const readFile2 = promisify(readFile);
+const writeFile2 = promisify(writeFile);
 const stat2 = promisify(stat);
 
 // Types
 
-type NotebookFileName = string;
+type AbsDirectoryPath = string; // Absolute path to a directory in the file system.
+type AbsFilePath = string; // Absolute path to a file in the file system.
+
+// Folder paths are always relative to root dir.
+export type FolderName = string;
+export type FolderPath = string;
 
 export interface Credentials {
   myscript: MyScriptServerKeys;
+}
+
+interface FolderEntry {
+  name: FolderName;
+  path: FolderPath;
 }
 
 // An entry in a list of notebooks.
 // NOT an entry in a notebook.
 export interface NotebookEntry {
   name: NotebookName;
-  fileName: NotebookFileName;
+  path: NotebookPath;
 }
 
-export interface UserEntry {
-  userName: UserName;
+interface NotebooksAndFolders {
+  notebooks: NotebookEntry[];
+  folders: FolderEntry[];
 }
 
 // Constants
 
-const CREDENTIALS_FILENAME = '.math-tablet-credentials.json';
-const NOTEBOOK_FILENAME_SUFFIX_LENGTH = NOTEBOOK_FILENAME_SUFFIX.length;
+const NOTEBOOK_DIR_SUFFIX = '.mtnb';
+const NOTEBOOK_DIR_SUFFIX_LEN = NOTEBOOK_DIR_SUFFIX.length;
+const NOTEBOOK_ENCODING = 'utf8';
+const NOTEBOOK_FILE_NAME = 'notebook.json';
+const ROOT_DIR_NAME = 'math-tablet-usr';
 
-// SECURITY: DO NOT ALLOW PERIODS OR SLASHES OR BACKSLASHES IN USER NAMES OR NOTEBOOK NAMES!!!
-const USER_NAME_RE = /^\w+$/;
-const NOTEBOOK_NAME_RE = /^\w+$/; // REVIEW: aslo allow hyphens?
+const CREDENTIALS_FILENAME = '.math-tablet-credentials.json';
+
+// SECURITY: DO NOT ALLOW PERIODS IN FOLDER NAMES OR NOTEBOOK PATHS!!!
+const FOLDER_NAME_RE = /^(\w+)$/;
+const NOTEBOOK_NAME_RE = /^(\w+)$/;
+const NOTEBOOK_PATH_RE = /^(\w+)(\/\w+)*.mtnb$/;
 
 // Exported functions
 
-export async function checkNotebookExists(userName: UserName, notebookName: NotebookName): Promise<boolean> {
-  validateUserName(userName);
-  validateNotebookName(userName);
-  const notebookFilePath = join(homeDir(), USR_DIR, userName, `${notebookName}${NOTEBOOK_FILENAME_SUFFIX}`);
-  let stats: Stats|undefined;
-  try {
-    stats = await stat2(notebookFilePath);
-  } catch(err) {
-    if (err.code != 'ENOENT') { throw err; }
-  }
-  return !!stats;
-}
-
-export async function checkUserExists(userName: UserName): Promise<boolean> {
-  validateUserName(userName);
-  const userDirectory = join(homeDir(), USR_DIR, userName);
-  let stats: Stats|undefined;
-  try {
-    stats = await stat2(userDirectory);
-  } catch(err) {
-    if (err.code != 'ENOENT') { throw err; }
-  }
-  return !!stats;
-}
-
-export async function checkUsrDirExists(): Promise<boolean> {
-  const usrDirectory = join(homeDir(), USR_DIR);
-  let stats: Stats|undefined;
-  try {
-    stats = await stat2(usrDirectory);
-  } catch(err) {
-    if (err.code != 'ENOENT') { throw err; }
-  }
-  return !!stats;
+export async function createFolder(folderPath: FolderPath): Promise<void> {
+  const fullPath = join(rootDir(), folderPath);
+  await mkdir2(fullPath);
 }
 
 export async function getCredentials(): Promise<Credentials> {
@@ -102,48 +89,86 @@ export async function getCredentials(): Promise<Credentials> {
   return JSON.parse(credentialsJson);
 }
 
-export async function getListOfUsers(): Promise<UserEntry[]> {
-  const directoryNames: string[] = await readdir2(join(homeDir(), USR_DIR));
-  const userEntries: UserEntry[] = directoryNames.filter(isValidUserName).map(d=>({ userName: d }));
-  return userEntries;
+// TYPESCRIPT: file path type?
+export async function getListOfNotebooksAndFoldersInFolder(path: FolderPath): Promise<NotebooksAndFolders> {
+  const rDir = rootDir();
+  const dirPath = join(rDir, path)
+  const names = await readdir2(dirPath);
+  const paths = names.map(n=>join(path, n));
+  const fullPaths = paths.map(p=>join(rDir, p));
+  const statss = await Promise.all(fullPaths.map(fp=>stat2(fp)));
+
+  const notebooks: NotebookEntry[] = [];
+  const folders: FolderEntry[] = [];
+
+  for (let i=0; i < names.length; i++) {
+    const name = names[i];
+    const path = paths[i];
+    const stats = statss[i];
+
+    if (name.startsWith(".")) { /* skip hidden */ continue; }
+    if (!stats.isDirectory()) { /* skip non-directories */ continue; }
+
+    // Notebooks are directories that end with .mtnb.
+    // Folders are all other directories.
+    if (name.endsWith(NOTEBOOK_DIR_SUFFIX)) {
+      const nameWithoutSuffix = name.slice(0, -NOTEBOOK_DIR_SUFFIX_LEN);
+      notebooks.push({ name: nameWithoutSuffix, path })
+    } else {
+      folders.push({ name, path})
+    }
+  }
+  return { notebooks, folders };
 }
 
-export async function getListOfUsersNotebooks(userName: UserName): Promise<NotebookEntry[]> {
-  const userDirectory: /* TYPESCRIPT: FilePath */string = join(homeDir(), USR_DIR, userName)
-  const filenames: string[] = await readdir2(userDirectory);
-  const notebookFilenames = filenames.filter(f=>f.toLowerCase().endsWith(NOTEBOOK_FILENAME_SUFFIX));
-  const notebookEntries: NotebookEntry[] = notebookFilenames.map(f=>{
-    const rval: NotebookEntry = { name: f.slice(0, -NOTEBOOK_FILENAME_SUFFIX_LENGTH), fileName: f };
-    return rval;
-  }).filter(e=>isValidNotebookName(e.name));
-  return notebookEntries;
+export function notebookPathFromFolderPathAndName(folderPath: FolderPath, notebookName: NotebookName): NotebookPath {
+  return join(folderPath, notebookName + NOTEBOOK_DIR_SUFFIX);
 }
 
-export function isValidUserName(userName: UserName): boolean {
-  return USER_NAME_RE.test(userName);
+export async function readNotebookFile(notebookPath: NotebookPath): Promise<string> {
+  if (!isValidNotebookPath(notebookPath)) {
+    throw new Error(`Invalid notebook path: ${notebookPath}`);
+  }
+  const filePath = absFilePathFromNotebookPath(notebookPath);
+  const json = await readFile2(filePath, NOTEBOOK_ENCODING);
+  return json;
+}
+
+// REVIEW: Memoize or save in global?
+export function rootDir(): AbsDirectoryPath {
+  return join(homeDir(), ROOT_DIR_NAME);
+}
+
+export async function writeNotebookFile(notebookPath: NotebookPath, json: string): Promise<void> {
+  if (!isValidNotebookPath(notebookPath)) {
+    throw new Error(`Invalid notebook path: ${notebookPath}`);
+  }
+  const filePath = absFilePathFromNotebookPath(notebookPath);
+  await writeFile2(filePath, json, NOTEBOOK_ENCODING)
+
+}
+
+// HELPER FUNCTIONS
+
+function absFilePathFromNotebookPath(notebookPath: NotebookPath): AbsFilePath {
+  return join(rootDir(), notebookPath, NOTEBOOK_FILE_NAME);
+}
+
+// REVIEW: Memoize or save in global?
+export function homeDir(): AbsDirectoryPath {
+  const rval = process.env.HOME;
+  if (!rval) { throw new Error("HOME environment variable not set."); }
+  return rval;
+}
+
+export function isValidFolderName(folderName: FolderName): boolean {
+  return FOLDER_NAME_RE.test(folderName);
 }
 
 export function isValidNotebookName(notebookName: NotebookName): boolean {
   return NOTEBOOK_NAME_RE.test(notebookName);
 }
 
-// HELPER FUNCTIONS
-
-// Duplicated in tdoc.ts.
-function homeDir(): string {
-  const rval = process.env.HOME;
-  if (!rval) { throw new Error("HOME environment variable not set."); }
-  return rval;
-}
-
-function validateUserName(userName: UserName): void {
-  if (!isValidUserName(userName)) {
-    throw new Error(`Invalid math tablet user name: ${userName}`);
-  }
-}
-
-function validateNotebookName(notebookName: NotebookName): void {
-  if (!isValidNotebookName(notebookName)) {
-    throw new Error(`Invalid math tablet notebook name: ${notebookName}`);
-  }
+export function isValidNotebookPath(notebookPath: NotebookPath): boolean {
+  return NOTEBOOK_PATH_RE.test(notebookPath);
 }

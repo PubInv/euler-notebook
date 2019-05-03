@@ -38,30 +38,30 @@ export async function initialize(): Promise<void> {
 function onChange(tDoc: TDoc, change: TDocChange): void {
   switch (change.type) {
   case 'styleDeleted':
-    console.log(`Mathematica tDoc ${tDoc._name}/${change.type} change: `);
+    console.log(`Mathematica tDoc ${tDoc._path}/${change.type} change: `);
     break;
   case 'styleInserted':
-    console.log(`Mathematica tDoc ${tDoc._name}/${change.type} change: `);
+    console.log(`Mathematica tDoc ${tDoc._path}/${change.type} change: `);
     mathMathematicaRule(tDoc, change.style);
     break;
   case 'thoughtDeleted':
-    console.log(`Mathematica tDoc ${tDoc._name}/${change.type} change: `);
+    console.log(`Mathematica tDoc ${tDoc._path}/${change.type} change: `);
     break;
   case 'thoughtInserted':
-    console.log(`Mathematica tDoc ${tDoc._name}/${change.type} change: `);
+    console.log(`Mathematica tDoc ${tDoc._path}/${change.type} change: `);
     break;
   default:
-    console.log(`Mathematica tDoc unknown change: ${tDoc._name} ${(<any>change).type}`);
+    console.log(`Mathematica tDoc unknown change: ${tDoc._path} ${(<any>change).type}`);
     break;
   }
 }
 
 function onClose(tDoc: TDoc): void {
-  console.log(`Mathematica tDoc close: ${tDoc._name}`);
+  console.log(`Mathematica tDoc close: ${tDoc._path}`);
 }
 
 function onOpen(tDoc: TDoc): void {
-  console.log(`Mathematica: tDoc open: ${tDoc._name}`);
+  console.log(`Mathematica: tDoc open: ${tDoc._path}`);
 }
 
 
