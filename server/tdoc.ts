@@ -138,7 +138,7 @@ export class TDoc extends EventEmitter {
     // If the document is already open, then return the existing instance.
     console.log("OPENING");
     console.dir(notebookPath);
-    console.dir(this.tDocs.keys());
+    console.dir(Array.from(this.tDocs.keys()));
     const openTDoc = this.tDocs.get(notebookPath);
     if (openTDoc) { return openTDoc; }
     console.log("NOT FOUND, READING");
@@ -358,7 +358,7 @@ export class TDoc extends EventEmitter {
     if (!this._options.anonymous) {
       console.log("INITIALIZING");
       console.dir(this._path);
-      console.dir(TDoc.tDocs.keys());
+      console.dir(Array.from(TDoc.tDocs.keys()));
       if (TDoc.tDocs.has(this._path)) { throw new Error(`Initializing a TDoc with a name that already exists.`); }
       TDoc.tDocs.set(this._path, this);
     }
