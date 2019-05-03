@@ -276,15 +276,15 @@ export class TDoc extends EventEmitter {
 
   // Private Class Methods
 
-  private static fromJSON(obj: TDocObject, name: NotebookPath, options: TDocOptions): TDoc {
+  private static fromJSON(obj: TDocObject, notebookPath: NotebookPath, options: TDocOptions): TDoc {
     // Validate the object
     if (!obj.nextId) { throw new Error("Invalid TDoc object JSON."); }
     if (obj.version != VERSION) { throw new Error("TDoc in unexpected version."); }
 
     // Create the TDoc object from its properties and reanimated thoughts and styles.
     // REVIEW: We never call the constructor. Maybe we should?
-    const tDoc = Object.assign(Object.create(TDoc.prototype), obj);
-    tDoc._name = name;
+    const tDoc: TDoc = Object.assign(Object.create(TDoc.prototype), obj);
+    tDoc._path = notebookPath;
     tDoc._options = { ...DEFAULT_OPTIONS, ...options };
     tDoc.initialize();
     return tDoc;
