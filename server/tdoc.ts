@@ -136,12 +136,8 @@ export class TDoc extends EventEmitter {
     if (options.anonymous) { throw new Error(`Cannot open anonymous tdoc. Use create.`); }
 
     // If the document is already open, then return the existing instance.
-    console.log("OPENING");
-    console.dir(notebookPath);
-    console.dir(Array.from(this.tDocs.keys()));
     const openTDoc = this.tDocs.get(notebookPath);
     if (openTDoc) { return openTDoc; }
-    console.log("NOT FOUND, READING");
     const json = await readNotebookFile(notebookPath);
     const obj = JSON.parse(json);
     const tDoc = this.fromJSON(obj, notebookPath, options);
@@ -356,9 +352,6 @@ export class TDoc extends EventEmitter {
   // This should be called on any newly created TDoc immediately after the constructor.
   private initialize(): void {
     if (!this._options.anonymous) {
-      console.log("INITIALIZING");
-      console.dir(this._path);
-      console.dir(Array.from(TDoc.tDocs.keys()));
       if (TDoc.tDocs.has(this._path)) { throw new Error(`Initializing a TDoc with a name that already exists.`); }
       TDoc.tDocs.set(this._path, this);
     }
