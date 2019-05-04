@@ -23,7 +23,7 @@ block content
     if !path
       | root
     else
-      a(href='/') root
+      a(href='/') home
       | /
       - const segments = path.split('/');
       each segment, i in segments

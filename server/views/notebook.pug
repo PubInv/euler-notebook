@@ -18,6 +18,20 @@
 
 extends layout
 
+mixin menuBar
+  #menu
+    div TBD: Menu
+    div
+      a(href='/') home
+      | /
+      each segment, i in pathSegments
+        - const url = '/' + pathSegments.slice(0,i+1).join('/')
+        a(href=url)= segment
+        | /
+      = notebookName
+    div TBD
+
+
 block metatags
   //- These meta tags are copied from MyScript samples.
   meta(name="viewport", content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no")
@@ -37,10 +51,7 @@ block scripts
   script(type='module', src='/javascripts/app.js')
 
 block content
-  #menu
-    div TBD: Menu
-    = notebookName
-    div TBD
+  +menuBar
   #tdoc
   #footer
     #previewArea
