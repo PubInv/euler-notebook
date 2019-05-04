@@ -25,6 +25,7 @@ export type LatexText = string;
 export type MathJsText = string;
 export type MathMlXml = string;
 export type MthMtcaText = string;
+export type WolframText = string;
 
 export type NotebookName = string; // Just the name of the notebook, no .mtnb extension.
 export type NotebookPath = string; // relative path from ~/math-tablet-usr/ plus name plus .mtnb extension.
@@ -47,7 +48,8 @@ export type StyleType =
   'MATHJS'|           // MathJS plain text expression
   'MATHML'|           // MathML Presentation XML
   'STROKE'|           // MyScript strokeGroups export from 'TEXT' editor.
-  'TEXT';             // Plain text
+  'TEXT'|             // Plain text
+  'WOLFRAM';          // Wolfram language expression
 export type StyleSource =
   'TEST'|             // An example source used only hour test system
   'USER'|             // Directly enterred by user
@@ -77,7 +79,7 @@ export type ThoughtId = number;
 export type StyleId = number;
 export type StylableId = ThoughtId|StyleId;
 
-export type StyleObject = ImageStyle|JiixStyle|LatexStyle|MathematicaStyle|MathJsStyle|MathMlStyle|StrokeStyle|TextStyle;
+export type StyleObject = ImageStyle|JiixStyle|LatexStyle|MathematicaStyle|MathJsStyle|MathMlStyle|StrokeStyle|TextStyle|WolframStyle;
 
 interface BaseStyle {
   id: ThoughtId;
@@ -125,6 +127,11 @@ export interface StrokeStyle extends BaseStyle {
 export interface TextStyle extends BaseStyle {
   type: 'TEXT';
   data: TextData;
+}
+
+export interface WolframStyle extends BaseStyle {
+  type: 'WOLFRAM';
+  data: WolframText;
 }
 
 export interface TDocObject {
