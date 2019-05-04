@@ -27,11 +27,11 @@ import { addErrorMessageToHeader, /* addSuccessMessageToHeader */} from './globa
 // import { StyleObject, ThoughtObject }  from './math-tablet-api.js';
 import { Notebook } from './notebook.js';
 import { ServerSocket } from './server-socket.js';
-import { Jiix, LatexText, MathMlXml } from './math-tablet-api.js';
+import { Jiix, LatexText, MathMlXml, StyleType } from './math-tablet-api.js';
 
 // Types
 
-type InputMethod = 'Math'|'MathJsPlain'|'Text';
+type InputMethod = 'Math'|'Keyboard'|'Text';
 
 // Global Variables
 
@@ -52,20 +52,20 @@ async function onDomReady(_event: Event){
 
     // Input area
     $('#inputMathButton').addEventListener<'click'>('click', _event=>switchInput('Math'));
-    $('#inputMathJsPlainButton').addEventListener<'click'>('click', _event=>switchInput('MathJsPlain'));
+    $('#inputKeyboardButton').addEventListener<'click'>('click', _event=>switchInput('Keyboard'));
     $('#inputTextButton').addEventListener<'click'>('click', _event=>switchInput('Text'));
 
-    const mathJsInputField = $('#inputMathJsPlain>input');
-    mathJsInputField.addEventListener<'input'>('input', onMathJsPlainInputInput);
-    mathJsInputField.addEventListener<'keyup'>('keyup', onMathJsPlainInputKeyup);
+    const keyboardInputField = $('#inputKeyboard>input');
+    keyboardInputField.addEventListener<'input'>('input', onKeyboardInputInput);
+    keyboardInputField.addEventListener<'keyup'>('keyup', onKeyboardInputKeyup);
 
-    // TODO: Make undo, redo etc work with MathJsPlain input.
+    // TODO: Make undo, redo etc work with Keyboard input.
     $('#undoButton').addEventListener<'click'>('click', _event=>gEditor && gEditor.undo());
     $('#redoButton').addEventListener<'click'>('click', _event=>gEditor && gEditor.redo());
     $('#clearButton').addEventListener<'click'>('click', _event=>gEditor && gEditor.clear());
     $('#convertButton').addEventListener<'click'>('click', _event=>gEditor && gEditor.convert());
 
-    switchInput('MathJsPlain');
+    switchInput('Keyboard');
 
     // Make websocket connection to the notebook.
     const wsUrl = `ws://${window.location.host}/`;
@@ -108,11 +108,15 @@ function onInsertButtonClicked(_event: Event) {
       editor.clear();
       break;
     }
-    case 'MathJsPlain': {
-      const $field = $<HTMLInputElement>('#inputMathJsPlain>input');
-      const text = $field.value;
-      gNotebook.insertMathJsText(text);
-      $field.value = $('#previewMathJsPlain').innerText = '';
+    case 'Keyboard': {
+      const $typeSelector = $<HTMLSelectElement>('#inputKeyboard>select');
+      const styleType: StyleType = <StyleType>$typeSelector.value;
+      console.log(`Style type is ${styleType}`);
+      // TODO: 
+      const $inputField = $<HTMLInputElement>('#inputKeyboard>input');
+      const text = $inputField.value;
+      gNotebook.insertKeyboardText(styleType, text);
+      $inputField.value = $('#previewKeyboard').innerText = '';
       break;
     }
     case 'Text': {
@@ -134,23 +138,23 @@ function onInsertButtonClicked(_event: Event) {
   }
 }
 
-function onMathJsPlainInputInput(this: HTMLElement, _event: Event): void {
+function onKeyboardInputInput(this: HTMLElement, _event: Event): void {
   try {
     const $field: HTMLInputElement = this /* TYPESCRIPT: */ as HTMLInputElement;
     const text: string = $field.value;
     const isValid = (text.length>0); // LATER: Validate expression.
-    $('#previewMathJsPlain').innerText = text;
+    $('#previewKeyboard').innerText = text;
     $<HTMLButtonElement>('#insertButton').disabled = !isValid;
   } catch(err) {
-    showErrorMessage("Error updating mathJsPlain preview.", err);
+    showErrorMessage("Error on keyboard-input input event.", err);
   }
 }
 
-function onMathJsPlainInputKeyup(this: HTMLElement, event: KeyboardEvent): void {
+function onKeyboardInputKeyup(this: HTMLElement, event: KeyboardEvent): void {
   try {
     if (event.keyCode == 13) { onInsertButtonClicked.call(this, event); }
   } catch(err) {
-    showErrorMessage("Error on mathJsPlain keyup event.", err);
+    showErrorMessage("Error on keyboard-input keyup event.", err);
   }
 }
 

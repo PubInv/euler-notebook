@@ -199,7 +199,7 @@ interface NotebookOpened {
 
 // Messages from the client
 
-export type ClientMessage = CloseNotebook|DeleteThought|InsertHandwrittenMath|InsertHandwrittenText|InsertMathJsText|OpenNotebook;
+export type ClientMessage = CloseNotebook|DeleteThought|InsertHandwrittenMath|InsertHandwrittenText|InsertKeyboardText|OpenNotebook;
 
 interface CloseNotebook {
   action: 'closeNotebook';
@@ -227,10 +227,11 @@ interface InsertHandwrittenText {
   strokeGroups: StrokeGroups;
 }
 
-interface InsertMathJsText {
-  action: 'insertMathJsText';
+interface InsertKeyboardText {
+  action: 'insertKeyboardText';
   notebookName: NotebookName;
-  mathJsText: MathJsText;
+  text: string;
+  type: StyleType;
 }
 
 interface OpenNotebook {

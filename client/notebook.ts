@@ -21,8 +21,8 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 import { ServerSocket } from './server-socket.js';
 
-import { LatexText, MathJsText, NotebookName, TDocObject, StyleId, StyleObject,
-  ThoughtId, ThoughtObject, NotebookChange, MathMlXml } from './math-tablet-api.js';
+import { LatexText, NotebookName, TDocObject, StyleId, StyleObject,
+  ThoughtId, ThoughtObject, NotebookChange, MathMlXml, StyleType } from './math-tablet-api.js';
 import { Jiix, StrokeGroups } from './myscript-types.js';
 import { StyleElement } from './style-element.js';
 import { ThoughtElement } from './thought-element.js';
@@ -70,8 +70,8 @@ export class Notebook {
     this.socket.sendMessage({ action: 'insertHandwrittenText', notebookName: this.notebookName, text, strokeGroups });
   }
 
-  public insertMathJsText(mathJsText: MathJsText): void {
-    this.socket.sendMessage({ action: 'insertMathJsText', notebookName: this.notebookName, mathJsText });
+  public insertKeyboardText(type: StyleType, text: string): void {
+    this.socket.sendMessage({ action: 'insertKeyboardText', notebookName: this.notebookName, text, type });
   }
 
   // -- PRIVATE --

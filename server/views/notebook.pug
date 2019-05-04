@@ -57,17 +57,22 @@ block content
     #previewArea
       #previewText(style='display:none')
       #previewMath(style='display:none')
-      #previewMathJsPlain(style='display:none')
+      #previewKeyboard(style='display:none')
       #previewControls
         button#insertButton(disabled=true) I
     #inputArea('data-applicationkey'=credentials.myscript.applicationKey, 'data-hmackey'=credentials.myscript.hmacKey)
       #inputSelector
         button#inputMathButton HM
         button#inputTextButton HT
-        button#inputMathJsPlainButton MJP
+        button#inputKeyboardButton KB
       #inputText(style='display:none')
       #inputMath(style='display:none')
-      #inputMathJsPlain(style='display:none')
+      #inputKeyboard(style='display:none')
+        select()
+          option(value='LATEX') LaTeX
+          option(value='MATHJS') MathJS
+          option(value='TEXT') Text
+          option(value='WOLFRAM', selected=true) Wolfram
         input(type='text', placeholder="e.g. r = x^2 + y^2", style='width:100%')
       #inputControls
         button#undoButton(disabled=true) U
