@@ -153,10 +153,10 @@ async function onDashboard(req: Request, res: Response) {
 
 // Helper Functions
 
-// function getScratchNotebookName(): string {
-//   var d = new Date();
-//   return `Scratch${d.getFullYear()}${zeroPad(d.getMonth()+1)}${zeroPad(d.getDate())}${zeroPad(d.getHours())}${zeroPad(d.getMinutes())}`;
-// }
+function generateScratchNotebookName(): string {
+  var d = new Date();
+  return `Scratch${d.getFullYear()}${zeroPad(d.getMonth()+1)}${zeroPad(d.getDate())}${zeroPad(d.getHours())}${zeroPad(d.getMinutes())}`;
+}
 
 async function newFolder(body: FolderPageBody, path: FolderPath, messages: PageMessages): Promise<void> {
   const folderName = body.folderName!.trim();
@@ -173,8 +173,8 @@ async function newFolder(body: FolderPageBody, path: FolderPath, messages: PageM
 
 async function newNotebook(body: FolderPageBody, folderPath: FolderPath, messages: PageMessages): Promise<void> {
 
-  //if (!notebookPath) { notebookPath = getScratchNotebookName(); }
-  const notebookName = body.notebookName!.trim();
+  const notebookName = body.notebookName!.trim() || generateScratchNotebookName();
+
   if (!isValidNotebookName(notebookName)) {
     messages.error.push(`Invalid notebook name: '${notebookName}'`);
     return;
@@ -198,7 +198,7 @@ async function newNotebook(body: FolderPageBody, folderPath: FolderPath, message
   // LATER: Redirect to notebook itself.
 }
 
-// function zeroPad(n: number): string {
-//   return ('0'+n).slice(-2);
-// }
+function zeroPad(n: number): string {
+  return ('0'+n).slice(-2);
+}
 
