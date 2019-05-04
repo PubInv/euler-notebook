@@ -130,8 +130,8 @@ async function evaluateExpressionPromise(expr: string) {
 export async function mathMathematicaRule(tdoc: TDoc, style: StyleObject): Promise<StyleObject[]> {
 
   console.log("INSIDE RULE :",style);
-  // We only extract symbols from MathJS expressions that are user input.
-  if (style.type != 'MATHJS' || style.meaning != 'INPUT') { return []; }
+  // We only extract symbols from Wolfram expressions that are user input.
+  if (style.type != 'WOLFRAM' || style.meaning != 'INPUT') { return []; }
 
   var styles = [];
 
