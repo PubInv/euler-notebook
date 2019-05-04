@@ -19,39 +19,57 @@
 extends layout
 
 block content
-  h1= path || "/"
-
+  h1
+    if !path
+      | root
+    else
+      a(href='/') root
+      | /
+      - const segments = path.split('/');
+      each segment, i in segments
+        if i < segments.length-1
+          - const url = '/' + segments.slice(0,i+1).join('/')
+          a(href=url)= segment
+          | /
+        else
+          = segment
   form(method='POST')
 
     div(style='margin-bottom: 1em')
       table
         tr
-          th Folders
-        if (folders.length==0)
-          tr
-            td
-              i No subfolders found.
+          th
+            input(type='checkbox')
+          th(colspan=2) Folders
         each entry in folders
           tr
             td
+              input(type='checkbox')
+            td(colspan=2)
               a(href=`/${entry.path}`)= entry.name
-
-      input(type='text', name='folderName', placeholder="Folder name")
-      button(type='submit', name='action', value='newFolder') New Folder
+        tr
+          td
+          td
+            input(type='text', name='folderName', placeholder="Folder name")
+          td
+            button(type='submit', name='action', value='newFolder') New Folder
 
     div
       table
         tr
-          th Notebooks
-        if (notebooks.length==0)
-          tr
-            td
-              i No notebooks found in this folder.
+          th
+            input(type='checkbox')
+          th(colspan=2) Notebooks
         each entry in notebooks
           tr
             td
+              input(type='checkbox')
+            td(colspan=2)
               a(href=`/${entry.path}`)= entry.name
-
-      input(type='text', name='notebookName', placeholder="Notebook name")
-      button(type='submit', name='action', value='newNotebook') New Notebook
+        tr
+          td
+          td
+            input(type='text', name='notebookName', placeholder="Notebook name")
+          td
+            button(type='submit', name='action', value='newNotebook') New Notebook
 

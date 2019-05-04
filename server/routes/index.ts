@@ -29,6 +29,7 @@ import { ClientSocket } from '../client-socket';
 import { TDoc } from '../tdoc';
 import { Credentials, getCredentials, isValidNotebookPath, getListOfNotebooksAndFoldersInFolder,
           isValidFolderName, createFolder, FolderPath, isValidNotebookName, notebookPathFromFolderPathAndName } from '../users-and-files';
+import { NotebookName } from '../../client/math-tablet-api';
 
 // Exports
 
@@ -155,7 +156,11 @@ async function onDashboard(req: Request, res: Response) {
 
 function generateScratchNotebookName(): string {
   var d = new Date();
-  return `Scratch${d.getFullYear()}${zeroPad(d.getMonth()+1)}${zeroPad(d.getDate())}${zeroPad(d.getHours())}${zeroPad(d.getMinutes())}`;
+  const ymd = `${d.getFullYear()}${zeroPad(d.getMonth()+1)}${zeroPad(d.getDate())}`;
+  const hms = `${zeroPad(d.getHours())}${zeroPad(d.getMinutes())}${zeroPad(d.getSeconds())}`;
+  const rval: NotebookName = `scratch_${ymd}_${hms}`;
+  console.dir(rval);
+  return rval;
 }
 
 async function newFolder(body: FolderPageBody, path: FolderPath, messages: PageMessages): Promise<void> {
