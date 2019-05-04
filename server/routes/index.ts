@@ -147,10 +147,12 @@ async function onFolderPage(req: Request, res: Response, _next: NextFunction): P
 async function onNotebookPage(req: Request, res: Response, next: NextFunction): Promise<void> {
   const notebookPath = req.path.slice(1);
   try {
+    const pathSegments = notebookPath.split('/');
+    const notebookName = pathSegments[pathSegments.length-1].slice(0, -5);
     if (!gCredentials) { gCredentials = await getCredentials(); }
     if (!isValidNotebookPath(notebookPath)) { return next(); }
     await TDoc.open(notebookPath, {/* default options */});
-    res.render('notebook', { credentials: gCredentials, /* messages, */ notebookPath });
+    res.render('notebook', { credentials: gCredentials, /* messages, */ notebookName });
   } catch(err) {
     console.dir(err);
     res.status(404).send(`Can't open notebook '${notebookPath}': ${err.message}`);
