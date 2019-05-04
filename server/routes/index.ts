@@ -37,6 +37,8 @@ export var router = Router();
 
 // Types
 
+type Uri = string;
+
 interface FolderPageBody {
   action: 'newFolder'|'newNotebook';
 
@@ -73,44 +75,6 @@ router.get('/*', onFolderPage);
 router.post('/*', onFolderPage);
 
 // Route Handler Functions
-
-async function onNotebookPage(req: Request, res: Response, next: NextFunction): Promise<void> {
-  const notebookPath = req.path.slice(1);
-  try {
-    if (!gCredentials) { gCredentials = await getCredentials(); }
-    if (!isValidNotebookPath(notebookPath)) { return next(); }
-    await TDoc.open(notebookPath, {/* default options */});
-    res.render('notebook', { credentials: gCredentials, /* messages, */ notebookPath });
-  } catch(err) {
-    console.dir(err);
-    res.status(404).send(`Can't open notebook '${notebookPath}': ${err.message}`);
-  }
-}
-
-async function onFolderPage(req: Request, res: Response, _next: NextFunction): Promise<void> {
-  const path = req.path.slice(1);
-  const body: FolderPageBody = req.body;
-  try {
-    const messages: PageMessages = { banner: [], error: [], success: [], warning: [] };
-
-    if (req.method == 'POST') {
-      const action = body.action;
-      switch (action) {
-      case 'newFolder': await newFolder(body, path, messages); break;
-      case 'newNotebook': await newNotebook(body, path, messages); break;
-      default:
-        messages.error.push(`Unknown form action: ${action}`);
-        break;
-      }
-    }
-
-    const { notebooks, folders } = await getListOfNotebooksAndFoldersInFolder(path);
-    res.render('folder', { folders, messages, notebooks, path });
-
-  } catch(err) {
-    res.status(404).send(`Can't open path '${path}': ${err.message}`);
-  }
-}
 
 async function onDashboard(req: Request, res: Response) {
   try {
@@ -152,6 +116,47 @@ async function onDashboard(req: Request, res: Response) {
   }
 }
 
+async function onFolderPage(req: Request, res: Response, _next: NextFunction): Promise<void> {
+  const path = req.path.slice(1);
+  const body: FolderPageBody = req.body;
+  try {
+    const messages: PageMessages = { banner: [], error: [], success: [], warning: [] };
+
+    let redirectUri: Uri|undefined;
+    if (req.method == 'POST') {
+      const action = body.action;
+      switch (action) {
+      case 'newFolder': redirectUri = await newFolder(body, path, messages); break;
+      case 'newNotebook': redirectUri = await newNotebook(body, path, messages); break;
+      default:
+        messages.error.push(`Unknown form action: ${action}`);
+        break;
+      }
+    }
+
+    if (redirectUri) { return res.redirect(redirectUri); }
+
+    const { notebooks, folders } = await getListOfNotebooksAndFoldersInFolder(path);
+    res.render('folder', { folders, messages, notebooks, path });
+
+  } catch(err) {
+    res.status(404).send(`Can't open path '${path}': ${err.message}`);
+  }
+}
+
+async function onNotebookPage(req: Request, res: Response, next: NextFunction): Promise<void> {
+  const notebookPath = req.path.slice(1);
+  try {
+    if (!gCredentials) { gCredentials = await getCredentials(); }
+    if (!isValidNotebookPath(notebookPath)) { return next(); }
+    await TDoc.open(notebookPath, {/* default options */});
+    res.render('notebook', { credentials: gCredentials, /* messages, */ notebookPath });
+  } catch(err) {
+    console.dir(err);
+    res.status(404).send(`Can't open notebook '${notebookPath}': ${err.message}`);
+  }
+}
+
 // Helper Functions
 
 function generateScratchNotebookName(): string {
@@ -163,26 +168,30 @@ function generateScratchNotebookName(): string {
   return rval;
 }
 
-async function newFolder(body: FolderPageBody, path: FolderPath, messages: PageMessages): Promise<void> {
+// Returns URI for the new folder to redirect to if creation succeeds.
+// Otherwise, returns undefined, and messages contains an error message to be displayed.
+async function newFolder(body: FolderPageBody, folderPath: FolderPath, messages: PageMessages): Promise<Uri|undefined> {
   const folderName = body.folderName!.trim();
   if (!isValidFolderName(folderName)) {
     messages.error.push(`Invalid folder name: '${folderName}'`);
-    return;
+    return undefined;
   }
-  const folderPath = join(path, folderName);
-  // TODO: Safety checks on folder path?
-  await createFolder(folderPath);
+  const newFolderPath = join(folderPath, folderName);
+  // REVIEW: Additional safety checks on folder path?
+  await createFolder(newFolderPath);
   messages.success.push(`Folder '${folderName}' created successfully.`);
-  // LATER: redirect to new folder.
+  return `/${newFolderPath}`;
 }
 
-async function newNotebook(body: FolderPageBody, folderPath: FolderPath, messages: PageMessages): Promise<void> {
+// Returns URI for the new notebook to redirect to if creation succeeds.
+// Otherwise, returns undefined, and messages contains an error message to be displayed.
+async function newNotebook(body: FolderPageBody, folderPath: FolderPath, messages: PageMessages): Promise<Uri|undefined> {
 
   const notebookName = body.notebookName!.trim() || generateScratchNotebookName();
 
   if (!isValidNotebookName(notebookName)) {
     messages.error.push(`Invalid notebook name: '${notebookName}'`);
-    return;
+    return undefined;
   }
   const notebookPath = notebookPathFromFolderPathAndName(folderPath, notebookName);
 
@@ -200,7 +209,7 @@ async function newNotebook(body: FolderPageBody, folderPath: FolderPath, message
   await TDoc.create(notebookPath, {/* default options */});
 
   messages.success.push(`Notebook '${notebookName}' created successfully.`);
-  // LATER: Redirect to notebook itself.
+  return `/${notebookPath}`;
 }
 
 function zeroPad(n: number): string {
