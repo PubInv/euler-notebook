@@ -25,7 +25,7 @@ mixin menuBar
       a(href='/') home
       | /
       each segment, i in pathSegments
-        - const url = '/' + pathSegments.slice(0,i+1).join('/')
+        - const url = '/' + pathSegments.slice(0,i+1).join('/') + '/';
         a(href=url)= segment
         | /
       = notebookName

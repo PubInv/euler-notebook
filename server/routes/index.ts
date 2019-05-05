@@ -28,7 +28,8 @@ import { NextFunction, Request, Response, Router } from 'express';
 import { ClientSocket } from '../client-socket';
 import { TDoc } from '../tdoc';
 import { Credentials, getCredentials, isValidNotebookPath, getListOfNotebooksAndFoldersInFolder,
-          isValidFolderName, createFolder, FolderPath, isValidNotebookName, notebookPathFromFolderPathAndName } from '../files-and-folders';
+          isValidFolderName, createFolder, FolderPath, FOLDER_PATH_RE, isValidNotebookName,
+          notebookPathFromFolderPathAndName, NOTEBOOK_PATH_RE } from '../files-and-folders';
 import { NotebookName } from '../../client/math-tablet-api';
 
 // Exports
@@ -58,7 +59,6 @@ interface PageMessages {
 
 // Constants
 
-
 // Globals
 
 let gCredentials: Credentials|undefined;
@@ -68,11 +68,11 @@ let gCredentials: Credentials|undefined;
 router.get('/dashboard', onDashboard);
 router.post('/dashboard', onDashboard);
 
-router.get('/*.mtnb', onNotebookPage);
-router.post('/*.mtnb', onNotebookPage);
+router.get(NOTEBOOK_PATH_RE, onNotebookPage);
+router.post(NOTEBOOK_PATH_RE, onNotebookPage);
 
-router.get('/*', onFolderPage);
-router.post('/*', onFolderPage);
+router.get(FOLDER_PATH_RE, onFolderPage);
+router.post(FOLDER_PATH_RE, onFolderPage);
 
 // Route Handler Functions
 
@@ -117,9 +117,10 @@ async function onDashboard(req: Request, res: Response) {
 }
 
 async function onFolderPage(req: Request, res: Response, _next: NextFunction): Promise<void> {
-  const path = req.path.slice(1);
+  const path = req.path;
   const body: FolderPageBody = req.body;
   try {
+    const pathSegments = path == '/' ? [] : path.slice(1, -1).split('/');
     const messages: PageMessages = { banner: [], error: [], success: [], warning: [] };
 
     let redirectUri: Uri|undefined;
@@ -137,7 +138,9 @@ async function onFolderPage(req: Request, res: Response, _next: NextFunction): P
     if (redirectUri) { return res.redirect(redirectUri); }
 
     const { notebooks, folders } = await getListOfNotebooksAndFoldersInFolder(path);
-    res.render('folder', { folders, messages, notebooks, path });
+    const locals = { folders, messages, notebooks, pathSegments };
+    // console.dir(locals);
+    res.render('folder', locals);
 
   } catch(err) {
     res.status(404).send(`Can't open path '${path}': ${err.message}`);
@@ -145,14 +148,16 @@ async function onFolderPage(req: Request, res: Response, _next: NextFunction): P
 }
 
 async function onNotebookPage(req: Request, res: Response, next: NextFunction): Promise<void> {
-  const notebookPath = req.path.slice(1);
+  const notebookPath = req.path;
   try {
-    const pathSegments = notebookPath.split('/');
+    const pathSegments = notebookPath == '/' ? [] : notebookPath.slice(1, -1).split('/');
     const notebookName = pathSegments.pop()!.slice(0, -5);
     if (!gCredentials) { gCredentials = await getCredentials(); }
     if (!isValidNotebookPath(notebookPath)) { return next(); }
     await TDoc.open(notebookPath, {/* default options */});
-    res.render('notebook', { credentials: gCredentials, /* messages, */ notebookName, pathSegments });
+    const locals = { credentials: gCredentials, /* messages, */ notebookName, pathSegments };
+    // console.dir(locals);
+    res.render('notebook', locals);
   } catch(err) {
     console.dir(err);
     res.status(404).send(`Can't open notebook '${notebookPath}': ${err.message}`);
@@ -178,11 +183,11 @@ async function newFolder(body: FolderPageBody, folderPath: FolderPath, messages:
     messages.error.push(`Invalid folder name: '${folderName}'`);
     return undefined;
   }
-  const newFolderPath = join(folderPath, folderName);
+  const newFolderPath = join(folderPath, folderName) + '/';
   // REVIEW: Additional safety checks on folder path?
   await createFolder(newFolderPath);
   messages.success.push(`Folder '${folderName}' created successfully.`);
-  return `/${newFolderPath}`;
+  return `${newFolderPath}`;
 }
 
 // Returns URI for the new notebook to redirect to if creation succeeds.
@@ -211,7 +216,7 @@ async function newNotebook(body: FolderPageBody, folderPath: FolderPath, message
   await TDoc.create(notebookPath, {/* default options */});
 
   messages.success.push(`Notebook '${notebookName}' created successfully.`);
-  return `/${notebookPath}`;
+  return `${notebookPath}`;
 }
 
 function zeroPad(n: number): string {

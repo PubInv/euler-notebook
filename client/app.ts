@@ -72,7 +72,7 @@ async function onDomReady(_event: Event){
     gSocket = await ServerSocket.connect(wsUrl);
 
     // Open the notebook specified in our URL.
-    const notebookName = window.location.pathname.slice(1);
+    const notebookName = window.location.pathname;
     gNotebook = await gSocket.openNotebook(notebookName);
 
     $('#tdoc').appendChild(gNotebook.$elt);
@@ -111,8 +111,6 @@ function onInsertButtonClicked(_event: Event) {
     case 'Keyboard': {
       const $typeSelector = $<HTMLSelectElement>('#inputKeyboard>select');
       const styleType: StyleType = <StyleType>$typeSelector.value;
-      console.log(`Style type is ${styleType}`);
-      // TODO: 
       const $inputField = $<HTMLInputElement>('#inputKeyboard>input');
       const text = $inputField.value;
       gNotebook.insertKeyboardText(styleType, text);

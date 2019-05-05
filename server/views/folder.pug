@@ -20,15 +20,14 @@ extends layout
 
 block content
   h1
-    if !path
-      | root
+    if pathSegments.length == 0
+      | home
     else
       a(href='/') home
       | /
-      - const segments = path.split('/');
-      each segment, i in segments
-        if i < segments.length-1
-          - const url = '/' + segments.slice(0,i+1).join('/')
+      each segment, i in pathSegments
+        if i < pathSegments.length-1
+          - const url = '/' + pathSegments.slice(0,i+1).join('/') + '/'
           a(href=url)= segment
           | /
         else
@@ -46,7 +45,7 @@ block content
             td
               input(type='checkbox')
             td(colspan=2)
-              a(href=`/${entry.path}`)= entry.name
+              a(href=`${entry.path}`)= entry.name
         tr
           td
           td
@@ -65,7 +64,7 @@ block content
             td
               input(type='checkbox')
             td(colspan=2)
-              a(href=`/${entry.path}`)= entry.name
+              a(href=`${entry.path}`)= entry.name
         tr
           td
           td

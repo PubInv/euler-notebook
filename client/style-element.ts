@@ -22,7 +22,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 import { getKatex } from './katex-types.js';
 
 import { $new, Html } from './dom.js';
-import { StyleObject, LatexStyle, MathematicaStyle, MathJsStyle, TextStyle, MathMlStyle, JiixStyle } from './math-tablet-api.js';
+import { StyleObject, LatexStyle, MathematicaStyle, MathJsStyle, TextStyle, MathMlStyle, JiixStyle, ImageStyle } from './math-tablet-api.js';
 
 // Types
 
@@ -99,7 +99,7 @@ function escapeHtml(str: string): Html {
   return div.innerHTML;
 }
 
-function renderImageStyle(style: JiixStyle): Html {
+function renderImageStyle(style: ImageStyle): Html {
   return `<div><img src="${style.data}"/></div>`;
 }
 

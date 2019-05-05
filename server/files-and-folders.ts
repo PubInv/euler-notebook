@@ -73,13 +73,14 @@ const CREDENTIALS_FILENAME = '.math-tablet-credentials.json';
 
 // SECURITY: DO NOT ALLOW PERIODS IN FOLDER NAMES OR NOTEBOOK PATHS!!!
 const FOLDER_NAME_RE = /^(\w+)$/;
+export const FOLDER_PATH_RE = /^\/(\w+\/)*$/;
 const NOTEBOOK_NAME_RE = /^(\w+)$/;
-const NOTEBOOK_PATH_RE = /^(\w+)(\/\w+)*.mtnb$/;
+export const NOTEBOOK_PATH_RE = /^\/(\w+\/)*\w+\.mtnb\/$/;
 
 // Exported functions
 
 export function absDirPathFromNotebookPath(notebookPath: NotebookPath): AbsDirectoryPath {
-  return join(rootDir(), notebookPath);
+  return join(rootDir(), notebookPath.slice(1, -1));
 }
 
 export async function createFolder(folderPath: FolderPath): Promise<void> {
@@ -117,16 +118,16 @@ export async function getListOfNotebooksAndFoldersInFolder(path: FolderPath): Pr
     // Folders are all other directories.
     if (name.endsWith(NOTEBOOK_DIR_SUFFIX)) {
       const nameWithoutSuffix = name.slice(0, -NOTEBOOK_DIR_SUFFIX_LEN);
-      notebooks.push({ name: nameWithoutSuffix, path })
+      notebooks.push({ name: nameWithoutSuffix, path: path+'/' })
     } else {
-      folders.push({ name, path})
+      folders.push({ name, path: path+'/' })
     }
   }
   return { notebooks, folders };
 }
 
 export function notebookPathFromFolderPathAndName(folderPath: FolderPath, notebookName: NotebookName): NotebookPath {
-  return join(folderPath, notebookName + NOTEBOOK_DIR_SUFFIX);
+  return join(folderPath, notebookName + NOTEBOOK_DIR_SUFFIX) + '/';
 }
 
 export async function readNotebookFile(notebookPath: NotebookPath): Promise<string> {

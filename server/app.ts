@@ -32,6 +32,7 @@ import { initialize as initializeMathematicaCas } from './mathematica-cas';
 import { initialize as initializeMathJsCas } from './mathjs-cas';
 import { initialize as initializeMathStepsCas } from './math-steps-cas';
 import { ClientSocket } from './client-socket';
+import { rootDir as notebookRootDir } from './files-and-folders';
 
 import { router as apiRouter } from './routes/api';
 import { router as indexRouter } from './routes/index';
@@ -73,6 +74,7 @@ async function main() {
   app.use(cookieParser());
   app.use(stylusMiddleware(join(__dirname, 'public')));
   app.use(express.static(join(__dirname, 'public')));
+  app.use(express.static(notebookRootDir(), { index: false, redirect: false }));
 
   app.use('/', indexRouter);
   app.use('/api', apiRouter);
