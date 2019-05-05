@@ -28,7 +28,7 @@ import { NextFunction, Request, Response, Router } from 'express';
 import { ClientSocket } from '../client-socket';
 import { TDoc } from '../tdoc';
 import { Credentials, getCredentials, isValidNotebookPath, getListOfNotebooksAndFoldersInFolder,
-          isValidFolderName, createFolder, FolderPath, isValidNotebookName, notebookPathFromFolderPathAndName } from '../users-and-files';
+          isValidFolderName, createFolder, FolderPath, isValidNotebookName, notebookPathFromFolderPathAndName } from '../files-and-folders';
 import { NotebookName } from '../../client/math-tablet-api';
 
 // Exports
