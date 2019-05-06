@@ -162,7 +162,7 @@ interface NotebookOpened {
 
 // Messages from the client
 
-export type ClientMessage = CloseNotebook|DeleteThought|InsertHandwrittenMath|InsertHandwrittenText|InsertKeyboardText|OpenNotebook;
+export type ClientMessage = CloseNotebook|DeleteThought|InsertThought|OpenNotebook;
 
 interface CloseNotebook {
   action: 'closeNotebook';
@@ -175,26 +175,11 @@ interface DeleteThought {
   thoughtId: number;
 }
 
-interface InsertHandwrittenMath {
-  action: 'insertHandwrittenMath';
+interface InsertThought {
+  action: 'insertThought';
   notebookName: NotebookName;
-  latexMath: LatexData;
-  jiix: Jiix;
-  mathMl: MathMlData;
-}
-
-interface InsertHandwrittenText {
-  action: 'insertHandwrittenText';
-  notebookName: NotebookName;
-  text: string;
-  strokeGroups: StrokeGroups;
-}
-
-interface InsertKeyboardText {
-  action: 'insertKeyboardText';
-  notebookName: NotebookName;
-  text: string;
-  type: StyleType;
+  thoughtProps: ThoughtProperties;
+  stylePropss: StyleProperties[];
 }
 
 interface OpenNotebook {

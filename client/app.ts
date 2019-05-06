@@ -27,7 +27,7 @@ import { addErrorMessageToHeader, /* addSuccessMessageToHeader */} from './globa
 // import { StyleObject, ThoughtObject }  from './math-tablet-api.js';
 import { Notebook } from './notebook.js';
 import { ServerSocket } from './server-socket.js';
-import { Jiix, LatexData, MathMlData, StyleType } from './math-tablet-api.js';
+import { Jiix, LatexData, MathMlData, StyleType, ThoughtProperties, StyleProperties } from './math-tablet-api.js';
 
 // Types
 
@@ -104,7 +104,13 @@ function onInsertButtonClicked(_event: Event) {
       const jiix: Jiix = editor.exports && editor.exports['application/vnd.myscript.jiix'];
       const latex: LatexData = editor.exports && editor.exports['application/x-latex'];
       const mathMl: MathMlData = editor.exports && editor.exports['application/mathml+xml'];
-      gNotebook.insertHandwrittenMath(latex, jiix, mathMl);
+      const thoughtProps: ThoughtProperties = {};
+      const stylePropss: StyleProperties[] = [
+        { type: 'JIIX', data: jiix, meaning: 'INPUT', source: 'USER' },
+        { type: 'LATEX', data: latex, meaning: 'INPUT', source: 'USER' },
+        { type: 'MATHML', data: mathMl, meaning: 'INPUT', source: 'USER' },
+      ];
+      gNotebook.insertThought(thoughtProps, stylePropss);
       editor.clear();
       break;
     }
@@ -113,7 +119,11 @@ function onInsertButtonClicked(_event: Event) {
       const styleType: StyleType = <StyleType>$typeSelector.value;
       const $inputField = $<HTMLInputElement>('#inputKeyboard>input');
       const text = $inputField.value;
-      gNotebook.insertKeyboardText(styleType, text);
+      const thoughtProps: ThoughtProperties = {};
+      const stylePropss: StyleProperties[] = [
+        { type: styleType, data: text, meaning: 'INPUT', source: 'USER' },
+      ];
+      gNotebook.insertThought(thoughtProps, stylePropss);
       $inputField.value = $('#previewKeyboard').innerText = '';
       break;
     }
@@ -122,7 +132,12 @@ function onInsertButtonClicked(_event: Event) {
       if (!editor) { throw new Error(); }
       const text = editor.exports && editor.exports['text/plain'];
       const strokeGroups = editor.model.strokeGroups;
-      gNotebook.insertHandwrittenText(text, strokeGroups);
+      const thoughtProps: ThoughtProperties = {};
+      const stylePropss: StyleProperties[] = [
+        { type: 'TEXT', data: text, meaning: 'INPUT', source: 'USER' },
+        { type: 'STROKE', data: strokeGroups, meaning: 'INPUT', source: 'USER' },
+      ];
+      gNotebook.insertThought(thoughtProps, stylePropss);
       editor.clear();
       break;
     }

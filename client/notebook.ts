@@ -21,9 +21,9 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 import { ServerSocket } from './server-socket.js';
 
-import { LatexData, NotebookName, TDocObject, StyleId, StyleObject,
-  ThoughtId, ThoughtObject, NotebookChange, MathMlData, StyleType } from './math-tablet-api.js';
-import { Jiix, StrokeGroups } from './myscript-types.js';
+import { NotebookName, TDocObject, StyleId, StyleObject,
+  ThoughtId, ThoughtObject, NotebookChange, ThoughtProperties, StyleProperties } from './math-tablet-api.js';
+// import { Jiix, StrokeGroups } from './myscript-types.js';
 import { StyleElement } from './style-element.js';
 import { ThoughtElement } from './thought-element.js';
 import { $new } from './dom.js';
@@ -62,16 +62,8 @@ export class Notebook {
     // TODO: delete element?
   }
 
-  public insertHandwrittenMath(latexMath: LatexData, jiix: Jiix, mathMl: MathMlData): void {
-    this.socket.sendMessage({ action: 'insertHandwrittenMath', notebookName: this.notebookName, jiix, latexMath, mathMl });
-  }
-
-  public insertHandwrittenText(text: string, strokeGroups: StrokeGroups): void {
-    this.socket.sendMessage({ action: 'insertHandwrittenText', notebookName: this.notebookName, text, strokeGroups });
-  }
-
-  public insertKeyboardText(type: StyleType, text: string): void {
-    this.socket.sendMessage({ action: 'insertKeyboardText', notebookName: this.notebookName, text, type });
+  public insertThought(thoughtProps: ThoughtProperties, stylePropss: StyleProperties[]): void {
+    this.socket.sendMessage({ action: 'insertThought', notebookName: this.notebookName, thoughtProps, stylePropss });
   }
 
   // -- PRIVATE --

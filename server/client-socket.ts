@@ -25,7 +25,7 @@ import * as WebSocket from 'ws';
 // TODO: Handle websocket lifecycle: closing, unexpected disconnects, errors, etc.
 
 import { ClientMessage, NotebookChange, NotebookName, NotebookPath, ServerMessage,
-         ThoughtId, LatexData, Jiix, StrokeGroups, MathMlData, StyleType } from '../client/math-tablet-api';
+         ThoughtId, ThoughtProperties, StyleProperties } from '../client/math-tablet-api';
 
 import { PromiseResolver } from './common';
 import { parseMathJsExpression, ParseResults as MathJsParseResults } from './mathjs-cas';
@@ -204,10 +204,8 @@ export class ClientSocket {
         const tDoc = this.tDocs.get(msg.notebookName);
         if (!tDoc) { throw new Error(`Client Socket unknown notebook: ${msg.action} ${msg.notebookName}`); }
         switch(msg.action) {
-        case 'deleteThought':         this.cmDeleteThought(tDoc, msg.thoughtId); break;
-        case 'insertHandwrittenMath': this.cmInsertHandwrittenMath(tDoc, msg.jiix, msg.latexMath, msg.mathMl); break;
-        case 'insertHandwrittenText': this.cmInsertHandwrittenText(tDoc, msg.text, msg.strokeGroups); break;
-        case 'insertKeyboardText':    this.cmInsertKeyboardText(tDoc, msg.type, msg.text); break;
+        case 'deleteThought':  this.cmDeleteThought(tDoc, msg.thoughtId); break;
+        case 'insertThought':  this.cmInsertThought(tDoc, msg.thoughtProps, msg.stylePropss); break;
         default: {
           console.error(`Client Socket: unexpected WebSocket message action ${(<any>msg).action}. Ignoring.`);
           break;
@@ -229,59 +227,29 @@ export class ClientSocket {
     tDoc.deleteThought(thoughtId);
   }
 
-  private cmInsertHandwrittenMath(tDoc: TDoc, jiix: Jiix, latexMath: LatexData, mathMl: MathMlData): void {
-    const thought = tDoc.insertThought({});
-    tDoc.insertStyle(thought, { type: 'JIIX', data: jiix, meaning: 'HANDWRITING', source: 'USER' });
-    tDoc.insertStyle(thought, { type: 'LATEX', data: latexMath, meaning: 'INPUT', source: 'USER' });
-    tDoc.insertStyle(thought, { type: 'MATHML', data: mathMl, meaning: 'INPUT', source: 'USER' });
-  }
-
-  private cmInsertHandwrittenText(tDoc: TDoc, text: string, strokeGroups: StrokeGroups): void {
-    const thought = tDoc.insertThought({});
-    tDoc.insertStyle(thought, { type: 'TEXT', data: text, meaning: 'INPUT', source: 'USER' });
-    tDoc.insertStyle(thought, { type: 'STROKE', data: strokeGroups, meaning: 'HANDWRITING', source: 'USER' });
-  }
-
-  private cmInsertKeyboardText(tDoc: TDoc, styleType: StyleType, text: string): void {
-    // Depending on the type, parse the text to see if it is valid.
-
-    switch(styleType) {
-    case 'LATEX': {
-      // TODO: Validate by parsing
-      const thought = tDoc.insertThought({});
-      tDoc.insertStyle(thought, { type: 'LATEX', data: text, meaning: 'INPUT', source: 'USER' });
-      break;
-    }
-    case 'MATHJS': {
-      let parseResults: MathJsParseResults;
-      try {
-        parseResults = parseMathJsExpression(text);
-      } catch(err) {
-        // REVIEW: Is this error handled properly?
-        console.error(`Client Socket: insertMathJsText parse error: ${err.message}`);
-        // TODO: Attach an error message style?
-        return;
+  private cmInsertThought(tDoc: TDoc, thoughtProps: ThoughtProperties, stylePropss: StyleProperties[]): void {
+    const thought = tDoc.insertThought(thoughtProps);
+    for (const styleProps of stylePropss) {
+      switch (styleProps.type) {
+      case 'MATHJS': {
+        let parseResults: MathJsParseResults;
+        try {
+          parseResults = parseMathJsExpression(styleProps.data);
+        } catch(err) {
+          // REVIEW: Is this error handled properly?
+          console.error(`Client Socket: insertMathJsText parse error: ${err.message}`);
+          // TODO: Attach an error message style?
+          return;
+        }
+        // MathJS parsing also give us a LaTeX representation, so add that.
+        const style = tDoc.insertStyle(thought, { ...styleProps, data: parseResults.mathJsText });
+        tDoc.insertStyle(style, { type: 'LATEX', data: parseResults.latexMath, meaning: 'PRETTY', source: 'USER' });
+          break;
       }
-      // MathJS parsing also give us a LaTeX representation, so add that.
-      const thought = tDoc.insertThought({});
-      const style = tDoc.insertStyle(thought, { type: 'MATHJS', data: parseResults.mathJsText, meaning: 'INPUT', source: 'USER' });
-      tDoc.insertStyle(style, { type: 'LATEX', data: parseResults.latexMath, meaning: 'PRETTY', source: 'USER' });
-      break;
-    }
-    case 'TEXT': {
-      // REVIEW: Any validation for plain text? Trim?
-      const thought = tDoc.insertThought({});
-      tDoc.insertStyle(thought, { type: 'TEXT', data: text, meaning: 'INPUT', source: 'USER' });
-      break;
-    }
-    case 'WOLFRAM': {
-      // TODO: Validate by parsing
-      const thought = tDoc.insertThought({});
-      tDoc.insertStyle(thought, { type: 'WOLFRAM', data: text, meaning: 'INPUT', source: 'USER' });
-      break;
-    }
-    default:
-      throw new Error(`Unexpected style type ${styleType} for keyboard input.`);
+      default: 
+        // TODO: Need to validate other style types!
+        tDoc.insertStyle(thought, styleProps);
+      }
     }
   }
 
