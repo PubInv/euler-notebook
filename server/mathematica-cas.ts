@@ -20,7 +20,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 // Requirements
 
 // import { MthMtcaText } from '../client/math-tablet-api';
-import { StyleObject } from '../client/math-tablet-api';
+import { StyleObject, StyleProperties } from '../client/math-tablet-api';
 import { TDoc, TDocChange } from './tdoc';
 import * as fs from 'fs';
 
@@ -152,7 +152,7 @@ export async function mathMathematicaRule(tdoc: TDoc, style: StyleObject): Promi
   // @ts-ignore --- I don't know how to type this.
   let result = assoc[1][2]; // "magic" for Mathematica
   console.log(" RESULT STRING :",result);
-  var exemplar = tdoc.insertStyle({ type: 'MATHEMATICA', id: 0, stylableId: style.id, data: <string>result, meaning: 'EVALUATION', source: 'MATHEMATICA' })
+  var exemplar = tdoc.insertStyle(style, { type: 'MATHEMATICA', data: <string>result, meaning: 'EVALUATION', source: 'MATHEMATICA' })
 
   styles.push(exemplar);
 
@@ -180,11 +180,8 @@ export async function mathMathematicaRule(tdoc: TDoc, style: StyleObject): Promi
           fs.copyFile(fn, dest, err => {
             if (err) return console.error(err);
             console.log('success!');
-            var imageStyle =
-                tdoc.insertStyle({ type: 'IMAGE', id: 0, stylableId: style.id,
-                                   data: urlPath+"/"+fn,
-                                   meaning: 'PLOT',
-                                   source: 'MATHEMATICA' })
+            const props: StyleProperties = { type: 'IMAGE', data: urlPath+"/"+fn, meaning: 'PLOT', source: 'MATHEMATICA' };
+            var imageStyle = tdoc.insertStyle(style, props);
             styles.push(imageStyle);
           });
         }

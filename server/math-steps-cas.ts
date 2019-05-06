@@ -83,7 +83,7 @@ async function onStyleInserted(tDoc: TDoc, style: StyleObject): Promise<void> {
                       steps);
 
     // should we return the new style here? I suppose not.
-    tDoc.insertStyle({ type: 'TEXT', id: 0, stylableId: style.id, data: expressionStringStream, meaning: 'INDENTED', source: 'MATHSTEPS' });
+    tDoc.insertStyle(style, { type: 'TEXT', data: expressionStringStream, meaning: 'INDENTED', source: 'MATHSTEPS' });
 
   }
   // @ts-ignore // TYPESCRIPT:
@@ -95,7 +95,7 @@ async function onStyleInserted(tDoc: TDoc, style: StyleObject): Promise<void> {
                       steps2);
 
     // should we return the new style here? I suppose not.
-    tDoc.insertStyle({ type: 'TEXT', id: 0, stylableId: style.id, data: equationStringStream, meaning: 'INDENTED', source: 'MATHSTEPS' });
+    tDoc.insertStyle(style, { type: 'TEXT', data: equationStringStream, meaning: 'INDENTED', source: 'MATHSTEPS' });
   }
 }
 

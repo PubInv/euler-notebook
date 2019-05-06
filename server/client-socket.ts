@@ -25,7 +25,7 @@ import * as WebSocket from 'ws';
 // TODO: Handle websocket lifecycle: closing, unexpected disconnects, errors, etc.
 
 import { ClientMessage, NotebookChange, NotebookName, NotebookPath, ServerMessage,
-         ThoughtId, LatexText, Jiix, StrokeGroups, MathMlXml, StyleType } from '../client/math-tablet-api';
+         ThoughtId, LatexData, Jiix, StrokeGroups, MathMlData, StyleType } from '../client/math-tablet-api';
 
 import { PromiseResolver } from './common';
 import { parseMathJsExpression, ParseResults as MathJsParseResults } from './mathjs-cas';
@@ -229,17 +229,17 @@ export class ClientSocket {
     tDoc.deleteThought(thoughtId);
   }
 
-  private cmInsertHandwrittenMath(tDoc: TDoc, jiix: Jiix, latexMath: LatexText, mathMl: MathMlXml): void {
-    const thought = tDoc.insertThought();
-    tDoc.insertStyle({ type: 'JIIX', id: 0, stylableId: thought.id, data: jiix, meaning: 'HANDWRITING', source: 'USER' });
-    tDoc.insertStyle({ type: 'LATEX', id: 0, stylableId: thought.id, data: latexMath, meaning: 'INPUT', source: 'USER' });
-    tDoc.insertStyle({ type: 'MATHML', id: 0, stylableId: thought.id, data: mathMl, meaning: 'INPUT', source: 'USER' });
+  private cmInsertHandwrittenMath(tDoc: TDoc, jiix: Jiix, latexMath: LatexData, mathMl: MathMlData): void {
+    const thought = tDoc.insertThought({});
+    tDoc.insertStyle(thought, { type: 'JIIX', data: jiix, meaning: 'HANDWRITING', source: 'USER' });
+    tDoc.insertStyle(thought, { type: 'LATEX', data: latexMath, meaning: 'INPUT', source: 'USER' });
+    tDoc.insertStyle(thought, { type: 'MATHML', data: mathMl, meaning: 'INPUT', source: 'USER' });
   }
 
   private cmInsertHandwrittenText(tDoc: TDoc, text: string, strokeGroups: StrokeGroups): void {
-    const thought = tDoc.insertThought();
-    tDoc.insertStyle({ type: 'TEXT', id: 0, stylableId: thought.id, data: text, meaning: 'INPUT', source: 'USER' });
-    tDoc.insertStyle({ type: 'STROKE', id: 0, stylableId: thought.id, data: strokeGroups, meaning: 'HANDWRITING', source: 'USER' });
+    const thought = tDoc.insertThought({});
+    tDoc.insertStyle(thought, { type: 'TEXT', data: text, meaning: 'INPUT', source: 'USER' });
+    tDoc.insertStyle(thought, { type: 'STROKE', data: strokeGroups, meaning: 'HANDWRITING', source: 'USER' });
   }
 
   private cmInsertKeyboardText(tDoc: TDoc, styleType: StyleType, text: string): void {
@@ -248,8 +248,8 @@ export class ClientSocket {
     switch(styleType) {
     case 'LATEX': {
       // TODO: Validate by parsing
-      const thought = tDoc.insertThought();
-      tDoc.insertStyle( { type: 'LATEX', id: 0, stylableId: thought.id, data: text, meaning: 'INPUT', source: 'USER' });
+      const thought = tDoc.insertThought({});
+      tDoc.insertStyle(thought, { type: 'LATEX', data: text, meaning: 'INPUT', source: 'USER' });
       break;
     }
     case 'MATHJS': {
@@ -263,21 +263,21 @@ export class ClientSocket {
         return;
       }
       // MathJS parsing also give us a LaTeX representation, so add that.
-      const thought = tDoc.insertThought();
-      const style = tDoc.insertStyle( { type: 'MATHJS', id: 0, stylableId: thought.id, data: parseResults.mathJsText, meaning: 'INPUT', source: 'USER' });
-      tDoc.insertStyle({ type: 'LATEX', id: 0, stylableId: style.id, data: parseResults.latexMath, meaning: 'PRETTY', source: 'USER' });
+      const thought = tDoc.insertThought({});
+      const style = tDoc.insertStyle(thought, { type: 'MATHJS', data: parseResults.mathJsText, meaning: 'INPUT', source: 'USER' });
+      tDoc.insertStyle(style, { type: 'LATEX', data: parseResults.latexMath, meaning: 'PRETTY', source: 'USER' });
       break;
     }
     case 'TEXT': {
       // REVIEW: Any validation for plain text? Trim?
-      const thought = tDoc.insertThought();
-      tDoc.insertStyle( { type: 'TEXT', id: 0, stylableId: thought.id, data: text, meaning: 'INPUT', source: 'USER' });
+      const thought = tDoc.insertThought({});
+      tDoc.insertStyle(thought, { type: 'TEXT', data: text, meaning: 'INPUT', source: 'USER' });
       break;
     }
     case 'WOLFRAM': {
       // TODO: Validate by parsing
-      const thought = tDoc.insertThought();
-      tDoc.insertStyle( { type: 'WOLFRAM', id: 0, stylableId: thought.id, data: text, meaning: 'INPUT', source: 'USER' });
+      const thought = tDoc.insertThought({});
+      tDoc.insertStyle(thought, { type: 'WOLFRAM', data: text, meaning: 'INPUT', source: 'USER' });
       break;
     }
     default:

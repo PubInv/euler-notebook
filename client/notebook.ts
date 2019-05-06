@@ -21,8 +21,8 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 import { ServerSocket } from './server-socket.js';
 
-import { LatexText, NotebookName, TDocObject, StyleId, StyleObject,
-  ThoughtId, ThoughtObject, NotebookChange, MathMlXml, StyleType } from './math-tablet-api.js';
+import { LatexData, NotebookName, TDocObject, StyleId, StyleObject,
+  ThoughtId, ThoughtObject, NotebookChange, MathMlData, StyleType } from './math-tablet-api.js';
 import { Jiix, StrokeGroups } from './myscript-types.js';
 import { StyleElement } from './style-element.js';
 import { ThoughtElement } from './thought-element.js';
@@ -62,7 +62,7 @@ export class Notebook {
     // TODO: delete element?
   }
 
-  public insertHandwrittenMath(latexMath: LatexText, jiix: Jiix, mathMl: MathMlXml): void {
+  public insertHandwrittenMath(latexMath: LatexData, jiix: Jiix, mathMl: MathMlData): void {
     this.socket.sendMessage({ action: 'insertHandwrittenMath', notebookName: this.notebookName, jiix, latexMath, mathMl });
   }
 

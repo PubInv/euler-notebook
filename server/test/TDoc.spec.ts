@@ -46,14 +46,14 @@ describe('tdoc', function() {
     });
     it('tdocs can add and retrieve a thought', function() {
       let td0 = TDoc.createAnonymous();
-      let th = td0.insertThought();
+      let th = td0.insertThought({});
       assert.equal(td0.getThoughts().length, 1);
       assert.equal(td0.getThoughts()[0].id, th.id);
     });
     it('a thought can add and retrieve a style', function() {
       let td0 = TDoc.createAnonymous();
-      let th = td0.insertThought();
-      let st = td0.insertStyle({ type: 'TEXT', id: 0, stylableId: th.id, data: "spud boy", meaning: 'INPUT', source: 'TEST' });
+      let th = td0.insertThought({});
+      let st = td0.insertStyle(th, { type: 'TEXT', data: "spud boy", meaning: 'INPUT', source: 'TEST' });
       assert.equal(td0.getThoughts().length, 1);
       assert.equal(td0.getThoughts()[0].id, th.id);
       assert.equal(td0.getStyles().length, 1);
@@ -61,8 +61,8 @@ describe('tdoc', function() {
     });
     it('a style with a source can be added', function() {
       let td0 = TDoc.createAnonymous();
-      let th = td0.insertThought();
-      let st = td0.insertStyle({ type: 'TEXT', id: 0, stylableId: th.id, data: "spud boy", meaning: 'INPUT', source: 'TEST' });
+      let th = td0.insertThought({});
+      let st = td0.insertStyle(th, { type: 'TEXT', data: "spud boy", meaning: 'INPUT', source: 'TEST' });
       assert.equal(td0.getThoughts().length, 1);
       assert.equal(td0.getThoughts()[0].id, th.id);
       assert.equal(td0.getStyles().length, 1);
@@ -106,7 +106,7 @@ describe('utility computations', function() {
      it('we can create a tdoc from a csv (case 2)', function() {
        let td = createTDocFromText('TEXT', "x = 4; y = 5; x + y = 3");
        let s0 = td.getStyles()[0];
-       td.insertStyle({ type: 'TEXT', id: 0, stylableId: s0.id, data: "this is a style on a style", meaning: 'EVALUATION', source: 'TEST' })
+       td.insertStyle(s0, { type: 'TEXT', data: "this is a style on a style", meaning: 'EVALUATION', source: 'TEST' })
        assert.ok(td.stylableHasChildOfType(s0, 'TEXT'));
        assert.ok(!td.stylableHasChildOfType(s0, 'LATEX'));
      });
@@ -117,9 +117,9 @@ describe('style applier', function() {
     it('we can add a style with a mathjs rule', function() {
       // TODO: Simplify with the text compiler
       let td0 = TDoc.createAnonymous();
-      let th = td0.insertThought();
-      td0.insertStyle({ type: 'MATHJS', id: 0, stylableId: th.id, data: "2+9", meaning: 'INPUT', source: 'TEST' })
-      td0.insertStyle({ type: 'MATHJS', id: 0, stylableId: th.id, data: "4+5", meaning: 'INPUT', source: 'TEST' })
+      let th = td0.insertThought({});
+      td0.insertStyle(th, { type: 'MATHJS', data: "2+9", meaning: 'INPUT', source: 'TEST' })
+      td0.insertStyle(th, { type: 'MATHJS', data: "4+5", meaning: 'INPUT', source: 'TEST' })
       let newStyles = applyCasRules(td0,[mathSimplifyRule, mathExtractVariablesRule]);
       assert.equal(newStyles.length, 4);
       assert.equal(td0.numStyles('MATHJS', 'INPUT'), 2);
@@ -128,9 +128,9 @@ describe('style applier', function() {
     it('simplifying is idempotent.', function() {
       // TODO: Simplify with the text compiler
       let td0 = TDoc.createAnonymous();
-      let th = td0.insertThought();
-      td0.insertStyle({ type: 'MATHJS', id: 0, stylableId: th.id, data: "2+9", meaning: 'INPUT', source: 'TEST' })
-      td0.insertStyle({ type: 'MATHJS', id: 0, stylableId: th.id, data: "4+5", meaning: 'INPUT', source: 'TEST' })
+      let th = td0.insertThought({});
+      td0.insertStyle(th, { type: 'MATHJS', data: "2+9", meaning: 'INPUT', source: 'TEST' })
+      td0.insertStyle(th, { type: 'MATHJS', data: "4+5", meaning: 'INPUT', source: 'TEST' })
       let firstStyles = applyCasRules(td0,[mathSimplifyRule,
                                         mathExtractVariablesRule]);
       assert.equal(firstStyles.length, 4);
@@ -145,12 +145,12 @@ describe('style applier', function() {
     it('we can do two rules', function() {
       // TODO: Simplify with the text compiler
       let td0 = TDoc.createAnonymous();
-      let th0 = td0.insertThought();
-      let th1 = td0.insertThought();
-      let th2 = td0.insertThought();
-      td0.insertStyle({ type: 'MATHJS', id: 0, stylableId: th0.id, data: "x = 2", meaning: 'INPUT', source: 'TEST' })
-      td0.insertStyle({ type: 'MATHJS', id: 0, stylableId: th1.id, data: "y = 4", meaning: 'INPUT', source: 'TEST' })
-      td0.insertStyle({ type: 'MATHJS', id: 0, stylableId: th2.id, data: "z = x + y", meaning: 'INPUT', source: 'TEST' })
+      let th0 = td0.insertThought({});
+      let th1 = td0.insertThought({});
+      let th2 = td0.insertThought({});
+      td0.insertStyle(th0, { type: 'MATHJS', data: "x = 2", meaning: 'INPUT', source: 'TEST' })
+      td0.insertStyle(th1, { type: 'MATHJS', data: "y = 4", meaning: 'INPUT', source: 'TEST' })
+      td0.insertStyle(th2, { type: 'MATHJS', data: "z = x + y", meaning: 'INPUT', source: 'TEST' })
       let newStyles = applyCasRules(td0,
         [mathSimplifyRule,
          mathExtractVariablesRule]);
@@ -165,9 +165,9 @@ describe('style applier', function() {
 describe('variable extraction', function() {
   it('we can extract single variables', function() {
     let td = TDoc.createAnonymous();
-    let th = td.insertThought();
-    td.insertStyle({ type: 'MATHJS', id: 0, stylableId: th.id, data: "x = 4", meaning: 'INPUT', source: 'TEST' })
-    td.insertStyle({ type: 'MATHJS', id: 0, stylableId: th.id, data: "y = 5", meaning: 'INPUT', source: 'TEST' })
+    let th = td.insertThought({});
+    td.insertStyle(th, { type: 'MATHJS', data: "x = 4", meaning: 'INPUT', source: 'TEST' })
+    td.insertStyle(th, { type: 'MATHJS', data: "y = 5", meaning: 'INPUT', source: 'TEST' })
     let newStyles = applyCasRules(td,[mathExtractVariablesRule]);
     assert.equal(newStyles.length, 2);
     assert.equal(td.numStyles('MATHJS', "SYMBOL"), 2);
@@ -177,12 +177,12 @@ describe('variable extraction', function() {
 describe('variable extraction', function() {
   it('we extract multiple variables', function() {
         let td = TDoc.createAnonymous();
-    let th0 = td.insertThought();
-    let th1 = td.insertThought();
-    let th2 = td.insertThought();
-    td.insertStyle({ type: 'MATHJS', id: 0, stylableId: th0.id, data: "x = 4", meaning: 'INPUT', source: 'TEST' })
-    td.insertStyle({ type: 'MATHJS', id: 0, stylableId: th1.id, data: "y = 5", meaning: 'INPUT', source: 'TEST' })
-    td.insertStyle({ type: 'MATHJS', id: 0, stylableId: th2.id, data: "z = x + y", meaning: 'INPUT', source: 'TEST' })
+    let th0 = td.insertThought({});
+    let th1 = td.insertThought({});
+    let th2 = td.insertThought({});
+    td.insertStyle(th0, { type: 'MATHJS', data: "x = 4", meaning: 'INPUT', source: 'TEST' })
+    td.insertStyle(th1, { type: 'MATHJS', data: "y = 5", meaning: 'INPUT', source: 'TEST' })
+    td.insertStyle(th2, { type: 'MATHJS', data: "z = x + y", meaning: 'INPUT', source: 'TEST' })
   // at present, we will be extracting all of these symbols,
     // without regard to the face that some of theme should
     // be treated as the same.
@@ -196,18 +196,18 @@ describe('manipulate plain ascii styles', function() {
   // This is just to exercise the style createMathJsPlain
   it('we can create and simplify plain ascii styles', function() {
     let td = TDoc.createAnonymous();
-    let th0 = td.insertThought();
-    let th1 = td.insertThought();
+    let th0 = td.insertThought({});
+    let th1 = td.insertThought({});
     // Here we create new styles
-    td.insertStyle({ type: 'MATHJS', id: 0, stylableId: th0.id, data: "3x + 4x", meaning: 'INPUT', source: 'TEST' })
-    td.insertStyle({ type: 'MATHJS', id: 0, stylableId: th1.id, data: "4 + 5", meaning: 'INPUT', source: 'TEST' })
+    td.insertStyle(th0, { type: 'MATHJS', data: "3x + 4x", meaning: 'INPUT', source: 'TEST' })
+    td.insertStyle(th1, { type: 'MATHJS', data: "4 + 5", meaning: 'INPUT', source: 'TEST' })
     let newStyles = applyCasRules(td,[ mathSimplifyRule ]);
     assert.equal(newStyles.length, 4);
   });
   it('the MathJsPlainStyle style simplifies 3 + 7', function() {
     let td0 = TDoc.createAnonymous();
-    let th0 = td0.insertThought();
-    td0.insertStyle({ type: 'MATHJS', id: 0, stylableId: th0.id, data: "3+7", meaning: 'INPUT', source: 'TEST' })
+    let th0 = td0.insertThought({});
+    td0.insertStyle(th0, { type: 'MATHJS', data: "3+7", meaning: 'INPUT', source: 'TEST' })
     let newStylesMathJs = applyCasRules(td0,[mathSimplifyRule]);
     assert.equal(newStylesMathJs.length, 2);
   });
@@ -326,13 +326,13 @@ function createTDocFromText(type: 'MATHJS'|'TEXT', text: string): TDoc {
   const td =  TDoc.createAnonymous();
   const ths = text.split(";").map(s=>s.trim());
   for (text of ths) {
-    const th = td.insertThought();
+    const th = td.insertThought({});
     switch(type){
     case 'TEXT':
-      td.insertStyle({ type: 'TEXT', id: 0, stylableId: th.id, data: text, meaning: 'INPUT', source: 'TEST' });
+      td.insertStyle(th, { type: 'TEXT', data: text, meaning: 'INPUT', source: 'TEST' });
       break;
     case 'MATHJS':
-      td.insertStyle({ type: 'MATHJS', id: 0, stylableId: th.id, data: text, meaning: 'INPUT', source: 'TEST' });
+      td.insertStyle(th, { type: 'MATHJS', data: text, meaning: 'INPUT', source: 'TEST' });
       break;
     }
   }

@@ -21,11 +21,12 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 // Types
 
-export type LatexText = string;
-export type MathJsText = string;
-export type MathMlXml = string;
-export type MthMtcaText = string;
-export type WolframText = string;
+export type ImageData = string;
+export type LatexData = string;
+export type MathJsData = string;
+export type MathMlData = string;
+export type MthMtcaData = string;
+export type WolframData = string;
 
 export type NotebookName = string; // Just the name of the notebook, no .mtnb extension.
 export type NotebookPath = string; // relative path from ~/math-tablet-usr/ plus name plus .mtnb extension.
@@ -56,7 +57,7 @@ export type StyleSource =
   'MATHJS'|           // The Mathjs Computer Algebra System system
   'MATHEMATICA'|      // Mathematica style (evaluation)
   'MATHSTEPS'         // The Mathsteps CAS system
-type TextData = string;
+export type TextData = string;
 
 // MyScript Types
 
@@ -79,59 +80,16 @@ export type ThoughtId = number;
 export type StyleId = number;
 export type StylableId = ThoughtId|StyleId;
 
-export type StyleObject = ImageStyle|JiixStyle|LatexStyle|MathematicaStyle|MathJsStyle|MathMlStyle|StrokeStyle|TextStyle|WolframStyle;
-
-interface BaseStyle {
-  id: ThoughtId;
+export interface StyleProperties {
+  data: any;
   meaning: StyleMeaning;
   source: StyleSource;
-  stylableId: StylableId;
   type: StyleType;
 }
 
-export interface ImageStyle extends BaseStyle {
-  type: 'IMAGE';
-  data: string; // path relative to notebook folder.
-}
-
-export interface JiixStyle extends BaseStyle {
-  type: 'JIIX';
-  data: Jiix;
-}
-
-export interface LatexStyle extends BaseStyle {
-  type: 'LATEX';
-  data: LatexText;
-}
-
-export interface MathematicaStyle extends BaseStyle {
-  type: 'MATHEMATICA';
-  data: string; // TYPESCRIPT: TODO
-}
-
-export interface MathJsStyle extends BaseStyle {
-  type: 'MATHJS';
-  data: MathJsText;
-}
-
-export interface MathMlStyle extends BaseStyle {
-  type: 'MATHML';
-  data: MathMlXml;
-}
-
-export interface StrokeStyle extends BaseStyle {
-  type: 'STROKE';
-  data: StrokeGroups;
-}
-
-export interface TextStyle extends BaseStyle {
-  type: 'TEXT';
-  data: TextData;
-}
-
-export interface WolframStyle extends BaseStyle {
-  type: 'WOLFRAM';
-  data: WolframText;
+export interface StyleObject extends StyleProperties {
+  id: StyleId;
+  stylableId: StylableId;
 }
 
 export interface TDocObject {
@@ -141,7 +99,12 @@ export interface TDocObject {
   styles: StyleObject[];
 }
 
-export interface ThoughtObject {
+export interface ThoughtProperties {
+  // Expect thoughts will have some sort of properties in the future.
+  // e.g. position and size
+}
+
+export interface ThoughtObject extends ThoughtProperties {
   id: ThoughtId;
 }
 
@@ -215,9 +178,9 @@ interface DeleteThought {
 interface InsertHandwrittenMath {
   action: 'insertHandwrittenMath';
   notebookName: NotebookName;
-  latexMath: LatexText;
+  latexMath: LatexData;
   jiix: Jiix;
-  mathMl: MathMlXml;
+  mathMl: MathMlData;
 }
 
 interface InsertHandwrittenText {

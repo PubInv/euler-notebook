@@ -27,7 +27,7 @@ import { addErrorMessageToHeader, /* addSuccessMessageToHeader */} from './globa
 // import { StyleObject, ThoughtObject }  from './math-tablet-api.js';
 import { Notebook } from './notebook.js';
 import { ServerSocket } from './server-socket.js';
-import { Jiix, LatexText, MathMlXml, StyleType } from './math-tablet-api.js';
+import { Jiix, LatexData, MathMlData, StyleType } from './math-tablet-api.js';
 
 // Types
 
@@ -102,8 +102,8 @@ function onInsertButtonClicked(_event: Event) {
       if (!editor) { throw new Error(); }
       console.dir(editor.exports);
       const jiix: Jiix = editor.exports && editor.exports['application/vnd.myscript.jiix'];
-      const latex: LatexText = editor.exports && editor.exports['application/x-latex'];
-      const mathMl: MathMlXml = editor.exports && editor.exports['application/mathml+xml'];
+      const latex: LatexData = editor.exports && editor.exports['application/x-latex'];
+      const mathMl: MathMlData = editor.exports && editor.exports['application/mathml+xml'];
       gNotebook.insertHandwrittenMath(latex, jiix, mathMl);
       editor.clear();
       break;

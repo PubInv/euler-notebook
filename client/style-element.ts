@@ -22,7 +22,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 import { getKatex } from './katex-types.js';
 
 import { $new, Html } from './dom.js';
-import { StyleObject, LatexStyle, MathematicaStyle, MathJsStyle, TextStyle, MathMlStyle, JiixStyle, ImageStyle } from './math-tablet-api.js';
+import { StyleObject } from './math-tablet-api.js';
 
 // Types
 
@@ -99,29 +99,29 @@ function escapeHtml(str: string): Html {
   return div.innerHTML;
 }
 
-function renderImageStyle(style: ImageStyle): Html {
+function renderImageStyle(style: StyleObject): Html {
   return `<div><img src="${style.data}"/></div>`;
 }
 
-function renderJiixStyle(_style: JiixStyle): Html {
+function renderJiixStyle(_style: StyleObject): Html {
   return `<div><i>JIIX data</i></div>`;
 }
 
-function renderLatexStyle(style: LatexStyle): Html {
+function renderLatexStyle(style: StyleObject): Html {
   // TODO: Catch errors and display.
   const latexHtml = getKatex().renderToString(style.data, { throwOnError: false });
   return `<div>${latexHtml}</div>`;
 }
 
-function renderMathematicaStyle(style: MathematicaStyle): Html {
+function renderMathematicaStyle(style: StyleObject): Html {
   return `<div><tt>${style.data}</tt></div>`;
 }
 
-function renderMathJsStyle(style: MathJsStyle): Html {
+function renderMathJsStyle(style: StyleObject): Html {
   return `<div><tt>${style.data}</tt></div>`;
 }
 
-function renderMathMlStyle(style: MathMlStyle): Html {
+function renderMathMlStyle(style: StyleObject): Html {
   console.dir(style.data);
   return `<div><pre>${escapeHtml(style.data)}</pre></div>`;
 }
@@ -130,7 +130,7 @@ function renderOtherStyle(style: StyleObject): Html {
   return `<div><tt>${style.data}</tt></div>`;
 }
 
-function renderTextStyle(style: TextStyle): Html {
+function renderTextStyle(style: StyleObject): Html {
   if (style.meaning == 'INDENTED') {
     return `<pre>${style.data}</pre>`;
   } else {

@@ -21,7 +21,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 import { EventEmitter } from 'events';
 
-import { NotebookChange, NotebookPath, StyleObject, StyleMeaning, StyleType, TDocObject, ThoughtObject, ThoughtId, StyleId } from '../client/math-tablet-api';
+import { NotebookChange, NotebookPath, StyleObject, StyleMeaning, StyleType, TDocObject, ThoughtObject, ThoughtId, StyleId, StyleProperties, ThoughtProperties } from '../client/math-tablet-api';
 
 import { readNotebookFile, writeNotebookFile, AbsDirectoryPath, absDirPathFromNotebookPath } from './files-and-folders';
 
@@ -244,18 +244,18 @@ export class TDoc extends EventEmitter {
     this.deleteThoughtEntryAndEmit(thoughtId);
   }
 
-  public insertStyle(obj: StyleObject): StyleObject {
+  public insertStyle(stylable: StyleObject|ThoughtObject, props: StyleProperties): StyleObject {
     this.assertNotClosed('insertStyle');
-    const style: StyleObject = { ...obj, id: this.nextId++ };
+    const style: StyleObject = { ...props, id: this.nextId++, stylableId: stylable.id };
     this.styles.push(style);
     const change: NotebookChange = { type: 'styleInserted', style: style };
     this.notifyChange(change);
     return style;
   }
 
-  public insertThought(): ThoughtObject {
+  public insertThought(props: ThoughtProperties): ThoughtObject {
     this.assertNotClosed('insertThought');
-    const thought: ThoughtObject = { id: this.nextId++ };
+    const thought: ThoughtObject = { ...props, id: this.nextId++ };
     this.thoughts.push(thought);
     const change: NotebookChange = { type: 'thoughtInserted', thought: thought };
     this.notifyChange(change);

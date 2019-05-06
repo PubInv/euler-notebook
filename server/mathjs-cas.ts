@@ -21,7 +21,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 import * as math from 'mathjs';
 
-import { LatexText, MathJsText, StyleObject } from '../client/math-tablet-api';
+import { LatexData, MathJsData, StyleObject } from '../client/math-tablet-api';
 import { TDoc, TDocChange }  from './tdoc';
 
 // Types
@@ -29,8 +29,8 @@ import { TDoc, TDocChange }  from './tdoc';
 type StyleRule = (tdoc: TDoc, session: SessionData, style: StyleObject)=>StyleObject[];
 
 export interface ParseResults {
-  latexMath: LatexText;
-  mathJsText: MathJsText;
+  latexMath: LatexData;
+  mathJsText: MathJsData;
 }
 
 interface SessionData {
@@ -126,7 +126,7 @@ export function mathEvaluateRule(tdoc: TDoc, session: SessionData, style: StyleO
   } catch (err) {
     console.log("error in eval", style.data, err.messsage);
     const firstLine = err.message;
-    let st = tdoc.insertStyle({ type: 'TEXT', id: 0, stylableId: style.id, data: firstLine, meaning: 'EVALUATION-ERROR', source: 'MATHJS' });
+    let st = tdoc.insertStyle(style, { type: 'TEXT', data: firstLine, meaning: 'EVALUATION-ERROR', source: 'MATHJS' });
     return [st];
   }
 
@@ -134,7 +134,7 @@ export function mathEvaluateRule(tdoc: TDoc, session: SessionData, style: StyleO
 
   // REVIEW: Should we introduce a number style?
   let eString = ""+ e;
-  let st = tdoc.insertStyle({ type: 'MATHJS', id: 0, stylableId: style.id, data: eString, meaning: 'EVALUATION', source: 'MATHJS' });
+  let st = tdoc.insertStyle(style, { type: 'MATHJS', data: eString, meaning: 'EVALUATION', source: 'MATHJS' });
 
   return [st];
 }
@@ -150,7 +150,7 @@ export function mathExtractVariablesRule(tdoc: TDoc, _session: SessionData, styl
   if (!parse) return [];
 
   const symbolNodes = collectSymbols(parse);
-  const styles =  symbolNodes.map(s => tdoc.insertStyle({ type: 'MATHJS', id: 0, stylableId: style.id, data: s, meaning: 'SYMBOL', source: 'MATHJS' }));
+  const styles =  symbolNodes.map(s => tdoc.insertStyle(style, { type: 'MATHJS', data: s, meaning: 'SYMBOL', source: 'MATHJS' }));
   return styles;
 }
 
@@ -177,8 +177,8 @@ export function mathSimplifyRule(tdoc: TDoc, _session: SessionData, style: Style
   const simplerText = simpler.toString();
   if (simplerText == style.data) { return []; }
 
-  const s1 = tdoc.insertStyle({ type: 'MATHJS', id: 0, stylableId: style.id, data: simplerText, meaning: 'SIMPLIFICATION', source: 'MATHJS' });
-  const s2 = tdoc.insertStyle({ type: 'LATEX', id: 0, stylableId: s1.id, data: simpler.toTex(), meaning: 'PRETTY', source: 'MATHJS' });
+  const s1 = tdoc.insertStyle(style, { type: 'MATHJS', data: simplerText, meaning: 'SIMPLIFICATION', source: 'MATHJS' });
+  const s2 = tdoc.insertStyle(s1, { type: 'LATEX', data: simpler.toTex(), meaning: 'PRETTY', source: 'MATHJS' });
   return [ s1, s2 ];
 }
 
