@@ -39,43 +39,44 @@ block content
         else
           = segment
   form(method='POST')
+    - const isEmpty = folders.length==0 && notebooks.length==0
+    table
 
-    div(style='margin-bottom: 1em')
-      table
-        each entry in folders
-          tr
-            td
-              input(type='checkbox', name=`folders[${entry.name}]`, value=entry.path)
-            td(colspan=2)
-              +folderIcon
-              a(href=`${entry.path}`)= entry.name
-
-        tr
-          td
-          td
-            input(type='text', name='folderName', placeholder="Folder name")
-          td
-            button(type='submit', name='action', value='newFolder') New Folder
-
-        each entry in notebooks
-          tr
-            td
-              input(type='checkbox', name=`notebooks[${entry.name}]`, value=entry.path)
-            td(colspan=2)
-              a(href=`${entry.path}`)= entry.name
-        if folders.length==0 && notebooks.length==0
-          tr
-            td
-            td(colspan=2)
-              i Folder is empty.
-        tr
-          td
-          td
-            input(type='text', name='notebookName', placeholder="Notebook name")
-          td
-            button(type='submit', name='action', value='newNotebook') New Notebook
+      if isEmpty
         tr
           td
           td(colspan=2)
-            button(type='submit', name='action', value='deleteSelected') Delete Selected
+            i Folder is empty.
+
+      each entry in folders
+        tr
+          td
+            input(type='checkbox', name=`folders[${entry.name}]`, value=entry.path)
+          td(colspan=2)
+            +folderIcon
+            a(href=`${entry.path}`)= entry.name
+
+      tr
+        td
+        td
+          input(type='text', name='folderName', placeholder="Folder name")
+        td
+          button(type='submit', name='action', value='newFolder') New Folder
+
+      each entry in notebooks
+        tr
+          td
+            input(type='checkbox', name=`notebooks[${entry.name}]`, value=entry.path)
+          td(colspan=2)
+            a(href=`${entry.path}`)= entry.name
+      tr
+        td
+        td
+          input(type='text', name='notebookName', placeholder="Notebook name")
+        td
+          button(type='submit', name='action', value='newNotebook') New Notebook
+      tr
+        td
+        td(colspan=2)
+          button(type='submit', name='action', value='deleteSelected', disabled=isEmpty) Delete Selected
 
