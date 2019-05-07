@@ -19,7 +19,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 // Requirements
 
-import { mkdir, readdir, readFile, stat, writeFile } from 'fs';
+import { mkdir, readdir, readFile, rmdir, stat, writeFile } from 'fs';
 import { join } from 'path';
 import { promisify } from 'util';
 
@@ -30,6 +30,7 @@ import { NotebookName, NotebookPath, MyScriptServerKeys } from '../client/math-t
 const mkdir2 = promisify(mkdir);
 const readdir2 = promisify(readdir);
 const readFile2 = promisify(readFile);
+const rmdir2 = promisify(rmdir);
 const stat2 = promisify(stat);
 const writeFile2 = promisify(writeFile);
 
@@ -93,16 +94,20 @@ export async function createFolder(folderPath: FolderPath): Promise<void> {
   await mkdir2(fullPath);
 }
 
-export async function deleteFolder(folderPath: FolderPath): Promise<void> {
+export async function deleteFolder(folderPath: FolderPath): Promise<undefined|string> {
   const path = absDirPathFromNotebookPath(folderPath);
   console.log(`Deleting folder directory ${path}`);
-  await rimraf2(path);
+  try { await rmdir2(path); } 
+  catch(err) { return err.code; }
+  return undefined;
 }
 
-export async function deleteNotebook(notebookPath: NotebookPath): Promise<void> {
+export async function deleteNotebook(notebookPath: NotebookPath): Promise<undefined|string> {
   const path = absDirPathFromNotebookPath(notebookPath);
   console.log(`Deleting notebook directory ${path}`);
-  await rimraf2(path);
+  try { await rimraf2(path); }
+  catch(err) { return err.code; }
+  return undefined;
 }
 
 export async function getCredentials(): Promise<Credentials> {

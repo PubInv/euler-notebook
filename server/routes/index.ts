@@ -182,21 +182,35 @@ async function deleteSelected(body: FolderPageBody, _folderPath: FolderPath, mes
 
   const msgSegments = [];
   if (body.folders) {
-    const folderPaths = Object.values(body.folders);
-    for (const folderPath of folderPaths) {
+    let numDeleted = 0;
+    for (const folderName in body.folders) {
+      const folderPath = body.folders[folderName];
       if (!isValidFolderPath(folderPath)) { throw new Error(`Invalid folder path: ${folderPath}`); }
-      await deleteFolder(folderPath);
+      const errCode = await deleteFolder(folderPath);
+      if (!errCode) {
+        numDeleted++;
+      } else if (errCode == 'ENOTEMPTY') {
+        messages.error.push(`Cannot delete non-empty folder '${folderName}'`)
+      } else {
+        messages.error.push(`Cannot delete folder '${folderName}': ${errCode}`)
+      }
     }
-    msgSegments.push(folderPaths.length==1 ? "1 folder": `${folderPaths.length} folders`);
+    msgSegments.push(numDeleted==1 ? "1 folder": `${numDeleted} folders`);
   }
 
   if (body.notebooks) {
-    const notebookPaths = Object.values(body.notebooks);
-    for (const notebookPath of notebookPaths) {
+    let numDeleted = 0;
+    for (const notebookName in body.notebooks) {
+      const notebookPath = body.notebooks[notebookName];
       if (!isValidNotebookPath(notebookPath)) { throw new Error(`Invalid notebook path: ${notebookPath}`); }
-      await deleteNotebook(notebookPath);
+      const errCode = await deleteNotebook(notebookPath);
+      if (!errCode) {
+        numDeleted++;
+      } else {
+        messages.error.push(`Cannot delete notebook '${notebookName}': ${errCode}`)
+      }
     }
-    msgSegments.push(notebookPaths.length==1 ? "1 notebook" : `${notebookPaths.length} notebooks`);
+    msgSegments.push(numDeleted==1 ? "1 notebook" : `${numDeleted} notebooks`);
   }
 
   messages.success.push(`${msgSegments.join(" and ")} deleted.`)
