@@ -18,6 +18,12 @@
 
 extends layout
 
+mixin folderIcon
+  img.icon(src='/images/folder.svg')
+
+block styles
+  link(rel='stylesheet', href='/stylesheets/folder.css')
+
 block content
   h1
     if pathSegments.length == 0
@@ -36,16 +42,14 @@ block content
 
     div(style='margin-bottom: 1em')
       table
-        tr
-          th
-            input(type='checkbox')
-          th(colspan=2) Folders
         each entry in folders
           tr
             td
               input(type='checkbox')
             td(colspan=2)
+              +folderIcon
               a(href=`${entry.path}`)= entry.name
+
         tr
           td
           td
@@ -53,18 +57,17 @@ block content
           td
             button(type='submit', name='action', value='newFolder') New Folder
 
-    div
-      table
-        tr
-          th
-            input(type='checkbox')
-          th(colspan=2) Notebooks
         each entry in notebooks
           tr
             td
               input(type='checkbox')
             td(colspan=2)
               a(href=`${entry.path}`)= entry.name
+        if folders.length==0 && notebooks.length==0
+          tr
+            td
+            td(colspan=2)
+              i Folder is empty.
         tr
           td
           td

@@ -74,6 +74,10 @@ and produces a simple log.
 This work is preliminary and actively under development. There is not
 good way to kill the kernel except by hand at present.
 
+## Credits
+
+* Folder icon, Stefan Taubert, Creative Commons (Attribution 3.0 Unported), [IconFinder.com](https://www.iconfinder.com/iconsets/basic-user-interface-elements).
+
 ## Development
 
 The scripts/go command runs the following bash scripts:
