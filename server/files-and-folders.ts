@@ -23,13 +23,17 @@ import { mkdir, readdir, readFile, stat, writeFile } from 'fs';
 import { join } from 'path';
 import { promisify } from 'util';
 
+import * as rimraf from 'rimraf';
+
 import { NotebookName, NotebookPath, MyScriptServerKeys } from '../client/math-tablet-api';
 
 const mkdir2 = promisify(mkdir);
 const readdir2 = promisify(readdir);
 const readFile2 = promisify(readFile);
-const writeFile2 = promisify(writeFile);
 const stat2 = promisify(stat);
+const writeFile2 = promisify(writeFile);
+
+const rimraf2 = promisify(rimraf);
 
 // Types
 
@@ -79,13 +83,26 @@ export const NOTEBOOK_PATH_RE = /^\/(\w+\/)*\w+\.mtnb\/$/;
 
 // Exported functions
 
-export function absDirPathFromNotebookPath(notebookPath: NotebookPath): AbsDirectoryPath {
+// Works on folder paths, too.
+export function absDirPathFromNotebookPath(notebookPath: FolderPath|NotebookPath): AbsDirectoryPath {
   return join(rootDir(), notebookPath.slice(1, -1));
 }
 
 export async function createFolder(folderPath: FolderPath): Promise<void> {
   const fullPath = join(rootDir(), folderPath);
   await mkdir2(fullPath);
+}
+
+export async function deleteFolder(folderPath: FolderPath): Promise<void> {
+  const path = absDirPathFromNotebookPath(folderPath);
+  console.log(`Deleting folder directory ${path}`);
+  await rimraf2(path);
+}
+
+export async function deleteNotebook(notebookPath: NotebookPath): Promise<void> {
+  const path = absDirPathFromNotebookPath(notebookPath);
+  console.log(`Deleting notebook directory ${path}`);
+  await rimraf2(path);
 }
 
 export async function getCredentials(): Promise<Credentials> {
@@ -168,6 +185,10 @@ export function homeDir(): AbsDirectoryPath {
 
 export function isValidFolderName(folderName: FolderName): boolean {
   return FOLDER_NAME_RE.test(folderName);
+}
+
+export function isValidFolderPath(folderPath: FolderPath): boolean {
+  return FOLDER_PATH_RE.test(folderPath);
 }
 
 export function isValidNotebookName(notebookName: NotebookName): boolean {

@@ -29,8 +29,8 @@ import { ClientSocket } from '../client-socket';
 import { TDoc } from '../tdoc';
 import { Credentials, getCredentials, isValidNotebookPath, getListOfNotebooksAndFoldersInFolder,
           isValidFolderName, createFolder, FolderPath, FOLDER_PATH_RE, isValidNotebookName,
-          notebookPathFromFolderPathAndName, NOTEBOOK_PATH_RE } from '../files-and-folders';
-import { NotebookName } from '../../client/math-tablet-api';
+          notebookPathFromFolderPathAndName, NOTEBOOK_PATH_RE, isValidFolderPath, deleteFolder, deleteNotebook } from '../files-and-folders';
+import { NotebookName, NotebookPath } from '../../client/math-tablet-api';
 
 // Exports
 
@@ -41,7 +41,11 @@ export var router = Router();
 type Uri = string;
 
 interface FolderPageBody {
-  action: 'newFolder'|'newNotebook';
+  action: 'deleteSelected'|'newFolder'|'newNotebook';
+
+  // 'deleteSelected' fields
+  folders?: { [ path: string]: FolderPath },
+  notebooks?: { [ path: string]: NotebookPath },
 
   // 'folderName' fields
   folderName?: string;
@@ -127,8 +131,9 @@ async function onFolderPage(req: Request, res: Response, _next: NextFunction): P
     if (req.method == 'POST') {
       const action = body.action;
       switch (action) {
-      case 'newFolder': redirectUri = await newFolder(body, path, messages); break;
-      case 'newNotebook': redirectUri = await newNotebook(body, path, messages); break;
+      case 'deleteSelected':  redirectUri = await deleteSelected(body, path, messages); break;
+      case 'newFolder':       redirectUri = await newFolder(body, path, messages); break;
+      case 'newNotebook':     redirectUri = await newNotebook(body, path, messages); break;
       default:
         messages.error.push(`Unknown form action: ${action}`);
         break;
@@ -165,6 +170,39 @@ async function onNotebookPage(req: Request, res: Response, next: NextFunction): 
 }
 
 // Helper Functions
+
+async function deleteSelected(body: FolderPageBody, _folderPath: FolderPath, messages: PageMessages): Promise<Uri|undefined> {
+
+  // LATER: The way we construct the success message is not easily localized.
+
+  if (!body.folders && !body.notebooks) {
+    messages.warning.push("No folders or files selected. Select using checkboxes.");
+    return undefined;
+  }
+
+  const msgSegments = [];
+  if (body.folders) {
+    const folderPaths = Object.values(body.folders);
+    for (const folderPath of folderPaths) {
+      if (!isValidFolderPath(folderPath)) { throw new Error(`Invalid folder path: ${folderPath}`); }
+      await deleteFolder(folderPath);
+    }
+    msgSegments.push(folderPaths.length==1 ? "1 folder": `${folderPaths.length} folders`);
+  }
+
+  if (body.notebooks) {
+    const notebookPaths = Object.values(body.notebooks);
+    for (const notebookPath of notebookPaths) {
+      if (!isValidNotebookPath(notebookPath)) { throw new Error(`Invalid notebook path: ${notebookPath}`); }
+      await deleteNotebook(notebookPath);
+    }
+    msgSegments.push(notebookPaths.length==1 ? "1 notebook" : `${notebookPaths.length} notebooks`);
+  }
+
+  messages.success.push(`${msgSegments.join(" and ")} deleted.`)
+  return undefined;
+}
+
 
 function generateScratchNotebookName(): string {
   var d = new Date();

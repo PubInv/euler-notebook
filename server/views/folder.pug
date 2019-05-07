@@ -45,7 +45,7 @@ block content
         each entry in folders
           tr
             td
-              input(type='checkbox')
+              input(type='checkbox', name=`folders[${entry.name}]`, value=entry.path)
             td(colspan=2)
               +folderIcon
               a(href=`${entry.path}`)= entry.name
@@ -60,7 +60,7 @@ block content
         each entry in notebooks
           tr
             td
-              input(type='checkbox')
+              input(type='checkbox', name=`notebooks[${entry.name}]`, value=entry.path)
             td(colspan=2)
               a(href=`${entry.path}`)= entry.name
         if folders.length==0 && notebooks.length==0
@@ -74,4 +74,8 @@ block content
             input(type='text', name='notebookName', placeholder="Notebook name")
           td
             button(type='submit', name='action', value='newNotebook') New Notebook
+        tr
+          td
+          td(colspan=2)
+            button(type='submit', name='action', value='deleteSelected') Delete Selected
 
