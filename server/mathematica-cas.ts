@@ -117,7 +117,7 @@ export async function mathMathematicaRule(tdoc: TDoc, style: StyleObject): Promi
     console.log("ASSOC RETURNED",assoc,assoc.toString());
   } catch (e) {
     console.log("MATHEMATICA EVALUATION FAILED :",e);
-    return [];
+    assoc = null;
   }
 
   // Mathematica returns an "association" with a lot of
@@ -125,16 +125,6 @@ export async function mathMathematicaRule(tdoc: TDoc, style: StyleObject): Promi
   // this in a style. For the time being, we will extract
   // only the most concise result.
 
-  // @ts-ignore --- I don't know how to type this.
-  //  let result = assoc[1][2]; // "magic" for Mathematica
-  let result = assoc.toString();
-  console.log(" RESULT STRING :",result);
-  var exemplar = tdoc.insertStyle(style, { type: 'MATHEMATICA',
-                                           data: <string>result,
-                                           meaning: 'EVALUATION',
-                                           source: 'MATHEMATICA' });
-
-  styles.push(exemplar);
 
   // now we will attempt to discern if a .gif file was created,
   // and if so, move it into the notebook directory and create
@@ -152,12 +142,11 @@ export async function mathMathematicaRule(tdoc: TDoc, style: StyleObject): Promi
     fs.readdir(path, function(_err, items) {
       console.log(items);
       for (var i=0; i <items.length; i++) {
-        console.log(items[i]);
         const ext = items[i].split('.').pop();
         if (ext == "gif") {
           const fn = items[i]
           var dest = targetPath+"/"+fn;
-          fs.copyFile(fn, dest, err => {
+          fs.rename(fn, dest, err => {
             if (err) return console.error(err);
             console.log('success!');
             var imageStyle =
@@ -172,6 +161,19 @@ export async function mathMathematicaRule(tdoc: TDoc, style: StyleObject): Promi
     });
   } catch(e) {
     console.log("ERROR Trying to read: ",e);
+  }
+
+  // @ts-ignore --- I don't know how to type this.
+  //  let result = assoc[1][2]; // "magic" for Mathematica
+  if (assoc) {
+  let result = assoc.toString();
+  console.log(" RESULT STRING :",result);
+  var exemplar = tdoc.insertStyle(style, { type: 'MATHEMATICA',
+                                           data: <string>result,
+                                           meaning: 'EVALUATION',
+                                           source: 'MATHEMATICA' });
+
+    styles.push(exemplar);
   }
   return styles;
 }
