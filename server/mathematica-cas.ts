@@ -22,6 +22,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 // import { MthMtcaText } from '../client/math-tablet-api';
 import { StyleObject } from '../client/math-tablet-api';
 import { TDoc, TDocChange } from './tdoc';
+import { execute } from './wolframscript';
 import * as fs from 'fs';
 
 // Exports
@@ -78,28 +79,30 @@ child.stdin.write('Print["hello"]\n');
 
 async function evaluateExpressionPromiseWS(expr: string) : Promise<string> {
   console.log("INSIDE EVALUATE WS");
-  return new Promise(function(resolve,reject) {
-    child.stdout.once('data',
-                      (data: string) => {
-                        try {
-                          var ret_text = data.toString();
-                          console.log("DATA",ret_text);
-                          // Typical response: Out[2]= 7. In[3]:=
-                          const regex = /([\.\w]+)\[\d+\]\=\s([\.\w]+)/g;
-                          const found : string[] | null =
-                                regex.exec(ret_text);
-                          console.log("FOUND :",found);
-                          const result = found && found[2];
-                          console.log("Result :",result);
-                          if (found)
-                            resolve(found[2]);
-                          else
-                            reject(new Error("unexpected null from wolframscript"));
-                        } catch (e) {
-                          reject(e);
-                        }});
-    child.stdin.write(expr+"\n");
-  });
+  let result : string = await execute(expr);
+  return result;
+  // return new Promise(function(resolve,reject) {
+  //   child.stdout.once('data',
+  //                     (data: string) => {
+  //                       try {
+  //                         var ret_text = data.toString();
+  //                         console.log("DATA",ret_text);
+  //                         // Typical response: Out[2]= 7. In[3]:=
+  //                         const regex = /([\.\w]+)\[\d+\]\=\s([\.\w]+)/g;
+  //                         const found : string[] | null =
+  //                               regex.exec(ret_text);
+  //                         console.log("FOUND :",found);
+  //                         const result = found && found[2];
+  //                         console.log("Result :",result);
+  //                         if (found)
+  //                           resolve(found[2]);
+  //                         else
+  //                           reject(new Error("unexpected null from wolframscript"));
+  //                       } catch (e) {
+  //                         reject(e);
+  //                       }});
+  //   child.stdin.write(expr+"\n");
+  // });
 }
 
 export async function mathMathematicaRule(tdoc: TDoc, style: StyleObject): Promise<StyleObject[]> {
@@ -140,7 +143,6 @@ export async function mathMathematicaRule(tdoc: TDoc, style: StyleObject): Promi
 
   try {
     fs.readdir(path, function(_err, items) {
-      console.log(items);
       for (var i=0; i <items.length; i++) {
         const ext = items[i].split('.').pop();
         if (ext == "gif") {

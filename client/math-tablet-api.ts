@@ -36,6 +36,7 @@ export type StyleMeaning =
   'EVALUATION-ERROR'| // Error in CAS evaluation of an expression
   'HANDWRITING'|      // Stroke information for the user's handwriting.
   'INPUT'|            // Primary representation of something that the user has input.
+  'QUADRATIC'|        // A quadratic expression, presumably worth plotting.
   'PRETTY' |          // A more visually-pleasing representation. e.g. LaTeX version of plain-text math.
   'SIMPLIFICATION' |  // CAS simplification of expression or equation.
   'INDENTED'|         // Indented text for the purpose of exposition.
@@ -46,6 +47,7 @@ export type StyleType =
   'JIIX'|             // MyScript JIIX export from 'MATH' editor.
   'LATEX'|            // LaTeX string
   'MATHEMATICA'|      // Mathematica style (evaluation)
+  'CLASSIFICATION'|   // A classifcication of the thought.
   'MATHJS'|           // MathJS plain text expression
   'MATHML'|           // MathML Presentation XML
   'STROKE'|           // MyScript strokeGroups export from 'TEXT' editor.

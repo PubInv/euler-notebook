@@ -29,6 +29,7 @@ import * as morgan from 'morgan';
 import { middleware as stylusMiddleware } from 'stylus';
 
 import { initialize as initializeMathematicaCas } from './mathematica-cas';
+import { initialize as initializeQuadClassifier } from './quad-classifier';
 import { initialize as initializeMathJsCas } from './mathjs-cas';
 import { initialize as initializeMathStepsCas } from './math-steps-cas';
 import { ClientSocket } from './client-socket';
@@ -52,6 +53,7 @@ async function main() {
 
   await Promise.all([
     initializeMathematicaCas(),
+    initializeQuadClassifier(),
     initializeMathJsCas(),
     initializeMathStepsCas(),
   ]);
