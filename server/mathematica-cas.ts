@@ -66,20 +66,21 @@ function onOpen(tDoc: TDoc): void {
   console.log(`Mathematica: tDoc open: ${tDoc._path}`);
 }
 
-var child_process = require('child_process');
+// var child_process = require('child_process');
 
-var child = child_process.spawn('/usr/local/bin/wolframscript');
+// var child = child_process.spawn('/usr/local/bin/wolframscript');
 
-child.stdout.once('data',
-         (data: string) => {
-           console.log("INITIAL PIPE RESPONSE",data.toString());
-             })
+// child.stdout.once('data',
+//          (data: string) => {
+//            console.log("INITIAL PIPE RESPONSE",data.toString());
+//              })
 
-child.stdin.write('Print["hello"]\n');
+// child.stdin.write('Print["hello"]\n');
 
 async function evaluateExpressionPromiseWS(expr: string) : Promise<string> {
-  console.log("INSIDE EVALUATE WS");
-  let result : string = await execute(expr);
+  console.log("INSIDE EVALUATE WS",expr);
+  let result : string = await execute("InputForm["+expr+"]");
+  console.log("RESULT FROM WS",result);
   return result;
   // return new Promise(function(resolve,reject) {
   //   child.stdout.once('data',
