@@ -41,6 +41,8 @@ const TEST_CASES = [
    '3 + x^3'],
 ];
 
+// TODO: Error test cases. e.g. 'InputForm[x^3 + 3' (Missing right bracket);
+
 let gWolframStarted: boolean = false;
 
 describe("wolframscript", function(){

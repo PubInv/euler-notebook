@@ -44,7 +44,10 @@ function onChange(tDoc: TDoc, change: TDocChange): void {
     break;
   case 'styleInserted':
     console.log(`Mathematica tDoc ${tDoc._path}/${change.type} change: `);
-    mathMathematicaRule(tDoc, change.style);
+    mathMathematicaRule(tDoc, change.style)
+    .catch((err)=>{ console.error(`Error applying mathMathematicaRule: ${err.message}`); });
+    convertMathMlToWolframRule(tDoc, change.style)
+    .catch((err)=>{ console.error(`Error applying convertMathMlToWolframRule: ${err.message}`); });
     break;
   case 'thoughtDeleted':
     console.log(`Mathematica tDoc ${tDoc._path}/${change.type} change: `);
@@ -106,6 +109,8 @@ async function evaluateExpressionPromiseWS(expr: string) : Promise<string> {
   // });
 }
 
+// REVIEW: Caller doesn't do anything with the return value. Does not need to return a value.
+// REVIEW: This does not need to be exported, as it does not occur anywhere else in the source.
 export async function mathMathematicaRule(tdoc: TDoc, style: StyleObject): Promise<StyleObject[]> {
 
   console.log("INSIDE RULE :",style);
@@ -179,4 +184,20 @@ export async function mathMathematicaRule(tdoc: TDoc, style: StyleObject): Promi
     styles.push(exemplar);
   }
   return styles;
+}
+
+async function convertMathMlToWolframRule(tdoc: TDoc, style: StyleObject): Promise<void> {
+
+  if (style.type != 'MATHML' || style.meaning != 'INPUT') { return; }
+
+  const mathMl = style.data.split('\n').join().replace(/"/g, '\\"');
+  const cmd = `InputForm[ToExpression[ImportString["${mathMl}"]]]`;
+  // console.log(cmd);
+  try {
+    const data = await execute(cmd);
+    // REVIEW: Attach it to the thought instead of the style?
+    tdoc.insertStyle(style, { type: 'WOLFRAM', source: 'MATHEMATICA', meaning: 'INPUT', data });
+  } catch(err) {
+    tdoc.insertStyle(style, { type: 'TEXT', source: 'MATHEMATICA', meaning: 'EVALUATION-ERROR', data: `Cannot convert to Wolfram expression: ${err.message}` });
+  }
 }
