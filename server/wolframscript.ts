@@ -24,10 +24,12 @@ import { WolframData } from '../client/math-tablet-api';
 
 // Constants
 
+const WOLFRAM_LICENSE_EXPIRING_MSG = "\n\tWolfram Language 12.0.0 Engine license you are using is expiring.\n\tPlease contact Wolfram Research or an authorized\n\tWolfram product distributor to extend your license and\n\tobtain a new password.\n"
 const WOLFRAMSCRIPT_PATH = '/usr/local/bin/wolframscript';
 
 const INPUT_PROMPT_RE = /\s*In\[(\d+)\]:=\s*$/;
 const OUTPUT_PROMPT_RE = /^\s*Out\[(\d+)\](\/\/\w+)?=\s*/;
+const SYNTAX_ERROR_RE = /^\s*(Syntax::.*)/;
 
 // Globals
 
@@ -38,24 +40,46 @@ let gChildProcess: ChildProcess;
 export async function execute(command: WolframData): Promise<WolframData> {
   // TODO: reject if server not started.
   //console.log(`WolframScript: executing: ${command}`);
-  return new Promise((resolve, _reject)=>{
+  return new Promise((resolve, reject)=>{
     gChildProcess.stdin!.write(command + '\n');
     let results = '';
     const stdoutListener = (data: Buffer)=>{
       let dataString: string = data.toString();
       // console.log(`data: ${showInvisible(dataString)}`);
       results += dataString;
-      const outputPromptMatch = OUTPUT_PROMPT_RE.exec(results);
-      if (outputPromptMatch) {
-        const inputPromptMatch = INPUT_PROMPT_RE.exec(results);
-        if (inputPromptMatch) {
-          // console.dir(inputPromptMatch);
-          // Strip output prompt from the beginning and input prompt from the end.
+
+      // Once the results end with an input prompt, we have received the complete result.
+      const inputPromptMatch = INPUT_PROMPT_RE.exec(results);
+      if (inputPromptMatch) {
+
+        gChildProcess.stdout!.removeListener('data', stdoutListener);
+
+        // If the results start with an output prompt, then it was a successful execution:
+        const outputPromptMatch = OUTPUT_PROMPT_RE.exec(results);
+        if (outputPromptMatch) {
+
+          // ... then fulfill with whatever came between the prompts.
           results = results.substring(outputPromptMatch![0].length, inputPromptMatch.index);
-          gChildProcess.stdout!.removeListener('data', stdoutListener);
+          // console.log(`Resolving: '${results}'`);
           resolve(results);
+        } else {
+          let message: string = "WolframScript Error: ";
+
+          // Extract a useful error message as best we can:
+          const syntaxErrorMatch = SYNTAX_ERROR_RE.exec(results);
+          if (syntaxErrorMatch) {
+            message += `${syntaxErrorMatch[1]}`;
+          } else {
+            message += `Unexpected result: ${results.slice(0, 20)}`;
+          }
+
+          // console.log(`Rejecting: '${message}'`);
+          reject(new Error(message));
         }
+      } else {
+        // Wait for more data events from Wolfram Script to complete the result.
       }
+
     };
     gChildProcess.stdout!.on('data', stdoutListener)
   });
@@ -70,6 +94,13 @@ export async function start(): Promise<void> {
     };
     const exitListener = (code: number, signal: string)=>{ 
       reject(new Error(`WolframScript exited prematurely. Code ${code}, signal ${signal}`));
+    };
+    const stderrListener = (data: Buffer)=>{
+      const dataString = data.toString();
+      // Ignore any text to standard out that is part of the license expiring string.
+      // TODO: This is specific to the version encoded in the string (12.0.0). Make this version independent.
+      if (WOLFRAM_LICENSE_EXPIRING_MSG.indexOf(dataString)>=0) { return; }
+      console.error(`ERROR: WolframScript: stderr output: ${showInvisible(dataString)}`);
     };
     const stdoutListener = (data: Buffer) => {
       // console.dir(data);
@@ -86,9 +117,7 @@ export async function start(): Promise<void> {
     child.once('error', errorListener);
     child.once('exit', exitListener);
     child.stdout.on('data', stdoutListener);
-    child.stderr.on('data', (data: Buffer)=>{
-      console.error(`ERROR: WolframScript: stderr output: ${data}`);
-    })
+    child.stderr.on('data', stderrListener);
   });
 }
 
@@ -96,7 +125,7 @@ export async function stop(): Promise<void> {
   return new Promise((resolve, reject)=>{
     const child = gChildProcess;
     child.once('error', (err: Error)=>{
-      console.error(`ERROR: WolframScript: child process error: ${err.message}`);
+      // console.error(`ERROR: WolframScript: child process error: ${err.message}`);
       reject(err);
     });
     // REVIEW: should we wait for 'close', too?
@@ -109,6 +138,6 @@ export async function stop(): Promise<void> {
 
 // HELPER FUNCTIONS
 
-// function showInvisible(s: string): string {
-//   return s.replace('\n', '\\n').replace('\r', '\\r').replace('\t', '\\t');
-// }
+function showInvisible(s: string): string {
+  return s.replace(/\n/g, '\\n').replace(/\r/g, '\\r').replace(/\t/g, '\\t');
+}
