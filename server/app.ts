@@ -32,6 +32,7 @@ import { initialize as initializeMathematicaCas } from './mathematica-cas';
 import { initialize as initializeQuadClassifier } from './quad-classifier';
 import { initialize as initializeMathJsCas } from './mathjs-cas';
 import { initialize as initializeMathStepsCas } from './math-steps-cas';
+import { start as startWolframscript } from './wolframscript';
 import { ClientSocket } from './client-socket';
 import { rootDir as notebookRootDir } from './files-and-folders';
 
@@ -51,6 +52,8 @@ function normalizePort(val: string): string|number|boolean {
 
 async function main() {
 
+  await startWolframscript();
+  
   await Promise.all([
     initializeMathematicaCas(),
     initializeQuadClassifier(),
