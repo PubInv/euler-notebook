@@ -20,7 +20,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 // Requirements
 
 // import { MthMtcaText } from '../client/math-tablet-api';
-import { StyleObject, StyleProperties } from '../client/math-tablet-api';
+import { StyleObject } from '../client/math-tablet-api';
 import { TDoc, TDocChange } from './tdoc';
 import * as fs from 'fs';
 
@@ -65,65 +65,40 @@ function onOpen(tDoc: TDoc): void {
   console.log(`Mathematica: tDoc open: ${tDoc._path}`);
 }
 
+var child_process = require('child_process');
 
-// Mathematica is a very powerful system; we could in theory
-// analyze any expression in a number of ways with Mathematica.
-// for the time being, I will assume what I hope is simple:
-// an expression is intended to be evaluated by Mathematica,
-// producing what you would get if you typed that expression into
-// a notebook.
-// This also implies the creation of symbols in the kernel
-// which can be evaulated in separate styles. Since
-// Mathematica is declarative-oriented, this should not be
-// a giant problem in the short term. Eventually, the tdoc may
-// need to have some of the same "kernel" functionality that the WolframKernel
-// does, even if you are not using Mathematica.
+var child = child_process.spawn('/usr/local/bin/wolframscript');
 
-// The basic way to read Mathematica is by using a ZeroMQ queue, and
-// to have initialized the kernel previously. This is handled by
-// a server-side script at present. The port numbers 52817 and 52818 are
-// magic numbers expressed both here and in that script; these
-// should be moved into a global configuration.
-var socket_uri_A = 'tcp://127.0.0.1:52817';
-var socket_uri_B = 'tcp://127.0.0.1:52818';
+child.stdout.once('data',
+         (data: string) => {
+           console.log("INITIAL PIPE RESPONSE",data.toString());
+             })
 
-// producer.js
-var zmq = require('zeromq');
-var sockPush = zmq.socket('push');
-var sockPull = zmq.socket('pull');
+child.stdin.write('Print["hello"]\n');
 
-function initiateQueue() {
-  sockPush.bindSync(socket_uri_A);
-  sockPull.bindSync(socket_uri_B);
-
-}
-
-async function evaluateExpressionPromise(expr: string) {
+async function evaluateExpressionPromiseWS(expr: string) : Promise<string> {
+  console.log("INSIDE EVALUATE WS");
   return new Promise(function(resolve,reject) {
-    sockPush.send(expr);
-    // QUESTION: Here I am re-assigning the "on" handler
-    // with each call, which cost us little, but is inelegant.
-    // However, this is the noly obvious way to embed the "resolve"
-    // object in it.
-    sockPull.on('message', function(msg: any) {
-      // WARNING!!! This seems to work, but is a fragile
-      // about the way zeromq is serilalizing a message.
-      // Probably a careful analysis of the Wolfram Client Python
-      // library would allow us to duplciate the deserialization
-      // fully in Node, rather than this crummy hack, which
-      // seems to work.
-      let preamble_len = "8:fsTimesS�".length+3;
-      var gmsg_str = msg.toString().substring(preamble_len);
-      // WARNING!!! yet another hack to remove the
-      // some trailing data.
-      gmsg_str = gmsg_str.replace('s\u0004Null','');
-      try {
-        var obj = JSON.parse(gmsg_str);
-        resolve(obj);
-      } catch (e) {
-        reject(e);
-      }
-    });
+    child.stdout.once('data',
+                      (data: string) => {
+                        try {
+                          var ret_text = data.toString();
+                          console.log("DATA",ret_text);
+                          // Typical response: Out[2]= 7. In[3]:=
+                          const regex = /([\.\w]+)\[\d+\]\=\s([\.\w]+)/g;
+                          const found : string[] | null =
+                                regex.exec(ret_text);
+                          console.log("FOUND :",found);
+                          const result = found && found[2];
+                          console.log("Result :",result);
+                          if (found)
+                            resolve(found[2]);
+                          else
+                            reject(new Error("unexpected null from wolframscript"));
+                        } catch (e) {
+                          reject(e);
+                        }});
+    child.stdin.write(expr+"\n");
   });
 }
 
@@ -137,22 +112,27 @@ export async function mathMathematicaRule(tdoc: TDoc, style: StyleObject): Promi
 
   var assoc;
   try {
-    assoc = await evaluateExpressionPromise(style.data);
+    //    assoc = await evaluateExpressionPromiseWS(style.data);
+    assoc = await evaluateExpressionPromiseWS(style.data);
+    console.log("ASSOC RETURNED",assoc,assoc.toString());
   } catch (e) {
     console.log("MATHEMATICA EVALUATION FAILED :",e);
     return [];
   }
 
-  console.log("RESULT :", assoc);
   // Mathematica returns an "association" with a lot of
   // information. We will eventually wish to place all of
   // this in a style. For the time being, we will extract
   // only the most concise result.
 
   // @ts-ignore --- I don't know how to type this.
-  let result = assoc[1][2]; // "magic" for Mathematica
+  //  let result = assoc[1][2]; // "magic" for Mathematica
+  let result = assoc.toString();
   console.log(" RESULT STRING :",result);
-  var exemplar = tdoc.insertStyle(style, { type: 'MATHEMATICA', data: <string>result, meaning: 'EVALUATION', source: 'MATHEMATICA' })
+  var exemplar = tdoc.insertStyle(style, { type: 'MATHEMATICA',
+                                           data: <string>result,
+                                           meaning: 'EVALUATION',
+                                           source: 'MATHEMATICA' });
 
   styles.push(exemplar);
 
@@ -180,8 +160,11 @@ export async function mathMathematicaRule(tdoc: TDoc, style: StyleObject): Promi
           fs.copyFile(fn, dest, err => {
             if (err) return console.error(err);
             console.log('success!');
-            const props: StyleProperties = { type: 'IMAGE', data: urlPath+"/"+fn, meaning: 'PLOT', source: 'MATHEMATICA' };
-            var imageStyle = tdoc.insertStyle(style, props);
+            var imageStyle =
+                tdoc.insertStyle(style,{ type: 'IMAGE',
+                                   data: urlPath+"/"+fn,
+                                   meaning: 'PLOT',
+                                   source: 'MATHEMATICA' })
             styles.push(imageStyle);
           });
         }
@@ -192,8 +175,3 @@ export async function mathMathematicaRule(tdoc: TDoc, style: StyleObject): Promi
   }
   return styles;
 }
-
-
-// What is the best way to call this?
-// How do we know if the queue is alive and well?
-initiateQueue();
