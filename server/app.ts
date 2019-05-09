@@ -51,8 +51,9 @@ function normalizePort(val: string): string|number|boolean {
 
 async function main() {
 
+  // TODO: stopWolframscript before exiting.
   await startWolframscript();
-  
+
   await Promise.all([
     initializeMathematicaCas(),
     initializeMathJsCas(),

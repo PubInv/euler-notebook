@@ -26,8 +26,17 @@ import { assert } from 'chai';
 import 'mocha';
 
 const TEST_CASES = [
-  ['N[Sqrt[3]]' , '1.73205'],
-  ['With[{v = Variables[#]}, Exponent[#, v[[1]]] == 2 && Length[v] == 1] &[x^2 + x]', 'True'],
+  ['N[Sqrt[3]]', 
+   '1.73205'],
+
+  // Determining if an expression is a quadratic
+  ['With[{v = Variables[#]}, Exponent[#, v[[1]]] == 2 && Length[v] == 1] &[x^2 + x]', 
+   'True'],
+
+  // Converting MathML to Wolfram expression.
+  ['InputForm[ToExpression[ImportString["<math xmlns=\'http://www.w3.org/1998/Math/MathML\'><msup><mrow><mi>x</mi></mrow><mrow><mn>2</mn></mrow></msup><mo>+</mo><mn>3</mn><mi>x</mi><mo>+</mo><mn>5</mn></math>", "MathML"]]]',
+   '5 + 3*x + x^2'],
+
 ];
 
 describe("wolframscript", function(){
