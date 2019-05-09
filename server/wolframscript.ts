@@ -35,37 +35,6 @@ let gChildProcess: ChildProcess;
 
 // Exported functions
 
-export async function start(): Promise<void> {
-  return new Promise((resolve, reject)=>{
-    const child = gChildProcess = spawn(WOLFRAMSCRIPT_PATH);
-    child.on('error', (err: Error)=>{
-      console.error(`ERROR: WolframScript: child process error: ${err.message}`);
-      reject(err);
-    });
-    child.on('close', (code: number, signal: string)=>{ 
-      console.error(`WolframScript child process close event: ${code} '${signal}'`);
-    });
-    child.on('exit', (code: number, signal: string)=>{ 
-      console.error(`WolframScript child process exit event: ${code} '${signal}'`);
-    });
-    const stdoutListener = (data: Buffer) => {
-      // console.dir(data);
-      let dataString = data.toString();
-      // console.log(`WolframScript initial data: ${showInvisible(dataString)}`);
-      if (INPUT_PROMPT_RE.test(dataString)) {
-        // console.log("MATCHES. RESOLVING.")
-        child.stdout.removeListener('data', stdoutListener);
-        resolve(); 
-      }
-      else { /* console.log("DOESN'T MATCH. WAITING."); */}
-    }
-    child.stdout.on('data', stdoutListener);
-    child.stderr.on('data', (data: Buffer)=>{
-      console.error(`ERROR: WolframScript: stderr output: ${data}`);
-    })
-  });
-}
-
 export async function execute(command: WolframData): Promise<WolframData> {
   //console.log(`WolframScript: executing: ${command}`);
   return new Promise((resolve, _reject)=>{
@@ -91,32 +60,54 @@ export async function execute(command: WolframData): Promise<WolframData> {
   });
 }
 
+export async function start(): Promise<void> {
+  return new Promise((resolve, reject)=>{
+    const child = gChildProcess = spawn(WOLFRAMSCRIPT_PATH);
+
+    const errorListener = (err: Error)=>{
+      reject(new Error(`WolframScript error on start: ${err.message}`));
+    };
+    const exitListener = (code: number, signal: string)=>{ 
+      reject(new Error(`WolframScript exited prematurely. Code ${code}, signal ${signal}`));
+    };
+    const stdoutListener = (data: Buffer) => {
+      // console.dir(data);
+      let dataString = data.toString();
+      // console.log(`WolframScript initial data: ${showInvisible(dataString)}`);
+      if (INPUT_PROMPT_RE.test(dataString)) {
+        // console.log("MATCHES. RESOLVING.")
+        child.stdout.removeListener('data', stdoutListener);
+        resolve(); 
+      }
+      else { /* console.log("DOESN'T MATCH. WAITING."); */}
+    }
+
+    child.once('error', errorListener);
+    child.once('exit', exitListener);
+    child.stdout.on('data', stdoutListener);
+    child.stderr.on('data', (data: Buffer)=>{
+      console.error(`ERROR: WolframScript: stderr output: ${data}`);
+    })
+  });
+}
+
+export async function stop(): Promise<void> {
+  return new Promise((resolve, reject)=>{
+    const child = gChildProcess;
+    child.once('error', (err: Error)=>{
+      console.error(`ERROR: WolframScript: child process error: ${err.message}`);
+      reject(err);
+    });
+    // REVIEW: should we wait for 'close', too?
+    child.once('exit', (_code: number, _signal: string)=>{ 
+      resolve();
+    });
+    child.kill(/* 'SIGTERM' */);
+  });
+}
+
 // HELPER FUNCTIONS
 
 // function showInvisible(s: string): string {
 //   return s.replace('\n', '\\n').replace('\r', '\\r').replace('\t', '\\t');
 // }
-
-// TESTING
-
-// const TEST_COMMANDS = [
-//   'N[Sqrt[3]]',
-//   'InputForm[ToExpression[ImportString["<math xmlns=\'http://www.w3.org/1998/Math/MathML\'><msup><mrow><mi>x</mi></mrow><mrow><mn>2</mn></mrow></msup><mo>+</mo><mn>3</mn><mi>x</mi><mo>+</mo><mn>5</mn></math>", "MathML"]]]',
-// ]
-// async function main(): Promise<void> {
-//   // console.log("Starting WolframScript");
-//   await start();
-//   // console.log("WolframScript started.");
-
-//   for (const cmd of TEST_COMMANDS) {
-//     console.log(`In ${cmd}`);
-//     const results = await execute(cmd);
-//     console.log(`Out ${results}`);
-//   }
-// }
-
-// main()
-// .then(
-//   ()=> { console.log(`Main promise resolved.`); },
-//   err=>{ console.error(`WolframScript.ts ERROR: ${err.message}`) }
-// );
