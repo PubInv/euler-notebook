@@ -36,6 +36,7 @@ let gChildProcess: ChildProcess;
 // Exported functions
 
 export async function execute(command: WolframData): Promise<WolframData> {
+  // TODO: reject if server not started.
   //console.log(`WolframScript: executing: ${command}`);
   return new Promise((resolve, _reject)=>{
     gChildProcess.stdin!.write(command + '\n');
