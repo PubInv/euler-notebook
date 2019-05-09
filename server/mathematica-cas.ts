@@ -190,7 +190,7 @@ async function convertMathMlToWolframRule(tdoc: TDoc, style: StyleObject): Promi
 
   if (style.type != 'MATHML' || style.meaning != 'INPUT') { return; }
 
-  const mathMl = style.data.split('\n').join().replace(/"/g, '\\"');
+  const mathMl = style.data.split('\n').join('').replace(/"/g, '\\"');
   const cmd = `InputForm[ToExpression[ImportString["${mathMl}"]]]`;
   // console.log(cmd);
   try {
