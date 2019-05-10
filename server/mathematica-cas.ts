@@ -39,9 +39,6 @@ export async function initialize(): Promise<void> {
 
 function onChange(tDoc: TDoc, change: NotebookChange): void {
   switch (change.type) {
-  case 'styleDeleted':
-    console.log(`Mathematica tDoc ${tDoc._path}/${change.type} change: `);
-    break;
   case 'styleInserted':
     console.log(`Mathematica tDoc ${tDoc._path}/${change.type} change: `);
     mathMathematicaRule(tDoc, change.style)
@@ -49,15 +46,7 @@ function onChange(tDoc: TDoc, change: NotebookChange): void {
     convertMathMlToWolframRule(tDoc, change.style)
     .catch((err)=>{ console.error(`Error applying convertMathMlToWolframRule: ${err.message}`); });
     break;
-  case 'thoughtDeleted':
-    console.log(`Mathematica tDoc ${tDoc._path}/${change.type} change: `);
-    break;
-  case 'thoughtInserted':
-    console.log(`Mathematica tDoc ${tDoc._path}/${change.type} change: `);
-    break;
-  default:
-    console.log(`Mathematica tDoc unknown change: ${tDoc._path} ${(<any>change).type}`);
-    break;
+  default: break;
   }
 }
 

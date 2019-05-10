@@ -75,9 +75,7 @@ function onChange(tDoc: TDoc, change: NotebookChange): void {
     mathEvaluateRule(tDoc, session, change.style);
     mathSimplifyRule(tDoc, session, change.style);
     break;
-  default:
-    console.log(`MathJs tDoc ignored change: ${tDoc._path} ${(<any>change).type}`);
-    break;
+  default: break;
   }
 }
 

@@ -163,7 +163,7 @@ interface StyleDeleted {
   styleId: StyleId;
 }
 
-interface StyleInserted {
+export interface StyleInserted {
   type: 'styleInserted';
   style: StyleObject;
 }

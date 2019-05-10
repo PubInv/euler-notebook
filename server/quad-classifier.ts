@@ -37,22 +37,11 @@ export async function initialize(): Promise<void> {
 
 function onChange(tDoc: TDoc, change: NotebookChange): void {
   switch (change.type) {
-  case 'styleDeleted':
-    console.log(`QuadClassifier tDoc ${tDoc._path}/${change.type} change: `);
-    break;
   case 'styleInserted':
     console.log(`QuadClassifier tDoc ${tDoc._path}/${change.type} change: `);
     quadClassifierRule(tDoc, change.style);
     break;
-  case 'thoughtDeleted':
-    console.log(`QuadClassifier tDoc ${tDoc._path}/${change.type} change: `);
-    break;
-  case 'thoughtInserted':
-    console.log(`QuadClassifier tDoc ${tDoc._path}/${change.type} change: `);
-    break;
-  default:
-    console.log(`QuadClassifier tDoc unknown change: ${tDoc._path} ${(<any>change).type}`);
-    break;
+  default: break;
   }
 }
 

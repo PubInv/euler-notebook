@@ -54,9 +54,7 @@ function onChange(tDoc: TDoc, change: NotebookChange): void {
     console.log(`MathSteps tDoc ${tDoc._path}/${change.type} change: `);
     onStyleInserted(tDoc, change.style);
     break;
-  default:
-    console.log(`MathSteps tDoc ignored change: ${tDoc._path} ${(<any>change).type}`);
-    break;
+  default: break;
   }
 }
 

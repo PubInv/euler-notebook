@@ -35,7 +35,7 @@ type InputMethod = 'Math'|'Keyboard'|'Text';
 
 // Constants
 
-const INITIAL_INPUT_METHOD: InputMethod = 'Math';
+const INITIAL_INPUT_METHOD: InputMethod = 'Keyboard';
 
 // Global Variables
 

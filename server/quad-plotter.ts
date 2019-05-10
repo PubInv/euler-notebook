@@ -37,24 +37,12 @@ export async function initialize(): Promise<void> {
 
 function onChange(tDoc: TDoc, change: NotebookChange): void {
   switch (change.type) {
-  case 'styleDeleted':
-    console.log(`QuadPlotter tDoc ${tDoc._path}/${change.type} change: `);
-    break;
   case 'styleInserted':
     console.log(`QuadPlotter tDoc ${tDoc._path}/${change.type} change: `);
     quadPlotterRule(tDoc, change.style).catch(
       (err)=>{ console.error(`Error applying mathMathematicaRule: ${err.message}`); });
-
     break;
-  case 'thoughtDeleted':
-    console.log(`QuadPlotter tDoc ${tDoc._path}/${change.type} change: `);
-    break;
-  case 'thoughtInserted':
-    console.log(`QuadPlotter tDoc ${tDoc._path}/${change.type} change: `);
-    break;
-  default:
-    console.log(`QuadPlotter tDoc unknown change: ${tDoc._path} ${(<any>change).type}`);
-    break;
+  default: break;
   }
 }
 
