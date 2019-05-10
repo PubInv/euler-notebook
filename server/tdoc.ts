@@ -123,7 +123,7 @@ export class TDoc extends EventEmitter {
 
   // TODO: Return an iterator rather than our internal array.
   public getRelationships(
-    stylableId?: StylableId, 
+    stylableId?: StylableId,
   ): RelationshipObject[] {
     let rval: RelationshipObject[] = this.relationships;
     if (stylableId) { rval = rval.filter(r=>(r.sourceId == stylableId || r.targetId == stylableId)); }
@@ -290,6 +290,17 @@ export class TDoc extends EventEmitter {
         return this.thoughts[tindex];
       else
         return null;
+    }
+  }
+
+  public getAncestorThought(styleId : StyleId) : ThoughtObject | null {
+    const s = this.getStylable(styleId);
+    if (!s) return null;
+    // The type exists on Styles, but not Thoughts!!!
+    if (!('type' in s)) {
+      return s;
+    } else {
+      return this.getAncestorThought(s.stylableId);
     }
   }
 

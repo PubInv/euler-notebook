@@ -55,37 +55,78 @@ function onOpen(tDoc: TDoc): void {
   debug(`QuadClassifier: tDoc open: ${tDoc._path}`);
 }
 
-
 // Return "null" if it does not seem to be a quadratic, and the name
 // of the variable (which must be unique to pass this test) if it is.
-async function isExpressionPlottableQuadratic(expr : string) : Promise<string|null> {
-  // Mathematica offers various ways to deal with this:
-  // https://reference.wolfram.com/language/tutorial/FindingTheStructureOfAPolynomial.html
-  // I believe this is a good invocation of an anonymous function
-  /*
-With[{v = Variables[3 + x^2]},
-   Print[Exponent[3 + x^2, x]];
-    if[Exponent[3 + x^2, v[[1]]] == 2 && Length[v] == 1, v[[1]],
-     False]]] &[3 + x^2]
-  */
+async function isExpressionPlottableQuadratic(expr : string,
+                                              usedSymbols: StyleObject[])
+: Promise<string|null> {
+
   const quadratic_function_script = `With[{v = Variables[#]},If[Exponent[#, v[[1]]] == 2 && Length[v] == 1, v[[1]], False]]`;
-  const script = quadratic_function_script+" &[" + expr + "]";
-  debug("EXPRESSION TO CLASSIFY: ",script );
+
+  // now we construct the expr to include known
+  // substitutions of symbols....
+  const rules = usedSymbols.map(s => `{ ${s.data.name} -> ${s.data.value}}`);
+  debug("SUBSTITUIONS RULES",rules);
+  var sub_expr;
+  if (rules.length > 0) {
+    const rulestring = rules.join(",");
+    debug("RULESTRING",rulestring);
+    sub_expr = expr + " /. " + "{ " + rulestring + " }";
+  } else {
+    sub_expr = expr;
+  }
+  debug("EXPRESSION TO CLASSIFY: ",sub_expr );
+  const script = quadratic_function_script+" &[" + sub_expr + "]";
   let result : string = await execute(script);
-  debug("EXECUTE RESULTS",expr, result);
   return (result == "False") ? null : result;
+}
+
+// Return all StyleObjects which are Symbols for which
+// the is a Symbol Dependency relationship with this
+// object as the the target
+// Note: The defintion is the "source" of the relationship
+// and the "use" is "target" of the relationship.
+function getSymbolStylesIDependOn(tdoc: TDoc, style:StyleObject): StyleObject[] {
+  // simplest way to do this is to iterate over all relationships,
+  // computing the source and target thoughts. If the target thought
+  // is the same as our ancestor thought, then we return the
+  // source style, which should be of type Symbol and meaning Definition.
+  const rs = tdoc.getRelationships();
+  var symbolStyles: StyleObject[] = [];
+  const mp = tdoc.getAncestorThought(style.id);
+  if (!mp) {
+    console.error("INTERNAL ERROR: did not produce ancenstor: ",style.id);
+    throw new Error("INTERNAL ERROR: did not produce ancenstor: ");
+  }
+  rs.forEach(r => {
+    const rp = tdoc.getAncestorThought(r.targetId);
+    if (!rp) {
+      console.error("INTERNAL ERROR: did not produce ancenstor: ",style.id);
+      throw new Error("INTERNAL ERROR: did not produce ancenstor: ");
+    }
+    if (rp.id == mp.id) {
+      // We are a user of this definition...
+      symbolStyles.push(<StyleObject>tdoc.getStylable(r.sourceId));
+    }
+  });
+  return symbolStyles;
 }
 
 export async function quadClassifierRule(tdoc: TDoc, style: StyleObject): Promise<StyleObject[]> {
   if (style.type != 'MATHEMATICA' || style.meaning != 'EVALUATION') { return []; }
-  debug("INSIDE QUAD CLASSIFIER :",style);
+  // debug("INSIDE QUAD CLASSIFIER :",style);
 
   var isPlottableQuadratic;
   try {
-    isPlottableQuadratic = await isExpressionPlottableQuadratic(style.data);
-    debug("QUAD CLASSIFER SAYS:",isPlottableQuadratic);
+    // here I attempt to find the dependency relationships....
+    const rs = getSymbolStylesIDependOn(tdoc,style);
+    debug("RS ",rs);
+    // Now each member of rs should have a name and a value
+    // that we should use in our quadratic classification....
+    isPlottableQuadratic = await isExpressionPlottableQuadratic(style.data,rs);
+    // debug("QUAD CLASSIFER SAYS:",isPlottableQuadratic);
   } catch (e) {
-    console.error("MATHEMATICA EVALUATION FAILED :",e);
+    debug("MATHEMATICA EVALUATION FAILED :",e);
     return [];
   }
 
