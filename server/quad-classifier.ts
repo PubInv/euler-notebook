@@ -64,19 +64,25 @@ function onOpen(tDoc: TDoc): void {
   console.log(`QuadClassifier: tDoc open: ${tDoc._path}`);
 }
 
-async function isExpressionPlottableQuadratic(expr : string) : Promise<boolean> {
+
+// Return "null" if it does not seem to be a quadratic, and the name
+// of the variable (which must be unique to pass this test) if it is.
+async function isExpressionPlottableQuadratic(expr : string) : Promise<string|null> {
   // Mathematica offers various ways to deal with this:
   // https://reference.wolfram.com/language/tutorial/FindingTheStructureOfAPolynomial.html
   // I believe this is a good invocation of an anonymous function
   /*
-With[{v = Variables[#]},
- Exponent[#, v[[1]]] == 2 && Length[v] == 1] &[x^2+x]
+With[{v = Variables[3 + x^2]},
+   Print[Exponent[3 + x^2, x]];
+    if[Exponent[3 + x^2, v[[1]]] == 2 && Length[v] == 1, v[[1]],
+     False]]] &[3 + x^2]
   */
-  const quadratic_function_script = `With[{v = Variables[#]},
- Exponent[#, v[[1]]] == 2 && Length[v] == 1]`;
-  let result : string = await execute(quadratic_function_script+"&[" + expr + "]");
+  const quadratic_function_script = `With[{v = Variables[#]},If[Exponent[#, v[[1]]] == 2 && Length[v] == 1, v[[1]], False]]`;
+  const script = quadratic_function_script+" &[" + expr + "]";
+  console.log("EXPRESSION TO CLASSIFY: ",script );
+  let result : string = await execute(script);
   console.log("EXECUTE RESULTS",expr, result);
-  return result == "True";
+  return (result == "False") ? null : result;
 }
 
 export async function quadClassifierRule(tdoc: TDoc, style: StyleObject): Promise<StyleObject[]> {
@@ -96,7 +102,7 @@ export async function quadClassifierRule(tdoc: TDoc, style: StyleObject): Promis
   var styles = [];
   if (isPlottableQuadratic) {
     var classification = tdoc.insertStyle(style, { type: 'CLASSIFICATION',
-                                           data: true,
+                                           data: isPlottableQuadratic,
                                            meaning: 'QUADRATIC',
                                            source: 'MATHEMATICA' });
 

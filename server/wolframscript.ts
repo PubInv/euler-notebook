@@ -45,7 +45,7 @@ export async function execute(command: WolframData): Promise<WolframData> {
     let results = '';
     const stdoutListener = (data: Buffer)=>{
       let dataString: string = data.toString();
-      // console.log(`data: ${showInvisible(dataString)}`);
+      console.log(`data: ${showInvisible(dataString)}`);
       results += dataString;
 
       // Once the results end with an input prompt, we have received the complete result.
@@ -60,7 +60,7 @@ export async function execute(command: WolframData): Promise<WolframData> {
 
           // ... then fulfill with whatever came between the prompts.
           results = results.substring(outputPromptMatch![0].length, inputPromptMatch.index);
-          // console.log(`Resolving: '${results}'`);
+          console.log(`Resolving: '${results}'`);
           resolve(results);
         } else {
           let message: string = "WolframScript Error: ";
@@ -73,7 +73,7 @@ export async function execute(command: WolframData): Promise<WolframData> {
             message += `Unexpected result: ${results.slice(0, 20)}`;
           }
 
-          // console.log(`Rejecting: '${message}'`);
+          console.log(`Rejecting: '${message}'`);
           reject(new Error(message));
         }
       } else {
@@ -92,7 +92,7 @@ export async function start(): Promise<void> {
     const errorListener = (err: Error)=>{
       reject(new Error(`WolframScript error on start: ${err.message}`));
     };
-    const exitListener = (code: number, signal: string)=>{ 
+    const exitListener = (code: number, signal: string)=>{
       reject(new Error(`WolframScript exited prematurely. Code ${code}, signal ${signal}`));
     };
     const stderrListener = (data: Buffer)=>{
@@ -109,7 +109,7 @@ export async function start(): Promise<void> {
       if (INPUT_PROMPT_RE.test(dataString)) {
         // console.log("MATCHES. RESOLVING.")
         child.stdout.removeListener('data', stdoutListener);
-        resolve(); 
+        resolve();
       }
       else { /* console.log("DOESN'T MATCH. WAITING."); */}
     }
@@ -129,7 +129,7 @@ export async function stop(): Promise<void> {
       reject(err);
     });
     // REVIEW: should we wait for 'close', too?
-    child.once('exit', (_code: number, _signal: string)=>{ 
+    child.once('exit', (_code: number, _signal: string)=>{
       resolve();
     });
     child.kill(/* 'SIGTERM' */);

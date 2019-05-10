@@ -38,33 +38,35 @@ export async function initialize(): Promise<void> {
 function onChange(tDoc: TDoc, change: TDocChange): void {
   switch (change.type) {
   case 'styleDeleted':
-    console.log(`QuadClassifier tDoc ${tDoc._path}/${change.type} change: `);
+    console.log(`QuadPlotter tDoc ${tDoc._path}/${change.type} change: `);
     break;
   case 'styleInserted':
-    console.log(`QuadClassifier tDoc ${tDoc._path}/${change.type} change: `);
-    quadClassifierRule(tDoc, change.style);
+    console.log(`QuadPlotter tDoc ${tDoc._path}/${change.type} change: `);
+    quadPlotterRule(tDoc, change.style).catch(
+      (err)=>{ console.error(`Error applying mathMathematicaRule: ${err.message}`); });
+
     break;
   case 'thoughtDeleted':
-    console.log(`QuadClassifier tDoc ${tDoc._path}/${change.type} change: `);
+    console.log(`QuadPlotter tDoc ${tDoc._path}/${change.type} change: `);
     break;
   case 'thoughtInserted':
-    console.log(`QuadClassifier tDoc ${tDoc._path}/${change.type} change: `);
+    console.log(`QuadPlotter tDoc ${tDoc._path}/${change.type} change: `);
     break;
   default:
-    console.log(`QuadClassifier tDoc unknown change: ${tDoc._path} ${(<any>change).type}`);
+    console.log(`QuadPlotter tDoc unknown change: ${tDoc._path} ${(<any>change).type}`);
     break;
   }
 }
 
 function onClose(tDoc: TDoc): void {
-  console.log(`QuadClassifier tDoc close: ${tDoc._path}`);
+  console.log(`QuadPlotter tDoc close: ${tDoc._path}`);
 }
 
 function onOpen(tDoc: TDoc): void {
-  console.log(`QuadClassifier: tDoc open: ${tDoc._path}`);
+  console.log(`QuadPlotter: tDoc open: ${tDoc._path}`);
 }
 
-async function plotQuadratic(expr : string,filename : string) : Promise<boolean> {
+async function plotQuadratic(expr : string, variable: string, filename : string) : Promise<boolean> {
   // Mathematica offers various ways to deal with this:
   // https://reference.wolfram.com/language/tutorial/FindingTheStructureOfAPolynomial.html
   // I believe this is a good invocation of an anonymous function
@@ -74,10 +76,11 @@ With[{v = Variables[#]},
 With[{v = Variables[#1]},
  Export[#2,Plot[#1,{v[[1]],0,6 Pi}]]]
   */
-  const univariate_plot_script = `Export[#1,Plot[#2,`;
-  let result : string = await execute(quadratic_function_script+"&[" + expr + "]");
-  console.log("EXECUTE RESULTS",expr, result);
-  return result == "True";
+  const univariate_plot_script =
+        `Export["${filename}",Plot[${expr},{${variable},0,6 Pi}]]`;
+  console.log("PLOT COMMAND SENT TO WOLFRAM",univariate_plot_script);
+  await execute(univariate_plot_script);
+  return true;
 }
 
 export async function quadPlotterRule(tdoc: TDoc, style: StyleObject): Promise<StyleObject[]> {
@@ -85,20 +88,23 @@ export async function quadPlotterRule(tdoc: TDoc, style: StyleObject): Promise<S
   console.log("INSIDE QUAD PLOTTER :",style);
   const targetPath = "./public/tmp";
   const urlPath = "/tmp";
-  const fn = "quadplot" + "1" + ".gif";
+  const fn = "quadplot" + style.id + ".gif";
   const full_filename = targetPath + "/" + fn;
+
+  const parent = <StyleObject>tdoc.getStylable(style.stylableId);
 
   var createdPlotSuccessfully;
   try {
-    createdPlotSuccessfully = await PlotQuadratic(style.data,full_filename);
-    console.log("QUAD CLASSIFER SAYS:",isPlottableQuadratic);
+    // In this case, the style.data is the variable name...
+    createdPlotSuccessfully = await plotQuadratic(parent.data,style.data,full_filename);
+    console.log("PLOTTER SUCCESS SAYS:",createdPlotSuccessfully);
   } catch (e) {
-    console.log("MATHEMATICA EVALUATION FAILED :",e);
+    console.log("MATHEMATICA QUAD PLOT FAILED :",e);
     return [];
   }
 
   var styles = [];
-  if (isPlottableQuadratic) {
+  if (createdPlotSuccessfully) {
     var imageStyle =
         tdoc.insertStyle(style,{ type: 'IMAGE',
                                  data: urlPath+"/"+fn,

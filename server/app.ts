@@ -30,6 +30,7 @@ import { middleware as stylusMiddleware } from 'stylus';
 
 import { initialize as initializeMathematicaCas } from './mathematica-cas';
 import { initialize as initializeQuadClassifier } from './quad-classifier';
+import { initialize as initializeQuadPlotter } from './quad-plotter';
 import { initialize as initializeMathJsCas } from './mathjs-cas';
 import { initialize as initializeMathStepsCas } from './math-steps-cas';
 import { start as startWolframscript } from './wolframscript';
@@ -58,6 +59,7 @@ async function main() {
   await Promise.all([
     initializeMathematicaCas(),
     initializeQuadClassifier(),
+    initializeQuadPlotter(),
     initializeMathJsCas(),
     initializeMathStepsCas(),
   ]);

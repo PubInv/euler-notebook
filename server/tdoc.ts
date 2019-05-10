@@ -262,6 +262,20 @@ export class TDoc extends EventEmitter {
     return thought;
   }
 
+  public getStylable(styleId : StyleId) : StyleObject | ThoughtObject | null {
+    const sindex = this.styles.findIndex(s=>(s.id==styleId));
+    if (sindex >= 0) {
+      return this.styles[sindex];
+    } else {
+      const tindex = this.thoughts.findIndex(s=>(s.id==styleId));
+      if (tindex >= 0)
+        return this.thoughts[tindex];
+      else
+        return null;
+    }
+  }
+
+
   // --- PRIVATE ---
 
   // Private Class Properties
