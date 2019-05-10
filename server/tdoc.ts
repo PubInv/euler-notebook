@@ -119,13 +119,24 @@ export class TDoc extends EventEmitter {
 
   // Public Instance Property Functions
 
-  public getThoughts(): ThoughtObject[] {
-    return this.thoughts;
+  // TODO: Return an iterator rather than our internal array.
+  public getRelationships(
+    stylableId?: StylableId, 
+  ): RelationshipObject[] {
+    let rval: RelationshipObject[] = this.relationships;
+    if (stylableId) { rval = rval.filter(r=>(r.sourceId == stylableId || r.targetId == stylableId)); }
+    return rval;
   }
 
+  // TODO: Return an iterator rather than our internal array.
   public getStyles(stylableId?: StylableId): StyleObject[] {
     if (stylableId) { return this.styles.filter(s=>(s.stylableId==stylableId)); }
     else { return this.styles; }
+  }
+
+  // TODO: Return an iterator rather than our internal array.
+  public getThoughts(): ThoughtObject[] {
+    return this.thoughts;
   }
 
   public jsonPrinter(): string {
@@ -194,23 +205,41 @@ export class TDoc extends EventEmitter {
     console.log(`TDoc: closed: ${this._path}`);
   }
 
+  // Deletes the specified relationship.
+  // Emits a TDoc 'change' event.
   public deleteRelationship(relationshipId: RelationshipId): void {
     this.deleteRelationshipEntryAndEmit(relationshipId);
   }
 
-  // Deletes the specified style and any styles attached to it recursively.
-  // Emits 'change' events in a depth-first postorder.
+  // Deletes the specified style and any styles or relationships attached to it recursively.
+  // Emits TDoc 'change' events in a depth-first postorder.
   public deleteStyle(styleId: StyleId): void {
+
+    // Delete any relationships attached to this style.
+    const relationships = this.getRelationships(styleId);
+    for(const relationship of relationships) { this.deleteRelationship(relationship.id); }
+
+    // Delete any styles attached to this style
     const styles = this.getStyles(styleId);
     for(const style of styles) { this.deleteStyle(style.id); }
+
+    // Delete the style itself and emit a change event.
     this.deleteStyleEntryAndEmit(styleId);
   }
 
   // Deletes the specified thought and any styles attached to it recursively.
-  // Emits 'change' events in a depth-first postorder.
+  // Emits TDoc 'change' events in a depth-first postorder.
   public deleteThought(thoughtId: ThoughtId): void {
+
+    // Delete any relationships attached to this thought.
+    const relationships = this.getRelationships(thoughtId);
+    for(const relationship of relationships) { this.deleteRelationship(relationship.id); }
+
+    // Delete any styles attached to this style
     const styles = this.getStyles(thoughtId);
     for(const style of styles) { this.deleteStyle(style.id); }
+
+    // Delete the style itself and emit a change event.
     this.deleteThoughtEntryAndEmit(thoughtId);
   }
 
