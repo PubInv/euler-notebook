@@ -17,6 +17,19 @@ You should have received a copy of the GNU Affero General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
+/*
+
+TODO: Additional Test cases
+  * Error test cases. e.g. 'InputForm[x^3 + 3' (Missing right bracket);
+  * Start multiple times should fail.
+  * Execute before start should fail.
+  * Stop multiple times should fail.
+  * Execute during stopping should fail.
+  * Execute after stop should fail.
+  * Can start, then stop, then start, then stop the server.
+
+*/
+
 // Requirements
 
 import { execute, start, stop } from '../wolframscript';
@@ -44,11 +57,9 @@ const TEST_CASES = [
    '3 + x^3'],
 ];
 
-// TODO: Error test cases. e.g. 'InputForm[x^3 + 3' (Missing right bracket);
-
-let gWolframStarted: boolean = false;
-
 describe("wolframscript", function(){
+
+    let gWolframStarted: boolean = false;
     this.timeout(10*1000);
 
     before("starting", async function(){
@@ -81,6 +92,14 @@ describe("wolframscript", function(){
       });
 
     }
+
+    it("serializes execution", async function(){
+      const p1 = await execute('Pause[2]; "Hello,"');
+      const p2 = await execute('Pause[2]; "World!"');
+      const [ r1, r2 ] = await Promise.all([p1, p2]);
+      assert.equal(r1, 'Hello,');
+      assert.equal(r2, 'World!');
+    });
 
     after("stopping", async function(){
       if (gWolframStarted) {

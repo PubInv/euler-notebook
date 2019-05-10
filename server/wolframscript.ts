@@ -31,20 +31,97 @@ const INPUT_PROMPT_RE = /\s*In\[(\d+)\]:=\s*$/;
 const OUTPUT_PROMPT_RE = /^\s*Out\[(\d+)\](\/\/\w+)?=\s*/;
 const SYNTAX_ERROR_RE = /^\s*(Syntax::.*)/;
 
-const SERVER_NOT_RUNNING_PROMISE = Promise.reject(new Error("WolframScript not started.")).catch(_err=>{});
-
 // Globals
 
 let gChildProcess: ChildProcess;
 
-// The 'execute' function waits for this promise to resolve before attempting to
-// send anything to WolframScript.
+// This promise is used to serialize sending commands to WolframScript.
 let gExecutingPromise: Promise<WolframData> = Promise.resolve('');
 
-// This promise will be overwritten by the promise returned from the 'start' function.
-let gServerRunningPromise: Promise<void> = SERVER_NOT_RUNNING_PROMISE;
+let gServerStartingPromise: Promise<void>|undefined = undefined;
+let gServerStoppingPromise: Promise<void>|undefined = undefined;
 
 // Exported functions
+
+export async function execute(command: WolframData): Promise<WolframData> {
+
+  // Wait for the server to start.
+  if (!gServerStartingPromise) { throw new Error("Can't execute -- WolframScript not started."); }
+  if (gServerStoppingPromise) { throw new Error("Can't execute -- WolframScript is stopping."); }
+  await gServerStartingPromise;
+
+  // Create a promise for the next 'execute' invocation to wait on.
+  const executingPromise = gExecutingPromise;
+  gExecutingPromise = new Promise<WolframData>((resolve, reject)=>{
+    // Wait on the previous 'execute' invocation.
+    // LATER: Use .finally instead when everyone is at node 10 or later.
+    executingPromise.then(
+      // Execute the command.
+      ()=>{ executeNow(command, resolve, reject); },
+      (_err)=>{ executeNow(command, resolve, reject); }
+    );
+  });
+  return gExecutingPromise;
+}
+
+export async function start(): Promise<void> {
+
+  if (gServerStartingPromise) { throw new Error("WolframScript already started."); }
+
+  gServerStartingPromise = new Promise((resolve, reject)=>{
+    const child = gChildProcess = spawn(WOLFRAMSCRIPT_PATH);
+
+    const errorListener = (err: Error)=>{
+      reject(new Error(`WolframScript error on start: ${err.message}`));
+    };
+    const exitListener = (code: number, signal: string)=>{
+      reject(new Error(`WolframScript exited prematurely. Code ${code}, signal ${signal}`));
+    };
+    const stderrListener = (data: Buffer)=>{
+      const dataString = data.toString();
+      // Ignore any text to standard out that is part of the license expiring string.
+      // TODO: This is specific to the version encoded in the string (12.0.0). Make this version independent.
+      if (WOLFRAM_LICENSE_EXPIRING_MSG.indexOf(dataString)>=0) { return; }
+      console.error(`ERROR: WolframScript: stderr output: ${showInvisible(dataString)}`);
+    };
+    const stdoutListener = (data: Buffer) => {
+      // console.dir(data);
+      let dataString = data.toString();
+      // console.log(`WolframScript initial data: ${showInvisible(dataString)}`);
+      if (INPUT_PROMPT_RE.test(dataString)) {
+        // console.log("MATCHES. RESOLVING.")
+        child.stdout.removeListener('data', stdoutListener);
+        resolve();
+      }
+      else { /* console.log("DOESN'T MATCH. WAITING."); */}
+    }
+
+    child.once('error', errorListener);
+    child.once('exit', exitListener);
+    child.stdout.on('data', stdoutListener);
+    child.stderr.on('data', stderrListener);
+  });
+  return gServerStartingPromise;
+}
+
+export async function stop(): Promise<void> {
+  if (!gServerStartingPromise) { throw new Error("WolframScript not started."); }
+  if (gServerStoppingPromise) { throw new Error("WolframScript is already stopping."); }
+  gServerStoppingPromise = new Promise((resolve, reject)=>{
+    const child = gChildProcess;
+    child.once('error', (err: Error)=>{ reject(err); });
+    // REVIEW: should we wait for 'close', too?
+    child.once('exit', (_code: number, _signal: string)=>{ 
+      resolve();
+      gServerStartingPromise = undefined;
+      gServerStoppingPromise = undefined;
+    });
+    child.kill(/* 'SIGTERM' */);
+  });
+  return gServerStoppingPromise;
+}
+
+// HELPER FUNCTIONS
 
 function executeNow(command: WolframData, resolve: (data: string)=>void, reject: (reason: any)=>void): void {
 
@@ -91,79 +168,6 @@ function executeNow(command: WolframData, resolve: (data: string)=>void, reject:
   //console.log(`WolframScript: executing: ${command}`);
   gChildProcess.stdin!.write(command + '\n');
 }
-
-export async function execute(command: WolframData): Promise<WolframData> {
-
-  // Wait for the server to start.
-  await gServerRunningPromise;
-
-  // Create a promise for the next 'execute' invocation to wait on.
-  const executingPromise = gExecutingPromise;
-  gExecutingPromise = new Promise<WolframData>((resolve, reject)=>{
-    // Wait on the previous 'execute' invocation.
-    console.dir(executingPromise);
-    // LATER: Use .finally instead when everyone is at node 10 or later.
-    executingPromise.then(
-      ()=>{ executeNow(command, resolve, reject); },
-      (_err)=>{ executeNow(command, resolve, reject); }
-    );
-  });
-  return gExecutingPromise;
-}
-
-export async function start(): Promise<void> {
-  gServerRunningPromise = new Promise((resolve, reject)=>{
-    const child = gChildProcess = spawn(WOLFRAMSCRIPT_PATH);
-
-    const errorListener = (err: Error)=>{
-      reject(new Error(`WolframScript error on start: ${err.message}`));
-    };
-    const exitListener = (code: number, signal: string)=>{
-      reject(new Error(`WolframScript exited prematurely. Code ${code}, signal ${signal}`));
-    };
-    const stderrListener = (data: Buffer)=>{
-      const dataString = data.toString();
-      // Ignore any text to standard out that is part of the license expiring string.
-      // TODO: This is specific to the version encoded in the string (12.0.0). Make this version independent.
-      if (WOLFRAM_LICENSE_EXPIRING_MSG.indexOf(dataString)>=0) { return; }
-      console.error(`ERROR: WolframScript: stderr output: ${showInvisible(dataString)}`);
-    };
-    const stdoutListener = (data: Buffer) => {
-      // console.dir(data);
-      let dataString = data.toString();
-      // console.log(`WolframScript initial data: ${showInvisible(dataString)}`);
-      if (INPUT_PROMPT_RE.test(dataString)) {
-        // console.log("MATCHES. RESOLVING.")
-        child.stdout.removeListener('data', stdoutListener);
-        resolve();
-      }
-      else { /* console.log("DOESN'T MATCH. WAITING."); */}
-    }
-
-    child.once('error', errorListener);
-    child.once('exit', exitListener);
-    child.stdout.on('data', stdoutListener);
-    child.stderr.on('data', stderrListener);
-  });
-  return gServerRunningPromise;
-}
-
-export async function stop(): Promise<void> {
-  return new Promise((resolve, reject)=>{
-    const child = gChildProcess;
-    child.once('error', (err: Error)=>{
-      // console.error(`ERROR: WolframScript: child process error: ${err.message}`);
-      reject(err);
-    });
-    // REVIEW: should we wait for 'close', too?
-    child.once('exit', (_code: number, _signal: string)=>{
-      resolve();
-    });
-    child.kill(/* 'SIGTERM' */);
-  });
-}
-
-// HELPER FUNCTIONS
 
 function showInvisible(s: string): string {
   return s.replace(/\n/g, '\\n').replace(/\r/g, '\\r').replace(/\t/g, '\\t');
