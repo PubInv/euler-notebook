@@ -84,6 +84,9 @@ async function main() {
   app.get('/stylesheets/myscript.min.css', (_req: express.Request, res: express.Response)=>res.sendFile(`${__dirname}/node_modules/myscript/dist/myscript.min.css`));
   app.get('/javascripts/myscript.min.js', (_req: express.Request, res: express.Response)=>res.sendFile(`${__dirname}/node_modules/myscript/dist/myscript.min.js`));
   app.get('/javascripts/myscript.min.js.map', (_req: express.Request, res: express.Response)=>res.sendFile(`${__dirname}/node_modules/myscript/dist/myscript.min.js.map`));
+
+  // REVIEW: Putting this logger *after* the static routes means the static routes are not logged.
+  //         This is generally what we want for development, but may not be what we want for production.
   app.use(morgan('dev'));
 
   app.use(express.json());
