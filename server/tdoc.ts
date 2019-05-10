@@ -250,7 +250,7 @@ export class TDoc extends EventEmitter {
   ): RelationshipObject {
     this.assertNotClosed('insertRelationship');
     const relationship: RelationshipObject = { ...props, id: this.nextId++, sourceId: source.id, targetId: target.id };
-    console.log(`TDoc: inserting relationship ${JSON.stringify(relationship)}`)
+    // console.log(`TDoc: inserting relationship ${JSON.stringify(relationship)}`)
     this.relationships.push(relationship);
     const change: NotebookChange = { type: 'relationshipInserted', relationship };
     this.notifyChange(change);
@@ -260,8 +260,8 @@ export class TDoc extends EventEmitter {
   public insertStyle(stylable: StyleObject|ThoughtObject, props: StyleProperties): StyleObject {
     this.assertNotClosed('insertStyle');
     const style: StyleObject = { ...props, id: this.nextId++, stylableId: stylable.id };
-    const styleMinusData = { ...style, data: '...' };
-    console.log(`TDoc: inserting style ${JSON.stringify(styleMinusData)}`)
+    // const styleMinusData = { ...style, data: '...' };
+    // console.log(`TDoc: inserting style ${JSON.stringify(styleMinusData)}`)
     this.styles.push(style);
     const change: NotebookChange = { type: 'styleInserted', style: style };
     this.notifyChange(change);
@@ -271,7 +271,7 @@ export class TDoc extends EventEmitter {
   public insertThought(props: ThoughtProperties): ThoughtObject {
     this.assertNotClosed('insertThought');
     const thought: ThoughtObject = { ...props, id: this.nextId++ };
-    console.log(`TDoc: inserting thought ${JSON.stringify(thought)}`)
+    // console.log(`TDoc: inserting thought ${JSON.stringify(thought)}`)
     this.thoughts.push(thought);
     const change: NotebookChange = { type: 'thoughtInserted', thought: thought };
     this.notifyChange(change);

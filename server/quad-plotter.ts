@@ -45,11 +45,11 @@ function onChange(tDoc: TDoc, change: NotebookChange): void {
   }
 }
 
-function onClose(tDoc: TDoc): void {
+function onClose(_tDoc: TDoc): void {
   // console.log(`QuadPlotter tDoc close: ${tDoc._path}`);
 }
 
-function onOpen(tDoc: TDoc): void {
+function onOpen(_tDoc: TDoc): void {
   // console.log(`QuadPlotter: tDoc open: ${tDoc._path}`);
 }
 
