@@ -26,6 +26,7 @@ export type LatexData = string;
 export type MathJsData = string;
 export type MathMlData = string;
 export type MthMtcaData = string;
+export type Symbol = string;
 export type WolframData = string;
 
 export type NotebookName = string; // Just the name of the notebook, no .mtnb extension.
@@ -36,21 +37,25 @@ export type StyleMeaning =
   'EVALUATION-ERROR'| // Error in CAS evaluation of an expression
   'HANDWRITING'|      // Stroke information for the user's handwriting.
   'INPUT'|            // Primary representation of something that the user has input.
-  'QUADRATIC'|        // A quadratic expression, presumably worth plotting.
+  /* DEPRECATED: */ 'QUADRATIC'|        // A quadratic expression, presumably worth plotting.
   'PRETTY' |          // A more visually-pleasing representation. e.g. LaTeX version of plain-text math.
   'SIMPLIFICATION' |  // CAS simplification of expression or equation.
   'INDENTED'|         // Indented text for the purpose of exposition.
-  'PLOT'|         // Indented text for the purpose of exposition.
-  'SYMBOL';           // Symbols extracted from an expression.
-export type StyleType =
+  'PLOT'|             // Indented text for the purpose of exposition.
+  'SYMBOL'|           // Symbols extracted from an expression.
+  'SYMBOL-DEFINITION'|// Definition of a symbol.
+  'SYMBOL-USE'|       // Use of a symbol
+  'UNIVARIATE-QUADRATIC';  // A quadratic expression, presumably worth plotting.
+  export type StyleType =
   'IMAGE'|            // URL of image relative to notebook folder.
   'JIIX'|             // MyScript JIIX export from 'MATH' editor.
   'LATEX'|            // LaTeX string
   'MATHEMATICA'|      // Mathematica style (evaluation)
-  'CLASSIFICATION'|   // A classifcication of the thought.
+  /* DEPRECATED: */ 'CLASSIFICATION'|   // A classifcication of the thought.
   'MATHJS'|           // MathJS plain text expression
   'MATHML'|           // MathML Presentation XML
   'STROKE'|           // MyScript strokeGroups export from 'TEXT' editor.
+  'SYMBOL'|           // Symbol: symbol in a definition or expression.
   'TEXT'|             // Plain text
   'WOLFRAM';          // Wolfram language expression
 export type StyleSource =

@@ -191,8 +191,8 @@ async function convertMathMlToWolframRule(tdoc: TDoc, style: StyleObject): Promi
   if (style.type != 'MATHML' || style.meaning != 'INPUT') { return; }
 
   const mathMl = style.data.split('\n').join('').replace(/"/g, '\\"');
-  const cmd = `InputForm[ToExpression[ImportString["${mathMl}"]]]`;
-  // console.log(cmd);
+  const cmd = `InputForm[ToExpression[ImportString["${mathMl}", "MathML"]]]`;
+  console.log(cmd);
   try {
     const data = await execute(cmd);
     // REVIEW: Attach it to the thought instead of the style?
