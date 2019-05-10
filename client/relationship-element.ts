@@ -20,19 +20,21 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 // Requirements
 
 import { $new, Html } from './dom.js';
-import { StyleObject, ThoughtObject, RelationshipObject } from './math-tablet-api.js';
-import { StyleElement } from './style-element.js';
-import { RelationshipElement } from './relationship-element.js';
+import { RelationshipObject } from './math-tablet-api.js';
+
+// Types
+
+// Constants
 
 // Exported Class
 
-export class ThoughtElement {
+export class RelationshipElement {
 
   // Class Methods
 
-  static insert($tDoc: HTMLElement, thought: ThoughtObject): ThoughtElement {
-    var rval = new this(thought);
-    $tDoc.appendChild(rval.$elt);
+  static insert($parent: HTMLElement, relationship: RelationshipObject): RelationshipElement {
+    var rval = new this(relationship);
+    $parent.appendChild(rval.$elt);
     return rval;
   }
 
@@ -40,28 +42,19 @@ export class ThoughtElement {
 
   delete(): void {
     const $parent = this.$elt.parentElement;
-    if (!$parent) { throw new Error("Thought element has no parent in delete."); }
+    if (!$parent) { throw new Error("Relationship element has no parent in delete."); }
     $parent.removeChild(this.$elt);
-  }
-
-  insertRelationship(relationship: RelationshipObject): RelationshipElement {
-    return RelationshipElement.insert(this.$elt, relationship);
-  }
-
-  insertStyle(style: StyleObject): StyleElement {
-    return StyleElement.insert(this.$elt, style);
   }
 
   // PRIVATE
 
   // Private Constructor
 
-  private constructor(thought: ThoughtObject) {
-    const id = `S${thought.id}`;
-    const classes = ['thought'];
-    const deleteButtonHtml: Html = `<button class="deleteThought">&#x2715;</button>`;
-    const headerHtml: Html = `<div class="header">T-${thought.id}</div>`
-    const html: Html = `${deleteButtonHtml}${headerHtml}`;
+  private constructor(relationship: RelationshipObject) {
+    const id = `R${relationship.id}`;
+    const classes = ['relationship' /* relationship.meaning? */ ];
+    // const showButtonHtml: Html = `<button class="showStyle">&#x1F5E8;</button>`;
+    const html: Html = `<div class="header">R-${relationship.id} ${relationship.meaning} => ${relationship.targetId}</div>`;
     this.$elt = $new<HTMLDivElement>('div', id, classes, html);
   }
 

@@ -22,11 +22,12 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 import { ServerSocket } from './server-socket.js';
 
 import { NotebookName, TDocObject, StyleId, StyleObject,
-  ThoughtId, ThoughtObject, NotebookChange, ThoughtProperties, StyleProperties } from './math-tablet-api.js';
+  ThoughtId, ThoughtObject, NotebookChange, ThoughtProperties, StyleProperties, RelationshipId, RelationshipObject } from './math-tablet-api.js';
 // import { Jiix, StrokeGroups } from './myscript-types.js';
 import { StyleElement } from './style-element.js';
 import { ThoughtElement } from './thought-element.js';
 import { $new } from './dom.js';
+import { RelationshipElement } from './relationship-element.js';
 
 // Exported Class
 
@@ -49,9 +50,11 @@ export class Notebook {
 
   public smChange(change: NotebookChange): void {
     switch (change.type) {
+      case 'relationshipDeleted': this.chDeleteRelationship(change.relationship.id); break;
+      case 'relationshipInserted': this.chInsertRelationship(change.relationship); break;
       case 'styleDeleted': this.chDeleteStyle(change.styleId); break;
-      case 'thoughtDeleted': this.chDeleteThought(change.thoughtId); break;
       case 'styleInserted': this.chInsertStyle(change.style); break;
+      case 'thoughtDeleted': this.chDeleteThought(change.thoughtId); break;
       case 'thoughtInserted': this.chInsertThought(change.thought); break;
     }
   }
@@ -75,6 +78,7 @@ export class Notebook {
     this.$elt = $new('div', notebookName, ['tdoc']);
     this.$elt.addEventListener('click', (event: MouseEvent)=>{ this.onClick(event); })
 
+    this.relationshipElements = new Map();
     this.styleElements = new Map();
     this.thoughtElements = new Map();
 
@@ -85,6 +89,7 @@ export class Notebook {
   // Private Instance Properties
 
   private socket: ServerSocket;
+  private relationshipElements: Map<RelationshipId, RelationshipElement>;
   private styleElements: Map<StyleId, StyleElement>;
   private thoughtElements: Map<ThoughtId, ThoughtElement>;
 
@@ -103,6 +108,13 @@ export class Notebook {
 
   // Private Change Event Handlers
 
+  private chDeleteRelationship(relationshipId: RelationshipId): void {
+    const relationshipElt = this.relationshipElements.get(relationshipId);
+    if (!relationshipElt) { throw new Error("Delete relationship message for unknown style"); }
+    relationshipElt.delete();
+    this.relationshipElements.delete(relationshipId);
+  }
+
   private chDeleteStyle(styleId: StyleId): void {
     const styleElt = this.styleElements.get(styleId);
     if (!styleElt) { throw new Error("Delete style message for unknown style"); }
@@ -115,6 +127,17 @@ export class Notebook {
     if (!thoughtElt) { throw new Error("Delete thought message for unknown thought"); }
     thoughtElt.delete();
     this.thoughtElements.delete(thoughtId);
+  }
+
+  private chInsertRelationship(relationship: RelationshipObject): void {
+    let elt: ThoughtElement|StyleElement|undefined;
+    elt = this.thoughtElements.get(relationship.sourceId);
+    if (!elt) {
+      elt = this.styleElements.get(relationship.sourceId);
+    }
+    if (!elt) { throw new Error("Relationship attached to unknown thought or style."); }
+    const relationshipElt = elt.insertRelationship(relationship);
+    this.relationshipElements.set(relationship.id, relationshipElt);
   }
 
   private chInsertStyle(style: StyleObject): void {

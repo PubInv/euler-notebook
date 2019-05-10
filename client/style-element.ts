@@ -22,7 +22,8 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 import { getKatex } from './katex-types.js';
 
 import { $new, Html } from './dom.js';
-import { StyleObject } from './math-tablet-api.js';
+import { StyleObject, RelationshipObject } from './math-tablet-api.js';
+import { RelationshipElement } from './relationship-element.js';
 
 // Types
 
@@ -63,6 +64,10 @@ export class StyleElement {
     const $parent = this.$elt.parentElement;
     if (!$parent) { throw new Error("Style element has no parent in delete."); }
     $parent.removeChild(this.$elt);
+  }
+
+  insertRelationship(relationship: RelationshipObject): RelationshipElement {
+    return RelationshipElement.insert(this.$elt, relationship);
   }
 
   insertStyle(style: StyleObject): StyleElement {
