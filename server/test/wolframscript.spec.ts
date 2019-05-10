@@ -26,11 +26,14 @@ import { assert } from 'chai';
 import 'mocha';
 
 const TEST_CASES = [
-  ['N[Sqrt[3]]', 
+  ['FullForm[Hold[y = 13]]',
+   'Hold[Set[y, 13]]'],
+
+  ['N[Sqrt[3]]',
    '1.73205'],
 
   // Determining if an expression is a quadratic
-  ['With[{v = Variables[#]}, Exponent[#, v[[1]]] == 2 && Length[v] == 1] &[x^2 + x]', 
+  ['With[{v = Variables[#]}, Exponent[#, v[[1]]] == 2 && Length[v] == 1] &[x^2 + x]',
    'True'],
 
   // Converting MathML to Wolfram expression.
@@ -76,7 +79,7 @@ describe("wolframscript", function(){
         const results = await execute(expr);
         assert.equal(results, expected);
       });
-  
+
     }
 
     after("stopping", async function(){

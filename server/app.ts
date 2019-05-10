@@ -32,6 +32,8 @@ import { initialize as initializeMathematicaCas } from './mathematica-cas';
 import { initialize as initializeMathJsCas } from './mathjs-cas';
 import { initialize as initializeMathStepsCas } from './math-steps-cas';
 import { initialize as initializeQuadClassifier } from './quad-classifier';
+import { initialize as initializeSymDefClassifier } from './sym-def-classifier';
+import { initialize as initializeSymUseClassifier } from './sym-use-classifier';
 import { initialize as initializeQuadPlotter } from './quad-plotter';
 import { initialize as initializeSymbolDependencyBuilder } from './symbol-dependency-builder';
 import { start as startWolframscript } from './wolframscript';
@@ -62,6 +64,8 @@ async function main() {
     initializeMathJsCas(),
     initializeMathStepsCas(),
     initializeQuadClassifier(),
+    initializeSymDefClassifier(),
+    initializeSymUseClassifier(),
     initializeQuadPlotter(),
     initializeSymbolDependencyBuilder(),
   ]);
