@@ -25,6 +25,8 @@ import { join } from 'path';
 import * as  createError from 'http-errors';
 import * as express from 'express';
 import * as cookieParser from 'cookie-parser';
+import * as debug1 from 'debug';
+const debug = debug1('server:app');
 import * as morgan from 'morgan';
 import { middleware as stylusMiddleware } from 'stylus';
 
@@ -142,6 +144,6 @@ async function main() {
 }
 
 main().then(
-  ()=>{ console.log("Main promise resolved."); },
+  ()=>{   debug("Main promise resolved."); },
   (err)=>{ console.error(`Error initializing app: ${err.message}`); },
 );

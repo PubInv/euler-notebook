@@ -19,6 +19,9 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 // Requirements
 
+import * as debug1 from 'debug';
+const debug = debug1('server:sym-def-classifier');
+
 import { NotebookChange, StyleObject } from '../client/math-tablet-api';
 import { TDoc } from './tdoc';
 import { execute } from './wolframscript';
@@ -38,30 +41,30 @@ export async function initialize(): Promise<void> {
 function onChange(tDoc: TDoc, change: NotebookChange): void {
   switch (change.type) {
   case 'styleDeleted':
-    console.log(`SymbolDefinitionClassifier tDoc ${tDoc._path}/${change.type} change: `);
+    debug(`SymbolDefinitionClassifier tDoc ${tDoc._path}/${change.type} change: `);
     break;
   case 'styleInserted':
-    console.log(`SymbolDefinitionClassifier tDoc ${tDoc._path}/${change.type} change: `);
+    debug(`SymbolDefinitionClassifier tDoc ${tDoc._path}/${change.type} change: `);
     symDefClassifierRule(tDoc, change.style);
     break;
   case 'thoughtDeleted':
-    console.log(`SymbolDefinitionClassifier tDoc ${tDoc._path}/${change.type} change: `);
+    debug(`SymbolDefinitionClassifier tDoc ${tDoc._path}/${change.type} change: `);
     break;
   case 'thoughtInserted':
-    console.log(`SymbolDefinitionClassifier tDoc ${tDoc._path}/${change.type} change: `);
+    debug(`SymbolDefinitionClassifier tDoc ${tDoc._path}/${change.type} change: `);
     break;
   default:
-    console.log(`SymbolDefinitionClassifier tDoc unknown change: ${tDoc._path} ${(<any>change).type}`);
+    debug(`SymbolDefinitionClassifier tDoc unknown change: ${tDoc._path} ${(<any>change).type}`);
     break;
   }
 }
 
 function onClose(tDoc: TDoc): void {
-  console.log(`SymbolDefinitionClassifier tDoc close: ${tDoc._path}`);
+  debug(`SymbolDefinitionClassifier tDoc close: ${tDoc._path}`);
 }
 
 function onOpen(tDoc: TDoc): void {
-  console.log(`SymbolDefinitionClassifier: tDoc open: ${tDoc._path}`);
+  debug(`SymbolDefinitionClassifier: tDoc open: ${tDoc._path}`);
 }
 
 // TODO: Move to a shared file, probably the math-tablet-api.ts
@@ -75,9 +78,7 @@ export interface SymbolData {
 async function isSymbolDefinition(expr : string) : Promise<SymbolData|null> {
   // const quadratic_function_script = `With[{v = Variables[#]},If[Exponent[#, v[[1]]] == 2 && Length[v] == 1, v[[1]], False]]`;
   // const script = quadratic_function_script+" &[" + expr + "]";
-  // console.log("EXPRESSION TO CLASSIFY: ",script );
   // let result : string = await execute(script);
-  // console.log("EXECUTE RESULTS",expr, result);
   // return (result == "False") ? null : result;
   // WARNING! TODO! DANGER! This would be better done
   // completely in Mathematica. However, we have not been able to
@@ -85,19 +86,19 @@ async function isSymbolDefinition(expr : string) : Promise<SymbolData|null> {
   // We are therefore doing this in TypeScript, hoping we eventually
   // figure it out in Mathematica.
   const script = `FullForm[Hold[${expr}]]`;
-  console.log("SCRIPT",script);
+  debug("SCRIPT",script);
   const result : string = await execute(script);
-  console.log("RESULT (SYM DEF): ",result);
+  debug("RESULT (SYM DEF): ",result);
   const preamble = "Hold[Set[";
   if (result.startsWith(preamble)) {
     // WARNING! TODO!  This may work but will not match
     // expressions which do not evaluate numerically.
     const name_matcher = /Hold\[Set\[(\w+),/g;
     const name_matches = name_matcher.exec(result);
-    console.log("NAME_MATCHES", name_matches);
+    debug("NAME_MATCHES", name_matches);
     const value_matcher = /,\s+(.+)\]\]/g;
     const value_matches = value_matcher.exec(result);
-    console.log("VALUE_MATCHES", value_matches);
+    debug("VALUE_MATCHES", value_matches);
     if (name_matches && value_matches) {
       let sd = { name: name_matches[1],
                  value: value_matches[1]
@@ -113,15 +114,15 @@ async function isSymbolDefinition(expr : string) : Promise<SymbolData|null> {
 
 export async function symDefClassifierRule(tdoc: TDoc, style: StyleObject): Promise<StyleObject[]> {
   if (style.type != 'WOLFRAM' || style.meaning != 'INPUT') { return []; }
-  console.log("INSIDE SYMDEF CLASSIFIER :",style);
+  debug("INSIDE SYMDEF CLASSIFIER :",style);
 
 
   var isDefinition;
   try {
     isDefinition = await isSymbolDefinition(style.data);
-    console.log("SYMBOLIC DEFINITION CLASSIFIER SAYS:",isDefinition);
+    debug("SYMBOLIC DEFINITION CLASSIFIER SAYS:",isDefinition);
   } catch (e) {
-    console.log("MATHEMATICA EVALUATION FAILED :",e);
+    debug("MATHEMATICA EVALUATION FAILED :",e);
     return [];
   }
 

@@ -19,6 +19,9 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 // Requirements
 
+import * as debug1 from 'debug';
+const debug = debug1('server:mathematica-cas');
+
 // import { MthMtcaText } from '../client/math-tablet-api';
 import { StyleObject, NotebookChange } from '../client/math-tablet-api';
 import { TDoc } from './tdoc';
@@ -49,12 +52,12 @@ function onChange(tDoc: TDoc, change: NotebookChange): void {
   }
 }
 
-function onClose(_tDoc: TDoc): void {
-  // console.log(`Mathematica tDoc close: ${tDoc._path}`);
+function onClose(tDoc: TDoc): void {
+  debug(`Mathematica tDoc close: ${tDoc._path}`);
 }
 
-function onOpen(_tDoc: TDoc): void {
-  // console.log(`Mathematica: tDoc open: ${tDoc._path}`);
+function onOpen(tDoc: TDoc): void {
+  debug(`Mathematica: tDoc open: ${tDoc._path}`);
 }
 
 // var child_process = require('child_process');
@@ -63,29 +66,29 @@ function onOpen(_tDoc: TDoc): void {
 
 // child.stdout.once('data',
 //          (data: string) => {
-//            console.log("INITIAL PIPE RESPONSE",data.toString());
+//            debug("INITIAL PIPE RESPONSE",data.toString());
 //              })
 
 // child.stdin.write('Print["hello"]\n');
 
 async function evaluateExpressionPromiseWS(expr: string) : Promise<string> {
-  // console.log("INSIDE EVALUATE WS",expr);
+  debug("INSIDE EVALUATE WS",expr);
   let result : string = await execute("InputForm["+expr+"]");
-  // console.log("RESULT FROM WS",result);
+  debug("RESULT FROM WS",result);
   return result;
   // return new Promise(function(resolve,reject) {
   //   child.stdout.once('data',
   //                     (data: string) => {
   //                       try {
   //                         var ret_text = data.toString();
-  //                         console.log("DATA",ret_text);
+  //                         debug("DATA",ret_text);
   //                         // Typical response: Out[2]= 7. In[3]:=
   //                         const regex = /([\.\w]+)\[\d+\]\=\s([\.\w]+)/g;
   //                         const found : string[] | null =
   //                               regex.exec(ret_text);
-  //                         console.log("FOUND :",found);
+  //                         debug("FOUND :",found);
   //                         const result = found && found[2];
-  //                         console.log("Result :",result);
+  //                         debug("Result :",result);
   //                         if (found)
   //                           resolve(found[2]);
   //                         else
@@ -101,7 +104,7 @@ async function evaluateExpressionPromiseWS(expr: string) : Promise<string> {
 // REVIEW: This does not need to be exported, as it does not occur anywhere else in the source.
 export async function mathMathematicaRule(tdoc: TDoc, style: StyleObject): Promise<StyleObject[]> {
 
-  // console.log("INSIDE RULE :",style);
+  debug("INSIDE RULE :",style);
   // We only extract symbols from Wolfram expressions that are user input.
   if (style.type != 'WOLFRAM' || style.meaning != 'INPUT') { return []; }
 
@@ -111,9 +114,9 @@ export async function mathMathematicaRule(tdoc: TDoc, style: StyleObject): Promi
   try {
     //    assoc = await evaluateExpressionPromiseWS(style.data);
     assoc = await evaluateExpressionPromiseWS(style.data);
-    console.log("ASSOC RETURNED",assoc,assoc.toString());
+    debug("ASSOC RETURNED",assoc,assoc.toString());
   } catch (e) {
-    console.log("MATHEMATICA EVALUATION FAILED :",e);
+    debug("MATHEMATICA EVALUATION FAILED :",e);
     assoc = null;
   }
 
@@ -128,7 +131,7 @@ export async function mathMathematicaRule(tdoc: TDoc, style: StyleObject): Promi
   // a style.  This is a bit of a hacky means that allows
   // us to avoid having to understand too much about the expression.
   var path = tdoc.absoluteDirectoryPath();
-  console.log("path",path);
+  debug("path",path);
   // we do not yet have the code to use the tdoc path quite ready, so instead we are going to use
   // public/tmp as a place for images until we are ready.
   const targetPath = "./public/tmp";
@@ -144,7 +147,7 @@ export async function mathMathematicaRule(tdoc: TDoc, style: StyleObject): Promi
           var dest = targetPath+"/"+fn;
           fs.rename(fn, dest, err => {
             if (err) return console.error(err);
-            console.log('success!');
+            debug('success!');
             var imageStyle =
                 tdoc.insertStyle(style,{ type: 'IMAGE',
                                    data: urlPath+"/"+fn,
@@ -156,14 +159,14 @@ export async function mathMathematicaRule(tdoc: TDoc, style: StyleObject): Promi
       }
     });
   } catch(e) {
-    console.log("ERROR Trying to read: ",e);
+    debug("ERROR Trying to read: ",e);
   }
 
   // @ts-ignore --- I don't know how to type this.
   //  let result = assoc[1][2]; // "magic" for Mathematica
   if (assoc) {
   let result = assoc.toString();
-  console.log(" RESULT STRING :",result);
+  debug(" RESULT STRING :",result);
   var exemplar = tdoc.insertStyle(style, { type: 'MATHEMATICA',
                                            data: <string>result,
                                            meaning: 'EVALUATION',
@@ -180,7 +183,7 @@ async function convertMathMlToWolframRule(tdoc: TDoc, style: StyleObject): Promi
 
   const mathMl = style.data.split('\n').join('').replace(/"/g, '\\"');
   const cmd = `InputForm[ToExpression[ImportString["${mathMl}", "MathML"]]]`;
-  console.log(cmd);
+  debug(cmd);
   try {
     const data = await execute(cmd);
     // REVIEW: Attach it to the thought instead of the style?

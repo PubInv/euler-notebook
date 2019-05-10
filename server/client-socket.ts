@@ -19,6 +19,8 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 import { Server } from 'http';
 
+import * as debug1 from 'debug';
+const debug = debug1('server:client-socket');
 import { Request } from 'express';
 import * as WebSocket from 'ws';
 
@@ -63,7 +65,7 @@ export class ClientSocket {
   }
 
   public static initialize(server: Server): void {
-    console.log("Client Socket: initialize");
+    debug("Client Socket: initialize");
     const wss = new WebSocket.Server({ server });
     wss.on('connection', (ws: WebSocket, req: Request)=>{ this.onConnection(ws, req); });
   }
@@ -91,7 +93,7 @@ export class ClientSocket {
         this.closeAllNotebooks(notify);
         this.closePromise = new Promise((resolve, reject)=>{ this.closeResolver = { resolve, reject }; });
         if (this.socket.readyState != WebSocket.CLOSING) {
-          console.log(`Client Socket ${this.id}: closing.`);
+          debug(`Client Socket ${this.id}: closing.`);
           this.socket.close(code, reason);
         } else {
           console.warn(`WARNING: Client Socket ${this.id}: closing socket that is closing.`)
@@ -118,7 +120,7 @@ export class ClientSocket {
 
   private static async onConnection(ws: WebSocket, req: Request): Promise<void> {
     try {
-      console.log(`Client Socket: new connection: ${req.url}`);
+      debug(`Client Socket: new connection: ${req.url}`);
       // TODO: Client generate ID and send it with connection.
       const id: ClientId = Date.now().toString();
       const instance = new this(id, ws);
@@ -131,7 +133,7 @@ export class ClientSocket {
   // Private Constructor
 
   private constructor(id: ClientId, ws: WebSocket) {
-    console.log(`Client Socket: constructor`)
+    debug(`Client Socket: constructor`)
     this.id = id;
     this.socket = ws;
     this.tDocs = new Map();
@@ -152,7 +154,7 @@ export class ClientSocket {
 
   private onTDocChange(tDoc: TDoc, change: NotebookChange): void {
     try {
-      console.log(`Client Socket: tDoc changed: ${tDoc._path} ${change.type}`);
+      debug(`Client Socket: tDoc changed: ${tDoc._path} ${change.type}`);
       this.sendMessage({ action: 'notebookChanged', notebookName: tDoc._path, change });
     } catch(err) {
       console.error(`Client Socket: unexpected error handling tDoc change: ${err.message}`);
@@ -161,7 +163,7 @@ export class ClientSocket {
 
   private onTDocClose(tDoc: TDoc): void {
     try {
-      console.log(`Client Socket: tDoc closed: ${tDoc._path}`);
+      debug(`Client Socket: tDoc closed: ${tDoc._path}`);
       this.closeNotebook(tDoc._path, true);
     } catch(err) {
       console.error(`Client Socket: Unexpected error handling tdoc close: ${err.message}`);
@@ -172,10 +174,10 @@ export class ClientSocket {
     try {
       // Normal close appears to be code 1001, reason empty string.
       if (this.closeResolver) {
-        console.log(`Client Socket: web socket closed by server: ${code} '${reason}' ${this.tDocs.size}`);
+        debug(`Client Socket: web socket closed by server: ${code} '${reason}' ${this.tDocs.size}`);
         this.closeResolver.resolve();
       } else {
-        console.log(`Client Socket: web socket closed by client: ${code} '${reason}' ${this.tDocs.size}`);
+        debug(`Client Socket: web socket closed by client: ${code} '${reason}' ${this.tDocs.size}`);
         this.closeAllNotebooks(false);
       }
       ClientSocket.clientSockets.delete(this.id);
@@ -196,7 +198,7 @@ export class ClientSocket {
   private onWsMessage(_ws: WebSocket, message: WebSocket.Data) {
     try {
       const msg: ClientMessage = JSON.parse(message.toString());
-      console.log(`Client Socket: received socket message: ${msg.action} ${msg.notebookName}`);
+      debug(`Client Socket: received socket message: ${msg.action} ${msg.notebookName}`);
       switch(msg.action) {
       case 'openNotebook': this.cmOpenNotebook(msg.notebookName); break;
       case 'closeNotebook': this.cmCloseNotebook(msg.notebookName); break;
@@ -319,7 +321,7 @@ export class ClientSocket {
 
   private sendMessage(msg: ServerMessage): void {
     const json = JSON.stringify(msg);
-    console.log(`Client Socket: sending socket message ${msg.action}.`);
+    debug(`Client Socket: sending socket message ${msg.action}.`);
     try {
       // REVIEW: Should we check ws.readyState
       // REVIEW: Should we use the callback to see if the message went through?

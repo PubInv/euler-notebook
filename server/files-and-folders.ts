@@ -23,6 +23,8 @@ import { mkdir, readdir, readFile, rmdir, stat, writeFile } from 'fs';
 import { join } from 'path';
 import { promisify } from 'util';
 
+import * as debug1 from 'debug';
+const debug = debug1('server:files-and-folders');
 import * as rimraf from 'rimraf';
 
 import { NotebookName, NotebookPath, MyScriptServerKeys } from '../client/math-tablet-api';
@@ -96,7 +98,7 @@ export async function createFolder(folderPath: FolderPath): Promise<void> {
 
 export async function deleteFolder(folderPath: FolderPath): Promise<undefined|string> {
   const path = absDirPathFromNotebookPath(folderPath);
-  console.log(`Deleting folder directory ${path}`);
+  debug(`Deleting folder directory ${path}`);
   try { await rmdir2(path); } 
   catch(err) { return err.code; }
   return undefined;
@@ -104,7 +106,7 @@ export async function deleteFolder(folderPath: FolderPath): Promise<undefined|st
 
 export async function deleteNotebook(notebookPath: NotebookPath): Promise<undefined|string> {
   const path = absDirPathFromNotebookPath(notebookPath);
-  console.log(`Deleting notebook directory ${path}`);
+  debug(`Deleting notebook directory ${path}`);
   try { await rimraf2(path); }
   catch(err) { return err.code; }
   return undefined;

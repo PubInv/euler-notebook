@@ -19,6 +19,8 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 // Requirements
 
+import * as debug1 from 'debug';
+const debug = debug1('server:mathjs-cas');
 import * as math from 'mathjs';
 
 import { LatexData, MathJsData, NotebookChange, StyleObject } from '../client/math-tablet-api';
@@ -121,7 +123,7 @@ export function mathEvaluateRule(tdoc: TDoc, session: SessionData, style: StyleO
   try {
     e = session.parser.eval(style.data);
   } catch (err) {
-    console.log("error in eval", style.data, err.messsage);
+    debug("error in eval", style.data, err.messsage);
     const firstLine = err.message;
     let st = tdoc.insertStyle(style, { type: 'TEXT', data: firstLine, meaning: 'EVALUATION-ERROR', source: 'MATHJS' });
     return [st];
@@ -165,7 +167,7 @@ export function mathSimplifyRule(tdoc: TDoc, _session: SessionData, style: Style
   } catch {
     // This is useful for debugging, but it is not error to fail to
     // be able to simplify something.
-    //    console.log("math.simplify failed on", style.data);
+    //    debug("math.simplify failed on", style.data);
     return [];
   }
   if (!simpler) { return []; }

@@ -19,6 +19,9 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 // Requirements
 
+import * as debug1 from 'debug';
+const debug = debug1('server:sym-use-classifier');
+
 import { NotebookChange, StyleObject } from '../client/math-tablet-api';
 import { TDoc } from './tdoc';
 import { execute } from './wolframscript';
@@ -38,30 +41,30 @@ export async function initialize(): Promise<void> {
 function onChange(tDoc: TDoc, change: NotebookChange): void {
   switch (change.type) {
   case 'styleDeleted':
-    console.log(`SymbolUseClassifier tDoc ${tDoc._path}/${change.type} change: `);
+    debug(`SymbolUseClassifier tDoc ${tDoc._path}/${change.type} change: `);
     break;
   case 'styleInserted':
-    console.log(`SymbolUseClassifier tDoc ${tDoc._path}/${change.type} change: `);
+    debug(`SymbolUseClassifier tDoc ${tDoc._path}/${change.type} change: `);
     symDefClassifierRule(tDoc, change.style);
     break;
   case 'thoughtDeleted':
-    console.log(`SymbolUseClassifier tDoc ${tDoc._path}/${change.type} change: `);
+    debug(`SymbolUseClassifier tDoc ${tDoc._path}/${change.type} change: `);
     break;
   case 'thoughtInserted':
-    console.log(`SymbolUseClassifier tDoc ${tDoc._path}/${change.type} change: `);
+    debug(`SymbolUseClassifier tDoc ${tDoc._path}/${change.type} change: `);
     break;
   default:
-    console.log(`SymbolUseClassifier tDoc unknown change: ${tDoc._path} ${(<any>change).type}`);
+    debug(`SymbolUseClassifier tDoc unknown change: ${tDoc._path} ${(<any>change).type}`);
     break;
   }
 }
 
 function onClose(tDoc: TDoc): void {
-  console.log(`SymbolUseClassifier tDoc close: ${tDoc._path}`);
+  debug(`SymbolUseClassifier tDoc close: ${tDoc._path}`);
 }
 
 function onOpen(tDoc: TDoc): void {
-  console.log(`SymbolUseClassifier: tDoc open: ${tDoc._path}`);
+  debug(`SymbolUseClassifier: tDoc open: ${tDoc._path}`);
 }
 
 
@@ -70,9 +73,7 @@ function onOpen(tDoc: TDoc): void {
 async function symbolsUsed(expr : string) : Promise<string[]> {
   // const quadratic_function_script = `With[{v = Variables[#]},If[Exponent[#, v[[1]]] == 2 && Length[v] == 1, v[[1]], False]]`;
   // const script = quadratic_function_script+" &[" + expr + "]";
-  // console.log("EXPRESSION TO CLASSIFY: ",script );
   // let result : string = await execute(script);
-  // console.log("EXECUTE RESULTS",expr, result);
   // return (result == "False") ? null : result;
   // WARNING! TODO! DANGER! This would be better done
   // completely in Mathematica. However, we have not been able to
@@ -80,12 +81,12 @@ async function symbolsUsed(expr : string) : Promise<string[]> {
   // We are therefore doing this in TypeScript, hoping we eventually
   // figure it out in Mathematica.
   const script = `Variables[${expr}]`;
-  console.log("SCRIPT",script);
+  debug("SCRIPT",script);
   const result : string = await execute(script);
-  console.log("RESULT (SYM USE): ",result);
+  debug("RESULT (SYM USE): ",result);
   const trimmed = result.replace(/{|}/g,'');
   const vars = trimmed.split(',').filter( s => !!s);
-  console.log("VARS : ", vars);
+  debug("VARS : ", vars);
   return vars;
 }
 
@@ -97,15 +98,15 @@ export interface SymbolData {
 
 export async function symDefClassifierRule(tdoc: TDoc, style: StyleObject): Promise<StyleObject[]> {
   if (style.type != 'WOLFRAM' || style.meaning != 'INPUT') { return []; }
-  console.log("INSIDE SYMDEF CLASSIFIER :",style);
+  debug("INSIDE SYMDEF CLASSIFIER :",style);
 
 
   var symbols;
   try {
     symbols = await symbolsUsed(style.data);
-    console.log("SYMBOLIC USE CLASSIFIER SAYS:",symbols);
+    debug("SYMBOLIC USE CLASSIFIER SAYS:",symbols);
   } catch (e) {
-    console.log("MATHEMATICA EVALUATION FAILED :",e);
+    debug("MATHEMATICA EVALUATION FAILED :",e);
     return [];
   }
 

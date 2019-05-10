@@ -19,6 +19,8 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 // Requirements
 
+import * as debug1 from 'debug';
+const debug = debug1('server:math-steps-cas');
 import * as mathsteps from 'mathsteps';
 import * as math from 'mathjs';
 
@@ -60,7 +62,7 @@ function onChange(tDoc: TDoc, change: NotebookChange): void {
 // Helper Functions
 
 async function onStyleInserted(tDoc: TDoc, style: StyleObject): Promise<void> {
-  // console.log(`MathStep onStyleInserted ${style.id} ${style.stylableId} ${style.type} ${style.meaning}`);
+  debug(`MathStep onStyleInserted ${style.id} ${style.stylableId} ${style.type} ${style.meaning}`);
 
   // Only try to simplify/solve MathJS expressions
   if (style.type != 'MATHJS' || style.meaning != 'INPUT') { return; }

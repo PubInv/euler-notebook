@@ -19,6 +19,9 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 // Requirements
 
+import * as debug1 from 'debug';
+const debug = debug1('server:tdoc.spec');
+
 import { TDoc }  from '../tdoc';
 import { mathSimplifyRule }  from '../mathjs-cas';
 import { mathExtractVariablesRule }  from '../mathjs-cas';
@@ -255,12 +258,12 @@ describe('manipulate plain ascii styles', function() {
       assert.ok(true);
     }
     try {
-      console.log('Z = X + 4', parser.eval('z = x + 4'));
+      debug('Z = X + 4', parser.eval('z = x + 4'));
     } catch {
       assert.ok(true);
     }
     try {
-      console.log('Z', parser.eval('z'));
+      debug('Z', parser.eval('z'));
     } catch {
       assert.ok(true);
     }

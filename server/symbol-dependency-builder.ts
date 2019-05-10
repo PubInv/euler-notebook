@@ -19,6 +19,9 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 // Requirements
 
+import * as debug1 from 'debug';
+const debug = debug1('server:symbol-dependency-builder');
+
 import { NotebookChange, StyleInserted } from '../client/math-tablet-api';
 import { TDoc } from './tdoc';
 
@@ -43,12 +46,12 @@ function onChange(tDoc: TDoc, change: NotebookChange): void {
   }
 }
 
-function onClose(_tDoc: TDoc): void {
-  // console.log(`QuadClassifier tDoc close: ${tDoc._path}`);
+function onClose(tDoc: TDoc): void {
+  debug(`QuadClassifier tDoc close: ${tDoc._path}`);
 }
 
-function onOpen(_tDoc: TDoc): void {
-  // console.log(`QuadClassifier: tDoc open: ${tDoc._path}`);
+function onOpen(tDoc: TDoc): void {
+  debug(`QuadClassifier: tDoc open: ${tDoc._path}`);
 }
 
 // Change Event Handlers

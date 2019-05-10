@@ -19,6 +19,9 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 // Requirements
 
+import * as debug1 from 'debug';
+const debug = debug1('server:quad-classifier');
+
 import { NotebookChange, StyleObject } from '../client/math-tablet-api';
 import { TDoc } from './tdoc';
 import { execute } from './wolframscript';
@@ -44,12 +47,12 @@ function onChange(tDoc: TDoc, change: NotebookChange): void {
   }
 }
 
-function onClose(_tDoc: TDoc): void {
-  // console.log(`QuadClassifier tDoc close: ${tDoc._path}`);
+function onClose(tDoc: TDoc): void {
+  debug(`QuadClassifier tDoc close: ${tDoc._path}`);
 }
 
-function onOpen(_tDoc: TDoc): void {
-  // console.log(`QuadClassifier: tDoc open: ${tDoc._path}`);
+function onOpen(tDoc: TDoc): void {
+  debug(`QuadClassifier: tDoc open: ${tDoc._path}`);
 }
 
 
@@ -67,20 +70,20 @@ With[{v = Variables[3 + x^2]},
   */
   const quadratic_function_script = `With[{v = Variables[#]},If[Exponent[#, v[[1]]] == 2 && Length[v] == 1, v[[1]], False]]`;
   const script = quadratic_function_script+" &[" + expr + "]";
-  // console.log("EXPRESSION TO CLASSIFY: ",script );
+  debug("EXPRESSION TO CLASSIFY: ",script );
   let result : string = await execute(script);
-  // console.log("EXECUTE RESULTS",expr, result);
+  debug("EXECUTE RESULTS",expr, result);
   return (result == "False") ? null : result;
 }
 
 export async function quadClassifierRule(tdoc: TDoc, style: StyleObject): Promise<StyleObject[]> {
   if (style.type != 'MATHEMATICA' || style.meaning != 'EVALUATION') { return []; }
-  // console.log("INSIDE QUAD CLASSIFIER :",style);
+  debug("INSIDE QUAD CLASSIFIER :",style);
 
   var isPlottableQuadratic;
   try {
     isPlottableQuadratic = await isExpressionPlottableQuadratic(style.data);
-    // console.log("QUAD CLASSIFER SAYS:",isPlottableQuadratic);
+    debug("QUAD CLASSIFER SAYS:",isPlottableQuadratic);
   } catch (e) {
     console.error("MATHEMATICA EVALUATION FAILED :",e);
     return [];

@@ -21,6 +21,9 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 import { join } from 'path';
 
+import * as debug1 from 'debug';
+const debug = debug1('server:index');
+
 import { NextFunction, Request, Response, Router } from 'express';
 
 // import { NotebookPath } from '../../client/math-tablet-api';
@@ -89,14 +92,14 @@ async function onDashboard(req: Request, res: Response) {
       switch(action) {
       case 'closeClient': {
         for (const clientId of Object.keys(req.body.clientSockets)) {
-          console.log(`Closing client ${clientId}`);
+          debug(`Closing client ${clientId}`);
           await ClientSocket.close(clientId, 4000, 'dashboard');
         }
         break;
       }
       case 'closeNotebook': {
         for (const notebookName of Object.keys(req.body.notebooks)) {
-          console.log(`Closing client ${notebookName}`);
+          debug(`Closing client ${notebookName}`);
           await TDoc.close(notebookName);
         }
         break;
@@ -115,7 +118,7 @@ async function onDashboard(req: Request, res: Response) {
     res.render('dashboard', { clientSockets, tDocs });
   } catch(err) {
     console.error(err.message);
-    console.log(err.stack);
+    debug(err.stack);
     res.send(`Server crash in onDashboard: ${err.message}`);
   }
 }

@@ -19,6 +19,9 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 // Requirements
 
+import * as debug1 from 'debug';
+const debug = debug1('server:api');
+
 import { NextFunction, Request, Response, Router } from 'express';
 
 // import { FooParams, FooResults } from '../../client/math-tablet-api';
@@ -48,7 +51,7 @@ router.post('/foo', async function(req: Request, res: Response, _next: NextFunct
   } catch (err) {
     // TODO: Distinguish 400 from 500 responses
     console.error(`Error in /open API: ${err.message}`)
-    console.log(err.stack);
+    debug(err.stack);
     res.status(400).json({ ok: false, message: err.message });
   }
 });

@@ -19,6 +19,9 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 // Requirements
 
+import * as debug1 from 'debug';
+const debug = debug1('server:quad-plotter');
+
 import { NotebookChange, StyleObject } from '../client/math-tablet-api';
 import { TDoc  } from './tdoc';
 import { execute } from './wolframscript';
@@ -45,12 +48,12 @@ function onChange(tDoc: TDoc, change: NotebookChange): void {
   }
 }
 
-function onClose(_tDoc: TDoc): void {
-  // console.log(`QuadPlotter tDoc close: ${tDoc._path}`);
+function onClose(tDoc: TDoc): void {
+  debug(`QuadPlotter tDoc close: ${tDoc._path}`);
 }
 
-function onOpen(_tDoc: TDoc): void {
-  // console.log(`QuadPlotter: tDoc open: ${tDoc._path}`);
+function onOpen(tDoc: TDoc): void {
+  debug(`QuadPlotter: tDoc open: ${tDoc._path}`);
 }
 
 async function plotQuadratic(expr : string, variable: string, filename : string) : Promise<boolean> {
@@ -65,14 +68,14 @@ With[{v = Variables[#1]},
   */
   const univariate_plot_script =
         `Export["${filename}",Plot[${expr},{${variable},0,6 Pi}]]`;
-  console.log("PLOT COMMAND SENT TO WOLFRAM",univariate_plot_script);
+  debug("PLOT COMMAND SENT TO WOLFRAM",univariate_plot_script);
   await execute(univariate_plot_script);
   return true;
 }
 
 export async function quadPlotterRule(tdoc: TDoc, style: StyleObject): Promise<StyleObject[]> {
   if (style.type != 'CLASSIFICATION' || style.meaning != 'QUADRATIC') { return []; }
-  console.log("INSIDE QUAD PLOTTER :",style);
+  debug("INSIDE QUAD PLOTTER :",style);
   const targetPath = "./public/tmp";
   const urlPath = "/tmp";
   const fn = "quadplot" + style.id + ".gif";
@@ -84,9 +87,9 @@ export async function quadPlotterRule(tdoc: TDoc, style: StyleObject): Promise<S
   try {
     // In this case, the style.data is the variable name...
     createdPlotSuccessfully = await plotQuadratic(parent.data,style.data,full_filename);
-    console.log("PLOTTER SUCCESS SAYS:",createdPlotSuccessfully);
+    debug("PLOTTER SUCCESS SAYS:",createdPlotSuccessfully);
   } catch (e) {
-    console.log("MATHEMATICA QUAD PLOT FAILED :",e);
+    debug("MATHEMATICA QUAD PLOT FAILED :",e);
     return [];
   }
 

@@ -19,6 +19,9 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 // Requirements
 
+import * as debug1 from 'debug';
+const debug = debug1('server:wolframscript');
+
 import { spawn, ChildProcess } from 'child_process';
 import { WolframData } from '../client/math-tablet-api';
 
@@ -87,13 +90,13 @@ export async function start(): Promise<void> {
     const stdoutListener = (data: Buffer) => {
       // console.dir(data);
       let dataString = data.toString();
-      // console.log(`WolframScript initial data: ${showInvisible(dataString)}`);
+      debug(`WolframScript initial data: ${showInvisible(dataString)}`);
       if (INPUT_PROMPT_RE.test(dataString)) {
-        // console.log("MATCHES. RESOLVING.")
+        debug("MATCHES. RESOLVING.")
         child.stdout.removeListener('data', stdoutListener);
         resolve();
       }
-      else { /* console.log("DOESN'T MATCH. WAITING."); */}
+      else { /* debug("DOESN'T MATCH. WAITING."); */}
     }
 
     child.once('error', errorListener);
@@ -128,7 +131,7 @@ function executeNow(command: WolframData, resolve: (data: string)=>void, reject:
   let results = '';
   const stdoutListener = (data: Buffer)=>{
     let dataString: string = data.toString();
-    // console.log(`data: ${showInvisible(dataString)}`);
+    debug(`data: ${showInvisible(dataString)}`);
     results += dataString;
 
     // Once the results end with an input prompt, we have received the complete result.
@@ -143,7 +146,7 @@ function executeNow(command: WolframData, resolve: (data: string)=>void, reject:
 
         // ... then fulfill with whatever came between the prompts.
         results = results.substring(outputPromptMatch![0].length, inputPromptMatch.index);
-        // console.log(`Resolving: '${results}'`);
+        debug(`Resolving: '${results}'`);
         resolve(results);
       } else {
         let message: string = "WolframScript Error: ";
@@ -156,7 +159,7 @@ function executeNow(command: WolframData, resolve: (data: string)=>void, reject:
           message += `Unexpected result: ${results.slice(0, 20)}`;
         }
 
-        // console.log(`Rejecting: '${message}'`);
+        debug(`Rejecting: '${message}'`);
         reject(new Error(message));
       }
     } else {
@@ -165,7 +168,7 @@ function executeNow(command: WolframData, resolve: (data: string)=>void, reject:
   }
 
   gChildProcess.stdout!.on('data', stdoutListener)
-  //console.log(`WolframScript: executing: ${command}`);
+  //debug(`WolframScript: executing: ${command}`);
   gChildProcess.stdin!.write(command + '\n');
 }
 
