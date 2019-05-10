@@ -46,52 +46,67 @@ let gServerRunningPromise: Promise<void> = SERVER_NOT_RUNNING_PROMISE;
 
 // Exported functions
 
-export async function execute(command: WolframData): Promise<WolframData> {
-  await gServerRunningPromise;
-  await gExecutingPromise;
-  gExecutingPromise = new Promise((resolve, reject)=>{
-    //console.log(`WolframScript: executing: ${command}`);
-    gChildProcess.stdin!.write(command + '\n');
-    let results = '';
-    const stdoutListener = (data: Buffer)=>{
-      let dataString: string = data.toString();
-      // console.log(`data: ${showInvisible(dataString)}`);
-      results += dataString;
+function executeNow(command: WolframData, resolve: (data: string)=>void, reject: (reason: any)=>void): void {
 
-      // Once the results end with an input prompt, we have received the complete result.
-      const inputPromptMatch = INPUT_PROMPT_RE.exec(results);
-      if (inputPromptMatch) {
+  let results = '';
+  const stdoutListener = (data: Buffer)=>{
+    let dataString: string = data.toString();
+    // console.log(`data: ${showInvisible(dataString)}`);
+    results += dataString;
 
-        gChildProcess.stdout!.removeListener('data', stdoutListener);
+    // Once the results end with an input prompt, we have received the complete result.
+    const inputPromptMatch = INPUT_PROMPT_RE.exec(results);
+    if (inputPromptMatch) {
 
-        // If the results start with an output prompt, then it was a successful execution:
-        const outputPromptMatch = OUTPUT_PROMPT_RE.exec(results);
-        if (outputPromptMatch) {
+      gChildProcess.stdout!.removeListener('data', stdoutListener);
 
-          // ... then fulfill with whatever came between the prompts.
-          results = results.substring(outputPromptMatch![0].length, inputPromptMatch.index);
-          // console.log(`Resolving: '${results}'`);
-          resolve(results);
-        } else {
-          let message: string = "WolframScript Error: ";
+      // If the results start with an output prompt, then it was a successful execution:
+      const outputPromptMatch = OUTPUT_PROMPT_RE.exec(results);
+      if (outputPromptMatch) {
 
-          // Extract a useful error message as best we can:
-          const syntaxErrorMatch = SYNTAX_ERROR_RE.exec(results);
-          if (syntaxErrorMatch) {
-            message += `${syntaxErrorMatch[1]}`;
-          } else {
-            message += `Unexpected result: ${results.slice(0, 20)}`;
-          }
-
-          // console.log(`Rejecting: '${message}'`);
-          reject(new Error(message));
-        }
+        // ... then fulfill with whatever came between the prompts.
+        results = results.substring(outputPromptMatch![0].length, inputPromptMatch.index);
+        // console.log(`Resolving: '${results}'`);
+        resolve(results);
       } else {
-        // Wait for more data events from Wolfram Script to complete the result.
-      }
+        let message: string = "WolframScript Error: ";
 
-    };
-    gChildProcess.stdout!.on('data', stdoutListener)
+        // Extract a useful error message as best we can:
+        const syntaxErrorMatch = SYNTAX_ERROR_RE.exec(results);
+        if (syntaxErrorMatch) {
+          message += `${syntaxErrorMatch[1]}`;
+        } else {
+          message += `Unexpected result: ${results.slice(0, 20)}`;
+        }
+
+        // console.log(`Rejecting: '${message}'`);
+        reject(new Error(message));
+      }
+    } else {
+      // Wait for more data events from Wolfram Script to complete the result.
+    }
+  }
+
+  gChildProcess.stdout!.on('data', stdoutListener)
+  //console.log(`WolframScript: executing: ${command}`);
+  gChildProcess.stdin!.write(command + '\n');
+}
+
+export async function execute(command: WolframData): Promise<WolframData> {
+
+  // Wait for the server to start.
+  await gServerRunningPromise;
+
+  // Create a promise for the next 'execute' invocation to wait on.
+  const executingPromise = gExecutingPromise;
+  gExecutingPromise = new Promise<WolframData>((resolve, reject)=>{
+    // Wait on the previous 'execute' invocation.
+    console.dir(executingPromise);
+    // LATER: Use .finally instead when everyone is at node 10 or later.
+    executingPromise.then(
+      ()=>{ executeNow(command, resolve, reject); },
+      (_err)=>{ executeNow(command, resolve, reject); }
+    );
   });
   return gExecutingPromise;
 }
