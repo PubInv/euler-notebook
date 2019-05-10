@@ -78,19 +78,18 @@ async function main() {
   app.set('views', join(__dirname, 'views'));
   app.set('view engine', 'pug');
 
-  app.use(morgan('dev'));
-
+  app.use(stylusMiddleware(join(__dirname, 'public')));
+  app.use(express.static(join(__dirname, 'public')));
+  app.use(express.static(notebookRootDir(), { index: false, redirect: false }));
   app.get('/stylesheets/myscript.min.css', (_req: express.Request, res: express.Response)=>res.sendFile(`${__dirname}/node_modules/myscript/dist/myscript.min.css`));
   app.get('/javascripts/myscript.min.js', (_req: express.Request, res: express.Response)=>res.sendFile(`${__dirname}/node_modules/myscript/dist/myscript.min.js`));
   app.get('/javascripts/myscript.min.js.map', (_req: express.Request, res: express.Response)=>res.sendFile(`${__dirname}/node_modules/myscript/dist/myscript.min.js.map`));
+  app.use(morgan('dev'));
 
   app.use(express.json());
   // REVIEW: There seems to be some reason not to use extended flag. Investigate.
   app.use(express.urlencoded({ extended: true }));
   app.use(cookieParser());
-  app.use(stylusMiddleware(join(__dirname, 'public')));
-  app.use(express.static(join(__dirname, 'public')));
-  app.use(express.static(notebookRootDir(), { index: false, redirect: false }));
 
   app.use('/', indexRouter);
   app.use('/api', apiRouter);
