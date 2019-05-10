@@ -22,7 +22,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 import * as debug1 from 'debug';
 const debug = debug1('server:quad-classifier');
 
-import { NotebookChange, StyleObject } from '../client/math-tablet-api';
+import { NotebookChange, StyleObject, RelationshipObject } from '../client/math-tablet-api';
 import { TDoc } from './tdoc';
 import { execute } from './wolframscript';
 
@@ -41,7 +41,12 @@ export async function initialize(): Promise<void> {
 function onChange(tDoc: TDoc, change: NotebookChange): void {
   switch (change.type) {
   case 'styleInserted':
-    quadClassifierRule(tDoc, change.style);
+    quadClassifierRule(tDoc, change.style)
+      .catch(e => console.error("Internal Error on styleInserted:",e));
+    break;
+  case 'relationshipInserted':
+    quadClassifierChangedRule(tDoc, change.relationship)
+      .catch(e => console.error("Internal Error on relationshipInserted:",e));
     break;
   default: break;
   }
@@ -140,4 +145,37 @@ export async function quadClassifierRule(tdoc: TDoc, style: StyleObject): Promis
     styles.push(classification);
   }
   return styles;
+}
+export async function quadClassifierChangedRule(_tdoc: TDoc, relationship: RelationshipObject): Promise<void> {
+
+  if (relationship.meaning != 'SYMBOL-DEPENDENCY') return;
+
+
+  // We want to find the style which may need to be classified..
+
+
+  // var isPlottableQuadratic;
+  // try {
+  //   // here I attempt to find the dependency relationships....
+  //   const rs = getSymbolStylesIDependOn(tdoc,style);
+  //   console.log("RS ",rs);
+  //   // Now each member of rs should have a name and a value
+  //   // that we should use in our quadratic classification....
+  //   isPlottableQuadratic = await isExpressionPlottableQuadratic(style.data,rs);
+  //   // console.log("QUAD CLASSIFER SAYS:",isPlottableQuadratic);
+  // } catch (e) {
+  //   console.error("MATHEMATICA EVALUATION FAILED :",e);
+  //   return [];
+  // }
+
+  // var styles = [];
+  // if (isPlottableQuadratic) {
+  //   var classification = tdoc.insertStyle(style, { type: 'CLASSIFICATION',
+  //                                          data: isPlottableQuadratic,
+  //                                          meaning: 'QUADRATIC',
+  //                                          source: 'MATHEMATICA' });
+
+  //   styles.push(classification);
+  // }
+  //  return styles;
 }
