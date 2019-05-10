@@ -41,6 +41,7 @@ const STYLE_RENDERERS: StyleRendererMap = {
   'MATHJS': renderMathJsStyle,
   'MATHML': renderMathMlStyle,
   'MATHEMATICA': renderMathematicaStyle,
+  'SYMBOL': renderSymbolStyle,
   'TEXT': renderTextStyle,
 };
 
@@ -115,6 +116,14 @@ function renderLatexStyle(style: StyleObject): Html {
 
 function renderMathematicaStyle(style: StyleObject): Html {
   return `<div><tt>${style.data}</tt></div>`;
+}
+
+function renderSymbolStyle(style: StyleObject): Html {
+  if (style.meaning == 'SYMBOL-DEFINITION') {
+    return `<div><tt>def: ${style.data.name} = ${style.data.value}</tt></div>`;
+  } else {
+    return `<div><tt>use: ${style.data.name}</tt></div>`;
+  }
 }
 
 function renderMathJsStyle(style: StyleObject): Html {

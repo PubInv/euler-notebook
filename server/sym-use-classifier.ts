@@ -83,8 +83,8 @@ async function symbolsUsed(expr : string) : Promise<string[]> {
   console.log("SCRIPT",script);
   const result : string = await execute(script);
   console.log("RESULT (SYM USE): ",result);
-  const trimmed = result.replace('{}','');
-  const vars = trimmed.split(',');
+  const trimmed = result.replace(/{|}/g,'');
+  const vars = trimmed.split(',').filter( s => !!s);
   console.log("VARS : ", vars);
   return vars;
 }
