@@ -57,6 +57,7 @@ function onChStyleInserted(tDoc: TDoc, change: StyleInserted): void {
   const style = change.style;
   if (style.type == 'SYMBOL' && style.meaning == 'SYMBOL-DEFINITION') {
     for (const style2 of tDoc.getStyles()) {
+      if (style2.id == style.id) { continue; }
       if (style2.type == 'SYMBOL' &&
           style2.meaning == 'SYMBOL-USE' &&
           style2.data.name == style.data.name) {
@@ -65,6 +66,7 @@ function onChStyleInserted(tDoc: TDoc, change: StyleInserted): void {
     }
   } else if (style.type == 'SYMBOL' && style.meaning == 'SYMBOL-USE') {
     for (const style2 of tDoc.getStyles()) {
+      if (style2.id == style.id) { continue; }
       if (style2.type == 'SYMBOL' &&
           style2.meaning == 'SYMBOL-DEFINITION' &&
           style2.data.name == style.data.name) {
