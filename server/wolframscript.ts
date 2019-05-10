@@ -45,7 +45,7 @@ export async function execute(command: WolframData): Promise<WolframData> {
     let results = '';
     const stdoutListener = (data: Buffer)=>{
       let dataString: string = data.toString();
-      console.log(`data: ${showInvisible(dataString)}`);
+      // console.log(`data: ${showInvisible(dataString)}`);
       results += dataString;
 
       // Once the results end with an input prompt, we have received the complete result.
@@ -60,7 +60,7 @@ export async function execute(command: WolframData): Promise<WolframData> {
 
           // ... then fulfill with whatever came between the prompts.
           results = results.substring(outputPromptMatch![0].length, inputPromptMatch.index);
-          console.log(`Resolving: '${results}'`);
+          // console.log(`Resolving: '${results}'`);
           resolve(results);
         } else {
           let message: string = "WolframScript Error: ";
@@ -73,7 +73,7 @@ export async function execute(command: WolframData): Promise<WolframData> {
             message += `Unexpected result: ${results.slice(0, 20)}`;
           }
 
-          console.log(`Rejecting: '${message}'`);
+          // console.log(`Rejecting: '${message}'`);
           reject(new Error(message));
         }
       } else {

@@ -70,7 +70,6 @@ function onChange(tDoc: TDoc, change: NotebookChange): void {
   if (!session) { throw new Error("TDoc has no session for MathJS."); }
   switch (change.type) {
   case 'styleInserted':
-    console.log(`MathJs tDoc ${tDoc._path}/${change.type} change: `);
     mathExtractVariablesRule(tDoc, session, change.style);
     mathEvaluateRule(tDoc, session, change.style);
     mathSimplifyRule(tDoc, session, change.style);

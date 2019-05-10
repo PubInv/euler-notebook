@@ -44,11 +44,11 @@ function onChange(tDoc: TDoc, change: NotebookChange): void {
 }
 
 function onClose(tDoc: TDoc): void {
-  console.log(`QuadClassifier tDoc close: ${tDoc._path}`);
+  // console.log(`QuadClassifier tDoc close: ${tDoc._path}`);
 }
 
 function onOpen(tDoc: TDoc): void {
-  console.log(`QuadClassifier: tDoc open: ${tDoc._path}`);
+  // console.log(`QuadClassifier: tDoc open: ${tDoc._path}`);
 }
 
 // Change Event Handlers

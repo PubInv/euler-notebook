@@ -38,7 +38,6 @@ export async function initialize(): Promise<void> {
 function onChange(tDoc: TDoc, change: NotebookChange): void {
   switch (change.type) {
   case 'styleInserted':
-    console.log(`QuadPlotter tDoc ${tDoc._path}/${change.type} change: `);
     quadPlotterRule(tDoc, change.style).catch(
       (err)=>{ console.error(`Error applying mathMathematicaRule: ${err.message}`); });
     break;
@@ -47,11 +46,11 @@ function onChange(tDoc: TDoc, change: NotebookChange): void {
 }
 
 function onClose(tDoc: TDoc): void {
-  console.log(`QuadPlotter tDoc close: ${tDoc._path}`);
+  // console.log(`QuadPlotter tDoc close: ${tDoc._path}`);
 }
 
 function onOpen(tDoc: TDoc): void {
-  console.log(`QuadPlotter: tDoc open: ${tDoc._path}`);
+  // console.log(`QuadPlotter: tDoc open: ${tDoc._path}`);
 }
 
 async function plotQuadratic(expr : string, variable: string, filename : string) : Promise<boolean> {

@@ -250,6 +250,7 @@ export class TDoc extends EventEmitter {
   ): RelationshipObject {
     this.assertNotClosed('insertRelationship');
     const relationship: RelationshipObject = { ...props, id: this.nextId++, sourceId: source.id, targetId: target.id };
+    console.log(`TDoc: inserting relationship ${JSON.stringify(relationship)}`)
     this.relationships.push(relationship);
     const change: NotebookChange = { type: 'relationshipInserted', relationship };
     this.notifyChange(change);
@@ -259,6 +260,8 @@ export class TDoc extends EventEmitter {
   public insertStyle(stylable: StyleObject|ThoughtObject, props: StyleProperties): StyleObject {
     this.assertNotClosed('insertStyle');
     const style: StyleObject = { ...props, id: this.nextId++, stylableId: stylable.id };
+    const styleMinusData = { ...style, data: '...' };
+    console.log(`TDoc: inserting style ${JSON.stringify(styleMinusData)}`)
     this.styles.push(style);
     const change: NotebookChange = { type: 'styleInserted', style: style };
     this.notifyChange(change);
@@ -268,6 +271,7 @@ export class TDoc extends EventEmitter {
   public insertThought(props: ThoughtProperties): ThoughtObject {
     this.assertNotClosed('insertThought');
     const thought: ThoughtObject = { ...props, id: this.nextId++ };
+    console.log(`TDoc: inserting thought ${JSON.stringify(thought)}`)
     this.thoughts.push(thought);
     const change: NotebookChange = { type: 'thoughtInserted', thought: thought };
     this.notifyChange(change);
@@ -408,10 +412,10 @@ export class TDoc extends EventEmitter {
   // notifyChange will call this method if the TDoc is persistent.
   private scheduleSave(): void {
     if (this._saveTimeout) {
-      console.log(`TDoc: postponing save timeout: ${this._path}`);
+      // console.log(`TDoc: postponing save timeout: ${this._path}`);
       clearTimeout(this._saveTimeout);
     } else {
-      console.log(`TDoc: scheduling save timeout: ${this._path}`);
+      // console.log(`TDoc: scheduling save timeout: ${this._path}`);
     }
     this._saveTimeout = setTimeout(async ()=>{
       delete this._saveTimeout;

@@ -38,7 +38,6 @@ export async function initialize(): Promise<void> {
 function onChange(tDoc: TDoc, change: NotebookChange): void {
   switch (change.type) {
   case 'styleInserted':
-    console.log(`QuadClassifier tDoc ${tDoc._path}/${change.type} change: `);
     quadClassifierRule(tDoc, change.style);
     break;
   default: break;
@@ -46,11 +45,11 @@ function onChange(tDoc: TDoc, change: NotebookChange): void {
 }
 
 function onClose(tDoc: TDoc): void {
-  console.log(`QuadClassifier tDoc close: ${tDoc._path}`);
+  // console.log(`QuadClassifier tDoc close: ${tDoc._path}`);
 }
 
 function onOpen(tDoc: TDoc): void {
-  console.log(`QuadClassifier: tDoc open: ${tDoc._path}`);
+  // console.log(`QuadClassifier: tDoc open: ${tDoc._path}`);
 }
 
 
@@ -68,23 +67,22 @@ With[{v = Variables[3 + x^2]},
   */
   const quadratic_function_script = `With[{v = Variables[#]},If[Exponent[#, v[[1]]] == 2 && Length[v] == 1, v[[1]], False]]`;
   const script = quadratic_function_script+" &[" + expr + "]";
-  console.log("EXPRESSION TO CLASSIFY: ",script );
+  // console.log("EXPRESSION TO CLASSIFY: ",script );
   let result : string = await execute(script);
-  console.log("EXECUTE RESULTS",expr, result);
+  // console.log("EXECUTE RESULTS",expr, result);
   return (result == "False") ? null : result;
 }
 
 export async function quadClassifierRule(tdoc: TDoc, style: StyleObject): Promise<StyleObject[]> {
   if (style.type != 'MATHEMATICA' || style.meaning != 'EVALUATION') { return []; }
-  console.log("INSIDE QUAD CLASSIFIER :",style);
-
+  // console.log("INSIDE QUAD CLASSIFIER :",style);
 
   var isPlottableQuadratic;
   try {
     isPlottableQuadratic = await isExpressionPlottableQuadratic(style.data);
-    console.log("QUAD CLASSIFER SAYS:",isPlottableQuadratic);
+    // console.log("QUAD CLASSIFER SAYS:",isPlottableQuadratic);
   } catch (e) {
-    console.log("MATHEMATICA EVALUATION FAILED :",e);
+    console.error("MATHEMATICA EVALUATION FAILED :",e);
     return [];
   }
 

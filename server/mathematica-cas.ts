@@ -40,7 +40,6 @@ export async function initialize(): Promise<void> {
 function onChange(tDoc: TDoc, change: NotebookChange): void {
   switch (change.type) {
   case 'styleInserted':
-    console.log(`Mathematica tDoc ${tDoc._path}/${change.type} change: `);
     mathMathematicaRule(tDoc, change.style)
     .catch((err)=>{ console.error(`Error applying mathMathematicaRule: ${err.message}`); });
     convertMathMlToWolframRule(tDoc, change.style)
@@ -51,11 +50,11 @@ function onChange(tDoc: TDoc, change: NotebookChange): void {
 }
 
 function onClose(tDoc: TDoc): void {
-  console.log(`Mathematica tDoc close: ${tDoc._path}`);
+  // console.log(`Mathematica tDoc close: ${tDoc._path}`);
 }
 
 function onOpen(tDoc: TDoc): void {
-  console.log(`Mathematica: tDoc open: ${tDoc._path}`);
+  // console.log(`Mathematica: tDoc open: ${tDoc._path}`);
 }
 
 // var child_process = require('child_process');
@@ -70,9 +69,9 @@ function onOpen(tDoc: TDoc): void {
 // child.stdin.write('Print["hello"]\n');
 
 async function evaluateExpressionPromiseWS(expr: string) : Promise<string> {
-  console.log("INSIDE EVALUATE WS",expr);
+  // console.log("INSIDE EVALUATE WS",expr);
   let result : string = await execute("InputForm["+expr+"]");
-  console.log("RESULT FROM WS",result);
+  // console.log("RESULT FROM WS",result);
   return result;
   // return new Promise(function(resolve,reject) {
   //   child.stdout.once('data',
@@ -102,7 +101,7 @@ async function evaluateExpressionPromiseWS(expr: string) : Promise<string> {
 // REVIEW: This does not need to be exported, as it does not occur anywhere else in the source.
 export async function mathMathematicaRule(tdoc: TDoc, style: StyleObject): Promise<StyleObject[]> {
 
-  console.log("INSIDE RULE :",style);
+  // console.log("INSIDE RULE :",style);
   // We only extract symbols from Wolfram expressions that are user input.
   if (style.type != 'WOLFRAM' || style.meaning != 'INPUT') { return []; }
 
