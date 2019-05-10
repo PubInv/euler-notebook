@@ -22,8 +22,8 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 import * as mathsteps from 'mathsteps';
 import * as math from 'mathjs';
 
-import { StyleObject } from '../client/math-tablet-api';
-import { TDoc, TDocChange }  from './tdoc';
+import { StyleObject, NotebookChange } from '../client/math-tablet-api';
+import { TDoc }  from './tdoc';
 
 // Types
 
@@ -40,7 +40,7 @@ export interface MathStep {
 
 export async function initialize(): Promise<void> {
   TDoc.on('open', (tDoc: TDoc)=>{
-    tDoc.on('change', function(this: TDoc, change: TDocChange){ onChange(this, change); });
+    tDoc.on('change', function(this: TDoc, change: NotebookChange){ onChange(this, change); });
     // tDoc.on('close', function(this: TDoc){ onClose(this); });
     // onOpen(tDoc);
   });
@@ -48,7 +48,7 @@ export async function initialize(): Promise<void> {
 
 // Event Handler Functions
 
-function onChange(tDoc: TDoc, change: TDocChange): void {
+function onChange(tDoc: TDoc, change: NotebookChange): void {
   switch (change.type) {
   case 'styleInserted':
     console.log(`MathSteps tDoc ${tDoc._path}/${change.type} change: `);

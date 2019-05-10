@@ -21,8 +21,8 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 import * as math from 'mathjs';
 
-import { LatexData, MathJsData, StyleObject } from '../client/math-tablet-api';
-import { TDoc, TDocChange }  from './tdoc';
+import { LatexData, MathJsData, NotebookChange, StyleObject } from '../client/math-tablet-api';
+import { TDoc }  from './tdoc';
 
 // Types
 
@@ -52,7 +52,7 @@ const gTDocSessions = new Map<TDoc, SessionData>();
 
 export async function initialize(): Promise<void> {
   TDoc.on('open', (tDoc: TDoc)=>{
-    tDoc.on('change', function(this: TDoc, change: TDocChange){ onChange(this, change); });
+    tDoc.on('change', function(this: TDoc, change: NotebookChange){ onChange(this, change); });
     tDoc.on('close', function(this: TDoc){ onClose(this); });
     onOpen(tDoc);
   });
@@ -65,7 +65,7 @@ export function parseMathJsExpression(s: string): ParseResults {
 
 // Event Handler Functions
 
-function onChange(tDoc: TDoc, change: TDocChange): void {
+function onChange(tDoc: TDoc, change: NotebookChange): void {
   const session = gTDocSessions.get(tDoc);
   if (!session) { throw new Error("TDoc has no session for MathJS."); }
   switch (change.type) {

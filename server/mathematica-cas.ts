@@ -20,8 +20,8 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 // Requirements
 
 // import { MthMtcaText } from '../client/math-tablet-api';
-import { StyleObject } from '../client/math-tablet-api';
-import { TDoc, TDocChange } from './tdoc';
+import { StyleObject, NotebookChange } from '../client/math-tablet-api';
+import { TDoc } from './tdoc';
 import { execute } from './wolframscript';
 import * as fs from 'fs';
 
@@ -29,7 +29,7 @@ import * as fs from 'fs';
 
 export async function initialize(): Promise<void> {
   TDoc.on('open', (tDoc: TDoc)=>{
-    tDoc.on('change', function(this: TDoc, change: TDocChange){ onChange(this, change); });
+    tDoc.on('change', function(this: TDoc, change: NotebookChange){ onChange(this, change); });
     tDoc.on('close', function(this: TDoc){ onClose(this); });
     onOpen(tDoc);
   });
@@ -37,7 +37,7 @@ export async function initialize(): Promise<void> {
 
 // Private Functions
 
-function onChange(tDoc: TDoc, change: TDocChange): void {
+function onChange(tDoc: TDoc, change: NotebookChange): void {
   switch (change.type) {
   case 'styleDeleted':
     console.log(`Mathematica tDoc ${tDoc._path}/${change.type} change: `);

@@ -21,48 +21,14 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 import { EventEmitter } from 'events';
 
-import { NotebookChange, NotebookPath, StyleObject, StyleMeaning, StyleType, TDocObject, ThoughtObject, ThoughtId, StyleId, StyleProperties, ThoughtProperties } from '../client/math-tablet-api';
+import { NotebookChange, NotebookPath, StyleObject, StyleMeaning, StyleType, TDocObject, ThoughtObject, ThoughtId, StyleId, StyleProperties, ThoughtProperties, RelationshipObject, StylableId, RelationshipProperties, RelationshipId } from '../client/math-tablet-api';
 
 import { readNotebookFile, writeNotebookFile, AbsDirectoryPath, absDirPathFromNotebookPath } from './files-and-folders';
 
 // Types
 
-type StylableId = number;
-// type StyleRule = (tdoc: TDoc, style: Style)=>Style[];
-
 export interface TDocOptions {
   anonymous?: boolean;
-}
-
-// TDocChange. Keep in sync with NotebookChange
-
-export type TDocChange = StyleDeleted|StyleInserted|ThoughtDeleted|ThoughtInserted;
-
-interface StyleDeleted {
-  type: 'styleDeleted';
-  // REVIEW: This is probably not sufficient info,
-  //         as the style has already been deleted from
-  //         the TDoc when this event is fired.
-  stylableId: StylableId;
-  styleId: StyleId;
-}
-
-interface StyleInserted {
-  type: 'styleInserted';
-  style: StyleObject;
-}
-
-interface ThoughtDeleted {
-  type: 'thoughtDeleted';
-  // REVIEW: This is probably not sufficient info,
-  //         as the thought has already been deleted from
-  //         the TDoc when this event is fired.
-  thoughtId: ThoughtId;
-}
-
-interface ThoughtInserted {
-  type: 'thoughtInserted';
-  thought: ThoughtObject;
 }
 
 // Constants
@@ -73,7 +39,7 @@ const SAVE_TIMEOUT_MS = 5000;
 // VERSION CHANGES:
 // 0.0.1 - Initial version.
 // 0.0.2 - Made meaning required on styles.
-const VERSION = "0.0.2";
+const VERSION = "0.0.3";
 
 // REVIEW: Are there other event emitters in our project that need similar declarations?
 // See https://stackoverflow.com/questions/39142858/declaring-events-in-a-typescript-class-which-extends-eventemitter
@@ -228,6 +194,10 @@ export class TDoc extends EventEmitter {
     console.log(`TDoc: closed: ${this._path}`);
   }
 
+  public deleteRelationship(relationshipId: RelationshipId): void {
+    this.deleteRelationshipEntryAndEmit(relationshipId);
+  }
+
   // Deletes the specified style and any styles attached to it recursively.
   // Emits 'change' events in a depth-first postorder.
   public deleteStyle(styleId: StyleId): void {
@@ -242,6 +212,19 @@ export class TDoc extends EventEmitter {
     const styles = this.getStyles(thoughtId);
     for(const style of styles) { this.deleteStyle(style.id); }
     this.deleteThoughtEntryAndEmit(thoughtId);
+  }
+
+  public insertRelationship(
+    source: StyleObject|ThoughtObject,
+    target: StyleObject|ThoughtObject,
+    props: RelationshipProperties,
+  ): RelationshipObject {
+    this.assertNotClosed('insertRelationship');
+    const relationship: RelationshipObject = { ...props, id: this.nextId++, sourceId: source.id, targetId: target.id };
+    this.relationships.push(relationship);
+    const change: NotebookChange = { type: 'relationshipInserted', relationship };
+    this.notifyChange(change);
+    return relationship;
   }
 
   public insertStyle(stylable: StyleObject|ThoughtObject, props: StyleProperties): StyleObject {
@@ -306,6 +289,7 @@ export class TDoc extends EventEmitter {
     super();
 
     this.nextId = 1;
+    this.relationships = [];
     this.styles = [];
     this.thoughts = [];
     this.version = VERSION;
@@ -316,6 +300,7 @@ export class TDoc extends EventEmitter {
 
   // Private Instance Properties
 
+  private relationships: RelationshipObject[];
   private styles: StyleObject[];
   private thoughts: ThoughtObject[];
   // NOTE: Properties with an underscore prefix are not persisted.
@@ -340,10 +325,21 @@ export class TDoc extends EventEmitter {
 
   // Private Instance Methods
 
+  // Delete a specific relationship entry and emits a 'change' event.
+  private deleteRelationshipEntryAndEmit(relationshipId: RelationshipId): void {
+    this.assertNotClosed('deleteRelationshipEntryAndEmit');
+    const index = this.relationships.findIndex(r=>(r.id==relationshipId));
+    const relationship = this.relationships[index];
+    if (index<0) { throw new Error(`Deleting unknown relationship ${relationshipId}`); }
+    this.relationships.splice(index, 1);
+    const change: NotebookChange = { type: 'relationshipDeleted', relationship };
+    this.notifyChange(change);
+  }
+
   // Delete a specific style entry and emits a 'change' event.
   // IMPORTANT: All attached styles should be deleted first!
   private deleteStyleEntryAndEmit(styleId: StyleId): void {
-    this.assertNotClosed('deleteStyle');
+    this.assertNotClosed('deleteStyleEntryAndEmit');
     const index = this.styles.findIndex(s=>(s.id==styleId));
     const style = this.styles[index];
     if (index<0) { throw new Error(`Deleting unknown style ${styleId}`); }
@@ -355,7 +351,7 @@ export class TDoc extends EventEmitter {
   // Delete a specific thought entry and emits a 'change' event.
   // IMPORTANT: All attached styles should be deleted first!
   private deleteThoughtEntryAndEmit(thoughtId: ThoughtId): void {
-    this.assertNotClosed('deleteThought');
+    this.assertNotClosed('deleteThoughtEntryAndEmit');
     const index = this.thoughts.findIndex(t=>(t.id==thoughtId));
     if (index<0) { throw new Error(`Deleting unknown thought ${thoughtId}`); }
     this.thoughts.splice(index, 1);

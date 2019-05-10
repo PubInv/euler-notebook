@@ -27,10 +27,19 @@ export type MathJsData = string;
 export type MathMlData = string;
 export type MthMtcaData = string;
 export type Symbol = string;
+export type TextData = string;
 export type WolframData = string;
+
+export interface SymbolData {
+  name: string;
+  value?: string;
+}
 
 export type NotebookName = string; // Just the name of the notebook, no .mtnb extension.
 export type NotebookPath = string; // relative path from ~/math-tablet-usr/ plus name plus .mtnb extension.
+
+export type RelationshipMeaning = 
+  'SYMBOL-DEPENDENCY';
 
 export type StyleMeaning =
   'EVALUATION'|       // CAS evaluation of an expression.
@@ -46,25 +55,26 @@ export type StyleMeaning =
   'SYMBOL-DEFINITION'|// Definition of a symbol.
   'SYMBOL-USE'|       // Use of a symbol
   'UNIVARIATE-QUADRATIC';  // A quadratic expression, presumably worth plotting.
+  
   export type StyleType =
-  'IMAGE'|            // URL of image relative to notebook folder.
-  'JIIX'|             // MyScript JIIX export from 'MATH' editor.
-  'LATEX'|            // LaTeX string
+  'IMAGE'|            // ImageData: URL of image relative to notebook folder.
+  'JIIX'|             // Jiix: MyScript JIIX export from 'MATH' editor.
+  'LATEX'|            // LatexData: LaTeX string
   'MATHEMATICA'|      // Mathematica style (evaluation)
   /* DEPRECATED: */ 'CLASSIFICATION'|   // A classifcication of the thought.
-  'MATHJS'|           // MathJS plain text expression
-  'MATHML'|           // MathML Presentation XML
-  'STROKE'|           // MyScript strokeGroups export from 'TEXT' editor.
-  'SYMBOL'|           // Symbol: symbol in a definition or expression.
-  'TEXT'|             // Plain text
-  'WOLFRAM';          // Wolfram language expression
-export type StyleSource =
+  'MATHJS'|           // MathJsData: MathJS plain text expression
+  'MATHML'|           // MathMlData: MathML Presentation XML
+  'STROKE'|           // StrokeGroups: MyScript strokeGroups export from 'TEXT' editor.
+  'SYMBOL'|           // SymbolData: symbol in a definition or expression.
+  'TEXT'|             // TextData: Plain text
+  'WOLFRAM';          // WolframData: Wolfram language expression
+
+  export type StyleSource =
   'TEST'|             // An example source used only hour test system
   'USER'|             // Directly enterred by user
   'MATHJS'|           // The Mathjs Computer Algebra System system
   'MATHEMATICA'|      // Mathematica style (evaluation)
   'MATHSTEPS'         // The Mathsteps CAS system
-export type TextData = string;
 
 // MyScript Types
 
@@ -83,9 +93,20 @@ export interface StrokeGroups {
 
 // Plain object version of TDoc
 
-export type ThoughtId = number;
-export type StyleId = number;
+export type RelationshipId = number;
 export type StylableId = ThoughtId|StyleId;
+export type StyleId = number;
+export type ThoughtId = number;
+
+export interface RelationshipProperties {
+  meaning: RelationshipMeaning;
+}
+
+export interface RelationshipObject extends RelationshipProperties {
+  id: RelationshipId;
+  sourceId: StylableId;
+  targetId: StylableId;
+}
 
 export interface StyleProperties {
   data: any;
@@ -101,9 +122,10 @@ export interface StyleObject extends StyleProperties {
 
 export interface TDocObject {
   nextId: StylableId;
-  version: string;
-  thoughts: ThoughtObject[];
+  relationships: RelationshipObject[];
   styles: StyleObject[];
+  thoughts: ThoughtObject[];
+  version: string;
 }
 
 export interface ThoughtProperties {
@@ -117,7 +139,20 @@ export interface ThoughtObject extends ThoughtProperties {
 
 // Notebook Change types:
 
-export type NotebookChange = StyleDeleted|StyleInserted|ThoughtDeleted|ThoughtInserted;
+export type NotebookChange = RelationshipDeleted|RelationshipInserted|StyleDeleted|StyleInserted|ThoughtDeleted|ThoughtInserted;
+
+interface RelationshipDeleted {
+  type: 'relationshipDeleted';
+  // REVIEW: This is probably not sufficient info,
+  //         as the style has already been deleted from
+  //         the TDoc when this event is fired.
+  relationship: RelationshipObject;
+}
+
+interface RelationshipInserted {
+  type: 'relationshipInserted';
+  relationship: RelationshipObject;
+}
 
 interface StyleDeleted {
   type: 'styleDeleted';

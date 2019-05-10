@@ -19,15 +19,15 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 // Requirements
 
-import { StyleObject } from '../client/math-tablet-api';
-import { TDoc, TDocChange } from './tdoc';
+import { NotebookChange, StyleObject } from '../client/math-tablet-api';
+import { TDoc  } from './tdoc';
 import { execute } from './wolframscript';
 
 // Exports
 
 export async function initialize(): Promise<void> {
   TDoc.on('open', (tDoc: TDoc)=>{
-    tDoc.on('change', function(this: TDoc, change: TDocChange){ onChange(this, change); });
+    tDoc.on('change', function(this: TDoc, change: NotebookChange){ onChange(this, change); });
     tDoc.on('close', function(this: TDoc){ onClose(this); });
     onOpen(tDoc);
   });
@@ -35,7 +35,7 @@ export async function initialize(): Promise<void> {
 
 // Private Functions
 
-function onChange(tDoc: TDoc, change: TDocChange): void {
+function onChange(tDoc: TDoc, change: NotebookChange): void {
   switch (change.type) {
   case 'styleDeleted':
     console.log(`QuadPlotter tDoc ${tDoc._path}/${change.type} change: `);
