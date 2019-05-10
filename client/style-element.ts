@@ -92,12 +92,12 @@ export class StyleElement {
 
 // Helper Functions
 
-// From: http://shebang.brandonmintern.com/foolproof-html-escaping-in-javascript/
-function escapeHtml(str: string): Html {
-  var div = document.createElement('div');
-  div.appendChild(document.createTextNode(str));
-  return div.innerHTML;
-}
+// // From: http://shebang.brandonmintern.com/foolproof-html-escaping-in-javascript/
+// function escapeHtml(str: string): Html {
+//   var div = document.createElement('div');
+//   div.appendChild(document.createTextNode(str));
+//   return div.innerHTML;
+// }
 
 function renderImageStyle(style: StyleObject): Html {
   return `<div><img src="${style.data}"/></div>`;
