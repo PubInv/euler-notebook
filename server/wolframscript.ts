@@ -31,16 +31,26 @@ const INPUT_PROMPT_RE = /\s*In\[(\d+)\]:=\s*$/;
 const OUTPUT_PROMPT_RE = /^\s*Out\[(\d+)\](\/\/\w+)?=\s*/;
 const SYNTAX_ERROR_RE = /^\s*(Syntax::.*)/;
 
+const SERVER_NOT_RUNNING_PROMISE = Promise.reject(new Error("WolframScript not started."));
+
 // Globals
 
 let gChildProcess: ChildProcess;
 
+// The 'execute' function waits for this promise to resolve before attempting to
+// send anything to WolframScript.
+let gExecutingPromise: Promise<WolframData> = Promise.resolve('');
+
+// This promise will be overwritten by the promise returned from the 'start' function.
+let gServerRunningPromise: Promise<void> = SERVER_NOT_RUNNING_PROMISE;
+
 // Exported functions
 
 export async function execute(command: WolframData): Promise<WolframData> {
-  // TODO: reject if server not started.
-  //console.log(`WolframScript: executing: ${command}`);
-  return new Promise((resolve, reject)=>{
+  await gServerRunningPromise;
+  await gExecutingPromise;
+  gExecutingPromise = new Promise((resolve, reject)=>{
+    //console.log(`WolframScript: executing: ${command}`);
     gChildProcess.stdin!.write(command + '\n');
     let results = '';
     const stdoutListener = (data: Buffer)=>{
@@ -83,10 +93,11 @@ export async function execute(command: WolframData): Promise<WolframData> {
     };
     gChildProcess.stdout!.on('data', stdoutListener)
   });
+  return gExecutingPromise;
 }
 
 export async function start(): Promise<void> {
-  return new Promise((resolve, reject)=>{
+  gServerRunningPromise = new Promise((resolve, reject)=>{
     const child = gChildProcess = spawn(WOLFRAMSCRIPT_PATH);
 
     const errorListener = (err: Error)=>{
@@ -119,6 +130,7 @@ export async function start(): Promise<void> {
     child.stdout.on('data', stdoutListener);
     child.stderr.on('data', stderrListener);
   });
+  return gServerRunningPromise;
 }
 
 export async function stop(): Promise<void> {
