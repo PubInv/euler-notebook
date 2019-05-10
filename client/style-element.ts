@@ -123,7 +123,7 @@ function renderMathJsStyle(style: StyleObject): Html {
 
 function renderMathMlStyle(style: StyleObject): Html {
   console.dir(style.data);
-  return `<div><pre>${escapeHtml(style.data)}</pre></div>`;
+  return `<div><i>MathML data</i></div>`;
 }
 
 function renderOtherStyle(style: StyleObject): Html {

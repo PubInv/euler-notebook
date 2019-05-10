@@ -33,6 +33,10 @@ import { Jiix, LatexData, MathMlData, StyleType, ThoughtProperties, StylePropert
 
 type InputMethod = 'Math'|'Keyboard'|'Text';
 
+// Constants
+
+const INITIAL_INPUT_METHOD: InputMethod = 'Math';
+
 // Global Variables
 
 let gSocket: ServerSocket;
@@ -65,7 +69,7 @@ async function onDomReady(_event: Event){
     $('#clearButton').addEventListener<'click'>('click', _event=>gEditor && gEditor.clear());
     $('#convertButton').addEventListener<'click'>('click', _event=>gEditor && gEditor.convert());
 
-    switchInput('Keyboard');
+    switchInput(INITIAL_INPUT_METHOD);
 
     // Make websocket connection to the notebook.
     const wsUrl = `ws://${window.location.host}/`;
@@ -99,11 +103,14 @@ function onInsertButtonClicked(_event: Event) {
     switch(gInputMethod) {
     case 'Math': {
       const editor = gEditor; // TODO: grab from DOM.editor instead
-      if (!editor) { throw new Error(); }
-      console.dir(editor.exports);
-      const jiix: Jiix = editor.exports && editor.exports['application/vnd.myscript.jiix'];
-      const latex: LatexData = editor.exports && editor.exports['application/x-latex'];
-      const mathMl: MathMlData = editor.exports && editor.exports['application/mathml+xml'];
+      if (!editor) { throw new Error("Inserting math with no MyScript editor."); }
+      const edExports = editor.exports;
+      if (!edExports) { throw new Error("MyScript math editor has no exports."); }
+      const jiix: Jiix = edExports['application/vnd.myscript.jiix'];
+      const latex: LatexData = edExports['application/x-latex'];
+      const mathMl: MathMlData = edExports['application/mathml+xml'];
+      if (!jiix || !latex || !mathMl) { throw new Error("Missing export from MyScript math editor."); }
+      console.dir(mathMl);
       const thoughtProps: ThoughtProperties = {};
       const stylePropss: StyleProperties[] = [
         { type: 'JIIX', data: jiix, meaning: 'INPUT', source: 'USER' },
