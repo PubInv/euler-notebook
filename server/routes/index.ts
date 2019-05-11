@@ -22,7 +22,8 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 import { join } from 'path';
 
 import * as debug1 from 'debug';
-const debug = debug1('server:index');
+const MODULE = __filename.split('/').slice(-1)[0].slice(0,-3);
+const debug = debug1(`server:${MODULE}`);
 
 import { NextFunction, Request, Response, Router } from 'express';
 

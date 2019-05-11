@@ -20,11 +20,13 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 // Requirements
 
 import * as debug1 from 'debug';
-const debug = debug1('server:quad-plotter');
+const MODULE = __filename.split('/').slice(-1)[0].slice(0,-3);
+const debug = debug1(`server:${MODULE}`);
 
 import { NotebookChange, StyleObject } from '../client/math-tablet-api';
 import { TDoc  } from './tdoc';
 import { execute } from './wolframscript';
+import { runAsync } from './common';
 
 // Exports
 
@@ -41,8 +43,7 @@ export async function initialize(): Promise<void> {
 function onChange(tDoc: TDoc, change: NotebookChange): void {
   switch (change.type) {
   case 'styleInserted':
-    quadPlotterRule(tDoc, change.style).catch(
-      (err)=>{ console.error(`Error applying mathMathematicaRule: ${err.message}`); });
+    runAsync(quadPlotterRule(tDoc, change.style), MODULE, 'quadPlotterRule');
     break;
   default: break;
   }

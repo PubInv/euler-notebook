@@ -20,7 +20,8 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 // Requirements
 
 import * as debug1 from 'debug';
-const debug = debug1('server:mathjs-cas');
+const MODULE = __filename.split('/').slice(-1)[0].slice(0,-3);
+const debug = debug1(`server:${MODULE}`);
 import * as math from 'mathjs';
 
 import { LatexData, MathJsData, NotebookChange, StyleObject } from '../client/math-tablet-api';
