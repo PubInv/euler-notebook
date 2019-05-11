@@ -87,7 +87,7 @@ async function addSymbolDefStyles(tDoc: TDoc, style: StyleObject): Promise<void>
       const newStyle = tDoc.insertStyle(style, styleProps);
       debug(`Inserting def style: ${JSON.stringify(newStyle)}`);
 
-      // Add any symboldependency relationships as a result of the new symbol-def style
+      // Add any symbol-dependency relationships as a result of the new symbol-def style
       for (const otherStyle of tDoc.getStyles()) {
         if (otherStyle.id == newStyle.id) { continue; }
         if (otherStyle.type == 'SYMBOL' &&
@@ -105,8 +105,8 @@ async function addSymbolUseStyles(tDoc: TDoc, style: StyleObject): Promise<void>
   const script = `Variables[${style.data}]`;
   const result = await execute(script);
   if (!result) { return; }
-  const trimmed = result.replace(/{|}/g,'');
-  const symbols = trimmed.split(',').filter( s => !!s);
+  // TODO: validate return value is in expected format with regex.
+  const symbols = result.slice(1,-1).split(', ').filter( s => !!s)
   symbols.forEach(s => {
 
     // Add the symbol-use style
@@ -115,7 +115,7 @@ async function addSymbolUseStyles(tDoc: TDoc, style: StyleObject): Promise<void>
     const newStyle = tDoc.insertStyle(style, styleProps);
     debug(`Inserting use style: ${JSON.stringify(newStyle)}`);
 
-    // Add any symboldependency relationships as a result of the new symbol-use style
+    // Add any symbol-dependency relationships as a result of the new symbol-use style
     for (const otherStyle of tDoc.getStyles()) {
       if (otherStyle.id == newStyle.id) { continue; }
       if (otherStyle.type == 'SYMBOL' &&
