@@ -22,7 +22,8 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 import { EventEmitter } from 'events';
 
 import * as debug1 from 'debug';
-const debug = debug1('server:tdoc');
+const MODULE = __filename.split('/').slice(-1)[0].slice(0,-3);
+const debug = debug1(`server:${MODULE}`);
 
 import { NotebookChange, NotebookPath, StyleObject, StyleMeaning, StyleType, TDocObject, ThoughtObject, ThoughtId, StyleId, StyleProperties, ThoughtProperties, RelationshipObject, StylableId, RelationshipProperties, RelationshipId } from '../client/math-tablet-api';
 import { readNotebookFile, writeNotebookFile, AbsDirectoryPath, absDirPathFromNotebookPath } from './files-and-folders';
@@ -68,7 +69,7 @@ export class TDoc extends EventEmitter {
   }
 
   public static async closeAll(): Promise<void> {
-    debug(`TDoc: closing all: ${this.tDocs.size}`);
+    debug(`closing all: ${this.tDocs.size}`);
     const tDocs = Array.from(this.tDocs.values());
     const promises = tDocs.map(td=>td.close());
     await Promise.all(promises);
@@ -193,7 +194,7 @@ export class TDoc extends EventEmitter {
 
   public async close(): Promise<void> {
     if (this._closed) { throw new Error("Closing TDoc that is already closed."); }
-    debug(`TDoc: closing: ${this._path}`);
+    debug(`closing: ${this._path}`);
     this._closed = true;
     if (!this._options.anonymous) { TDoc.tDocs.delete(this._path); }
     this.emit('close');
@@ -204,7 +205,7 @@ export class TDoc extends EventEmitter {
       delete this._saveTimeout;
       await this.save();
     }
-    debug(`TDoc: closed: ${this._path}`);
+    debug(`closed: ${this._path}`);
   }
 
   // Deletes the specified relationship.
@@ -252,7 +253,7 @@ export class TDoc extends EventEmitter {
   ): RelationshipObject {
     this.assertNotClosed('insertRelationship');
     const relationship: RelationshipObject = { ...props, id: this.nextId++, sourceId: source.id, targetId: target.id };
-    debug(`TDoc: inserting relationship ${JSON.stringify(relationship)}`)
+    debug(`inserting relationship ${JSON.stringify(relationship)}`)
     this.relationships.push(relationship);
     const change: NotebookChange = { type: 'relationshipInserted', relationship };
     this.notifyChange(change);
@@ -263,7 +264,7 @@ export class TDoc extends EventEmitter {
     this.assertNotClosed('insertStyle');
     const style: StyleObject = { ...props, id: this.nextId++, stylableId: stylable.id };
     const styleMinusData = { ...style, data: '...' };
-    debug(`TDoc: inserting style ${JSON.stringify(styleMinusData)}`)
+    debug(`inserting style ${JSON.stringify(styleMinusData)}`)
     this.styles.push(style);
     const change: NotebookChange = { type: 'styleInserted', style: style };
     this.notifyChange(change);
@@ -273,7 +274,7 @@ export class TDoc extends EventEmitter {
   public insertThought(props: ThoughtProperties): ThoughtObject {
     this.assertNotClosed('insertThought');
     const thought: ThoughtObject = { ...props, id: this.nextId++ };
-    debug(`TDoc: inserting thought ${JSON.stringify(thought)}`)
+    debug(`inserting thought ${JSON.stringify(thought)}`)
     this.thoughts.push(thought);
     const change: NotebookChange = { type: 'thoughtInserted', thought: thought };
     this.notifyChange(change);
@@ -425,17 +426,17 @@ export class TDoc extends EventEmitter {
   // notifyChange will call this method if the TDoc is persistent.
   private scheduleSave(): void {
     if (this._saveTimeout) {
-      debug(`TDoc: postponing save timeout: ${this._path}`);
+      debug(`postponing save timeout: ${this._path}`);
       clearTimeout(this._saveTimeout);
     } else {
-      debug(`TDoc: scheduling save timeout: ${this._path}`);
+      debug(`scheduling save timeout: ${this._path}`);
     }
     this._saveTimeout = setTimeout(async ()=>{
       delete this._saveTimeout;
       try {
         await this.save();
       } catch(err) {
-        console.error(`TDoc: error saving ${this._path}: ${err.message}`);
+        console.error(`ERROR ${MODULE}: error saving ${this._path}: ${err.message}`);
         // TODO: What else should we do besides log an error?
       }
     }, SAVE_TIMEOUT_MS);
@@ -447,7 +448,7 @@ export class TDoc extends EventEmitter {
   private async save(): Promise<void> {
     // TODO: Handle this in a more robust way.
     if (this._saving) { throw new Error(`Taking longer that ${SAVE_TIMEOUT_MS}ms to save.`); }
-    debug(`TDoc: saving ${this._path}`);
+    debug(`saving ${this._path}`);
     this._saving = true;
     const json = JSON.stringify(this);
     await writeNotebookFile(this._path, json);

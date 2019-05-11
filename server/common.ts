@@ -20,7 +20,17 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 // BE VERY SPARING OF WHAT YOU PUT IN HERE!
 // THIS SHOULD *NOT* DEPEND ON OTHER FILES OR LIBRARIES!
 
+// Types
+
 export interface PromiseResolver<T> {
   resolve: (s: T)=>void;
   reject: (err: Error)=>void
+}
+
+// Exported Functions
+
+// If the promise fails, then log the error, but otherwise continue. 
+export function runAsync<T>(promise: Promise<T>, module: string, functionName: string): void {
+  promise.catch((err: Error)=>console.error(`ERROR ${module}: Unexpected error in ${functionName}: ${err.message}`));
+
 }
