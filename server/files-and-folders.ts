@@ -24,7 +24,8 @@ import { join } from 'path';
 import { promisify } from 'util';
 
 import * as debug1 from 'debug';
-const debug = debug1('server:files-and-folders');
+const MODULE = __filename.split('/').slice(-1)[0].slice(0,-3);
+const debug = debug1(`server:${MODULE}`);
 import * as rimraf from 'rimraf';
 
 import { NotebookName, NotebookPath, MyScriptServerKeys } from '../client/math-tablet-api';

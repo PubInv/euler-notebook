@@ -20,11 +20,13 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 // Requirements
 
 import * as debug1 from 'debug';
-const debug = debug1('server:quad-classifier');
+const MODULE = __filename.split('/').slice(-1)[0].slice(0,-3);
+const debug = debug1(`server:${MODULE}`);
 
 import { NotebookChange, StyleObject, RelationshipObject } from '../client/math-tablet-api';
 import { TDoc } from './tdoc';
 import { execute } from './wolframscript';
+import { runAsync } from './common';
 
 // Exports
 
@@ -41,12 +43,10 @@ export async function initialize(): Promise<void> {
 function onChange(tDoc: TDoc, change: NotebookChange): void {
   switch (change.type) {
   case 'styleInserted':
-    quadClassifierRule(tDoc, change.style)
-      .catch(e => console.error("Internal Error on styleInserted:",e));
+    runAsync(quadClassifierRule(tDoc, change.style), MODULE, 'quadClassifierRule');
     break;
   case 'relationshipInserted':
-    quadClassifierChangedRule(tDoc, change.relationship)
-      .catch(e => console.error("Internal Error on relationshipInserted:",e));
+    runAsync(quadClassifierChangedRule(tDoc, change.relationship), MODULE, 'quadClassifierChangedRule');
     break;
   default: break;
   }

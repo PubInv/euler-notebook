@@ -26,7 +26,8 @@ import * as  createError from 'http-errors';
 import * as express from 'express';
 import * as cookieParser from 'cookie-parser';
 import * as debug1 from 'debug';
-const debug = debug1('server:app');
+const MODULE = __filename.split('/').slice(-1)[0].slice(0,-3);
+const debug = debug1(`server:${MODULE}`);
 import * as morgan from 'morgan';
 import { middleware as stylusMiddleware } from 'stylus';
 
@@ -34,10 +35,8 @@ import { initialize as initializeMathematicaCas } from './mathematica-cas';
 import { initialize as initializeMathJsCas } from './mathjs-cas';
 import { initialize as initializeMathStepsCas } from './math-steps-cas';
 import { initialize as initializeQuadClassifier } from './quad-classifier';
-import { initialize as initializeSymDefClassifier } from './sym-def-classifier';
-import { initialize as initializeSymUseClassifier } from './sym-use-classifier';
+import { initialize as initializeSymbolClassifier } from './symbol-classifier';
 import { initialize as initializeQuadPlotter } from './quad-plotter';
-import { initialize as initializeSymbolDependencyBuilder } from './symbol-dependency-builder';
 import { start as startWolframscript } from './wolframscript';
 import { ClientSocket } from './client-socket';
 import { rootDir as notebookRootDir } from './files-and-folders';
@@ -66,10 +65,8 @@ async function main() {
     initializeMathJsCas(),
     initializeMathStepsCas(),
     initializeQuadClassifier(),
-    initializeSymDefClassifier(),
-    initializeSymUseClassifier(),
+    initializeSymbolClassifier(),
     initializeQuadPlotter(),
-    initializeSymbolDependencyBuilder(),
   ]);
 
   const app: express.Express = express();
@@ -124,11 +121,11 @@ async function main() {
     var bind = (typeof port === 'string' ? 'Pipe ' + port : 'Port ' + port);
     switch ((<any>error).code) {
       case 'EACCES':
-        console.error(`ERROR: ${bind} requires elevated privileges`);
+        console.error(`ERROR ${MODULE}: ${bind} requires elevated privileges`);
         process.exit(1);
         break;
       case 'EADDRINUSE':
-        console.error(`ERROR: ${bind} is already in use`);
+        console.error(`ERROR ${MODULE}: ${bind} is already in use`);
         process.exit(1);
         break;
       default:
@@ -147,5 +144,5 @@ async function main() {
 
 main().then(
   ()=>{   debug("Main promise resolved."); },
-  (err)=>{ console.error(`Error initializing app: ${err.message}`); },
+  (err)=>{ console.error(`ERROR ${MODULE}: Error initializing app: ${err.message}`); },
 );

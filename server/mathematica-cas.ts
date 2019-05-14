@@ -20,13 +20,15 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 // Requirements
 
 import * as debug1 from 'debug';
-const debug = debug1('server:mathematica-cas');
+const MODULE = __filename.split('/').slice(-1)[0].slice(0,-3);
+const debug = debug1(`server:${MODULE}`);
 
 // import { MthMtcaText } from '../client/math-tablet-api';
 import { StyleObject, NotebookChange } from '../client/math-tablet-api';
 import { TDoc } from './tdoc';
 import { execute } from './wolframscript';
 import * as fs from 'fs';
+import { runAsync } from './common';
 
 // Exports
 
@@ -43,10 +45,8 @@ export async function initialize(): Promise<void> {
 function onChange(tDoc: TDoc, change: NotebookChange): void {
   switch (change.type) {
   case 'styleInserted':
-    mathMathematicaRule(tDoc, change.style)
-    .catch((err)=>{ console.error(`Error applying mathMathematicaRule: ${err.message}`); });
-    convertMathMlToWolframRule(tDoc, change.style)
-    .catch((err)=>{ console.error(`Error applying convertMathMlToWolframRule: ${err.message}`); });
+    runAsync(mathMathematicaRule(tDoc, change.style), MODULE, 'mathMathematicaRule');
+    runAsync(convertMathMlToWolframRule(tDoc, change.style), MODULE, 'convertMathMlToWolframRule');
     break;
   default: break;
   }

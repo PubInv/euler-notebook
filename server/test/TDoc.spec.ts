@@ -20,7 +20,8 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 // Requirements
 
 import * as debug1 from 'debug';
-const debug = debug1('server:tdoc.spec');
+const MODULE = __filename.split('/').slice(-1)[0].slice(0,-3);
+const debug = debug1(`server:${MODULE}`);
 
 import { TDoc }  from '../tdoc';
 import { mathSimplifyRule }  from '../mathjs-cas';

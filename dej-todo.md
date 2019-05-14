@@ -1,8 +1,8 @@
 
-* Deleting notebooks and folders from the folder page.
-* Socket and TDoc lifecycle. 
-* Wolfram Alph CAS
-* OEIS CAS
+* MyScript MathML to Wolfram conversion issues
+* More efficient TDoc data structures
+* Socket and TDoc lifecycle
+* Show original math handwriting in notebook if user wants
 * Drawings
 * Ordering/positioning of thoughts
 * Draggable/zoomable canvas
