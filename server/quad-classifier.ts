@@ -150,6 +150,20 @@ export async function quadClassifierChangedRule(_tdoc: TDoc, relationship: Relat
 
   if (relationship.meaning != 'SYMBOL-DEPENDENCY') return;
 
+  debug("RELATIONSHIP",relationship);
+
+//  const target_ancestor = tdoc.getAncestorThought(relationship.targetId);
+
+  // now we want to find any potentially (re)classifiable style on
+  // this ancestor thought...
+
+  //  const candidate_style =
+
+//        tdoc.findChildStyleOfType(target_ancestor.id,'MATHEMATICA','EVALUATION');
+
+ // debug(tdoc.stylableHasChildOfType())
+
+
 
   // We want to find the style which may need to be classified..
 

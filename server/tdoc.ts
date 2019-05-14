@@ -166,6 +166,34 @@ export class TDoc extends EventEmitter {
                             (!meaning || s.meaning == meaning));
   }
 
+  // find all children of given type and meaning
+  public findChildStyleOfType(id: StylableId, tname: StyleType, meaning?: StyleMeaning): StyleObject[] {
+    // we will count ourselves as a child here....
+    const s = this.getStylable(id);
+    if (!s) return [];
+    var matching = [];
+    if (s && 'type' in s) {
+      // if null, this is a Thought, so not a Style...
+      if (s && s.type == tname && s.meaning == meaning) {
+        // we match, so we add ourselves...
+        matching.push(<StyleObject>s);
+      }
+    }
+
+    // DANGER! this makes this function asymptotic quadratic or worse...
+    const kids = this.styles.filter(s => s.stylableId == id);
+    // now for each kid, recurse...
+    if (kids) {
+      for(let k of kids) {
+        const kmatch = this.findChildStyleOfType(k.id,tname,meaning);
+        for(let km of kmatch) {
+          matching.push(km);
+        }
+      }
+    }
+    return matching;
+  }
+
   public summaryPrinter(): string {
     var numLatex = this.numStyles('LATEX');
     var numMath = this.numStyles('MATHJS');
