@@ -27,6 +27,7 @@ const debug = debug1(`server:${MODULE}`);
 import { StyleObject, NotebookChange } from '../client/math-tablet-api';
 import { TDoc } from './tdoc';
 import { execute } from './wolframscript';
+import { draftChangeContextName } from './wolframscript';
 import * as fs from 'fs';
 import { runAsync } from './common';
 
@@ -60,45 +61,20 @@ function onOpen(tDoc: TDoc): void {
   debug(`Mathematica: tDoc open: ${tDoc._path}`);
 }
 
-// var child_process = require('child_process');
-
-// var child = child_process.spawn('/usr/local/bin/wolframscript');
-
-// child.stdout.once('data',
-//          (data: string) => {
-//            debug("INITIAL PIPE RESPONSE",data.toString());
-//              })
-
-// child.stdin.write('Print["hello"]\n');
-
 async function evaluateExpressionPromiseWS(expr: string) : Promise<string> {
   debug("INSIDE EVALUATE WS",expr);
-  let result : string = await execute("InputForm["+expr+"]");
+  // WARNING! This works to make definitions private
+  // from wolframscript, but not when executed here!?!
+  //  let result : string = await execute("InputForm[runPrivate["+expr+"]]");
+  let result : string = await execute("runPrivate["+expr+"]");
   debug("RESULT FROM WS",result);
   return result;
-  // return new Promise(function(resolve,reject) {
-  //   child.stdout.once('data',
-  //                     (data: string) => {
-  //                       try {
-  //                         var ret_text = data.toString();
-  //                         debug("DATA",ret_text);
-  //                         // Typical response: Out[2]= 7. In[3]:=
-  //                         const regex = /([\.\w]+)\[\d+\]\=\s([\.\w]+)/g;
-  //                         const found : string[] | null =
-  //                               regex.exec(ret_text);
-  //                         debug("FOUND :",found);
-  //                         const result = found && found[2];
-  //                         debug("Result :",result);
-  //                         if (found)
-  //                           resolve(found[2]);
-  //                         else
-  //                           reject(new Error("unexpected null from wolframscript"));
-  //                       } catch (e) {
-  //                         reject(e);
-  //                       }});
-  //   child.stdin.write(expr+"\n");
-  // });
 }
+
+// const OUR_PRIVATE_CTX_NAME = "runPrv`";
+// function draftChangeContextName(expr,ctx = OUR_PRIVATE_CTX_NAME) {
+//   return expr.replace(ctx,'');
+// }
 
 // REVIEW: Caller doesn't do anything with the return value. Does not need to return a value.
 // REVIEW: This does not need to be exported, as it does not occur anywhere else in the source.
@@ -114,7 +90,10 @@ export async function mathMathematicaRule(tdoc: TDoc, style: StyleObject): Promi
   try {
     //    assoc = await evaluateExpressionPromiseWS(style.data);
     assoc = await evaluateExpressionPromiseWS(style.data);
+
     debug("ASSOC RETURNED",assoc,assoc.toString());
+    assoc = draftChangeContextName(assoc);
+    debug("After context switch",assoc,assoc.toString());
   } catch (e) {
     debug("MATHEMATICA EVALUATION FAILED :",e);
     assoc = null;

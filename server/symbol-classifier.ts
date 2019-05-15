@@ -26,6 +26,7 @@ const debug = debug1(`server:${MODULE}`);
 import { NotebookChange, StyleObject, StyleProperties, SymbolData, WolframData } from '../client/math-tablet-api';
 import { TDoc } from './tdoc';
 import { execute as executeWolframscript } from './wolframscript';
+import { draftChangeContextName } from './wolframscript';
 import { runAsync } from './common';
 
 // Exports
@@ -44,7 +45,7 @@ function onChange(tDoc: TDoc, change: NotebookChange): void {
   switch (change.type) {
   case 'styleInserted': {
     const style = change.style;
-    if (style.type == 'WOLFRAM' && style.meaning == 'INPUT') { 
+    if (style.type == 'WOLFRAM' && style.meaning == 'INPUT') {
       runAsync<void>(addSymbolUseStyles(tDoc, style), MODULE, 'addSymbolUseStyles');
       runAsync<void>(addSymbolDefStyles(tDoc, style), MODULE, 'addSymbolDefStyles');
     }
@@ -68,6 +69,8 @@ async function execute(script: WolframData): Promise<WolframData|undefined> {
 }
 
 async function addSymbolDefStyles(tDoc: TDoc, style: StyleObject): Promise<void> {
+
+  // TODO: This (inappropriately, IMHO) sets the variable in the kernel
   const script = `FullForm[Hold[${style.data}]]`;
   const result = await execute(script);
   if (!result) { return; }
@@ -102,9 +105,13 @@ async function addSymbolDefStyles(tDoc: TDoc, style: StyleObject): Promise<void>
 }
 
 async function addSymbolUseStyles(tDoc: TDoc, style: StyleObject): Promise<void> {
-  const script = `Variables[${style.data}]`;
-  const result = await execute(script);
-  if (!result) { return; }
+  const script = `runPrivate[Variables[${style.data}]]`;
+  const oresult = await execute(script);
+  if (!oresult) { return; }
+  debug("BEFORE: "+oresult);
+  const result = draftChangeContextName(oresult);
+  debug("CONTEXT REMOVED: "+result);
+
   // TODO: validate return value is in expected format with regex.
   const symbols = result.slice(1,-1).split(', ').filter( s => !!s)
   symbols.forEach(s => {

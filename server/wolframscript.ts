@@ -115,7 +115,7 @@ export async function stop(): Promise<void> {
     const child = gChildProcess;
     child.once('error', (err: Error)=>{ reject(err); });
     // REVIEW: should we wait for 'close', too?
-    child.once('exit', (_code: number, _signal: string)=>{ 
+    child.once('exit', (_code: number, _signal: string)=>{
       resolve();
       gServerStartingPromise = undefined;
       gServerStoppingPromise = undefined;
@@ -169,10 +169,17 @@ function executeNow(command: WolframData, resolve: (data: string)=>void, reject:
   }
 
   gChildProcess.stdout!.on('data', stdoutListener)
-  //debug(`WolframScript: executing: ${command}`);
+  debug(`WolframScript: executing: ${command}`);
   gChildProcess.stdin!.write(command + '\n');
 }
 
 function showInvisible(s: string): string {
   return s.replace(/\n/g, '\\n').replace(/\r/g, '\\r').replace(/\t/g, '\\t');
+}
+
+
+const OUR_PRIVATE_CTX_NAME = "runPrv`";
+export function draftChangeContextName(expr: string,_ctx = OUR_PRIVATE_CTX_NAME) {
+  // figure out how to make this a variable
+  return expr.replace(/runPrv`/g,'');
 }

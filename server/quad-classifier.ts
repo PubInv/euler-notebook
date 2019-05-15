@@ -66,7 +66,10 @@ async function isExpressionPlottableQuadratic(expr : string,
                                               usedSymbols: StyleObject[])
 : Promise<string|null> {
 
-  const quadratic_function_script = `With[{v = Variables[#]},If[Exponent[#, v[[1]]] == 2 && Length[v] == 1, v[[1]], False]]`;
+  // Note: Int he function below, I don't now why the second
+  // [[1]] is needed; it appears that # is treated differently than
+  // a literal?
+  const quadratic_function_script = `With[{v = Variables[#]},If[(Length[v] == 1) && (Part[Exponent[#, v[[1]]],1] == 2), v[[1]], False]]`;
 
   // now we construct the expr to include known
   // substitutions of symbols....
@@ -80,8 +83,9 @@ async function isExpressionPlottableQuadratic(expr : string,
   } else {
     sub_expr = expr;
   }
-  debug("EXPRESSION TO CLASSIFY: ",sub_expr );
+  sub_expr = "runPrivate[" + sub_expr + "]";
   const script = quadratic_function_script+" &[" + sub_expr + "]";
+  debug("EXPRESSION FOR CLASSIFIFYING: ",script );
   let result : string = await execute(script);
   return (result == "False") ? null : result;
 }
@@ -146,50 +150,62 @@ export async function quadClassifierRule(tdoc: TDoc, style: StyleObject): Promis
   }
   return styles;
 }
-export async function quadClassifierChangedRule(_tdoc: TDoc, relationship: RelationshipObject): Promise<void> {
+export async function quadClassifierChangedRule(tdoc: TDoc, relationship: RelationshipObject): Promise<void> {
 
   if (relationship.meaning != 'SYMBOL-DEPENDENCY') return;
 
   debug("RELATIONSHIP",relationship);
 
-//  const target_ancestor = tdoc.getAncestorThought(relationship.targetId);
+  const target_ancestor = tdoc.getAncestorThought(relationship.targetId);
+
+  if (target_ancestor == null) {
+    throw new Error("Could not find ancestor Thought: "+relationship.targetId);
+  }
 
   // now we want to find any potentially (re)classifiable style on
   // this ancestor thought...
 
-  //  const candidate_style =
+  const candidate_styles =
+        tdoc.findChildStyleOfType(target_ancestor.id,'MATHEMATICA','EVALUATION');
+  debug(candidate_styles);
+  // Not really sure what to do here if there is more than one!!!
 
-//        tdoc.findChildStyleOfType(target_ancestor.id,'MATHEMATICA','EVALUATION');
+  const beforeChangeClassifiedAsQuadratic = tdoc.stylableHasChildOfType(candidate_styles[0],'CLASSIFICATION','QUADRATIC');
+  debug(beforeChangeClassifiedAsQuadratic);
 
- // debug(tdoc.stylableHasChildOfType())
+  // Now it is possible that any classifications need to be removed;
+  // it is also possible that that a new classification should be added.
 
+  // A simple thing would be to rmove all classifications and regenerate.
+  // However, we want to be as minimal as possible. I think we shold distinguish
+  // the case: Either we are adding a QUADRATIC, or disqalifying one.
+  // So we should just check if this EVALAUTION is plottable. If so, we
+  // should make sure one exists, by adding a CLASSIFICATION if it does not.
+  // if one does exist, we whold remove it if we are not.
+  const unique_style = candidate_styles[0];
 
+  var isPlottableQuadratic;
+  try {
+    // here I attempt to find the dependency relationships....
+    const rs = getSymbolStylesIDependOn(tdoc,unique_style);
+    debug("RS ",rs);
+    // Now each member of rs should have a name and a value
+    // that we should use in our quadratic classification....
+    isPlottableQuadratic = await isExpressionPlottableQuadratic(unique_style.data,rs);
+     debug("QUAD CLASSIFER SAYS:",isPlottableQuadratic);
+  } catch (e) {
+    debug("MATHEMATICA EVALUATION FAILED :",e);
+  }
+  if (isPlottableQuadratic && !beforeChangeClassifiedAsQuadratic) {
+    tdoc.insertStyle(unique_style, { type: 'CLASSIFICATION',
+                                           data: isPlottableQuadratic,
+                                           meaning: 'QUADRATIC',
+                                           source: 'MATHEMATICA' });
 
-  // We want to find the style which may need to be classified..
-
-
-  // var isPlottableQuadratic;
-  // try {
-  //   // here I attempt to find the dependency relationships....
-  //   const rs = getSymbolStylesIDependOn(tdoc,style);
-  //   console.log("RS ",rs);
-  //   // Now each member of rs should have a name and a value
-  //   // that we should use in our quadratic classification....
-  //   isPlottableQuadratic = await isExpressionPlottableQuadratic(style.data,rs);
-  //   // console.log("QUAD CLASSIFER SAYS:",isPlottableQuadratic);
-  // } catch (e) {
-  //   console.error("MATHEMATICA EVALUATION FAILED :",e);
-  //   return [];
-  // }
-
-  // var styles = [];
-  // if (isPlottableQuadratic) {
-  //   var classification = tdoc.insertStyle(style, { type: 'CLASSIFICATION',
-  //                                          data: isPlottableQuadratic,
-  //                                          meaning: 'QUADRATIC',
-  //                                          source: 'MATHEMATICA' });
-
-  //   styles.push(classification);
-  // }
-  //  return styles;
+  }
+  if (!isPlottableQuadratic && beforeChangeClassifiedAsQuadratic) {
+    const classifcations =
+          tdoc.findChildStyleOfType(target_ancestor.id,'CLASSIFICATION','QUADRATIC');
+    tdoc.deleteStyle(classifcations[0].id);
+  }
 }

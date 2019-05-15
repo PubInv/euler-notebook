@@ -37,7 +37,9 @@ import { initialize as initializeMathStepsCas } from './math-steps-cas';
 import { initialize as initializeQuadClassifier } from './quad-classifier';
 import { initialize as initializeSymbolClassifier } from './symbol-classifier';
 import { initialize as initializeQuadPlotter } from './quad-plotter';
+
 import { start as startWolframscript } from './wolframscript';
+import { execute as executeWolframscript } from './wolframscript';
 import { ClientSocket } from './client-socket';
 import { rootDir as notebookRootDir } from './files-and-folders';
 
@@ -51,6 +53,18 @@ function normalizePort(val: string): string|number|boolean {
   if (isNaN(port)) { /* named pipe */ return val; }
   if (port >= 0) { /* port number */ return port; }
   return false;
+}
+
+// TODO: at least the text of this should be retrieved from the wolframscript module!!
+async function defineRunPrivate() : Promise<void> {
+
+  // Create a promise for the next 'execute' invocation to wait on.
+  // our execute function apparently can't yet handle multline scripts...
+  // Also, our execute codes expects something to be returned, so I addded
+  // a dummy return value
+  var defRunPrivateScript = 'SetAttributes[runPrivate, HoldAllComplete]; runPrivate[code_] := With[{body = MakeBoxes@code},  Block[{$ContextPath = {"System`"}, $Context = "runPrv`"}, Global`xxx = ToExpression@body;  Clear["runPrv`*"]; Global`xxx]]; 4+5';
+  debug(defRunPrivateScript);
+  await executeWolframscript(defRunPrivateScript);
 }
 
 // Application Entry Point
@@ -140,9 +154,14 @@ async function main() {
   });
 
   ClientSocket.initialize(server);
+
+  await defineRunPrivate();
+
+
 }
 
 main().then(
-  ()=>{   debug("Main promise resolved."); },
+  ()=>{   debug("Main promise resolved.");
+      },
   (err)=>{ console.error(`ERROR ${MODULE}: Error initializing app: ${err.message}`); },
 );
