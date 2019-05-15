@@ -65,8 +65,7 @@ async function evaluateExpressionPromiseWS(expr: string) : Promise<string> {
   debug("INSIDE EVALUATE WS",expr);
   // WARNING! This works to make definitions private
   // from wolframscript, but not when executed here!?!
-  //  let result : string = await execute("InputForm[runPrivate["+expr+"]]");
-  let result : string = await execute("runPrivate["+expr+"]");
+  let result : string = await execute("InputForm[runPrivate["+expr+"]]");
   debug("RESULT FROM WS",result);
   return result;
 }

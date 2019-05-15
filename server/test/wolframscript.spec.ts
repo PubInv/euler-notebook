@@ -32,29 +32,41 @@ TODO: Additional Test cases
 
 // Requirements
 
-import { execute, start, stop } from '../wolframscript';
+import { execute, start, stop, defineRunPrivate } from '../wolframscript';
 
 // import { expect } from 'chai';
 import { assert } from 'chai';
 import 'mocha';
 
 const TEST_CASES = [
-  ['FullForm[Hold[y = 13]]',
-   'Hold[Set[y, 13]]'],
+  // ['FullForm[Hold[y = 13]]',
+  //  'Hold[Set[y, 13]]'],
 
-  ['N[Sqrt[3]]',
-   '1.73205'],
+  // ['N[Sqrt[3]]',
+  //  '1.73205'],
 
-  // Determining if an expression is a quadratic
-  ['With[{v = Variables[#]}, Exponent[#, v[[1]]] == 2 && Length[v] == 1] &[x^2 + x]',
-   'True'],
+  // // Determining if an expression is a quadratic
+  // ['With[{v = Variables[#]}, Exponent[#, v[[1]]] == 2 && Length[v] == 1] &[x^2 + x]',
+  //  'True'],
 
-  // Converting MathML to Wolfram expression.
-  ['InputForm[ToExpression[ImportString["<math xmlns=\'http://www.w3.org/1998/Math/MathML\'><msup><mrow><mi>x</mi></mrow><mrow><mn>2</mn></mrow></msup><mo>+</mo><mn>3</mn><mi>x</mi><mo>+</mo><mn>5</mn></math>", "MathML"]]]',
-   '5 + 3*x + x^2'],
+  // // Converting MathML to Wolfram expression.
+  // ['InputForm[ToExpression[ImportString["<math xmlns=\'http://www.w3.org/1998/Math/MathML\'><msup><mrow><mi>x</mi></mrow><mrow><mn>2</mn></mrow></msup><mo>+</mo><mn>3</mn><mi>x</mi><mo>+</mo><mn>5</mn></math>", "MathML"]]]',
+  //  '5 + 3*x + x^2'],
 
-  ['InputForm[x^3 + 3]',
-   '3 + x^3'],
+  // ['InputForm[x^3 + 3]',
+  //  '3 + x^3'],
+
+  // Here Rob attempts to test some of the runPrivate functionality
+//  ['runPrivate[InputForm[x^3 + 3]]',
+//   '3 + x^3'],
+  ['15 + 13',
+   '28'],
+  ['runPrivate[15 + 13]',
+   '28'],
+  ['InputForm[runPrivate[x^3 + x]]',
+   'runPrv`x + runPrv`x^3'],
+  ['runPrivate[With[{ v = Variables[#]},If[(Length[v] == 1) && (Exponent[#,v[[1]]] ==2),v[[1]],False]]]  &[x^2 + 5]',
+   'runPrv`x'],
 ];
 
 describe("wolframscript", function(){
@@ -64,6 +76,8 @@ describe("wolframscript", function(){
 
     before("starting", async function(){
       await start();
+
+      await defineRunPrivate();
       gWolframStarted = true;
     });
 

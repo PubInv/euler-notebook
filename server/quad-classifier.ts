@@ -69,7 +69,7 @@ async function isExpressionPlottableQuadratic(expr : string,
   // Note: Int he function below, I don't now why the second
   // [[1]] is needed; it appears that # is treated differently than
   // a literal?
-  const quadratic_function_script = `With[{v = Variables[#]},If[(Length[v] == 1) && (Part[Exponent[#, v[[1]]],1] == 2), v[[1]], False]]`;
+  const quadratic_function_script = `With[{v = Variables[#]},If[(Length[v] == 1) && (Exponent[#, v[[1]]] == 2), v[[1]], False]]`;
 
   // now we construct the expr to include known
   // substitutions of symbols....
@@ -83,8 +83,9 @@ async function isExpressionPlottableQuadratic(expr : string,
   } else {
     sub_expr = expr;
   }
-  sub_expr = "runPrivate[" + sub_expr + "]";
-  const script = quadratic_function_script+" &[" + sub_expr + "]";
+//  sub_expr = "runPrivate[" + sub_expr + "]";
+  const unwrapped_script = quadratic_function_script+" &[" + sub_expr + "]";
+  const script = "runPrivate[" + unwrapped_script + "]";
   debug("EXPRESSION FOR CLASSIFIFYING: ",script );
   let result : string = await execute(script);
   return (result == "False") ? null : result;
@@ -167,7 +168,7 @@ export async function quadClassifierChangedRule(tdoc: TDoc, relationship: Relati
 
   const candidate_styles =
         tdoc.findChildStyleOfType(target_ancestor.id,'MATHEMATICA','EVALUATION');
-  debug(candidate_styles);
+  debug("candidate styles",candidate_styles);
   // Not really sure what to do here if there is more than one!!!
 
   const beforeChangeClassifiedAsQuadratic = tdoc.stylableHasChildOfType(candidate_styles[0],'CLASSIFICATION','QUADRATIC');

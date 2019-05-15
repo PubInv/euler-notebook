@@ -134,6 +134,7 @@ function executeNow(command: WolframData, resolve: (data: string)=>void, reject:
     let dataString: string = data.toString();
     debug(`data: ${showInvisible(dataString)}`);
     results += dataString;
+    debug(`results: ${showInvisible(results)}`);
 
     // Once the results end with an input prompt, we have received the complete result.
     const inputPromptMatch = INPUT_PROMPT_RE.exec(results);
@@ -147,6 +148,7 @@ function executeNow(command: WolframData, resolve: (data: string)=>void, reject:
 
         // ... then fulfill with whatever came between the prompts.
         results = results.substring(outputPromptMatch![0].length, inputPromptMatch.index);
+        results = draftChangeContextName(results);
         debug(`Resolving: '${results}'`);
         resolve(results);
       } else {
@@ -172,6 +174,20 @@ function executeNow(command: WolframData, resolve: (data: string)=>void, reject:
   debug(`WolframScript: executing: ${command}`);
   gChildProcess.stdin!.write(command + '\n');
 }
+
+
+// TODO: at least the text of this should be retrieved from the wolframscript module!!
+export async function defineRunPrivate() : Promise<void> {
+
+  // Create a promise for the next 'execute' invocation to wait on.
+  // our execute function apparently can't yet handle multline scripts...
+  // Also, our execute codes expects something to be returned, so I addded
+  // a dummy return value
+  var defRunPrivateScript = 'SetAttributes[runPrivate, HoldAllComplete]; runPrivate[code_] := With[{body = MakeBoxes@code},  Block[{$ContextPath = {"System`"}, $Context = "runPrv`"}, Global`xxx = ToExpression@body;  Clear["runPrv`*"]; Global`xxx]]; 4+5';
+  debug(defRunPrivateScript);
+  await execute(defRunPrivateScript);
+}
+
 
 function showInvisible(s: string): string {
   return s.replace(/\n/g, '\\n').replace(/\r/g, '\\r').replace(/\t/g, '\\t');
