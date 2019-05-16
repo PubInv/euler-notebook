@@ -59,14 +59,22 @@ const TEST_CASES = [
   // Here Rob attempts to test some of the runPrivate functionality
 //  ['runPrivate[InputForm[x^3 + 3]]',
 //   '3 + x^3'],
-  ['15 + 13',
-   '28'],
-  ['runPrivate[15 + 13]',
-   '28'],
-  ['InputForm[runPrivate[x^3 + x]]',
-   'runPrv`x + runPrv`x^3'],
-  ['runPrivate[With[{ v = Variables[#]},If[(Length[v] == 1) && (Exponent[#,v[[1]]] ==2),v[[1]],False]]]  &[x^2 + 5]',
-   'runPrv`x'],
+  // ['15 + 13',
+  //  '28'],
+  // ['runPrivate[15 + 13]',
+  //  '28'],
+  // ['InputForm[runPrivate[x^3 + x]]',
+  //  'x + x^3'],
+  // ['runPrivate[With[{ v = Variables[#]},If[(Length[v] == 1) && (Exponent[#,v[[1]]] ==2),v[[1]],False]]]  &[x^2 + 5]',
+  //  'x'],
+  // ['runPrivate[With[{ v = Variables[#]},If[(Length[v] == 1) && (Exponent[#,v[[1]]] ==2),v[[1]],False]]]  &[x^2 + y + 5]',
+  //  'False'],
+  // ['runPrivate[With[{ v = Variables[#]},If[(Length[v] == 1) && (Exponent[#,v[[1]]] ==2),v[[1]],False]]]  &[x^2 + y * 3]',
+  //  'False'],
+  // ['runPrivate[With[{v = Variables[#]},If[(Length[v] == 1) && (Exponent[#, v[[1]]] == 2), v[[1]], False]] &[y /. { { y -> 4} }]]',
+  //  'False'],
+  ['runPrivate[With[{v = Variables[#]},If[(Length[v] == 1) && (Exponent[#, v[[1]]] == 2), v[[1]], False]] &[x^2 + 3*y /.  { y -> 4} ]]',
+   'x']
 ];
 
 describe("wolframscript", function(){

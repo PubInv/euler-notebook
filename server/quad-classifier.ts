@@ -25,7 +25,7 @@ const debug = debug1(`server:${MODULE}`);
 
 import { NotebookChange, StyleObject, RelationshipObject } from '../client/math-tablet-api';
 import { TDoc } from './tdoc';
-import { execute } from './wolframscript';
+import { execute, constructSubstitution } from './wolframscript';
 import { runAsync } from './common';
 
 // Exports
@@ -60,6 +60,7 @@ function onOpen(tDoc: TDoc): void {
   debug(`QuadClassifier: tDoc open: ${tDoc._path}`);
 }
 
+
 // Return "null" if it does not seem to be a quadratic, and the name
 // of the variable (which must be unique to pass this test) if it is.
 async function isExpressionPlottableQuadratic(expr : string,
@@ -70,20 +71,26 @@ async function isExpressionPlottableQuadratic(expr : string,
   // [[1]] is needed; it appears that # is treated differently than
   // a literal?
   const quadratic_function_script = `With[{v = Variables[#]},If[(Length[v] == 1) && (Exponent[#, v[[1]]] == 2), v[[1]], False]]`;
+  ;
+  const sub_expr =
+        constructSubstitution(expr,
+                              usedSymbols.map(
+                                s => ({ name: s.data.name,
+                                        value: s.data.value})));
+  // // now we construct the expr to include known
+  // // substitutions of symbols....
+  // const rules = usedSymbols.map(s => ` ${s.data.name} -> ${s.data.value}`);
+  // debug("SUBSTITUIONS RULES",rules);
+  // var sub_expr;
+  // if (rules.length > 0) {
+  //   const rulestring = rules.join(",");
+  //   debug("RULESTRING",rulestring);
+  //   sub_expr = expr + " /. " + "{ " + rulestring + " }";
+  // } else {
+  //   sub_expr = expr;
+  // }
+  // //  sub_expr = "runPrivate[" + sub_expr + "]";
 
-  // now we construct the expr to include known
-  // substitutions of symbols....
-  const rules = usedSymbols.map(s => `{ ${s.data.name} -> ${s.data.value}}`);
-  debug("SUBSTITUIONS RULES",rules);
-  var sub_expr;
-  if (rules.length > 0) {
-    const rulestring = rules.join(",");
-    debug("RULESTRING",rulestring);
-    sub_expr = expr + " /. " + "{ " + rulestring + " }";
-  } else {
-    sub_expr = expr;
-  }
-//  sub_expr = "runPrivate[" + sub_expr + "]";
   const unwrapped_script = quadratic_function_script+" &[" + sub_expr + "]";
   const script = "runPrivate[" + unwrapped_script + "]";
   debug("EXPRESSION FOR CLASSIFIFYING: ",script );
@@ -91,36 +98,6 @@ async function isExpressionPlottableQuadratic(expr : string,
   return (result == "False") ? null : result;
 }
 
-// Return all StyleObjects which are Symbols for which
-// the is a Symbol Dependency relationship with this
-// object as the the target
-// Note: The defintion is the "source" of the relationship
-// and the "use" is "target" of the relationship.
-function getSymbolStylesIDependOn(tdoc: TDoc, style:StyleObject): StyleObject[] {
-  // simplest way to do this is to iterate over all relationships,
-  // computing the source and target thoughts. If the target thought
-  // is the same as our ancestor thought, then we return the
-  // source style, which should be of type Symbol and meaning Definition.
-  const rs = tdoc.getRelationships();
-  var symbolStyles: StyleObject[] = [];
-  const mp = tdoc.getAncestorThought(style.id);
-  if (!mp) {
-    console.error("INTERNAL ERROR: did not produce ancenstor: ",style.id);
-    throw new Error("INTERNAL ERROR: did not produce ancenstor: ");
-  }
-  rs.forEach(r => {
-    const rp = tdoc.getAncestorThought(r.targetId);
-    if (!rp) {
-      console.error("INTERNAL ERROR: did not produce ancenstor: ",style.id);
-      throw new Error("INTERNAL ERROR: did not produce ancenstor: ");
-    }
-    if (rp.id == mp.id) {
-      // We are a user of this definition...
-      symbolStyles.push(<StyleObject>tdoc.getStylable(r.sourceId));
-    }
-  });
-  return symbolStyles;
-}
 
 export async function quadClassifierRule(tdoc: TDoc, style: StyleObject): Promise<StyleObject[]> {
   if (style.type != 'MATHEMATICA' || style.meaning != 'EVALUATION') { return []; }
@@ -129,7 +106,7 @@ export async function quadClassifierRule(tdoc: TDoc, style: StyleObject): Promis
   var isPlottableQuadratic;
   try {
     // here I attempt to find the dependency relationships....
-    const rs = getSymbolStylesIDependOn(tdoc,style);
+    const rs = tdoc.getSymbolStylesIDependOn(style);
     debug("RS ",rs);
     // Now each member of rs should have a name and a value
     // that we should use in our quadratic classification....
@@ -188,7 +165,7 @@ export async function quadClassifierChangedRule(tdoc: TDoc, relationship: Relati
   var isPlottableQuadratic;
   try {
     // here I attempt to find the dependency relationships....
-    const rs = getSymbolStylesIDependOn(tdoc,unique_style);
+    const rs = tdoc.getSymbolStylesIDependOn(unique_style);
     debug("RS ",rs);
     // Now each member of rs should have a name and a value
     // that we should use in our quadratic classification....

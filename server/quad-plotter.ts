@@ -25,7 +25,7 @@ const debug = debug1(`server:${MODULE}`);
 
 import { NotebookChange, StyleObject } from '../client/math-tablet-api';
 import { TDoc  } from './tdoc';
-import { execute } from './wolframscript';
+import { execute, constructSubstitution } from './wolframscript';
 import { runAsync } from './common';
 
 // Exports
@@ -84,10 +84,19 @@ export async function quadPlotterRule(tdoc: TDoc, style: StyleObject): Promise<S
 
   const parent = <StyleObject>tdoc.getStylable(style.stylableId);
 
+  // We are only plottable if we make the normal substitutions...
+  const rs = tdoc.getSymbolStylesIDependOn(parent);
   var createdPlotSuccessfully;
   try {
     // In this case, the style.data is the variable name...
-    createdPlotSuccessfully = await plotQuadratic(parent.data,style.data,full_filename);
+
+    const sub_expr =
+          constructSubstitution(parent.data,
+                                rs.map(
+                                  s => ({ name: s.data.name,
+                                          value: s.data.value})));
+
+    createdPlotSuccessfully = await plotQuadratic(sub_expr,style.data,full_filename);
     debug("PLOTTER SUCCESS SAYS:",createdPlotSuccessfully);
   } catch (e) {
     debug("MATHEMATICA QUAD PLOT FAILED :",e);

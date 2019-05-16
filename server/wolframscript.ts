@@ -188,9 +188,29 @@ export async function defineRunPrivate() : Promise<void> {
   await execute(defRunPrivateScript);
 }
 
+interface NVPair { name: string; value: string }
 
 function showInvisible(s: string): string {
   return s.replace(/\n/g, '\\n').replace(/\r/g, '\\r').replace(/\t/g, '\\t');
+}
+
+export function constructSubstitution(expr: string,usedVariables: NVPair[]) {
+  // now we construct the expr to include known
+  // substitutions of symbols....
+  const rules = usedVariables.map(s => {
+    const q = <NVPair>s;
+    return (` ${q.name} -> ${q.value}`);
+  });
+  debug("SUBSTITUIONS RULES",rules);
+  var sub_expr;
+  if (rules.length > 0) {
+    const rulestring = rules.join(",");
+    debug("RULESTRING",rulestring);
+    sub_expr = expr + " /. " + "{ " + rulestring + " }";
+  } else {
+    sub_expr = expr;
+  }
+  return sub_expr;
 }
 
 

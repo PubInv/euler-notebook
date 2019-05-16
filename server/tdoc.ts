@@ -334,6 +334,38 @@ export class TDoc extends EventEmitter {
   }
 
 
+// Return all StyleObjects which are Symbols for which
+// the is a Symbol Dependency relationship with this
+// object as the the target
+// Note: The defintion is the "source" of the relationship
+// and the "use" is "target" of the relationship.
+ public getSymbolStylesIDependOn(style:StyleObject): StyleObject[] {
+  // simplest way to do this is to iterate over all relationships,
+  // computing the source and target thoughts. If the target thought
+  // is the same as our ancestor thought, then we return the
+  // source style, which should be of type Symbol and meaning Definition.
+  const rs = this.getRelationships();
+  var symbolStyles: StyleObject[] = [];
+  const mp = this.getAncestorThought(style.id);
+  if (!mp) {
+    console.error("INTERNAL ERROR: did not produce ancenstor: ",style.id);
+    throw new Error("INTERNAL ERROR: did not produce ancenstor: ");
+  }
+  rs.forEach(r => {
+    const rp = this.getAncestorThought(r.targetId);
+    if (!rp) {
+      console.error("INTERNAL ERROR: did not produce ancenstor: ",style.id);
+      throw new Error("INTERNAL ERROR: did not produce ancenstor: ");
+    }
+    if (rp.id == mp.id) {
+      // We are a user of this definition...
+      symbolStyles.push(<StyleObject>this.getStylable(r.sourceId));
+    }
+  });
+  return symbolStyles;
+}
+
+
   // --- PRIVATE ---
 
   // Private Class Properties
