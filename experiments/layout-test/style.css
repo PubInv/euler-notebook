@@ -1,0 +1,102 @@
+
+#templates {
+  display: none;
+}
+
+.actions {
+  width: 80px;
+}
+
+.action {
+  display: block;
+  font: 8pt Arial;
+  text-decoration: none;
+}
+
+.delete {
+  color: inherit;
+  background-color: transparent;
+  border: none;
+  width: 36px
+}
+
+.handle {
+  padding: 4px 0 4px 0;
+  text-align: right;
+  width: 24px;
+}
+
+.status {
+  text-align: left;
+  width: 24px;
+}
+
+.status.ok {
+  color: green;
+}
+
+.status.error {
+  color: red;
+}
+
+.thought {
+  align-items: center;
+  display: flex;
+  flex-direction: row;
+  margin: 12px 0 12px 0;
+}
+
+.thought.selected {
+  background-color: #f0f0f0;
+}
+
+.formula {
+  flex-grow: 1;
+}
+
+body {
+  margin: 0
+}
+
+@media (hover: hover) {
+  .delete {
+    visibility: hidden;
+  }
+  .thought:hover {
+    background-color:#f8f8f8;
+  }
+  .thought:hover .delete {
+    visibility: visible;
+  }
+}
+
+/* DEBUGGING: */
+
+body.debug .actions {
+  background-color: lightgoldenrodyellow;
+}
+
+body.debug .status {
+  background-color: lightcyan;
+}
+
+body.debug .delete {
+  background-color: lightsteelblue;
+}
+
+body.debug .formula {
+  background-color: lightskyblue;
+}
+
+body.debug .tdoc {
+  background-color: yellow;
+}
+
+body.debug .thought{
+  /* border: 1px solid black; */
+  background-color: lightgreen;
+}
+
+body.debug .handle {
+  background-color: lightsalmon;
+}
