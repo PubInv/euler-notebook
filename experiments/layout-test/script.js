@@ -11,13 +11,13 @@
     {
       latex: "\\sum_j \\frac{f_j(x)}{g_j(x)}",
       status: 'ok',
-      actions: [ "Diff.", "Plot", "Simplify", "Expand" ]
+      actions: [ "Diff.", "Plot", "Simplify", "Expand" ],
+      selected: true,
     },
     {
       latex: "\\frac{1}{g(x)} = \\frac{CP+DQ}{PQ} = \\frac{C}{Q}+\\frac{D}{P}",
       status: 'unknown',
       actions: [],
-      selected: true,
     },
     {
       latex: "\\frac{P(x)}{Q(x)} = \\frac{c_1}{x-\\alpha_1} + \\frac{c_2}{x-\\alpha_2} + \\cdots + \\frac{c_n}{x-\\alpha_n}",
