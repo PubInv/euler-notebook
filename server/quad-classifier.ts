@@ -48,6 +48,9 @@ function onChange(tDoc: TDoc, change: NotebookChange): void {
   case 'relationshipInserted':
     runAsync(quadClassifierChangedRule(tDoc, change.relationship), MODULE, 'quadClassifierChangedRule');
     break;
+  case 'relationshipDeleted':
+    runAsync(quadClassifierChangedRule(tDoc, change.relationship), MODULE, 'quadClassifierChangedRule');
+    break;
   default: break;
   }
 }
@@ -77,19 +80,6 @@ async function isExpressionPlottableQuadratic(expr : string,
                               usedSymbols.map(
                                 s => ({ name: s.data.name,
                                         value: s.data.value})));
-  // // now we construct the expr to include known
-  // // substitutions of symbols....
-  // const rules = usedSymbols.map(s => ` ${s.data.name} -> ${s.data.value}`);
-  // debug("SUBSTITUIONS RULES",rules);
-  // var sub_expr;
-  // if (rules.length > 0) {
-  //   const rulestring = rules.join(",");
-  //   debug("RULESTRING",rulestring);
-  //   sub_expr = expr + " /. " + "{ " + rulestring + " }";
-  // } else {
-  //   sub_expr = expr;
-  // }
-  // //  sub_expr = "runPrivate[" + sub_expr + "]";
 
   const unwrapped_script = quadratic_function_script+" &[" + sub_expr + "]";
   const script = "runPrivate[" + unwrapped_script + "]";
@@ -170,10 +160,12 @@ export async function quadClassifierChangedRule(tdoc: TDoc, relationship: Relati
     // Now each member of rs should have a name and a value
     // that we should use in our quadratic classification....
     isPlottableQuadratic = await isExpressionPlottableQuadratic(unique_style.data,rs);
-     debug("QUAD CLASSIFER SAYS:",isPlottableQuadratic);
+    debug("QUAD CLASSIFER SAYS:",isPlottableQuadratic);
   } catch (e) {
     debug("MATHEMATICA EVALUATION FAILED :",e);
   }
+  debug("IS PLOTTABLE",isPlottableQuadratic);
+  debug("IS BEFOREQUDRATIC",beforeChangeClassifiedAsQuadratic);
   if (isPlottableQuadratic && !beforeChangeClassifiedAsQuadratic) {
     tdoc.insertStyle(unique_style, { type: 'CLASSIFICATION',
                                            data: isPlottableQuadratic,
@@ -181,7 +173,8 @@ export async function quadClassifierChangedRule(tdoc: TDoc, relationship: Relati
                                            source: 'MATHEMATICA' });
 
   }
-  if (!isPlottableQuadratic && beforeChangeClassifiedAsQuadratic) {
+    if (!isPlottableQuadratic && beforeChangeClassifiedAsQuadratic) {
+        debug("CHOOSING DELETION");
     const classifcations =
           tdoc.findChildStyleOfType(target_ancestor.id,'CLASSIFICATION','QUADRATIC');
     tdoc.deleteStyle(classifcations[0].id);
