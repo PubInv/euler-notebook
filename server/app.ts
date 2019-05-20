@@ -39,9 +39,9 @@ import { initialize as initializeSymbolClassifier } from './symbol-classifier';
 import { initialize as initializeQuadPlotter } from './quad-plotter';
 
 import { start as startWolframscript } from './wolframscript';
-import { defineRunPrivate } from './wolframscript';
 import { ClientSocket } from './client-socket';
 import { rootDir as notebookRootDir } from './files-and-folders';
+import { getConfig} from './config';
 
 import { router as apiRouter } from './routes/api';
 import { router as indexRouter } from './routes/index';
@@ -55,21 +55,22 @@ function normalizePort(val: string): string|number|boolean {
   return false;
 }
 
-
 // Application Entry Point
 
 async function main() {
 
+  const config = await getConfig();
+  
   // TODO: stopWolframscript before exiting.
-  await startWolframscript();
+  if (config.mathematica) { await startWolframscript(config); }
 
   await Promise.all([
-    initializeMathematicaCas(),
-    initializeMathJsCas(),
-    initializeMathStepsCas(),
-    initializeQuadClassifier(),
-    initializeSymbolClassifier(),
-    initializeQuadPlotter(),
+    config.mathematica && initializeMathematicaCas(config),
+    config.mathjs && initializeMathJsCas(config),
+    config.mathsteps && initializeMathStepsCas(config),
+    config.mathematica && initializeQuadClassifier(config),
+    config.mathematica && initializeSymbolClassifier(config),
+    config.mathematica && initializeQuadPlotter(config),
   ]);
 
   const app: express.Express = express();
@@ -143,8 +144,6 @@ async function main() {
   });
 
   ClientSocket.initialize(server);
-
-  await defineRunPrivate();
 
 }
 

@@ -26,20 +26,20 @@ Our current code can accept handwriting and put togetether simple mathematical a
 Step 1: Create a [MyScript developer account](https://developer.myscript.com/getting-started/web)
 to obtain application keys for their handwriting recognition services.
 After you create an account, MyScript will send you an email message with an <tt>applicationKey</tt>and an <tt>hmacKey</tt>.
-In your HOME (<tt>echo $HOME</tt>) directory, create a <tt>.math-tablet-credentials.json</tt>file with your MyScript keys:
-
-```json
-{
-  "myscript": {
-    "applicationKey": "REPLACE-ME",
-    "hmacKey": "REPLACE-ME"
-  }
-}
-```
 
 Step 2: Install [node](https://nodejs.org/en/) if you don't have it already.
 
-Step 3: Create a directory to store user notebooks.
+Step 3: Create a credentials and configuration directory:
+
+```bash
+cp -r ~/math-tablet/server/config-dir/ ~/.math-tablet
+```
+
+Edit ~/.math-tablet/credentials.json to insert your MyScript applicationKey and hmacKey.
+
+If you don't have Mathematica, then edit ~/.math-tablet/config.json to remove the "mathematica" section.
+
+Step 4: Create a directory to store user notebooks.
 In your HOME directory, create a subdirectory <tt>math-tablet-usr</tt>.
 Then, create a subdirectory of that directory named after a user,
 e.g. <tt>~/math-tablet-usr/david</tt>.
@@ -55,7 +55,7 @@ Step 4: Install dependencies, build, test, and run math-tablet:
 scripts/go
 ```
 
-Step 4: Open a browser to [localhost:3000](http://localhost:3000) and enjoy!
+Step 5: Open a browser to [localhost:3000](http://localhost:3000) and enjoy!
 
 ## Mathematica Integration
 

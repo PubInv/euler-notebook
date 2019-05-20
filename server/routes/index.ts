@@ -31,9 +31,11 @@ import { NextFunction, Request, Response, Router } from 'express';
 
 import { ClientSocket } from '../client-socket';
 import { TDoc } from '../tdoc';
-import { Credentials, getCredentials, isValidNotebookPath, getListOfNotebooksAndFoldersInFolder,
+import { isValidNotebookPath, getListOfNotebooksAndFoldersInFolder,
           isValidFolderName, createFolder, FolderPath, FOLDER_PATH_RE, isValidNotebookName,
           notebookPathFromFolderPathAndName, NOTEBOOK_PATH_RE, isValidFolderPath, deleteFolder, deleteNotebook } from '../files-and-folders';
+import { Credentials, getCredentials } from '../config';
+
 import { NotebookName, NotebookPath } from '../../client/math-tablet-api';
 
 // Exports

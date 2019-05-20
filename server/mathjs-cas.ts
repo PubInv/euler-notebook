@@ -26,6 +26,7 @@ import * as math from 'mathjs';
 
 import { LatexData, MathJsData, NotebookChange, StyleObject } from '../client/math-tablet-api';
 import { TDoc }  from './tdoc';
+import { Config } from './config';
 
 // Types
 
@@ -53,7 +54,8 @@ const gTDocSessions = new Map<TDoc, SessionData>();
 
 // Exported Functions
 
-export async function initialize(): Promise<void> {
+export async function initialize(_config: Config): Promise<void> {
+  debug(`initializing`);
   TDoc.on('open', (tDoc: TDoc)=>{
     tDoc.on('change', function(this: TDoc, change: NotebookChange){ onChange(this, change); });
     tDoc.on('close', function(this: TDoc){ onClose(this); });

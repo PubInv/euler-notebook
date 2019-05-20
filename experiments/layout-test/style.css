@@ -1,10 +1,9 @@
 
-#templates {
-  display: none;
-}
+#templates { display: none }
 
 .actions {
   width: 80px;
+  visibility: hidden;
 }
 
 .action {
@@ -17,86 +16,52 @@
   color: inherit;
   background-color: transparent;
   border: none;
-  width: 36px
+  width: 36px;
+  visibility: hidden;
 }
 
 .handle {
   padding: 4px 0 4px 0;
   text-align: right;
-  width: 24px;
+  width: 48px;
 }
 
 .status {
   text-align: left;
-  width: 24px;
+  width: 36px;
 }
 
-.status.ok {
-  color: green;
-}
+.status.ok { color: green }
 
-.status.error {
-  color: red;
-}
+.status.error { color: red }
 
 .thought {
   align-items: center;
   display: flex;
   flex-direction: row;
-  margin: 12px 0 12px 0;
+  margin: 18px 0 18px 0;
 }
 
-.thought.selected {
-  background-color: #f0f0f0;
-}
+.thought.selected { background-color: #f0f0f0 }
+.thought.selected .delete { visibility: visible }
+.thought.selected .actions { visibility: visible }
 
-.formula {
-  flex-grow: 1;
-}
+.formula { flex-grow: 1 }
 
-body {
-  margin: 0
-}
+body { margin: 0 }
 
 @media (hover: hover) {
-  .delete {
-    visibility: hidden;
-  }
-  .thought:hover {
-    background-color:#f8f8f8;
-  }
-  .thought:hover .delete {
-    visibility: visible;
-  }
+  .thought:hover .actions { visibility: visible }
+  .thought:hover { background-color:#f8f8f8 }
+  .thought:hover .delete { visibility: visible }
 }
 
 /* DEBUGGING: */
 
-body.debug .actions {
-  background-color: lightgoldenrodyellow;
-}
-
-body.debug .status {
-  background-color: lightcyan;
-}
-
-body.debug .delete {
-  background-color: lightsteelblue;
-}
-
-body.debug .formula {
-  background-color: lightskyblue;
-}
-
-body.debug .tdoc {
-  background-color: yellow;
-}
-
-body.debug .thought{
-  /* border: 1px solid black; */
-  background-color: lightgreen;
-}
-
-body.debug .handle {
-  background-color: lightsalmon;
-}
+body.debug .actions { background-color: lightgoldenrodyellow }
+body.debug .status { background-color: lightcyan }
+body.debug .delete { background-color: lightsteelblue }
+body.debug .formula { background-color: lightskyblue }
+body.debug .tdoc { background-color: yellow }
+body.debug .thought{ background-color: lightgreen }
+body.debug .handle { background-color: lightsalmon }

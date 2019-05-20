@@ -25,6 +25,11 @@ const debug = debug1(`server:${MODULE}`);
 
 import { spawn, ChildProcess } from 'child_process';
 import { WolframData } from '../client/math-tablet-api';
+import { Config } from './config';
+
+// Types
+
+interface NVPair { name: string; value: string }
 
 // Constants
 
@@ -34,6 +39,8 @@ const WOLFRAMSCRIPT_PATH = '/usr/local/bin/wolframscript';
 const INPUT_PROMPT_RE = /\s*In\[(\d+)\]:=\s*$/;
 const OUTPUT_PROMPT_RE = /^\s*Out\[(\d+)\](\/\/\w+)?=\s*/;
 const SYNTAX_ERROR_RE = /^\s*(Syntax::.*)/;
+
+const OUR_PRIVATE_CTX_NAME = "runPrv`";
 
 // Globals
 
@@ -68,47 +75,14 @@ export async function execute(command: WolframData): Promise<WolframData> {
   return gExecutingPromise;
 }
 
-export async function start(): Promise<void> {
-
-  if (gServerStartingPromise) { throw new Error("WolframScript already started."); }
-
-  gServerStartingPromise = new Promise((resolve, reject)=>{
-    const child = gChildProcess = spawn(WOLFRAMSCRIPT_PATH);
-
-    const errorListener = (err: Error)=>{
-      reject(new Error(`WolframScript error on start: ${err.message}`));
-    };
-    const exitListener = (code: number, signal: string)=>{
-      reject(new Error(`WolframScript exited prematurely. Code ${code}, signal ${signal}`));
-    };
-    const stderrListener = (data: Buffer)=>{
-      const dataString = data.toString();
-      // Ignore any text to standard out that is part of the license expiring string.
-      // TODO: This is specific to the version encoded in the string (12.0.0). Make this version independent.
-      if (WOLFRAM_LICENSE_EXPIRING_MSG.indexOf(dataString)>=0) { return; }
-      console.error(`ERROR: WolframScript: stderr output: ${showInvisible(dataString)}`);
-    };
-    const stdoutListener = (data: Buffer) => {
-      // console.dir(data);
-      let dataString = data.toString();
-      debug(`WolframScript initial data: ${showInvisible(dataString)}`);
-      if (INPUT_PROMPT_RE.test(dataString)) {
-        debug("MATCHES. RESOLVING.")
-        child.stdout.removeListener('data', stdoutListener);
-        resolve();
-      }
-      else { /* debug("DOESN'T MATCH. WAITING."); */}
-    }
-
-    child.once('error', errorListener);
-    child.once('exit', exitListener);
-    child.stdout.on('data', stdoutListener);
-    child.stderr.on('data', stderrListener);
-  });
-  return gServerStartingPromise;
+export async function start(_config: Config): Promise<void> {
+  debug(`starting`);
+  await startProcess();
+  await defineRunPrivate();
 }
 
 export async function stop(): Promise<void> {
+  debug(`stopping`);
   if (!gServerStartingPromise) { throw new Error("WolframScript not started."); }
   if (gServerStoppingPromise) { throw new Error("WolframScript is already stopping."); }
   gServerStoppingPromise = new Promise((resolve, reject)=>{
@@ -126,6 +100,36 @@ export async function stop(): Promise<void> {
 }
 
 // HELPER FUNCTIONS
+
+// TODO: at least the text of this should be retrieved from the wolframscript module!!
+async function defineRunPrivate() : Promise<void> {
+  // Create a promise for the next 'execute' invocation to wait on.
+  // our execute function apparently can't yet handle multline scripts...
+  // Also, our execute codes expects something to be returned, so I addded
+  // a dummy return value
+  debug(`defining runPrivate`);
+  var defRunPrivateScript = 'SetAttributes[runPrivate, HoldAllComplete]; runPrivate[code_] := With[{body = MakeBoxes@code},  Block[{$ContextPath = {"System`"}, $Context = "runPrv`"}, Global`xxx = ToExpression@body;  Clear["runPrv`*"]; Global`xxx]]; 4+5';
+  await execute(defRunPrivateScript);
+}
+
+export function constructSubstitution(expr: string,usedVariables: NVPair[]) {
+  // now we construct the expr to include known
+  // substitutions of symbols....
+  const rules = usedVariables.map(s => {
+    const q = <NVPair>s;
+    return (` ${q.name} -> ${q.value}`);
+  });
+  debug("SUBSTITUIONS RULES",rules);
+  var sub_expr;
+  if (rules.length > 0) {
+    const rulestring = rules.join(",");
+    debug("RULESTRING",rulestring);
+    sub_expr = expr + " /. " + "{ " + rulestring + " }";
+  } else {
+    sub_expr = expr;
+  }
+  return sub_expr;
+}
 
 function executeNow(command: WolframData, resolve: (data: string)=>void, reject: (reason: any)=>void): void {
 
@@ -175,46 +179,50 @@ function executeNow(command: WolframData, resolve: (data: string)=>void, reject:
   gChildProcess.stdin!.write(command + '\n');
 }
 
-
-// TODO: at least the text of this should be retrieved from the wolframscript module!!
-export async function defineRunPrivate() : Promise<void> {
-
-  // Create a promise for the next 'execute' invocation to wait on.
-  // our execute function apparently can't yet handle multline scripts...
-  // Also, our execute codes expects something to be returned, so I addded
-  // a dummy return value
-  var defRunPrivateScript = 'SetAttributes[runPrivate, HoldAllComplete]; runPrivate[code_] := With[{body = MakeBoxes@code},  Block[{$ContextPath = {"System`"}, $Context = "runPrv`"}, Global`xxx = ToExpression@body;  Clear["runPrv`*"]; Global`xxx]]; 4+5';
-  debug(defRunPrivateScript);
-  await execute(defRunPrivateScript);
-}
-
-interface NVPair { name: string; value: string }
-
 function showInvisible(s: string): string {
   return s.replace(/\n/g, '\\n').replace(/\r/g, '\\r').replace(/\t/g, '\\t');
 }
 
-export function constructSubstitution(expr: string,usedVariables: NVPair[]) {
-  // now we construct the expr to include known
-  // substitutions of symbols....
-  const rules = usedVariables.map(s => {
-    const q = <NVPair>s;
-    return (` ${q.name} -> ${q.value}`);
+async function startProcess(): Promise<void> {
+
+  if (gServerStartingPromise) { throw new Error("WolframScript already started."); }
+
+  gServerStartingPromise = new Promise((resolve, reject)=>{
+    const child = gChildProcess = spawn(WOLFRAMSCRIPT_PATH);
+
+    const errorListener = (err: Error)=>{
+      reject(new Error(`WolframScript error on start: ${err.message}`));
+    };
+    const exitListener = (code: number, signal: string)=>{
+      reject(new Error(`WolframScript exited prematurely. Code ${code}, signal ${signal}`));
+    };
+    const stderrListener = (data: Buffer)=>{
+      const dataString = data.toString();
+      // Ignore any text to standard out that is part of the license expiring string.
+      // TODO: This is specific to the version encoded in the string (12.0.0). Make this version independent.
+      if (WOLFRAM_LICENSE_EXPIRING_MSG.indexOf(dataString)>=0) { return; }
+      console.error(`ERROR: WolframScript: stderr output: ${showInvisible(dataString)}`);
+    };
+    const stdoutListener = (data: Buffer) => {
+      // console.dir(data);
+      let dataString = data.toString();
+      debug(`WolframScript initial data: ${showInvisible(dataString)}`);
+      if (INPUT_PROMPT_RE.test(dataString)) {
+        debug("MATCHES. RESOLVING.")
+        child.stdout.removeListener('data', stdoutListener);
+        resolve();
+      }
+      else { /* debug("DOESN'T MATCH. WAITING."); */}
+    }
+
+    child.once('error', errorListener);
+    child.once('exit', exitListener);
+    child.stdout.on('data', stdoutListener);
+    child.stderr.on('data', stderrListener);
   });
-  debug("SUBSTITUIONS RULES",rules);
-  var sub_expr;
-  if (rules.length > 0) {
-    const rulestring = rules.join(",");
-    debug("RULESTRING",rulestring);
-    sub_expr = expr + " /. " + "{ " + rulestring + " }";
-  } else {
-    sub_expr = expr;
-  }
-  return sub_expr;
+  return gServerStartingPromise;
 }
 
-
-const OUR_PRIVATE_CTX_NAME = "runPrv`";
 export function draftChangeContextName(expr: string,_ctx = OUR_PRIVATE_CTX_NAME) {
   // figure out how to make this a variable
   return expr.replace(/runPrv`/g,'');

@@ -28,7 +28,7 @@ const MODULE = __filename.split('/').slice(-1)[0].slice(0,-3);
 const debug = debug1(`server:${MODULE}`);
 import * as rimraf from 'rimraf';
 
-import { NotebookName, NotebookPath, MyScriptServerKeys } from '../client/math-tablet-api';
+import { NotebookName, NotebookPath } from '../client/math-tablet-api';
 
 const mkdir2 = promisify(mkdir);
 const readdir2 = promisify(readdir);
@@ -47,10 +47,6 @@ export type AbsFilePath = string; // Absolute path to a file in the file system.
 // Folder paths are always relative to root dir.
 export type FolderName = string;
 export type FolderPath = string;
-
-export interface Credentials {
-  myscript: MyScriptServerKeys;
-}
 
 interface FolderEntry {
   name: FolderName;
@@ -76,8 +72,6 @@ const NOTEBOOK_DIR_SUFFIX_LEN = NOTEBOOK_DIR_SUFFIX.length;
 const NOTEBOOK_ENCODING = 'utf8';
 const NOTEBOOK_FILE_NAME = 'notebook.json';
 const ROOT_DIR_NAME = 'math-tablet-usr';
-
-const CREDENTIALS_FILENAME = '.math-tablet-credentials.json';
 
 // SECURITY: DO NOT ALLOW PERIODS IN FOLDER NAMES OR NOTEBOOK PATHS!!!
 const FOLDER_NAME_RE = /^(\w+)$/;
@@ -113,12 +107,6 @@ export async function deleteNotebook(notebookPath: NotebookPath): Promise<undefi
   return undefined;
 }
 
-export async function getCredentials(): Promise<Credentials> {
-  const credentialsPath = join(homeDir(), CREDENTIALS_FILENAME);
-  const credentialsJson = await readFile2(credentialsPath, 'utf8');
-  return JSON.parse(credentialsJson);
-}
-
 // TYPESCRIPT: file path type?
 export async function getListOfNotebooksAndFoldersInFolder(path: FolderPath): Promise<NotebooksAndFolders> {
   const rDir = rootDir();
@@ -151,6 +139,22 @@ export async function getListOfNotebooksAndFoldersInFolder(path: FolderPath): Pr
   return { notebooks, folders };
 }
 
+export function isValidFolderName(folderName: FolderName): boolean {
+  return FOLDER_NAME_RE.test(folderName);
+}
+
+export function isValidFolderPath(folderPath: FolderPath): boolean {
+  return FOLDER_PATH_RE.test(folderPath);
+}
+
+export function isValidNotebookName(notebookName: NotebookName): boolean {
+  return NOTEBOOK_NAME_RE.test(notebookName);
+}
+
+export function isValidNotebookPath(notebookPath: NotebookPath): boolean {
+  return NOTEBOOK_PATH_RE.test(notebookPath);
+}
+
 export function notebookPathFromFolderPathAndName(folderPath: FolderPath, notebookName: NotebookName): NotebookPath {
   return join(folderPath, notebookName + NOTEBOOK_DIR_SUFFIX) + '/';
 }
@@ -178,31 +182,15 @@ export async function writeNotebookFile(notebookPath: NotebookPath, json: string
 
 }
 
-// HELPER FUNCTIONS
+// Helper Functions
 
 function absFilePathFromNotebookPath(notebookPath: NotebookPath): AbsFilePath {
   return join(absDirPathFromNotebookPath(notebookPath), NOTEBOOK_FILE_NAME);
 }
 
-// REVIEW: Memoize or save in global?
-export function homeDir(): AbsDirectoryPath {
+function homeDir(): AbsDirectoryPath {
   const rval = process.env.HOME;
   if (!rval) { throw new Error("HOME environment variable not set."); }
   return rval;
 }
 
-export function isValidFolderName(folderName: FolderName): boolean {
-  return FOLDER_NAME_RE.test(folderName);
-}
-
-export function isValidFolderPath(folderPath: FolderPath): boolean {
-  return FOLDER_PATH_RE.test(folderPath);
-}
-
-export function isValidNotebookName(notebookName: NotebookName): boolean {
-  return NOTEBOOK_NAME_RE.test(notebookName);
-}
-
-export function isValidNotebookPath(notebookPath: NotebookPath): boolean {
-  return NOTEBOOK_PATH_RE.test(notebookPath);
-}
