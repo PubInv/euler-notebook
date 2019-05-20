@@ -77,7 +77,8 @@ const NOTEBOOK_ENCODING = 'utf8';
 const NOTEBOOK_FILE_NAME = 'notebook.json';
 const ROOT_DIR_NAME = 'math-tablet-usr';
 
-const CREDENTIALS_FILENAME = '.math-tablet-credentials.json';
+const CONFIG_DIR = '.math-tablet';
+const CREDENTIALS_FILENAME = 'credentials.json';
 
 // SECURITY: DO NOT ALLOW PERIODS IN FOLDER NAMES OR NOTEBOOK PATHS!!!
 const FOLDER_NAME_RE = /^(\w+)$/;
@@ -114,7 +115,7 @@ export async function deleteNotebook(notebookPath: NotebookPath): Promise<undefi
 }
 
 export async function getCredentials(): Promise<Credentials> {
-  const credentialsPath = join(homeDir(), CREDENTIALS_FILENAME);
+  const credentialsPath = join(homeDir(), CONFIG_DIR, CREDENTIALS_FILENAME);
   const credentialsJson = await readFile2(credentialsPath, 'utf8');
   return JSON.parse(credentialsJson);
 }
