@@ -27,6 +27,7 @@ import * as math from 'mathjs';
 
 import { StyleObject, NotebookChange } from '../client/math-tablet-api';
 import { TDoc }  from './tdoc';
+import { Config } from './config';
 
 // Types
 
@@ -41,7 +42,8 @@ export interface MathStep {
 
 // Exported Functions
 
-export async function initialize(): Promise<void> {
+export async function initialize(_config: Config): Promise<void> {
+  debug(`initializing`);
   TDoc.on('open', (tDoc: TDoc)=>{
     tDoc.on('change', function(this: TDoc, change: NotebookChange){ onChange(this, change); });
     // tDoc.on('close', function(this: TDoc){ onClose(this); });
@@ -63,7 +65,7 @@ function onChange(tDoc: TDoc, change: NotebookChange): void {
 // Helper Functions
 
 async function onStyleInserted(tDoc: TDoc, style: StyleObject): Promise<void> {
-  debug(`MathStep onStyleInserted ${style.id} ${style.stylableId} ${style.type} ${style.meaning}`);
+  debug(`onStyleInserted ${style.id} ${style.stylableId} ${style.type} ${style.meaning}`);
 
   // Only try to simplify/solve MathJS expressions
   if (style.type != 'MATHJS' || style.meaning != 'INPUT') { return; }

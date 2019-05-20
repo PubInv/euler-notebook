@@ -27,10 +27,12 @@ import { NotebookChange, StyleObject } from '../client/math-tablet-api';
 import { TDoc  } from './tdoc';
 import { execute, constructSubstitution } from './wolframscript';
 import { runAsync } from './common';
+import { Config } from './config';
 
 // Exports
 
-export async function initialize(): Promise<void> {
+export async function initialize(_config: Config): Promise<void> {
+  debug(`initializing`);
   TDoc.on('open', (tDoc: TDoc)=>{
     tDoc.on('change', function(this: TDoc, change: NotebookChange){ onChange(this, change); });
     tDoc.on('close', function(this: TDoc){ onClose(this); });
@@ -50,11 +52,11 @@ function onChange(tDoc: TDoc, change: NotebookChange): void {
 }
 
 function onClose(tDoc: TDoc): void {
-  debug(`QuadPlotter tDoc close: ${tDoc._path}`);
+  debug(`tDoc close: ${tDoc._path}`);
 }
 
 function onOpen(tDoc: TDoc): void {
-  debug(`QuadPlotter: tDoc open: ${tDoc._path}`);
+  debug(`tDoc open: ${tDoc._path}`);
 }
 
 async function plotQuadratic(expr : string, variable: string, filename : string) : Promise<boolean> {

@@ -32,7 +32,7 @@ TODO: Additional Test cases
 
 // Requirements
 
-import { execute, start, stop, defineRunPrivate } from '../wolframscript';
+import { execute, start, stop } from '../wolframscript';
 
 // import { expect } from 'chai';
 import { assert } from 'chai';
@@ -83,9 +83,7 @@ describe("wolframscript", function(){
     this.timeout(10*1000);
 
     before("starting", async function(){
-      await start();
-
-      await defineRunPrivate();
+      await start({});
       gWolframStarted = true;
     });
 

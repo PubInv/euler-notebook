@@ -28,10 +28,12 @@ import { TDoc } from './tdoc';
 import { execute as executeWolframscript } from './wolframscript';
 import { draftChangeContextName } from './wolframscript';
 import { runAsync } from './common';
+import { Config } from './config';
 
 // Exports
 
-export async function initialize(): Promise<void> {
+export async function initialize(_config: Config): Promise<void> {
+  debug(`initializing`);
   TDoc.on('open', (tDoc: TDoc)=>{
     tDoc.on('change', function(this: TDoc, change: NotebookChange){ onChange(this, change); });
     // tDoc.on('close', function(this: TDoc){ onClose(this); });
