@@ -32,7 +32,7 @@ TODO: Additional Test cases
 
 // Requirements
 
-import { execute, start, stop } from '../wolframscript';
+import { execute, start, stop } from '../observers/wolframscript';
 
 // import { expect } from 'chai';
 import { assert } from 'chai';

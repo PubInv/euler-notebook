@@ -23,11 +23,11 @@ import * as debug1 from 'debug';
 const MODULE = __filename.split('/').slice(-1)[0].slice(0,-3);
 const debug = debug1(`server:${MODULE}`);
 
-import { NotebookChange, StyleObject } from '../client/math-tablet-api';
-import { TDoc  } from './tdoc';
+import { NotebookChange, StyleObject } from '../../client/math-tablet-api';
+import { TDoc  } from '../tdoc';
 import { execute, constructSubstitution } from './wolframscript';
-import { runAsync } from './common';
-import { Config } from './config';
+import { runAsync } from '../common';
+import { Config } from '../config';
 
 // Exports
 

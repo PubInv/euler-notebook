@@ -31,14 +31,14 @@ const debug = debug1(`server:${MODULE}`);
 import * as morgan from 'morgan';
 import { middleware as stylusMiddleware } from 'stylus';
 
-import { initialize as initializeMathematicaCas } from './mathematica-cas';
-import { initialize as initializeMathJsCas } from './mathjs-cas';
-import { initialize as initializeMathStepsCas } from './math-steps-cas';
-import { initialize as initializeQuadClassifier } from './quad-classifier';
-import { initialize as initializeSymbolClassifier } from './symbol-classifier';
-import { initialize as initializeQuadPlotter } from './quad-plotter';
+import { initialize as initializeMathematicaCas } from './observers/mathematica-cas';
+import { initialize as initializeMathJsCas } from './observers/mathjs-cas';
+import { initialize as initializeMathStepsCas } from './observers/math-steps-cas';
+import { initialize as initializeQuadClassifier } from './observers/quad-classifier';
+import { initialize as initializeSymbolClassifier } from './observers/symbol-classifier';
+import { initialize as initializeQuadPlotter } from './observers/quad-plotter';
 
-import { start as startWolframscript } from './wolframscript';
+import { start as startWolframscript } from './observers/wolframscript';
 import { ClientSocket } from './client-socket';
 import { rootDir as notebookRootDir } from './files-and-folders';
 import { getConfig} from './config';

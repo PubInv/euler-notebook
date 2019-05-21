@@ -31,7 +31,8 @@ import { ClientMessage, NotebookChange, NotebookName, NotebookPath, ServerMessag
          ThoughtId, ThoughtProperties, StyleProperties } from '../client/math-tablet-api';
 
 import { PromiseResolver } from './common';
-import { parseMathJsExpression, ParseResults as MathJsParseResults } from './mathjs-cas';
+// REVIEW: This file should not be dependent on any specific observers.
+import { parseMathJsExpression, ParseResults as MathJsParseResults } from './observers/mathjs-cas';
 import { TDoc } from './tdoc';
 
 // Types

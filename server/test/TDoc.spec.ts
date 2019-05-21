@@ -22,15 +22,15 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 import * as debug1 from 'debug';
 const MODULE = __filename.split('/').slice(-1)[0].slice(0,-3);
 const debug = debug1(`server:${MODULE}`);
-
-import { TDoc }  from '../tdoc';
-import { mathSimplifyRule }  from '../mathjs-cas';
-import { mathExtractVariablesRule }  from '../mathjs-cas';
-import { mathEvaluateRule }  from '../mathjs-cas';
-import { applyCasRules }  from '../mathjs-cas';
 import * as math from 'mathjs';
 import * as mathsteps from 'mathsteps';
-import { dumpEquationSteps, dumpExpressionSteps }  from '../math-steps-cas';
+
+import { TDoc }  from '../tdoc';
+import { mathSimplifyRule }  from '../observers/mathjs-cas';
+import { mathExtractVariablesRule }  from '../observers/mathjs-cas';
+import { mathEvaluateRule }  from '../observers/mathjs-cas';
+import { applyCasRules }  from '../observers/mathjs-cas';
+import { dumpEquationSteps, dumpExpressionSteps }  from '../observers/math-steps-cas';
 // import { MathStep }  from '../math-steps-cas';
 
 // import { expect } from 'chai';

@@ -24,9 +24,9 @@ const MODULE = __filename.split('/').slice(-1)[0].slice(0,-3);
 const debug = debug1(`server:${MODULE}`);
 import * as math from 'mathjs';
 
-import { LatexData, MathJsData, NotebookChange, StyleObject } from '../client/math-tablet-api';
-import { TDoc }  from './tdoc';
-import { Config } from './config';
+import { LatexData, MathJsData, NotebookChange, StyleObject } from '../../client/math-tablet-api';
+import { TDoc }  from '../tdoc';
+import { Config } from '../config';
 
 // Types
 

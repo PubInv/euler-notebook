@@ -24,13 +24,13 @@ const MODULE = __filename.split('/').slice(-1)[0].slice(0,-3);
 const debug = debug1(`server:${MODULE}`);
 
 // import { MthMtcaText } from '../client/math-tablet-api';
-import { StyleObject, NotebookChange } from '../client/math-tablet-api';
-import { TDoc } from './tdoc';
+import { StyleObject, NotebookChange } from '../../client/math-tablet-api';
+import { TDoc } from '../tdoc';
 import { execute } from './wolframscript';
 // import { draftChangeContextName } from './wolframscript';
 import * as fs from 'fs';
-import { runAsync } from './common';
-import { Config } from './config';
+import { runAsync } from '../common';
+import { Config } from '../config';
 
 // Exports
 

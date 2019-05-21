@@ -24,8 +24,8 @@ const MODULE = __filename.split('/').slice(-1)[0].slice(0,-3);
 const debug = debug1(`server:${MODULE}`);
 
 import { spawn, ChildProcess } from 'child_process';
-import { WolframData } from '../client/math-tablet-api';
-import { Config } from './config';
+import { WolframData } from '../../client/math-tablet-api';
+import { Config } from '../config';
 
 // Types
 
