@@ -1,4 +1,5 @@
 {
+  "@comment": "To comment out an observer, just prepend a '@' to the appropriate key.",
   "mathematica": {},
   "mathjs": {},
   "mathsteps": {}
