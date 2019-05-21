@@ -25,7 +25,7 @@ import * as debug1 from 'debug';
 const MODULE = __filename.split('/').slice(-1)[0].slice(0,-3);
 const debug = debug1(`server:${MODULE}`);
 
-import { NotebookChange } from '../../client/math-tablet-api';
+import { NotebookChange, StyleProperties, ToolMenu } from '../../client/math-tablet-api';
 import { TDoc  } from '../tdoc';
 import { Config } from '../config';
 
@@ -44,6 +44,41 @@ export async function initialize(_config: Config): Promise<void> {
 
 function onChange(tDoc: TDoc, change: NotebookChange): void {
   debug(`tDoc change: ${tDoc._path} ${change.type}`);
+  switch(change.type) {
+    case 'relationshipDeleted': {
+      break;
+    }
+    case 'relationshipInserted': {
+      break;
+    }
+    case 'styleDeleted': {
+      break;
+    }
+    case 'styleInserted': {
+      break;
+    }
+    case 'thoughtInserted': {
+      const thought = change.thought;
+      const toolMenu: ToolMenu = {
+        'plot': { menuHtml: "Plot" },
+        'debug': { menuHtml: "Debug" },
+      }
+      const styleProps: StyleProperties = {
+        type: 'TOOL-MENU',
+        meaning: 'ATTRIBUTE',
+        source: 'SANDBOX',
+        data: toolMenu,
+      }
+      tDoc.insertStyle(thought, styleProps);
+      break;
+    }
+    case 'thoughtDeleted': {
+      break;
+    }
+    default: {
+      break;
+    }
+  }
 }
 
 function onClose(tDoc: TDoc): void {

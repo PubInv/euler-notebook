@@ -42,6 +42,7 @@ export type RelationshipMeaning =
   'SYMBOL-DEPENDENCY';
 
 export type StyleMeaning =
+  'ATTRIBUTE' |       // Generic attribute. Meaning implied by type.
   'EVALUATION'|       // CAS evaluation of an expression.
   'EVALUATION-ERROR'| // Error in CAS evaluation of an expression
   'HANDWRITING'|      // Stroke information for the user's handwriting.
@@ -67,6 +68,7 @@ export type StyleMeaning =
   'STROKE'|           // StrokeGroups: MyScript strokeGroups export from 'TEXT' editor.
   'SYMBOL'|           // SymbolData: symbol in a definition or expression.
   'TEXT'|             // TextData: Plain text
+  'TOOL-MENU' |       // ToolMenu: Menu of tools that an observer can apply to a thought.
   'WOLFRAM';          // WolframData: Wolfram language expression
 
   export type StyleSource =
@@ -74,7 +76,8 @@ export type StyleMeaning =
   'USER'|             // Directly enterred by user
   'MATHJS'|           // The Mathjs Computer Algebra System system
   'MATHEMATICA'|      // Mathematica style (evaluation)
-  'MATHSTEPS'         // The Mathsteps CAS system
+  'MATHSTEPS' |       // The Mathsteps CAS system
+  'SANDBOX'           // Sandbox for temporary experiments
 
 // MyScript Types
 
@@ -89,6 +92,14 @@ export interface MyScriptServerKeys {
 
 export interface StrokeGroups {
   // TYPESCRIPT: TODO
+}
+
+export interface ToolItem {
+  menuHtml: /* TYPESCRIPT: Html? */ string;
+}
+
+export interface ToolMenu {
+  [ name: string]: ToolItem;
 }
 
 // Plain object version of TDoc
