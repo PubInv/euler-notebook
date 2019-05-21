@@ -22,7 +22,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 import { getKatex } from './katex-types.js';
 
 import { $new, Html } from './dom.js';
-import { StyleObject, RelationshipObject } from './math-tablet-api.js';
+import { StyleObject, RelationshipObject, ToolMenu } from './math-tablet-api.js';
 import { RelationshipElement } from './relationship-element.js';
 
 // Types
@@ -43,6 +43,7 @@ const STYLE_RENDERERS: StyleRendererMap = {
   'MATHML': renderMathMlStyle,
   'MATHEMATICA': renderMathematicaStyle,
   'SYMBOL': renderSymbolStyle,
+  'TOOL-MENU': renderToolMenuStyle,
   'TEXT': renderTextStyle,
 };
 
@@ -150,4 +151,13 @@ function renderTextStyle(style: StyleObject): Html {
   } else {
     return `<div>${style.data}</div>`;
   }
+}
+
+function renderToolMenuStyle(style: StyleObject): Html {
+  const toolMenu: ToolMenu = style.data;
+  const toolHtmls =  Object.keys(toolMenu).map(toolName=>{
+    const toolInfo = toolMenu[toolName];
+    return `<button class="tool" data-tool="${toolName}">${toolInfo.menuHtml}</button>`;
+  });
+  return toolHtmls.join("&middot;");
 }

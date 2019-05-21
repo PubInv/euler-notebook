@@ -72,12 +72,13 @@ export type StyleMeaning =
   'WOLFRAM';          // WolframData: Wolfram language expression
 
   export type StyleSource =
-  'TEST'|             // An example source used only hour test system
-  'USER'|             // Directly enterred by user
+  'TEST'|             // An example source used only by our test system
+  'USER'|             // Directly entered by user
   'MATHJS'|           // The Mathjs Computer Algebra System system
   'MATHEMATICA'|      // Mathematica style (evaluation)
   'MATHSTEPS' |       // The Mathsteps CAS system
-  'SANDBOX'           // Sandbox for temporary experiments
+  'SANDBOX' |         // Sandbox for temporary experiments
+  'SYSTEM'            // The Math-Tablet app itself, not the user or an observer.
 
 // MyScript Types
 
@@ -94,12 +95,12 @@ export interface StrokeGroups {
   // TYPESCRIPT: TODO
 }
 
-export interface ToolItem {
+export interface ToolInfo {
   menuHtml: /* TYPESCRIPT: Html? */ string;
 }
 
 export interface ToolMenu {
-  [ name: string]: ToolItem;
+  [ name: string]: ToolInfo;
 }
 
 // Plain object version of TDoc
