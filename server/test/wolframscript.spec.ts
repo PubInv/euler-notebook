@@ -33,49 +33,51 @@ TODO: Additional Test cases
 // Requirements
 
 import { execute, start, stop } from '../wolframscript';
+import { postProcessMathMLResult } from '../wolframscript';
 
 // import { expect } from 'chai';
 import { assert } from 'chai';
 import 'mocha';
 
 const TEST_CASES = [
-  // ['FullForm[Hold[y = 13]]',
-  //  'Hold[Set[y, 13]]'],
+  ['FullForm[Hold[y = 13]]',
+   'Hold[Set[y, 13]]'],
 
-  // ['N[Sqrt[3]]',
-  //  '1.73205'],
+  ['N[Sqrt[3]]',
+   '1.73205'],
 
-  // // Determining if an expression is a quadratic
-  // ['With[{v = Variables[#]}, Exponent[#, v[[1]]] == 2 && Length[v] == 1] &[x^2 + x]',
-  //  'True'],
+  // Determining if an expression is a quadratic
+  ['With[{v = Variables[#]}, Exponent[#, v[[1]]] == 2 && Length[v] == 1] &[x^2 + x]',
+   'True'],
 
-  // // Converting MathML to Wolfram expression.
-  // ['InputForm[ToExpression[ImportString["<math xmlns=\'http://www.w3.org/1998/Math/MathML\'><msup><mrow><mi>x</mi></mrow><mrow><mn>2</mn></mrow></msup><mo>+</mo><mn>3</mn><mi>x</mi><mo>+</mo><mn>5</mn></math>", "MathML"]]]',
-  //  '5 + 3*x + x^2'],
+  // Converting MathML to Wolfram expression.
+  ['InputForm[ToExpression[ImportString["<math xmlns=\'http://www.w3.org/1998/Math/MathML\'><msup><mrow><mi>x</mi></mrow><mrow><mn>2</mn></mrow></msup><mo>+</mo><mn>3</mn><mi>x</mi><mo>+</mo><mn>5</mn></math>", "MathML"]]]',
+   '5 + 3*x + x^2'],
 
-  // ['InputForm[x^3 + 3]',
-  //  '3 + x^3'],
+  ['InputForm[x^3 + 3]',
+   '3 + x^3'],
 
-  // Here Rob attempts to test some of the runPrivate functionality
-//  ['runPrivate[InputForm[x^3 + 3]]',
-//   '3 + x^3'],
-  // ['15 + 13',
-  //  '28'],
-  // ['runPrivate[15 + 13]',
-  //  '28'],
-  // ['InputForm[runPrivate[x^3 + x]]',
-  //  'x + x^3'],
-  // ['runPrivate[With[{ v = Variables[#]},If[(Length[v] == 1) && (Exponent[#,v[[1]]] ==2),v[[1]],False]]]  &[x^2 + 5]',
-  //  'x'],
-  // ['runPrivate[With[{ v = Variables[#]},If[(Length[v] == 1) && (Exponent[#,v[[1]]] ==2),v[[1]],False]]]  &[x^2 + y + 5]',
-  //  'False'],
-  // ['runPrivate[With[{ v = Variables[#]},If[(Length[v] == 1) && (Exponent[#,v[[1]]] ==2),v[[1]],False]]]  &[x^2 + y * 3]',
-  //  'False'],
-  // ['runPrivate[With[{v = Variables[#]},If[(Length[v] == 1) && (Exponent[#, v[[1]]] == 2), v[[1]], False]] &[y /. { { y -> 4} }]]',
-  //  'False'],
+//  Here Rob attempts to test some of the runPrivate functionality
+// EXPECTED TO FAIL: ['runPrivate[InputForm[x^3 + 3]]',
+//  '3 + x^3'],
+  ['15 + 13',
+   '28'],
+  ['runPrivate[15 + 13]',
+   '28'],
+  ['InputForm[runPrivate[x^3 + x]]',
+   'x + x^3'],
+  ['runPrivate[With[{ v = Variables[#]},If[(Length[v] == 1) && (Exponent[#,v[[1]]] ==2),v[[1]],False]]]  &[x^2 + 5]',
+   'x'],
+  ['runPrivate[With[{ v = Variables[#]},If[(Length[v] == 1) && (Exponent[#,v[[1]]] ==2),v[[1]],False]]]  &[x^2 + y + 5]',
+   'False'],
+  ['runPrivate[With[{ v = Variables[#]},If[(Length[v] == 1) && (Exponent[#,v[[1]]] ==2),v[[1]],False]]]  &[x^2 + y * 3]',
+   'False'],
+  ['runPrivate[With[{v = Variables[#]},If[(Length[v] == 1) && (Exponent[#, v[[1]]] == 2), v[[1]], False]] &[y /. { { y -> 4} }]]',
+   'False'],
   ['runPrivate[With[{v = Variables[#]},If[(Length[v] == 1) && (Exponent[#, v[[1]]] == 2), v[[1]], False]] &[x^2 + 3*y /.  { y -> 4} ]]',
    'x']
 ];
+
 
 describe("wolframscript", function(){
 
@@ -120,6 +122,61 @@ describe("wolframscript", function(){
       assert.equal(r1, 'Hello,');
       assert.equal(r2, 'World!');
     });
+
+
+    after("stopping", async function(){
+      if (gWolframStarted) {
+        await stop();
+      }
+    });
+});
+
+const MATHML_TEST_CASES = [
+  ["MakeExpression[ImportString[\"<math xmlns='http://www.w3.org/1998/Math/MathML'>  <mi> x </mi>  <mo> = </mo>  <mn> 4 </mn></math>\"], StandardForm]'",
+   // for some completely unknown wacky reason, "execute" is returning
+   // the result parenthesized and with a trailing quote mark!
+   // This does not seem to happen when from interactively
+  'HoldComplete[x = 4]'],
+  ["MakeExpression[ImportString[\"<math xmlns='http://www.w3.org/1998/Math/MathML'>  <mi> a </mi>  <mo> = </mo>  <mi> b </mi>  <mo> + </mo>  <mi> c </mi></math>\"], StandardForm]'",
+   // for some completely unknown wacky reason, "execute" is returning
+   // the result parenthesized and with a trailing quote mark!
+   // This does not seem to happen when from interactively
+   'HoldComplete[a = b + c]'],
+  ["MakeExpression[ImportString[\"<math xmlns='http://www.w3.org/1998/Math/MathML'>  <mi> a </mi>  <mo> = </mo>  <msup>    <mrow>      <mi> x </mi>    </mrow>    <mrow>      <mn> 2 </mn>    </mrow>  </msup></math>\"], StandardForm]'",
+   'HoldComplete[a = x^2]']
+];
+
+
+describe.only("wolframscriptmathml", function(){
+
+    let gWolframStarted: boolean = false;
+    this.timeout(10*1000);
+
+    before("starting", async function(){
+      await start({});
+      gWolframStarted = true;
+    });
+
+    for (const [expr, expected] of MATHML_TEST_CASES) {
+      const label = (expr.length<=20 ?
+        `evaluates ${expr}` :
+        `evaluates ${expr.slice(0,20)}...`
+      )
+      it(label, async function(){
+        const results = await execute(expr);
+        const processed = postProcessMathMLResult(results);
+        assert.equal(processed, expected);
+      });
+    }
+
+    it("serializes execution", async function(){
+      const p1 = await execute('Pause[2]; "Hello,"');
+      const p2 = await execute('Pause[2]; "World!"');
+      const [ r1, r2 ] = await Promise.all([p1, p2]);
+      assert.equal(r1, 'Hello,');
+      assert.equal(r2, 'World!');
+    });
+
 
     after("stopping", async function(){
       if (gWolframStarted) {

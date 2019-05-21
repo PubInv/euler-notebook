@@ -27,7 +27,7 @@ const debug = debug1(`server:${MODULE}`);
 import { StyleObject, NotebookChange } from '../client/math-tablet-api';
 import { TDoc } from './tdoc';
 import { execute } from './wolframscript';
-import { draftChangeContextName } from './wolframscript';
+// import { draftChangeContextName } from './wolframscript';
 import * as fs from 'fs';
 import { runAsync } from './common';
 import { Config } from './config';
@@ -93,7 +93,7 @@ export async function mathMathematicaRule(tdoc: TDoc, style: StyleObject): Promi
     assoc = await evaluateExpressionPromiseWS(style.data);
 
     debug("ASSOC RETURNED",assoc,assoc.toString());
-    assoc = draftChangeContextName(assoc);
+//    assoc = draftChangeContextName(assoc);
     debug("After context switch",assoc,assoc.toString());
   } catch (e) {
     debug("MATHEMATICA EVALUATION FAILED :",e);
@@ -162,12 +162,22 @@ async function convertMathMlToWolframRule(tdoc: TDoc, style: StyleObject): Promi
   if (style.type != 'MATHML' || style.meaning != 'INPUT') { return; }
 
   const mathMl = style.data.split('\n').join('').replace(/"/g, '\\"');
-  const cmd = `InputForm[ToExpression[ImportString["${mathMl}", "MathML"]]]`;
+  debug("mathML",mathMl);
+  const cmd = `InputForm[MakeExpression[ImportString["${mathMl}", "MathML"]]]`;
   debug(cmd);
   try {
     const data = await execute(cmd);
+    // In our current style, the result comes back as
+    // HoldComplete[result].
+    const regex = /HoldComplete\[(.*)\]/;
+    const results = regex.exec(data);
+    debug("regex results",results);
+    if (results == null) throw new Error("could not match pattern:"+data);
+    if (results[1] == null) throw new Error("could not match pattern:"+data);
+    const wolframexpr = results[1];
+
     // REVIEW: Attach it to the thought instead of the style?
-    tdoc.insertStyle(style, { type: 'WOLFRAM', source: 'MATHEMATICA', meaning: 'INPUT', data });
+    tdoc.insertStyle(style, { type: 'WOLFRAM', source: 'MATHEMATICA', meaning: 'INPUT', data: wolframexpr });
   } catch(err) {
     tdoc.insertStyle(style, { type: 'TEXT', source: 'MATHEMATICA', meaning: 'EVALUATION-ERROR', data: `Cannot convert to Wolfram expression: ${err.message}` });
   }

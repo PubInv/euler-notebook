@@ -71,8 +71,6 @@ async function execute(script: WolframData): Promise<WolframData|undefined> {
 }
 
 async function addSymbolDefStyles(tDoc: TDoc, style: StyleObject): Promise<void> {
-
-  // TODO: This (inappropriately, IMHO) sets the variable in the kernel
   const script = `FullForm[Hold[${style.data}]]`;
   const result = await execute(script);
   if (!result) { return; }
