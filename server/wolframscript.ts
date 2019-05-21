@@ -227,12 +227,3 @@ export function draftChangeContextName(expr: string,_ctx = OUR_PRIVATE_CTX_NAME)
   // figure out how to make this a variable
   return expr.replace(/runPrv`/g,'');
 }
-
-// I don't know why this is needed, but wolframscript
-// bizarrely returns parenthesized expressions with trailing quote mark
-// I assume this is very fragile. It does NOT seem to happen
-// when you run wolfrascript interactively from the command line.
-export function postProcessMathMLResult(expr: string) {
-  // we sometimes get: '(result)'' when we want 'result'
-  return expr.slice(1,-2);
-}

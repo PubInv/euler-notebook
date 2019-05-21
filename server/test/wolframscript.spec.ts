@@ -33,7 +33,6 @@ TODO: Additional Test cases
 // Requirements
 
 import { execute, start, stop } from '../wolframscript';
-import { postProcessMathMLResult } from '../wolframscript';
 
 // import { expect } from 'chai';
 import { assert } from 'chai';
@@ -132,22 +131,21 @@ describe("wolframscript", function(){
 });
 
 const MATHML_TEST_CASES = [
-  ["MakeExpression[ImportString[\"<math xmlns='http://www.w3.org/1998/Math/MathML'>  <mi> x </mi>  <mo> = </mo>  <mn> 4 </mn></math>\"], StandardForm]'",
+  ["<math xmlns='http://www.w3.org/1998/Math/MathML'>  <mi> x </mi>  <mo> = </mo>  <mn> 4 </mn></math>",
    // for some completely unknown wacky reason, "execute" is returning
    // the result parenthesized and with a trailing quote mark!
    // This does not seem to happen when from interactively
-  'HoldComplete[x = 4]'],
-  ["MakeExpression[ImportString[\"<math xmlns='http://www.w3.org/1998/Math/MathML'>  <mi> a </mi>  <mo> = </mo>  <mi> b </mi>  <mo> + </mo>  <mi> c </mi></math>\"], StandardForm]'",
-   // for some completely unknown wacky reason, "execute" is returning
-   // the result parenthesized and with a trailing quote mark!
-   // This does not seem to happen when from interactively
+   'HoldComplete[x = 4]'],
+
+  ["<math xmlns='http://www.w3.org/1998/Math/MathML'>  <mi> a </mi>  <mo> = </mo>  <mi> b </mi>  <mo> + </mo>  <mi> c </mi></math>",
    'HoldComplete[a = b + c]'],
-  ["MakeExpression[ImportString[\"<math xmlns='http://www.w3.org/1998/Math/MathML'>  <mi> a </mi>  <mo> = </mo>  <msup>    <mrow>      <mi> x </mi>    </mrow>    <mrow>      <mn> 2 </mn>    </mrow>  </msup></math>\"], StandardForm]'",
-   'HoldComplete[a = x^2]']
+
+   ["<math xmlns='http://www.w3.org/1998/Math/MathML'>  <mi> a </mi>  <mo> = </mo>  <msup>    <mrow>      <mi> x </mi>    </mrow>    <mrow>      <mn> 2 </mn>    </mrow>  </msup></math>",
+    'HoldComplete[a = x^2]']
 ];
 
 
-describe.only("wolframscriptmathml", function(){
+describe("wolframscriptmathml", function(){
 
     let gWolframStarted: boolean = false;
     this.timeout(10*1000);
@@ -163,9 +161,10 @@ describe.only("wolframscriptmathml", function(){
         `evaluates ${expr.slice(0,20)}...`
       )
       it(label, async function(){
-        const results = await execute(expr);
-        const processed = postProcessMathMLResult(results);
-        assert.equal(processed, expected);
+        const wrapped = `InputForm[MakeExpression[ImportString["${expr}"], StandardForm]]`;
+        const results = await execute(wrapped);
+//        const processed = postProcessMathMLResult(results);
+        assert.equal(results, expected);
       });
     }
 
