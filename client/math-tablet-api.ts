@@ -38,7 +38,7 @@ export interface SymbolData {
 export type NotebookName = string; // Just the name of the notebook, no .mtnb extension.
 export type NotebookPath = string; // relative path from ~/math-tablet-usr/ plus name plus .mtnb extension.
 
-export type RelationshipMeaning = 
+export type RelationshipMeaning =
   'SYMBOL-DEPENDENCY';
 
 export type StyleMeaning =
@@ -55,8 +55,9 @@ export type StyleMeaning =
   'SYMBOL'|           // Symbols extracted from an expression.
   'SYMBOL-DEFINITION'|// Definition of a symbol.
   'SYMBOL-USE'|       // Use of a symbol
-  'UNIVARIATE-QUADRATIC';  // A quadratic expression, presumably worth plotting.
-  
+  'UNIVARIATE-QUADRATIC'|  // A quadratic expression, presumably worth plotting.
+  'SUBTRIVARIATE';  // An expression in one or two variables presumable plottable.
+
   export type StyleType =
   'IMAGE'|            // ImageData: URL of image relative to notebook folder.
   'JIIX'|             // Jiix: MyScript JIIX export from 'MATH' editor.

@@ -77,7 +77,7 @@ With[{v = Variables[#1]},
 }
 
 export async function quadPlotterRule(tdoc: TDoc, style: StyleObject): Promise<StyleObject[]> {
-  if (style.type != 'CLASSIFICATION' || style.meaning != 'QUADRATIC') { return []; }
+  if (style.type != 'CLASSIFICATION' || style.meaning != 'UNIVARIATE-QUADRATIC') { return []; }
   debug("INSIDE QUAD PLOTTER :",style);
   const targetPath = "./public/tmp";
   const urlPath = "/tmp";

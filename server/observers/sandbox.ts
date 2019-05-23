@@ -88,4 +88,3 @@ function onClose(tDoc: TDoc): void {
 function onOpen(tDoc: TDoc): void {
   debug(`tDoc open: ${tDoc._path}`);
 }
-
