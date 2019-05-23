@@ -49,10 +49,12 @@ function onChange(tDoc: TDoc, change: NotebookChange): void {
       runAsync(subtrivariateClassifierRule(tDoc, change.style), MODULE, 'subtrivariateClassifierRule');
     break;
   case 'relationshipInserted':
-    runAsync(quadClassifierChangedRule(tDoc, change.relationship), MODULE, 'quadClassifierChangedRule');
+      runAsync(quadClassifierChangedRule(tDoc, change.relationship), MODULE, 'quadClassifierChangedRule');
+    runAsync(subTrivariateClassifierChangedRule(tDoc, change.relationship), MODULE, 'subTrivariateClassifierChangedRule');
     break;
   case 'relationshipDeleted':
-    runAsync(quadClassifierChangedRule(tDoc, change.relationship), MODULE, 'quadClassifierChangedRule');
+      runAsync(quadClassifierChangedRule(tDoc, change.relationship), MODULE, 'quadClassifierChangedRule');
+    runAsync(subTrivariateClassifierChangedRule(tDoc, change.relationship), MODULE, 'subTrivariateClassifierChangedRule');
     break;
   default: break;
   }
@@ -236,6 +238,70 @@ export async function quadClassifierChangedRule(tdoc: TDoc, relationship: Relati
         debug("CHOOSING DELETION");
     const classifcations =
           tdoc.findChildStyleOfType(target_ancestor.id,'CLASSIFICATION','UNIVARIATE-QUADRATIC');
+    tdoc.deleteStyle(classifcations[0].id);
+  }
+}
+
+
+export async function subTrivariateClassifierChangedRule(tdoc: TDoc, relationship: RelationshipObject): Promise<void> {
+
+  if (relationship.meaning != 'SYMBOL-DEPENDENCY') return;
+
+  debug("RELATIONSHIP",relationship);
+
+  const target_ancestor = tdoc.getAncestorThought(relationship.targetId);
+
+  if (target_ancestor == null) {
+    throw new Error("Could not find ancestor Thought: "+relationship.targetId);
+  }
+
+  // now we want to find any potentially (re)classifiable style on
+  // this ancestor thought...
+
+  const candidate_styles =
+        tdoc.findChildStyleOfType(target_ancestor.id,'MATHEMATICA','EVALUATION');
+  debug("candidate styles",candidate_styles);
+  // Not really sure what to do here if there is more than one!!!
+
+  const beforeChangeClassifiedAsSubTrivariate = tdoc.stylableHasChildOfType(candidate_styles[0],'CLASSIFICATION','SUBTRIVARIATE');
+  debug(beforeChangeClassifiedAsSubTrivariate);
+
+  // Now it is possible that any classifications need to be removed;
+  // it is also possible that that a new classification should be added.
+
+  // A simple thing would be to rmove all classifications and regenerate.
+  // However, we want to be as minimal as possible. I think we shold distinguish
+  // the case: Either we are adding a UNIVARIATE-QUADRATIC, or disqalifying one.
+  // So we should just check if this EVALAUTION is plottable. If so, we
+  // should make sure one exists, by adding a CLASSIFICATION if it does not.
+  // if one does exist, we whold remove it if we are not.
+  const unique_style = candidate_styles[0];
+
+  var isSubTrivariate;
+  try {
+    // here I attempt to find the dependency relationships....
+    const rs = tdoc.getSymbolStylesIDependOn(unique_style);
+    debug("RS ",rs);
+    // Now each member of rs should have a name and a value
+    // that we should use in our quadratic classification....
+    isSubTrivariate = await isExpressionSubTrivariate(unique_style.data,rs);
+    debug("SUBTRI CLASSIFER SAYS:",isSubTrivariate);
+  } catch (e) {
+    debug("MATHEMATICA EVALUATION FAILED :",e);
+  }
+  debug("IS PLOTTABLE",isSubTrivariate);
+  debug("IS BEFOREQUDRATIC",beforeChangeClassifiedAsSubTrivariate);
+  if (isSubTrivariate && !beforeChangeClassifiedAsSubTrivariate) {
+    tdoc.insertStyle(unique_style, { type: 'CLASSIFICATION',
+                                           data: isSubTrivariate,
+                                           meaning: 'SUBTRIVARIATE',
+                                           source: 'MATHEMATICA' });
+
+  }
+  if (!isSubTrivariate && beforeChangeClassifiedAsSubTrivariate) {
+    debug("CHOOSING DELETION");
+    const classifcations =
+      tdoc.findChildStyleOfType(target_ancestor.id,'CLASSIFICATION','SUBTRIVARIATE');
     tdoc.deleteStyle(classifcations[0].id);
   }
 }

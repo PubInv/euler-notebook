@@ -45,7 +45,8 @@ export async function initialize(_config: Config): Promise<void> {
 function onChange(tDoc: TDoc, change: NotebookChange): void {
   switch (change.type) {
   case 'styleInserted':
-    runAsync(quadPlotterRule(tDoc, change.style), MODULE, 'quadPlotterRule');
+      runAsync(quadPlotterRule(tDoc, change.style), MODULE, 'quadPlotterRule');
+      runAsync(plotterRule(tDoc, change.style), MODULE, 'quadPlotterRule');
     break;
   default: break;
   }
@@ -59,16 +60,8 @@ function onOpen(tDoc: TDoc): void {
   debug(`tDoc open: ${tDoc._path}`);
 }
 
+
 async function plotQuadratic(expr : string, variable: string, filename : string) : Promise<boolean> {
-  // Mathematica offers various ways to deal with this:
-  // https://reference.wolfram.com/language/tutorial/FindingTheStructureOfAPolynomial.html
-  // I believe this is a good invocation of an anonymous function
-  /*
-With[{v = Variables[#]},
- Exponent[#, v[[1]]] == 2 && Length[v] == 1] &[x^2+x]
-With[{v = Variables[#1]},
- Export[#2,Plot[#1,{v[[1]],0,6 Pi}]]]
-  */
   const univariate_plot_script =
         `Export["${filename}",Plot[${expr},{${variable},0,6 Pi}]]`;
   debug("PLOT COMMAND SENT TO WOLFRAM",univariate_plot_script);
@@ -99,6 +92,60 @@ export async function quadPlotterRule(tdoc: TDoc, style: StyleObject): Promise<S
                                           value: s.data.value})));
 
     createdPlotSuccessfully = await plotQuadratic(sub_expr,style.data,full_filename);
+    debug("PLOTTER SUCCESS SAYS:",createdPlotSuccessfully);
+  } catch (e) {
+    debug("MATHEMATICA QUAD PLOT FAILED :",e);
+    return [];
+  }
+
+  var styles = [];
+  if (createdPlotSuccessfully) {
+    var imageStyle =
+        tdoc.insertStyle(style,{ type: 'IMAGE',
+                                 data: urlPath+"/"+fn,
+                                 meaning: 'PLOT',
+                                 source: 'MATHEMATICA' })
+    styles.push(imageStyle);
+  }
+  return styles;
+}
+
+
+async function plotSubtrivariate(expr : string, variables: string[], filename : string) : Promise<boolean> {
+  let plot_script =
+   (variables.length == 1) ?
+    `Export["${filename}",Plot[${expr},{${variables[0]},0,6 Pi}]]`
+    :
+    `Export["${filename}",Plot3D[${expr},{${variables[0]},0,6 Pi},{${variables[1]},0,6 Pi}]]`;
+  debug("PLOT COMMAND SENT TO WOLFRAM",plot_script);
+  await execute(plot_script);
+  return true;
+}
+
+
+export async function plotterRule(tdoc: TDoc, style: StyleObject): Promise<StyleObject[]> {
+  if (style.type != 'CLASSIFICATION' || style.meaning != 'SUBTRIVARIATE') { return []; }
+  debug("INSIDE PLOTTER :",style);
+  const targetPath = "./public/tmp";
+  const urlPath = "/tmp";
+  const fn = "quadplot" + style.id + ".gif";
+  const full_filename = targetPath + "/" + fn;
+
+  const parent = <StyleObject>tdoc.getStylable(style.stylableId);
+
+  // We are only plottable if we make the normal substitutions...
+  const rs = tdoc.getSymbolStylesIDependOn(parent);
+  var createdPlotSuccessfully;
+  try {
+    // In this case, the style.data is the variable name...
+
+    const sub_expr =
+          constructSubstitution(parent.data,
+                                rs.map(
+                                  s => ({ name: s.data.name,
+                                          value: s.data.value})));
+
+    createdPlotSuccessfully = await plotSubtrivariate(sub_expr,style.data,full_filename);
     debug("PLOTTER SUCCESS SAYS:",createdPlotSuccessfully);
   } catch (e) {
     debug("MATHEMATICA QUAD PLOT FAILED :",e);
