@@ -96,14 +96,13 @@ export interface StrokeGroups {
   // TYPESCRIPT: TODO
 }
 
+export type ToolName = string;
 export interface ToolInfo {
-  menuHtml: /* TYPESCRIPT: Html? */ string;
+  name: ToolName;
+  html: /* TYPESCRIPT: Html? */ string;
 }
-
-export interface ToolMenu {
-  [ name: string]: ToolInfo;
-}
-
+export type ToolMenu = ToolInfo[];
+	
 // Plain object version of TDoc
 
 export type RelationshipId = number;

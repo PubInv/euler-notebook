@@ -148,9 +148,5 @@ function renderTextStyle(style: StyleObject): Html {
 
 function renderToolMenuStyle(style: StyleObject): Html {
   const toolMenu: ToolMenu = style.data;
-  const toolHtmls =  Object.keys(toolMenu).map(toolName=>{
-    const toolInfo = toolMenu[toolName];
-    return `<button class="tool" data-tool="${toolName}">${toolInfo.menuHtml}</button>`;
-  });
-  return toolHtmls.join("&middot;");
+  return toolMenu.map((toolInfo)=>`<button class="tool" data-tool="${toolInfo.name}">${toolInfo.html}</button>`).join("&middot;");
 }

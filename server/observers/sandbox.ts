@@ -59,10 +59,10 @@ function onChange(tDoc: TDoc, change: NotebookChange): void {
     }
     case 'thoughtInserted': {
       const thought = change.thought;
-      const toolMenu: ToolMenu = {
-        'plot': { menuHtml: "Plot" },
-        'debug': { menuHtml: "Debug" },
-      }
+      const toolMenu: ToolMenu = [
+        { name: 'plot', html: "Plot" },
+        { name: 'debug', html: "Debug" },
+      ]
       const styleProps: StyleProperties = {
         type: 'TOOL-MENU',
         meaning: 'ATTRIBUTE',

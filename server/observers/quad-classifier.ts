@@ -135,9 +135,9 @@ export async function subtrivariateClassifierRule(tdoc: TDoc, style: StyleObject
                                                    source: 'MATHEMATICA' });
 
     styles.push(classification);
-    const toolMenu: ToolMenu = {
-      'plot': { menuHtml: "Plot Subtrivariate (draft)" },
-    }
+    const toolMenu: ToolMenu = [
+      { name: 'plot', html: "Plot Subtrivariate (draft)" },
+    ]
     const styleProps: StyleProperties = {
       type: 'TOOL-MENU',
       meaning: 'ATTRIBUTE',
