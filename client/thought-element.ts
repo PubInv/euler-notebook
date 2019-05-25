@@ -60,6 +60,8 @@ export class ThoughtElement {
   insertStyle(style: StyleObject): void {    
     if (style.type == 'LATEX' && (style.meaning=='INPUT'||style.meaning=='INPUT-ALT')) {
       this.renderLatexFormula(style.data);
+    } else if (style.type == 'IMAGE' && style.meaning=='PLOT') {
+      this.renderPlot(style.data);
     } else if (style.type == 'TOOL-MENU') {
       this.renderToolMenu(style);
     }
@@ -88,6 +90,11 @@ export class ThoughtElement {
     const latexHtml = getKatex().renderToString(latexData, { throwOnError: false });
     const $formulaElt = this.$elt.querySelector('.formula');
     $formulaElt!.innerHTML = latexHtml;
+  }
+
+  private renderPlot(url: string): void {
+    const $formulaElt = this.$elt.querySelector('.formula');
+    $formulaElt!.innerHTML = `<image src="${url}"/>`
   }
 
   private renderToolMenu(style: StyleObject): void {

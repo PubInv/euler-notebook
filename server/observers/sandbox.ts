@@ -27,6 +27,7 @@ const debug = debug1(`server:${MODULE}`);
 
 import { NotebookChange, StyleProperties, ToolMenu, ThoughtId, StyleSource, ToolInfo } from '../../client/math-tablet-api';
 import { TDoc  } from '../tdoc';
+import { runAsync } from '../common';
 import { Config } from '../config';
 
 // Exports
@@ -34,16 +35,20 @@ import { Config } from '../config';
 export async function initialize(_config: Config): Promise<void> {
   debug(`initializing`);
   TDoc.on('open', (tDoc: TDoc)=>{
-    tDoc.on('change', function(this: TDoc, change: NotebookChange){ onChange(this, change); });
+    tDoc.on('change', function(this: TDoc, change: NotebookChange){ 
+      runAsync(onChange(this, change), MODULE, 'onChange'); 
+    });
     tDoc.on('close', function(this: TDoc){ onClose(this); });
-    tDoc.on('useTool', function(this: TDoc, thoughtId: ThoughtId, source: StyleSource, info: ToolInfo){ onUseTool(this, thoughtId, source, info); })
+    tDoc.on('useTool', function(this: TDoc, thoughtId: ThoughtId, source: StyleSource, info: ToolInfo){ 
+      runAsync(onUseTool(this, thoughtId, source, info), MODULE, 'onUseTool'); 
+    })
     onOpen(tDoc);
   });
 }
 
 // Event Handlers
 
-function onChange(tDoc: TDoc, change: NotebookChange): void {
+async function onChange(tDoc: TDoc, change: NotebookChange): Promise<void> {
   debug(`tDoc change: ${tDoc._path} ${change.type}`);
   switch(change.type) {
     case 'relationshipDeleted': {
@@ -90,7 +95,28 @@ function onOpen(tDoc: TDoc): void {
   debug(`tDoc open: ${tDoc._path}`);
 }
  
-function onUseTool(tDoc: TDoc, thoughtId: ThoughtId, source: StyleSource, info: ToolInfo): void {
+async function onUseTool(tDoc: TDoc, thoughtId: ThoughtId, source: StyleSource, info: ToolInfo): Promise<void> {
   if (source != 'SANDBOX') { return; }
-  debug(`tDoc use tool: ${tDoc._path} ${thoughtId} ${source} ${JSON.stringify(info)}`)
+  debug(`tDoc use tool: ${tDoc._path} ${thoughtId} ${source} ${JSON.stringify(info)}`);
+
+  switch(info.name) {
+    case 'plot': {
+      const thought = tDoc.insertThought({});
+      tDoc.insertStyle(thought, { 
+        type: 'IMAGE', 
+        meaning: 'PLOT',
+        source: 'SANDBOX',
+        data: 'https://www.mathsisfun.com/sets/images/function-square.svg',
+      });
+      // REVIEW: Insert relationship?
+      break;
+    }
+    case 'debug': {
+      break;
+    }
+    default: {
+      console.error(`ERROR ${MODULE}: unknown tool ${info.name}`);
+      break;
+    }
+  }
 }
