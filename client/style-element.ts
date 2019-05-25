@@ -19,32 +19,32 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 // Requirements
 
-import { getKatex } from './katex-types.js';
+// import { getKatex } from './katex-types.js';
 
-import { $new, Html } from './dom.js';
-import { StyleObject, ToolMenu } from './math-tablet-api.js';
+// import { Html } from './dom.js';
+import { StyleObject } from './math-tablet-api.js';
 
 // Types
 
-type StyleRenderer = (s: any /* TYPESCRIPT: */)=>Html;
+// type StyleRenderer = (s: any /* TYPESCRIPT: */)=>Html;
 
-interface StyleRendererMap {
-  [ styleType: /* StyleType */ string ]: StyleRenderer;
-}
+// interface StyleRendererMap {
+//   [ styleType: /* StyleType */ string ]: StyleRenderer;
+// }
 
 // Constants
 
-const STYLE_RENDERERS: StyleRendererMap = {
-  'IMAGE': renderImageStyle,
-  'JIIX': renderJiixStyle,
-  'LATEX': renderLatexStyle,
-  'MATHJS': renderMathJsStyle,
-  'MATHML': renderMathMlStyle,
-  'MATHEMATICA': renderMathematicaStyle,
-  'SYMBOL': renderSymbolStyle,
-  'TOOL-MENU': renderToolMenuStyle,
-  'TEXT': renderTextStyle,
-};
+// const STYLE_RENDERERS: StyleRendererMap = {
+//   'IMAGE': renderImageStyle,
+//   'JIIX': renderJiixStyle,
+//   'LATEX': renderLatexStyle,
+//   'MATHJS': renderMathJsStyle,
+//   'MATHML': renderMathMlStyle,
+//   'MATHEMATICA': renderMathematicaStyle,
+//   'SYMBOL': renderSymbolStyle,
+//   'TOOL-MENU': renderToolMenuStyle,
+//   'TEXT': renderTextStyle,
+// };
 
 // Exported Class
 
@@ -52,39 +52,21 @@ export class StyleElement {
 
   // Class Methods
 
-  static insert($parent: HTMLElement, style: StyleObject): StyleElement {
-    var rval = new this(style);
-    $parent.appendChild(rval.$elt);
-    return rval;
+  static insert(style: StyleObject): StyleElement {
+    return new this(style);
   }
 
   // Instance Properties
 
-  public $elt: HTMLDivElement;
   public style: StyleObject;
 
   // Instance Methods
-
-  delete(): void {
-    const $parent = this.$elt.parentElement;
-    if (!$parent) { throw new Error("Style element has no parent in delete."); }
-    $parent.removeChild(this.$elt);
-  }
 
   // PRIVATE
 
   // Private Constructor
 
   private constructor(style: StyleObject) {
-    const id = `S${style.id}`;
-    const classes = ['style' ];
-    if (style.source) { classes.push(style.source); }
-    // const showButtonHtml: Html = `<button class="showStyle">&#x1F5E8;</button>`;
-    let headerHtml: Html = `<div class="header">S-${style.id} ${style.source} ${style.type} ${style.meaning} => ${style.stylableId}</div>`;
-    const renderFn = STYLE_RENDERERS[style.type];
-    const contentHtml = renderFn ? renderFn(style) : renderOtherStyle(style);
-    const html = /* ${showButtonHtml} */ `${headerHtml}${contentHtml}`;
-    this.$elt = $new<HTMLDivElement>('div', id, classes, html);
     this.style = style;
   }
 
@@ -99,54 +81,54 @@ export class StyleElement {
 //   return div.innerHTML;
 // }
 
-function renderImageStyle(style: StyleObject): Html {
-  return `<div><img src="${style.data}"/></div>`;
-}
+// function renderImageStyle(style: StyleObject): Html {
+//   return `<div><img src="${style.data}"/></div>`;
+// }
 
-function renderJiixStyle(_style: StyleObject): Html {
-  return `<div><i>JIIX data</i></div>`;
-}
+// function renderJiixStyle(_style: StyleObject): Html {
+//   return `<div><i>JIIX data</i></div>`;
+// }
 
-function renderLatexStyle(style: StyleObject): Html {
-  // TODO: Catch errors and display.
-  const latexHtml = getKatex().renderToString(style.data, { throwOnError: false });
-  return `<div>${latexHtml}</div>`;
-}
+// function renderLatexStyle(style: StyleObject): Html {
+//   // TODO: Catch errors and display.
+//   const latexHtml = getKatex().renderToString(style.data, { throwOnError: false });
+//   return `<div>${latexHtml}</div>`;
+// }
 
-function renderMathematicaStyle(style: StyleObject): Html {
-  return `<div><tt>${style.data}</tt></div>`;
-}
+// function renderMathematicaStyle(style: StyleObject): Html {
+//   return `<div><tt>${style.data}</tt></div>`;
+// }
 
-function renderSymbolStyle(style: StyleObject): Html {
-  if (style.meaning == 'SYMBOL-DEFINITION') {
-    return `<div><tt>def: ${style.data.name} = ${style.data.value}</tt></div>`;
-  } else {
-    return `<div><tt>use: ${style.data.name}</tt></div>`;
-  }
-}
+// function renderSymbolStyle(style: StyleObject): Html {
+//   if (style.meaning == 'SYMBOL-DEFINITION') {
+//     return `<div><tt>def: ${style.data.name} = ${style.data.value}</tt></div>`;
+//   } else {
+//     return `<div><tt>use: ${style.data.name}</tt></div>`;
+//   }
+// }
 
-function renderMathJsStyle(style: StyleObject): Html {
-  return `<div><tt>${style.data}</tt></div>`;
-}
+// function renderMathJsStyle(style: StyleObject): Html {
+//   return `<div><tt>${style.data}</tt></div>`;
+// }
 
-function renderMathMlStyle(style: StyleObject): Html {
-  console.dir(style.data);
-  return `<div><i>MathML data</i></div>`;
-}
+// function renderMathMlStyle(style: StyleObject): Html {
+//   console.dir(style.data);
+//   return `<div><i>MathML data</i></div>`;
+// }
 
-function renderOtherStyle(style: StyleObject): Html {
-  return `<div><tt>${style.data}</tt></div>`;
-}
+// function renderOtherStyle(style: StyleObject): Html {
+//   return `<div><tt>${style.data}</tt></div>`;
+// }
 
-function renderTextStyle(style: StyleObject): Html {
-  if (style.meaning == 'INDENTED') {
-    return `<pre>${style.data}</pre>`;
-  } else {
-    return `<div>${style.data}</div>`;
-  }
-}
+// function renderTextStyle(style: StyleObject): Html {
+//   if (style.meaning == 'INDENTED') {
+//     return `<pre>${style.data}</pre>`;
+//   } else {
+//     return `<div>${style.data}</div>`;
+//   }
+// }
 
-function renderToolMenuStyle(style: StyleObject): Html {
-  const toolMenu: ToolMenu = style.data;
-  return toolMenu.map((toolInfo)=>`<button class="tool" data-tool="${toolInfo.name}">${toolInfo.html}</button>`).join("&middot;");
-}
+// function renderToolMenuStyle(style: StyleObject): Html {
+//   const toolMenu: ToolMenu = style.data;
+//   return toolMenu.map((toolInfo)=>`<button class="tool" data-tool="${toolInfo.name}">${toolInfo.html}</button>`).join("&middot;");
+// }

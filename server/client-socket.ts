@@ -235,6 +235,7 @@ export class ClientSocket {
     const thought = tDoc.insertThought(thoughtProps);
     for (const styleProps of stylePropss) {
       switch (styleProps.type) {
+      // REVIEW: This code should go over in observers/mathjs-cas.ts
       case 'MATHJS': {
         let parseResults: MathJsParseResults;
         try {
@@ -246,8 +247,8 @@ export class ClientSocket {
           return;
         }
         // MathJS parsing also give us a LaTeX representation, so add that.
-        const style = tDoc.insertStyle(thought, { ...styleProps, data: parseResults.mathJsText });
-        tDoc.insertStyle(style, { type: 'LATEX', data: parseResults.latexMath, meaning: 'INPUT-ALT', source: 'USER' });
+        tDoc.insertStyle(thought, { ...styleProps, data: parseResults.mathJsText });
+        tDoc.insertStyle(thought, { type: 'LATEX', data: parseResults.latexMath, meaning: 'INPUT-ALT', source: 'USER' });
           break;
       }
       default: 

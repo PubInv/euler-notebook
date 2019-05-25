@@ -105,37 +105,57 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 // Element classes
 
-// .tdoc
-  // display flex
-  // flex-direction column
-
 .deleteThought
-.showStyle
   color inherit
   background-color transparent
   border none
   padding 0
+  width 36px
+  visibility hidden
 
-.deleteThought
-  float right
-  
-.showStyle
-  float left
+.formula
+  flex-grow 1
 
-.style
-  .MATHJS
-    color blue
-  .MATHSTEPS
-    color purple
+.handle
+  padding 4px 0 4px 0
+  text-align right
+  width 48px
 
-.thought, .style
-  border 1px solid #cccccc
-  margin 2pt
-  padding 2pt
+.status
+  text-align left
+  width 36px
 
-  .header
-    font-size x-small
-    color#cccccc
+.thought
+  align-items center
+  display flex
+  flex-direction row
+  margin 18px 0 18px 0
+
+.thought.selected 
+  background-color: #f0f0f0
+
+.thought.selected .deleteThought
+  visibility visible
+
+.thought.selected .tools
+  visibility visible
+
+.tool
+  color blue
+  background-color transparent
+  border none
+  padding 0
+  text-decoration underline
+
+.tools
+  width 80px
+  visibility hidden
+
+@media (hover: hover) {
+  .thought:hover .tools { visibility: visible }
+  .thought:hover { background-color:#f8f8f8 }
+  .thought:hover .deleteThought { visibility: visible }
+}
 
 // Element types
 

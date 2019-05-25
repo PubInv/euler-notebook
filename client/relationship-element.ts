@@ -19,7 +19,6 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 // Requirements
 
-import { $new, Html } from './dom.js';
 import { RelationshipObject } from './math-tablet-api.js';
 
 // Types
@@ -32,35 +31,21 @@ export class RelationshipElement {
 
   // Class Methods
 
-  static insert($parent: HTMLElement, relationship: RelationshipObject): RelationshipElement {
-    var rval = new this(relationship);
-    $parent.appendChild(rval.$elt);
-    return rval;
+  static insert(relationship: RelationshipObject): RelationshipElement {
+   return new this(relationship);
   }
 
   // Instance Properties
 
-  public $elt: HTMLDivElement;
   public relationship: RelationshipObject;
 
   // Instance Methods
-
-  delete(): void {
-    const $parent = this.$elt.parentElement;
-    if (!$parent) { throw new Error("Relationship element has no parent in delete."); }
-    $parent.removeChild(this.$elt);
-  }
 
   // PRIVATE
 
   // Private Constructor
 
   private constructor(relationship: RelationshipObject) {
-    const id = `R${relationship.id}`;
-    const classes = ['relationship' /* relationship.meaning? */ ];
-    // const showButtonHtml: Html = `<button class="showStyle">&#x1F5E8;</button>`;
-    const html: Html = `<div class="header">R-${relationship.id} ${relationship.meaning} => ${relationship.targetId}</div>`;
-    this.$elt = $new<HTMLDivElement>('div', id, classes, html);
     this.relationship = relationship;
   }
 

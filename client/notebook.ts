@@ -136,15 +136,15 @@ export class Notebook {
   private chDeleteRelationship(relationshipId: RelationshipId): void {
     const relationshipElt = this.relationshipElements.get(relationshipId);
     if (!relationshipElt) { throw new Error("Delete relationship message for unknown style"); }
-    relationshipElt.delete();
     this.relationshipElements.delete(relationshipId);
   }
 
   private chDeleteStyle(styleId: StyleId): void {
     const styleElt = this.styleElements.get(styleId);
     if (!styleElt) { throw new Error("Delete style message for unknown style"); }
-    styleElt.delete();
     this.styleElements.delete(styleId);
+    const elt = this.thoughtElements.get(styleElt.style.stylableId);
+    if (elt) { elt.deleteStyle(styleElt.style); }
   }
 
   private chDeleteThought(thoughtId: ThoughtId): void {
@@ -155,26 +155,28 @@ export class Notebook {
   }
 
   private chInsertRelationship(relationship: RelationshipObject): void {
-    let elt: ThoughtElement|StyleElement|undefined;
-    elt = this.thoughtElements.get(relationship.sourceId);
-    if (!elt) {
-      elt = this.styleElements.get(relationship.sourceId);
-    }
-    if (!elt) { throw new Error("Relationship attached to unknown thought or style."); }
-    const relationshipElt = RelationshipElement.insert(elt.$elt, relationship);;
+    // let elt: ThoughtElement|StyleElement|undefined;
+    // elt = this.thoughtElements.get(relationship.sourceId);
+    // if (!elt) {
+    //   elt = this.styleElements.get(relationship.sourceId);
+    // }
+    // if (!elt) { throw new Error("Relationship attached to unknown thought or style."); }
+    const relationshipElt = RelationshipElement.insert(relationship);;
     this.relationshipElements.set(relationship.id, relationshipElt);
   }
 
   private chInsertStyle(style: StyleObject): void {
-    let elt: ThoughtElement|StyleElement|undefined;
-    elt = this.thoughtElements.get(style.stylableId);
-    if (!elt) {
-      elt = this.styleElements.get(style.stylableId);
-    }
-    if (!elt) { throw new Error("Style attached to unknown thought or style."); }
-    const styleElt = StyleElement.insert(elt.$elt, style);
+    // let elt: ThoughtElement|StyleElement|undefined;
+    // elt = this.thoughtElements.get(style.stylableId);
+    // if (!elt) {
+    //   elt = this.styleElements.get(style.stylableId);
+    // }
+    // if (!elt) { throw new Error("Style attached to unknown thought or style."); }
+    const styleElt = StyleElement.insert(style);
     this.styleElements.set(style.id, styleElt);
-  }
+    const elt = this.thoughtElements.get(style.stylableId);
+    if (elt) { elt.insertStyle(style); }
+    }
 
   private chInsertThought(thought: ThoughtObject): void {
     const thoughtElt = ThoughtElement.insert(this.$elt, thought);
