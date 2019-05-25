@@ -35,8 +35,17 @@ export class Notebook {
 
   // Class Methods
 
+  public static get(notebookName: NotebookName): Notebook|undefined {
+    return this.notebooks.get(notebookName);
+  }
+
   public static open(socket: ServerSocket, notebookName: NotebookName, notebookData: TDocObject): Notebook {
-    return new this(socket, notebookName, notebookData);
+    let notebook = this.notebooks.get(notebookName);
+    if (!notebook) {
+      notebook = new this(socket, notebookName, notebookData);
+      this.notebooks.set(notebookName, notebook);
+    }
+    return notebook;
   }
 
   // Instance Properties
@@ -45,6 +54,14 @@ export class Notebook {
   public notebookName: NotebookName;
 
   // Instance Methods
+
+  public close() {
+    // TODO: remove event listeners?
+    // TODO: delete element?
+    // TODO: mark closed?
+    this.clear();
+    Notebook.notebooks.delete(this.notebookName);
+  }
 
   // Server Message Handlers
 
@@ -59,17 +76,19 @@ export class Notebook {
     }
   }
 
-  public smClose(): void {
-    this.clear();
-    // TODO: remove event listeners?
-    // TODO: delete element?
-  }
+  public smClose(): void { return this.close(); }
 
   public insertThought(thoughtProps: ThoughtProperties, stylePropss: StyleProperties[]): void {
     this.socket.sendMessage({ action: 'insertThought', notebookName: this.notebookName, thoughtProps, stylePropss });
   }
 
   // -- PRIVATE --
+
+  // Private Class Properties
+
+  private static notebooks: Map<NotebookName, Notebook> = new Map();
+  
+  // Private Constructor
 
   private constructor(socket: ServerSocket, notebookName: NotebookName, notebookData: TDocObject) {
     this.socket = socket;

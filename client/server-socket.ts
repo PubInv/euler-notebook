@@ -78,7 +78,6 @@ export class ServerSocket {
   private constructor(url: string, connectPromise: ConnectPromise) {
     this.connectPromise = connectPromise;
     this.openPromises = new Map();
-    this.notebooks = new Map();
     const ws = this.ws = new WebSocket(url);
     ws.addEventListener('close', (event: CloseEvent)=>this.onWsClose(event));
     ws.addEventListener('error', (event: Event)=>this.onWsError(event));
@@ -90,7 +89,6 @@ export class ServerSocket {
 
   private openPromises: Map<NotebookName, OpenPromise>;
   private connectPromise: ConnectPromise;
-  private notebooks: Map<NotebookName, Notebook>;
   private ws: WebSocket;
 
   // Private Event Handlers
@@ -148,7 +146,6 @@ export class ServerSocket {
     const openRequest = this.openPromises.get(notebookName);
     if (!openRequest) { throw new Error(`Notebook opened message for unknown notebook: ${notebookName}`); }
     const notebook = Notebook.open(this, notebookName, notebookData);
-    this.notebooks.set(notebookName, notebook);
     openRequest.resolve(notebook);
     this.openPromises.delete(notebookName);
   }
@@ -156,15 +153,13 @@ export class ServerSocket {
   // TODO: notebook open failure
 
   private smNotebookClosed(notebookName: NotebookName): void {
-    const notebook = this.notebooks.get(notebookName);
+    const notebook = Notebook.get(notebookName);
     if (!notebook) { throw new Error(`Unknown notebook closed: ${notebookName}`); }
     notebook.smClose();
-    this.notebooks.delete(notebookName);
-
   }
 
   private smNotebookChanged(notebookName: NotebookName, change: NotebookChange): void {
-    const notebook = this.notebooks.get(notebookName);
+    const notebook = Notebook.get(notebookName);
     if (!notebook) { throw new Error(`Notebook change from hnknown notebook: ${notebookName}`); }
     notebook.smChange(change);
   }
