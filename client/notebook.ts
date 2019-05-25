@@ -155,7 +155,7 @@ export class Notebook {
       elt = this.styleElements.get(relationship.sourceId);
     }
     if (!elt) { throw new Error("Relationship attached to unknown thought or style."); }
-    const relationshipElt = elt.insertRelationship(relationship);
+    const relationshipElt = RelationshipElement.insert(elt.$elt, relationship);;
     this.relationshipElements.set(relationship.id, relationshipElt);
   }
 
@@ -166,7 +166,7 @@ export class Notebook {
       elt = this.styleElements.get(style.stylableId);
     }
     if (!elt) { throw new Error("Style attached to unknown thought or style."); }
-    const styleElt = elt.insertStyle(style);
+    const styleElt = StyleElement.insert(elt.$elt, style);
     this.styleElements.set(style.id, styleElt);
   }
 
