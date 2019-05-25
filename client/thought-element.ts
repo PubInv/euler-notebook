@@ -37,6 +37,7 @@ export class ThoughtElement {
   // Instance Properties
 
   public $elt: HTMLDivElement;
+  public thought: ThoughtObject;
 
   // Instance Methods
 
@@ -57,6 +58,7 @@ export class ThoughtElement {
     const headerHtml: Html = `<div class="header">T-${thought.id}</div>`
     const html: Html = `${deleteButtonHtml}${headerHtml}`;
     this.$elt = $new<HTMLDivElement>('div', id, classes, html);
+    this.thought = thought;
   }
 
 }

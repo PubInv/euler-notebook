@@ -26,7 +26,7 @@ import { NotebookName, TDocObject, StyleId, StyleObject,
 // import { Jiix, StrokeGroups } from './myscript-types.js';
 import { StyleElement } from './style-element.js';
 import { ThoughtElement } from './thought-element.js';
-import { $new } from './dom.js';
+import { $new, Html } from './dom.js';
 import { RelationshipElement } from './relationship-element.js';
 
 // Exported Class
@@ -52,6 +52,12 @@ export class Notebook {
 
   public $elt: HTMLElement;
   public notebookName: NotebookName;
+
+  // Instance Property Functions
+
+  public debugHtml(): Html {
+    return Array.from(this.thoughtElements.values()).map(t=>this.debugThoughtHtml(t)).join('');
+  }
 
   // Instance Methods
 
@@ -181,6 +187,64 @@ export class Notebook {
     this.$elt.innerHTML = '';
     this.thoughtElements.clear();
     this.styleElements.clear();
+  }
+
+  private debugRelationshipHtml(r: RelationshipElement): Html {
+    return `<div><span class="leaf">R${r.relationship.id} &#x27a1; ${r.relationship.targetId}</span></div>`;
+  }
+
+  private debugStyleHtml(s: StyleElement): Html {
+    const styleElements = this.stylesAttachedToStyle(s);
+    const relationshipElements = this.relationshipsAttachedToStyle(s);
+    const json = JSON.stringify(s.style.data);
+    if (styleElements.length == 0 && relationshipElements.length == 0 && json.length<30) {
+      return `<div><span class="leaf">S${s.style.id} ${s.style.type} ${s.style.meaning} ${s.style.source} <tt>${json}</tt></span></div>`;
+    } else {
+      const stylesHtml = styleElements.map(s=>this.debugStyleHtml(s)).join('');
+      const relationshipsHtml = relationshipElements.map(r=>this.debugRelationshipHtml(r)).join('');
+      const [ shortJsonTt, longJsonTt ] = json.length<30 ? [` <tt>${json}</tt>`, ''] : [ '', `<tt>${json}</tt>` ];
+      return `<div>
+  <span class="collapsed">S${s.style.id} ${s.style.type} ${s.style.meaning} ${s.style.source}${shortJsonTt}</span>
+  <div class="nested" style="display:none">${longJsonTt}
+    ${stylesHtml}
+    ${relationshipsHtml}
+  </div>
+</div>`;
+    }
+  }
+
+  private debugThoughtHtml(t: ThoughtElement): Html {
+    const styleElements = this.stylesAttachedToThought(t);
+    const relationshipElements = this.relationshipsAttachedToThought(t);
+    if (styleElements.length == 0 && relationshipElements.length == 0) {
+      return `<div><span class="leaf">T${t.thought.id}</span></div>`;
+    } else {
+      const stylesHtml = styleElements.map(s=>this.debugStyleHtml(s)).join('');
+      const relationshipsHtml = relationshipElements.map(r=>this.debugRelationshipHtml(r)).join('');
+      return `<div>
+  <span class="collapsed">T${t.thought.id}</span>
+  <div class="nested" style="display:none">
+    ${stylesHtml}
+    ${relationshipsHtml}
+  </div>
+</div>`;
+    }
+  }
+
+  private relationshipsAttachedToStyle(s: StyleElement): RelationshipElement[] {
+    return Array.from(this.relationshipElements.values()).filter(r=>r.relationship.sourceId==s.style.id);
+  }
+
+  private relationshipsAttachedToThought(t: ThoughtElement): RelationshipElement[] {
+    return Array.from(this.relationshipElements.values()).filter(r=>r.relationship.sourceId==t.thought.id);
+  }
+
+  private stylesAttachedToStyle(s: StyleElement): StyleElement[] {
+    return Array.from(this.styleElements.values()).filter(s2=>s2.style.stylableId==s.style.id);
+  }
+
+  private stylesAttachedToThought(t: ThoughtElement): StyleElement[] {
+    return Array.from(this.styleElements.values()).filter(s=>s.style.stylableId==t.thought.id);
   }
 
 }

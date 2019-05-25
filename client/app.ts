@@ -46,10 +46,38 @@ let gInputMethod: InputMethod|undefined;
 
 // Event Handlers
 
+function onDebugMenuClicked(_event: MouseEvent) {
+  const $window = $('#debugWindow');
+  if ($window.style.display == 'none') {
+    const html = gNotebook ? gNotebook.debugHtml() : "<i>No open notebook</i>"
+    $window.innerHTML = html;
+    $window.style.display = 'block';
+  } else {
+    $window.style.display = 'none';
+    $window.innerHTML = '';
+  }
+}
+
+function onDebugWindowClicked(event: MouseEvent) {
+  const $target: HTMLElement = <HTMLElement>event.target;
+  if ($target.tagName == 'SPAN') {
+    if ($target.classList.contains('collapsed')) {
+      (<HTMLElement>$target.nextElementSibling).style.display = 'block';
+      $target.classList.remove('collapsed');
+      $target.classList.add('expanded');
+    } else if ($target.classList.contains('expanded')) {
+      (<HTMLElement>$target.nextElementSibling).style.display = 'none';
+      $target.classList.remove('expanded');
+      $target.classList.add('collapsed');
+    }
+  }
+}
+
 async function onDomReady(_event: Event){
   try {
 
     // Menu
+    $('#debugMenu').addEventListener<'click'>('click', onDebugMenuClicked);
 
     // Preview area
     $('#insertButton').addEventListener<'click'>('click', onInsertButtonClicked);
@@ -68,6 +96,9 @@ async function onDomReady(_event: Event){
     $('#redoButton').addEventListener<'click'>('click', _event=>gEditor && gEditor.redo());
     $('#clearButton').addEventListener<'click'>('click', _event=>gEditor && gEditor.clear());
     $('#convertButton').addEventListener<'click'>('click', _event=>gEditor && gEditor.convert());
+
+    // Debug window
+    $('#debugWindow').addEventListener<'click'>('click', onDebugWindowClicked);
 
     switchInput(INITIAL_INPUT_METHOD);
 

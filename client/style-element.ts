@@ -61,6 +61,7 @@ export class StyleElement {
   // Instance Properties
 
   public $elt: HTMLDivElement;
+  public style: StyleObject;
 
   // Instance Methods
 
@@ -84,6 +85,7 @@ export class StyleElement {
     const contentHtml = renderFn ? renderFn(style) : renderOtherStyle(style);
     const html = /* ${showButtonHtml} */ `${headerHtml}${contentHtml}`;
     this.$elt = $new<HTMLDivElement>('div', id, classes, html);
+    this.style = style;
   }
 
 }

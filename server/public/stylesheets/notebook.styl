@@ -19,6 +19,32 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 // Specific elements
 
+#debugWindow
+  background-color #eeeeee
+  border 1px solid black
+  font-size smaller
+  height 80%
+  left 10%
+  overflow hidden
+  overflow-y scroll
+  position absolute
+  top 10%
+  white-space nowrap
+  width 80%
+  z-index 10
+
+  .nested
+    padding-left 1em
+
+  .collapsed::before
+    content "\0025b6 "
+
+  .expanded::before
+    content "\0025bc "
+
+  .leaf::before
+    content "\0025cf "
+
 #footer
   bottom 0
   left 0
@@ -58,9 +84,13 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
   padding 2pt
 
   button
-    background-color white
-    color #222222
-    height 20pt
+    background none!important
+    border none
+    color blue
+    cursor pointer
+    font inherit
+    padding 0!important
+    text-decoration underline
 
 #previewArea
   border-top 1px solid #cccccc
@@ -88,7 +118,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 .deleteThought
   float right
-
+  
 .showStyle
   float left
 

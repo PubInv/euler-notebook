@@ -38,6 +38,11 @@ export class RelationshipElement {
     return rval;
   }
 
+  // Instance Properties
+
+  public $elt: HTMLDivElement;
+  public relationship: RelationshipObject;
+
   // Instance Methods
 
   delete(): void {
@@ -56,10 +61,10 @@ export class RelationshipElement {
     // const showButtonHtml: Html = `<button class="showStyle">&#x1F5E8;</button>`;
     const html: Html = `<div class="header">R-${relationship.id} ${relationship.meaning} => ${relationship.targetId}</div>`;
     this.$elt = $new<HTMLDivElement>('div', id, classes, html);
+    this.relationship = relationship;
   }
 
   // Private Instance Properties
 
-  private $elt: HTMLDivElement;
 
 }

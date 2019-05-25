@@ -20,7 +20,8 @@ extends layout
 
 mixin menuBar
   #menu
-    div TBD: Menu
+    div
+      button#debugMenu Debug
     div
       a(href='/') home
       | /
@@ -51,6 +52,7 @@ block scripts
   script(type='module', src='/javascripts/app.js')
 
 block content
+  #debugWindow(style='display:none')
   +menuBar
   #tdoc
   #footer
