@@ -145,8 +145,8 @@ function onInsertButtonClicked(_event: Event) {
       const thoughtProps: ThoughtProperties = {};
       const stylePropss: StyleProperties[] = [
         { type: 'JIIX', data: jiix, meaning: 'INPUT', source: 'USER' },
-        { type: 'LATEX', data: latex, meaning: 'INPUT', source: 'USER' },
-        { type: 'MATHML', data: mathMl, meaning: 'INPUT', source: 'USER' },
+        { type: 'LATEX', data: latex, meaning: 'INPUT-ALT', source: 'USER' },
+        { type: 'MATHML', data: mathMl, meaning: 'INPUT-ALT', source: 'USER' },
       ];
       gNotebook.insertThought(thoughtProps, stylePropss);
       editor.clear();
@@ -172,7 +172,7 @@ function onInsertButtonClicked(_event: Event) {
       const strokeGroups = editor.model.strokeGroups;
       const thoughtProps: ThoughtProperties = {};
       const stylePropss: StyleProperties[] = [
-        { type: 'TEXT', data: text, meaning: 'INPUT', source: 'USER' },
+        { type: 'TEXT', data: text, meaning: 'INPUT-ALT', source: 'USER' },
         { type: 'STROKE', data: strokeGroups, meaning: 'INPUT', source: 'USER' },
       ];
       gNotebook.insertThought(thoughtProps, stylePropss);

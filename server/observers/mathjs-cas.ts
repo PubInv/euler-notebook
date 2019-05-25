@@ -112,10 +112,9 @@ function collectSymbols(node: math.MathNode) : string[] {
 export function mathEvaluateRule(tdoc: TDoc, session: SessionData, style: StyleObject): StyleObject[] {
 
   // We only evaluate MathJS expressions that are user input.
-  if (style.type != 'MATHJS' || style.meaning != 'INPUT') {
-    return [];
-  }
-
+  if (style.type != 'MATHJS') { return []; }
+	if (style.meaning!='INPUT' && style.meaning!='INPUT-ALT') { return []; }
+	
   // Do not evaluate more than once.
   if ((tdoc.stylableHasChildOfType(style, 'MATHJS', 'EVALUATION')) ||
       (tdoc.stylableHasChildOfType(style, 'TEXT', 'EVALUATION-ERROR'))) {
@@ -143,8 +142,9 @@ export function mathEvaluateRule(tdoc: TDoc, session: SessionData, style: StyleO
 
 export function mathExtractVariablesRule(tdoc: TDoc, _session: SessionData, style: StyleObject): StyleObject[] {
   // We only extract symbols from MathJS expressions that are user input.
-  if (style.type != 'MATHJS' || style.meaning != 'INPUT') { return []; }
-
+  if (style.type != 'MATHJS') { return []; }
+	if (style.meaning!='INPUT' && style.meaning!='INPUT-ALT') { return []; }
+	
   // Do not extract symbols more than once.
   if (tdoc.stylableHasChildOfType(style, 'MATHJS', 'SYMBOL')) { return []; }
 
@@ -159,8 +159,9 @@ export function mathExtractVariablesRule(tdoc: TDoc, _session: SessionData, styl
 // Attempt math.js-based simplification
 export function mathSimplifyRule(tdoc: TDoc, _session: SessionData, style: StyleObject): StyleObject[] {
   // We only apply MathJS simplifications so MathJS styles that are user input.
-  if (style.type != 'MATHJS' || style.meaning != 'INPUT') { return []; }
-
+  if (style.type != 'MATHJS') { return []; }
+	if (style.meaning!='INPUT' && style.meaning!='INPUT-ALT') { return []; }
+	
   // Do not apply simplification more than once.
   if (tdoc.stylableHasChildOfType(style, 'MATHJS', 'SIMPLIFICATION')) { return []; }
 
@@ -180,7 +181,7 @@ export function mathSimplifyRule(tdoc: TDoc, _session: SessionData, style: Style
   if (simplerText == style.data) { return []; }
 
   const s1 = tdoc.insertStyle(style, { type: 'MATHJS', data: simplerText, meaning: 'SIMPLIFICATION', source: 'MATHJS' });
-  const s2 = tdoc.insertStyle(s1, { type: 'LATEX', data: simpler.toTex(), meaning: 'PRETTY', source: 'MATHJS' });
+  const s2 = tdoc.insertStyle(s1, { type: 'LATEX', data: simpler.toTex(), meaning: 'INPUT-ALT', source: 'MATHJS' });
   return [ s1, s2 ];
 }
 

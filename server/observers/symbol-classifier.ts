@@ -46,7 +46,7 @@ function onChange(tDoc: TDoc, change: NotebookChange): void {
   switch (change.type) {
   case 'styleInserted': {
     const style = change.style;
-    if (style.type == 'WOLFRAM' && style.meaning == 'INPUT') {
+    if (style.type == 'WOLFRAM' && style.meaning == 'INPUT' ||style.meaning == 'INPUT-ALT') {
       runAsync<void>(addSymbolUseStyles(tDoc, style), MODULE, 'addSymbolUseStyles');
       runAsync<void>(addSymbolDefStyles(tDoc, style), MODULE, 'addSymbolDefStyles');
     }

@@ -83,8 +83,9 @@ export async function mathMathematicaRule(tdoc: TDoc, style: StyleObject): Promi
 
   debug("INSIDE RULE :",style);
   // We only extract symbols from Wolfram expressions that are user input.
-  if (style.type != 'WOLFRAM' || style.meaning != 'INPUT') { return []; }
-
+  if (style.type != 'WOLFRAM') { return []; }
+    if (style.meaning!='INPUT' && style.meaning!='INPUT-ALT') { return []; }
+    
   var styles = [];
 
   var assoc;
@@ -159,8 +160,9 @@ export async function mathMathematicaRule(tdoc: TDoc, style: StyleObject): Promi
 
 async function convertMathMlToWolframRule(tdoc: TDoc, style: StyleObject): Promise<void> {
 
-  if (style.type != 'MATHML' || style.meaning != 'INPUT') { return; }
-
+  if (style.type != 'MATHML') { return; }
+  if (style.meaning!='INPUT' && style.meaning!='INPUT-ALT') { return; }
+    
   const mathMl = style.data.split('\n').join('').replace(/"/g, '\\"');
   debug("mathML",mathMl);
   const cmd = `InputForm[MakeExpression[ImportString["${mathMl}", "MathML"]]]`;
@@ -177,7 +179,7 @@ async function convertMathMlToWolframRule(tdoc: TDoc, style: StyleObject): Promi
     const wolframexpr = results[1];
 
     // REVIEW: Attach it to the thought instead of the style?
-    tdoc.insertStyle(style, { type: 'WOLFRAM', source: 'MATHEMATICA', meaning: 'INPUT', data: wolframexpr });
+    tdoc.insertStyle(style, { type: 'WOLFRAM', source: 'MATHEMATICA', meaning: 'INPUT-ALT', data: wolframexpr });
   } catch(err) {
     tdoc.insertStyle(style, { type: 'TEXT', source: 'MATHEMATICA', meaning: 'EVALUATION-ERROR', data: `Cannot convert to Wolfram expression: ${err.message}` });
   }

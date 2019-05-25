@@ -39,10 +39,7 @@ export interface TDocOptions {
 const DEFAULT_OPTIONS: TDocOptions = { anonymous: false };
 const SAVE_TIMEOUT_MS = 5000;
 
-// VERSION CHANGES:
-// 0.0.1 - Initial version.
-// 0.0.2 - Made meaning required on styles.
-const VERSION = "0.0.3";
+const VERSION = "0.0.4";
 
 // REVIEW: Are there other event emitters in our project that need similar declarations?
 // See https://stackoverflow.com/questions/39142858/declaring-events-in-a-typescript-class-which-extends-eventemitter

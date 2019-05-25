@@ -247,7 +247,7 @@ export class ClientSocket {
         }
         // MathJS parsing also give us a LaTeX representation, so add that.
         const style = tDoc.insertStyle(thought, { ...styleProps, data: parseResults.mathJsText });
-        tDoc.insertStyle(style, { type: 'LATEX', data: parseResults.latexMath, meaning: 'PRETTY', source: 'USER' });
+        tDoc.insertStyle(style, { type: 'LATEX', data: parseResults.latexMath, meaning: 'INPUT-ALT', source: 'USER' });
           break;
       }
       default: 

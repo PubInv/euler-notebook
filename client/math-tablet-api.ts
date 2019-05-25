@@ -47,8 +47,8 @@ export type StyleMeaning =
   'EVALUATION-ERROR'| // Error in CAS evaluation of an expression
   'HANDWRITING'|      // Stroke information for the user's handwriting.
   'INPUT'|            // Primary representation of something that the user has input.
-  /* DEPRECATED: */ 'QUADRATIC'|        // A quadratic expression, presumably worth plotting.
-  'PRETTY' |          // A more visually-pleasing representation. e.g. LaTeX version of plain-text math.
+  'INPUT-ALT' |       // An alternative representation, e.g. LaTeX version of handwritten math.
+  'QUADRATIC'|        // DEPRECATED: A quadratic expression, presumably worth plotting.
   'SIMPLIFICATION' |  // CAS simplification of expression or equation.
   'INDENTED'|         // Indented text for the purpose of exposition.
   'PLOT'|             // Indented text for the purpose of exposition.
