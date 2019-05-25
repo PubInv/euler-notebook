@@ -28,7 +28,7 @@ import * as WebSocket from 'ws';
 // TODO: Handle websocket lifecycle: closing, unexpected disconnects, errors, etc.
 
 import { ClientMessage, NotebookChange, NotebookName, NotebookPath, ServerMessage,
-         ThoughtId, ThoughtProperties, StyleProperties } from '../client/math-tablet-api';
+         ThoughtId, ThoughtProperties, StyleProperties, StyleSource, ToolInfo } from '../client/math-tablet-api';
 
 import { PromiseResolver } from './common';
 // REVIEW: This file should not be dependent on any specific observers.
@@ -210,7 +210,8 @@ export class ClientSocket {
         switch(msg.action) {
         case 'deleteThought':  this.cmDeleteThought(tDoc, msg.thoughtId); break;
         case 'insertThought':  this.cmInsertThought(tDoc, msg.thoughtProps, msg.stylePropss); break;
-        default: {
+        case 'useTool': this.cmUseTool(tDoc, msg.thoughtId, msg.source, msg.info); break;
+	      default: {
           console.error(`Client Socket: unexpected WebSocket message action ${(<any>msg).action}. Ignoring.`);
           break;
         }}
@@ -272,6 +273,10 @@ export class ClientSocket {
         // TODO: Send client an error message
       }
     );
+  }
+
+  private cmUseTool(tDoc: TDoc, thoughtId: ThoughtId, source: StyleSource, info: ToolInfo): void {
+    tDoc.useTool(thoughtId, source, info);
   }
 
   // Private Instance Methods

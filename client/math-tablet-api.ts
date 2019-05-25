@@ -216,8 +216,8 @@ interface NotebookOpened {
 
 // Messages from the client
 
-export type ClientMessage = CloseNotebook|DeleteThought|InsertThought|OpenNotebook;
-
+export type ClientMessage = CloseNotebook|DeleteThought|InsertThought|OpenNotebook|UseTool;
+	
 interface CloseNotebook {
   action: 'closeNotebook';
   notebookName: NotebookName;
@@ -229,7 +229,7 @@ interface DeleteThought {
   thoughtId: number;
 }
 
-interface InsertThought {
+export interface InsertThought {
   action: 'insertThought';
   notebookName: NotebookName;
   thoughtProps: ThoughtProperties;
@@ -239,4 +239,12 @@ interface InsertThought {
 interface OpenNotebook {
   action: 'openNotebook';
   notebookName: NotebookName;
+}
+
+export interface UseTool {
+  action: 'useTool';
+  info: ToolInfo;
+  notebookName: NotebookName;
+  source: StyleSource;
+  thoughtId: ThoughtId;
 }

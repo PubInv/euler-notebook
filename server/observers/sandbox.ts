@@ -25,7 +25,7 @@ import * as debug1 from 'debug';
 const MODULE = __filename.split('/').slice(-1)[0].slice(0,-3);
 const debug = debug1(`server:${MODULE}`);
 
-import { NotebookChange, StyleProperties, ToolMenu } from '../../client/math-tablet-api';
+import { NotebookChange, StyleProperties, ToolMenu, ThoughtId, StyleSource, ToolInfo } from '../../client/math-tablet-api';
 import { TDoc  } from '../tdoc';
 import { Config } from '../config';
 
@@ -36,6 +36,7 @@ export async function initialize(_config: Config): Promise<void> {
   TDoc.on('open', (tDoc: TDoc)=>{
     tDoc.on('change', function(this: TDoc, change: NotebookChange){ onChange(this, change); });
     tDoc.on('close', function(this: TDoc){ onClose(this); });
+    tDoc.on('useTool', function(this: TDoc, thoughtId: ThoughtId, source: StyleSource, info: ToolInfo){ onUseTool(this, thoughtId, source, info); })
     onOpen(tDoc);
   });
 }
@@ -87,4 +88,9 @@ function onClose(tDoc: TDoc): void {
 
 function onOpen(tDoc: TDoc): void {
   debug(`tDoc open: ${tDoc._path}`);
+}
+ 
+function onUseTool(tDoc: TDoc, thoughtId: ThoughtId, source: StyleSource, info: ToolInfo): void {
+  if (source != 'SANDBOX') { return; }
+  debug(`tDoc use tool: ${tDoc._path} ${thoughtId} ${source} ${JSON.stringify(info)}`)
 }

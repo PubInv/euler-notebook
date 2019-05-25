@@ -22,6 +22,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 import { $new } from './dom.js';
 import { getKatex } from './katex-types.js';
 import { ThoughtObject, StyleObject, LatexData, ToolMenu } from './math-tablet-api.js';
+import { Notebook } from './notebook.js';
 
 // Exported Class
 
@@ -29,9 +30,9 @@ export class ThoughtElement {
 
   // Class Methods
 
-  static insert($tDoc: HTMLElement, thought: ThoughtObject): ThoughtElement {
-    var rval = new this(thought);
-    $tDoc.appendChild(rval.$elt);
+  static insert(notebook: Notebook, thought: ThoughtObject): ThoughtElement {
+    var rval = new this(notebook, thought);
+    notebook.$elt.appendChild(rval.$elt);
     return rval;
   }
 
@@ -39,6 +40,7 @@ export class ThoughtElement {
 
   public $elt: HTMLDivElement;
   public thought: ThoughtObject;
+  public notebook: Notebook;
 
   // Instance Methods
 
@@ -67,17 +69,20 @@ export class ThoughtElement {
 
   // Private Constructor
 
-  private constructor(thought: ThoughtObject) {
+  private constructor(notebook: Notebook, thought: ThoughtObject) {
     const id = `T${thought.id}`; // REVIEW: Is id used?
     this.$elt = $new<HTMLDivElement>('div', id, ['thought'], `<div class="handle">(${thought.id})</div>
 <div class="status"></div>
 <div class="formula"></div>
 <div class="tools"></div>
 <button class="deleteThought">&#x2715;</button>`);
+    this.notebook = notebook;
     this.thought = thought;
   }
 
+
   // Private Instance Methods
+
   private renderLatexFormula(latexData: LatexData): void {
     // TODO: Handle errors
     const latexHtml = getKatex().renderToString(latexData, { throwOnError: false });
@@ -90,9 +95,9 @@ export class ThoughtElement {
     const $toolsElt = this.$elt.querySelector('.tools');
     for (const info of toolMenu) {
       const $button = $new('button', undefined, ['tool'], info.html);
-      // $button.addEventListener('click', (_event: MouseEvent)=>{
-      //   this.notebook.useTool(this, style.source, info);
-      // });
+      $button.addEventListener('click', (_event: MouseEvent)=>{
+        this.notebook.useTool(this, style.source, info);
+      });
       $toolsElt!.appendChild($button);
     };    
   }

@@ -25,7 +25,7 @@ import * as debug1 from 'debug';
 const MODULE = __filename.split('/').slice(-1)[0].slice(0,-3);
 const debug = debug1(`server:${MODULE}`);
 
-import { NotebookChange, NotebookPath, StyleObject, StyleMeaning, StyleType, TDocObject, ThoughtObject, ThoughtId, StyleId, StyleProperties, ThoughtProperties, RelationshipObject, StylableId, RelationshipProperties, RelationshipId } from '../client/math-tablet-api';
+import { NotebookChange, NotebookPath, StyleObject, StyleMeaning, StyleType, TDocObject, ThoughtObject, ThoughtId, StyleId, StyleProperties, ThoughtProperties, RelationshipObject, StylableId, RelationshipProperties, RelationshipId, StyleSource, ToolInfo } from '../client/math-tablet-api';
 import { readNotebookFile, writeNotebookFile, AbsDirectoryPath, absDirPathFromNotebookPath } from './files-and-folders';
 
 // Types
@@ -46,6 +46,7 @@ const VERSION = "0.0.4";
 export declare interface TDoc {
   on(event: 'change', listener: (change: NotebookChange)=> void): this;
   on(event: 'close', listener: ()=> void): this;
+  on(event: 'useTool', listener: (thoughtId: ThoughtId, source: StyleSource, info: ToolInfo)=>void): this;
   on(event: string, listener: Function): this;
 }
 
@@ -119,49 +120,8 @@ export class TDoc extends EventEmitter {
 
   // Public Instance Property Functions
 
-  // TODO: Return an iterator rather than our internal array.
-  public getRelationships(
-    stylableId?: StylableId,
-  ): RelationshipObject[] {
-    let rval: RelationshipObject[] = this.relationships;
-    if (stylableId) { rval = rval.filter(r=>(r.sourceId == stylableId || r.targetId == stylableId)); }
-    return rval;
-  }
-
-  // TODO: Return an iterator rather than our internal array.
-  public getStyles(stylableId?: StylableId): StyleObject[] {
-    if (stylableId) { return this.styles.filter(s=>(s.stylableId==stylableId)); }
-    else { return this.styles; }
-  }
-
-  // TODO: Return an iterator rather than our internal array.
-  public getThoughts(): ThoughtObject[] {
-    return this.thoughts;
-  }
-
-  public jsonPrinter(): string {
-    return JSON.stringify(this,null,' ');
-  }
-
   public absoluteDirectoryPath(): AbsDirectoryPath {
     return absDirPathFromNotebookPath(this._path);
-  }
-
-  public numStyles(tname: StyleType, meaning?: StyleMeaning) : number {
-    return this.styles.reduce(
-      function(total,x){
-        return (x.type == tname && (!meaning || x.meaning == meaning))
-          ?
-          total+1 : total},
-      0);
-  }
-
-  // This can be asymptotically improved later.
-  public stylableHasChildOfType(style: StyleObject, tname: StyleType, meaning?: StyleMeaning): boolean {
-    const id = style.id;
-    return !!this.styles.find(s => s.stylableId == id &&
-                            s.type == tname &&
-                            (!meaning || s.meaning == meaning));
   }
 
   // find all children of given type and meaning
@@ -190,6 +150,102 @@ export class TDoc extends EventEmitter {
       }
     }
     return matching;
+  }
+
+  public getAncestorThought(styleId : StyleId) : ThoughtObject | null {
+    const s = this.getStylable(styleId);
+    if (!s) return null;
+    // The type exists on Styles, but not Thoughts!!!
+    if (!('type' in s)) {
+      return s;
+    } else {
+      return this.getAncestorThought(s.stylableId);
+    }
+  }
+
+  // TODO: Return an iterator rather than our internal array.
+  public getRelationships(
+    stylableId?: StylableId,
+  ): RelationshipObject[] {
+    let rval: RelationshipObject[] = this.relationships;
+    if (stylableId) { rval = rval.filter(r=>(r.sourceId == stylableId || r.targetId == stylableId)); }
+    return rval;
+  }
+
+  public getStylable(styleId : StyleId) : StyleObject | ThoughtObject | null {
+    const sindex = this.styles.findIndex(s=>(s.id==styleId));
+    if (sindex >= 0) {
+      return this.styles[sindex];
+    } else {
+      const tindex = this.thoughts.findIndex(s=>(s.id==styleId));
+      if (tindex >= 0)
+        return this.thoughts[tindex];
+      else
+        return null;
+    }
+  }
+
+  // TODO: Return an iterator rather than our internal array.
+  public getStyles(stylableId?: StylableId): StyleObject[] {
+    if (stylableId) { return this.styles.filter(s=>(s.stylableId==stylableId)); }
+    else { return this.styles; }
+  }
+
+  // Return all StyleObjects which are Symbols for which
+  // the is a Symbol Dependency relationship with this
+  // object as the the target
+  // Note: The defintion is the "source" of the relationship
+  // and the "use" is "target" of the relationship.
+  public getSymbolStylesIDependOn(style:StyleObject): StyleObject[] {
+    // simplest way to do this is to iterate over all relationships,
+    // computing the source and target thoughts. If the target thought
+    // is the same as our ancestor thought, then we return the
+    // source style, which should be of type Symbol and meaning Definition.
+    const rs = this.getRelationships();
+    var symbolStyles: StyleObject[] = [];
+    const mp = this.getAncestorThought(style.id);
+    if (!mp) {
+      console.error("INTERNAL ERROR: did not produce ancenstor: ",style.id);
+      throw new Error("INTERNAL ERROR: did not produce ancenstor: ");
+    }
+    rs.forEach(r => {
+      const rp = this.getAncestorThought(r.targetId);
+      if (!rp) {
+        console.error("INTERNAL ERROR: did not produce ancenstor: ",style.id);
+        throw new Error("INTERNAL ERROR: did not produce ancenstor: ");
+      }
+      if (rp.id == mp.id) {
+        // We are a user of this definition...
+        symbolStyles.push(<StyleObject>this.getStylable(r.sourceId));
+      }
+    });
+    return symbolStyles;
+  }
+
+  // TODO: Return an iterator rather than our internal array.
+  public getThoughts(): ThoughtObject[] {
+    return this.thoughts;
+  }
+
+  public jsonPrinter(): string {
+    return JSON.stringify(this,null,' ');
+  }
+
+  public numStyles(tname: StyleType, meaning?: StyleMeaning) : number {
+    return this.styles.reduce(
+      function(total,x){
+        return (x.type == tname && (!meaning || x.meaning == meaning))
+          ?
+          total+1 : total},
+      0);
+  }
+
+  // This can be asymptotically improved later.
+  public stylableHasChildOfType(style: StyleObject, tname: StyleType, meaning?: StyleMeaning): boolean {
+    const id = style.id;
+    return !!this.styles.find(s => s.stylableId == id &&
+                            s.type == tname &&
+                            (!meaning || s.meaning == meaning));
   }
 
   public summaryPrinter(): string {
@@ -306,62 +362,9 @@ export class TDoc extends EventEmitter {
     return thought;
   }
 
-  public getStylable(styleId : StyleId) : StyleObject | ThoughtObject | null {
-    const sindex = this.styles.findIndex(s=>(s.id==styleId));
-    if (sindex >= 0) {
-      return this.styles[sindex];
-    } else {
-      const tindex = this.thoughts.findIndex(s=>(s.id==styleId));
-      if (tindex >= 0)
-        return this.thoughts[tindex];
-      else
-        return null;
-    }
+  public useTool(thoughtId: ThoughtId, source: StyleSource, info: ToolInfo): void {
+    this.emit('useTool', thoughtId, source, info);
   }
-
-  public getAncestorThought(styleId : StyleId) : ThoughtObject | null {
-    const s = this.getStylable(styleId);
-    if (!s) return null;
-    // The type exists on Styles, but not Thoughts!!!
-    if (!('type' in s)) {
-      return s;
-    } else {
-      return this.getAncestorThought(s.stylableId);
-    }
-  }
-
-
-// Return all StyleObjects which are Symbols for which
-// the is a Symbol Dependency relationship with this
-// object as the the target
-// Note: The defintion is the "source" of the relationship
-// and the "use" is "target" of the relationship.
- public getSymbolStylesIDependOn(style:StyleObject): StyleObject[] {
-  // simplest way to do this is to iterate over all relationships,
-  // computing the source and target thoughts. If the target thought
-  // is the same as our ancestor thought, then we return the
-  // source style, which should be of type Symbol and meaning Definition.
-  const rs = this.getRelationships();
-  var symbolStyles: StyleObject[] = [];
-  const mp = this.getAncestorThought(style.id);
-  if (!mp) {
-    console.error("INTERNAL ERROR: did not produce ancenstor: ",style.id);
-    throw new Error("INTERNAL ERROR: did not produce ancenstor: ");
-  }
-  rs.forEach(r => {
-    const rp = this.getAncestorThought(r.targetId);
-    if (!rp) {
-      console.error("INTERNAL ERROR: did not produce ancenstor: ",style.id);
-      throw new Error("INTERNAL ERROR: did not produce ancenstor: ");
-    }
-    if (rp.id == mp.id) {
-      // We are a user of this definition...
-      symbolStyles.push(<StyleObject>this.getStylable(r.sourceId));
-    }
-  });
-  return symbolStyles;
-}
-
 
   // --- PRIVATE ---
 
