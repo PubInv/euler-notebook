@@ -23,14 +23,12 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 // import * as debug1 from 'debug';
 // const MODULE = __filename.split('/').slice(-1)[0].slice(0,-3);
 // const debug = debug1(`server:${MODULE}`);
-
-import { TDoc }  from '../tdoc';
-// import { Config } from '../config';
-import { initialize as initializeMathstepsCas } from '../observers/math-steps-cas';
-
 import { assert } from 'chai';
 import 'mocha';
-import { StyleType, StyleMeaning, StyleSource, StyleObject, StyleProperties, MathJsData } from '../../client/math-tablet-api';
+
+import { initialize as initializeMathstepsCas } from '../observers/math-steps-cas';
+
+import { getStylesGeneratedForInputStyle, hasStyles } from './common';
 
 // Constants
 
@@ -168,43 +166,3 @@ describe('mathsteps-cas', function(){
   });
 
 });
-
-// Helper Functions
-
-function findStyles(
-  styles: StyleObject[],
-  type: StyleType,
-  meaning: StyleMeaning,
-  source: StyleSource
-): StyleObject[]|undefined {
-  return styles.filter(s=>(s.type==type && s.meaning==meaning && s.source==source))
-}
-
-function getStylesGeneratedForInputStyle(data: MathJsData): StyleObject[] {
-  const styleProps: StyleProperties = { type: 'MATHJS', meaning: 'INPUT', source: 'USER', data };
-  return getStylesGeneratedForStyle(styleProps);
-}
-
-function getStylesGeneratedForStyle(styleProps: StyleProperties): StyleObject[] {
-  const tDoc = TDoc.createAnonymous();
-  const thought = tDoc.insertThought({});
-  const style = tDoc.insertStyle(thought, styleProps);
-  const substyles = tDoc.getStyles(style.id);
-  return substyles;
-}
-
-function hasStyles(
-  styles: StyleObject[],
-  type: StyleType,
-  meaning: StyleMeaning,
-  source: StyleSource,
-  datas: string[]
-): boolean {
-  const as1 = findStyles(styles, type, meaning, source);
-  if (!as1) { return false; }
-  if (as1.length != datas.length) { return false; }
-  for (const data of datas) {
-    if (!styles.find(s=>(s.data==data))) { return false; }
-  }
-  return true;
-}
