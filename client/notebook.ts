@@ -24,10 +24,8 @@ import { ServerSocket } from './server-socket.js';
 import { NotebookName, TDocObject, StyleId, StyleObject,
   ThoughtId, ThoughtObject, NotebookChange, ThoughtProperties, StyleProperties, RelationshipId, RelationshipObject, UseTool, InsertThought, StyleSource, ToolInfo } from './math-tablet-api.js';
 // import { Jiix, StrokeGroups } from './myscript-types.js';
-import { StyleElement } from './style-element.js';
 import { ThoughtElement } from './thought-element.js';
 import { $new, escapeHtml, Html } from './dom.js';
-import { RelationshipElement } from './relationship-element.js';
 
 // Exported Class
 
@@ -120,8 +118,8 @@ export class Notebook {
     this.$elt = $new('div', notebookName, ['tdoc']);
     this.$elt.addEventListener('click', (event: MouseEvent)=>{ this.onClick(event); })
 
-    this.relationshipElements = new Map();
-    this.styleElements = new Map();
+    this.relationships = new Map();
+    this.styles = new Map();
     this.thoughtElements = new Map();
 
     for (const thought of notebookData.thoughts) { this.chInsertThought(thought); }
@@ -131,8 +129,8 @@ export class Notebook {
   // Private Instance Properties
 
   private socket: ServerSocket;
-  private relationshipElements: Map<RelationshipId, RelationshipElement>;
-  private styleElements: Map<StyleId, StyleElement>;
+  private relationships: Map<RelationshipId, RelationshipObject>;
+  private styles: Map<StyleId, StyleObject>;
   private thoughtElements: Map<ThoughtId, ThoughtElement>;
 
   // Private Event Handlers
@@ -151,17 +149,17 @@ export class Notebook {
   // Private Change Event Handlers
 
   private chDeleteRelationship(relationshipId: RelationshipId): void {
-    const relationshipElt = this.relationshipElements.get(relationshipId);
+    const relationshipElt = this.relationships.get(relationshipId);
     if (!relationshipElt) { throw new Error("Delete relationship message for unknown style"); }
-    this.relationshipElements.delete(relationshipId);
+    this.relationships.delete(relationshipId);
   }
 
   private chDeleteStyle(styleId: StyleId): void {
-    const styleElt = this.styleElements.get(styleId);
-    if (!styleElt) { throw new Error("Delete style message for unknown style"); }
-    this.styleElements.delete(styleId);
-    const elt = this.thoughtElements.get(styleElt.style.stylableId);
-    if (elt) { elt.deleteStyle(styleElt.style); }
+    const style = this.styles.get(styleId);
+    if (!style) { throw new Error("Delete style message for unknown style"); }
+    this.styles.delete(styleId);
+    const thoughtElt = this.thoughtElements.get(style.stylableId);
+    if (thoughtElt) { thoughtElt.deleteStyle(style); }
   }
 
   private chDeleteThought(thoughtId: ThoughtId): void {
@@ -172,25 +170,11 @@ export class Notebook {
   }
 
   private chInsertRelationship(relationship: RelationshipObject): void {
-    // let elt: ThoughtElement|StyleElement|undefined;
-    // elt = this.thoughtElements.get(relationship.sourceId);
-    // if (!elt) {
-    //   elt = this.styleElements.get(relationship.sourceId);
-    // }
-    // if (!elt) { throw new Error("Relationship attached to unknown thought or style."); }
-    const relationshipElt = RelationshipElement.insert(relationship);;
-    this.relationshipElements.set(relationship.id, relationshipElt);
+    this.relationships.set(relationship.id, relationship);
   }
 
   private chInsertStyle(style: StyleObject): void {
-    // let elt: ThoughtElement|StyleElement|undefined;
-    // elt = this.thoughtElements.get(style.stylableId);
-    // if (!elt) {
-    //   elt = this.styleElements.get(style.stylableId);
-    // }
-    // if (!elt) { throw new Error("Style attached to unknown thought or style."); }
-    const styleElt = StyleElement.insert(style);
-    this.styleElements.set(style.id, styleElt);
+    this.styles.set(style.id, style);
     const elt = this.thoughtElements.get(style.stylableId);
     if (elt) { elt.insertStyle(style); }
     }
@@ -205,25 +189,25 @@ export class Notebook {
   private clear(): void {
     this.$elt.innerHTML = '';
     this.thoughtElements.clear();
-    this.styleElements.clear();
+    this.styles.clear();
   }
 
-  private debugRelationshipHtml(r: RelationshipElement): Html {
-    return `<div><span class="leaf">R${r.relationship.id} &#x27a1; ${r.relationship.targetId}</span></div>`;
+  private debugRelationshipHtml(relationship: RelationshipObject): Html {
+    return `<div><span class="leaf">R${relationship.id} &#x27a1; ${relationship.targetId}</span></div>`;
   }
 
-  private debugStyleHtml(s: StyleElement): Html {
-    const styleElements = this.stylesAttachedToStyle(s);
-    const relationshipElements = this.relationshipsAttachedToStyle(s);
-    const json = escapeHtml(JSON.stringify(s.style.data));
+  private debugStyleHtml(style: StyleObject): Html {
+    const styleElements = this.stylesAttachedToStyle(style);
+    const relationshipElements = this.relationshipsAttachedToStyle(style);
+    const json = escapeHtml(JSON.stringify(style.data));
     if (styleElements.length == 0 && relationshipElements.length == 0 && json.length<30) {
-      return `<div><span class="leaf">S${s.style.id} ${s.style.type} ${s.style.meaning} ${s.style.source} <tt>${json}</tt></span></div>`;
+      return `<div><span class="leaf">S${style.id} ${style.type} ${style.meaning} ${style.source} <tt>${json}</tt></span></div>`;
     } else {
       const stylesHtml = styleElements.map(s=>this.debugStyleHtml(s)).join('');
       const relationshipsHtml = relationshipElements.map(r=>this.debugRelationshipHtml(r)).join('');
       const [ shortJsonTt, longJsonTt ] = json.length<30 ? [` <tt>${json}</tt>`, ''] : [ '', `<tt>${json}</tt>` ];
       return `<div>
-  <span class="collapsed">S${s.style.id} ${s.style.type} ${s.style.meaning} ${s.style.source}${shortJsonTt}</span>
+  <span class="collapsed">S${style.id} ${style.type} ${style.meaning} ${style.source}${shortJsonTt}</span>
   <div class="nested" style="display:none">${longJsonTt}
     ${stylesHtml}
     ${relationshipsHtml}
@@ -250,20 +234,20 @@ export class Notebook {
     }
   }
 
-  private relationshipsAttachedToStyle(s: StyleElement): RelationshipElement[] {
-    return Array.from(this.relationshipElements.values()).filter(r=>r.relationship.sourceId==s.style.id);
+  private relationshipsAttachedToStyle(s: StyleObject): RelationshipObject[] {
+    return Array.from(this.relationships.values()).filter(r=>r.sourceId==s.id);
   }
 
-  private relationshipsAttachedToThought(t: ThoughtElement): RelationshipElement[] {
-    return Array.from(this.relationshipElements.values()).filter(r=>r.relationship.sourceId==t.thought.id);
+  private relationshipsAttachedToThought(t: ThoughtElement): RelationshipObject[] {
+    return Array.from(this.relationships.values()).filter(r=>r.sourceId==t.thought.id);
   }
 
-  private stylesAttachedToStyle(s: StyleElement): StyleElement[] {
-    return Array.from(this.styleElements.values()).filter(s2=>s2.style.stylableId==s.style.id);
+  private stylesAttachedToStyle(s: StyleObject): StyleObject[] {
+    return Array.from(this.styles.values()).filter(s2=>s2.stylableId==s.id);
   }
 
-  private stylesAttachedToThought(t: ThoughtElement): StyleElement[] {
-    return Array.from(this.styleElements.values()).filter(s=>s.style.stylableId==t.thought.id);
+  private stylesAttachedToThought(t: ThoughtElement): StyleObject[] {
+    return Array.from(this.styles.values()).filter(s=>s.stylableId==t.thought.id);
   }
 
 }
