@@ -57,11 +57,15 @@ export class ThoughtElement {
     }
   }
 
+  // REVIEW: This is very fragile in the ordering of style insertions.
+  //         For example, if LaTeX input-alt comes in after error, the error message
+  //         will be obliterated.
   insertStyle(style: StyleObject): void {
     switch(style.meaning) {
       case 'ATTRIBUTE':
         if (style.type == 'TOOL-MENU') { this.renderToolMenu(style); }
         break;
+      case 'ERROR': this.renderErrorMessage(style); break;
       case 'INPUT':
         if (style.type == 'LATEX') { this.renderLatexFormula(style.data); }
         else { this.renderOtherInput(style); }
@@ -69,9 +73,7 @@ export class ThoughtElement {
       case 'INPUT-ALT':
         if (style.type == 'LATEX') { this.renderLatexFormula(style.data); }
         break;
-      case 'PLOT':
-        this.renderPlot(style);
-        break;
+      case 'PLOT': this.renderPlot(style); break;
     }
   }
 
@@ -92,6 +94,17 @@ export class ThoughtElement {
 
 
   // Private Instance Methods
+
+  private renderErrorMessage(style: StyleObject): void {
+    if (style.type != 'TEXT') {
+      console.error(`Don't know how to render ${style.type} error.`);
+      return;
+    }
+    const $formulaElt = this.$elt.querySelector('.formula');
+    const escapedText = escapeHtml(style.data);
+    const html = `<div class="error">${escapedText}</div>${$formulaElt!.innerHTML}`;
+    $formulaElt!.innerHTML = html;
+  }
 
   private renderLatexFormula(latexData: LatexData): void {
     // TODO: Handle errors
