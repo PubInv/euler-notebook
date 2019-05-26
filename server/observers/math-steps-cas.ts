@@ -104,7 +104,7 @@ async function onStyleInserted(tDoc: TDoc, style: StyleObject): Promise<void> {
 
 // WARNING: Input "a = 3/27","b = 6/27", "c = a + b" appears
 // to cause an error here.
-export function dumpExpressionSteps(writer: (step: string) => void,
+function dumpExpressionSteps(writer: (step: string) => void,
                                     steps: MathStep[],
                                     level: number = 0) {
   const indent = '  '.repeat(level);
@@ -124,7 +124,7 @@ export function dumpExpressionSteps(writer: (step: string) => void,
     }
   }
 }
-export function dumpEquationSteps(writer: (step: string) => void,
+function dumpEquationSteps(writer: (step: string) => void,
                                   steps: MathStep[],
                                   level: number = 0) {
   const indent = '  '.repeat(level);
