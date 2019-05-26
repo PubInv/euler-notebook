@@ -172,17 +172,8 @@ export class TDoc extends EventEmitter {
     return rval;
   }
 
-  public getStylable(styleId : StyleId) : StyleObject | ThoughtObject | null {
-    const sindex = this.styles.findIndex(s=>(s.id==styleId));
-    if (sindex >= 0) {
-      return this.styles[sindex];
-    } else {
-      const tindex = this.thoughts.findIndex(s=>(s.id==styleId));
-      if (tindex >= 0)
-        return this.thoughts[tindex];
-      else
-        return null;
-    }
+  public getStylable(styleId : StyleId) : StyleObject|ThoughtObject|null {
+    return this.getThoughtById(styleId) || this.getStyleById(styleId) || null;
   }
 
   // TODO: Return an iterator rather than our internal array.
@@ -220,6 +211,14 @@ export class TDoc extends EventEmitter {
       }
     });
     return symbolStyles;
+  }
+
+  public getStyleById(id: StyleId): StyleObject|undefined {
+    return this.styles.find(s=>(s.id==id));
+  }
+
+  public getThoughtById(id: ThoughtId): ThoughtObject|undefined {
+    return this.thoughts.find(t=>(t.id==id));
   }
 
   // TODO: Return an iterator rather than our internal array.

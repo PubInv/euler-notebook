@@ -24,18 +24,13 @@ const MODULE = __filename.split('/').slice(-1)[0].slice(0,-3);
 const debug = debug1(`server:${MODULE}`);
 import * as math from 'mathjs';
 
-import { LatexData, MathJsData, NotebookChange, StyleObject } from '../../client/math-tablet-api';
+import { NotebookChange, StyleObject, StyleInserted } from '../../client/math-tablet-api';
 import { TDoc }  from '../tdoc';
 import { Config } from '../config';
 
 // Types
 
 type StyleRule = (tdoc: TDoc, session: SessionData, style: StyleObject)=>StyleObject[];
-
-export interface ParseResults {
-  latexMath: LatexData;
-  mathJsText: MathJsData;
-}
 
 interface SessionData {
   // The "parser" allows the evaluator to retain state. The fact that
@@ -63,22 +58,11 @@ export async function initialize(_config: Config): Promise<void> {
   });
 }
 
-export function parseMathJsExpression(s: string): ParseResults {
-  const node = math.parse(s);
-  return { mathJsText: node.toString(), latexMath: node.toTex() };
-}
-
 // Event Handler Functions
 
 function onChange(tDoc: TDoc, change: NotebookChange): void {
-  const session = gTDocSessions.get(tDoc);
-  if (!session) { throw new Error("TDoc has no session for MathJS."); }
   switch (change.type) {
-  case 'styleInserted':
-    mathExtractVariablesRule(tDoc, session, change.style);
-    mathEvaluateRule(tDoc, session, change.style);
-    mathSimplifyRule(tDoc, session, change.style);
-    break;
+  case 'styleInserted': chStyleInserted(tDoc, change); break;
   default: break;
   }
 }
@@ -91,6 +75,41 @@ function onOpen(tDoc: TDoc): void {
   const session: SessionData = { parser: math.parser() };
   gTDocSessions.set(tDoc, session);
   // TODO: Run an evaluation over the entire TDoc so our parser has the full context.
+}
+
+// Change Event Handlers
+
+function chStyleInserted(tDoc: TDoc, change: StyleInserted): void {
+  const style = change.style;
+
+  // If the user input MATHJS text, then parse it, and attach a LaTeX alternate representation
+  // to the thought.
+  // If there is a parsing error, then attach an error message to the style.
+  if (style.type == 'MATHJS' && style.meaning == 'INPUT') {
+    let node: math.MathNode;
+    try {
+      node = math.parse(style.data);
+    } catch(err) {
+      console.error(err.message);
+      console.dir(err);
+      // TODO: attach error style:
+      // tDoc.insertStyle(style, { type: 'TEXT', data: err.message, meaning: 'ERROR', source: 'MATHJS' });
+      return;
+    }
+    const thought = tDoc.getThoughtById(style.stylableId);
+    if (!thought) {
+      // TODO: style attached to another style?
+      return;
+    }
+    const data = node.toTex();
+    tDoc.insertStyle(thought, { type: 'LATEX', data, meaning: 'INPUT-ALT', source: 'USER' });  
+  }
+
+  const session = gTDocSessions.get(tDoc);
+  if (!session) { throw new Error("TDoc has no session for MathJS."); }
+  mathExtractVariablesRule(tDoc, session, style);
+  mathEvaluateRule(tDoc, session, style);
+  mathSimplifyRule(tDoc, session, style);
 }
 
 // Helper Functions
@@ -185,10 +204,6 @@ export function mathSimplifyRule(tdoc: TDoc, _session: SessionData, style: Style
   return [ s1, s2 ];
 }
 
-// NOTE: David and Rob suggested moving this out of this file.
-// However, it is more general than someting to go int mathjs-cas.ts.
-// Possibly it should be in its own class.  I intened to move
-// it when I figure that out.
 // Applies each rule to each style of the TDoc
 // and returns an array of any new styles that were generated.
 export function applyCasRules(tdoc: TDoc, rules: StyleRule[]): StyleObject[] {
@@ -207,3 +222,4 @@ export function applyCasRules(tdoc: TDoc, rules: StyleRule[]): StyleObject[] {
   }
   return rval;
 }
+

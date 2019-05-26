@@ -32,7 +32,6 @@ import { ClientMessage, NotebookChange, NotebookName, NotebookPath, ServerMessag
 
 import { PromiseResolver } from './common';
 // REVIEW: This file should not be dependent on any specific observers.
-import { parseMathJsExpression, ParseResults as MathJsParseResults } from './observers/mathjs-cas';
 import { TDoc } from './tdoc';
 
 // Types
@@ -235,27 +234,7 @@ export class ClientSocket {
   private cmInsertThought(tDoc: TDoc, thoughtProps: ThoughtProperties, stylePropss: StyleProperties[]): void {
     const thought = tDoc.insertThought(thoughtProps);
     for (const styleProps of stylePropss) {
-      switch (styleProps.type) {
-      // REVIEW: This code should go over in observers/mathjs-cas.ts
-      case 'MATHJS': {
-        let parseResults: MathJsParseResults;
-        try {
-          parseResults = parseMathJsExpression(styleProps.data);
-        } catch(err) {
-          // REVIEW: Is this error handled properly?
-          console.error(`Client Socket: insertMathJsText parse error: ${err.message}`);
-          // TODO: Attach an error message style?
-          return;
-        }
-        // MathJS parsing also give us a LaTeX representation, so add that.
-        tDoc.insertStyle(thought, { ...styleProps, data: parseResults.mathJsText });
-        tDoc.insertStyle(thought, { type: 'LATEX', data: parseResults.latexMath, meaning: 'INPUT-ALT', source: 'USER' });
-          break;
-      }
-      default: 
-        // TODO: Need to validate other style types!
-        tDoc.insertStyle(thought, styleProps);
-      }
+      tDoc.insertStyle(thought, styleProps);
     }
   }
 
