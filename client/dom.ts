@@ -41,3 +41,11 @@ export function $new<T extends HTMLElement>(tag: HtmlElementTag, id?: string, cl
   if (html) { $elt.innerHTML = html; }
   return $elt;
 }
+
+// From: http://shebang.brandonmintern.com/foolproof-html-escaping-in-javascript/
+export function escapeHtml(str: string): Html {
+  var div = document.createElement('div');
+  div.appendChild(document.createTextNode(str));
+  return div.innerHTML;
+}
+

@@ -26,7 +26,7 @@ import { NotebookName, TDocObject, StyleId, StyleObject,
 // import { Jiix, StrokeGroups } from './myscript-types.js';
 import { StyleElement } from './style-element.js';
 import { ThoughtElement } from './thought-element.js';
-import { $new, Html } from './dom.js';
+import { $new, escapeHtml, Html } from './dom.js';
 import { RelationshipElement } from './relationship-element.js';
 
 // Exported Class
@@ -215,7 +215,7 @@ export class Notebook {
   private debugStyleHtml(s: StyleElement): Html {
     const styleElements = this.stylesAttachedToStyle(s);
     const relationshipElements = this.relationshipsAttachedToStyle(s);
-    const json = JSON.stringify(s.style.data);
+    const json = escapeHtml(JSON.stringify(s.style.data));
     if (styleElements.length == 0 && relationshipElements.length == 0 && json.length<30) {
       return `<div><span class="leaf">S${s.style.id} ${s.style.type} ${s.style.meaning} ${s.style.source} <tt>${json}</tt></span></div>`;
     } else {
