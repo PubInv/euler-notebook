@@ -30,8 +30,6 @@ import { Config } from '../config';
 
 // Types
 
-type StyleRule = (tdoc: TDoc, session: SessionData, style: StyleObject)=>StyleObject[];
-
 interface SessionData {
   // The "parser" allows the evaluator to retain state. The fact that
   // the rules are not applied in any order or repetitively makes the operation
@@ -104,7 +102,6 @@ function chStyleInserted(tDoc: TDoc, change: StyleInserted): void {
 }
 
 // Helper Functions
-// (Some are exported for unit testing)
 
 // Traverses the MathJS expression tree, finds any symbol nodes,
 // and returns an array of all of the symbols found.
@@ -119,16 +116,16 @@ function collectSymbols(node: math.MathNode) : string[] {
 }
 
 
-export function mathEvaluateRule(tdoc: TDoc, session: SessionData, style: StyleObject): StyleObject[] {
+function mathEvaluateRule(tdoc: TDoc, session: SessionData, style: StyleObject): void {
 
   // We only evaluate MathJS expressions that are user input.
-  if (style.type != 'MATHJS') { return []; }
-	if (style.meaning!='INPUT' && style.meaning!='INPUT-ALT') { return []; }
+  if (style.type != 'MATHJS') { return; }
+	if (style.meaning!='INPUT' && style.meaning!='INPUT-ALT') { return; }
 
   // Do not evaluate more than once.
   if ((tdoc.stylableHasChildOfType(style, 'MATHJS', 'EVALUATION')) ||
       (tdoc.stylableHasChildOfType(style, 'TEXT', 'EVALUATION-ERROR'))) {
-    return [];
+    return;
   }
 
   let e;
@@ -137,43 +134,40 @@ export function mathEvaluateRule(tdoc: TDoc, session: SessionData, style: StyleO
   } catch (err) {
     debug("error in eval", style.data, err.messsage);
     const firstLine = err.message;
-    let st = tdoc.insertStyle(style, { type: 'TEXT', data: firstLine, meaning: 'EVALUATION-ERROR', source: 'MATHJS' });
-    return [st];
+    tdoc.insertStyle(style, { type: 'TEXT', data: firstLine, meaning: 'EVALUATION-ERROR', source: 'MATHJS' });
+    return;
   }
 
-  if (typeof e != 'number') return [];
+  if (typeof e != 'number') { return; }
 
   // REVIEW: Should we introduce a number style?
   let eString = ""+ e;
-  let st = tdoc.insertStyle(style, { type: 'MATHJS', data: eString, meaning: 'EVALUATION', source: 'MATHJS' });
-
-  return [st];
+  tdoc.insertStyle(style, { type: 'MATHJS', data: eString, meaning: 'EVALUATION', source: 'MATHJS' });
 }
 
-export function mathExtractVariablesRule(tdoc: TDoc, _session: SessionData, style: StyleObject): StyleObject[] {
+function mathExtractVariablesRule(tdoc: TDoc, _session: SessionData, style: StyleObject): void {
   // We only extract symbols from MathJS expressions that are user input.
-  if (style.type != 'MATHJS') { return []; }
-	if (style.meaning!='INPUT' && style.meaning!='INPUT-ALT') { return []; }
+  if (style.type != 'MATHJS') { return; }
+	if (style.meaning!='INPUT' && style.meaning!='INPUT-ALT') { return; }
 
   // Do not extract symbols more than once.
-  if (tdoc.stylableHasChildOfType(style, 'MATHJS', 'SYMBOL')) { return []; }
+  if (tdoc.stylableHasChildOfType(style, 'MATHJS', 'SYMBOL')) { return; }
 
   const parse = math.parse(style.data);
-  if (!parse) return [];
+  if (!parse) { return; }
 
   const symbolNodes = collectSymbols(parse);
-  const styles =  symbolNodes.map(s => tdoc.insertStyle(style, { type: 'MATHJS', data: s, meaning: 'SYMBOL', source: 'MATHJS' }));
-  return styles;
+  symbolNodes.map(s => tdoc.insertStyle(style, { type: 'MATHJS', data: s, meaning: 'SYMBOL', source: 'MATHJS' }));
 }
 
 // Attempt math.js-based simplification
-export function mathSimplifyRule(tdoc: TDoc, _session: SessionData, style: StyleObject): StyleObject[] {
+function mathSimplifyRule(tdoc: TDoc, _session: SessionData, style: StyleObject): void {
   // We only apply MathJS simplifications so MathJS styles that are user input.
-  if (style.type != 'MATHJS') { return []; }
-	if (style.meaning!='INPUT' && style.meaning!='INPUT-ALT') { return []; }
+  if (style.type != 'MATHJS') { return; }
+	if (style.meaning!='INPUT' && style.meaning!='INPUT-ALT') { return; }
 
   // Do not apply simplification more than once.
-  if (tdoc.stylableHasChildOfType(style, 'MATHJS', 'SIMPLIFICATION')) { return []; }
+  if (tdoc.stylableHasChildOfType(style, 'MATHJS', 'SIMPLIFICATION')) { return; }
 
   let simpler;
   try {
@@ -182,35 +176,14 @@ export function mathSimplifyRule(tdoc: TDoc, _session: SessionData, style: Style
     // This is useful for debugging, but it is not error to fail to
     // be able to simplify something.
     //    debug("math.simplify failed on", style.data);
-    return [];
+    return;
   }
-  if (!simpler) { return []; }
+  if (!simpler) { return; }
 
   // If the simplification hasn't changed anything then don't add it.
   const simplerText = simpler.toString();
-  if (simplerText == style.data) { return []; }
+  if (simplerText == style.data) { return; }
 
   const s1 = tdoc.insertStyle(style, { type: 'MATHJS', data: simplerText, meaning: 'SIMPLIFICATION', source: 'MATHJS' });
-  const s2 = tdoc.insertStyle(s1, { type: 'LATEX', data: simpler.toTex(), meaning: 'FORMULA-ALT', source: 'MATHJS' });
-  return [ s1, s2 ];
+  tdoc.insertStyle(s1, { type: 'LATEX', data: simpler.toTex(), meaning: 'FORMULA-ALT', source: 'MATHJS' });
 }
-
-// Applies each rule to each style of the TDoc
-// and returns an array of any new styles that were generated.
-export function applyCasRules(tdoc: TDoc, rules: StyleRule[]): StyleObject[] {
-  let rval: StyleObject[] = [];
-  const session: SessionData = { parser: math.parser() };
-  // IMPORTANT: The rules may add new styles. So capture the current
-  //            length of the styles array, and only iterate over
-  //            the existing styles. Otherwise, we could get into
-  //            an infinite loop.
-  let origStyles = tdoc.getStyles().slice();
-  for (const style of origStyles) {
-    for (const rule of rules) {
-      const newStyles = rule(tdoc, session, style);
-      rval = rval.concat(newStyles);
-    }
-  }
-  return rval;
-}
-
