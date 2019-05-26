@@ -28,7 +28,7 @@ import * as WebSocket from 'ws';
 // TODO: Handle websocket lifecycle: closing, unexpected disconnects, errors, etc.
 
 import { ClientMessage, NotebookChange, NotebookName, NotebookPath, ServerMessage,
-         ThoughtId, ThoughtProperties, StyleProperties, StyleSource, ToolInfo } from '../client/math-tablet-api';
+         ThoughtId, ThoughtProperties, StyleSource, ToolInfo, StylePropertiesWithSubprops, ThoughtObject, StyleObject } from '../client/math-tablet-api';
 
 import { PromiseResolver } from './common';
 // REVIEW: This file should not be dependent on any specific observers.
@@ -231,10 +231,10 @@ export class ClientSocket {
     tDoc.deleteThought(thoughtId);
   }
 
-  private cmInsertThought(tDoc: TDoc, thoughtProps: ThoughtProperties, stylePropss: StyleProperties[]): void {
+  private cmInsertThought(tDoc: TDoc, thoughtProps: ThoughtProperties, stylePropss: StylePropertiesWithSubprops[]): void {
     const thought = tDoc.insertThought(thoughtProps);
     for (const styleProps of stylePropss) {
-      tDoc.insertStyle(thought, styleProps);
+      insertStyleRecursive(tDoc, thought, styleProps);
     }
   }
 
@@ -317,5 +317,16 @@ export class ClientSocket {
       console.error(`ERROR: OpenTDoc sending websocket message: ${this.socket.readyState} ${(<any>err).code} ${err.message}`)
     }
   }
+}
 
+// Helper Functions
+
+function insertStyleRecursive(tDoc: TDoc, parent: ThoughtObject|StyleObject, propsWithSubprops: StylePropertiesWithSubprops): void {
+  const { subprops, ...props } = propsWithSubprops;
+  const style = tDoc.insertStyle(parent, props);
+  if (subprops) {
+    for (const props of subprops) {
+      insertStyleRecursive(tDoc, style, props);
+    }
+  }
 }

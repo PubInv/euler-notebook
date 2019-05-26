@@ -22,7 +22,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 import { ServerSocket } from './server-socket.js';
 
 import { NotebookName, TDocObject, StyleId, StyleObject,
-  ThoughtId, ThoughtObject, NotebookChange, ThoughtProperties, StyleProperties, RelationshipId, RelationshipObject, UseTool, InsertThought, StyleSource, ToolInfo } from './math-tablet-api.js';
+  ThoughtId, ThoughtObject, NotebookChange, ThoughtProperties, RelationshipId, RelationshipObject, UseTool, InsertThought, StyleSource, ToolInfo, StylePropertiesWithSubprops } from './math-tablet-api.js';
 // import { Jiix, StrokeGroups } from './myscript-types.js';
 import { ThoughtElement } from './thought-element.js';
 import { $new, escapeHtml, Html } from './dom.js';
@@ -82,22 +82,22 @@ export class Notebook {
 
   public smClose(): void { return this.close(); }
 
-  public insertThought(thoughtProps: ThoughtProperties, stylePropss: StyleProperties[]): void {
-    const msg: InsertThought = { 
-      action: 'insertThought', 
-      notebookName: this.notebookName, 
-      thoughtProps, 
+  public insertThought(thoughtProps: ThoughtProperties, stylePropss: StylePropertiesWithSubprops[]): void {
+    const msg: InsertThought = {
+      action: 'insertThought',
+      notebookName: this.notebookName,
+      thoughtProps,
       stylePropss,
     }
     this.socket.sendMessage(msg);
   }
 
   public useTool(thoughtElt: ThoughtElement, source: StyleSource, info: ToolInfo, ): void {
-    const msg: UseTool = { 
-      action: 'useTool', 
-      notebookName: this.notebookName, 
-      info, 
-      source, 
+    const msg: UseTool = {
+      action: 'useTool',
+      notebookName: this.notebookName,
+      info,
+      source,
       thoughtId: thoughtElt.thought.id,
     };
     this.socket.sendMessage(msg);
@@ -108,7 +108,7 @@ export class Notebook {
   // Private Class Properties
 
   private static notebooks: Map<NotebookName, Notebook> = new Map();
-  
+
   // Private Constructor
 
   private constructor(socket: ServerSocket, notebookName: NotebookName, notebookData: TDocObject) {
@@ -154,8 +154,8 @@ export class Notebook {
   private thoughtElementForStyle(style: StyleObject): ThoughtElement {
     let ancestorStyle: StyleObject;
     let parentStyle: StyleObject|undefined;
-    for (ancestorStyle = style; 
-         parentStyle = this.styles.get(ancestorStyle.stylableId); 
+    for (ancestorStyle = style;
+         parentStyle = this.styles.get(ancestorStyle.stylableId);
          ancestorStyle = parentStyle);
     const thoughtElt = this.thoughtElements.get(ancestorStyle.stylableId);
     if (!thoughtElt) { throw new Error(`Style ${style.id} is not a descendant of a thought.`); }

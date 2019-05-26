@@ -129,6 +129,10 @@ export interface StyleProperties {
   type: StyleType;
 }
 
+export interface StylePropertiesWithSubprops extends StyleProperties {
+  subprops?: StylePropertiesWithSubprops[];
+}
+
 export interface StyleObject extends StyleProperties {
   id: StyleId;
   stylableId: StylableId;
@@ -235,7 +239,7 @@ export interface InsertThought {
   action: 'insertThought';
   notebookName: NotebookName;
   thoughtProps: ThoughtProperties;
-  stylePropss: StyleProperties[];
+  stylePropss: StylePropertiesWithSubprops[];
 }
 
 interface OpenNotebook {

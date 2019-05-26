@@ -27,7 +27,7 @@ import { addErrorMessageToHeader, /* addSuccessMessageToHeader */} from './globa
 // import { StyleObject, ThoughtObject }  from './math-tablet-api.js';
 import { Notebook } from './notebook.js';
 import { ServerSocket } from './server-socket.js';
-import { Jiix, LatexData, MathMlData, StyleType, ThoughtProperties, StyleProperties } from './math-tablet-api.js';
+import { Jiix, LatexData, MathMlData, StyleType, ThoughtProperties, StylePropertiesWithSubprops } from './math-tablet-api.js';
 
 // Types
 
@@ -143,10 +143,11 @@ function onInsertButtonClicked(_event: Event) {
       if (!jiix || !latex || !mathMl) { throw new Error("Missing export from MyScript math editor."); }
       console.dir(mathMl);
       const thoughtProps: ThoughtProperties = {};
-      const stylePropss: StyleProperties[] = [
-        { type: 'JIIX', data: jiix, meaning: 'INPUT', source: 'USER' },
-        { type: 'LATEX', data: latex, meaning: 'INPUT-ALT', source: 'USER' },
-        { type: 'MATHML', data: mathMl, meaning: 'INPUT-ALT', source: 'USER' },
+      const stylePropss: StylePropertiesWithSubprops[] = [
+        { type: 'JIIX', data: jiix, meaning: 'INPUT', source: 'USER', subprops: [
+          { type: 'LATEX', data: latex, meaning: 'INPUT-ALT', source: 'USER' },
+          { type: 'MATHML', data: mathMl, meaning: 'INPUT-ALT', source: 'USER' },
+        ]},
       ];
       gNotebook.insertThought(thoughtProps, stylePropss);
       editor.clear();
@@ -158,7 +159,7 @@ function onInsertButtonClicked(_event: Event) {
       const $inputField = $<HTMLInputElement>('#inputKeyboard>input');
       const text = $inputField.value;
       const thoughtProps: ThoughtProperties = {};
-      const stylePropss: StyleProperties[] = [
+      const stylePropss: StylePropertiesWithSubprops[] = [
         { type: styleType, data: text, meaning: 'INPUT', source: 'USER' },
       ];
       gNotebook.insertThought(thoughtProps, stylePropss);
@@ -171,9 +172,10 @@ function onInsertButtonClicked(_event: Event) {
       const text = editor.exports && editor.exports['text/plain'];
       const strokeGroups = editor.model.strokeGroups;
       const thoughtProps: ThoughtProperties = {};
-      const stylePropss: StyleProperties[] = [
-        { type: 'TEXT', data: text, meaning: 'INPUT-ALT', source: 'USER' },
-        { type: 'STROKE', data: strokeGroups, meaning: 'INPUT', source: 'USER' },
+      const stylePropss: StylePropertiesWithSubprops[] = [
+        { type: 'STROKE', data: strokeGroups, meaning: 'INPUT', source: 'USER', subprops: [
+          { type: 'TEXT', data: text, meaning: 'INPUT-ALT', source: 'USER' },
+        ]},
       ];
       gNotebook.insertThought(thoughtProps, stylePropss);
       editor.clear();

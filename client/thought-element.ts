@@ -68,10 +68,12 @@ export class ThoughtElement {
       case 'ERROR': this.renderErrorMessage(style); break;
       case 'INPUT':
         if (style.type == 'LATEX') { this.renderLatexFormula(style.data); }
+        else if (style.type == 'TEXT') { this.renderText(style.data); }
         else { this.renderOtherInput(style); }
         break;
       case 'INPUT-ALT':
         if (style.type == 'LATEX') { this.renderLatexFormula(style.data); }
+        else if (style.type == 'TEXT') { this.renderText(style.data); }
         break;
       case 'PLOT': this.renderPlot(style); break;
     }
@@ -123,9 +125,7 @@ export class ThoughtElement {
       return;
     }
     const $formulaElt = this.$elt.querySelector('.formula');
-    const escapedText = escapeHtml(style.data);
-    const html = (style.type == 'TEXT' ? escapedText : `<tt>${escapedText}</tt>`);
-    $formulaElt!.innerHTML = html;
+    $formulaElt!.innerHTML = `<tt>${escapeHtml(style.data)}</tt>`;
   }
 
   private renderPlot(style: StyleObject): void {
@@ -136,6 +136,11 @@ export class ThoughtElement {
     const url: string = style.data;
     const $formulaElt = this.$elt.querySelector('.formula');
     $formulaElt!.innerHTML = `<image src="${url}"/>`
+  }
+
+  private renderText(text: string): void {
+    const $formulaElt = this.$elt.querySelector('.formula');
+    $formulaElt!.innerHTML = escapeHtml(text);
   }
 
   private renderToolMenu(style: StyleObject): void {
