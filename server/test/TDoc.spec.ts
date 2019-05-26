@@ -19,21 +19,15 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 // Requirements
 
-import * as debug1 from 'debug';
-const MODULE = __filename.split('/').slice(-1)[0].slice(0,-3);
-const debug = debug1(`server:${MODULE}`);
-import * as math from 'mathjs';
+// import * as debug1 from 'debug';
+// const MODULE = __filename.split('/').slice(-1)[0].slice(0,-3);
+// const debug = debug1(`server:${MODULE}`);
 import * as mathsteps from 'mathsteps';
 
 import { TDoc }  from '../tdoc';
-import { mathSimplifyRule }  from '../observers/mathjs-cas';
-import { mathExtractVariablesRule }  from '../observers/mathjs-cas';
-import { mathEvaluateRule }  from '../observers/mathjs-cas';
-import { applyCasRules }  from '../observers/mathjs-cas';
 import { dumpEquationSteps, dumpExpressionSteps }  from '../observers/math-steps-cas';
 // import { MathStep }  from '../math-steps-cas';
 
-// import { expect } from 'chai';
 import { assert } from 'chai';
 import 'mocha';
 
@@ -97,199 +91,26 @@ describe('renderer', function() {
 });
 
 describe('tdoctextcompiler', function() {
-     it('we can create a tdoc from a csv', function() {
-       let td = createTDocFromText('TEXT', "x = 4; y = 5; x + y = 3");
-       let s0s = td.getStyles();
-       assert.equal(td.numStyles('TEXT'), 3);
-       assert.equal(s0s.length, 3);
-       assert.ok(td);
-     });
+  it('we can create a tdoc from a csv', function() {
+    let td = createTDocFromText('TEXT', "x = 4; y = 5; x + y = 3");
+    let s0s = td.getStyles();
+    assert.equal(td.numStyles('TEXT'), 3);
+    assert.equal(s0s.length, 3);
+    assert.ok(td);
+  });
 });
 
 describe('utility computations', function() {
-     it('we can create a tdoc from a csv (case 2)', function() {
-       let td = createTDocFromText('TEXT', "x = 4; y = 5; x + y = 3");
-       let s0 = td.getStyles()[0];
-       td.insertStyle(s0, { type: 'TEXT', data: "this is a style on a style", meaning: 'EVALUATION', source: 'TEST' })
-       assert.ok(td.stylableHasChildOfType(s0, 'TEXT'));
-       assert.ok(!td.stylableHasChildOfType(s0, 'LATEX'));
-     });
-});
-
-describe('style applier', function() {
-  describe('math js rule', function() {
-    it('we can add a style with a mathjs rule', function() {
-      // TODO: Simplify with the text compiler
-      let td0 = TDoc.createAnonymous();
-      let th = td0.insertThought({});
-      td0.insertStyle(th, { type: 'MATHJS', data: "2+9", meaning: 'INPUT', source: 'TEST' })
-      td0.insertStyle(th, { type: 'MATHJS', data: "4+5", meaning: 'INPUT', source: 'TEST' })
-      let newStyles = applyCasRules(td0,[mathSimplifyRule, mathExtractVariablesRule]);
-      assert.equal(newStyles.length, 4);
-      assert.equal(td0.numStyles('MATHJS', 'INPUT'), 2);
-      assert.equal(td0.numStyles('MATHJS', 'SIMPLIFICATION'), 2);
-    });
-    it('simplifying is idempotent.', function() {
-      // TODO: Simplify with the text compiler
-      let td0 = TDoc.createAnonymous();
-      let th = td0.insertThought({});
-      td0.insertStyle(th, { type: 'MATHJS', data: "2+9", meaning: 'INPUT', source: 'TEST' })
-      td0.insertStyle(th, { type: 'MATHJS', data: "4+5", meaning: 'INPUT', source: 'TEST' })
-      let firstStyles = applyCasRules(td0,[mathSimplifyRule,
-                                        mathExtractVariablesRule]);
-      assert.equal(firstStyles.length, 4);
-      assert.equal(td0.numStyles('MATHJS', 'INPUT'), 2);
-      assert.equal(td0.numStyles('MATHJS', 'SIMPLIFICATION'), 2);
-
-      let secondStyles = applyCasRules(td0,[mathSimplifyRule,
-                                         mathExtractVariablesRule]);
-      assert.equal(secondStyles.length, 0, "no new styles");
-      assert.equal(td0.numStyles('MATHJS', 'SIMPLIFICATION'), 2);
-    });
-    it('we can do two rules', function() {
-      // TODO: Simplify with the text compiler
-      let td0 = TDoc.createAnonymous();
-      let th0 = td0.insertThought({});
-      let th1 = td0.insertThought({});
-      let th2 = td0.insertThought({});
-      td0.insertStyle(th0, { type: 'MATHJS', data: "x = 2", meaning: 'INPUT', source: 'TEST' })
-      td0.insertStyle(th1, { type: 'MATHJS', data: "y = 4", meaning: 'INPUT', source: 'TEST' })
-      td0.insertStyle(th2, { type: 'MATHJS', data: "z = x + y", meaning: 'INPUT', source: 'TEST' })
-      let newStyles = applyCasRules(td0,
-        [mathSimplifyRule,
-         mathExtractVariablesRule]);
-      assert.equal(newStyles.length, 5);
-      assert.equal(td0.numStyles('MATHJS', 'INPUT'), 3);
-      assert.equal(td0.numStyles('MATHJS', 'SYMBOL'), 5);
-    });
+  it('we can create a tdoc from a csv (case 2)', function() {
+    let td = createTDocFromText('TEXT', "x = 4; y = 5; x + y = 3");
+    let s0 = td.getStyles()[0];
+    td.insertStyle(s0, { type: 'TEXT', data: "this is a style on a style", meaning: 'EVALUATION', source: 'TEST' })
+    assert.ok(td.stylableHasChildOfType(s0, 'TEXT'));
+    assert.ok(!td.stylableHasChildOfType(s0, 'LATEX'));
   });
-});
-
-
-describe('variable extraction', function() {
-  it('we can extract single variables', function() {
-    let td = TDoc.createAnonymous();
-    let th = td.insertThought({});
-    td.insertStyle(th, { type: 'MATHJS', data: "x = 4", meaning: 'INPUT', source: 'TEST' })
-    td.insertStyle(th, { type: 'MATHJS', data: "y = 5", meaning: 'INPUT', source: 'TEST' })
-    let newStyles = applyCasRules(td,[mathExtractVariablesRule]);
-    assert.equal(newStyles.length, 2);
-    assert.equal(td.numStyles('MATHJS', "SYMBOL"), 2);
-  });
-});
-
-describe('variable extraction', function() {
-  it('we extract multiple variables', function() {
-        let td = TDoc.createAnonymous();
-    let th0 = td.insertThought({});
-    let th1 = td.insertThought({});
-    let th2 = td.insertThought({});
-    td.insertStyle(th0, { type: 'MATHJS', data: "x = 4", meaning: 'INPUT', source: 'TEST' })
-    td.insertStyle(th1, { type: 'MATHJS', data: "y = 5", meaning: 'INPUT', source: 'TEST' })
-    td.insertStyle(th2, { type: 'MATHJS', data: "z = x + y", meaning: 'INPUT', source: 'TEST' })
-  // at present, we will be extracting all of these symbols,
-    // without regard to the face that some of theme should
-    // be treated as the same.
-    let newStyles = applyCasRules(td,[mathExtractVariablesRule]);
-    assert.equal(newStyles.length, 5);
-    assert.equal(td.numStyles('MATHJS', "SYMBOL"), 5);
-    });
 });
 
 describe('manipulate plain ascii styles', function() {
-  // This is just to exercise the style createMathJsPlain
-  it('we can create and simplify plain ascii styles', function() {
-    let td = TDoc.createAnonymous();
-    let th0 = td.insertThought({});
-    let th1 = td.insertThought({});
-    // Here we create new styles
-    td.insertStyle(th0, { type: 'MATHJS', data: "3x + 4x", meaning: 'INPUT', source: 'TEST' })
-    td.insertStyle(th1, { type: 'MATHJS', data: "4 + 5", meaning: 'INPUT', source: 'TEST' })
-    let newStyles = applyCasRules(td,[ mathSimplifyRule ]);
-    assert.equal(newStyles.length, 4);
-  });
-  it('the MathJsPlainStyle style simplifies 3 + 7', function() {
-    let td0 = TDoc.createAnonymous();
-    let th0 = td0.insertThought({});
-    td0.insertStyle(th0, { type: 'MATHJS', data: "3+7", meaning: 'INPUT', source: 'TEST' })
-    let newStylesMathJs = applyCasRules(td0,[mathSimplifyRule]);
-    assert.equal(newStylesMathJs.length, 2);
-  });
-  it('we can do basic things with mathjs parser', function() {
-    // create a parser
-    const parser = math.parser()
-
-    // evaluate expressions
-    assert.equal(parser.eval('sqrt(3^2 + 4^2)'),5);
-    assert.equal(parser.eval('sqrt(-4)'),"2i");
-    assert.equal(parser.eval('2 inch to cm'),"5.08 cm");
-    assert.equal(parser.eval('cos(45 deg)'),"0.7071067811865476");
-
-  });
-  it('we can operate on multiple expressions with mathjs parser', function() {
-    // create a parser
-    const parser = math.parser()
-
-    // semicolons return last!
-    let semi = parser.eval('sqrt(3^2 + 4^2);sqrt(-4);4'); // 5, 2i
-
-    assert.equal(semi.entries[0], 4);
-
-    // commas fail!
-    try {
-      parser.eval('sqrt(3^2 + 4^2), sqrt(-4), 4');
-      assert.fail();
-    } catch {
-      assert.ok(true);
-    }
-
-    // define variables and functions
-    assert.equal(parser.eval('x = 7 / 2'), 3.5); // 3.5
-    assert.equal(parser.eval('x + 3'), 6.5); // 6.5
-    // This does in fact produce a return value, but it is
-    // easier to test the result below...
-    parser.eval('f2(x, y) = x^y');
-    assert.equal(parser.eval('f2(2, 3)'),8); // 8
-
-    // now let's try to leave some variables underdefined
-    parser.clear();
-    try {
-      parser.eval('z = x + y');
-    } catch {
-      assert.ok(true);
-    }
-    try {
-      debug('Z = X + 4', parser.eval('z = x + 4'));
-    } catch {
-      assert.ok(true);
-    }
-    try {
-      debug('Z', parser.eval('z'));
-    } catch {
-      assert.ok(true);
-    }
-
-  });
-  it('we can meaningly perform an evaluation against an entire tdoc', function() {
-    {
-      let td = createTDocFromText('MATHJS', "x = 4; y = 5; z = x + y");
-      let evaluations = applyCasRules(td,[mathEvaluateRule]);
-      assert.equal(evaluations[2].data, 9);
-    }
-  });
-
-  // REVIEW: Not sure how this test ever worked. We always pass expressions to MathJS in the order
-  // they are inserted. In this example, the "x=4" evaluates to "4", "z = x+y" evaluates to
-  // "y is undefined", and "y=5" evaluates to "5". So the assertion should be evaluations[2].data == 5.
-  // And we cannot meaningfully ignore order with out current MathJS implementation. -- DJ
-  it.skip('we can meaningly perform an entire tdoc without any special order!', function() {
-    {
-      // NOTE THE ORDER HERE!!!
-      let td = createTDocFromText('MATHJS', "x = 4; z = x + y; y = 5");
-      let evaluations = applyCasRules(td,[mathEvaluateRule]);
-      assert.equal(evaluations[2].data, 9);
-    }
-  });
 
   describe('mathsteps is usable', function() {
     it('we can simplify an equation', function() {
