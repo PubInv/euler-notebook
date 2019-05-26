@@ -31,6 +31,8 @@ import { assert } from 'chai';
 import 'mocha';
 import { StyleType, StyleMeaning, StyleSource, StyleObject, StyleProperties, MathJsData } from '../../client/math-tablet-api';
 
+// Tests
+
 describe('mathjs-cas', function(){
 
   before(async function(): Promise<void>{
