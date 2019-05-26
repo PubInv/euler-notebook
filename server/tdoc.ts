@@ -125,16 +125,16 @@ export class TDoc extends EventEmitter {
   }
 
   // find all children of given type and meaning
-  public findChildStyleOfType(id: StylableId, tname: StyleType, meaning?: StyleMeaning): StyleObject[] {
+  public findChildStyleOfType(id: StylableId, type: StyleType, meaning?: StyleMeaning): StyleObject[] {
     // we will count ourselves as a child here....
-    const s = this.getStylable(id);
-    if (!s) return [];
+    const style = this.getStyleById(id);
+    if (!style) return [];
     var matching = [];
-    if (s && 'type' in s) {
+    if (style && 'type' in style) {
       // if null, this is a Thought, so not a Style...
-      if (s && s.type == tname && s.meaning == meaning) {
+      if (style && style.type == type && style.meaning == meaning) {
         // we match, so we add ourselves...
-        matching.push(<StyleObject>s);
+        matching.push(<StyleObject>style);
       }
     }
 
@@ -143,7 +143,7 @@ export class TDoc extends EventEmitter {
     // now for each kid, recurse...
     if (kids) {
       for(let k of kids) {
-        const kmatch = this.findChildStyleOfType(k.id,tname,meaning);
+        const kmatch = this.findChildStyleOfType(k.id,type,meaning);
         for(let km of kmatch) {
           matching.push(km);
         }
@@ -174,6 +174,10 @@ export class TDoc extends EventEmitter {
 
   public getStylable(styleId : StyleId) : StyleObject|ThoughtObject|null {
     return this.getThoughtById(styleId) || this.getStyleById(styleId) || null;
+  }
+
+  public getStyleById(id: StyleId): StyleObject|undefined {
+    return this.styles.find(s=>(s.id==id));
   }
 
   // TODO: Return an iterator rather than our internal array.
@@ -211,10 +215,6 @@ export class TDoc extends EventEmitter {
       }
     });
     return symbolStyles;
-  }
-
-  public getStyleById(id: StyleId): StyleObject|undefined {
-    return this.styles.find(s=>(s.id==id));
   }
 
   public getThoughtById(id: ThoughtId): ThoughtObject|undefined {
