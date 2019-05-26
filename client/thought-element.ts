@@ -107,10 +107,14 @@ export class ThoughtElement {
   }
 
   private renderLatexFormula(latexData: LatexData): void {
-    // TODO: Handle errors
-    const latexHtml = getKatex().renderToString(latexData, { throwOnError: false });
     const $formulaElt = this.$elt.querySelector('.formula');
-    $formulaElt!.innerHTML = latexHtml;
+    let html;
+    try {
+      html = getKatex().renderToString(latexData, {});
+    } catch(err) {
+      html = `<div class="error">${escapeHtml(err.message)}</div><tt>${escapeHtml(latexData)}</tt>`
+    }
+    $formulaElt!.innerHTML = html;
   }
 
   private renderOtherInput(style: StyleObject): void {
