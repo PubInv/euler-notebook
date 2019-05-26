@@ -133,6 +133,35 @@ export class Notebook {
   private styles: Map<StyleId, StyleObject>;
   private thoughtElements: Map<ThoughtId, ThoughtElement>;
 
+  // Private Instance Property Functions
+
+  private relationshipsAttachedToStyle(s: StyleObject): RelationshipObject[] {
+    return Array.from(this.relationships.values()).filter(r=>r.sourceId==s.id);
+  }
+
+  private relationshipsAttachedToThought(t: ThoughtElement): RelationshipObject[] {
+    return Array.from(this.relationships.values()).filter(r=>r.sourceId==t.thought.id);
+  }
+
+  private stylesAttachedToStyle(s: StyleObject): StyleObject[] {
+    return Array.from(this.styles.values()).filter(s2=>s2.stylableId==s.id);
+  }
+
+  private stylesAttachedToThought(t: ThoughtElement): StyleObject[] {
+    return Array.from(this.styles.values()).filter(s=>s.stylableId==t.thought.id);
+  }
+
+  private thoughtElementForStyle(style: StyleObject): ThoughtElement {
+    let ancestorStyle: StyleObject;
+    let parentStyle: StyleObject|undefined;
+    for (ancestorStyle = style; 
+         parentStyle = this.styles.get(ancestorStyle.stylableId); 
+         ancestorStyle = parentStyle);
+    const thoughtElt = this.thoughtElements.get(ancestorStyle.stylableId);
+    if (!thoughtElt) { throw new Error(`Style ${style.id} is not a descendant of a thought.`); }
+    return thoughtElt;
+  }
+
   // Private Event Handlers
 
   private onClick(event: MouseEvent): void {
@@ -175,9 +204,9 @@ export class Notebook {
 
   private chInsertStyle(style: StyleObject): void {
     this.styles.set(style.id, style);
-    const elt = this.thoughtElements.get(style.stylableId);
-    if (elt) { elt.insertStyle(style); }
-    }
+    const thoughtElt = this.thoughtElementForStyle(style);
+    thoughtElt.insertStyle(style);
+  }
 
   private chInsertThought(thought: ThoughtObject): void {
     const thoughtElt = ThoughtElement.insert(this, thought);
@@ -232,22 +261,6 @@ export class Notebook {
   </div>
 </div>`;
     }
-  }
-
-  private relationshipsAttachedToStyle(s: StyleObject): RelationshipObject[] {
-    return Array.from(this.relationships.values()).filter(r=>r.sourceId==s.id);
-  }
-
-  private relationshipsAttachedToThought(t: ThoughtElement): RelationshipObject[] {
-    return Array.from(this.relationships.values()).filter(r=>r.sourceId==t.thought.id);
-  }
-
-  private stylesAttachedToStyle(s: StyleObject): StyleObject[] {
-    return Array.from(this.styles.values()).filter(s2=>s2.stylableId==s.id);
-  }
-
-  private stylesAttachedToThought(t: ThoughtElement): StyleObject[] {
-    return Array.from(this.styles.values()).filter(s=>s.stylableId==t.thought.id);
   }
 
 }

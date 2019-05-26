@@ -84,8 +84,8 @@ export async function mathMathematicaRule(tdoc: TDoc, style: StyleObject): Promi
   debug("INSIDE RULE :",style);
   // We only extract symbols from Wolfram expressions that are user input.
   if (style.type != 'WOLFRAM') { return []; }
-    if (style.meaning!='INPUT' && style.meaning!='INPUT-ALT') { return []; }
-    
+  if (style.meaning!='INPUT' && style.meaning!='INPUT-ALT') { return []; }
+
   var styles = [];
 
   var assoc;
@@ -162,7 +162,7 @@ async function convertMathMlToWolframRule(tdoc: TDoc, style: StyleObject): Promi
 
   if (style.type != 'MATHML') { return; }
   if (style.meaning!='INPUT' && style.meaning!='INPUT-ALT') { return; }
-    
+
   const mathMl = style.data.split('\n').join('').replace(/"/g, '\\"');
   debug("mathML",mathMl);
   const cmd = `InputForm[MakeExpression[ImportString["${mathMl}", "MathML"]]]`;

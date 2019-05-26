@@ -43,8 +43,10 @@ export type RelationshipMeaning =
 
 export type StyleMeaning =
   'ATTRIBUTE' |       // Generic attribute. Meaning implied by type.
+  'ERROR' |           // An error message. Type should be text.
   'EVALUATION'|       // CAS evaluation of an expression.
-  'EVALUATION-ERROR'| // Error in CAS evaluation of an expression
+  'EVALUATION-ERROR' |// Error in CAS evaluation of an expression.
+  'FORMULA-ALT' |     // Alternative representation of a formula.
   'HANDWRITING'|      // Stroke information for the user's handwriting.
   'INPUT'|            // Primary representation of something that the user has input.
   'INPUT-ALT' |       // An alternative representation, e.g. LaTeX version of handwritten math.
@@ -54,9 +56,9 @@ export type StyleMeaning =
   'PLOT'|             // Indented text for the purpose of exposition.
   'SYMBOL'|           // Symbols extracted from an expression.
   'SYMBOL-DEFINITION'|// Definition of a symbol.
-  'SYMBOL-USE'|       // Use of a symbol
+  'SYMBOL-USE'|       // Use of a symbol.
   'UNIVARIATE-QUADRATIC'|  // A quadratic expression, presumably worth plotting.
-  'SUBTRIVARIATE';  // An expression in one or two variables presumable plottable.
+  'SUBTRIVARIATE';    // An expression in one or two variables presumable plottable.
 
   export type StyleType =
   'IMAGE'|            // ImageData: URL of image relative to notebook folder.
@@ -102,7 +104,7 @@ export interface ToolInfo {
   html: /* TYPESCRIPT: Html? */ string;
 }
 export type ToolMenu = ToolInfo[];
-	
+
 // Plain object version of TDoc
 
 export type RelationshipId = number;
@@ -217,7 +219,7 @@ interface NotebookOpened {
 // Messages from the client
 
 export type ClientMessage = CloseNotebook|DeleteThought|InsertThought|OpenNotebook|UseTool;
-	
+
 interface CloseNotebook {
   action: 'closeNotebook';
   notebookName: NotebookName;

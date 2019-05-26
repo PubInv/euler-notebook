@@ -19,7 +19,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 // Requirements
 
-import { $new } from './dom.js';
+import { $new, escapeHtml } from './dom.js';
 import { getKatex } from './katex-types.js';
 import { ThoughtObject, StyleObject, LatexData, ToolMenu } from './math-tablet-api.js';
 import { Notebook } from './notebook.js';
@@ -57,13 +57,21 @@ export class ThoughtElement {
     }
   }
 
-  insertStyle(style: StyleObject): void {    
-    if (style.type == 'LATEX' && (style.meaning=='INPUT'||style.meaning=='INPUT-ALT')) {
-      this.renderLatexFormula(style.data);
-    } else if (style.type == 'IMAGE' && style.meaning=='PLOT') {
-      this.renderPlot(style.data);
-    } else if (style.type == 'TOOL-MENU') {
-      this.renderToolMenu(style);
+  insertStyle(style: StyleObject): void {
+    switch(style.meaning) {
+      case 'ATTRIBUTE':
+        if (style.type == 'TOOL-MENU') { this.renderToolMenu(style); }
+        break;
+      case 'INPUT':
+        if (style.type == 'LATEX') { this.renderLatexFormula(style.data); }
+        else { this.renderOtherInput(style); }
+        break;
+      case 'INPUT-ALT':
+        if (style.type == 'LATEX') { this.renderLatexFormula(style.data); }
+        break;
+      case 'PLOT':
+        this.renderPlot(style);
+        break;
     }
   }
 
@@ -92,7 +100,23 @@ export class ThoughtElement {
     $formulaElt!.innerHTML = latexHtml;
   }
 
-  private renderPlot(url: string): void {
+  private renderOtherInput(style: StyleObject): void {
+    if (typeof style.data != 'string') {
+      console.error(`Don't know how to render non-string input ${typeof style.data}`);
+      return;
+    }
+    const $formulaElt = this.$elt.querySelector('.formula');
+    const escapedText = escapeHtml(style.data);
+    const html = (style.type == 'TEXT' ? escapedText : `<tt>${escapedText}</tt>`);
+    $formulaElt!.innerHTML = html;
+  }
+
+  private renderPlot(style: StyleObject): void {
+    if (style.type != 'IMAGE') {
+      console.error(`Don't know how to handle plot of type ${style.type}`);
+      return;
+    }
+    const url: string = style.data;
     const $formulaElt = this.$elt.querySelector('.formula');
     $formulaElt!.innerHTML = `<image src="${url}"/>`
   }
@@ -106,7 +130,7 @@ export class ThoughtElement {
         this.notebook.useTool(this, style.source, info);
       });
       $toolsElt!.appendChild($button);
-    };    
+    };
   }
 
 }

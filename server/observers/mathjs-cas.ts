@@ -90,19 +90,10 @@ function chStyleInserted(tDoc: TDoc, change: StyleInserted): void {
     try {
       node = math.parse(style.data);
     } catch(err) {
-      console.error(err.message);
-      console.dir(err);
-      // TODO: attach error style:
-      // tDoc.insertStyle(style, { type: 'TEXT', data: err.message, meaning: 'ERROR', source: 'MATHJS' });
+      tDoc.insertStyle(style, { type: 'TEXT', data: err.message, meaning: 'ERROR', source: 'MATHJS' });
       return;
     }
-    const thought = tDoc.getThoughtById(style.stylableId);
-    if (!thought) {
-      // TODO: style attached to another style?
-      return;
-    }
-    const data = node.toTex();
-    tDoc.insertStyle(thought, { type: 'LATEX', data, meaning: 'INPUT-ALT', source: 'USER' });  
+    tDoc.insertStyle(style, { type: 'LATEX', data: node.toTex(), meaning: 'INPUT-ALT', source: 'USER' });
   }
 
   const session = gTDocSessions.get(tDoc);
@@ -133,7 +124,7 @@ export function mathEvaluateRule(tdoc: TDoc, session: SessionData, style: StyleO
   // We only evaluate MathJS expressions that are user input.
   if (style.type != 'MATHJS') { return []; }
 	if (style.meaning!='INPUT' && style.meaning!='INPUT-ALT') { return []; }
-	
+
   // Do not evaluate more than once.
   if ((tdoc.stylableHasChildOfType(style, 'MATHJS', 'EVALUATION')) ||
       (tdoc.stylableHasChildOfType(style, 'TEXT', 'EVALUATION-ERROR'))) {
@@ -163,7 +154,7 @@ export function mathExtractVariablesRule(tdoc: TDoc, _session: SessionData, styl
   // We only extract symbols from MathJS expressions that are user input.
   if (style.type != 'MATHJS') { return []; }
 	if (style.meaning!='INPUT' && style.meaning!='INPUT-ALT') { return []; }
-	
+
   // Do not extract symbols more than once.
   if (tdoc.stylableHasChildOfType(style, 'MATHJS', 'SYMBOL')) { return []; }
 
@@ -180,7 +171,7 @@ export function mathSimplifyRule(tdoc: TDoc, _session: SessionData, style: Style
   // We only apply MathJS simplifications so MathJS styles that are user input.
   if (style.type != 'MATHJS') { return []; }
 	if (style.meaning!='INPUT' && style.meaning!='INPUT-ALT') { return []; }
-	
+
   // Do not apply simplification more than once.
   if (tdoc.stylableHasChildOfType(style, 'MATHJS', 'SIMPLIFICATION')) { return []; }
 
@@ -200,7 +191,7 @@ export function mathSimplifyRule(tdoc: TDoc, _session: SessionData, style: Style
   if (simplerText == style.data) { return []; }
 
   const s1 = tdoc.insertStyle(style, { type: 'MATHJS', data: simplerText, meaning: 'SIMPLIFICATION', source: 'MATHJS' });
-  const s2 = tdoc.insertStyle(s1, { type: 'LATEX', data: simpler.toTex(), meaning: 'INPUT-ALT', source: 'MATHJS' });
+  const s2 = tdoc.insertStyle(s1, { type: 'LATEX', data: simpler.toTex(), meaning: 'FORMULA-ALT', source: 'MATHJS' });
   return [ s1, s2 ];
 }
 

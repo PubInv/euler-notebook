@@ -69,8 +69,8 @@ async function onStyleInserted(tDoc: TDoc, style: StyleObject): Promise<void> {
 
   // Only try to simplify/solve MathJS expressions
   if (style.type!='MATHJS') { return; }
-	  if (style.meaning!='INPUT' && style.meaning!='INPUT-ALT') { return; }
-	
+  if (style.meaning!='INPUT' && style.meaning!='INPUT-ALT') { return; }
+
   // if (tDoc.stylableHasChildOfType(style, 'MATHJS', 'SIMPLIFICATION-STEPS')) { return; }
 
   const steps = mathsteps.simplifyExpression(style.data);
