@@ -26,7 +26,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 import { assert } from 'chai';
 import 'mocha';
 
-import { initialize as initializeMathstepsCas } from '../observers/math-steps-cas';
+import { initialize as initializeMathstepsCas } from '../observers/mathsteps-cas';
 
 import { getStylesGeneratedForInputStyle, hasStyles } from './common';
 

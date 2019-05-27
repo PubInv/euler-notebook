@@ -23,7 +23,7 @@ import { Config } from '../config';
 
 import { initialize as initializeMathematicaCas } from './mathematica-cas';
 import { initialize as initializeMathJsCas } from './mathjs-cas';
-import { initialize as initializeMathStepsCas } from './math-steps-cas';
+import { initialize as initializeMathStepsCas } from './mathsteps-cas';
 import { initialize as initializeQuadClassifier } from './quad-classifier';
 import { initialize as initializeQuadPlotter } from './quad-plotter';
 import { initialize as initializeSandbox } from './sandbox';
