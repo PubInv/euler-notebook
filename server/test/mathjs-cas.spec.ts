@@ -27,7 +27,7 @@ import 'mocha';
 
 import { initialize as initializeMathJsCas } from '../observers/mathjs-cas';
 
-import { getStylesGeneratedForInputStyle, hasStyles } from './common';
+import { getStylesGeneratedForInputStyle, assertHasStyles } from './common';
 
 // Tests
 
@@ -41,19 +41,19 @@ describe('mathjs-cas', function(){
     const substyles = getStylesGeneratedForInputStyle("2+2");
     // console.dir(substyles);
     assert(substyles.length==3);
-    assert(hasStyles(substyles, 'LATEX', 'INPUT-ALT', 'USER', ["2+2"]));
-    assert(hasStyles(substyles, 'MATHJS', 'EVALUATION', 'MATHJS', ["4"]));
-    assert(hasStyles(substyles, 'MATHJS', 'SIMPLIFICATION', 'MATHJS', ["4"]));
+    assertHasStyles(substyles, 'LATEX', 'INPUT-ALT', 'USER', ["2+2"]);
+    assertHasStyles(substyles, 'MATHJS', 'EVALUATION', 'MATHJS', ["4"]);
+    assertHasStyles(substyles, 'MATHJS', 'SIMPLIFICATION', 'MATHJS', ["4"]);
   });
 
   it("Adds appropriate substyles to MATHJS INPUT for 'x^2 + y^2 == r'", function(){
     const substyles = getStylesGeneratedForInputStyle("x^2 + y^2 == r");
     // console.dir(substyles);
     assert(substyles.length==6);
-    assert(hasStyles(substyles, 'LATEX', 'INPUT-ALT', 'USER', ["{ x}^{2}+{ y}^{2}= r"]));
-    assert(hasStyles(substyles, 'TEXT', 'EVALUATION-ERROR', 'MATHJS', ["Undefined symbol x"]));
-    assert(hasStyles(substyles, 'MATHJS', 'SIMPLIFICATION', 'MATHJS', ["x ^ 2 + y ^ 2 == r"]));
-    assert(hasStyles(substyles, 'MATHJS', 'SYMBOL', 'MATHJS', ["x", "y", "r"]));
+    assertHasStyles(substyles, 'LATEX', 'INPUT-ALT', 'USER', ["{ x}^{2}+{ y}^{2}= r"]);
+    assertHasStyles(substyles, 'TEXT', 'EVALUATION-ERROR', 'MATHJS', ["Undefined symbol x"]);
+    assertHasStyles(substyles, 'MATHJS', 'SIMPLIFICATION', 'MATHJS', ["x ^ 2 + y ^ 2 == r"]);
+    assertHasStyles(substyles, 'MATHJS', 'SYMBOL', 'MATHJS', ["x", "y", "r"]);
   });
 });
 

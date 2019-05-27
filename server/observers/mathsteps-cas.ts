@@ -31,13 +31,18 @@ import { Config } from '../config';
 
 // Types
 
-export interface MathStep {
+export interface ExpressionStep {
   changeType: string;
   oldNode: math.MathNode;
   newNode: math.MathNode;
-//  oldEquation: mathsteps.Equation;
-//  newEquation: mathsteps.Equation;
-  substeps: MathStep[];
+  substeps: ExpressionStep[];
+}
+
+export interface EquationStep {
+  changeType: string;
+  oldEquation: any; // TYPESCRIPT: mathsteps.Equation;
+  newEquation: any; // TYPESCRIPT: mathsteps.Equation;
+  substeps: EquationStep[];
 }
 
 // Exported Functions
@@ -55,96 +60,94 @@ export async function initialize(_config: Config): Promise<void> {
 
 function onChange(tDoc: TDoc, change: NotebookChange): void {
   switch (change.type) {
-  case 'styleInserted':
-    onStyleInserted(tDoc, change.style);
-    break;
+  case 'styleInserted': chStyleInserted(tDoc, change.style); break;
   default: break;
   }
 }
 
-// Helper Functions
+// Change Handlers
 
-async function onStyleInserted(tDoc: TDoc, style: StyleObject): Promise<void> {
+async function chStyleInserted(tDoc: TDoc, style: StyleObject): Promise<void> {
   debug(`onStyleInserted ${style.id} ${style.stylableId} ${style.type} ${style.meaning}`);
 
   // Only try to simplify/solve MathJS expressions
   if (style.type!='MATHJS') { return; }
   if (style.meaning!='INPUT' && style.meaning!='INPUT-ALT') { return; }
 
-  // if (tDoc.stylableHasChildOfType(style, 'MATHJS', 'SIMPLIFICATION-STEPS')) { return; }
-
-  const steps = mathsteps.simplifyExpression(style.data);
-  let expressionStringStream = "";
-  dumpExpressionSteps((step) => expressionStringStream =
-                      expressionStringStream + step + "\n",
-                      steps);
-
+  const steps: ExpressionStep[] = mathsteps.simplifyExpression(style.data);
   if (steps.length > 0) {
-    let expressionStringStream = "";
-    dumpExpressionSteps((step) => expressionStringStream =
-                      expressionStringStream + step + "\n",
-                      steps);
-
-    // should we return the new style here? I suppose not.
-    tDoc.insertStyle(style, { type: 'TEXT', data: expressionStringStream, meaning: 'INDENTED', source: 'MATHSTEPS' });
-
+    const data = formatExpressionSteps(steps);
+    // console.dir(data);
+    tDoc.insertStyle(style, { type: 'TEXT', data, meaning: 'INDENTED', source: 'MATHSTEPS' });
   }
-  // @ts-ignore // TYPESCRIPT:
-  const steps2 = mathsteps.solveEquation(style.data);
-  if (steps2.length > 0) {
-    let equationStringStream = "";
-    dumpEquationSteps((step) => equationStringStream =
-                      equationStringStream + step + "\n",
-                      steps2);
 
-    // should we return the new style here? I suppose not.
-    tDoc.insertStyle(style, { type: 'TEXT', data: equationStringStream, meaning: 'INDENTED', source: 'MATHSTEPS' });
+  const steps2: EquationStep[] = mathsteps.solveEquation(style.data);
+  if (steps2.length > 0) {
+    const data = formatEquationSteps(steps2);
+    // console.dir(data);
+    tDoc.insertStyle(style, { type: 'TEXT', data, meaning: 'INDENTED', source: 'MATHSTEPS' });
   }
 }
+
+// Helper Functions
 
 // WARNING: Input "a = 3/27","b = 6/27", "c = a + b" appears
 // to cause an error here.
-function dumpExpressionSteps(writer: (step: string) => void,
-                                    steps: MathStep[],
-                                    level: number = 0) {
+
+function formatExpressionStep(step: ExpressionStep, level: number): string {
   const indent = '  '.repeat(level);
-  if (steps.length == 0) {
-    writer(`${indent}NO STEPS`);
+  let rval = `${indent}${step.changeType}\n`;
+  if (step.oldNode) {
+    rval += `${indent}FROM: ${step.oldNode.toString()}\n`;
   }
-  for (const step of steps) {
-    writer(`${indent}${step.changeType}`);
-    if (step.oldNode) {
-      writer(`${indent}FROM: ${step.oldNode.toString()}`);
-    }
-    if (step.newNode) {
-      writer(`${indent}  TO: ${step.newNode.toString()}`);
-    }
-    if (step.substeps.length>0) {
-      dumpExpressionSteps(writer,step.substeps, level+1);
-    }
+  if (step.newNode) {
+    rval += `${indent}  TO: ${step.newNode.toString()}\n`;
   }
+  if (step.substeps.length>0) {
+    rval += formatExpressionSteps(step.substeps, level+1);
+  }
+  return rval;
 }
-function dumpEquationSteps(writer: (step: string) => void,
-                                  steps: MathStep[],
-                                  level: number = 0) {
+
+function formatExpressionSteps(steps: ExpressionStep[], level: number = 0): string {
   const indent = '  '.repeat(level);
+  let rval: string;
   if (steps.length == 0) {
-    writer(`${indent}NO STEPS`);
-  }
-  for (const step of steps) {
-    writer(`${indent}${step.changeType}`);
-    // @ts-ignore // TYPESCRIPT:
-    if (step.oldEquation) {
-    // @ts-ignore // TYPESCRIPT:
-      writer(`${indent}FROM: ${step.oldEquation.ascii()}`);
-    }
-    // @ts-ignore // TYPESCRIPT:
-    if (step.newEquation) {
-    // @ts-ignore // TYPESCRIPT:
-      writer(`${indent}  TO: ${step.newEquation.ascii()}`);
-    }
-    if (step.substeps.length>0) {
-      dumpEquationSteps(writer,step.substeps, level+1);
+    rval = `${indent}NO STEPS`;
+  } else {
+    rval = '';
+    for (const step of steps) {
+      rval += formatExpressionStep(step, level);
     }
   }
+  return rval;
+}
+
+function formatEquationStep(step: EquationStep, level: number): string {
+  const indent = '  '.repeat(level);
+  let rval:string = `${indent}${step.changeType}\n`;
+  if (step.oldEquation) {
+    rval += `${indent}FROM: ${step.oldEquation.ascii()}\n`;
+  }
+  if (step.newEquation) {
+    rval += `${indent}  TO: ${step.newEquation.ascii()}\n`;
+  }
+  if (step.substeps.length>0) {
+    rval += formatEquationSteps(step.substeps, level+1);
+  }
+  return rval;
+}
+
+function formatEquationSteps(steps: EquationStep[], level: number = 0): string {
+  const indent = '  '.repeat(level);
+  let rval: string;
+  if (steps.length == 0) {
+    rval = `${indent}NO STEPS\n`;
+  } else {
+    rval = '';
+    for (const step of steps) {
+      rval += formatEquationStep(step, level);
+    }
+  }
+  return rval;
 }

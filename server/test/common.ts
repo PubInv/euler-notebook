@@ -23,6 +23,8 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 // const MODULE = __filename.split('/').slice(-1)[0].slice(0,-3);
 // const debug = debug1(`server:${MODULE}`);
 
+import { assert } from 'chai';
+
 import { StyleObject, StyleType, StyleMeaning, StyleSource, MathJsData, StyleProperties } from "../../client/math-tablet-api";
 import { TDoc } from "../tdoc";
 
@@ -33,20 +35,19 @@ export function getStylesGeneratedForInputStyle(data: MathJsData): StyleObject[]
   return getStylesGeneratedForStyle(styleProps);
 }
 
-export function hasStyles(
+export function assertHasStyles(
   styles: StyleObject[],
   type: StyleType,
   meaning: StyleMeaning,
   source: StyleSource,
   datas: string[]
-): boolean {
+): void {
   const styles2 = findStyles(styles, type, meaning, source);
-  if (!styles2) { return false; }
-  if (styles2.length != datas.length) { return false; }
+  assert(styles2);
+  assert.equal(styles2!.length, datas.length);
   for (const data of datas) {
-    if (!styles2.find(s=>(s.data==data))) { return false; }
+    assert(styles2!.find(s=>(s.data==data)));
   }
-  return true;
 }
 
 // Helper Functions

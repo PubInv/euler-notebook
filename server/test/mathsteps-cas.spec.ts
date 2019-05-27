@@ -28,7 +28,7 @@ import 'mocha';
 
 import { initialize as initializeMathstepsCas } from '../observers/mathsteps-cas';
 
-import { getStylesGeneratedForInputStyle, hasStyles } from './common';
+import { getStylesGeneratedForInputStyle, assertHasStyles } from './common';
 
 // Constants
 
@@ -155,14 +155,14 @@ describe('mathsteps-cas', function(){
     const substyles = getStylesGeneratedForInputStyle(EXPR1);
     // console.dir(substyles);
     assert(substyles.length==1);
-    assert(hasStyles(substyles, 'TEXT', 'INDENTED', 'MATHSTEPS', [EXPR1_SIMPLIFICATION]));
+    assertHasStyles(substyles, 'TEXT', 'INDENTED', 'MATHSTEPS', [EXPR1_SIMPLIFICATION]);
   });
 
   it(`Gives steps to solve equation '${EQUA1}'`, function(){
     const substyles = getStylesGeneratedForInputStyle(EQUA1);
     // console.dir(substyles);
     assert(substyles.length==1);
-    assert(hasStyles(substyles, 'TEXT', 'INDENTED', 'MATHSTEPS', [EQUA1_SIMPLIFICATION]));
+    assertHasStyles(substyles, 'TEXT', 'INDENTED', 'MATHSTEPS', [EQUA1_SIMPLIFICATION]);
   });
 
 });
