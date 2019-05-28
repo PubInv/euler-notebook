@@ -152,15 +152,12 @@ export class TDoc extends EventEmitter {
     return matching;
   }
 
-  public getAncestorThought(styleId : StyleId) : ThoughtObject | null {
-    const s = this.getStylable(styleId);
-    if (!s) return null;
-    // The type exists on Styles, but not Thoughts!!!
-    if (!('type' in s)) {
-      return s;
-    } else {
-      return this.getAncestorThought(s.stylableId);
-    }
+  public getAncestorThought(id : StylableId) : ThoughtObject {
+    const thought = this.getThoughtById(id);
+    if (thought) { return thought; }
+    const style = this.getStyleById(id);
+    if (!style) { throw new Error("Cannot find ancestor thought."); }
+    return this.getAncestorThought(style.stylableId);
   }
 
   // TODO: Return an iterator rather than our internal array.

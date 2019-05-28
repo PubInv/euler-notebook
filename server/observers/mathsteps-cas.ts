@@ -25,25 +25,22 @@ const debug = debug1(`server:${MODULE}`);
 import * as mathsteps from 'mathsteps';
 import * as math from 'mathjs';
 
-import { StyleObject, NotebookChange } from '../../client/math-tablet-api';
+import { StyleObject, NotebookChange, ToolMenu, StyleProperties, ThoughtId, StyleSource, ToolInfo } from '../../client/math-tablet-api';
 import { TDoc }  from '../tdoc';
 import { Config } from '../config';
 
 // Types
 
-export interface ExpressionStep {
+export interface Step {
   changeType: string;
-  oldNode: math.MathNode;
-  newNode: math.MathNode;
-  substeps: ExpressionStep[];
+  newEquation?: any; // TYPESCRIPT: mathsteps.Equation;
+  newNode?: math.MathNode;
+  oldEquation?: any; // TYPESCRIPT: mathsteps.Equation;
+  oldNode?: math.MathNode;
+  substeps: Step[];
 }
 
-export interface EquationStep {
-  changeType: string;
-  oldEquation: any; // TYPESCRIPT: mathsteps.Equation;
-  newEquation: any; // TYPESCRIPT: mathsteps.Equation;
-  substeps: EquationStep[];
-}
+// Constants
 
 // Exported Functions
 
@@ -52,6 +49,9 @@ export async function initialize(_config: Config): Promise<void> {
   TDoc.on('open', (tDoc: TDoc)=>{
     tDoc.on('change', function(this: TDoc, change: NotebookChange){ onChange(this, change); });
     // tDoc.on('close', function(this: TDoc){ onClose(this); });
+    tDoc.on('useTool', function(this: TDoc, thoughtId: ThoughtId, source: StyleSource, info: ToolInfo){
+      onUseTool(this, thoughtId, source, info);
+    });
     // onOpen(tDoc);
   });
 }
@@ -65,6 +65,22 @@ function onChange(tDoc: TDoc, change: NotebookChange): void {
   }
 }
 
+function onUseTool(tDoc: TDoc, _thoughtId: ThoughtId, _source: StyleSource, info: ToolInfo): void {
+  let style = tDoc.getStyleById(info.data.styleId);
+  if (!style) {
+    console.error(`Style for tool no longer exists.`);
+    return;
+  }
+  const steps: Step[] = (info.data.expr ?
+                          mathsteps.simplifyExpression(style.data) :
+                          mathsteps.solveEquation(style.data));
+  const data: string = `<pre>\n${formatSteps(steps)}</pre>`;
+  const thought = tDoc.insertThought({});
+  tDoc.insertStyle(thought, { type: 'HTML', meaning: 'EXPOSITION', source: 'MATHSTEPS', data });
+  // TODO: Add a relationship between this thought and the original thought.
+  // TODO: If original thought changes, then remove/update this simplification.
+}
+
 // Change Handlers
 
 async function chStyleInserted(tDoc: TDoc, style: StyleObject): Promise<void> {
@@ -74,18 +90,37 @@ async function chStyleInserted(tDoc: TDoc, style: StyleObject): Promise<void> {
   if (style.type!='MATHJS') { return; }
   if (style.meaning!='INPUT' && style.meaning!='INPUT-ALT') { return; }
 
-  const steps: ExpressionStep[] = mathsteps.simplifyExpression(style.data);
+  // Try to simplify it as an expression
+  const steps: Step[] = mathsteps.simplifyExpression(style.data);
   if (steps.length > 0) {
-    const data = formatExpressionSteps(steps);
-    // console.dir(data);
-    tDoc.insertStyle(style, { type: 'TEXT', data, meaning: 'INDENTED', source: 'MATHSTEPS' });
-  }
+    const thought = tDoc.getAncestorThought(style.stylableId);
+    const toolMenu: ToolMenu = [
+      { name: 'steps', html: 'Steps', data: { expr: true, styleId: style.id }}
+    ];
+    const styleProps: StyleProperties = {
+      type: 'TOOL-MENU',
+      meaning: 'ATTRIBUTE',
+      source: 'MATHSTEPS',
+      data: toolMenu,
+    };
+    tDoc.insertStyle(thought, styleProps);
+  } else {
 
-  const steps2: EquationStep[] = mathsteps.solveEquation(style.data);
-  if (steps2.length > 0) {
-    const data = formatEquationSteps(steps2);
-    // console.dir(data);
-    tDoc.insertStyle(style, { type: 'TEXT', data, meaning: 'INDENTED', source: 'MATHSTEPS' });
+    // Doesn't simplify as expression. Try to solve it as an equation.
+    const steps2: Step[] = mathsteps.solveEquation(style.data);
+    if (steps2.length > 0) {
+      const thought = tDoc.getAncestorThought(style.stylableId);
+      const toolMenu: ToolMenu = [
+        { name: 'steps', html: 'Steps', data: { expr: false, styleId: style.id }}
+      ];
+      const styleProps: StyleProperties = {
+        type: 'TOOL-MENU',
+        meaning: 'ATTRIBUTE',
+        source: 'MATHSTEPS',
+        data: toolMenu,
+      };
+      tDoc.insertStyle(thought, styleProps);
+    }
   }
 }
 
@@ -94,22 +129,28 @@ async function chStyleInserted(tDoc: TDoc, style: StyleObject): Promise<void> {
 // WARNING: Input "a = 3/27","b = 6/27", "c = a + b" appears
 // to cause an error here.
 
-function formatExpressionStep(step: ExpressionStep, level: number): string {
+function formatStep(step: Step, level: number): string {
   const indent = '  '.repeat(level);
   let rval = `${indent}${step.changeType}\n`;
   if (step.oldNode) {
     rval += `${indent}FROM: ${step.oldNode.toString()}\n`;
   }
+  if (step.oldEquation) {
+    rval += `${indent}FROM: ${step.oldEquation.ascii()}\n`;
+  }
   if (step.newNode) {
     rval += `${indent}  TO: ${step.newNode.toString()}\n`;
   }
+  if (step.newEquation) {
+    rval += `${indent}  TO: ${step.newEquation.ascii()}\n`;
+  }
   if (step.substeps.length>0) {
-    rval += formatExpressionSteps(step.substeps, level+1);
+    rval += formatSteps(step.substeps, level+1);
   }
   return rval;
 }
 
-function formatExpressionSteps(steps: ExpressionStep[], level: number = 0): string {
+function formatSteps(steps: Step[], level: number = 0): string {
   const indent = '  '.repeat(level);
   let rval: string;
   if (steps.length == 0) {
@@ -117,36 +158,7 @@ function formatExpressionSteps(steps: ExpressionStep[], level: number = 0): stri
   } else {
     rval = '';
     for (const step of steps) {
-      rval += formatExpressionStep(step, level);
-    }
-  }
-  return rval;
-}
-
-function formatEquationStep(step: EquationStep, level: number): string {
-  const indent = '  '.repeat(level);
-  let rval:string = `${indent}${step.changeType}\n`;
-  if (step.oldEquation) {
-    rval += `${indent}FROM: ${step.oldEquation.ascii()}\n`;
-  }
-  if (step.newEquation) {
-    rval += `${indent}  TO: ${step.newEquation.ascii()}\n`;
-  }
-  if (step.substeps.length>0) {
-    rval += formatEquationSteps(step.substeps, level+1);
-  }
-  return rval;
-}
-
-function formatEquationSteps(steps: EquationStep[], level: number = 0): string {
-  const indent = '  '.repeat(level);
-  let rval: string;
-  if (steps.length == 0) {
-    rval = `${indent}NO STEPS\n`;
-  } else {
-    rval = '';
-    for (const step of steps) {
-      rval += formatEquationStep(step, level);
+      rval += formatStep(step, level);
     }
   }
   return rval;

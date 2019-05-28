@@ -25,15 +25,10 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 import { assert } from 'chai';
 
-import { StyleObject, StyleType, StyleMeaning, StyleSource, MathJsData, StyleProperties } from "../../client/math-tablet-api";
+import { StyleObject, StyleType, StyleMeaning, StyleSource, StyleProperties, ToolMenu } from "../../client/math-tablet-api";
 import { TDoc } from "../tdoc";
 
 // Exported Functions
-
-export function getStylesGeneratedForInputStyle(data: MathJsData): StyleObject[] {
-  const styleProps: StyleProperties = { type: 'MATHJS', meaning: 'INPUT', source: 'USER', data };
-  return getStylesGeneratedForStyle(styleProps);
-}
 
 export function assertHasStyles(
   styles: StyleObject[],
@@ -50,6 +45,24 @@ export function assertHasStyles(
   }
 }
 
+// IMPORTANT: This will not work for observers that add styles and thoughts asynchronously.
+export function getSubstylesGeneratedForStyle(styleProps: StyleProperties): StyleObject[] {
+  const tDoc = TDoc.createAnonymous();
+  const thought = tDoc.insertThought({});
+  const style = tDoc.insertStyle(thought, styleProps);
+  const substyles = tDoc.getStyles(style.id);
+  return substyles;
+}
+
+// IMPORTANT: This will not work for observers that add styles and thoughts asynchronously.
+export function getToolMenusGeneratedForStyle(styleProps: StyleProperties): ToolMenu[] {
+  const tDoc = TDoc.createAnonymous();
+  const thought = tDoc.insertThought({});
+  tDoc.insertStyle(thought, styleProps);
+  const styles = tDoc.getStyles(thought.id).filter(s=>s.type=='TOOL-MENU');
+  return styles.map(s=>s.data);
+}
+
 // Helper Functions
 
 function findStyles(
@@ -59,13 +72,5 @@ function findStyles(
   source: StyleSource
 ): StyleObject[]|undefined {
   return styles.filter(s=>(s.type==type && s.meaning==meaning && s.source==source))
-}
-
-function getStylesGeneratedForStyle(styleProps: StyleProperties): StyleObject[] {
-  const tDoc = TDoc.createAnonymous();
-  const thought = tDoc.insertThought({});
-  const style = tDoc.insertStyle(thought, styleProps);
-  const substyles = tDoc.getStyles(style.id);
-  return substyles;
 }
 

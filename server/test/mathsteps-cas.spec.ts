@@ -28,12 +28,15 @@ import 'mocha';
 
 import { initialize as initializeMathstepsCas } from '../observers/mathsteps-cas';
 
-import { getStylesGeneratedForInputStyle, assertHasStyles } from './common';
+// import { assertHasStyles, getSubstylesGeneratedForStyle, getToolMenusGeneratedForStyle } from './common';
+import { TDoc } from '../tdoc';
+import { StyleProperties, ToolMenu } from '../../client/math-tablet-api';
 
 // Constants
 
 const EXPR1 = "x+x"
-const EXPR1_SIMPLIFICATION = `ADD_POLYNOMIAL_TERMS
+const EXPR1_SIMPLIFICATION = `<pre>
+ADD_POLYNOMIAL_TERMS
 FROM: x + x
   TO: 2 x
   ADD_COEFFICIENT_OF_ONE
@@ -45,10 +48,11 @@ FROM: x + x
   SIMPLIFY_ARITHMETIC
   FROM: (1 + 1) x
     TO: 2 x
-`;
+</pre>`;
 
 const EQUA1 = "2(x+3)=5x";
-const EQUA1_SIMPLIFICATION = `DISTRIBUTE
+const EQUA1_SOLUTION = `<pre>
+DISTRIBUTE
 FROM: 2 * (x + 3) = 5x
   TO: 2x + 6 = 5x
   DISTRIBUTE
@@ -141,7 +145,7 @@ FROM: x = -6/-3
     CANCEL_GCD
     FROM: x = (2 * 3) / (1 * 3)
       TO: x = 2
-`;
+</pre>`;
 
 // Tests
 
@@ -151,18 +155,68 @@ describe('mathsteps-cas', function(){
     await initializeMathstepsCas({});
   });
 
-  it(`Gives steps to solve expression '${EXPR1}'`, function(){
-    const substyles = getStylesGeneratedForInputStyle(EXPR1);
-    // console.dir(substyles);
-    assert(substyles.length==1);
-    assertHasStyles(substyles, 'TEXT', 'INDENTED', 'MATHSTEPS', [EXPR1_SIMPLIFICATION]);
+  it(`Adds a 'steps' tool to '${EXPR1}' that adds simplification steps`, function(){
+
+    // Create a thought with a MathJS expression input style.
+    const tDoc = TDoc.createAnonymous();
+    const thought = tDoc.insertThought({});
+    const styleProps: StyleProperties = { type: 'MATHJS', meaning: 'INPUT', source: 'USER', data: EXPR1 };
+    const style = tDoc.insertStyle(thought, styleProps);
+
+    // Check that a tool menu was added to the thought.
+    const toolStyles = tDoc.getStyles(thought.id).filter(s=>s.type=='TOOL-MENU');
+    assert.equal(toolStyles.length, 1);
+    const toolStyle = toolStyles[0];
+    const toolMenu: ToolMenu = toolStyle.data;
+    assert.equal(toolMenu.length, 1);
+    const toolInfo = toolMenu[0];
+    assert.equal(toolInfo.name, 'steps');
+    assert.deepEqual(toolInfo.data, { expr: true, styleId: style.id });
+
+    // Use the tool
+    tDoc.emit('useTool', thought.id, toolStyle.source, toolInfo);
+
+    // Check an exposition style was added with the steps.
+    const expoStyles = tDoc.getStyles().filter(s=>s.meaning=='EXPOSITION');
+    assert.equal(expoStyles.length, 1);
+    const expoStyle = expoStyles[0];
+    assert.notEqual(expoStyle.stylableId, thought.id);
+    assert(tDoc.getThoughtById(expoStyle.stylableId));
+    assert.equal(expoStyle.type, 'HTML');
+    assert.equal(expoStyle.source, 'MATHSTEPS');
+    assert.equal(expoStyle.data, EXPR1_SIMPLIFICATION);
   });
 
-  it(`Gives steps to solve equation '${EQUA1}'`, function(){
-    const substyles = getStylesGeneratedForInputStyle(EQUA1);
-    // console.dir(substyles);
-    assert(substyles.length==1);
-    assertHasStyles(substyles, 'TEXT', 'INDENTED', 'MATHSTEPS', [EQUA1_SIMPLIFICATION]);
+  it(`Adds a 'steps' tool to '${EQUA1}' that adds solution steps`, function(){
+
+    // Create a thought with a MathJS expression input style.
+    const tDoc = TDoc.createAnonymous();
+    const thought = tDoc.insertThought({});
+    const styleProps: StyleProperties = { type: 'MATHJS', meaning: 'INPUT', source: 'USER', data: EQUA1 };
+    const style = tDoc.insertStyle(thought, styleProps);
+
+    // Check that a tool menu was added to the thought.
+    const toolStyles = tDoc.getStyles(thought.id).filter(s=>s.type=='TOOL-MENU');
+    assert.equal(toolStyles.length, 1);
+    const toolStyle = toolStyles[0];
+    const toolMenu: ToolMenu = toolStyle.data;
+    assert.equal(toolMenu.length, 1);
+    const toolInfo = toolMenu[0];
+    assert.equal(toolInfo.name, 'steps');
+    assert.deepEqual(toolInfo.data, { expr: false, styleId: style.id });
+
+    // Use the tool
+    tDoc.emit('useTool', thought.id, toolStyle.source, toolInfo);
+
+    // Check an exposition style was added with the steps.
+    const expoStyles = tDoc.getStyles().filter(s=>s.meaning=='EXPOSITION');
+    assert.equal(expoStyles.length, 1);
+    const expoStyle = expoStyles[0];
+    assert.notEqual(expoStyle.stylableId, thought.id);
+    assert(tDoc.getThoughtById(expoStyle.stylableId));
+    assert.equal(expoStyle.type, 'HTML');
+    assert.equal(expoStyle.source, 'MATHSTEPS');
+    assert.equal(expoStyle.data, EQUA1_SOLUTION);
   });
 
 });

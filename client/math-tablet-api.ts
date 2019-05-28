@@ -46,39 +46,40 @@ export type StyleMeaning =
   'ERROR' |           // An error message. Type should be text.
   'EVALUATION'|       // CAS evaluation of an expression.
   'EVALUATION-ERROR' |// Error in CAS evaluation of an expression.
+  'EXPOSITION' |      // A longer discussion or description.
   'FORMULA-ALT' |     // Alternative representation of a formula.
-  'HANDWRITING'|      // Stroke information for the user's handwriting.
-  'INPUT'|            // Primary representation of something that the user has input.
+  'HANDWRITING' |     // REVIEW: Used? Deprecate? Stroke information for the user's handwriting.
+  'INPUT' |           // Primary representation of something that the user has input.
   'INPUT-ALT' |       // An alternative representation, e.g. LaTeX version of handwritten math.
-  'QUADRATIC'|        // DEPRECATED: A quadratic expression, presumably worth plotting.
+  'QUADRATIC' |       // DEPRECATED: A quadratic expression, presumably worth plotting.
   'SIMPLIFICATION' |  // CAS simplification of expression or equation.
-  'INDENTED'|         // Indented text for the purpose of exposition.
-  'PLOT'|             // Indented text for the purpose of exposition.
-  'SYMBOL'|           // Symbols extracted from an expression.
+  'PLOT' |            // Plot of a formula
+  'SYMBOL' |          // Symbols extracted from an expression.
   'SYMBOL-DEFINITION'|// Definition of a symbol.
-  'SYMBOL-USE'|       // Use of a symbol.
-  'UNIVARIATE-QUADRATIC'|  // A quadratic expression, presumably worth plotting.
+  'SYMBOL-USE' |      // Use of a symbol.
+  'UNIVARIATE-QUADRATIC'|// A quadratic expression, presumably worth plotting.
   'SUBTRIVARIATE';    // An expression in one or two variables presumable plottable.
 
   export type StyleType =
-  'IMAGE'|            // ImageData: URL of image relative to notebook folder.
-  'JIIX'|             // Jiix: MyScript JIIX export from 'MATH' editor.
-  'LATEX'|            // LatexData: LaTeX string
-  'MATHEMATICA'|      // Mathematica style (evaluation)
+  'HTML' |            // Html: HTML-formatted text
+  'IMAGE' |           // ImageData: URL of image relative to notebook folder.
+  'JIIX' |            // Jiix: MyScript JIIX export from 'MATH' editor.
+  'LATEX' |           // LatexData: LaTeX string
+  'MATHEMATICA' |     // Mathematica style (evaluation)
   /* DEPRECATED: */ 'CLASSIFICATION'|   // A classifcication of the thought.
-  'MATHJS'|           // MathJsData: MathJS plain text expression
-  'MATHML'|           // MathMlData: MathML Presentation XML
-  'STROKE'|           // StrokeGroups: MyScript strokeGroups export from 'TEXT' editor.
-  'SYMBOL'|           // SymbolData: symbol in a definition or expression.
-  'TEXT'|             // TextData: Plain text
+  'MATHJS' |          // MathJsData: MathJS plain text expression
+  'MATHML' |          // MathMlData: MathML Presentation XML
+  'STROKE' |          // StrokeGroups: MyScript strokeGroups export from 'TEXT' editor.
+  'SYMBOL' |          // SymbolData: symbol in a definition or expression.
+  'TEXT' |            // TextData: Plain text
   'TOOL-MENU' |       // ToolMenu: Menu of tools that an observer can apply to a thought.
   'WOLFRAM';          // WolframData: Wolfram language expression
 
   export type StyleSource =
-  'TEST'|             // An example source used only by our test system
-  'USER'|             // Directly entered by user
-  'MATHJS'|           // The Mathjs Computer Algebra System system
-  'MATHEMATICA'|      // Mathematica style (evaluation)
+  'TEST' |            // An example source used only by our test system
+  'USER' |            // Directly entered by user
+  'MATHJS' |          // The Mathjs Computer Algebra System system
+  'MATHEMATICA' |     // Mathematica style (evaluation)
   'MATHSTEPS' |       // The Mathsteps CAS system
   'SANDBOX' |         // Sandbox for temporary experiments
   'SYSTEM'            // The Math-Tablet app itself, not the user or an observer.
@@ -102,6 +103,7 @@ export type ToolName = string;
 export interface ToolInfo {
   name: ToolName;
   html: /* TYPESCRIPT: Html? */ string;
+  data?: any;
 }
 export type ToolMenu = ToolInfo[];
 

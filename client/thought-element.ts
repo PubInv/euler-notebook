@@ -19,7 +19,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 // Requirements
 
-import { $new, escapeHtml } from './dom.js';
+import { $new, escapeHtml, Html } from './dom.js';
 import { getKatex } from './katex-types.js';
 import { ThoughtObject, StyleObject, LatexData, ToolMenu } from './math-tablet-api.js';
 import { Notebook } from './notebook.js';
@@ -66,6 +66,11 @@ export class ThoughtElement {
         if (style.type == 'TOOL-MENU') { this.renderToolMenu(style); }
         break;
       case 'ERROR': this.renderErrorMessage(style); break;
+      case 'EXPOSITION':
+        if (style.type == 'HTML') { this.renderHtml(style.data); }
+        else if (style.type == 'TEXT') { this.renderText(style.data); }
+        else { throw new Error(`Unexpected data type for exposition: ${style.type}.`); }
+        break;
       case 'INPUT':
         if (style.type == 'LATEX') { this.renderLatexFormula(style.data); }
         else if (style.type == 'TEXT') { this.renderText(style.data); }
@@ -105,6 +110,11 @@ export class ThoughtElement {
     const $formulaElt = this.$elt.querySelector('.formula');
     const escapedText = escapeHtml(style.data);
     const html = `<div class="error">${escapedText}</div>${$formulaElt!.innerHTML}`;
+    $formulaElt!.innerHTML = html;
+  }
+
+  private renderHtml(html: Html): void {
+    const $formulaElt = this.$elt.querySelector('.formula');
     $formulaElt!.innerHTML = html;
   }
 

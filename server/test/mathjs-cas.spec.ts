@@ -27,7 +27,7 @@ import 'mocha';
 
 import { initialize as initializeMathJsCas } from '../observers/mathjs-cas';
 
-import { getStylesGeneratedForInputStyle, assertHasStyles } from './common';
+import { assertHasStyles, getSubstylesGeneratedForStyle } from './common';
 
 // Tests
 
@@ -38,7 +38,7 @@ describe('mathjs-cas', function(){
   });
 
   it("Adds appropriate substyles to MATHJS INPUT for '2+2'", function(){
-    const substyles = getStylesGeneratedForInputStyle("2+2");
+    const substyles = getSubstylesGeneratedForStyle({ type: 'MATHJS', meaning: 'INPUT', source: 'USER', data: "2+2" });
     // console.dir(substyles);
     assert(substyles.length==3);
     assertHasStyles(substyles, 'LATEX', 'INPUT-ALT', 'USER', ["2+2"]);
@@ -47,7 +47,7 @@ describe('mathjs-cas', function(){
   });
 
   it("Adds appropriate substyles to MATHJS INPUT for 'x^2 + y^2 == r'", function(){
-    const substyles = getStylesGeneratedForInputStyle("x^2 + y^2 == r");
+    const substyles = getSubstylesGeneratedForStyle({ type: 'MATHJS', meaning: 'INPUT', source: 'USER', data: "x^2 + y^2 == r" });
     // console.dir(substyles);
     assert(substyles.length==6);
     assertHasStyles(substyles, 'LATEX', 'INPUT-ALT', 'USER', ["{ x}^{2}+{ y}^{2}= r"]);
