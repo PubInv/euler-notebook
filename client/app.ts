@@ -302,14 +302,14 @@ function switchInput(method: InputMethod): void {
     if (gInputMethod) {
       $(`#input${gInputMethod}`).style.display = 'none';
       $(`#preview${gInputMethod}`).style.display = 'none';
-      $<HTMLButtonElement>(`#input${gInputMethod}`).disabled = false;
+      $<HTMLButtonElement>(`#input${gInputMethod}Button`).disabled = false;
     }
 
     // Enable the new input method
     gInputMethod = method;
     $(`#input${gInputMethod}`).style.display = 'block';
     $(`#preview${gInputMethod}`).style.display = 'block';
-    $<HTMLButtonElement>(`#input${gInputMethod}`).disabled = true;
+    $<HTMLButtonElement>(`#input${gInputMethod}Button`).disabled = true;
 
     switch(gInputMethod) {
     case 'Math':
