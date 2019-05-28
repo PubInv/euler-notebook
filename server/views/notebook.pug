@@ -53,32 +53,33 @@ block scripts
 
 block content
   #debugWindow(style='display:none')
+  #leftDock
+    button#inputMathButton HM
+    button#inputTextButton HT
+    button#inputKeyboardButton KB
+    button#undoButton(disabled=true) U
+    button#redoButton(disabled=true) R
+    button#clearButton(disabled=true) Cl
+    button#convertButton(disabled=true) Co
   +menuBar
-  #tdoc
-  #footer
-    #previewArea
-      #previewText(style='display:none')
-      #previewMath(style='display:none')
-      #previewKeyboard(style='display:none')
-      #previewControls
-        button#insertButton(disabled=true) I
-    #inputArea('data-applicationkey'=credentials.myscript.applicationKey, 'data-hmackey'=credentials.myscript.hmacKey)
-      #inputSelector
-        button#inputMathButton HM
-        button#inputTextButton HT
-        button#inputKeyboardButton KB
-      #inputText(style='display:none')
-      #inputMath(style='display:none')
-      #inputKeyboard(style='display:none')
-        select()
-          option(value='LATEX') LaTeX
-          option(value='MATHJS') MathJS
-          option(value='MATHML') MathML
-          option(value='TEXT') Text
-          option(value='WOLFRAM', selected=true) Wolfram
-        input(type='text', placeholder="e.g. r = x^2 + y^2", style='width:100%')
-      #inputControls
-        button#undoButton(disabled=true) U
-        button#redoButton(disabled=true) R
-        button#clearButton(disabled=true) Cl
-        button#convertButton(disabled=true) Co
+  #input
+    .handle
+    .status
+    #inputCol
+      #previewArea
+        #previewText(style='display:none')
+        #previewMath(style='display:none')
+        #previewKeyboard(style='display:none')
+        #previewControls
+          button#insertButton(disabled=true) I
+      #inputArea('data-applicationkey'=credentials.myscript.applicationKey, 'data-hmackey'=credentials.myscript.hmacKey)
+        #inputText(style='display:none')
+        #inputMath(style='display:none')
+        #inputKeyboard(style='display:none')
+          select()
+            option(value='LATEX') LaTeX
+            option(value='MATHJS', selected=true) MathJS
+            option(value='MATHML') MathML
+            option(value='TEXT') Text
+            option(value='WOLFRAM') Wolfram
+          input(type='text', placeholder="e.g. r = x^2 + y^2" size=60)
