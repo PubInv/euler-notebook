@@ -99,16 +99,21 @@ export class ThoughtElement {
 
   private createElement(): HTMLDivElement {
     const thoughtId = this.thought.id;
-    const $rval = $new<HTMLDivElement>('div', `T${thoughtId}`, ['thought'],
+    const $rval = $new<HTMLDivElement>('div', {
+      id: `T${thoughtId}`,
+      class: 'thought',
+      html:
 `<div class="handle">(${thoughtId})</div>
 <div class="status"></div>
 <div class="formula"></div>
-<div class="tools"></div>`);
+<div class="tools"></div>`
+    });
     // <button class="deleteThought"></button>`);
-    const $deleteButton = $new<HTMLButtonElement>('button', undefined, ['deleteThought'], "&#x2715;");
+    const $deleteButton = $new<HTMLButtonElement>('button', { class: 'deleteThought', html: "&#x2715;" });
     $deleteButton.addEventListener('click', (_event: MouseEvent)=>{
       this.notebook.deleteThought(thoughtId);
     });
+
     $rval.appendChild($deleteButton);
     return $rval;
   }
@@ -168,7 +173,7 @@ export class ThoughtElement {
     const toolMenu: ToolMenu = style.data;
     const $toolsElt = this.$elt.querySelector('.tools');
     for (const info of toolMenu) {
-      const $button = $new('button', undefined, ['tool'], info.html);
+      const $button = $new('button', { class: 'tool', html: info.html });
       $button.addEventListener('click', (_event: MouseEvent)=>{
         this.notebook.useTool(this, style.source, info);
       });

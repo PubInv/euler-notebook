@@ -120,7 +120,7 @@ export class Notebook {
     this.socket = socket;
     this.notebookName = notebookName;
 
-    this.$elt = $new('div', notebookName, ['tdoc']);
+    this.$elt = $new('div', { id: notebookName, class: 'tdoc' });
 
     this.relationships = new Map();
     this.styles = new Map();
