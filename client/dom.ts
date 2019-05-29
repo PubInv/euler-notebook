@@ -24,6 +24,14 @@ type HtmlElementTag = string;
 export type HtmlElementClass = string;
 export type Html = string;
 
+interface NewOptions {
+  appendTo?: HTMLElement;
+  class?: HtmlElementClass;
+  classes?: HtmlElementClass[];
+  html?: Html;
+  id?: string;
+}
+
 // Exported Functions
 
 export function $<T extends HTMLElement>(selector: CssSelector): T {
@@ -32,13 +40,16 @@ export function $<T extends HTMLElement>(selector: CssSelector): T {
   return <T>$elt;
 }
 
-export function $new<T extends HTMLElement>(tag: HtmlElementTag, id?: string, classes?: HtmlElementClass[], html?: Html): T {
+export function $new<T extends HTMLElement>(tag: HtmlElementTag, options?: NewOptions): T {
   const $elt = <T>document.createElement(tag);
-  if (id) { $elt.setAttribute('id', id); }
-  if (classes) {
-    for (const cls of classes) { $elt.classList.add(cls); }
+  options = options || {};
+  if (options.id) { $elt.setAttribute('id', options.id); }
+  if (options.class) { $elt.classList.add(options.class); }
+  if (options.classes) {
+    for (const cls of options.classes) { $elt.classList.add(cls); }
   }
-  if (html) { $elt.innerHTML = html; }
+  if (options.html) { $elt.innerHTML = options.html; }
+  if (options.appendTo) { options.appendTo.appendChild($elt); }
   return $elt;
 }
 
