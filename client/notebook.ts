@@ -22,7 +22,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 import { ServerSocket } from './server-socket.js';
 
 import { NotebookName, TDocObject, StyleId, StyleObject,
-  ThoughtId, ThoughtObject, NotebookChange, ThoughtProperties, RelationshipId, RelationshipObject, UseTool, InsertThought, StyleSource, ToolInfo, StylePropertiesWithSubprops } from './math-tablet-api.js';
+  ThoughtId, ThoughtObject, NotebookChange, ThoughtProperties, RelationshipId, RelationshipObject, UseTool, InsertThought, StyleSource, ToolInfo, StylePropertiesWithSubprops, DeleteThought } from './math-tablet-api.js';
 // import { Jiix, StrokeGroups } from './myscript-types.js';
 import { ThoughtElement } from './thought-element.js';
 import { $new, escapeHtml, Html } from './dom.js';
@@ -67,20 +67,10 @@ export class Notebook {
     Notebook.notebooks.delete(this.notebookName);
   }
 
-  // Server Message Handlers
-
-  public smChange(change: NotebookChange): void {
-    switch (change.type) {
-      case 'relationshipDeleted': this.chDeleteRelationship(change.relationship.id); break;
-      case 'relationshipInserted': this.chInsertRelationship(change.relationship); break;
-      case 'styleDeleted': this.chDeleteStyle(change.styleId); break;
-      case 'styleInserted': this.chInsertStyle(change.style); break;
-      case 'thoughtDeleted': this.chDeleteThought(change.thoughtId); break;
-      case 'thoughtInserted': this.chInsertThought(change.thought); break;
-    }
+  public deleteThought(thoughtId: ThoughtId): void {
+    const msg: DeleteThought = { action: 'deleteThought', notebookName: this.notebookName, thoughtId };
+    this.socket.sendMessage(msg);
   }
-
-  public smClose(): void { return this.close(); }
 
   public insertThought(thoughtProps: ThoughtProperties, stylePropss: StylePropertiesWithSubprops[]): void {
     const msg: InsertThought = {
@@ -103,6 +93,21 @@ export class Notebook {
     this.socket.sendMessage(msg);
   }
 
+  // Server Message Handlers
+
+  public smChange(change: NotebookChange): void {
+    switch (change.type) {
+      case 'relationshipDeleted': this.chDeleteRelationship(change.relationship.id); break;
+      case 'relationshipInserted': this.chInsertRelationship(change.relationship); break;
+      case 'styleDeleted': this.chDeleteStyle(change.styleId); break;
+      case 'styleInserted': this.chInsertStyle(change.style); break;
+      case 'thoughtDeleted': this.chDeleteThought(change.thoughtId); break;
+      case 'thoughtInserted': this.chInsertThought(change.thought); break;
+    }
+  }
+
+  public smClose(): void { return this.close(); }
+
   // -- PRIVATE --
 
   // Private Class Properties
@@ -116,7 +121,6 @@ export class Notebook {
     this.notebookName = notebookName;
 
     this.$elt = $new('div', notebookName, ['tdoc']);
-    this.$elt.addEventListener('click', (event: MouseEvent)=>{ this.onClick(event); })
 
     this.relationships = new Map();
     this.styles = new Map();
@@ -163,17 +167,6 @@ export class Notebook {
   }
 
   // Private Event Handlers
-
-  private onClick(event: MouseEvent): void {
-    const $target = <HTMLElement>event.target;
-    if (!$target) { throw new Error("TDoc click event has no target!"); }
-    if ($target.nodeName == 'BUTTON' && $target.classList.contains('deleteThought')) {
-      const $parent = $target.parentElement;
-      if (!$parent) { throw new Error("TDoc button has no parent!"); }
-      const thoughtId = parseInt($parent.id.slice(1));
-      this.socket.sendMessage({ action: 'deleteThought', notebookName: this.notebookName, thoughtId });
-    }
-  }
 
   // Private Change Event Handlers
 

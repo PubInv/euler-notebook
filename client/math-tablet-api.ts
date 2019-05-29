@@ -226,12 +226,12 @@ interface NotebookOpened {
 
 export type ClientMessage = CloseNotebook|DeleteThought|InsertThought|OpenNotebook|UseTool;
 
-interface CloseNotebook {
+export interface CloseNotebook {
   action: 'closeNotebook';
   notebookName: NotebookName;
 }
 
-interface DeleteThought {
+export interface DeleteThought {
   action: 'deleteThought';
   notebookName: NotebookName;
   thoughtId: number;
@@ -244,7 +244,7 @@ export interface InsertThought {
   stylePropss: StylePropertiesWithSubprops[];
 }
 
-interface OpenNotebook {
+export interface OpenNotebook {
   action: 'openNotebook';
   notebookName: NotebookName;
 }

@@ -89,18 +89,29 @@ export class ThoughtElement {
   // Private Constructor
 
   private constructor(notebook: Notebook, thought: ThoughtObject) {
-    const id = `T${thought.id}`; // REVIEW: Is id used?
-    this.$elt = $new<HTMLDivElement>('div', id, ['thought'], `<div class="handle">(${thought.id})</div>
-<div class="status"></div>
-<div class="formula"></div>
-<div class="tools"></div>
-<button class="deleteThought">&#x2715;</button>`);
     this.notebook = notebook;
     this.thought = thought;
+    this.$elt = this.createElement();
   }
 
 
   // Private Instance Methods
+
+  private createElement(): HTMLDivElement {
+    const thoughtId = this.thought.id;
+    const $rval = $new<HTMLDivElement>('div', `T${thoughtId}`, ['thought'],
+`<div class="handle">(${thoughtId})</div>
+<div class="status"></div>
+<div class="formula"></div>
+<div class="tools"></div>`);
+    // <button class="deleteThought"></button>`);
+    const $deleteButton = $new<HTMLButtonElement>('button', undefined, ['deleteThought'], "&#x2715;");
+    $deleteButton.addEventListener('click', (_event: MouseEvent)=>{
+      this.notebook.deleteThought(thoughtId);
+    });
+    $rval.appendChild($deleteButton);
+    return $rval;
+  }
 
   private renderErrorMessage(style: StyleObject): void {
     if (style.type != 'TEXT') {
