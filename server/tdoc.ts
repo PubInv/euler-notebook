@@ -359,7 +359,9 @@ export class TDoc extends EventEmitter {
   }
 
   public useTool(thoughtId: ThoughtId, source: StyleSource, info: ToolInfo): void {
+    debug(`Emmiting useTool`);
     this.emit('useTool', thoughtId, source, info);
+    debug(`done Emmiting useTool`);
   }
 
   // --- PRIVATE ---

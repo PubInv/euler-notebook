@@ -255,7 +255,9 @@ export class ClientSocket {
   }
 
   private cmUseTool(tDoc: TDoc, thoughtId: ThoughtId, source: StyleSource, info: ToolInfo): void {
+    debug("cmUseTool Begin");
     tDoc.useTool(thoughtId, source, info);
+    debug("cmUseTool End");
   }
 
   // Private Instance Methods

@@ -44,9 +44,11 @@ export async function initialize(_config: Config): Promise<void> {
 
 function onChange(tDoc: TDoc, change: NotebookChange): void {
   switch (change.type) {
-  case 'styleInserted':
-      runAsync(quadPlotterRule(tDoc, change.style), MODULE, 'quadPlotterRule');
-      runAsync(plotterRule(tDoc, change.style), MODULE, 'quadPlotterRule');
+    case 'styleInserted':
+      tDoc;
+      runAsync;
+//      runAsync(quadPlotterRule(tDoc, change.style), MODULE, 'quadPlotterRule');
+//      runAsync(plotterRule(tDoc, change.style), MODULE, 'quadPlotterRule');
     break;
   default: break;
   }
@@ -112,6 +114,7 @@ export async function quadPlotterRule(tdoc: TDoc, style: StyleObject): Promise<S
 
 
 async function plotSubtrivariate(expr : string, variables: string[], filename : string) : Promise<boolean> {
+  debug("VARIABLES",variables);
   let plot_script =
    (variables.length == 1) ?
     `Export["${filename}",Plot[${expr},{${variables[0]},0,6 Pi}]]`

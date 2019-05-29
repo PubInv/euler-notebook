@@ -66,6 +66,12 @@ function onChange(tDoc: TDoc, change: NotebookChange): void {
 }
 
 function onUseTool(tDoc: TDoc, _thoughtId: ThoughtId, _source: StyleSource, info: ToolInfo): void {
+  // DAVID: I think we may want to refactor this so that
+  // we attache a "thunk" to the tool. In any case it is a little weired
+  // to use an emmitter, because it means "onUseTool" is called for
+  // Tools that were not created in this file.  I have therefore added
+  // the line below, which essentially says "If I am not a 'steps' tool, do nothing.
+  if (info.name != 'steps') return;
   let style = tDoc.getStyleById(info.data.styleId);
   if (!style) {
     console.error(`Style for tool no longer exists.`);
