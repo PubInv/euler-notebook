@@ -25,10 +25,11 @@ export type HtmlElementClass = string;
 export type Html = string;
 
 interface NewOptions {
-  id?: string;
+  appendTo?: HTMLElement;
   class?: HtmlElementClass;
   classes?: HtmlElementClass[];
   html?: Html;
+  id?: string;
 }
 
 // Exported Functions
@@ -48,6 +49,7 @@ export function $new<T extends HTMLElement>(tag: HtmlElementTag, options?: NewOp
     for (const cls of options.classes) { $elt.classList.add(cls); }
   }
   if (options.html) { $elt.innerHTML = options.html; }
+  if (options.appendTo) { options.appendTo.appendChild($elt); }
   return $elt;
 }
 

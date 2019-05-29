@@ -44,13 +44,13 @@ export class ThoughtElement {
 
   // Instance Methods
 
-  delete(): void {
+  public delete(): void {
     const $parent = this.$elt.parentElement;
     if (!$parent) { throw new Error("Thought element has no parent in delete."); }
     $parent.removeChild(this.$elt);
   }
 
-  deleteStyle(style: StyleObject): void {
+  public deleteStyle(style: StyleObject): void {
     if (style.type == 'LATEX') {
       const $formulaElt = this.$elt.querySelector('.formula');
       $formulaElt!.innerHTML = '';
@@ -60,7 +60,7 @@ export class ThoughtElement {
   // REVIEW: This is very fragile in the ordering of style insertions.
   //         For example, if LaTeX input-alt comes in after error, the error message
   //         will be obliterated.
-  insertStyle(style: StyleObject): void {
+  public insertStyle(style: StyleObject): void {
     switch(style.meaning) {
       case 'ATTRIBUTE':
         if (style.type == 'TOOL-MENU') { this.renderToolMenu(style); }
@@ -84,6 +84,14 @@ export class ThoughtElement {
     }
   }
 
+  public select(): void {
+    this.$elt.classList.add('selected');
+  }
+
+  public unselect(): void {
+    this.$elt.classList.remove('selected');
+  }
+
   // PRIVATE
 
   // Private Constructor
@@ -102,19 +110,29 @@ export class ThoughtElement {
     const $rval = $new<HTMLDivElement>('div', {
       id: `T${thoughtId}`,
       class: 'thought',
-      html:
-`<div class="handle">(${thoughtId})</div>
-<div class="status"></div>
-<div class="formula"></div>
-<div class="tools"></div>`
     });
+
+    // <div class="handle">(1)</div>
+    const selectClickHandler = (event: MouseEvent)=>{ this.notebook.selectThought(thoughtId, event); };
+    const $handle = $new<HTMLDivElement>('div', { class: 'handle', html: `(${thoughtId})`, appendTo: $rval });
+    $handle.addEventListener('click', selectClickHandler);
+
+    // <div class="status"></div>
+    const $status = $new<HTMLDivElement>('div', { class: 'status', html: "&nbsp;", appendTo: $rval });
+    $status.addEventListener('click', selectClickHandler);
+
+    // <div class="formula"></div>
+    $new<HTMLDivElement>('div', { class: 'formula', appendTo: $rval });
+
+    // <div class="tools"></div>`
+    $new<HTMLDivElement>('div', { class: 'tools', appendTo: $rval });
+
     // <button class="deleteThought"></button>`);
-    const $deleteButton = $new<HTMLButtonElement>('button', { class: 'deleteThought', html: "&#x2715;" });
+    const $deleteButton = $new<HTMLButtonElement>('button', { class: 'deleteThought', html: "&#x2715;", appendTo: $rval });
     $deleteButton.addEventListener('click', (_event: MouseEvent)=>{
       this.notebook.deleteThought(thoughtId);
     });
 
-    $rval.appendChild($deleteButton);
     return $rval;
   }
 

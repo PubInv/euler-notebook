@@ -82,6 +82,21 @@ export class Notebook {
     this.socket.sendMessage(msg);
   }
 
+  public selectThought(thoughtId: ThoughtId, event: MouseEvent): void {
+
+    // If neither shift nor command held down then unselect prior selection
+    if (!event.shiftKey && !event.metaKey) {
+      while (this.selectedThoughts.length>0) {
+        const thoughtId = this.selectedThoughts.pop();
+        const $thoughtElt = this.thoughtElements.get(thoughtId!);
+        $thoughtElt!.unselect();
+      }
+    }
+    // TODO: if event.shiftKey, select all intervening thoughts.
+    this.thoughtElements.get(thoughtId)!.select();
+    this.selectedThoughts.push(thoughtId);
+  }
+
   public useTool(thoughtElt: ThoughtElement, source: StyleSource, info: ToolInfo, ): void {
     const msg: UseTool = {
       action: 'useTool',
@@ -125,7 +140,7 @@ export class Notebook {
     this.relationships = new Map();
     this.styles = new Map();
     this.thoughtElements = new Map();
-
+    this.selectedThoughts = [];
     for (const thought of notebookData.thoughts) { this.chInsertThought(thought); }
     for (const style of notebookData.styles) { this.chInsertStyle(style); }
   }
@@ -134,6 +149,7 @@ export class Notebook {
 
   private socket: ServerSocket;
   private relationships: Map<RelationshipId, RelationshipObject>;
+  private selectedThoughts: ThoughtId[];
   private styles: Map<StyleId, StyleObject>;
   private thoughtElements: Map<ThoughtId, ThoughtElement>;
 
