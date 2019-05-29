@@ -51,15 +51,12 @@ export async function initialize(_config: Config): Promise<void> {
 function onChange(tDoc: TDoc, change: NotebookChange): void {
   switch (change.type) {
   case 'styleInserted':
-//      runAsync(quadClassifierRule(tDoc, change.style), MODULE, 'quadClassifierRule');
       runAsync(subtrivariateClassifierRule(tDoc, change.style), MODULE, 'subtrivariateClassifierRule');
     break;
   case 'relationshipInserted':
-//      runAsync(quadClassifierChangedRule(tDoc, change.relationship), MODULE, 'quadClassifierChangedRule');
     runAsync(subTrivariateClassifierChangedRule(tDoc, change.relationship), MODULE, 'subTrivariateClassifierChangedRule');
     break;
   case 'relationshipDeleted':
-//      runAsync(quadClassifierChangedRule(tDoc, change.relationship), MODULE, 'quadClassifierChangedRule');
     runAsync(subTrivariateClassifierChangedRule(tDoc, change.relationship), MODULE, 'subTrivariateClassifierChangedRule');
     break;
   default: break;
@@ -95,25 +92,25 @@ async function isExpressionSubTrivariate(expr : string,
 }
 
 
-// Return "null" if it does not seem to be a quadratic, and the name
-// of the variable (which must be unique to pass this test) if it is.
-async function isExpressionPlottableQuadratic(expr : string,
-                                              usedSymbols: StyleObject[])
-: Promise<string|null> {
-  const quadratic_function_script = `With[{v = Variables[#]},If[(Length[v] == 1) && (Exponent[#, v[[1]]] == 2), v[[1]], False]]`;
-  ;
-  const sub_expr =
-        constructSubstitution(expr,
-                              usedSymbols.map(
-                                s => ({ name: s.data.name,
-                                        value: s.data.value})));
+// // Return "null" if it does not seem to be a quadratic, and the name
+// // of the variable (which must be unique to pass this test) if it is.
+// async function isExpressionPlottableQuadratic(expr : string,
+//                                               usedSymbols: StyleObject[])
+// : Promise<string|null> {
+//   const quadratic_function_script = `With[{v = Variables[#]},If[(Length[v] == 1) && (Exponent[#, v[[1]]] == 2), v[[1]], False]]`;
+//   ;
+//   const sub_expr =
+//         constructSubstitution(expr,
+//                               usedSymbols.map(
+//                                 s => ({ name: s.data.name,
+//                                         value: s.data.value})));
 
-  const unwrapped_script = quadratic_function_script+" &[" + sub_expr + "]";
-  const script = "runPrivate[" + unwrapped_script + "]";
-  debug("EXPRESSION FOR CLASSIFIFYING: ",script );
-  let result : string = await execute(script);
-  return (result == "False") ? null : result;
-}
+//   const unwrapped_script = quadratic_function_script+" &[" + sub_expr + "]";
+//   const script = "runPrivate[" + unwrapped_script + "]";
+//   debug("EXPRESSION FOR CLASSIFIFYING: ",script );
+//   let result : string = await execute(script);
+//   return (result == "False") ? null : result;
+// }
 
 export async function subtrivariateClassifierRule(tdoc: TDoc, style: StyleObject): Promise<StyleObject[]> {
   if (style.type != 'MATHEMATICA' || style.meaning != 'EVALUATION') { return []; }
@@ -160,35 +157,35 @@ export async function subtrivariateClassifierRule(tdoc: TDoc, style: StyleObject
 }
 
 
-export async function quadClassifierRule(tdoc: TDoc, style: StyleObject): Promise<StyleObject[]> {
-  if (style.type != 'MATHEMATICA' || style.meaning != 'EVALUATION') { return []; }
-  // debug("INSIDE QUAD CLASSIFIER :",style);
+// export async function quadClassifierRule(tdoc: TDoc, style: StyleObject): Promise<StyleObject[]> {
+//   if (style.type != 'MATHEMATICA' || style.meaning != 'EVALUATION') { return []; }
+//   // debug("INSIDE QUAD CLASSIFIER :",style);
 
-  var isPlottableQuadratic;
-  try {
-    // here I attempt to find the dependency relationships....
-    const rs = tdoc.getSymbolStylesIDependOn(style);
-    debug("RS ",rs);
-    // Now each member of rs should have a name and a value
-    // that we should use in our quadratic classification....
-    isPlottableQuadratic = await isExpressionPlottableQuadratic(style.data,rs);
-    // debug("QUAD CLASSIFER SAYS:",isPlottableQuadratic);
-  } catch (e) {
-    debug("MATHEMATICA EVALUATION FAILED :",e);
-    return [];
-  }
+//   var isPlottableQuadratic;
+//   try {
+//     // here I attempt to find the dependency relationships....
+//     const rs = tdoc.getSymbolStylesIDependOn(style);
+//     debug("RS ",rs);
+//     // Now each member of rs should have a name and a value
+//     // that we should use in our quadratic classification....
+//     isPlottableQuadratic = await isExpressionPlottableQuadratic(style.data,rs);
+//     // debug("QUAD CLASSIFER SAYS:",isPlottableQuadratic);
+//   } catch (e) {
+//     debug("MATHEMATICA EVALUATION FAILED :",e);
+//     return [];
+//   }
 
-  var styles = [];
-  if (isPlottableQuadratic) {
-    var classification = tdoc.insertStyle(style, { type: 'CLASSIFICATION',
-                                           data: isPlottableQuadratic,
-                                           meaning: 'UNIVARIATE-QUADRATIC',
-                                           source: 'MATHEMATICA' });
+//   var styles = [];
+//   if (isPlottableQuadratic) {
+//     var classification = tdoc.insertStyle(style, { type: 'CLASSIFICATION',
+//                                            data: isPlottableQuadratic,
+//                                            meaning: 'UNIVARIATE-QUADRATIC',
+//                                            source: 'MATHEMATICA' });
 
-    styles.push(classification);
-  }
-  return styles;
-}
+//     styles.push(classification);
+//   }
+//   return styles;
+// }
 // export async function quadClassifierChangedRule(tdoc: TDoc, relationship: RelationshipObject): Promise<void> {
 
 //   if (relationship.meaning != 'SYMBOL-DEPENDENCY') return;
@@ -359,17 +356,32 @@ async function onUseTool(tDoc: TDoc, _thoughtId: ThoughtId, _source: StyleSource
   // We are only plottable if we make the normal substitutions...
   const rs = tDoc.getSymbolStylesIDependOn(parent);
   debug("RS",rs);
+  debug("STYLE DATA",style.data);
   var createdPlotSuccessfully;
   try {
-    // In this case, the style.data is the variable name...
+    // Now style.data contains the variables in the expression "parent.data",
+    // but the rs map may have allowed some to be defined, and these must
+    // be removed.
+    let variables: string[] = [];
+   for(var s in style.data) {
+      variables.push(style.data[s]);
+    }
+//    style.data.map(s => (variables.push(s.data.name)));
 
+    debug("variables, pre-process",variables);
     const sub_expr =
           constructSubstitution(parent.data,
                                 rs.map(
-                                  s => ({ name: s.data.name,
-                                          value: s.data.value})));
+                                  s => {
+                                    variables = variables.filter(ele => (
+                                      ele != s.data.name));
+                                    return { name: s.data.name,
+                                             value: s.data.value};
+                                  }
+                                ));
+    debug("variables, post-process",variables);
 
-    createdPlotSuccessfully = await plotSubtrivariate(sub_expr,style.data,full_filename);
+    createdPlotSuccessfully = await plotSubtrivariate(sub_expr,variables,full_filename);
     debug("PLOTTER SUCCESS SAYS:",createdPlotSuccessfully);
   } catch (e) {
     debug("MATHEMATICA QUAD PLOT FAILED :",e);

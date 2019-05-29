@@ -24,8 +24,8 @@ import { Config } from '../config';
 import { initialize as initializeMathematicaCas } from './mathematica-cas';
 import { initialize as initializeMathJsCas } from './mathjs-cas';
 import { initialize as initializeMathStepsCas } from './mathsteps-cas';
-import { initialize as initializeQuadClassifier } from './quad-classifier';
-import { initialize as initializeQuadPlotter } from './quad-plotter';
+import { initialize as initializeQuadClassifier } from './subtriv-classifier';
+// import { initialize as initializeQuadPlotter } from './quad-plotter';
 import { initialize as initializeSandbox } from './sandbox';
 import { initialize as initializeSymbolClassifier } from './symbol-classifier';
 
@@ -37,7 +37,6 @@ export async function initialize(config: Config): Promise<void> {
     config.mathjs && initializeMathJsCas(config),
     config.mathsteps && initializeMathStepsCas(config),
     config.mathematica && initializeQuadClassifier(config),
-    config.mathematica && initializeQuadPlotter(config),
     initializeSandbox(config),
     config.mathematica && initializeSymbolClassifier(config),
   ]);
