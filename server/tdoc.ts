@@ -145,6 +145,15 @@ export class TDoc extends EventEmitter {
   }
 
   // REVIEW: Return an iterator?
+  public allRelationships(): RelationshipObject[] {
+    return Object.values(this.relationshipMap);
+  }
+
+  public relationshipsOf(stylableId: StylableId): RelationshipObject[] {
+    return this.allRelationships().filter(r=>(r.sourceId == stylableId || r.targetId == stylableId));
+  }
+
+  // REVIEW: Return an iterator?
   public allStyles(): StyleObject[] {
     return Object.values(this.styleMap);
   }
@@ -174,8 +183,8 @@ export class TDoc extends EventEmitter {
       }
     }
 
-    // DANGER! this makes this function asymptotic quadratic or worse...
     // now for each kid, recurse...
+    // DANGER! this makes this function asymptotic quadratic or worse...
     const kids = this.childStylesOf(id);
     for(const k of kids) {
       const kmatch = this.findChildStyleOfType(k.id, type, meaning);
@@ -185,21 +194,12 @@ export class TDoc extends EventEmitter {
     return rval;
   }
 
-  public getAncestorThought(id : StylableId) : ThoughtObject {
+  public getAncestorThought(id: StylableId): ThoughtObject {
     const thought = this.getThoughtById(id);
     if (thought) { return thought; }
     const style = this.getStyleById(id);
     if (!style) { throw new Error("Cannot find ancestor thought."); }
     return this.getAncestorThought(style.stylableId);
-  }
-
-  // REVIEW: Return an iterator?
-  public getRelationships(
-    stylableId?: StylableId,
-  ): RelationshipObject[] {
-    let rval: RelationshipObject[] = Object.values(this.relationshipMap);
-    if (stylableId) { rval = rval.filter(r=>(r.sourceId == stylableId || r.targetId == stylableId)); }
-    return rval;
   }
 
   public getStylable(styleId : StyleId) : StyleObject|ThoughtObject|null {
@@ -222,7 +222,7 @@ export class TDoc extends EventEmitter {
     // computing the source and target thoughts. If the target thought
     // is the same as our ancestor thought, then we return the
     // source style, which should be of type Symbol and meaning Definition.
-    const rs = this.getRelationships();
+    const rs = this.allRelationships();
     var symbolStyles: StyleObject[] = [];
     const mp = this.getAncestorThought(style.id);
     if (!mp) {
@@ -320,7 +320,7 @@ export class TDoc extends EventEmitter {
   public deleteStyle(styleId: StyleId): void {
 
     // Delete any relationships attached to this style.
-    const relationships = this.getRelationships(styleId);
+    const relationships = this.relationshipsOf(styleId);
     for(const relationship of relationships) { this.deleteRelationship(relationship.id); }
 
     // Delete any styles attached to this style
@@ -336,7 +336,7 @@ export class TDoc extends EventEmitter {
   public deleteThought(thoughtId: ThoughtId): void {
 
     // Delete any relationships attached to this thought.
-    const relationships = this.getRelationships(thoughtId);
+    const relationships = this.relationshipsOf(thoughtId);
     for(const relationship of relationships) { this.deleteRelationship(relationship.id); }
 
     // Delete any styles attached to this style
