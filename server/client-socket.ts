@@ -28,7 +28,7 @@ import * as WebSocket from 'ws';
 // TODO: Handle websocket lifecycle: closing, unexpected disconnects, errors, etc.
 
 import { ClientMessage, NotebookChange, NotebookName, NotebookPath, ServerMessage,
-         ThoughtId, ThoughtProperties, StyleSource, ToolInfo, StylePropertiesWithSubprops, ThoughtObject, StyleObject } from '../client/math-tablet-api';
+         ThoughtId, ThoughtProperties, StyleSource, ToolInfo, StylePropertiesWithSubprops, ThoughtObject, StyleObject, NotebookChanged, ThoughtInserted, StyleInserted, StylableId } from '../client/math-tablet-api';
 
 import { PromiseResolver } from './common';
 // REVIEW: This file should not be dependent on any specific observers.
@@ -286,6 +286,16 @@ export class ClientSocket {
     }
   }
 
+  // REVIEW: notebookName could be extracted from tDoc.
+  private insertStylesRecursively(notebookName: NotebookName, tDoc: TDoc, id: StylableId): void {
+    for (const style of tDoc.stylesAttachedTo(id)) {
+      const change: StyleInserted = { type: 'styleInserted', style };
+      const msg: NotebookChanged = { action: 'notebookChanged', notebookName, change }
+      this.sendMessage(msg);
+      this.insertStylesRecursively(notebookName, tDoc, style.id);
+    }
+  }
+
   private async openNotebook(notebookName: NotebookName): Promise<void> {
     const tDoc = await TDoc.open(notebookName, {/* default options*/});
     const listeners: TDocListeners = {
@@ -305,7 +315,15 @@ export class ClientSocket {
     tDoc.prependListener('change', listeners.change);
     tDoc.on('close', listeners.close);
 
-    this.sendMessage({ action: 'notebookOpened', notebookName, notebook: tDoc.toJSON() })
+    this.sendMessage({ action: 'notebookOpened', notebookName });
+
+    // Send all notebook thoughts and styles.
+    for (const thought of tDoc.allThoughts()) {
+      const change: ThoughtInserted = { type: 'thoughtInserted', thought };
+      const msg: NotebookChanged = { action: 'notebookChanged', notebookName, change }
+      this.sendMessage(msg);
+      this.insertStylesRecursively(notebookName, tDoc, thought.id);
+    }
   }
 
   private sendMessage(msg: ServerMessage): void {

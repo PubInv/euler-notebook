@@ -140,14 +140,6 @@ export interface StyleObject extends StyleProperties {
   stylableId: StylableId;
 }
 
-export interface TDocObject {
-  nextId: StylableId;
-  relationships: RelationshipObject[];
-  styles: StyleObject[];
-  thoughts: ThoughtObject[];
-  version: string;
-}
-
 export interface ThoughtProperties {
   // Expect thoughts will have some sort of properties in the future.
   // e.g. position and size
@@ -196,7 +188,7 @@ interface ThoughtDeleted {
   thoughtId: ThoughtId;
 }
 
-interface ThoughtInserted {
+export interface ThoughtInserted {
   type: 'thoughtInserted';
   thought: ThoughtObject;
 }
@@ -205,7 +197,7 @@ interface ThoughtInserted {
 
 export type ServerMessage = NotebookChanged|NotebookClosed|NotebookOpened;
 
-interface NotebookChanged {
+export interface NotebookChanged {
   action: 'notebookChanged';
   notebookName: NotebookName;
   change: NotebookChange;
@@ -219,7 +211,6 @@ interface NotebookClosed {
 interface NotebookOpened {
   action: 'notebookOpened';
   notebookName: NotebookName;
-  notebook: TDocObject;
 }
 
 // Messages from the client

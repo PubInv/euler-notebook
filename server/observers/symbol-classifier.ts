@@ -90,7 +90,7 @@ async function addSymbolDefStyles(tDoc: TDoc, style: StyleObject): Promise<void>
       debug(`Inserting def style: ${JSON.stringify(newStyle)}`);
 
       // Add any symbol-dependency relationships as a result of the new symbol-def style
-      for (const otherStyle of tDoc.getStyles()) {
+      for (const otherStyle of tDoc.allStyles()) {
         if (otherStyle.id == newStyle.id) { continue; }
         if (otherStyle.type == 'SYMBOL' &&
             otherStyle.meaning == 'SYMBOL-USE' &&
@@ -122,7 +122,7 @@ async function addSymbolUseStyles(tDoc: TDoc, style: StyleObject): Promise<void>
     debug(`Inserting use style: ${JSON.stringify(newStyle)}`);
 
     // Add any symbol-dependency relationships as a result of the new symbol-use style
-    for (const otherStyle of tDoc.getStyles()) {
+    for (const otherStyle of tDoc.allStyles()) {
       if (otherStyle.id == newStyle.id) { continue; }
       if (otherStyle.type == 'SYMBOL' &&
           otherStyle.meaning == 'SYMBOL-DEFINITION' &&

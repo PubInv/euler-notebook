@@ -164,7 +164,7 @@ describe('mathsteps-cas', function(){
     const style = tDoc.insertStyle(thought, styleProps);
 
     // Check that a tool menu was added to the thought.
-    const toolStyles = tDoc.getStyles(thought.id).filter(s=>s.type=='TOOL-MENU');
+    const toolStyles = tDoc.stylesAttachedTo(thought.id).filter(s=>s.type=='TOOL-MENU');
     assert.equal(toolStyles.length, 1);
     const toolStyle = toolStyles[0];
     const toolMenu: ToolMenu = toolStyle.data;
@@ -177,7 +177,7 @@ describe('mathsteps-cas', function(){
     tDoc.emit('useTool', thought.id, toolStyle.source, toolInfo);
 
     // Check an exposition style was added with the steps.
-    const expoStyles = tDoc.getStyles().filter(s=>s.meaning=='EXPOSITION');
+    const expoStyles = tDoc.allStyles().filter(s=>s.meaning=='EXPOSITION');
     assert.equal(expoStyles.length, 1);
     const expoStyle = expoStyles[0];
     assert.notEqual(expoStyle.stylableId, thought.id);
@@ -196,7 +196,7 @@ describe('mathsteps-cas', function(){
     const style = tDoc.insertStyle(thought, styleProps);
 
     // Check that a tool menu was added to the thought.
-    const toolStyles = tDoc.getStyles(thought.id).filter(s=>s.type=='TOOL-MENU');
+    const toolStyles = tDoc.stylesAttachedTo(thought.id).filter(s=>s.type=='TOOL-MENU');
     assert.equal(toolStyles.length, 1);
     const toolStyle = toolStyles[0];
     const toolMenu: ToolMenu = toolStyle.data;
@@ -209,7 +209,7 @@ describe('mathsteps-cas', function(){
     tDoc.emit('useTool', thought.id, toolStyle.source, toolInfo);
 
     // Check an exposition style was added with the steps.
-    const expoStyles = tDoc.getStyles().filter(s=>s.meaning=='EXPOSITION');
+    const expoStyles = tDoc.allStyles().filter(s=>s.meaning=='EXPOSITION');
     assert.equal(expoStyles.length, 1);
     const expoStyle = expoStyles[0];
     assert.notEqual(expoStyle.stylableId, thought.id);

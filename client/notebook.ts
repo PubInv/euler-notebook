@@ -21,8 +21,9 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 import { ServerSocket } from './server-socket.js';
 
-import { NotebookName, TDocObject, StyleId, StyleObject,
-  ThoughtId, ThoughtObject, NotebookChange, ThoughtProperties, RelationshipId, RelationshipObject, UseTool, InsertThought, StyleSource, ToolInfo, StylePropertiesWithSubprops, DeleteThought } from './math-tablet-api.js';
+import { NotebookName, StyleId, StyleObject, ThoughtId, ThoughtObject, NotebookChange,
+         ThoughtProperties, RelationshipId, RelationshipObject, UseTool, InsertThought,
+         StyleSource, ToolInfo, StylePropertiesWithSubprops, DeleteThought } from './math-tablet-api.js';
 // import { Jiix, StrokeGroups } from './myscript-types.js';
 import { ThoughtElement } from './thought-element.js';
 import { $new, escapeHtml, Html } from './dom.js';
@@ -37,10 +38,10 @@ export class Notebook {
     return this.notebooks.get(notebookName);
   }
 
-  public static open(socket: ServerSocket, notebookName: NotebookName, notebookData: TDocObject): Notebook {
+  public static open(socket: ServerSocket, notebookName: NotebookName): Notebook {
     let notebook = this.notebooks.get(notebookName);
     if (!notebook) {
-      notebook = new this(socket, notebookName, notebookData);
+      notebook = new this(socket, notebookName);
       this.notebooks.set(notebookName, notebook);
     }
     return notebook;
@@ -131,7 +132,7 @@ export class Notebook {
 
   // Private Constructor
 
-  private constructor(socket: ServerSocket, notebookName: NotebookName, notebookData: TDocObject) {
+  private constructor(socket: ServerSocket, notebookName: NotebookName) {
     this.socket = socket;
     this.notebookName = notebookName;
 
@@ -141,8 +142,6 @@ export class Notebook {
     this.styles = new Map();
     this.thoughtElements = new Map();
     this.selectedThoughts = [];
-    for (const thought of notebookData.thoughts) { this.chInsertThought(thought); }
-    for (const style of notebookData.styles) { this.chInsertStyle(style); }
   }
 
   // Private Instance Properties

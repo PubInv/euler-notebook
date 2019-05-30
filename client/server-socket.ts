@@ -23,7 +23,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 // Requirements
 
 import { addErrorMessageToHeader } from './global.js';
-import { ClientMessage, NotebookName, ServerMessage, TDocObject, NotebookChange } from './math-tablet-api.js';
+import { ClientMessage, NotebookName, ServerMessage, NotebookChange } from './math-tablet-api.js';
 import { Notebook } from './notebook.js';
 
 // Types
@@ -120,7 +120,7 @@ export class ServerSocket {
       switch(msg.action) {
       case 'notebookChanged': this.smNotebookChanged(msg.notebookName, msg.change); break;
       case 'notebookClosed':  this.smNotebookClosed(msg.notebookName); break;
-      case 'notebookOpened':  this.smNotebookOpened(msg.notebookName, msg.notebook); break;
+      case 'notebookOpened':  this.smNotebookOpened(msg.notebookName); break;
       default:
         console.error(`Unexpected action '${(<any>msg).action}' in WebSocket message`);
         break;
@@ -142,10 +142,10 @@ export class ServerSocket {
 
   // Private Server Message Handlers
 
-  private smNotebookOpened(notebookName: NotebookName, notebookData: TDocObject): void {
+  private smNotebookOpened(notebookName: NotebookName): void {
     const openRequest = this.openPromises.get(notebookName);
     if (!openRequest) { throw new Error(`Notebook opened message for unknown notebook: ${notebookName}`); }
-    const notebook = Notebook.open(this, notebookName, notebookData);
+    const notebook = Notebook.open(this, notebookName);
     openRequest.resolve(notebook);
     this.openPromises.delete(notebookName);
   }

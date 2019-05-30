@@ -279,7 +279,7 @@ function getMyScriptKeys(): ServerKeys {
 function initializeEditor($elt: EditorElement, editorType: EditorType) {
   const config = getMyScriptConfig(editorType);
   getMyScript().register($elt, config);
-  $elt.addEventListener('changed', </* TYPESCRIPT: */EventListener>onEditorChangoed);
+  $elt.addEventListener('changed', </* TYPESCRIPT: */EventListener>onEditorChanged);
   const onExportedFn = (editorType == 'MATH' ? onMathExported : onTextExported);
   $elt.addEventListener('exported', </* TYPESCRIPT: */EventListener>onExportedFn);
   return $elt.editor;
