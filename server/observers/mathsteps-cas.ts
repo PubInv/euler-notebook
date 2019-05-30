@@ -72,11 +72,7 @@ function onUseTool(tDoc: TDoc, _thoughtId: ThoughtId, _source: StyleSource, info
   // Tools that were not created in this file.  I have therefore added
   // the line below, which essentially says "If I am not a 'steps' tool, do nothing.
   if (info.name != 'steps') return;
-  let style = tDoc.getStyleById(info.data.styleId);
-  if (!style) {
-    console.error(`Style for tool no longer exists.`);
-    return;
-  }
+  const style = tDoc.getStyleById(info.data.styleId);
   const steps: Step[] = (info.data.expr ?
                           mathsteps.simplifyExpression(style.data) :
                           mathsteps.solveEquation(style.data));

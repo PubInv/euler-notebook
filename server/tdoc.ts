@@ -25,7 +25,9 @@ import * as debug1 from 'debug';
 const MODULE = __filename.split('/').slice(-1)[0].slice(0,-3);
 const debug = debug1(`server:${MODULE}`);
 
-import { NotebookChange, NotebookPath, StyleObject, StyleMeaning, StyleType, ThoughtObject, ThoughtId, StyleId, StyleProperties, ThoughtProperties, RelationshipObject, StylableId, RelationshipProperties, RelationshipId, StyleSource, ToolInfo } from '../client/math-tablet-api';
+import { NotebookChange, NotebookPath, StyleObject, StyleMeaning, StyleType, ThoughtObject,
+         ThoughtId, StyleProperties, ThoughtProperties, RelationshipObject, StylableId,
+         RelationshipProperties, RelationshipId, StyleSource, ToolInfo } from '../client/math-tablet-api';
 import { readNotebookFile, writeNotebookFile, AbsDirectoryPath, absDirPathFromNotebookPath } from './files-and-folders';
 
 // Types
@@ -172,16 +174,12 @@ export class TDoc extends EventEmitter {
 
     // we will count ourselves as a child here....
     const rval: StyleObject[] = [];
-    const style = this.getStyleById(id);
-    if (!style) { throw new Error(`Style ${id} not found.`); }
 
-    if (style && 'type' in style) {
-      // if null, this is a Thought, so not a Style...
-      if (style && style.type == type && style.meaning == meaning) {
-        // we match, so we add ourselves...
-        rval.push(<StyleObject>style);
-      }
-    }
+    const style = this.styleMap[id];
+    if (style && style.type == type && (!meaning || style.meaning == meaning)) {
+      // we match, so we add ourselves...
+      rval.push(<StyleObject>style);
+    } // else { assert(this.thoughtMap[id] }
 
     // now for each kid, recurse...
     // DANGER! this makes this function asymptotic quadratic or worse...
@@ -195,18 +193,14 @@ export class TDoc extends EventEmitter {
   }
 
   public getAncestorThought(id: StylableId): ThoughtObject {
-    const thought = this.getThoughtById(id);
+    const thought = this.thoughtMap[id];
     if (thought) { return thought; }
-    const style = this.getStyleById(id);
+    const style = this.styleMap[id];
     if (!style) { throw new Error("Cannot find ancestor thought."); }
     return this.getAncestorThought(style.stylableId);
   }
 
-  public getStylable(styleId : StyleId) : StyleObject|ThoughtObject|null {
-    return this.getThoughtById(styleId) || this.getStyleById(styleId) || null;
-  }
-
-  public getStyleById(id: StyleId): StyleObject {
+  public getStyleById(id: StylableId): StyleObject {
     const rval = this.styleMap[id];
     if (!rval) { throw new Error(`Style ${id} doesn't exist.`); }
     return rval;
@@ -237,7 +231,7 @@ export class TDoc extends EventEmitter {
       }
       if (rp.id == mp.id) {
         // We are a user of this definition...
-        symbolStyles.push(<StyleObject>this.getStylable(r.sourceId));
+        symbolStyles.push(this.getStyleById(r.sourceId));
       }
     });
     return symbolStyles;
@@ -317,7 +311,7 @@ export class TDoc extends EventEmitter {
 
   // Deletes the specified style and any styles or relationships attached to it recursively.
   // Emits TDoc 'change' events in a depth-first postorder.
-  public deleteStyle(styleId: StyleId): void {
+  public deleteStyle(styleId: StylableId): void {
 
     // Delete any relationships attached to this style.
     const relationships = this.relationshipsOf(styleId);
@@ -466,7 +460,7 @@ export class TDoc extends EventEmitter {
 
   // Delete a specific style entry and emits a 'change' event.
   // IMPORTANT: All attached styles should be deleted first!
-  private deleteStyleEntryAndEmit(id: StyleId): void {
+  private deleteStyleEntryAndEmit(id: StylableId): void {
     this.assertNotClosed('deleteStyleEntryAndEmit');
     const style = this.styleMap[id];
     if (!style) { throw new Error(`Deleting unknown style ${id}`); }

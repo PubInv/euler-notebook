@@ -335,11 +335,7 @@ async function onUseTool(tDoc: TDoc, _thoughtId: ThoughtId, _source: StyleSource
   // Its data will hold hold the varialbes.
   debug("INSIDE onUSE quad-classifier PLOTTER :",info.data.styleId);
 
-  let style = tDoc.getStyleById(info.data.styleId);
-  if (!style) {
-    console.error(`Style for tool no longer exists.`);
-    return;
-  }
+  const style = tDoc.getStyleById(info.data.styleId);
 
   // We neeed to find the SUBTRIVARIATE Style here in order
   // to get the variables list
@@ -351,7 +347,7 @@ async function onUseTool(tDoc: TDoc, _thoughtId: ThoughtId, _source: StyleSource
   const full_filename = targetPath + "/" + fn;
 
   // The parent of this style will be the MATHETMATICA/ EVALUATION
-  const parent = <StyleObject>tDoc.getStylable(style.stylableId);
+  const parent = tDoc.getStyleById(style.stylableId);
 
   // We are only plottable if we make the normal substitutions...
   const rs = tDoc.getSymbolStylesIDependOn(parent);
