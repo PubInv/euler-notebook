@@ -288,7 +288,7 @@ export class ClientSocket {
 
   // REVIEW: notebookName could be extracted from tDoc.
   private insertStylesRecursively(notebookName: NotebookName, tDoc: TDoc, id: StylableId): void {
-    for (const style of tDoc.stylesAttachedTo(id)) {
+    for (const style of tDoc.childStylesOf(id)) {
       const change: StyleInserted = { type: 'styleInserted', style };
       const msg: NotebookChanged = { action: 'notebookChanged', notebookName, change }
       this.sendMessage(msg);

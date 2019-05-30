@@ -50,7 +50,7 @@ export function getSubstylesGeneratedForStyle(styleProps: StyleProperties): Styl
   const tDoc = TDoc.createAnonymous();
   const thought = tDoc.insertThought({});
   const style = tDoc.insertStyle(thought, styleProps);
-  const substyles = tDoc.stylesAttachedTo(style.id);
+  const substyles = tDoc.childStylesOf(style.id);
   return substyles;
 }
 
@@ -59,7 +59,7 @@ export function getToolMenusGeneratedForStyle(styleProps: StyleProperties): Tool
   const tDoc = TDoc.createAnonymous();
   const thought = tDoc.insertThought({});
   tDoc.insertStyle(thought, styleProps);
-  const styles = tDoc.stylesAttachedTo(thought.id).filter(s=>s.type=='TOOL-MENU');
+  const styles = tDoc.childStylesOf(thought.id).filter(s=>s.type=='TOOL-MENU');
   return styles.map(s=>s.data);
 }
 

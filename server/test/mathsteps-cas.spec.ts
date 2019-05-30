@@ -164,7 +164,7 @@ describe('mathsteps-cas', function(){
     const style = tDoc.insertStyle(thought, styleProps);
 
     // Check that a tool menu was added to the thought.
-    const toolStyles = tDoc.stylesAttachedTo(thought.id).filter(s=>s.type=='TOOL-MENU');
+    const toolStyles = tDoc.childStylesOf(thought.id).filter(s=>s.type=='TOOL-MENU');
     assert.equal(toolStyles.length, 1);
     const toolStyle = toolStyles[0];
     const toolMenu: ToolMenu = toolStyle.data;
@@ -196,7 +196,7 @@ describe('mathsteps-cas', function(){
     const style = tDoc.insertStyle(thought, styleProps);
 
     // Check that a tool menu was added to the thought.
-    const toolStyles = tDoc.stylesAttachedTo(thought.id).filter(s=>s.type=='TOOL-MENU');
+    const toolStyles = tDoc.childStylesOf(thought.id).filter(s=>s.type=='TOOL-MENU');
     assert.equal(toolStyles.length, 1);
     const toolStyle = toolStyles[0];
     const toolMenu: ToolMenu = toolStyle.data;

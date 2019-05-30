@@ -154,6 +154,10 @@ export class TDoc extends EventEmitter {
     return Object.values(this.thoughtMap);
   }
 
+  public childStylesOf(stylableId: StylableId): StyleObject[] {
+    return this.allStyles().filter(s=>(s.stylableId==stylableId));
+  }
+
   // find all children of given type and meaning
   public findChildStyleOfType(id: StylableId, type: StyleType, meaning?: StyleMeaning): StyleObject[] {
 
@@ -172,7 +176,7 @@ export class TDoc extends EventEmitter {
 
     // DANGER! this makes this function asymptotic quadratic or worse...
     // now for each kid, recurse...
-    const kids = this.stylesAttachedTo(id);
+    const kids = this.childStylesOf(id);
     for(const k of kids) {
       const kmatch = this.findChildStyleOfType(k.id, type, meaning);
       for(let km of kmatch) { rval.push(km); }
@@ -261,11 +265,7 @@ export class TDoc extends EventEmitter {
   // This can be asymptotically improved later.
   public stylableHasChildOfType(style: StyleObject, tname: StyleType, meaning?: StyleMeaning): boolean {
     const id = style.id;
-    return !!this.stylesAttachedTo(id).find(s => s.type == tname && (!meaning || s.meaning == meaning));
-  }
-
-  public stylesAttachedTo(stylableId: StylableId): StyleObject[] {
-    return this.allStyles().filter(s=>(s.stylableId==stylableId));
+    return !!this.childStylesOf(id).find(s => s.type == tname && (!meaning || s.meaning == meaning));
   }
 
   public summaryPrinter(): string {
@@ -324,7 +324,7 @@ export class TDoc extends EventEmitter {
     for(const relationship of relationships) { this.deleteRelationship(relationship.id); }
 
     // Delete any styles attached to this style
-    const styles = this.stylesAttachedTo(styleId);
+    const styles = this.childStylesOf(styleId);
     for(const style of styles) { this.deleteStyle(style.id); }
 
     // Delete the style itself and emit a change event.
@@ -340,7 +340,7 @@ export class TDoc extends EventEmitter {
     for(const relationship of relationships) { this.deleteRelationship(relationship.id); }
 
     // Delete any styles attached to this style
-    const styles = this.stylesAttachedTo(thoughtId);
+    const styles = this.childStylesOf(thoughtId);
     for(const style of styles) { this.deleteStyle(style.id); }
 
     // Delete the style itself and emit a change event.
