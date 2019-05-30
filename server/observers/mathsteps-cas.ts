@@ -77,7 +77,7 @@ function onUseTool(tDoc: TDoc, _thoughtId: ThoughtId, _source: StyleSource, info
                           mathsteps.simplifyExpression(style.data) :
                           mathsteps.solveEquation(style.data));
   const data: string = `<pre>\n${formatSteps(steps)}</pre>`;
-  const thought = tDoc.insertThought({});
+  const thought = tDoc.insertThought({}, -1);
   tDoc.insertStyle(thought, { type: 'HTML', meaning: 'EXPOSITION', source: 'MATHSTEPS', data });
   // TODO: Add a relationship between this thought and the original thought.
   // TODO: If original thought changes, then remove/update this simplification.

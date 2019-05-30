@@ -391,7 +391,7 @@ async function onUseTool(tDoc: TDoc, _thoughtId: ThoughtId, _source: StyleSource
     // does not elegantly render styles.  Making this independent
     // will look nice in the short term, but loses an important connection
     // between the systems.
-    const th = tDoc.insertThought({});
+    const th = tDoc.insertThought({}, -1);
     var imageStyle =
         tDoc.insertStyle(th,{ type: 'IMAGE',
                                  data: urlPath+"/"+fn,

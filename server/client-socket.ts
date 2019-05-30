@@ -28,7 +28,7 @@ import * as WebSocket from 'ws';
 // TODO: Handle websocket lifecycle: closing, unexpected disconnects, errors, etc.
 
 import { ClientMessage, NotebookChange, NotebookName, NotebookPath, ServerMessage,
-         ThoughtId, ThoughtProperties, StyleSource, ToolInfo, StylePropertiesWithSubprops, ThoughtObject, StyleObject, NotebookChanged, ThoughtInserted, StyleInserted, StylableId } from '../client/math-tablet-api';
+         ThoughtId, StyleSource, ToolInfo, StylePropertiesWithSubprops, ThoughtObject, StyleObject, NotebookChanged, ThoughtInserted, StyleInserted, StylableId, InsertThought } from '../client/math-tablet-api';
 
 import { PromiseResolver } from './common';
 // REVIEW: This file should not be dependent on any specific observers.
@@ -208,7 +208,7 @@ export class ClientSocket {
         if (!tDoc) { throw new Error(`Client Socket unknown notebook: ${msg.action} ${msg.notebookName}`); }
         switch(msg.action) {
         case 'deleteThought':  this.cmDeleteThought(tDoc, msg.thoughtId); break;
-        case 'insertThought':  this.cmInsertThought(tDoc, msg.thoughtProps, msg.stylePropss); break;
+        case 'insertThought':  this.cmInsertThought(tDoc, msg); break;
         case 'useTool': this.cmUseTool(tDoc, msg.thoughtId, msg.source, msg.info); break;
 	      default: {
           console.error(`Client Socket: unexpected WebSocket message action ${(<any>msg).action}. Ignoring.`);
@@ -231,9 +231,9 @@ export class ClientSocket {
     tDoc.deleteThought(thoughtId);
   }
 
-  private cmInsertThought(tDoc: TDoc, thoughtProps: ThoughtProperties, stylePropss: StylePropertiesWithSubprops[]): void {
-    const thought = tDoc.insertThought(thoughtProps);
-    for (const styleProps of stylePropss) {
+  private cmInsertThought(tDoc: TDoc, msg: InsertThought): void {
+    const thought = tDoc.insertThought(msg.thoughtProps, msg.afterId);
+    for (const styleProps of msg.stylePropss) {
       insertStyleRecursive(tDoc, thought, styleProps);
     }
   }

@@ -76,6 +76,7 @@ export class Notebook {
   public insertThought(thoughtProps: ThoughtProperties, stylePropss: StylePropertiesWithSubprops[]): void {
     const msg: InsertThought = {
       action: 'insertThought',
+      afterId: -1,
       notebookName: this.notebookName,
       thoughtProps,
       stylePropss,

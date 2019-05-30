@@ -41,13 +41,13 @@ describe('tdoc', function() {
     });
     it('tdocs can add and retrieve a thought', function() {
       let td0 = TDoc.createAnonymous();
-      let th = td0.insertThought({});
+      let th = td0.insertThought({}, -1);
       assert.equal(td0.allThoughts().length, 1);
       assert.equal(td0.allThoughts()[0].id, th.id);
     });
     it('a thought can add and retrieve a style', function() {
       let td0 = TDoc.createAnonymous();
-      let th = td0.insertThought({});
+      let th = td0.insertThought({}, -1);
       let st = td0.insertStyle(th, { type: 'TEXT', data: "spud boy", meaning: 'INPUT', source: 'TEST' });
       assert.equal(td0.allThoughts().length, 1);
       assert.equal(td0.allThoughts()[0].id, th.id);
@@ -56,7 +56,7 @@ describe('tdoc', function() {
     });
     it('a style with a source can be added', function() {
       let td0 = TDoc.createAnonymous();
-      let th = td0.insertThought({});
+      let th = td0.insertThought({}, -1);
       let st = td0.insertStyle(th, { type: 'TEXT', data: "spud boy", meaning: 'INPUT', source: 'TEST' });
       assert.equal(td0.allThoughts().length, 1);
       assert.equal(td0.allThoughts()[0].id, th.id);
@@ -113,7 +113,7 @@ function createTDocFromText(type: 'MATHJS'|'TEXT', text: string): TDoc {
   const td =  TDoc.createAnonymous();
   const ths = text.split(";").map(s=>s.trim());
   for (text of ths) {
-    const th = td.insertThought({});
+    const th = td.insertThought({}, -1);
     switch(type){
     case 'TEXT':
       td.insertStyle(th, { type: 'TEXT', data: text, meaning: 'INPUT', source: 'TEST' });

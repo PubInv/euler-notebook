@@ -61,7 +61,7 @@ export interface TDocOptions {
 const DEFAULT_OPTIONS: TDocOptions = { anonymous: false };
 const SAVE_TIMEOUT_MS = 5000;
 
-const VERSION = "0.0.5";
+const VERSION = "0.0.6";
 
 // REVIEW: Are there other event emitters in our project that need similar declarations?
 // See https://stackoverflow.com/questions/39142858/declaring-events-in-a-typescript-class-which-extends-eventemitter
@@ -160,9 +160,10 @@ export class TDoc extends EventEmitter {
     return Object.values(this.styleMap);
   }
 
+  // Returns all thoughts in notebook order
   // REVIEW: Return an iterator?
   public allThoughts(): ThoughtObject[] {
-    return Object.values(this.thoughtMap);
+    return this.thoughtOrder.map(id=>this.thoughtMap[id]);
   }
 
   public childStylesOf(stylableId: StylableId): StyleObject[] {
@@ -327,18 +328,25 @@ export class TDoc extends EventEmitter {
 
   // Deletes the specified thought and any styles attached to it recursively.
   // Emits TDoc 'change' events in a depth-first postorder.
-  public deleteThought(thoughtId: ThoughtId): void {
+  public deleteThought(id: ThoughtId): void {
+    this.assertNotClosed('deleteThought');
 
     // Delete any relationships attached to this thought.
-    const relationships = this.relationshipsOf(thoughtId);
+    const relationships = this.relationshipsOf(id);
     for(const relationship of relationships) { this.deleteRelationship(relationship.id); }
 
     // Delete any styles attached to this style
-    const styles = this.childStylesOf(thoughtId);
+    const styles = this.childStylesOf(id);
     for(const style of styles) { this.deleteStyle(style.id); }
 
-    // Delete the style itself and emit a change event.
-    this.deleteThoughtEntryAndEmit(thoughtId);
+    // Delete the thought itself and emit a change event.
+    const thought = this.thoughtMap[id];
+    if (!thought) { throw new Error(`Deleting unknown thought ${id}`); }
+    const i = this.thoughtOrder.indexOf(id);
+    this.thoughtOrder.splice(i,1);
+    delete this.thoughtMap[id];
+    const change: NotebookChange = { type: 'thoughtDeleted', thoughtId: id };
+    this.notifyChange(change);
   }
 
   public insertRelationship(
@@ -366,11 +374,21 @@ export class TDoc extends EventEmitter {
     return style;
   }
 
-  public insertThought(props: ThoughtProperties): ThoughtObject {
+  // afterId: ID of thought to insert after or 0 for beginning, or -1 for end.
+  public insertThought(props: ThoughtProperties, afterId: ThoughtId): ThoughtObject {
     this.assertNotClosed('insertThought');
     const thought: ThoughtObject = { ...props, id: this.nextId++ };
     debug(`inserting thought ${JSON.stringify(thought)}`)
     this.thoughtMap[thought.id] = thought;
+    if (afterId===0) {
+      this.thoughtOrder.unshift(thought.id);
+    } else if (afterId===-1) {
+      this.thoughtOrder.push(thought.id);
+    } else {
+      const i = this.thoughtOrder.indexOf(afterId);
+      if (i<0) { throw new Error(`Cannot insert thought after unknown thought ${afterId}`); }
+      this.thoughtOrder.splice(i+1, 0, thought.id);
+    }
     const change: NotebookChange = { type: 'thoughtInserted', thought: thought };
     this.notifyChange(change);
     return thought;
@@ -415,6 +433,7 @@ export class TDoc extends EventEmitter {
     this.relationshipMap = {};
     this.styleMap = {};
     this.thoughtMap = {};
+    this.thoughtOrder = [];
     this.version = VERSION;
     this._path = notebookPath;
     this._options = { ...DEFAULT_OPTIONS, ...options };
@@ -426,6 +445,8 @@ export class TDoc extends EventEmitter {
   private relationshipMap: RelationshipMap;
   private styleMap: StyleMap;
   private thoughtMap: ThoughtMap;
+  private thoughtOrder: ThoughtId[];
+
   // NOTE: Properties with an underscore prefix are not persisted.
   private _closed?: boolean;
   private _options: TDocOptions;
@@ -466,17 +487,6 @@ export class TDoc extends EventEmitter {
     if (!style) { throw new Error(`Deleting unknown style ${id}`); }
     delete this.styleMap[id];
     const change: NotebookChange = { type: 'styleDeleted', styleId: id, stylableId: style.stylableId };
-    this.notifyChange(change);
-  }
-
-  // Delete a specific thought entry and emits a 'change' event.
-  // IMPORTANT: All attached styles should be deleted first!
-  private deleteThoughtEntryAndEmit(id: ThoughtId): void {
-    this.assertNotClosed('deleteThoughtEntryAndEmit');
-    const thought = this.thoughtMap[id];
-    if (!thought) { throw new Error(`Deleting unknown thought ${id}`); }
-    delete this.thoughtMap[id];
-    const change: NotebookChange = { type: 'thoughtDeleted', thoughtId: id };
     this.notifyChange(change);
   }
 

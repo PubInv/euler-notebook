@@ -233,6 +233,7 @@ export interface InsertThought {
   notebookName: NotebookName;
   thoughtProps: ThoughtProperties;
   stylePropss: StylePropertiesWithSubprops[];
+  afterId: ThoughtId; // or 0, -1.
 }
 
 export interface OpenNotebook {

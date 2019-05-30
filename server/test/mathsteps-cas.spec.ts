@@ -159,7 +159,7 @@ describe('mathsteps-cas', function(){
 
     // Create a thought with a MathJS expression input style.
     const tDoc = TDoc.createAnonymous();
-    const thought = tDoc.insertThought({});
+    const thought = tDoc.insertThought({}, -1);
     const styleProps: StyleProperties = { type: 'MATHJS', meaning: 'INPUT', source: 'USER', data: EXPR1 };
     const style = tDoc.insertStyle(thought, styleProps);
 
@@ -191,7 +191,7 @@ describe('mathsteps-cas', function(){
 
     // Create a thought with a MathJS expression input style.
     const tDoc = TDoc.createAnonymous();
-    const thought = tDoc.insertThought({});
+    const thought = tDoc.insertThought({}, -1);
     const styleProps: StyleProperties = { type: 'MATHJS', meaning: 'INPUT', source: 'USER', data: EQUA1 };
     const style = tDoc.insertStyle(thought, styleProps);
 
