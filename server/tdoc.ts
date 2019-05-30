@@ -418,9 +418,9 @@ export class TDoc extends EventEmitter {
     super();
 
     this.nextId = 1;
-    this.relationshipMap = [];
-    this.styleMap = [];
-    this.thoughtMap = [];
+    this.relationshipMap = {};
+    this.styleMap = {};
+    this.thoughtMap = {};
     this.version = VERSION;
     this._path = notebookPath;
     this._options = { ...DEFAULT_OPTIONS, ...options };
