@@ -12,6 +12,7 @@
     "verify": "npm run clean && npm install && npm run check-types && npm test && npm start"
   },
   "dependencies": {
+    "@types/uuid": "^3.4.4",
     "cookie-parser": "~1.4.3",
     "debug": "^4.1.1",
     "express": "~4.16.0",

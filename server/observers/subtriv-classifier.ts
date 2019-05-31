@@ -29,6 +29,9 @@ import { TDoc } from '../tdoc';
 import { execute, constructSubstitution } from './wolframscript';
 import { runAsync } from '../common';
 import { Config } from '../config';
+// import * as uuid from 'uuid-js';
+// import uuid = require('uuid');
+import { v4 as uuid } from 'uuid';
 
 // Exports
 
@@ -88,29 +91,16 @@ async function isExpressionSubTrivariate(expr : string,
   const script = "runPrivate[" + unwrapped_script + "]";
   debug("EXPRESSION FOR CLASSIFIFYING: ",script );
   let result : string = await execute(script);
-  return (result == "False") ? null : result.replace(/\{|\}/g,"").split(",");
+  if (result == "False") {
+    return null;
+  } else {
+    let trimmed = result.replace(/\{|\}/g,"").split(",");
+    trimmed = trimmed.map(s => s.trim());
+    return trimmed;
+  }
 }
 
 
-// // Return "null" if it does not seem to be a quadratic, and the name
-// // of the variable (which must be unique to pass this test) if it is.
-// async function isExpressionPlottableQuadratic(expr : string,
-//                                               usedSymbols: StyleObject[])
-// : Promise<string|null> {
-//   const quadratic_function_script = `With[{v = Variables[#]},If[(Length[v] == 1) && (Exponent[#, v[[1]]] == 2), v[[1]], False]]`;
-//   ;
-//   const sub_expr =
-//         constructSubstitution(expr,
-//                               usedSymbols.map(
-//                                 s => ({ name: s.data.name,
-//                                         value: s.data.value})));
-
-//   const unwrapped_script = quadratic_function_script+" &[" + sub_expr + "]";
-//   const script = "runPrivate[" + unwrapped_script + "]";
-//   debug("EXPRESSION FOR CLASSIFIFYING: ",script );
-//   let result : string = await execute(script);
-//   return (result == "False") ? null : result;
-// }
 
 export async function subtrivariateClassifierRule(tdoc: TDoc, style: StyleObject): Promise<StyleObject[]> {
   if (style.type != 'MATHEMATICA' || style.meaning != 'EVALUATION') { return []; }
@@ -155,100 +145,6 @@ export async function subtrivariateClassifierRule(tdoc: TDoc, style: StyleObject
   }
   return styles;
 }
-
-
-// export async function quadClassifierRule(tdoc: TDoc, style: StyleObject): Promise<StyleObject[]> {
-//   if (style.type != 'MATHEMATICA' || style.meaning != 'EVALUATION') { return []; }
-//   // debug("INSIDE QUAD CLASSIFIER :",style);
-
-//   var isPlottableQuadratic;
-//   try {
-//     // here I attempt to find the dependency relationships....
-//     const rs = tdoc.getSymbolStylesIDependOn(style);
-//     debug("RS ",rs);
-//     // Now each member of rs should have a name and a value
-//     // that we should use in our quadratic classification....
-//     isPlottableQuadratic = await isExpressionPlottableQuadratic(style.data,rs);
-//     // debug("QUAD CLASSIFER SAYS:",isPlottableQuadratic);
-//   } catch (e) {
-//     debug("MATHEMATICA EVALUATION FAILED :",e);
-//     return [];
-//   }
-
-//   var styles = [];
-//   if (isPlottableQuadratic) {
-//     var classification = tdoc.insertStyle(style, { type: 'CLASSIFICATION',
-//                                            data: isPlottableQuadratic,
-//                                            meaning: 'UNIVARIATE-QUADRATIC',
-//                                            source: 'MATHEMATICA' });
-
-//     styles.push(classification);
-//   }
-//   return styles;
-// }
-// export async function quadClassifierChangedRule(tdoc: TDoc, relationship: RelationshipObject): Promise<void> {
-
-//   if (relationship.meaning != 'SYMBOL-DEPENDENCY') return;
-
-//   debug("RELATIONSHIP",relationship);
-
-//   const target_ancestor = tdoc.getAncestorThought(relationship.targetId);
-
-//   if (target_ancestor == null) {
-//     throw new Error("Could not find ancestor Thought: "+relationship.targetId);
-//   }
-
-//   // now we want to find any potentially (re)classifiable style on
-//   // this ancestor thought...
-
-//   const candidate_styles =
-//         tdoc.findChildStyleOfType(target_ancestor.id,'MATHEMATICA','EVALUATION');
-//   debug("candidate styles",candidate_styles);
-//   // Not really sure what to do here if there is more than one!!!
-
-//   const beforeChangeClassifiedAsQuadratic = tdoc.stylableHasChildOfType(candidate_styles[0],'CLASSIFICATION','UNIVARIATE-QUADRATIC');
-//   debug(beforeChangeClassifiedAsQuadratic);
-
-//   // Now it is possible that any classifications need to be removed;
-//   // it is also possible that that a new classification should be added.
-
-//   // A simple thing would be to rmove all classifications and regenerate.
-//   // However, we want to be as minimal as possible. I think we shold distinguish
-//   // the case: Either we are adding a UNIVARIATE-QUADRATIC, or disqalifying one.
-//   // So we should just check if this EVALAUTION is plottable. If so, we
-//   // should make sure one exists, by adding a CLASSIFICATION if it does not.
-//   // if one does exist, we whold remove it if we are not.
-//   const unique_style = candidate_styles[0];
-
-//   var isPlottableQuadratic;
-//   try {
-//     // here I attempt to find the dependency relationships....
-//     const rs = tdoc.getSymbolStylesIDependOn(unique_style);
-//     debug("RS ",rs);
-//     // Now each member of rs should have a name and a value
-//     // that we should use in our quadratic classification....
-//     isPlottableQuadratic = await isExpressionPlottableQuadratic(unique_style.data,rs);
-//     debug("QUAD CLASSIFER SAYS:",isPlottableQuadratic);
-//   } catch (e) {
-//     debug("MATHEMATICA EVALUATION FAILED :",e);
-//   }
-//   debug("IS PLOTTABLE",isPlottableQuadratic);
-//   debug("IS BEFOREQUDRATIC",beforeChangeClassifiedAsQuadratic);
-//   if (isPlottableQuadratic && !beforeChangeClassifiedAsQuadratic) {
-//     tdoc.insertStyle(unique_style, { type: 'CLASSIFICATION',
-//                                            data: isPlottableQuadratic,
-//                                            meaning: 'UNIVARIATE-QUADRATIC',
-//                                            source: 'MATHEMATICA' });
-
-//   }
-//     if (!isPlottableQuadratic && beforeChangeClassifiedAsQuadratic) {
-//         debug("CHOOSING DELETION");
-//     const classifcations =
-//           tdoc.findChildStyleOfType(target_ancestor.id,'CLASSIFICATION','UNIVARIATE-QUADRATIC');
-//     tdoc.deleteStyle(classifcations[0].id);
-//   }
-// }
-
 
 export async function subTrivariateClassifierChangedRule(tdoc: TDoc, relationship: RelationshipObject): Promise<void> {
 
@@ -343,7 +239,9 @@ async function onUseTool(tDoc: TDoc, _thoughtId: ThoughtId, _source: StyleSource
 
   const targetPath = "./public/tmp";
   const urlPath = "/tmp";
-  const fn = "quadplot" + style.id + ".gif";
+  var uuid4 = uuid();
+  debug(uuid4);
+  const fn = "quadplot" + style.id + '-' + uuid4 + ".gif";
   const full_filename = targetPath + "/" + fn;
 
   // The parent of this style will be the MATHETMATICA/ EVALUATION
@@ -359,10 +257,9 @@ async function onUseTool(tDoc: TDoc, _thoughtId: ThoughtId, _source: StyleSource
     // but the rs map may have allowed some to be defined, and these must
     // be removed.
     let variables: string[] = [];
-   for(var s in style.data) {
+    for(var s in style.data) {
       variables.push(style.data[s]);
     }
-//    style.data.map(s => (variables.push(s.data.name)));
 
     debug("variables, pre-process",variables);
     const sub_expr =
