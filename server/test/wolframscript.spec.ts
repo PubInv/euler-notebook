@@ -132,9 +132,6 @@ describe("wolframscript", function(){
 
 const MATHML_TEST_CASES = [
   ["<math xmlns='http://www.w3.org/1998/Math/MathML'>  <mi> x </mi>  <mo> = </mo>  <mn> 4 </mn></math>",
-   // for some completely unknown wacky reason, "execute" is returning
-   // the result parenthesized and with a trailing quote mark!
-   // This does not seem to happen when from interactively
    'HoldComplete[x = 4]'],
 
   ["<math xmlns='http://www.w3.org/1998/Math/MathML'>  <mi> a </mi>  <mo> = </mo>  <mi> b </mi>  <mo> + </mo>  <mi> c </mi></math>",
@@ -175,6 +172,56 @@ describe("wolframscriptmathml", function(){
       assert.equal(r1, 'Hello,');
       assert.equal(r2, 'World!');
     });
+
+
+    after("stopping", async function(){
+      if (gWolframStarted) {
+        await stop();
+      }
+    });
+});
+
+// This is an attempt to make a simple boolean test
+// of whether two expressions are the same or not.
+const EQUIVALENCE_TEST_CASES = [
+  ['x',
+   'x',
+   'true'],
+  ['x',
+   'y',
+   'false'],
+  ['x^2 + x^2',
+   '2x^2',
+   'true'],
+];
+
+
+async function checkEquiv(a:string, b:string) : Promise<boolean> {
+  const wrapped = `FullSimplify[${a} == ${b}]`;
+  const result = await execute(wrapped);
+  return (result == 'True');
+}
+describe("wolframscriptequivalence", function(){
+
+  let gWolframStarted: boolean = false;
+    this.timeout(10*1000);
+
+    before("starting", async function(){
+      await start({});
+      gWolframStarted = true;
+    });
+
+  for (const [a,b, expected] of EQUIVALENCE_TEST_CASES) {
+      const label = (a.length<=20 ?
+        `checks equivalence ${a} ${b}` :
+        `checks equivalend ${a.slice(0,20)} ${b.slice(0,20)}...`
+      )
+      it(label, async function(){
+        const results = await checkEquiv(a,b);
+        assert.equal(results, expected == 'true');
+      });
+    }
+
 
 
     after("stopping", async function(){
