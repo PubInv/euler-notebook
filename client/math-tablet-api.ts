@@ -57,6 +57,7 @@ export type StyleMeaning =
   'SYMBOL' |          // Symbols extracted from an expression.
   'SYMBOL-DEFINITION'|// Definition of a symbol.
   'SYMBOL-USE' |      // Use of a symbol.
+  'EQUIVALENT-CHECKS'|// Checking expression equivalence of with other stylables
   'UNIVARIATE-QUADRATIC'|// A quadratic expression, presumably worth plotting.
   'SUBTRIVARIATE';    // An expression in one or two variables presumable plottable.
 
@@ -73,6 +74,7 @@ export type StyleMeaning =
   'SYMBOL' |          // SymbolData: symbol in a definition or expression.
   'TEXT' |            // TextData: Plain text
   'TOOL-MENU' |       // ToolMenu: Menu of tools that an observer can apply to a thought.
+  'BOOLEAN-MAP' |       // An object mapping stylable ids into boolean
   'WOLFRAM';          // WolframData: Wolfram language expression
 
   export type StyleSource =

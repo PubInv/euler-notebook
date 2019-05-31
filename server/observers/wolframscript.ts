@@ -227,3 +227,9 @@ export function draftChangeContextName(expr: string,_ctx = OUR_PRIVATE_CTX_NAME)
   // figure out how to make this a variable
   return expr.replace(/runPrv`/g,'');
 }
+
+export async function checkEquiv(a:string, b:string) : Promise<boolean> {
+  const wrapped = `FullSimplify[${a} == ${b}]`;
+  const result = await execute(wrapped);
+  return (result == 'True');
+}

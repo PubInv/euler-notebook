@@ -24,10 +24,10 @@ const MODULE = __filename.split('/').slice(-1)[0].slice(0,-3);
 const debug = debug1(`server:${MODULE}`);
 
 // import { MthMtcaText } from '../client/math-tablet-api';
-import { StyleObject, NotebookChange } from '../../client/math-tablet-api';
+import { StyleObject, NotebookChange, StyleProperties, ToolMenu, ToolInfo,
+         StyleSource,ThoughtId } from '../../client/math-tablet-api';
 import { TDoc } from '../tdoc';
-import { execute } from './wolframscript';
-// import { draftChangeContextName } from './wolframscript';
+import { execute, constructSubstitution, checkEquiv } from './wolframscript';
 import * as fs from 'fs';
 import { runAsync } from '../common';
 import { Config } from '../config';
@@ -38,12 +38,117 @@ export async function initialize(_config: Config): Promise<void> {
   debug(`initializing`);
   TDoc.on('open', (tDoc: TDoc)=>{
     tDoc.on('change', function(this: TDoc, change: NotebookChange){ onChange(this, change); });
+
+    tDoc.on('useTool', function(this: TDoc, thoughtId: ThoughtId, source: StyleSource, info: ToolInfo){
+      onUseTool(this, thoughtId, source, info);
+    });
+
     tDoc.on('close', function(this: TDoc){ onClose(this); });
     onOpen(tDoc);
   });
 }
 
 // Private Functions
+
+async function onUseTool(tDoc: TDoc, _thoughtId: ThoughtId, _source: StyleSource, info: ToolInfo):  Promise<void> {
+  if (info.name != 'checkeqv') return;
+  debug("INSIDE onUSE BEGIN :");
+  debug("INSIDE onUSE CHECKEQV :",info.data.styleId);
+
+  const style = tDoc.getStyleById(info.data.styleId);
+  debug("MAIN STTYLE",style);
+
+  // We are apply this rule to top level expressions, so
+  // we style a thought---which is rather confusing.
+//  const parent = tDoc.getThoughtById(style.stylableId);
+//  debug("PARENT STTYLE",style);
+  const rs = tDoc.getSymbolStylesIDependOn(style);
+  debug("RS",rs);
+  // TODO: Possibly this basic functionality should be moved to
+  // common usage, since it is now used in more than one place.
+  try {
+    // Now style.data contains the variables in the expression "parent.data",
+    // but the rs map may have allowed some to be defined, and these must
+    // be removed.
+    let variables: string[] = [];
+    for(var s in style.data) {
+      variables.push(style.data[s]);
+    }
+
+    debug("variables, pre-process",variables);
+    const sub_expr =
+          constructSubstitution(style.data,
+                                rs.map(
+                                  s => {
+                                    variables = variables.filter(ele => (
+                                      ele != s.data.name));
+                                    return { name: s.data.name,
+                                             value: s.data.value};
+                                  }
+                                ));
+    debug("variables, post-process",variables);
+    debug("sub_expr",sub_expr);
+
+    //    createdPlotSuccessfully = await plotSubtrivariate(sub_expr,variables,full_filename);
+
+    // Now we must ask the question: how do we intend to operate and how to
+    // produce our data?
+    // I propose we produce an object, whose keys are style ids of
+    // styles which are wolfram expressions, and whose values are booleans
+    // (true if equivalent).
+    // Since at present we do not have a convenient relationship structure
+    // representing a calculation or proof, I will simply check ALL
+    // expressions.
+    const parentThought =  tDoc.getAncestorThought(style.id);
+
+    const expressions = tDoc.allStyles().filter(
+      (s: StyleObject, _index: number, _array: StyleObject[]) => {
+        const anc = tDoc.getAncestorThought(s.id);
+        if (anc == parentThought) return false;
+        else {
+          debug(s);
+          debug(((s.type == 'WOLFRAM') && (s.meaning == 'INPUT' || s.meaning == 'INPUT-ALT')));
+          return ((s.type == 'WOLFRAM') && (s.meaning == 'INPUT' || s.meaning == 'INPUT-ALT'));
+        }
+      });
+    debug("expressions",expressions);
+    // Now I will try to build a table...
+
+    interface IStylableToBooleanMap
+    {
+      [key: number]: boolean;
+    }
+
+    const expressionEquivalence : IStylableToBooleanMap = {};
+    for (var exp of expressions) {
+      const expressID : number = exp.id;
+      try {
+        const equiv = await checkEquiv(style.data,exp.data);
+        debug("exp id",exp.id);
+        expressionEquivalence[expressID] = equiv;
+      } catch (e) {
+        debug("error evaluting equivalentce",e);
+        expressionEquivalence[expressID] = false;
+      }
+
+    }
+    debug("expressions",expressionEquivalence);
+    for(var key in expressionEquivalence) {
+      debug("key,value",key,expressionEquivalence[key]);
+    }
+    // Now we will add this as a new style--at least we will be able to
+    // see it with Debug, and eventually can produce a GUI for it.
+    tDoc.insertStyle(style,{ type: 'BOOLEAN-MAP',
+                             data: expressionEquivalence,
+                             meaning: 'EQUIVALENT-CHECKS',
+                             source: 'MATHEMATICA' })
+
+  } catch (e) {
+    debug("MATHEMATICA Check Equivalence :",e);
+    return;
+  }
+}
+
 
 function onChange(tDoc: TDoc, change: NotebookChange): void {
   switch (change.type) {
@@ -154,6 +259,20 @@ export async function mathMathematicaRule(tdoc: TDoc, style: StyleObject): Promi
                                            source: 'MATHEMATICA' });
 
     styles.push(exemplar);
+
+    const toolMenu: ToolMenu = [
+      { name: 'checkeqv',
+        html: "Check Equivalences",
+        data: { styleId: style.id }
+      }
+    ]
+    const styleProps: StyleProperties = {
+      type: 'TOOL-MENU',
+      meaning: 'ATTRIBUTE',
+      source: 'MATHEMATICA',
+      data: toolMenu,
+    }
+    tdoc.insertStyle(style, styleProps);
   }
   return styles;
 }
@@ -178,8 +297,9 @@ async function convertMathMlToWolframRule(tdoc: TDoc, style: StyleObject): Promi
     if (results[1] == null) throw new Error("could not match pattern:"+data);
     const wolframexpr = results[1];
 
-    // REVIEW: Attach it to the thought instead of the style?
     tdoc.insertStyle(style, { type: 'WOLFRAM', source: 'MATHEMATICA', meaning: 'INPUT-ALT', data: wolframexpr });
+
+
   } catch(err) {
     tdoc.insertStyle(style, { type: 'TEXT', source: 'MATHEMATICA', meaning: 'EVALUATION-ERROR', data: `Cannot convert to Wolfram expression: ${err.message}` });
   }

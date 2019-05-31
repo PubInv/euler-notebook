@@ -32,7 +32,7 @@ TODO: Additional Test cases
 
 // Requirements
 
-import { execute, start, stop } from '../observers/wolframscript';
+import { execute, start, stop, checkEquiv } from '../observers/wolframscript';
 
 // import { expect } from 'chai';
 import { assert } from 'chai';
@@ -196,11 +196,6 @@ const EQUIVALENCE_TEST_CASES = [
 ];
 
 
-async function checkEquiv(a:string, b:string) : Promise<boolean> {
-  const wrapped = `FullSimplify[${a} == ${b}]`;
-  const result = await execute(wrapped);
-  return (result == 'True');
-}
 describe("wolframscriptequivalence", function(){
 
   let gWolframStarted: boolean = false;
@@ -221,8 +216,6 @@ describe("wolframscriptequivalence", function(){
         assert.equal(results, expected == 'true');
       });
     }
-
-
 
     after("stopping", async function(){
       if (gWolframStarted) {

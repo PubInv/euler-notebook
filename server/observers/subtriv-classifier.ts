@@ -39,11 +39,12 @@ export async function initialize(_config: Config): Promise<void> {
   debug(`initializing`);
   TDoc.on('open', (tDoc: TDoc)=>{
     tDoc.on('change', function(this: TDoc, change: NotebookChange){ onChange(this, change); });
-    tDoc.on('useTool', function(this: TDoc, thoughtId: ThoughtId, source: StyleSource, info: ToolInfo){
 
+    tDoc.on('useTool', function(this: TDoc, thoughtId: ThoughtId, source: StyleSource, info: ToolInfo){
       debug("RESPONDING UNTIL USETOOL");
       onUseTool(this, thoughtId, source, info);
     });
+
     tDoc.on('close', function(this: TDoc){ onClose(this); });
     onOpen(tDoc);
   });
