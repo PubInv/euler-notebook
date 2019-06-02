@@ -19,10 +19,8 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 // Requirements
 
-import { join } from 'path';
-
 import * as debug1 from 'debug';
-const MODULE = __filename.split('/').slice(-1)[0].slice(0,-3);
+const MODULE = __filename.split(/[/\\]/).slice(-1)[0].slice(0,-3);
 const debug = debug1(`server:${MODULE}`);
 
 import { NextFunction, Request, Response, Router } from 'express';
@@ -90,7 +88,6 @@ async function onDashboard(req: Request, res: Response) {
   try {
 
     if (req.method == 'POST') {
-      console.dir(req.body);
       const action = req.body.action;
       switch(action) {
       case 'closeClient': {
@@ -150,7 +147,6 @@ async function onFolderPage(req: Request, res: Response, _next: NextFunction): P
 
     const { notebooks, folders } = await getListOfNotebooksAndFoldersInFolder(path);
     const locals = { folders, messages, notebooks, pathSegments };
-    // console.dir(locals);
     res.render('folder', locals);
 
   } catch(err) {
@@ -161,16 +157,14 @@ async function onFolderPage(req: Request, res: Response, _next: NextFunction): P
 async function onNotebookPage(req: Request, res: Response, next: NextFunction): Promise<void> {
   const notebookPath = req.path;
   try {
-    const pathSegments = notebookPath == '/' ? [] : notebookPath.slice(1, -1).split('/');
+    const pathSegments = notebookPath.slice(1, -1).split('/');
     const notebookName = pathSegments.pop()!.slice(0, -5);
     if (!gCredentials) { gCredentials = await getCredentials(); }
     if (!isValidNotebookPath(notebookPath)) { return next(); }
     await TDoc.open(notebookPath, {/* default options */});
     const locals = { credentials: gCredentials, /* messages, */ notebookName, pathSegments };
-    // console.dir(locals);
     res.render('notebook', locals);
   } catch(err) {
-    console.dir(err);
     res.status(404).send(`Can't open notebook '${notebookPath}': ${err.message}`);
   }
 }
@@ -223,13 +217,11 @@ async function deleteSelected(body: FolderPageBody, _folderPath: FolderPath, mes
   return undefined;
 }
 
-
 function generateScratchNotebookName(): string {
   var d = new Date();
   const ymd = `${d.getFullYear()}${zeroPad(d.getMonth()+1)}${zeroPad(d.getDate())}`;
   const hms = `${zeroPad(d.getHours())}${zeroPad(d.getMinutes())}${zeroPad(d.getSeconds())}`;
   const rval: NotebookName = `scratch_${ymd}_${hms}`;
-  console.dir(rval);
   return rval;
 }
 
@@ -241,7 +233,7 @@ async function newFolder(body: FolderPageBody, folderPath: FolderPath, messages:
     messages.error.push(`Invalid folder name: '${folderName}'`);
     return undefined;
   }
-  const newFolderPath = join(folderPath, folderName) + '/';
+  const newFolderPath = `${folderPath}${folderName}/`;
   // REVIEW: Additional safety checks on folder path?
   await createFolder(newFolderPath);
   messages.success.push(`Folder '${folderName}' created successfully.`);

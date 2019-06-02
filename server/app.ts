@@ -26,7 +26,7 @@ import * as  createError from 'http-errors';
 import * as express from 'express';
 import * as cookieParser from 'cookie-parser';
 import * as debug1 from 'debug';
-const MODULE = __filename.split('/').slice(-1)[0].slice(0,-3);
+const MODULE = __filename.split(/[/\\]/).slice(-1)[0].slice(0,-3);
 const debug = debug1(`server:${MODULE}`);
 import * as morgan from 'morgan';
 import { middleware as stylusMiddleware } from 'stylus';

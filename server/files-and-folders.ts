@@ -24,7 +24,7 @@ import { join } from 'path';
 import { promisify } from 'util';
 
 import * as debug1 from 'debug';
-const MODULE = __filename.split('/').slice(-1)[0].slice(0,-3);
+const MODULE = __filename.split(/[/\\]/).slice(-1)[0].slice(0,-3);
 const debug = debug1(`server:${MODULE}`);
 import * as rimraf from 'rimraf';
 
@@ -44,8 +44,12 @@ const rimraf2 = promisify(rimraf);
 export type AbsDirectoryPath = string; // Absolute path to a directory in the file system.
 export type AbsFilePath = string; // Absolute path to a file in the file system.
 
-// Folder paths are always relative to root dir.
 export type FolderName = string;
+
+// Folder paths start with a slash, and are followed by zero or more
+// folder names, follewed by another slash. e.g. '/', '/foo/', or '/foo/bar/'
+// Note that we always use forward slash, even on Windows where the filesystem
+// separator is a backslash.
 export type FolderPath = string;
 
 interface FolderEntry {
@@ -72,8 +76,11 @@ const NOTEBOOK_DIR_SUFFIX_LEN = NOTEBOOK_DIR_SUFFIX.length;
 const NOTEBOOK_ENCODING = 'utf8';
 const NOTEBOOK_FILE_NAME = 'notebook.json';
 const ROOT_DIR_NAME = 'math-tablet-usr';
+const ROOT_DIR_PATH = join(process.env.HOME!, ROOT_DIR_NAME);
 
 // SECURITY: DO NOT ALLOW PERIODS IN FOLDER NAMES OR NOTEBOOK PATHS!!!
+// SECURITY REVIEW: Any danger in allowing backslashes or forward slashes?
+//         Maybe should customize the RE to the correct separator depending on the system.
 const FOLDER_NAME_RE = /^(\w+)$/;
 export const FOLDER_PATH_RE = /^\/(\w+\/)*$/;
 const NOTEBOOK_NAME_RE = /^(\w+)$/;
@@ -81,14 +88,15 @@ export const NOTEBOOK_PATH_RE = /^\/(\w+\/)*\w+\.mtnb\/$/;
 
 // Exported functions
 
-// Works on folder paths, too.
 export function absDirPathFromNotebookPath(notebookPath: FolderPath|NotebookPath): AbsDirectoryPath {
-  return join(rootDir(), notebookPath.slice(1, -1));
+  //(Slice is to remove the leading and trailing slashes.)
+  const pathSegments = notebookPath.slice(1, -1).split('/');
+  return join(ROOT_DIR_PATH, ...pathSegments);
 }
 
 export async function createFolder(folderPath: FolderPath): Promise<void> {
-  const fullPath = join(rootDir(), folderPath);
-  await mkdir2(fullPath);
+  const absPath = absDirPathFromNotebookPath(folderPath);
+  await mkdir2(absPath);
 }
 
 export async function deleteFolder(folderPath: FolderPath): Promise<undefined|string> {
@@ -100,40 +108,37 @@ export async function deleteFolder(folderPath: FolderPath): Promise<undefined|st
 }
 
 export async function deleteNotebook(notebookPath: NotebookPath): Promise<undefined|string> {
-  const path = absDirPathFromNotebookPath(notebookPath);
-  debug(`Deleting notebook directory ${path}`);
-  try { await rimraf2(path); }
+  const absPath = absDirPathFromNotebookPath(notebookPath);
+  debug(`Deleting notebook directory ${absPath}`);
+  try { await rimraf2(absPath); }
   catch(err) { return err.code; }
   return undefined;
 }
 
 // TYPESCRIPT: file path type?
-export async function getListOfNotebooksAndFoldersInFolder(path: FolderPath): Promise<NotebooksAndFolders> {
-  const rDir = rootDir();
-  const dirPath = join(rDir, path)
-  const names = await readdir2(dirPath);
-  const paths = names.map(n=>join(path, n));
-  const fullPaths = paths.map(p=>join(rDir, p));
-  const statss = await Promise.all(fullPaths.map(fp=>stat2(fp)));
-
+export async function getListOfNotebooksAndFoldersInFolder(folderPath: FolderPath): Promise<NotebooksAndFolders> {
+  const absPath = absDirPathFromNotebookPath(folderPath);
+  const names = await readdir2(absPath);
   const notebooks: NotebookEntry[] = [];
   const folders: FolderEntry[] = [];
 
-  for (let i=0; i < names.length; i++) {
-    const name = names[i];
-    const path = paths[i];
-    const stats = statss[i];
+  for (const name of names) {
 
+    // Skip hidden files and folders
     if (name.startsWith(".")) { /* skip hidden */ continue; }
-    if (!stats.isDirectory()) { /* skip non-directories */ continue; }
+
+    // Skip non-directories
+    const stats = await(stat2(join(absPath, name)));
+    if (!stats.isDirectory()) { continue; }
 
     // Notebooks are directories that end with .mtnb.
     // Folders are all other directories.
+    const path = `${folderPath}${name}/`;
     if (name.endsWith(NOTEBOOK_DIR_SUFFIX)) {
       const nameWithoutSuffix = name.slice(0, -NOTEBOOK_DIR_SUFFIX_LEN);
-      notebooks.push({ name: nameWithoutSuffix, path: path+'/' })
+      notebooks.push({ name: nameWithoutSuffix, path })
     } else {
-      folders.push({ name, path: path+'/' })
+      folders.push({ name, path })
     }
   }
   return { notebooks, folders };
@@ -156,7 +161,7 @@ export function isValidNotebookPath(notebookPath: NotebookPath): boolean {
 }
 
 export function notebookPathFromFolderPathAndName(folderPath: FolderPath, notebookName: NotebookName): NotebookPath {
-  return join(folderPath, notebookName + NOTEBOOK_DIR_SUFFIX) + '/';
+  return `${folderPath}${notebookName}${NOTEBOOK_DIR_SUFFIX}/`;
 }
 
 export async function readNotebookFile(notebookPath: NotebookPath): Promise<string> {
@@ -170,7 +175,7 @@ export async function readNotebookFile(notebookPath: NotebookPath): Promise<stri
 
 // REVIEW: Memoize or save in global?
 export function rootDir(): AbsDirectoryPath {
-  return join(homeDir(), ROOT_DIR_NAME);
+  return ROOT_DIR_PATH;
 }
 
 export async function writeNotebookFile(notebookPath: NotebookPath, json: string): Promise<void> {
@@ -185,12 +190,7 @@ export async function writeNotebookFile(notebookPath: NotebookPath, json: string
 // Helper Functions
 
 function absFilePathFromNotebookPath(notebookPath: NotebookPath): AbsFilePath {
-  return join(absDirPathFromNotebookPath(notebookPath), NOTEBOOK_FILE_NAME);
-}
-
-function homeDir(): AbsDirectoryPath {
-  const rval = process.env.HOME;
-  if (!rval) { throw new Error("HOME environment variable not set."); }
-  return rval;
+  const absPath = absDirPathFromNotebookPath(notebookPath);
+  return join(absPath, NOTEBOOK_FILE_NAME);
 }
 

@@ -35,8 +35,14 @@ export interface SymbolData {
   value?: string;
 }
 
-export type NotebookName = string; // Just the name of the notebook, no .mtnb extension.
-export type NotebookPath = string; // relative path from ~/math-tablet-usr/ plus name plus .mtnb extension.
+// Just the name of the notebook, no .mtnb extension.
+export type NotebookName = string; 
+
+// Notebook paths are a FolderPath (see files-and-folders.ts) followed by a NotebookName,
+// then a '.mtnb' extension, and a slash.
+// Note that we always use forward slash, even on Windows where the filesystem
+// separator is a backslash.
+export type NotebookPath = string; 
 
 export type RelationshipMeaning =
   'SYMBOL-DEPENDENCY';

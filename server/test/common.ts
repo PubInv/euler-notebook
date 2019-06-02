@@ -20,7 +20,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 // Requirements
 
 // import * as debug1 from 'debug';
-// const MODULE = __filename.split('/').slice(-1)[0].slice(0,-3);
+// const MODULE = __filename.split(/[/\\]/).slice(-1)[0].slice(0,-3);
 // const debug = debug1(`server:${MODULE}`);
 
 import { assert } from 'chai';
