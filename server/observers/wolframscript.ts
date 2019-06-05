@@ -29,7 +29,7 @@ import { Config } from '../config';
 
 // Types
 
-interface NVPair { name: string; value: string }
+export interface NVPair { name: string; value: string }
 
 // Constants
 
@@ -124,7 +124,7 @@ export function constructSubstitution(expr: string,usedVariables: NVPair[]) {
   if (rules.length > 0) {
     const rulestring = rules.join(",");
     debug("RULESTRING",rulestring);
-    sub_expr = expr + " /. " + "{ " + rulestring + " }";
+    sub_expr = "(" + expr + " /. " + "{ " + rulestring + " }" + ")";
   } else {
     sub_expr = expr;
   }
@@ -229,7 +229,7 @@ export function draftChangeContextName(expr: string,_ctx = OUR_PRIVATE_CTX_NAME)
 }
 
 export async function checkEquiv(a:string, b:string) : Promise<boolean> {
-  const wrapped = `FullSimplify[${a} == ${b}]`;
+  const wrapped = `InputForm[runPrivate[FullSimplify[(${a}) == (${b})]]]`;
   const result = await execute(wrapped);
   return (result == 'True');
 }

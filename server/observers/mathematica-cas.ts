@@ -27,7 +27,7 @@ const debug = debug1(`server:${MODULE}`);
 import { StyleObject, NotebookChange, StyleProperties, ToolMenu, ToolInfo,
          StyleSource,ThoughtId } from '../../client/math-tablet-api';
 import { TDoc } from '../tdoc';
-import { execute, constructSubstitution, checkEquiv } from './wolframscript';
+import { execute, constructSubstitution, checkEquiv, NVPair } from './wolframscript';
 import * as fs from 'fs';
 import { runAsync } from '../common';
 import { Config } from '../config';
@@ -48,7 +48,40 @@ export async function initialize(_config: Config): Promise<void> {
   });
 }
 
+
 // Private Functions
+
+// We are apply this rule to top level expressions, so
+// we style a thought---which is rather confusing.
+//  const parent = tDoc.getThoughtById(style.stylableId);
+//  debug("PARENT STTYLE",style);
+function getSubstitutionsForStyle(tDoc: TDoc,style : StyleObject) :  NVPair[]  {
+  const rs = tDoc.getSymbolStylesIDependOn(style);
+  debug("RS",rs);
+  try {
+    let variables: string[] = [];
+    for(var s in style.data) {
+      variables.push(style.data[s]);
+    }
+
+    debug("variables, pre-process",variables);
+
+    const substitutions : NVPair[] =
+      rs.map(
+        s => {
+          variables = variables.filter(ele => (
+            ele != s.data.name));
+          return { name: s.data.name,
+                   value: s.data.value};
+        }
+      );
+    debug("variables, post-process",variables);
+    return substitutions;
+  } catch (e) {
+    debug("error evaluting equivalentce",e);
+    return [];
+  }
+}
 
 async function onUseTool(tDoc: TDoc, _thoughtId: ThoughtId, _source: StyleSource, info: ToolInfo):  Promise<void> {
   if (info.name != 'checkeqv') return;
@@ -57,36 +90,13 @@ async function onUseTool(tDoc: TDoc, _thoughtId: ThoughtId, _source: StyleSource
 
   const style = tDoc.getStyleById(info.data.styleId);
   debug("MAIN STTYLE",style);
-
-  // We are apply this rule to top level expressions, so
-  // we style a thought---which is rather confusing.
-//  const parent = tDoc.getThoughtById(style.stylableId);
-//  debug("PARENT STTYLE",style);
-  const rs = tDoc.getSymbolStylesIDependOn(style);
-  debug("RS",rs);
-  // TODO: Possibly this basic functionality should be moved to
-  // common usage, since it is now used in more than one place.
   try {
-    // Now style.data contains the variables in the expression "parent.data",
-    // but the rs map may have allowed some to be defined, and these must
-    // be removed.
-    let variables: string[] = [];
-    for(var s in style.data) {
-      variables.push(style.data[s]);
-    }
-
-    debug("variables, pre-process",variables);
+    const substitutions : NVPair[] = getSubstitutionsForStyle(tDoc,style);
     const sub_expr =
-          constructSubstitution(style.data,
-                                rs.map(
-                                  s => {
-                                    variables = variables.filter(ele => (
-                                      ele != s.data.name));
-                                    return { name: s.data.name,
-                                             value: s.data.value};
-                                  }
-                                ));
-    debug("variables, post-process",variables);
+      constructSubstitution(style.data,
+                            substitutions);
+
+    debug("sustitutions",substitutions);
     debug("sub_expr",sub_expr);
 
     //    createdPlotSuccessfully = await plotSubtrivariate(sub_expr,variables,full_filename);
@@ -120,11 +130,17 @@ async function onUseTool(tDoc: TDoc, _thoughtId: ThoughtId, _source: StyleSource
     }
 
     const expressionEquivalence : IStylableToBooleanMap = {};
+    const sub_expr1 =
+      constructSubstitution(style.data,substitutions);
     for (var exp of expressions) {
       const expressID : number = exp.id;
       try {
-        const equiv = await checkEquiv(style.data,exp.data);
-        debug("exp id",exp.id);
+        const esubs : NVPair[] = getSubstitutionsForStyle(tDoc,exp);
+        const sub_expr2 =
+          constructSubstitution(exp.data,esubs);
+        debug("substituted expressions",sub_expr1,sub_expr2);
+        const equiv = await checkEquiv(sub_expr1,sub_expr2);
+
         expressionEquivalence[expressID] = equiv;
       } catch (e) {
         debug("error evaluting equivalentce",e);
@@ -152,11 +168,11 @@ async function onUseTool(tDoc: TDoc, _thoughtId: ThoughtId, _source: StyleSource
 
 function onChange(tDoc: TDoc, change: NotebookChange): void {
   switch (change.type) {
-  case 'styleInserted':
-    runAsync(mathMathematicaRule(tDoc, change.style), MODULE, 'mathMathematicaRule');
-    runAsync(convertMathMlToWolframRule(tDoc, change.style), MODULE, 'convertMathMlToWolframRule');
-    break;
-  default: break;
+    case 'styleInserted':
+      runAsync(mathMathematicaRule(tDoc, change.style), MODULE, 'mathMathematicaRule');
+      runAsync(convertMathMlToWolframRule(tDoc, change.style), MODULE, 'convertMathMlToWolframRule');
+      break;
+    default: break;
   }
 }
 
@@ -177,16 +193,11 @@ async function evaluateExpressionPromiseWS(expr: string) : Promise<string> {
   return result;
 }
 
-// const OUR_PRIVATE_CTX_NAME = "runPrv`";
-// function draftChangeContextName(expr,ctx = OUR_PRIVATE_CTX_NAME) {
-//   return expr.replace(ctx,'');
-// }
-
 // REVIEW: Caller doesn't do anything with the return value. Does not need to return a value.
 // REVIEW: This does not need to be exported, as it does not occur anywhere else in the source.
 export async function mathMathematicaRule(tdoc: TDoc, style: StyleObject): Promise<StyleObject[]> {
 
-  debug("INSIDE RULE :",style);
+  //  debug("INSIDE RULE :",style);
   // We only extract symbols from Wolfram expressions that are user input.
   if (style.type != 'WOLFRAM') { return []; }
   if (style.meaning!='INPUT' && style.meaning!='INPUT-ALT') { return []; }
@@ -199,7 +210,7 @@ export async function mathMathematicaRule(tdoc: TDoc, style: StyleObject): Promi
     assoc = await evaluateExpressionPromiseWS(style.data);
 
     debug("ASSOC RETURNED",assoc,assoc.toString());
-//    assoc = draftChangeContextName(assoc);
+    //    assoc = draftChangeContextName(assoc);
     debug("After context switch",assoc,assoc.toString());
   } catch (e) {
     debug("MATHEMATICA EVALUATION FAILED :",e);
@@ -235,10 +246,10 @@ export async function mathMathematicaRule(tdoc: TDoc, style: StyleObject): Promi
             if (err) return console.error(err);
             debug('success!');
             var imageStyle =
-                tdoc.insertStyle(style,{ type: 'IMAGE',
-                                   data: urlPath+"/"+fn,
-                                   meaning: 'PLOT',
-                                   source: 'MATHEMATICA' })
+              tdoc.insertStyle(style,{ type: 'IMAGE',
+                                       data: urlPath+"/"+fn,
+                                       meaning: 'PLOT',
+                                       source: 'MATHEMATICA' })
             styles.push(imageStyle);
           });
         }
@@ -251,12 +262,12 @@ export async function mathMathematicaRule(tdoc: TDoc, style: StyleObject): Promi
   // @ts-ignore --- I don't know how to type this.
   //  let result = assoc[1][2]; // "magic" for Mathematica
   if (assoc) {
-  let result = assoc.toString();
-  debug(" RESULT STRING :",result);
-  var exemplar = tdoc.insertStyle(style, { type: 'MATHEMATICA',
-                                           data: <string>result,
-                                           meaning: 'EVALUATION',
-                                           source: 'MATHEMATICA' });
+    let result = assoc.toString();
+    debug(" RESULT STRING :",result);
+    var exemplar = tdoc.insertStyle(style, { type: 'MATHEMATICA',
+                                             data: <string>result,
+                                             meaning: 'EVALUATION',
+                                             source: 'MATHEMATICA' });
 
     styles.push(exemplar);
 
@@ -298,7 +309,6 @@ async function convertMathMlToWolframRule(tdoc: TDoc, style: StyleObject): Promi
     const wolframexpr = results[1];
 
     tdoc.insertStyle(style, { type: 'WOLFRAM', source: 'MATHEMATICA', meaning: 'INPUT-ALT', data: wolframexpr });
-
 
   } catch(err) {
     tdoc.insertStyle(style, { type: 'TEXT', source: 'MATHEMATICA', meaning: 'EVALUATION-ERROR', data: `Cannot convert to Wolfram expression: ${err.message}` });
