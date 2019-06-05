@@ -170,8 +170,9 @@ export class Notebook {
   private stylesAttachedToThought(t: ThoughtElement): StyleObject[] {
     return Array.from(this.styles.values()).filter(s=>s.stylableId==t.thought.id);
   }
-
-  private thoughtElementForStyle(style: StyleObject): ThoughtElement {
+  // Rob is making this public so it can be used in renderEquivalenceCheck
+  // private
+  public thoughtElementForStyle(style: StyleObject): ThoughtElement {
     let ancestorStyle: StyleObject;
     let parentStyle: StyleObject|undefined;
     for (ancestorStyle = style;
@@ -180,6 +181,11 @@ export class Notebook {
     const thoughtElt = this.thoughtElements.get(ancestorStyle.stylableId);
     if (!thoughtElt) { throw new Error(`Style ${style.id} is not a descendant of a thought.`); }
     return thoughtElt;
+  }
+  // This is just to have public access..
+  public getStyleFromKey(key: StyleId): StyleObject | null {
+    const g = this.styles.get(key);
+    return g ? g : null;
   }
 
   // Private Event Handlers

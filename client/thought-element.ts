@@ -81,6 +81,9 @@ export class ThoughtElement {
         else if (style.type == 'TEXT') { this.renderText(style.data); }
         break;
       case 'PLOT': this.renderPlot(style); break;
+      case 'EQUIVALENT-CHECKS':
+        this.renderEquivalenceCheck(style);
+        break;
     }
   }
 
@@ -162,6 +165,28 @@ export class ThoughtElement {
     }
     $formulaElt!.innerHTML = html;
   }
+
+  private renderEquivalenceCheck(_style: StyleObject): void {
+    const $formulaElt = this.$elt.querySelector('.formula');
+    const map = _style.data;
+    const keys: string[] = Object.keys(map).filter( (k : any) => map[k]);
+    // this a stopgap, we need to sort these...
+    if (keys.length == 0) {
+      return;
+    } else {
+      const key : number = Number(keys[keys.length -1]);
+      // now we must obtain the thought number for this
+      let childStyle = this.notebook.getStyleFromKey(key);
+      if (childStyle) {
+        const thought = this.notebook.thoughtElementForStyle(
+          childStyle
+        ).thought.id;
+        const preamble = ` = { (${thought}) (From Mathematica CAS) } <br>`;
+        $formulaElt!.innerHTML = preamble + $formulaElt!.innerHTML;
+      }
+    }
+  }
+
 
   private renderOtherInput(style: StyleObject): void {
     if (typeof style.data != 'string') {
