@@ -25,7 +25,7 @@ const debug = debug1(`server:${MODULE}`);
 import * as mathsteps from 'mathsteps';
 import * as math from 'mathjs';
 
-import { StyleObject, NotebookChange, ToolMenu, StyleProperties, ThoughtId, StyleSource, ToolInfo } from '../../client/math-tablet-api';
+import { StyleObject, NotebookChange, ToolMenu, StyleProperties, StyleId, StyleSource, ToolInfo } from '../../client/math-tablet-api';
 import { TDoc }  from '../tdoc';
 import { Config } from '../config';
 
@@ -49,8 +49,8 @@ export async function initialize(_config: Config): Promise<void> {
   TDoc.on('open', (tDoc: TDoc)=>{
     tDoc.on('change', function(this: TDoc, change: NotebookChange){ onChange(this, change); });
     // tDoc.on('close', function(this: TDoc){ onClose(this); });
-    tDoc.on('useTool', function(this: TDoc, thoughtId: ThoughtId, source: StyleSource, info: ToolInfo){
-      onUseTool(this, thoughtId, source, info);
+    tDoc.on('useTool', function(this: TDoc, styleId: StyleId, source: StyleSource, info: ToolInfo){
+      onUseTool(this, styleId, source, info);
     });
     // onOpen(tDoc);
   });
@@ -65,7 +65,7 @@ function onChange(tDoc: TDoc, change: NotebookChange): void {
   }
 }
 
-function onUseTool(tDoc: TDoc, _thoughtId: ThoughtId, _source: StyleSource, info: ToolInfo): void {
+function onUseTool(tDoc: TDoc, _styleId: StyleId, _source: StyleSource, info: ToolInfo): void {
   // DAVID: I think we may want to refactor this so that
   // we attache a "thunk" to the tool. In any case it is a little weired
   // to use an emmitter, because it means "onUseTool" is called for
@@ -77,8 +77,7 @@ function onUseTool(tDoc: TDoc, _thoughtId: ThoughtId, _source: StyleSource, info
                           mathsteps.simplifyExpression(style.data) :
                           mathsteps.solveEquation(style.data));
   const data: string = `<pre>\n${formatSteps(steps)}</pre>`;
-  const thought = tDoc.insertThought({}, -1);
-  tDoc.insertStyle(thought, { type: 'HTML', meaning: 'EXPOSITION', source: 'MATHSTEPS', data });
+  tDoc.insertStyle(undefined, { type: 'HTML', meaning: 'EXPOSITION', source: 'MATHSTEPS', data }, -1);
   // TODO: Add a relationship between this thought and the original thought.
   // TODO: If original thought changes, then remove/update this simplification.
 }
@@ -86,7 +85,7 @@ function onUseTool(tDoc: TDoc, _thoughtId: ThoughtId, _source: StyleSource, info
 // Change Handlers
 
 async function chStyleInserted(tDoc: TDoc, style: StyleObject): Promise<void> {
-  debug(`onStyleInserted ${style.id} ${style.stylableId} ${style.type} ${style.meaning}`);
+  debug(`onStyleInserted ${style.id} ${style.parentId} ${style.type} ${style.meaning}`);
 
   // Only try to simplify/solve MathJS expressions
   if (style.type!='MATHJS') { return; }
@@ -95,7 +94,8 @@ async function chStyleInserted(tDoc: TDoc, style: StyleObject): Promise<void> {
   // Try to simplify it as an expression
   const steps: Step[] = mathsteps.simplifyExpression(style.data);
   if (steps.length > 0) {
-    const thought = tDoc.getAncestorThought(style.stylableId);
+
+    const parentStyle = (style.meaning == 'INPUT' ? style : tDoc.getStyleById(style.parentId));
     const toolMenu: ToolMenu = [
       { name: 'steps', html: 'Steps', data: { expr: true, styleId: style.id }}
     ];
@@ -105,13 +105,13 @@ async function chStyleInserted(tDoc: TDoc, style: StyleObject): Promise<void> {
       source: 'MATHSTEPS',
       data: toolMenu,
     };
-    tDoc.insertStyle(thought, styleProps);
+    tDoc.insertStyle(parentStyle, styleProps);
   } else {
 
     // Doesn't simplify as expression. Try to solve it as an equation.
     const steps2: Step[] = mathsteps.solveEquation(style.data);
     if (steps2.length > 0) {
-      const thought = tDoc.getAncestorThought(style.stylableId);
+      const parentStyle = (style.meaning == 'INPUT' ? style : tDoc.getStyleById(style.parentId));
       const toolMenu: ToolMenu = [
         { name: 'steps', html: 'Steps', data: { expr: false, styleId: style.id }}
       ];
@@ -121,7 +121,7 @@ async function chStyleInserted(tDoc: TDoc, style: StyleObject): Promise<void> {
         source: 'MATHSTEPS',
         data: toolMenu,
       };
-      tDoc.insertStyle(thought, styleProps);
+      tDoc.insertStyle(parentStyle, styleProps);
     }
   }
 }

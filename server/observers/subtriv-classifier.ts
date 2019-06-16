@@ -24,7 +24,7 @@ const MODULE = __filename.split(/[/\\]/).slice(-1)[0].slice(0,-3);
 const debug = debug1(`server:${MODULE}`);
 
 import { NotebookChange, StyleObject, StyleProperties, RelationshipObject,
-         ThoughtId,  ToolInfo, StyleSource, ToolMenu } from '../../client/math-tablet-api';
+         StyleId,  ToolInfo, StyleSource, ToolMenu } from '../../client/math-tablet-api';
 import { TDoc } from '../tdoc';
 import { execute, constructSubstitution } from './wolframscript';
 import { runAsync } from '../common';
@@ -40,9 +40,9 @@ export async function initialize(_config: Config): Promise<void> {
   TDoc.on('open', (tDoc: TDoc)=>{
     tDoc.on('change', function(this: TDoc, change: NotebookChange){ onChange(this, change); });
 
-    tDoc.on('useTool', function(this: TDoc, thoughtId: ThoughtId, source: StyleSource, info: ToolInfo){
+    tDoc.on('useTool', function(this: TDoc, styleId: StyleId, source: StyleSource, info: ToolInfo){
       debug("RESPONDING UNTIL USETOOL");
-      onUseTool(this, thoughtId, source, info);
+      onUseTool(this, styleId, source, info);
     });
 
     tDoc.on('close', function(this: TDoc){ onClose(this); });
@@ -153,7 +153,7 @@ export async function subTrivariateClassifierChangedRule(tdoc: TDoc, relationshi
 
   debug("RELATIONSHIP",relationship);
 
-  const target_ancestor = tdoc.getAncestorThought(relationship.targetId);
+  const target_ancestor = tdoc.topLevelStyleOf(relationship.targetId);
 
   if (target_ancestor == null) {
     throw new Error("Could not find ancestor Thought: "+relationship.targetId);
@@ -167,7 +167,7 @@ export async function subTrivariateClassifierChangedRule(tdoc: TDoc, relationshi
   debug("candidate styles",candidate_styles);
   // Not really sure what to do here if there is more than one!!!
 
-  const beforeChangeClassifiedAsSubTrivariate = tdoc.stylableHasChildOfType(candidate_styles[0],'CLASSIFICATION','SUBTRIVARIATE');
+  const beforeChangeClassifiedAsSubTrivariate = tdoc.styleHasChildOfType(candidate_styles[0],'CLASSIFICATION','SUBTRIVARIATE');
   debug(beforeChangeClassifiedAsSubTrivariate);
 
   // Now it is possible that any classifications need to be removed;
@@ -222,7 +222,7 @@ async function plotSubtrivariate(expr : string, variables: string[], filename : 
 }
 
 
-async function onUseTool(tDoc: TDoc, _thoughtId: ThoughtId, _source: StyleSource, info: ToolInfo):  Promise<void> {
+async function onUseTool(tDoc: TDoc, _styleId: StyleId, _source: StyleSource, info: ToolInfo):  Promise<void> {
   if (info.name != 'plot') return;
   debug("INSIDE onUSE AAA :");
   debug(`INSIDE onUSE AAA name : ${info.name}`);
@@ -246,7 +246,7 @@ async function onUseTool(tDoc: TDoc, _thoughtId: ThoughtId, _source: StyleSource
   const full_filename = targetPath + "/" + fn;
 
   // The parent of this style will be the MATHETMATICA/ EVALUATION
-  const parent = tDoc.getStyleById(style.stylableId);
+  const parent = tDoc.getStyleById(style.parentId);
 
   // We are only plottable if we make the normal substitutions...
   const rs = tDoc.getSymbolStylesIDependOn(parent);
@@ -289,12 +289,7 @@ async function onUseTool(tDoc: TDoc, _thoughtId: ThoughtId, _source: StyleSource
     // does not elegantly render styles.  Making this independent
     // will look nice in the short term, but loses an important connection
     // between the systems.
-    const th = tDoc.insertThought({}, -1);
-    var imageStyle =
-        tDoc.insertStyle(th,{ type: 'IMAGE',
-                                 data: urlPath+"/"+fn,
-                                 meaning: 'PLOT',
-                                 source: 'MATHEMATICA' })
+    const imageStyle = tDoc.insertStyle(undefined,{ type: 'IMAGE', data: urlPath+"/"+fn, meaning: 'PLOT', source: 'MATHEMATICA' } , -1);
     styles.push(imageStyle);
   }
   return;

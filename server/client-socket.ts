@@ -28,7 +28,7 @@ import * as WebSocket from 'ws';
 // TODO: Handle websocket lifecycle: closing, unexpected disconnects, errors, etc.
 
 import { ClientMessage, NotebookChange, NotebookName, NotebookPath, ServerMessage,
-         ThoughtId, StyleSource, ToolInfo, StylePropertiesWithSubprops, ThoughtObject, StyleObject, NotebookChanged, ThoughtInserted, StyleInserted, StylableId, InsertThought } from '../client/math-tablet-api';
+         StyleId, StyleSource, ToolInfo, StylePropertiesWithSubprops, StyleObject, NotebookChanged, StyleInserted, InsertStyle } from '../client/math-tablet-api';
 
 import { PromiseResolver } from './common';
 // REVIEW: This file should not be dependent on any specific observers.
@@ -207,9 +207,9 @@ export class ClientSocket {
         const tDoc = this.tDocs.get(msg.notebookName);
         if (!tDoc) { throw new Error(`Client Socket unknown notebook: ${msg.action} ${msg.notebookName}`); }
         switch(msg.action) {
-        case 'deleteThought':  this.cmDeleteThought(tDoc, msg.thoughtId); break;
-        case 'insertThought':  this.cmInsertThought(tDoc, msg); break;
-        case 'useTool': this.cmUseTool(tDoc, msg.thoughtId, msg.source, msg.info); break;
+        case 'deleteStyle':  this.cmDeleteStyle(tDoc, msg.styleId); break;
+        case 'insertStyle':  this.cmInsertStyle(tDoc, msg); break;
+        case 'useTool': this.cmUseTool(tDoc, msg.styleId, msg.source, msg.info); break;
 	      default: {
           console.error(`Client Socket: unexpected WebSocket message action ${(<any>msg).action}. Ignoring.`);
           break;
@@ -227,15 +227,12 @@ export class ClientSocket {
     this.closeNotebook(notebookName, true);
   }
 
-  private cmDeleteThought(tDoc: TDoc, thoughtId: ThoughtId): void {
-    tDoc.deleteThought(thoughtId);
+  private cmDeleteStyle(tDoc: TDoc, styleId: StyleId): void {
+    tDoc.deleteStyle(styleId);
   }
 
-  private cmInsertThought(tDoc: TDoc, msg: InsertThought): void {
-    const thought = tDoc.insertThought(msg.thoughtProps, msg.afterId);
-    for (const styleProps of msg.stylePropss) {
-      insertStyleRecursive(tDoc, thought, styleProps);
-    }
+  private cmInsertStyle(tDoc: TDoc, msg: InsertStyle): void {
+    insertStyleRecursively(tDoc, undefined, msg.styleProps, msg.afterId);
   }
 
   private cmOpenNotebook(notebookName: NotebookName): void {
@@ -254,9 +251,9 @@ export class ClientSocket {
     );
   }
 
-  private cmUseTool(tDoc: TDoc, thoughtId: ThoughtId, source: StyleSource, info: ToolInfo): void {
+  private cmUseTool(tDoc: TDoc, styleId: StyleId, source: StyleSource, info: ToolInfo): void {
     debug("cmUseTool Begin");
-    tDoc.useTool(thoughtId, source, info);
+    tDoc.useTool(styleId, source, info);
     debug("cmUseTool End");
   }
 
@@ -287,12 +284,12 @@ export class ClientSocket {
   }
 
   // REVIEW: notebookName could be extracted from tDoc.
-  private insertStylesRecursively(notebookName: NotebookName, tDoc: TDoc, id: StylableId): void {
-    for (const style of tDoc.childStylesOf(id)) {
-      const change: StyleInserted = { type: 'styleInserted', style };
-      const msg: NotebookChanged = { action: 'notebookChanged', notebookName, change }
-      this.sendMessage(msg);
-      this.insertStylesRecursively(notebookName, tDoc, style.id);
+  private insertStylesRecursively(notebookName: NotebookName, tDoc: TDoc, style: StyleObject): void {
+    const change: StyleInserted = { type: 'styleInserted', style };
+    const msg: NotebookChanged = { action: 'notebookChanged', notebookName, change }
+    this.sendMessage(msg);
+    for (const subStyle of tDoc.childStylesOf(style.id)) {
+      this.insertStylesRecursively(notebookName, tDoc, subStyle);
     }
   }
 
@@ -318,11 +315,9 @@ export class ClientSocket {
     this.sendMessage({ action: 'notebookOpened', notebookName });
 
     // Send all notebook thoughts and styles.
-    for (const thought of tDoc.allThoughts()) {
-      const change: ThoughtInserted = { type: 'thoughtInserted', thought };
-      const msg: NotebookChanged = { action: 'notebookChanged', notebookName, change }
-      this.sendMessage(msg);
-      this.insertStylesRecursively(notebookName, tDoc, thought.id);
+    for (const id of tDoc.topLevelStyleOrder()) {
+      const style = tDoc.getStyleById(id);
+      this.insertStylesRecursively(notebookName, tDoc, style);
     }
   }
 
@@ -341,12 +336,12 @@ export class ClientSocket {
 
 // Helper Functions
 
-function insertStyleRecursive(tDoc: TDoc, parent: ThoughtObject|StyleObject, propsWithSubprops: StylePropertiesWithSubprops): void {
+function insertStyleRecursively(tDoc: TDoc, parent: StyleObject|undefined, propsWithSubprops: StylePropertiesWithSubprops, afterId: StyleId): void {
   const { subprops, ...props } = propsWithSubprops;
-  const style = tDoc.insertStyle(parent, props);
+  const style = tDoc.insertStyle(parent, props, afterId);
   if (subprops) {
     for (const props of subprops) {
-      insertStyleRecursive(tDoc, style, props);
+      insertStyleRecursively(tDoc, style, props, 0);
     }
   }
 }

@@ -2,8 +2,7 @@
 * Formula equivalence thought. Implement MathJS/Mathematica simplification/solve tools that generate formula equivalence thoughts.
 * Ability to select thoughts using the keyboard. Arrow up, arrow down, top, bottom, esc. to cancel selection, shift+arrow to extend selection
 * Ability to edit an existing thought. Enter/double tap to start editing. Thought changed events.
-* More efficient TDoc data structures: object mapping IDs to thoughts, styles, relationships.
-* Separate representation of thought order in TDoc: linked list?
+* Index styles by the id of what they are attached to, so we can get the substyles efficiently.
 * Ability to reorder thoughts with keyboard. option+arrow to move?
 * Ability to input thoughts at any position. Insert at top, between any two thoughts, or at the bottom.
 * Rewrite dispatch of notebook events. Use promises. Go in batches and rounds. Have timeouts and limits on the number of rounds. Have routing options.

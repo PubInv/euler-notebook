@@ -24,10 +24,10 @@ import { getKatex } from './katex-types.js';
 import { getMyScript, Configuration, Editor, EditorElement, EditorChangedEvent, EditorExportedEvent, EditorType, ServerKeys } from './myscript-types.js';
 import { addErrorMessageToHeader, /* addSuccessMessageToHeader */} from './global.js';
 // import { apiPostRequest } from './api.js';
-// import { StyleObject, ThoughtObject }  from './math-tablet-api.js';
+// import { StyleObject, StyleObject }  from './math-tablet-api.js';
 import { Notebook } from './notebook.js';
 import { ServerSocket } from './server-socket.js';
-import { Jiix, LatexData, MathMlData, StyleType, ThoughtProperties, StylePropertiesWithSubprops } from './math-tablet-api.js';
+import { Jiix, LatexData, MathMlData, StyleType, StylePropertiesWithSubprops } from './math-tablet-api.js';
 
 // Types
 
@@ -144,14 +144,17 @@ function onInsertButtonClicked(_event: Event) {
       const mathMl: MathMlData = edExports['application/mathml+xml'];
       if (!jiix || !latex || !mathMl) { throw new Error("Missing export from MyScript math editor."); }
       console.dir(mathMl);
-      const thoughtProps: ThoughtProperties = {};
-      const stylePropss: StylePropertiesWithSubprops[] = [
-        { type: 'JIIX', data: jiix, meaning: 'INPUT', source: 'USER', subprops: [
+      const styleProps: StylePropertiesWithSubprops = {
+        type: 'JIIX',
+        data: jiix,
+        meaning: 'INPUT',
+        source: 'USER',
+        subprops: [
           { type: 'LATEX', data: latex, meaning: 'INPUT-ALT', source: 'USER' },
           { type: 'MATHML', data: mathMl, meaning: 'INPUT-ALT', source: 'USER' },
-        ]},
-      ];
-      gNotebook.insertThought(thoughtProps, stylePropss);
+        ],
+      };
+      gNotebook.insertStyle(styleProps);
       editor.clear();
       break;
     }
@@ -160,11 +163,8 @@ function onInsertButtonClicked(_event: Event) {
       const styleType: StyleType = <StyleType>$typeSelector.value;
       const $inputField = $<HTMLInputElement>('#inputKeyboard>input');
       const text = $inputField.value;
-      const thoughtProps: ThoughtProperties = {};
-      const stylePropss: StylePropertiesWithSubprops[] = [
-        { type: styleType, data: text, meaning: 'INPUT', source: 'USER' },
-      ];
-      gNotebook.insertThought(thoughtProps, stylePropss);
+      const styleProps: StylePropertiesWithSubprops = { type: styleType, data: text, meaning: 'INPUT', source: 'USER' };
+      gNotebook.insertStyle(styleProps);
       $inputField.value = $('#previewKeyboard').innerText = '';
       break;
     }
@@ -173,13 +173,14 @@ function onInsertButtonClicked(_event: Event) {
       if (!editor) { throw new Error(); }
       const text = editor.exports && editor.exports['text/plain'];
       const strokeGroups = editor.model.strokeGroups;
-      const thoughtProps: ThoughtProperties = {};
-      const stylePropss: StylePropertiesWithSubprops[] = [
-        { type: 'STROKE', data: strokeGroups, meaning: 'INPUT', source: 'USER', subprops: [
-          { type: 'TEXT', data: text, meaning: 'INPUT-ALT', source: 'USER' },
-        ]},
-      ];
-      gNotebook.insertThought(thoughtProps, stylePropss);
+      const stylePropss: StylePropertiesWithSubprops = {
+        type: 'STROKE',
+        data: strokeGroups,
+        meaning: 'INPUT',
+        source: 'USER',
+        subprops: [ { type: 'TEXT', data: text, meaning: 'INPUT-ALT', source: 'USER' } ],
+      };
+      gNotebook.insertStyle(stylePropss);
       editor.clear();
       break;
     }

@@ -123,8 +123,8 @@ function mathEvaluateRule(tdoc: TDoc, session: SessionData, style: StyleObject):
 	if (style.meaning!='INPUT' && style.meaning!='INPUT-ALT') { return; }
 
   // Do not evaluate more than once.
-  if ((tdoc.stylableHasChildOfType(style, 'MATHJS', 'EVALUATION')) ||
-      (tdoc.stylableHasChildOfType(style, 'TEXT', 'EVALUATION-ERROR'))) {
+  if ((tdoc.styleHasChildOfType(style, 'MATHJS', 'EVALUATION')) ||
+      (tdoc.styleHasChildOfType(style, 'TEXT', 'EVALUATION-ERROR'))) {
     return;
   }
 
@@ -151,7 +151,7 @@ function mathExtractVariablesRule(tdoc: TDoc, _session: SessionData, style: Styl
 	if (style.meaning!='INPUT' && style.meaning!='INPUT-ALT') { return; }
 
   // Do not extract symbols more than once.
-  if (tdoc.stylableHasChildOfType(style, 'MATHJS', 'SYMBOL')) { return; }
+  if (tdoc.styleHasChildOfType(style, 'MATHJS', 'SYMBOL')) { return; }
 
   const parse = math.parse(style.data);
   if (!parse) { return; }
@@ -167,7 +167,7 @@ function mathSimplifyRule(tdoc: TDoc, _session: SessionData, style: StyleObject)
 	if (style.meaning!='INPUT' && style.meaning!='INPUT-ALT') { return; }
 
   // Do not apply simplification more than once.
-  if (tdoc.stylableHasChildOfType(style, 'MATHJS', 'SIMPLIFICATION')) { return; }
+  if (tdoc.styleHasChildOfType(style, 'MATHJS', 'SIMPLIFICATION')) { return; }
 
   let simpler;
   try {

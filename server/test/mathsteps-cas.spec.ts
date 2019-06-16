@@ -159,12 +159,10 @@ describe('mathsteps-cas', function(){
 
     // Create a thought with a MathJS expression input style.
     const tDoc = TDoc.createAnonymous();
-    const thought = tDoc.insertThought({}, -1);
-    const styleProps: StyleProperties = { type: 'MATHJS', meaning: 'INPUT', source: 'USER', data: EXPR1 };
-    const style = tDoc.insertStyle(thought, styleProps);
+    const style = tDoc.insertStyle(undefined, { type: 'MATHJS', meaning: 'INPUT', source: 'USER', data: EXPR1 }, -1);
 
     // Check that a tool menu was added to the thought.
-    const toolStyles = tDoc.childStylesOf(thought.id).filter(s=>s.type=='TOOL-MENU');
+    const toolStyles = tDoc.childStylesOf(style.id).filter(s=>s.type=='TOOL-MENU');
     assert.equal(toolStyles.length, 1);
     const toolStyle = toolStyles[0];
     const toolMenu: ToolMenu = toolStyle.data;
@@ -174,14 +172,13 @@ describe('mathsteps-cas', function(){
     assert.deepEqual(toolInfo.data, { expr: true, styleId: style.id });
 
     // Use the tool
-    tDoc.emit('useTool', thought.id, toolStyle.source, toolInfo);
+    tDoc.emit('useTool', style.id, toolStyle.source, toolInfo);
 
     // Check an exposition style was added with the steps.
     const expoStyles = tDoc.allStyles().filter(s=>s.meaning=='EXPOSITION');
     assert.equal(expoStyles.length, 1);
     const expoStyle = expoStyles[0];
-    assert.notEqual(expoStyle.stylableId, thought.id);
-    assert(tDoc.getThoughtById(expoStyle.stylableId));
+    assert.notEqual(expoStyle.parentId, style.id);
     assert.equal(expoStyle.type, 'HTML');
     assert.equal(expoStyle.source, 'MATHSTEPS');
     assert.equal(expoStyle.data, EXPR1_SIMPLIFICATION);
@@ -191,12 +188,11 @@ describe('mathsteps-cas', function(){
 
     // Create a thought with a MathJS expression input style.
     const tDoc = TDoc.createAnonymous();
-    const thought = tDoc.insertThought({}, -1);
     const styleProps: StyleProperties = { type: 'MATHJS', meaning: 'INPUT', source: 'USER', data: EQUA1 };
-    const style = tDoc.insertStyle(thought, styleProps);
+    const style = tDoc.insertStyle(undefined, styleProps);
 
     // Check that a tool menu was added to the thought.
-    const toolStyles = tDoc.childStylesOf(thought.id).filter(s=>s.type=='TOOL-MENU');
+    const toolStyles = tDoc.childStylesOf(style.id).filter(s=>s.type=='TOOL-MENU');
     assert.equal(toolStyles.length, 1);
     const toolStyle = toolStyles[0];
     const toolMenu: ToolMenu = toolStyle.data;
@@ -206,14 +202,13 @@ describe('mathsteps-cas', function(){
     assert.deepEqual(toolInfo.data, { expr: false, styleId: style.id });
 
     // Use the tool
-    tDoc.emit('useTool', thought.id, toolStyle.source, toolInfo);
+    tDoc.emit('useTool', style.id, toolStyle.source, toolInfo);
 
     // Check an exposition style was added with the steps.
     const expoStyles = tDoc.allStyles().filter(s=>s.meaning=='EXPOSITION');
     assert.equal(expoStyles.length, 1);
     const expoStyle = expoStyles[0];
-    assert.notEqual(expoStyle.stylableId, thought.id);
-    assert(tDoc.getThoughtById(expoStyle.stylableId));
+    assert.notEqual(expoStyle.parentId, style.id);
     assert.equal(expoStyle.type, 'HTML');
     assert.equal(expoStyle.source, 'MATHSTEPS');
     assert.equal(expoStyle.data, EQUA1_SOLUTION);

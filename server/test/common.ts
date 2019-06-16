@@ -48,8 +48,7 @@ export function assertHasStyles(
 // IMPORTANT: This will not work for observers that add styles and thoughts asynchronously.
 export function getSubstylesGeneratedForStyle(styleProps: StyleProperties): StyleObject[] {
   const tDoc = TDoc.createAnonymous();
-  const thought = tDoc.insertThought({}, -1);
-  const style = tDoc.insertStyle(thought, styleProps);
+  const style = tDoc.insertStyle(undefined, styleProps, -1);
   const substyles = tDoc.childStylesOf(style.id);
   return substyles;
 }
@@ -57,9 +56,8 @@ export function getSubstylesGeneratedForStyle(styleProps: StyleProperties): Styl
 // IMPORTANT: This will not work for observers that add styles and thoughts asynchronously.
 export function getToolMenusGeneratedForStyle(styleProps: StyleProperties): ToolMenu[] {
   const tDoc = TDoc.createAnonymous();
-  const thought = tDoc.insertThought({}, -1);
-  tDoc.insertStyle(thought, styleProps);
-  const styles = tDoc.childStylesOf(thought.id).filter(s=>s.type=='TOOL-MENU');
+  const style = tDoc.insertStyle(undefined, styleProps, -1);
+  const styles = tDoc.childStylesOf(style.id).filter(s=>s.type=='TOOL-MENU');
   return styles.map(s=>s.data);
 }
 

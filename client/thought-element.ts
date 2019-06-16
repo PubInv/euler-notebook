@@ -21,7 +21,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 import { $new, escapeHtml, Html } from './dom.js';
 import { getKatex } from './katex-types.js';
-import { ThoughtObject, StyleObject, LatexData, ToolMenu } from './math-tablet-api.js';
+import { StyleObject, LatexData, ToolMenu, StyleId } from './math-tablet-api.js';
 import { Notebook } from './notebook.js';
 
 // Exported Class
@@ -30,8 +30,8 @@ export class ThoughtElement {
 
   // Class Methods
 
-  static insert(notebook: Notebook, thought: ThoughtObject): ThoughtElement {
-    var rval = new this(notebook, thought);
+  static insert(notebook: Notebook, style: StyleObject): ThoughtElement {
+    var rval = new this(notebook, style);
     notebook.$elt.appendChild(rval.$elt);
     return rval;
   }
@@ -39,7 +39,7 @@ export class ThoughtElement {
   // Instance Properties
 
   public $elt: HTMLDivElement;
-  public thought: ThoughtObject;
+  public style: StyleObject;
   public notebook: Notebook;
 
   // Instance Methods
@@ -51,9 +51,13 @@ export class ThoughtElement {
   }
 
   public deleteStyle(style: StyleObject): void {
-    if (style.type == 'LATEX') {
-      const $formulaElt = this.$elt.querySelector('.formula');
-      $formulaElt!.innerHTML = '';
+    if (!style.parentId) {
+
+    } else {
+      if (style.type == 'LATEX') {
+        const $formulaElt = this.$elt.querySelector('.formula');
+        $formulaElt!.innerHTML = '';
+      }
     }
   }
 
@@ -61,12 +65,14 @@ export class ThoughtElement {
   //         For example, if LaTeX input-alt comes in after error, the error message
   //         will be obliterated.
   public insertStyle(style: StyleObject): void {
+    console.log(`Inserting style ${style.id} ${style.meaning} ${style.type}`);
     switch(style.meaning) {
       case 'ATTRIBUTE':
         if (style.type == 'TOOL-MENU') { this.renderToolMenu(style); }
         break;
       case 'ERROR': this.renderErrorMessage(style); break;
       case 'EXPOSITION':
+        console.dir(style);
         if (style.type == 'HTML') { this.renderHtml(style.data); }
         else if (style.type == 'TEXT') { this.renderText(style.data); }
         else { throw new Error(`Unexpected data type for exposition: ${style.type}.`); }
@@ -84,6 +90,7 @@ export class ThoughtElement {
       case 'EQUIVALENT-CHECKS':
         this.renderEquivalenceCheck(style);
         break;
+      default:
     }
   }
 
@@ -99,9 +106,9 @@ export class ThoughtElement {
 
   // Private Constructor
 
-  private constructor(notebook: Notebook, thought: ThoughtObject) {
+  private constructor(notebook: Notebook, thought: StyleObject) {
     this.notebook = notebook;
-    this.thought = thought;
+    this.style = thought;
     this.$elt = this.createElement();
   }
 
@@ -109,15 +116,15 @@ export class ThoughtElement {
   // Private Instance Methods
 
   private createElement(): HTMLDivElement {
-    const thoughtId = this.thought.id;
+    const styleId: StyleId = this.style.id!;
     const $rval = $new<HTMLDivElement>('div', {
-      id: `T${thoughtId}`,
+      id: `T${styleId}`,
       class: 'thought',
     });
 
     // <div class="handle">(1)</div>
-    const selectClickHandler = (event: MouseEvent)=>{ this.notebook.selectThought(thoughtId, event); };
-    const $handle = $new<HTMLDivElement>('div', { class: 'handle', html: `(${thoughtId})`, appendTo: $rval });
+    const selectClickHandler = (event: MouseEvent)=>{ this.notebook.selectStyle(styleId, event); };
+    const $handle = $new<HTMLDivElement>('div', { class: 'handle', html: `(${styleId})`, appendTo: $rval });
     $handle.addEventListener('click', selectClickHandler);
 
     // <div class="status"></div>
@@ -130,10 +137,10 @@ export class ThoughtElement {
     // <div class="tools"></div>`
     $new<HTMLDivElement>('div', { class: 'tools', appendTo: $rval });
 
-    // <button class="deleteThought"></button>`);
-    const $deleteButton = $new<HTMLButtonElement>('button', { class: 'deleteThought', html: "&#x2715;", appendTo: $rval });
+    // <button class="deleteStyle"></button>`);
+    const $deleteButton = $new<HTMLButtonElement>('button', { class: 'deleteStyle', html: "&#x2715;", appendTo: $rval });
     $deleteButton.addEventListener('click', (_event: MouseEvent)=>{
-      this.notebook.deleteThought(thoughtId);
+      this.notebook.deleteStyle(styleId);
     });
 
     return $rval;
@@ -178,9 +185,7 @@ export class ThoughtElement {
       // now we must obtain the thought number for this
       let childStyle = this.notebook.getStyleFromKey(key);
       if (childStyle) {
-        const thought = this.notebook.thoughtElementForStyle(
-          childStyle
-        ).thought.id;
+        const thought = this.notebook.topLevelStyleOf(childStyle).style.id;
         const preamble = ` = { (${thought}) (From Mathematica CAS) } <br>`;
         $formulaElt!.innerHTML = preamble + $formulaElt!.innerHTML;
       }

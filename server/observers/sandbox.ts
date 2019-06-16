@@ -25,7 +25,7 @@ import * as debug1 from 'debug';
 const MODULE = __filename.split(/[/\\]/).slice(-1)[0].slice(0,-3);
 const debug = debug1(`server:${MODULE}`);
 
-import { NotebookChange, ThoughtId, StyleSource, ToolInfo } from '../../client/math-tablet-api';
+import { NotebookChange, StyleId, StyleSource, ToolInfo } from '../../client/math-tablet-api';
 import { TDoc  } from '../tdoc';
 import { runAsync } from '../common';
 import { Config } from '../config';
@@ -39,8 +39,8 @@ export async function initialize(_config: Config): Promise<void> {
       runAsync(onChange(this, change), MODULE, 'onChange');
     });
     tDoc.on('close', function(this: TDoc){ onClose(this); });
-    tDoc.on('useTool', function(this: TDoc, thoughtId: ThoughtId, source: StyleSource, info: ToolInfo){
-      runAsync(onUseTool(this, thoughtId, source, info), MODULE, 'onUseTool');
+    tDoc.on('useTool', function(this: TDoc, styleId: StyleId, source: StyleSource, info: ToolInfo){
+      runAsync(onUseTool(this, styleId, source, info), MODULE, 'onUseTool');
     })
     onOpen(tDoc);
   });
@@ -55,21 +55,6 @@ async function onChange(tDoc: TDoc, change: NotebookChange): Promise<void> {
     case 'relationshipInserted': { break; }
     case 'styleDeleted': { break; }
     case 'styleInserted': { break; }
-    case 'thoughtInserted': {
-      // const thought = change.thought;
-      // const toolMenu: ToolMenu = [
-      //   { name: 'plot', html: "Plot" },
-      // ]
-      // const styleProps: StyleProperties = {
-      //   type: 'TOOL-MENU',
-      //   meaning: 'ATTRIBUTE',
-      //   source: 'SANDBOX',
-      //   data: toolMenu,
-      // }
-      // tDoc.insertStyle(thought, styleProps);
-      break;
-    }
-    case 'thoughtDeleted': { break; }
     default: { break; }
   }
 }
@@ -82,13 +67,13 @@ function onOpen(tDoc: TDoc): void {
   debug(`tDoc open: ${tDoc._path}`);
 }
 
-async function onUseTool(tDoc: TDoc, thoughtId: ThoughtId, source: StyleSource, info: ToolInfo): Promise<void> {
+async function onUseTool(tDoc: TDoc, styleId: StyleId, source: StyleSource, info: ToolInfo): Promise<void> {
   if (source != 'SANDBOX') { return; }
-  debug(`tDoc use tool: ${tDoc._path} ${thoughtId} ${source} ${JSON.stringify(info)}`);
+  debug(`tDoc use tool: ${tDoc._path} ${styleId} ${source} ${JSON.stringify(info)}`);
 
   switch(info.name) {
     // case 'plot': {
-    //   const thought = tDoc.insertThought({});
+    //   const thought = tDoc.insertStyle({});
     //   tDoc.insertStyle(thought, {
     //     type: 'IMAGE',
     //     meaning: 'PLOT',

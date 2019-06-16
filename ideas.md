@@ -11,4 +11,4 @@ to Math Tablet.
 * [SymPy Gamma](https://gamma.sympy.org) observer.
 * [OEIS](https://oeis.org) observer
 * [Wikipedia](https://www.wikipedia.org) observer. Wikipedia pages with matching formulas are identified. Would require a formula search engine.
-
+* [Rubi](https://rulebasedintegration.org) observer.

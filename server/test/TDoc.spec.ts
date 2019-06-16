@@ -39,32 +39,15 @@ describe('tdoc', function() {
       let td1 = TDoc.createAnonymous();
       assert.equal(td0.version, td1.version);
     });
-    it('tdocs can add and retrieve a thought', function() {
+    it('tdocs can add and retrieve a style', function() {
       let td0 = TDoc.createAnonymous();
-      let th = td0.insertThought({}, -1);
-      assert.equal(td0.allThoughts().length, 1);
-      assert.equal(td0.allThoughts()[0].id, th.id);
-    });
-    it('a thought can add and retrieve a style', function() {
-      let td0 = TDoc.createAnonymous();
-      let th = td0.insertThought({}, -1);
-      let st = td0.insertStyle(th, { type: 'TEXT', data: "spud boy", meaning: 'INPUT', source: 'TEST' });
-      assert.equal(td0.allThoughts().length, 1);
-      assert.equal(td0.allThoughts()[0].id, th.id);
-      assert.equal(td0.allStyles().length, 1);
-      assert.equal(td0.allStyles()[0].id, st.id);
-    });
-    it('a style with a source can be added', function() {
-      let td0 = TDoc.createAnonymous();
-      let th = td0.insertThought({}, -1);
-      let st = td0.insertStyle(th, { type: 'TEXT', data: "spud boy", meaning: 'INPUT', source: 'TEST' });
-      assert.equal(td0.allThoughts().length, 1);
-      assert.equal(td0.allThoughts()[0].id, th.id);
+      let st = td0.insertStyle(undefined, { type: 'TEXT', data: "spud boy", meaning: 'INPUT', source: 'TEST' });
+      assert.equal(td0.topLevelStyleOrder().length, 1);
+      assert.equal(td0.topLevelStyleOrder()[0], st.id);
       assert.equal(td0.allStyles().length, 1);
       assert.equal(td0.allStyles()[0].id, st.id);
       assert.equal(td0.allStyles()[0].source, 'TEST');
     });
-
   });
 });
 
@@ -72,7 +55,7 @@ describe('tdoc', function() {
   describe('tdoc Structure', function() {
     it('we can generate a tdoc with a compiler', function() {
       let td = createTDocFromText('TEXT', "x = 4; y = 5; x + y = 3");
-      assert.equal(td.allThoughts().length, 3);
+      assert.equal(td.topLevelStyleOrder().length, 3);
     });
   });
 });
@@ -102,8 +85,8 @@ describe('utility computations', function() {
     let td = createTDocFromText('TEXT', "x = 4; y = 5; x + y = 3");
     let s0 = td.allStyles()[0];
     td.insertStyle(s0, { type: 'TEXT', data: "this is a style on a style", meaning: 'EVALUATION', source: 'TEST' })
-    assert.ok(td.stylableHasChildOfType(s0, 'TEXT'));
-    assert.ok(!td.stylableHasChildOfType(s0, 'LATEX'));
+    assert.ok(td.styleHasChildOfType(s0, 'TEXT'));
+    assert.ok(!td.styleHasChildOfType(s0, 'LATEX'));
   });
 });
 
@@ -113,13 +96,12 @@ function createTDocFromText(type: 'MATHJS'|'TEXT', text: string): TDoc {
   const td =  TDoc.createAnonymous();
   const ths = text.split(";").map(s=>s.trim());
   for (text of ths) {
-    const th = td.insertThought({}, -1);
     switch(type){
     case 'TEXT':
-      td.insertStyle(th, { type: 'TEXT', data: text, meaning: 'INPUT', source: 'TEST' });
+      td.insertStyle(undefined, { type: 'TEXT', data: text, meaning: 'INPUT', source: 'TEST' });
       break;
     case 'MATHJS':
-      td.insertStyle(th, { type: 'MATHJS', data: text, meaning: 'INPUT', source: 'TEST' });
+      td.insertStyle(undefined, { type: 'MATHJS', data: text, meaning: 'INPUT', source: 'TEST' });
       break;
     }
   }

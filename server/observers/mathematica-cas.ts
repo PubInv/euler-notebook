@@ -25,7 +25,7 @@ const debug = debug1(`server:${MODULE}`);
 
 // import { MthMtcaText } from '../client/math-tablet-api';
 import { StyleObject, NotebookChange, StyleProperties, ToolMenu, ToolInfo,
-         StyleSource,ThoughtId } from '../../client/math-tablet-api';
+         StyleSource,StyleId, StyleIdToBooleanMap } from '../../client/math-tablet-api';
 import { TDoc } from '../tdoc';
 import { execute, constructSubstitution, checkEquiv, NVPair } from './wolframscript';
 import * as fs from 'fs';
@@ -39,8 +39,8 @@ export async function initialize(_config: Config): Promise<void> {
   TDoc.on('open', (tDoc: TDoc)=>{
     tDoc.on('change', function(this: TDoc, change: NotebookChange){ onChange(this, change); });
 
-    tDoc.on('useTool', function(this: TDoc, thoughtId: ThoughtId, source: StyleSource, info: ToolInfo){
-      onUseTool(this, thoughtId, source, info);
+    tDoc.on('useTool', function(this: TDoc, styleId: StyleId, source: StyleSource, info: ToolInfo){
+      onUseTool(this, styleId, source, info);
     });
 
     tDoc.on('close', function(this: TDoc){ onClose(this); });
@@ -48,13 +48,14 @@ export async function initialize(_config: Config): Promise<void> {
   });
 }
 
+// Private Functions
 
 // Private Functions
 
 // We are apply this rule to top level expressions, so
 // we style a thought---which is rather confusing.
-//  const parent = tDoc.getThoughtById(style.stylableId);
-//  debug("PARENT STTYLE",style);
+//  const parent = tDoc.getStyleById(style.parentId);
+//  debug("PARENT STYLE",style);
 function getSubstitutionsForStyle(tDoc: TDoc,style : StyleObject) :  NVPair[]  {
   const rs = tDoc.getSymbolStylesIDependOn(style);
   debug("RS",rs);
@@ -83,7 +84,7 @@ function getSubstitutionsForStyle(tDoc: TDoc,style : StyleObject) :  NVPair[]  {
   }
 }
 
-async function onUseTool(tDoc: TDoc, _thoughtId: ThoughtId, _source: StyleSource, info: ToolInfo):  Promise<void> {
+async function onUseTool(tDoc: TDoc, _styleId: StyleId, _source: StyleSource, info: ToolInfo):  Promise<void> {
   if (info.name != 'checkeqv') return;
   debug("INSIDE onUSE BEGIN :");
   debug("INSIDE onUSE CHECKEQV :",info.data.styleId);
@@ -109,11 +110,11 @@ async function onUseTool(tDoc: TDoc, _thoughtId: ThoughtId, _source: StyleSource
     // Since at present we do not have a convenient relationship structure
     // representing a calculation or proof, I will simply check ALL
     // expressions.
-    const parentThought =  tDoc.getAncestorThought(style.id);
+    const parentThought =  tDoc.topLevelStyleOf(style.id);
 
     const expressions = tDoc.allStyles().filter(
       (s: StyleObject, _index: number, _array: StyleObject[]) => {
-        const anc = tDoc.getAncestorThought(s.id);
+        const anc = tDoc.topLevelStyleOf(s.id);
         if (anc == parentThought) return false;
         else {
           debug(s);
@@ -124,12 +125,7 @@ async function onUseTool(tDoc: TDoc, _thoughtId: ThoughtId, _source: StyleSource
     debug("expressions",expressions);
     // Now I will try to build a table...
 
-    interface IStylableToBooleanMap
-    {
-      [key: number]: boolean;
-    }
-
-    const expressionEquivalence : IStylableToBooleanMap = {};
+    const expressionEquivalence : StyleIdToBooleanMap = {};
     const sub_expr1 =
       constructSubstitution(style.data,substitutions);
     for (var exp of expressions) {

@@ -63,7 +63,7 @@ export type StyleMeaning =
   'SYMBOL' |          // Symbols extracted from an expression.
   'SYMBOL-DEFINITION'|// Definition of a symbol.
   'SYMBOL-USE' |      // Use of a symbol.
-  'EQUIVALENT-CHECKS'|// Checking expression equivalence of with other stylables
+  'EQUIVALENT-CHECKS'|// Checking expression equivalence of with other styles
   'UNIVARIATE-QUADRATIC'|// A quadratic expression, presumably worth plotting.
   'SUBTRIVARIATE';    // An expression in one or two variables presumable plottable.
 
@@ -73,14 +73,14 @@ export type StyleMeaning =
   'JIIX' |            // Jiix: MyScript JIIX export from 'MATH' editor.
   'LATEX' |           // LatexData: LaTeX string
   'MATHEMATICA' |     // Mathematica style (evaluation)
-  /* DEPRECATED: */ 'CLASSIFICATION'|   // A classifcication of the thought.
+  /* DEPRECATED: */ 'CLASSIFICATION'|   // A classifcication of the style.
   'MATHJS' |          // MathJsData: MathJS plain text expression
   'MATHML' |          // MathMlData: MathML Presentation XML
   'STROKE' |          // StrokeGroups: MyScript strokeGroups export from 'TEXT' editor.
   'SYMBOL' |          // SymbolData: symbol in a definition or expression.
   'TEXT' |            // TextData: Plain text
-  'TOOL-MENU' |       // ToolMenu: Menu of tools that an observer can apply to a thought.
-  'BOOLEAN-MAP' |       // An object mapping stylable ids into boolean
+  'TOOL-MENU' |       // ToolMenu: Menu of tools that an observer can apply to a style.
+  'BOOLEAN-MAP' |     // StyleIdToBooleanMap: An object mapping style ids into boolean
   'WOLFRAM';          // WolframData: Wolfram language expression
 
   export type StyleSource =
@@ -107,6 +107,11 @@ export interface StrokeGroups {
   // TYPESCRIPT: TODO
 }
 
+export interface StyleIdToBooleanMap
+{
+  [key: number]: boolean;
+}
+
 export type ToolName = string;
 export interface ToolInfo {
   name: ToolName;
@@ -118,9 +123,7 @@ export type ToolMenu = ToolInfo[];
 // Plain object version of TDoc
 
 export type RelationshipId = number;
-export type StylableId = ThoughtId|StyleId;
 export type StyleId = number;
-export type ThoughtId = number;
 
 export interface RelationshipProperties {
   meaning: RelationshipMeaning;
@@ -128,8 +131,8 @@ export interface RelationshipProperties {
 
 export interface RelationshipObject extends RelationshipProperties {
   id: RelationshipId;
-  sourceId: StylableId;
-  targetId: StylableId;
+  sourceId: StyleId;
+  targetId: StyleId;
 }
 
 export interface StyleProperties {
@@ -145,21 +148,12 @@ export interface StylePropertiesWithSubprops extends StyleProperties {
 
 export interface StyleObject extends StyleProperties {
   id: StyleId;
-  stylableId: StylableId;
-}
-
-export interface ThoughtProperties {
-  // Expect thoughts will have some sort of properties in the future.
-  // e.g. position and size
-}
-
-export interface ThoughtObject extends ThoughtProperties {
-  id: ThoughtId;
+  parentId: StyleId; // 0 if top-level style.
 }
 
 // Notebook Change types:
 
-export type NotebookChange = RelationshipDeleted|RelationshipInserted|StyleDeleted|StyleInserted|ThoughtDeleted|ThoughtInserted;
+export type NotebookChange = RelationshipDeleted|RelationshipInserted|StyleDeleted|StyleInserted;
 
 interface RelationshipDeleted {
   type: 'relationshipDeleted';
@@ -179,26 +173,14 @@ interface StyleDeleted {
   // REVIEW: This is probably not sufficient info,
   //         as the style has already been deleted from
   //         the TDoc when this event is fired.
-  stylableId: StylableId;
+  parentId: StyleId;
   styleId: StyleId;
 }
 
 export interface StyleInserted {
   type: 'styleInserted';
   style: StyleObject;
-}
-
-interface ThoughtDeleted {
-  type: 'thoughtDeleted';
-  // REVIEW: This is probably not sufficient info,
-  //         as the thought has already been deleted from
-  //         the TDoc when this event is fired.
-  thoughtId: ThoughtId;
-}
-
-export interface ThoughtInserted {
-  type: 'thoughtInserted';
-  thought: ThoughtObject;
+  afterId?: StyleId;
 }
 
 // Messages from the server
@@ -223,25 +205,26 @@ interface NotebookOpened {
 
 // Messages from the client
 
-export type ClientMessage = CloseNotebook|DeleteThought|InsertThought|OpenNotebook|UseTool;
+// REVIEW: Unify with NotebookChange?
+
+export type ClientMessage = CloseNotebook|DeleteStyle|InsertStyle|OpenNotebook|UseTool;
 
 export interface CloseNotebook {
   action: 'closeNotebook';
   notebookName: NotebookName;
 }
 
-export interface DeleteThought {
-  action: 'deleteThought';
+export interface DeleteStyle {
+  action: 'deleteStyle';
   notebookName: NotebookName;
-  thoughtId: number;
+  styleId: number;
 }
 
-export interface InsertThought {
-  action: 'insertThought';
+export interface InsertStyle {
+  action: 'insertStyle';
   notebookName: NotebookName;
-  thoughtProps: ThoughtProperties;
-  stylePropss: StylePropertiesWithSubprops[];
-  afterId: ThoughtId; // or 0, -1.
+  styleProps: StylePropertiesWithSubprops;
+  afterId: StyleId; // or 0, -1.
 }
 
 export interface OpenNotebook {
@@ -254,5 +237,5 @@ export interface UseTool {
   info: ToolInfo;
   notebookName: NotebookName;
   source: StyleSource;
-  thoughtId: ThoughtId;
+  styleId: StyleId;
 }

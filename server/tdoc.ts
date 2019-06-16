@@ -25,8 +25,8 @@ import * as debug1 from 'debug';
 const MODULE = __filename.split(/[/\\]/).slice(-1)[0].slice(0,-3);
 const debug = debug1(`server:${MODULE}`);
 
-import { NotebookChange, NotebookPath, StyleObject, StyleMeaning, StyleType, ThoughtObject,
-         ThoughtId, StyleProperties, ThoughtProperties, RelationshipObject, StylableId,
+import { NotebookChange, NotebookPath, StyleObject, StyleMeaning, StyleType,
+         StyleId, StyleProperties, RelationshipObject,
          RelationshipProperties, RelationshipId, StyleSource, ToolInfo } from '../client/math-tablet-api';
 import { readNotebookFile, writeNotebookFile, AbsDirectoryPath, absDirPathFromNotebookPath } from './files-and-folders';
 
@@ -41,15 +41,10 @@ interface StyleMap {
 }
 
 interface TDocObject {
-  nextId: StylableId;
+  nextId: StyleId;
   relationshipMap: RelationshipMap;
   styleMap: StyleMap;
-  thoughtMap: ThoughtMap;
   version: string;
-}
-
-interface ThoughtMap {
-  [id: /* ThoughtId */number]: ThoughtObject;
 }
 
 export interface TDocOptions {
@@ -61,14 +56,14 @@ export interface TDocOptions {
 const DEFAULT_OPTIONS: TDocOptions = { anonymous: false };
 const SAVE_TIMEOUT_MS = 5000;
 
-const VERSION = "0.0.6";
+const VERSION = "0.0.7";
 
 // REVIEW: Are there other event emitters in our project that need similar declarations?
 // See https://stackoverflow.com/questions/39142858/declaring-events-in-a-typescript-class-which-extends-eventemitter
 export declare interface TDoc {
   on(event: 'change', listener: (change: NotebookChange)=> void): this;
   on(event: 'close', listener: ()=> void): this;
-  on(event: 'useTool', listener: (thoughtId: ThoughtId, source: StyleSource, info: ToolInfo)=>void): this;
+  on(event: 'useTool', listener: (styleId: StyleId, source: StyleSource, info: ToolInfo)=>void): this;
   on(event: string, listener: Function): this;
 }
 
@@ -136,7 +131,7 @@ export class TDoc extends EventEmitter {
   // Public Instance Properties
 
   public version: string;
-  public nextId: StylableId;
+  public nextId: StyleId;
   // NOTE: Properties with an underscore prefix are not persisted.
   public _path: NotebookPath;
 
@@ -151,8 +146,8 @@ export class TDoc extends EventEmitter {
     return Object.values(this.relationshipMap);
   }
 
-  public relationshipsOf(stylableId: StylableId): RelationshipObject[] {
-    return this.allRelationships().filter(r=>(r.sourceId == stylableId || r.targetId == stylableId));
+  public relationshipsOf(id: StyleId): RelationshipObject[] {
+    return this.allRelationships().filter(r=>(r.sourceId == id || r.targetId == id));
   }
 
   // REVIEW: Return an iterator?
@@ -162,16 +157,14 @@ export class TDoc extends EventEmitter {
 
   // Returns all thoughts in notebook order
   // REVIEW: Return an iterator?
-  public allThoughts(): ThoughtObject[] {
-    return this.thoughtOrder.map(id=>this.thoughtMap[id]);
-  }
+  public topLevelStyleOrder(): StyleId[] { return this.styleOrder; }
 
-  public childStylesOf(stylableId: StylableId): StyleObject[] {
-    return this.allStyles().filter(s=>(s.stylableId==stylableId));
+  public childStylesOf(id: StyleId): StyleObject[] {
+    return this.allStyles().filter(s=>(s.parentId==id));
   }
 
   // find all children of given type and meaning
-  public findChildStyleOfType(id: StylableId, type: StyleType, meaning?: StyleMeaning): StyleObject[] {
+  public findChildStyleOfType(id: StyleId, type: StyleType, meaning?: StyleMeaning): StyleObject[] {
 
     // we will count ourselves as a child here....
     const rval: StyleObject[] = [];
@@ -193,15 +186,7 @@ export class TDoc extends EventEmitter {
     return rval;
   }
 
-  public getAncestorThought(id: StylableId): ThoughtObject {
-    const thought = this.thoughtMap[id];
-    if (thought) { return thought; }
-    const style = this.styleMap[id];
-    if (!style) { throw new Error("Cannot find ancestor thought."); }
-    return this.getAncestorThought(style.stylableId);
-  }
-
-  public getStyleById(id: StylableId): StyleObject {
+  public getStyleById(id: StyleId): StyleObject {
     const rval = this.styleMap[id];
     if (!rval) { throw new Error(`Style ${id} doesn't exist.`); }
     return rval;
@@ -219,13 +204,13 @@ export class TDoc extends EventEmitter {
     // source style, which should be of type Symbol and meaning Definition.
     const rs = this.allRelationships();
     var symbolStyles: StyleObject[] = [];
-    const mp = this.getAncestorThought(style.id);
+    const mp = this.topLevelStyleOf(style.id);
     if (!mp) {
       console.error("INTERNAL ERROR: did not produce ancenstor: ",style.id);
       throw new Error("INTERNAL ERROR: did not produce ancenstor: ");
     }
     rs.forEach(r => {
-      const rp = this.getAncestorThought(r.targetId);
+      const rp = this.topLevelStyleOf(r.targetId);
       if (!rp) {
         console.error("INTERNAL ERROR: did not produce ancenstor: ",style.id);
         throw new Error("INTERNAL ERROR: did not produce ancenstor: ");
@@ -236,12 +221,6 @@ export class TDoc extends EventEmitter {
       }
     });
     return symbolStyles;
-  }
-
-  public getThoughtById(id: ThoughtId): ThoughtObject {
-    const rval = this.thoughtMap[id];
-    if (!rval) { throw new Error(`Thought ${id} doesn't exist.`); }
-    return rval;
   }
 
   public jsonPrinter(): string {
@@ -258,7 +237,7 @@ export class TDoc extends EventEmitter {
   }
 
   // This can be asymptotically improved later.
-  public stylableHasChildOfType(style: StyleObject, tname: StyleType, meaning?: StyleMeaning): boolean {
+  public styleHasChildOfType(style: StyleObject, tname: StyleType, meaning?: StyleMeaning): boolean {
     const id = style.id;
     return !!this.childStylesOf(id).find(s => s.type == tname && (!meaning || s.meaning == meaning));
   }
@@ -267,7 +246,7 @@ export class TDoc extends EventEmitter {
     var numLatex = this.numStyles('LATEX');
     var numMath = this.numStyles('MATHJS');
     var numText = this.numStyles('TEXT');
-    return `${this.allThoughts().length} thoughts\n`
+    return `${this.topLevelStyleOrder().length} thoughts\n`
       + `${this.allStyles().length} styles\n`
       + `${numLatex} latex styles\n`
       + `${numMath} math styles\n`
@@ -284,6 +263,13 @@ export class TDoc extends EventEmitter {
       if (key.startsWith('_') || key == 'domain') { delete obj[key]; }
     }
     return <TDocObject><unknown>obj;
+  }
+
+  public topLevelStyleOf(id: StyleId): StyleObject {
+    const style = this.styleMap[id];
+    if (!style) { throw new Error("Cannot find top-level style."); }
+    if (!style.parentId) { return style; }
+    return this.topLevelStyleOf(style.parentId);
   }
 
   // Public Instance Methods
@@ -312,26 +298,13 @@ export class TDoc extends EventEmitter {
 
   // Deletes the specified style and any styles or relationships attached to it recursively.
   // Emits TDoc 'change' events in a depth-first postorder.
-  public deleteStyle(styleId: StylableId): void {
+  public deleteStyle(id: StyleId): void {
+    this.assertNotClosed('deleteStyle');
+
+    const style = this.styleMap[id];
+    if (!style) { throw new Error(`Deleting unknown style ${id}`); }
 
     // Delete any relationships attached to this style.
-    const relationships = this.relationshipsOf(styleId);
-    for(const relationship of relationships) { this.deleteRelationship(relationship.id); }
-
-    // Delete any styles attached to this style
-    const styles = this.childStylesOf(styleId);
-    for(const style of styles) { this.deleteStyle(style.id); }
-
-    // Delete the style itself and emit a change event.
-    this.deleteStyleEntryAndEmit(styleId);
-  }
-
-  // Deletes the specified thought and any styles attached to it recursively.
-  // Emits TDoc 'change' events in a depth-first postorder.
-  public deleteThought(id: ThoughtId): void {
-    this.assertNotClosed('deleteThought');
-
-    // Delete any relationships attached to this thought.
     const relationships = this.relationshipsOf(id);
     for(const relationship of relationships) { this.deleteRelationship(relationship.id); }
 
@@ -339,19 +312,20 @@ export class TDoc extends EventEmitter {
     const styles = this.childStylesOf(id);
     for(const style of styles) { this.deleteStyle(style.id); }
 
-    // Delete the thought itself and emit a change event.
-    const thought = this.thoughtMap[id];
-    if (!thought) { throw new Error(`Deleting unknown thought ${id}`); }
-    const i = this.thoughtOrder.indexOf(id);
-    this.thoughtOrder.splice(i,1);
-    delete this.thoughtMap[id];
-    const change: NotebookChange = { type: 'thoughtDeleted', thoughtId: id };
+    if (!style.parentId) {
+      const i = this.styleOrder.indexOf(id);
+      this.styleOrder.splice(i,1);  
+    }
+
+    delete this.styleMap[id];
+
+    const change: NotebookChange = { type: 'styleDeleted', styleId: id, parentId: style.parentId };
     this.notifyChange(change);
   }
 
   public insertRelationship(
-    source: StyleObject|ThoughtObject,
-    target: StyleObject|ThoughtObject,
+    source: StyleObject|StyleObject,
+    target: StyleObject|StyleObject,
     props: RelationshipProperties,
   ): RelationshipObject {
     this.assertNotClosed('insertRelationship');
@@ -363,40 +337,34 @@ export class TDoc extends EventEmitter {
     return relationship;
   }
 
-  public insertStyle(stylable: StyleObject|ThoughtObject, props: StyleProperties): StyleObject {
+  // afterId: ID of thought to insert after or 0 for beginning, or -1 for end.
+  public insertStyle(parentStyle: StyleObject|undefined, props: StyleProperties, afterId: StyleId = 0): StyleObject {
     this.assertNotClosed('insertStyle');
-    const style: StyleObject = { ...props, id: this.nextId++, stylableId: stylable.id };
+    const style: StyleObject = { ...props, id: this.nextId++, parentId: (parentStyle ? parentStyle.id : 0) };
     const styleMinusData = { ...style, data: '...' };
-    debug(`inserting style ${JSON.stringify(styleMinusData)}`)
+    debug(`inserting style after ${afterId}: ${JSON.stringify(styleMinusData)}`)
     this.styleMap[style.id] = style;
+    if (!parentStyle) {
+      if (afterId===0) {
+        this.styleOrder.unshift(style.id);
+      } else if (afterId===-1) {
+        this.styleOrder.push(style.id);
+      } else {
+        const i = this.styleOrder.indexOf(afterId);
+        if (i<0) { throw new Error(`Cannot insert thought after unknown thought ${afterId}`); }
+        this.styleOrder.splice(i+1, 0, style.id);
+      }
+    }
     const change: NotebookChange = { type: 'styleInserted', style: style };
+    if (!parentStyle) { change.afterId = afterId ;}
     this.notifyChange(change);
+    // TODO: update this.styleOrder if top-level style
     return style;
   }
 
-  // afterId: ID of thought to insert after or 0 for beginning, or -1 for end.
-  public insertThought(props: ThoughtProperties, afterId: ThoughtId): ThoughtObject {
-    this.assertNotClosed('insertThought');
-    const thought: ThoughtObject = { ...props, id: this.nextId++ };
-    debug(`inserting thought ${JSON.stringify(thought)}`)
-    this.thoughtMap[thought.id] = thought;
-    if (afterId===0) {
-      this.thoughtOrder.unshift(thought.id);
-    } else if (afterId===-1) {
-      this.thoughtOrder.push(thought.id);
-    } else {
-      const i = this.thoughtOrder.indexOf(afterId);
-      if (i<0) { throw new Error(`Cannot insert thought after unknown thought ${afterId}`); }
-      this.thoughtOrder.splice(i+1, 0, thought.id);
-    }
-    const change: NotebookChange = { type: 'thoughtInserted', thought: thought };
-    this.notifyChange(change);
-    return thought;
-  }
-
-  public useTool(thoughtId: ThoughtId, source: StyleSource, info: ToolInfo): void {
+  public useTool(styleId: StyleId, source: StyleSource, info: ToolInfo): void {
     debug(`Emmiting useTool`);
-    this.emit('useTool', thoughtId, source, info);
+    this.emit('useTool', styleId, source, info);
     debug(`done Emmiting useTool`);
   }
 
@@ -432,8 +400,7 @@ export class TDoc extends EventEmitter {
     this.nextId = 1;
     this.relationshipMap = {};
     this.styleMap = {};
-    this.thoughtMap = {};
-    this.thoughtOrder = [];
+    this.styleOrder = [];
     this.version = VERSION;
     this._path = notebookPath;
     this._options = { ...DEFAULT_OPTIONS, ...options };
@@ -443,9 +410,8 @@ export class TDoc extends EventEmitter {
   // Private Instance Properties
 
   private relationshipMap: RelationshipMap;
-  private styleMap: StyleMap;
-  private thoughtMap: ThoughtMap;
-  private thoughtOrder: ThoughtId[];
+  private styleMap: StyleMap;     // Mapping from style ids to style objects.
+  private styleOrder: StyleId[];  // List of style ids in the top-down order they appear in the notebook.
 
   // NOTE: Properties with an underscore prefix are not persisted.
   private _closed?: boolean;
@@ -476,17 +442,6 @@ export class TDoc extends EventEmitter {
     if (!relationship) { throw new Error(`Deleting unknown relationship ${id}`); }
     delete this.relationshipMap[id];
     const change: NotebookChange = { type: 'relationshipDeleted', relationship };
-    this.notifyChange(change);
-  }
-
-  // Delete a specific style entry and emits a 'change' event.
-  // IMPORTANT: All attached styles should be deleted first!
-  private deleteStyleEntryAndEmit(id: StylableId): void {
-    this.assertNotClosed('deleteStyleEntryAndEmit');
-    const style = this.styleMap[id];
-    if (!style) { throw new Error(`Deleting unknown style ${id}`); }
-    delete this.styleMap[id];
-    const change: NotebookChange = { type: 'styleDeleted', styleId: id, stylableId: style.stylableId };
     this.notifyChange(change);
   }
 
