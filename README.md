@@ -102,6 +102,24 @@ Just refresh the browser page.
 
 Static assets to be served by the web server are placed in the <tt>server/public</tt>directory.
 
+## Developing with Wolfram Functionality for Free
+
+MathTablet hopes to use a plug-in strategy; at present, we are leveraging the
+computer algebra system and graphing capabilities of Wolfram Technology (i.e., Mathematica.)
+We also use MathJS, but as of this writing our main work is via wolframscript.
+
+If you pay for Mathematica, you can develop on your home machine as we (David and Rob) do.
+Happily, Wolfram now offers a [free-of-charge development license](https://blog.stephenwolfram.com/2019/05/launching-today-free-wolfram-engine-for-developers/) for key pieces
+for pre-production use. MathTablet is currently an experimental open-source system
+in pre-alpha development, so we believe it definitely qualifies. This means that
+you can develop for MathTablet without paying a license fee.
+
+To do this you will need to install two pieces of Wolfram technology:
+the [engine](https://www.wolfram.com/engine/) and [wolframscript](http://www.wolfram.com/wolframscript/?source=nav). This requires you to create an account at Wolfram and
+follow the instructions for installation and activation.  We have mocha unit test
+for wolframscript which should allow you to confirm when it is probably installed.
+
+
 ## Running Mocha tests
 
 There is a set of Mocha unit tests in <tt>server/test</tt> subdirectory. To run them:
