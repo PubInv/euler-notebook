@@ -65,6 +65,3 @@ async function getJsonFileFromConfigDir<T>(name: string): Promise<T> {
   const json = await readFile2(path, 'utf8');
   return JSON.parse(json);
 }
-
-
-

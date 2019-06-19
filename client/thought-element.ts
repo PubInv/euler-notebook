@@ -21,7 +21,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 import { $new, escapeHtml, Html } from './dom.js';
 import { getKatex } from './katex-types.js';
-import { StyleObject, LatexData, ToolMenu, StyleId } from './math-tablet-api.js';
+import { StyleObject, LatexData, ToolMenu, StyleId, RelationshipObject } from './math-tablet-api.js';
 import { Notebook } from './notebook.js';
 
 // Exported Class
@@ -87,10 +87,27 @@ export class ThoughtElement {
         else if (style.type == 'TEXT') { this.renderText(style.data); }
         break;
       case 'PLOT': this.renderPlot(style); break;
-      case 'EQUIVALENT-CHECKS':
-        this.renderEquivalenceCheck(style);
-        break;
       default:
+    }
+  }
+
+  public deleteEquivalence(relationship: RelationshipObject): void {
+//    const $formulaElt = this.$elt.querySelector('.formula');
+    console.log(relationship);
+    const element = document.getElementById("relationship"+relationship.id);
+    if (element != null) {
+      // @ts-ignore
+      element.parentNode.removeChild(element);
+    }
+  }
+
+  public insertEquivalence(relationship: RelationshipObject): void {
+    const $formulaElt = this.$elt.querySelector('.formula');
+    let childStyle = this.notebook.getStyleFromKey(relationship.sourceId);
+    if (childStyle) {
+      const thought = this.notebook.topLevelStyleOf(childStyle).style.id;
+      const preamble = `<p id=${"relationship"+relationship.id}> = { (${thought}) (From Mathematica CAS) } </p>`;
+      $formulaElt!.innerHTML = preamble + $formulaElt!.innerHTML;
     }
   }
 
@@ -172,26 +189,6 @@ export class ThoughtElement {
     }
     $formulaElt!.innerHTML = html;
   }
-
-  private renderEquivalenceCheck(_style: StyleObject): void {
-    const $formulaElt = this.$elt.querySelector('.formula');
-    const map = _style.data;
-    const keys: string[] = Object.keys(map).filter( (k : any) => map[k]);
-    // this a stopgap, we need to sort these...
-    if (keys.length == 0) {
-      return;
-    } else {
-      const key : number = Number(keys[keys.length -1]);
-      // now we must obtain the thought number for this
-      let childStyle = this.notebook.getStyleFromKey(key);
-      if (childStyle) {
-        const thought = this.notebook.topLevelStyleOf(childStyle).style.id;
-        const preamble = ` = { (${thought}) (From Mathematica CAS) } <br>`;
-        $formulaElt!.innerHTML = preamble + $formulaElt!.innerHTML;
-      }
-    }
-  }
-
 
   private renderOtherInput(style: StyleObject): void {
     if (typeof style.data != 'string') {

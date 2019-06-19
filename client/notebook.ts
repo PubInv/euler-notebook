@@ -87,7 +87,7 @@ export class Notebook {
   }
 
   public insertStyle(styleProps: StylePropertiesWithSubprops): void {
-    const msg: InsertStyle = {
+   const msg: InsertStyle = {
       action: 'insertStyle',
       afterId: -1,
       notebookName: this.notebookName,
@@ -126,7 +126,7 @@ export class Notebook {
 
   public smChange(change: NotebookChange): void {
     switch (change.type) {
-      case 'relationshipDeleted': this.chDeleteRelationship(change.relationship.id); break;
+      case 'relationshipDeleted': this.chDeleteRelationship(change.relationship); break;
       case 'relationshipInserted': this.chInsertRelationship(change.relationship); break;
       case 'styleDeleted': this.chDeleteStyle(change.styleId); break;
       case 'styleInserted': this.chInsertStyle(change.style); break;
@@ -177,10 +177,25 @@ export class Notebook {
 
   // Private Change Event Handlers
 
-  private chDeleteRelationship(relationshipId: RelationshipId): void {
-    const relationshipElt = this.relationships.get(relationshipId);
+  private chDeleteRelationship(relationship: RelationshipObject): void {
+    const relationshipElt = this.relationships.get(relationship.id);
     if (!relationshipElt) { throw new Error("Delete relationship message for unknown style"); }
-    this.relationships.delete(relationshipId);
+    this.relationships.delete(relationship.id);
+
+    // if the relationship is an equivalence, it has been rendered
+    // as a preamble of a thought. It would probably be easiest
+    // to re-render the thought.
+    if (relationship.meaning == 'EQUIVALENCE') {
+      const srcStyle = this.styles.get(relationship.sourceId);
+      const tarStyle = this.styles.get(relationship.targetId);
+      if (srcStyle && tarStyle) {
+        const srcStyleElt = this.topLevelStyleOf(srcStyle);
+        const tarStyleElt = this.topLevelStyleOf(tarStyle);
+        srcStyleElt.deleteEquivalence(relationship);
+        tarStyleElt.deleteEquivalence(relationship);
+        console.log(srcStyleElt,tarStyleElt);
+      }
+    }
   }
 
   private chDeleteStyle(styleId: StyleId): void {
@@ -198,6 +213,15 @@ export class Notebook {
 
   private chInsertRelationship(relationship: RelationshipObject): void {
     this.relationships.set(relationship.id, relationship);
+    if (relationship.meaning == 'EQUIVALENCE') {
+      let style = this.styles.get(relationship.targetId);
+      if (style) {
+        // Here I try to find the target to try to add the
+        // equivalence preamble...
+        let thoughtElt = this.topLevelStyleOf(style);
+        thoughtElt.insertEquivalence(relationship);
+      }
+    }
   }
 
   private chInsertStyle(style: StyleObject): void {

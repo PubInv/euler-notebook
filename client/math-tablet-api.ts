@@ -45,7 +45,8 @@ export type NotebookName = string;
 export type NotebookPath = string;
 
 export type RelationshipMeaning =
-  'SYMBOL-DEPENDENCY';
+  'SYMBOL-DEPENDENCY' |
+  'EQUIVALENCE';
 
 export type StyleMeaning =
   'ATTRIBUTE' |       // Generic attribute. Meaning implied by type.
@@ -107,10 +108,6 @@ export interface StrokeGroups {
   // TYPESCRIPT: TODO
 }
 
-export interface StyleIdToBooleanMap
-{
-  [key: number]: boolean;
-}
 
 export type ToolName = string;
 export interface ToolInfo {
@@ -124,6 +121,12 @@ export type ToolMenu = ToolInfo[];
 
 export type RelationshipId = number;
 export type StyleId = number;
+
+export interface StyleIdToBooleanMap
+{
+  [key: number]: boolean;
+}
+
 
 export interface RelationshipProperties {
   meaning: RelationshipMeaning;

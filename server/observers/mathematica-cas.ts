@@ -88,9 +88,24 @@ async function onUseTool(tDoc: TDoc, _styleId: StyleId, _source: StyleSource, in
   if (info.name != 'checkeqv') return;
   debug("INSIDE onUSE BEGIN :");
   debug("INSIDE onUSE CHECKEQV :",info.data.styleId);
-
   const style = tDoc.getStyleById(info.data.styleId);
-  debug("MAIN STTYLE",style);
+  await checkEquivalence(tDoc,style);
+}
+
+async function checkEquivalenceRule(tdoc: TDoc, style: StyleObject): Promise<StyleObject[]> {
+  if (style.type != 'WOLFRAM') { return []; }
+  // We need to call checkEquivalence on the style
+  // which has changed. Technically, we need to call it on
+  // all others compared to this as well. So
+  // really, I need to rewrit ethe function below
+  // to take two styles.
+  checkEquivalence(tdoc,style);
+  return [];
+}
+
+async function checkEquivalence(tDoc: TDoc, style: StyleObject):  Promise<StyleObject[]> {
+  debug("MAIN STYLE",style);
+
   try {
     const substitutions : NVPair[] = getSubstitutionsForStyle(tDoc,style);
     const sub_expr =
@@ -100,16 +115,6 @@ async function onUseTool(tDoc: TDoc, _styleId: StyleId, _source: StyleSource, in
     debug("sustitutions",substitutions);
     debug("sub_expr",sub_expr);
 
-    //    createdPlotSuccessfully = await plotSubtrivariate(sub_expr,variables,full_filename);
-
-    // Now we must ask the question: how do we intend to operate and how to
-    // produce our data?
-    // I propose we produce an object, whose keys are style ids of
-    // styles which are wolfram expressions, and whose values are booleans
-    // (true if equivalent).
-    // Since at present we do not have a convenient relationship structure
-    // representing a calculation or proof, I will simply check ALL
-    // expressions.
     const parentThought =  tDoc.topLevelStyleOf(style.id);
 
     const expressions = tDoc.allStyles().filter(
@@ -136,7 +141,6 @@ async function onUseTool(tDoc: TDoc, _styleId: StyleId, _source: StyleSource, in
           constructSubstitution(exp.data,esubs);
         debug("substituted expressions",sub_expr1,sub_expr2);
         const equiv = await checkEquiv(sub_expr1,sub_expr2);
-
         expressionEquivalence[expressID] = equiv;
       } catch (e) {
         debug("error evaluting equivalentce",e);
@@ -145,19 +149,32 @@ async function onUseTool(tDoc: TDoc, _styleId: StyleId, _source: StyleSource, in
 
     }
     debug("expressions",expressionEquivalence);
+    let styleIds = [];
     for(var key in expressionEquivalence) {
-      debug("key,value",key,expressionEquivalence[key]);
+      const keynum : number = <number>(<unknown>key);
+      debug("key,value",key,expressionEquivalence[keynum]);
+      if (expressionEquivalence[keynum]) {
+        styleIds.push(keynum);
+        const eqstyle = tDoc.getStyleById(<StyleId><unknown>keynum);
+        let src : StyleObject;
+        let tar : StyleObject;
+        if (style.id < keynum) {
+          src = style;
+          tar = eqstyle;
+        } else {
+          src = eqstyle;
+          tar = style;
+        }
+        const r = tDoc.insertRelationship(src, tar,
+                                          { meaning: 'EQUIVALENCE' });
+        debug("adding relationship",r);
+      }
     }
-    // Now we will add this as a new style--at least we will be able to
-    // see it with Debug, and eventually can produce a GUI for it.
-    tDoc.insertStyle(style,{ type: 'BOOLEAN-MAP',
-                             data: expressionEquivalence,
-                             meaning: 'EQUIVALENT-CHECKS',
-                             source: 'MATHEMATICA' })
-
+    debug("tdoc Relationships",tDoc.allRelationships());
+    return [];
   } catch (e) {
     debug("MATHEMATICA Check Equivalence :",e);
-    return;
+    return [];
   }
 }
 
@@ -167,6 +184,7 @@ function onChange(tDoc: TDoc, change: NotebookChange): void {
     case 'styleInserted':
       runAsync(mathMathematicaRule(tDoc, change.style), MODULE, 'mathMathematicaRule');
       runAsync(convertMathMlToWolframRule(tDoc, change.style), MODULE, 'convertMathMlToWolframRule');
+      runAsync(checkEquivalenceRule(tDoc, change.style), MODULE, 'checkEquivalenceRule');
       break;
     default: break;
   }
