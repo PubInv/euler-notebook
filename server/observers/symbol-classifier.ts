@@ -23,38 +23,156 @@ import * as debug1 from 'debug';
 const MODULE = __filename.split(/[/\\]/).slice(-1)[0].slice(0,-3);
 const debug = debug1(`server:${MODULE}`);
 
-import { NotebookChange, StyleObject, StyleProperties, SymbolData, WolframData } from '../../client/math-tablet-api';
-import { TDoc } from '../tdoc';
+import { NotebookChange, StyleObject, SymbolData, WolframData, NotebookChangeRequest, StyleInsertRequest, StylePropertiesWithSubprops, RelationshipPropertiesMap } from '../../client/math-tablet-api';
+import { TDoc, ObserverInstance } from '../tdoc';
 import { execute as executeWolframscript, draftChangeContextName } from './wolframscript';
-import { runAsync } from '../common';
 import { Config } from '../config';
 
-// Exports
+export class SymbolClassifierObserver implements ObserverInstance {
 
-export async function initialize(_config: Config): Promise<void> {
-  debug(`initializing`);
-  TDoc.on('open', (tDoc: TDoc)=>{
-    tDoc.on('change', function(this: TDoc, change: NotebookChange){ onChange(this, change); });
-    // tDoc.on('close', function(this: TDoc){ onClose(this); });
-    // onOpen(tDoc);
-  });
-}
+  // Class Methods
 
-// Event Handlers
+  public static async initialize(_config: Config): Promise<void> {
+    debug(`initialize`);
+  }
 
-function onChange(tDoc: TDoc, change: NotebookChange): void {
-  switch (change.type) {
-  case 'styleInserted': {
-    const style = change.style;
-    if (style.type == 'WOLFRAM' && style.meaning == 'INPUT' ||style.meaning == 'INPUT-ALT') {
-      runAsync<void>(addSymbolUseStyles(tDoc, style), MODULE, 'addSymbolUseStyles');
-      runAsync<void>(addSymbolDefStyles(tDoc, style), MODULE, 'addSymbolDefStyles');
+  public static async onOpen(tDoc: /* REVIEW: ReadOnlyTDoc */TDoc): Promise<ObserverInstance> {
+    debug(`onOpen`);
+    return new this(tDoc);
+  }
+
+  // Instance Methods
+
+  public async onChanges(changes: NotebookChange[]): Promise<NotebookChangeRequest[]> {
+    debug(`onChanges ${changes.length}`);
+    const rval: NotebookChangeRequest[] = [];
+    for (const change of changes) {
+      await this.onChange(change, rval);
     }
-    break;
-  }}
+    debug(`onChanges returning ${rval.length} changes.`);
+    return rval;
+  }
+
+  public async onClose(): Promise<void> {
+    debug(`onClose ${this.tDoc._path}`);
+    delete this.tDoc;
+  }
+
+  public async useTool(style: StyleObject): Promise<NotebookChangeRequest[]> {
+    debug(`useTool ${this.tDoc._path} ${style.id}`);
+    return [];
+  }
+
+  // --- PRIVATE ---
+
+  // Private Constructor
+
+  private constructor(tDoc: TDoc) {
+    this.tDoc = tDoc;
+  }
+
+  // Private Instance Properties
+
+  private tDoc: TDoc;
+
+  // Private Instance Methods
+
+  private async onChange(change: NotebookChange, rval: NotebookChangeRequest[]): Promise<void> {
+    debug(`onChange ${this.tDoc._path} ${change.type}`);
+    switch (change.type) {
+      case 'styleInserted': {
+        const style = change.style;
+        if (style.type == 'WOLFRAM' && style.meaning == 'INPUT' ||style.meaning == 'INPUT-ALT') {
+          await this.addSymbolUseStyles(style, rval);
+          await this.addSymbolDefStyles(style, rval);
+        }
+        break;
+      }
+    }
+  }
+
+  private async addSymbolDefStyles(style: StyleObject, rval: NotebookChangeRequest[]): Promise<void> {
+    const script = `FullForm[Hold[${style.data}]]`;
+    const result = await execute(script);
+    if (!result) { return; }
+    if (result.startsWith("Hold[Set[")) {
+      // WARNING! TODO!  This may work but will not match
+      // expressions which do not evaluate numerically.
+      const name_matcher = /Hold\[Set\[(\w+),/g;
+      const name_matches = name_matcher.exec(result);
+      const value_matcher = /,\s+(.+)\]\]/g;
+      const value_matches = value_matcher.exec(result);
+      if (name_matches && value_matches) {
+        // We have a symbol definition.
+        const name = name_matches[1];
+        const value = value_matches[1];
+        // Add the symbol-definition style
+        const relationsTo: RelationshipPropertiesMap = {};
+        // Add any symbol-dependency relationships as a result of the new symbol-def style
+        for (const otherStyle of this.tDoc.allStyles()) {
+          if (otherStyle.type == 'SYMBOL' &&
+              otherStyle.meaning == 'SYMBOL-USE' &&
+              otherStyle.data.name == name) {
+            relationsTo[otherStyle.id] = { meaning: 'SYMBOL-DEPENDENCY' };
+            debug(`Inserting relationship`);
+          }
+        }
+        const data = { name, value };
+        const styleProps: StylePropertiesWithSubprops = {
+          type: 'SYMBOL',
+          data,
+          meaning: 'SYMBOL-DEFINITION',
+          relationsTo,
+        }
+        const changeReq: StyleInsertRequest = { type: 'insertStyle', parentId: style.id, styleProps };
+        rval.push(changeReq);
+
+        debug(`Inserting def style.`);
+
+      }
+    }
+  }
+
+  private async  addSymbolUseStyles(style: StyleObject, rval: NotebookChangeRequest[]): Promise<void> {
+    const script = `runPrivate[Variables[${style.data}]]`;
+    const oresult = await execute(script);
+    if (!oresult) { return; }
+    debug("BEFORE: "+oresult);
+    const result = draftChangeContextName(oresult);
+    debug("CONTEXT REMOVED: "+result);
+
+    // TODO: validate return value is in expected format with regex.
+    const symbols = result.slice(1,-1).split(', ').filter( s => !!s)
+    symbols.forEach(s => {
+
+      // Add the symbol-use style
+      const relationsFrom: RelationshipPropertiesMap = {};
+      // Add any symbol-dependency relationships as a result of the new symbol-use style
+      for (const otherStyle of this.tDoc.allStyles()) {
+        if (otherStyle.type == 'SYMBOL' &&
+            otherStyle.meaning == 'SYMBOL-DEFINITION' &&
+            otherStyle.data.name == s) {
+          relationsFrom[otherStyle.id] = { meaning: 'SYMBOL-DEPENDENCY' };
+          debug(`Inserting relationship`);
+        }
+      }
+      const data: SymbolData = { name: s };
+      const styleProps: StylePropertiesWithSubprops = {
+        type: 'SYMBOL',
+        data,
+        meaning: 'SYMBOL-USE',
+        relationsFrom,
+      }
+      const changeReq: StyleInsertRequest = { type: 'insertStyle', parentId: style.id, styleProps };
+      rval.push(changeReq);
+      debug(`Inserting use style`);
+
+    });
+  }
+
 }
 
-// Private Functios
+// Helper Functios
 
 async function execute(script: WolframData): Promise<WolframData|undefined> {
   let result: WolframData;
@@ -69,67 +187,4 @@ async function execute(script: WolframData): Promise<WolframData|undefined> {
   return result;
 }
 
-async function addSymbolDefStyles(tDoc: TDoc, style: StyleObject): Promise<void> {
-  const script = `FullForm[Hold[${style.data}]]`;
-  const result = await execute(script);
-  if (!result) { return; }
-  if (result.startsWith("Hold[Set[")) {
-    // WARNING! TODO!  This may work but will not match
-    // expressions which do not evaluate numerically.
-    const name_matcher = /Hold\[Set\[(\w+),/g;
-    const name_matches = name_matcher.exec(result);
-    const value_matcher = /,\s+(.+)\]\]/g;
-    const value_matches = value_matcher.exec(result);
-    if (name_matches && value_matches) {
-      // We have a symbol definition.
 
-      // Add the symbol-definition style
-      const data = { name: name_matches[1], value: value_matches[1] };
-      const styleProps: StyleProperties = { type: 'SYMBOL', data, meaning: 'SYMBOL-DEFINITION', source: 'MATHEMATICA' }
-      const newStyle = tDoc.insertStyle(style, styleProps);
-      debug(`Inserting def style: ${JSON.stringify(newStyle)}`);
-
-      // Add any symbol-dependency relationships as a result of the new symbol-def style
-      for (const otherStyle of tDoc.allStyles()) {
-        if (otherStyle.id == newStyle.id) { continue; }
-        if (otherStyle.type == 'SYMBOL' &&
-            otherStyle.meaning == 'SYMBOL-USE' &&
-            otherStyle.data.name == newStyle.data.name) {
-          const relationship = tDoc.insertRelationship(newStyle, otherStyle, { meaning: 'SYMBOL-DEPENDENCY' });
-          debug(`Inserting relationship:: ${JSON.stringify(relationship)}`);
-        }
-      }
-    }
-  }
-}
-
-async function addSymbolUseStyles(tDoc: TDoc, style: StyleObject): Promise<void> {
-  const script = `runPrivate[Variables[${style.data}]]`;
-  const oresult = await execute(script);
-  if (!oresult) { return; }
-  debug("BEFORE: "+oresult);
-  const result = draftChangeContextName(oresult);
-  debug("CONTEXT REMOVED: "+result);
-
-  // TODO: validate return value is in expected format with regex.
-  const symbols = result.slice(1,-1).split(', ').filter( s => !!s)
-  symbols.forEach(s => {
-
-    // Add the symbol-use style
-    const data: SymbolData = { name: s };
-    const styleProps: StyleProperties = { type: 'SYMBOL', data, meaning: 'SYMBOL-USE', source: 'MATHEMATICA' }
-    const newStyle = tDoc.insertStyle(style, styleProps);
-    debug(`Inserting use style: ${JSON.stringify(newStyle)}`);
-
-    // Add any symbol-dependency relationships as a result of the new symbol-use style
-    for (const otherStyle of tDoc.allStyles()) {
-      if (otherStyle.id == newStyle.id) { continue; }
-      if (otherStyle.type == 'SYMBOL' &&
-          otherStyle.meaning == 'SYMBOL-DEFINITION' &&
-          otherStyle.data.name == newStyle.data.name) {
-        const relationship = tDoc.insertRelationship(otherStyle, newStyle, { meaning: 'SYMBOL-DEPENDENCY' });
-        debug(`Inserting relationship:: ${JSON.stringify(relationship)}`);
-      }
-    }
-  });
-}

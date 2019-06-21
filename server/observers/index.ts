@@ -21,23 +21,32 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 import { Config } from '../config';
 
-import { initialize as initializeMathematicaCas } from './mathematica-cas';
-import { initialize as initializeMathJsCas } from './mathjs-cas';
-import { initialize as initializeMathStepsCas } from './mathsteps-cas';
-import { initialize as initializeQuadClassifier } from './subtriv-classifier';
-// import { initialize as initializeQuadPlotter } from './quad-plotter';
-import { initialize as initializeSandbox } from './sandbox';
-import { initialize as initializeSymbolClassifier } from './symbol-classifier';
+import { MathematicaObserver } from './mathematica-cas';
+import { MathJsObserver } from './mathjs-cas';
+import { MathStepsObserver } from './mathsteps-cas';
+import { SandboxObserver } from './sandbox';
+import { SubtrivClassifierObserver } from './subtriv-classifier';
+import { SymbolClassifierObserver } from './symbol-classifier';
+import { TDoc } from '../tdoc';
 
 // Exported functions
 
 export async function initialize(config: Config): Promise<void> {
-  await Promise.all([
-    config.mathematica && initializeMathematicaCas(config),
-    config.mathjs && initializeMathJsCas(config),
-    config.mathsteps && initializeMathStepsCas(config),
-    config.mathematica && initializeQuadClassifier(config),
-    initializeSandbox(config),
-    config.mathematica && initializeSymbolClassifier(config),
-  ]);
+
+  if (config.mathematica) {
+    await MathematicaObserver.initialize(config);
+    TDoc.registerObserver('MATHEMATICA', MathematicaObserver);
+    TDoc.registerObserver('SUBTRIV-CLASSIFIER', SubtrivClassifierObserver);
+    TDoc.registerObserver('SYMBOL-CLASSIFIER', SymbolClassifierObserver);
+  }
+  if (config.mathjs) {
+    await MathJsObserver.initialize(config);
+    TDoc.registerObserver('MATHJS', MathJsObserver); 
+  }
+  if (config.mathsteps) {
+    await MathStepsObserver.initialize(config);
+    TDoc.registerObserver('MATHSTEPS', MathStepsObserver); 
+  }
+  await SandboxObserver.initialize(config);
+  TDoc.registerObserver('SANDBOX', SandboxObserver);
 }

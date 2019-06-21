@@ -27,21 +27,16 @@ import * as WebSocket from 'ws';
 
 // TODO: Handle websocket lifecycle: closing, unexpected disconnects, errors, etc.
 
-import { ClientMessage, NotebookChange, NotebookName, NotebookPath, ServerMessage,
-         StyleId, StyleSource, ToolInfo, StylePropertiesWithSubprops, StyleObject, NotebookChanged, StyleInserted, InsertStyle } from '../client/math-tablet-api';
+import { ClientMessage, NotebookPath, NotebookName, StyleDeleteRequest, InsertStyle, StyleInsertRequest, NotebookChanged, ServerMessage, CloseNotebook, DeleteStyle, OpenNotebook, UseTool, NotebookChange, NotebookOpened } from '../client/math-tablet-api';
 
-import { PromiseResolver } from './common';
+import { PromiseResolver, runAsync } from './common';
 // REVIEW: This file should not be dependent on any specific observers.
 import { TDoc } from './tdoc';
+import { ClientObserver } from './observers/client-observer';
 
 // Types
 
-type ClientId = string;
-
-interface TDocListeners {
-  change: (ch: NotebookChange)=>void,
-  close: ()=>void,
-}
+export type ClientId = string;
 
 // Constants
 
@@ -78,9 +73,9 @@ export class ClientSocket {
 
   // Instance Property Functions
 
-  public allNotebooks(): IterableIterator<TDoc> {
-    return this.tDocs.values();
-  }
+  // public allNotebooks(): IterableIterator<TDoc> {
+  //   return this.tDocs.values();
+  // }
 
   // Instance Methods
 
@@ -111,6 +106,17 @@ export class ClientSocket {
     return this.closePromise;
   }
 
+  // REVIEW: Async using socket sending callback?
+  public notebookChanged(tDoc: TDoc, changes: NotebookChange[]): void {
+    // REVIEW: verify that tDoc is one of our opened ones?
+    const msg: NotebookChanged = {
+      action: 'notebookChanged',
+      notebookName: tDoc._path,
+      changes,
+    };
+    this.sendMessage(msg);
+  }
+
   // --- PRIVATE ---
 
   // Private Class Properties
@@ -123,7 +129,7 @@ export class ClientSocket {
     try {
       debug(`Client Socket: new connection: ${req.url}`);
       // TODO: Client generate ID and send it with connection.
-      const id: ClientId = Date.now().toString();
+      const id: ClientId = `C${Date.now()}`;
       const instance = new this(id, ws);
       this.clientSockets.set(id, instance);
     } catch(err) {
@@ -137,8 +143,7 @@ export class ClientSocket {
     debug(`Client Socket: constructor`)
     this.id = id;
     this.socket = ws;
-    this.tDocs = new Map();
-    this.tDocListeners = new Map();
+    this.clientObservers = new Map();
     ws.on('close', (code: number, reason: string) => this.onWsClose(ws, code, reason))
     ws.on('error', (err: Error) => this.onWsError(ws, err))
     ws.on('message', (message: string) => this.onWsMessage(ws, message));
@@ -148,37 +153,16 @@ export class ClientSocket {
   private closePromise?: Promise<void>;
   private closeResolver?: PromiseResolver<void>;
   private socket: WebSocket;
-  private tDocs: Map<NotebookPath,TDoc>;
-  private tDocListeners: Map<NotebookPath, TDocListeners>;
-
-  // Private Event Handlers
-
-  private onTDocChange(tDoc: TDoc, change: NotebookChange): void {
-    try {
-      debug(`Client Socket: tDoc changed: ${tDoc._path} ${change.type}`);
-      this.sendMessage({ action: 'notebookChanged', notebookName: tDoc._path, change });
-    } catch(err) {
-      console.error(`Client Socket: unexpected error handling tDoc change: ${err.message}`);
-    }
-  }
-
-  private onTDocClose(tDoc: TDoc): void {
-    try {
-      debug(`Client Socket: tDoc closed: ${tDoc._path}`);
-      this.closeNotebook(tDoc._path, true);
-    } catch(err) {
-      console.error(`Client Socket: Unexpected error handling tdoc close: ${err.message}`);
-    }
-  }
+  private clientObservers: Map<NotebookPath, ClientObserver>;
 
   private onWsClose(_ws: WebSocket, code: number, reason: string): void {
     try {
       // Normal close appears to be code 1001, reason empty string.
       if (this.closeResolver) {
-        debug(`Client Socket: web socket closed by server: ${code} '${reason}' ${this.tDocs.size}`);
+        debug(`Client Socket: web socket closed by server: ${code} '${reason}' ${this.clientObservers.size}`);
         this.closeResolver.resolve();
       } else {
-        debug(`Client Socket: web socket closed by client: ${code} '${reason}' ${this.tDocs.size}`);
+        debug(`Client Socket: web socket closed by client: ${code} '${reason}' ${this.clientObservers.size}`);
         this.closeAllNotebooks(false);
       }
       ClientSocket.clientSockets.delete(this.id);
@@ -196,26 +180,32 @@ export class ClientSocket {
     }
   }
 
-  private onWsMessage(_ws: WebSocket, message: WebSocket.Data) {
+  private onWsMessage(_ws: WebSocket, message: WebSocket.Data): void {
     try {
       const msg: ClientMessage = JSON.parse(message.toString());
       debug(`Client Socket: received socket message: ${msg.action} ${msg.notebookName}`);
       switch(msg.action) {
-      case 'openNotebook': this.cmOpenNotebook(msg.notebookName); break;
-      case 'closeNotebook': this.cmCloseNotebook(msg.notebookName); break;
-      default: {
-        const tDoc = this.tDocs.get(msg.notebookName);
-        if (!tDoc) { throw new Error(`Client Socket unknown notebook: ${msg.action} ${msg.notebookName}`); }
-        switch(msg.action) {
-        case 'deleteStyle':  this.cmDeleteStyle(tDoc, msg.styleId); break;
-        case 'insertStyle':  this.cmInsertStyle(tDoc, msg); break;
-        case 'useTool': this.cmUseTool(tDoc, msg.styleId, msg.source, msg.info); break;
-	      default: {
+        // TODO: 'changeNotebook' taking array of change requests.
+        case 'openNotebook':
+          runAsync(this.cmOpenNotebook(msg), MODULE, 'cmOpenNotebook');
+          break;
+        case 'closeNotebook':
+          runAsync(this.cmCloseNotebook(msg), MODULE, 'cmCloseNotebook');
+          break;
+        case 'deleteStyle':
+          runAsync( this.cmDeleteStyle(msg), MODULE, 'cmDeleteStyle');
+          break;
+        case 'insertStyle':
+          runAsync(this.cmInsertStyle(msg), MODULE, 'cmInsertStyle');
+          break;
+        case 'useTool':
+          runAsync(this.cmUseTool(msg), MODULE, 'cmUseTool');
+          break;
+        default: {
           console.error(`Client Socket: unexpected WebSocket message action ${(<any>msg).action}. Ignoring.`);
           break;
-        }}
-        break;
-      }}
+        }
+      }
     } catch(err) {
       console.error(`Client Socket: unexpected error handling web-socket message: ${err.message}`);
     }
@@ -223,102 +213,79 @@ export class ClientSocket {
 
   // Private Client Message Handlers
 
-  private cmCloseNotebook(notebookName: NotebookName): void {
-    this.closeNotebook(notebookName, true);
+  private async cmCloseNotebook(msg: CloseNotebook): Promise<void> {
+    await this.closeNotebook(msg.notebookName, true);
   }
 
-  private cmDeleteStyle(tDoc: TDoc, styleId: StyleId): void {
-    tDoc.deleteStyle(styleId);
+  private async cmDeleteStyle(msg: DeleteStyle): Promise<void> {
+    const clientObserver = this.clientObservers.get(msg.notebookName);
+    if (!clientObserver) { throw new Error(`Unknown notebook ${msg.notebookName} for client message delete-style.`); }
+    const changeReq: StyleDeleteRequest = { type: 'deleteStyle', styleId: msg.styleId };
+    // REVIEW: source client id?
+    await clientObserver.tDoc.requestChanges('USER', [changeReq]);
   }
 
-  private cmInsertStyle(tDoc: TDoc, msg: InsertStyle): void {
-    insertStyleRecursively(tDoc, undefined, msg.styleProps, msg.afterId);
+  private async cmInsertStyle(msg: InsertStyle): Promise<void> {
+    const clientObserver = this.clientObservers.get(msg.notebookName);
+    if (!clientObserver) { throw new Error(`Unknown notebook ${msg.notebookName} for client message insert-style.`); }
+    const changeReq: StyleInsertRequest = {
+      type: 'insertStyle',
+      parentId: 0,
+      styleProps: msg.styleProps,
+      afterId: msg.afterId,
+    };
+    await clientObserver.tDoc.requestChanges('USER', [changeReq]);
   }
 
-  private cmOpenNotebook(notebookName: NotebookName): void {
-    const tDoc = this.tDocs.get(notebookName);
-    if (tDoc) {
+  private async cmOpenNotebook(msg: OpenNotebook): Promise<void> {
+    const clientObserver = this.clientObservers.get(msg.notebookName);
+    if (clientObserver) {
       // TODO: handle error
       // TODO: Send notebookOpened message?
-      console.error(`ERROR: Client Socket: client duplicate open notebook message: ${this.id} ${notebookName}`);
+      console.error(`ERROR: Client Socket: client duplicate open notebook message: ${this.id} ${msg.notebookName}`);
       return;
     }
-    this.openNotebook(notebookName).catch(
-      (err: Error)=>{
-        console.error(`ERROR: Client Socket: error opening notebook: ${this.id} ${notebookName} ${err.message}`);
-        // TODO: Send client an error message
-      }
-    );
+    await this.openNotebook(msg.notebookName);
   }
 
-  private cmUseTool(tDoc: TDoc, styleId: StyleId, source: StyleSource, info: ToolInfo): void {
-    debug("cmUseTool Begin");
-    tDoc.useTool(styleId, source, info);
-    debug("cmUseTool End");
+  private async cmUseTool(msg: UseTool): Promise<void> {
+    const clientObserver = this.clientObservers.get(msg.notebookName);
+    if (!clientObserver) { throw new Error(`Unknown notebook ${msg.notebookName} for client message use-tool.`); }
+    await clientObserver.tDoc.useTool(msg.styleId);
   }
 
   // Private Instance Methods
 
-  private closeAllNotebooks(notify: boolean): void {
-    for (const notebookName of this.tDocs.keys()) { this.closeNotebook(notebookName, notify); }
+  private async closeAllNotebooks(notify: boolean): Promise<void> {
+    // REVIEW: close in parallel?
+    for (const notebookName of this.clientObservers.keys()) {
+      await this.closeNotebook(notebookName, notify);
+    }
   }
 
-  private closeNotebook(notebookName: NotebookName, notify: boolean): void {
-    const tDoc = this.tDocs.get(notebookName);
-    if (!tDoc) {
+  private async closeNotebook(notebookName: NotebookName, notify: boolean): Promise<void> {
+    const clientObserver = this.clientObservers.get(notebookName);
+    if (!clientObserver) {
       console.warn(`Client Socket ${this.id}: closing notebook that is already closed: ${notebookName}`);
       return;
     }
-    this.tDocs.delete(notebookName);
-    const listeners = this.tDocListeners.get(notebookName);
-    if (listeners) {
-      this.tDocListeners.delete(notebookName);
-      tDoc.removeListener('close', listeners.close);
-      tDoc.removeListener('change', listeners.change);
-    } else {
-      console.error(`ERROR: Client Socket: listeners don't exist for tDoc: ${this.id} ${notebookName}`)
-    }
+    this.clientObservers.delete(notebookName);
+    clientObserver.close();
     if (notify) {
-      this.sendMessage({ action: 'notebookClosed', notebookName: tDoc._path });
-    }
-  }
-
-  // REVIEW: notebookName could be extracted from tDoc.
-  private insertStylesRecursively(notebookName: NotebookName, tDoc: TDoc, style: StyleObject): void {
-    const change: StyleInserted = { type: 'styleInserted', style };
-    const msg: NotebookChanged = { action: 'notebookChanged', notebookName, change }
-    this.sendMessage(msg);
-    for (const subStyle of tDoc.childStylesOf(style.id)) {
-      this.insertStylesRecursively(notebookName, tDoc, subStyle);
+      this.sendMessage({ action: 'notebookClosed', notebookName });
     }
   }
 
   private async openNotebook(notebookName: NotebookName): Promise<void> {
     const tDoc = await TDoc.open(notebookName, {/* default options*/});
-    const listeners: TDocListeners = {
-      change: (ch: NotebookChange)=>this.onTDocChange(tDoc,ch),
-      close: ()=>this.onTDocClose(tDoc),
+    const clientObserver = ClientObserver.open(tDoc, this);
+    this.clientObservers.set(tDoc._path, clientObserver);
+    const msg: NotebookOpened = {
+      action: 'notebookOpened',
+      notebookName,
+      tDoc: tDoc.toJSON(),
     }
-
-    this.tDocs.set(tDoc._path, tDoc);
-    this.tDocListeners.set(tDoc._path, listeners);
-
-    // IMPORTANT: We prepend the 'change' listener because we need to send
-    // style and thought insert messsage to the client in the order the
-    // styles and thoughts are created.
-    // Because CAS modules can synchronously create new thoughts and styles
-    // in response to 'change' events, if we are not first on the list of listeners,
-    // we may get the events out of creation order.
-    tDoc.prependListener('change', listeners.change);
-    tDoc.on('close', listeners.close);
-
-    this.sendMessage({ action: 'notebookOpened', notebookName });
-
-    // Send all notebook thoughts and styles.
-    for (const id of tDoc.topLevelStyleOrder()) {
-      const style = tDoc.getStyleById(id);
-      this.insertStylesRecursively(notebookName, tDoc, style);
-    }
+    this.sendMessage(msg);
   }
 
   private sendMessage(msg: ServerMessage): void {
@@ -335,13 +302,3 @@ export class ClientSocket {
 }
 
 // Helper Functions
-
-function insertStyleRecursively(tDoc: TDoc, parent: StyleObject|undefined, propsWithSubprops: StylePropertiesWithSubprops, afterId: StyleId): void {
-  const { subprops, ...props } = propsWithSubprops;
-  const style = tDoc.insertStyle(parent, props, afterId);
-  if (subprops) {
-    for (const props of subprops) {
-      insertStyleRecursively(tDoc, style, props, 0);
-    }
-  }
-}

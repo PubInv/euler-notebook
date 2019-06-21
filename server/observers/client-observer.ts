@@ -28,10 +28,11 @@ const debug = debug1(`server:${MODULE}`);
 import { NotebookChange, NotebookChangeRequest, StyleObject } from '../../client/math-tablet-api';
 import { TDoc, ObserverInstance  } from '../tdoc';
 import { Config } from '../config';
+import { ClientSocket } from '../client-socket';
 
 // Exported Class
 
-export class SandboxObserver implements ObserverInstance {
+export class ClientObserver implements ObserverInstance {
 
   // Class Methods
 
@@ -39,49 +40,56 @@ export class SandboxObserver implements ObserverInstance {
     debug(`initialize`);
   }
 
-  public static async onOpen(tDoc: /* REVIEW: ReadOnlyTDoc */TDoc): Promise<ObserverInstance> {
-    debug(`onOpen`);
-    return new this(tDoc);
+  public static open(tDoc: TDoc, clientSocket: ClientSocket): ClientObserver {
+    const rval = new this(tDoc, clientSocket);
+    // REVIEW: Should the observer be called 'CLIENT' instead of 'USER'?
+    // REVIEW: const clientId = clientSocket.id;
+    tDoc.registerObserver('USER', rval);
+    return rval;
   }
+
+  // Class Event Handlers
+
+  public static async onOpen(tDoc: /* REVIEW: ReadOnlyTDoc */TDoc): Promise<ObserverInstance> {
+    // This should never happen because our class isn't registered with the TDoc class.
+    // Instead we register a client observer instance with each tDoc instance.
+    throw new Error(`Unexpected onOpen event in client observer: tDoc ${tDoc._path}.`);
+  }
+
+  // Instance Properties
+
+  public clientSocket: ClientSocket;
+  public tDoc: TDoc;
 
   // Instance Methods
 
+  public async close() {
+    // TODO: Deregister observer with TDoc.
+  }
+
+  // Event Handlers
+
   public async onChanges(changes: NotebookChange[]): Promise<NotebookChangeRequest[]> {
     debug(`onChanges ${changes.length}`);
-    const rval: NotebookChangeRequest[] = [];
-    for (const change of changes) {
-      await this.onChange(change, rval);
-    }
-    debug(`onChanges returning ${rval.length} changes.`);
-    return rval;
+    this.clientSocket.notebookChanged(this.tDoc, changes);
+    return [];
   }
 
   public async onClose(): Promise<void> {
     debug(`onClose ${this.tDoc._path}`);
+    this.clientSocket.close(/* REVIEW: code? reason? */);
     delete this.tDoc;
   }
 
-  public async useTool(style: StyleObject): Promise<NotebookChangeRequest[]> {
-    debug(`useTool ${this.tDoc._path} ${style.id}`);
-    return [];
+  public async useTool(_style: StyleObject): Promise<NotebookChangeRequest[]> {
+    throw new Error(`useTool on client-observer unexpected.`);
   }
 
   // --- PRIVATE ---
 
-  // Private Constructor
-
-  private constructor(tDoc: TDoc) {
+  private constructor(tDoc: TDoc, clientSocket: ClientSocket) {
     this.tDoc = tDoc;
-  }
-
-  // Private Instance Properties
-
-  private tDoc: TDoc;
-
-  // Private Instance Methods
-
-  private async onChange(change: NotebookChange, _rval: NotebookChangeRequest[]): Promise<void> {
-    debug(`onChange ${this.tDoc._path} ${change.type}`);
+    this.clientSocket = clientSocket;
   }
 
 }

@@ -148,10 +148,9 @@ function onInsertButtonClicked(_event: Event) {
         type: 'JIIX',
         data: jiix,
         meaning: 'INPUT',
-        source: 'USER',
         subprops: [
-          { type: 'LATEX', data: latex, meaning: 'INPUT-ALT', source: 'USER' },
-          { type: 'MATHML', data: mathMl, meaning: 'INPUT-ALT', source: 'USER' },
+          { type: 'LATEX', data: latex, meaning: 'INPUT-ALT' },
+          { type: 'MATHML', data: mathMl, meaning: 'INPUT-ALT' },
         ],
       };
       gNotebook.insertStyle(styleProps);
@@ -163,7 +162,7 @@ function onInsertButtonClicked(_event: Event) {
       const styleType: StyleType = <StyleType>$typeSelector.value;
       const $inputField = $<HTMLInputElement>('#inputKeyboard>input');
       const text = $inputField.value;
-      const styleProps: StylePropertiesWithSubprops = { type: styleType, data: text, meaning: 'INPUT', source: 'USER' };
+      const styleProps: StylePropertiesWithSubprops = { type: styleType, data: text, meaning: 'INPUT' };
       gNotebook.insertStyle(styleProps);
       $inputField.value = $('#previewKeyboard').innerText = '';
       break;
@@ -177,8 +176,7 @@ function onInsertButtonClicked(_event: Event) {
         type: 'STROKE',
         data: strokeGroups,
         meaning: 'INPUT',
-        source: 'USER',
-        subprops: [ { type: 'TEXT', data: text, meaning: 'INPUT-ALT', source: 'USER' } ],
+        subprops: [ { type: 'TEXT', data: text, meaning: 'INPUT-ALT' } ],
       };
       gNotebook.insertStyle(stylePropss);
       editor.clear();

@@ -19,63 +19,47 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 // Requirement
 
-import { EventEmitter } from 'events';
-
 import * as debug1 from 'debug';
 const MODULE = __filename.split(/[/\\]/).slice(-1)[0].slice(0,-3);
 const debug = debug1(`server:${MODULE}`);
 
 import { NotebookChange, NotebookPath, StyleObject, StyleMeaning, StyleType,
-         StyleId, StyleProperties, RelationshipObject,
-         RelationshipProperties, RelationshipId, StyleSource, ToolInfo } from '../client/math-tablet-api';
+         StyleId, RelationshipObject,
+         RelationshipProperties, RelationshipId, StyleSource, NotebookChangeRequest, StylePropertiesWithSubprops, TDocObject, RelationshipMap, StyleMap } from '../client/math-tablet-api';
 import { readNotebookFile, writeNotebookFile, AbsDirectoryPath, absDirPathFromNotebookPath } from './files-and-folders';
 
 // Types
 
-interface RelationshipMap {
-  [id: /* RelationshipId */number]: RelationshipObject;
+export interface ObserverInstance {
+  onChanges: (changes: NotebookChange[]) => Promise<NotebookChangeRequest[]>;
+  onClose: ()=>Promise<void>;
+  useTool: (styleObject: StyleObject) => Promise<NotebookChangeRequest[]>;
 }
 
-interface StyleMap {
-  [id: /* StyleId */number]: StyleObject;
-}
-
-interface TDocObject {
-  nextId: StyleId;
-  relationshipMap: RelationshipMap;
-  styleMap: StyleMap;
-  version: string;
+export interface ObserverClass {
+  onOpen: (tDoc: TDoc)=>Promise<ObserverInstance>;
 }
 
 export interface TDocOptions {
-  anonymous?: boolean;
+  anonymous?: boolean; // TODO: invert this to 'persistent'
 }
 
 // Constants
 
 const DEFAULT_OPTIONS: TDocOptions = { anonymous: false };
-const SAVE_TIMEOUT_MS = 5000;
+const MAX_CHANGE_ROUNDS = 10;
+export const VERSION = "0.0.8";
 
-const VERSION = "0.0.7";
+export class TDoc {
 
-// REVIEW: Are there other event emitters in our project that need similar declarations?
-// See https://stackoverflow.com/questions/39142858/declaring-events-in-a-typescript-class-which-extends-eventemitter
-export declare interface TDoc {
-  on(event: 'change', listener: (change: NotebookChange)=> void): this;
-  on(event: 'close', listener: ()=> void): this;
-  on(event: 'useTool', listener: (styleId: StyleId, source: StyleSource, info: ToolInfo)=>void): this;
-  on(event: string, listener: Function): this;
-}
+  // Class Properties
 
-export class TDoc extends EventEmitter {
-
-  // Public Class Properties
-
+  // Note: contrary to the name, this only returns 'named' tDocs, not anonymous tDocs.
   public static allTDocs(): IterableIterator<TDoc> {
     return this.tDocs.values();
   }
 
-  // Public Class Methods
+  // Class Methods
 
   public static async close(notebookName: NotebookPath): Promise<void> {
     const instance = this.tDocs.get(notebookName);
@@ -99,20 +83,16 @@ export class TDoc extends EventEmitter {
     if (openTDoc) { throw new Error(`A TDoc with that name already exists: ${notebookPath}`); }
 
     const tDoc = new this(notebookPath, options);
-    tDoc.initialize();
+    await tDoc.initialize(this.observerClasses);
     await tDoc.save();
+    this.tDocs.set(notebookPath, tDoc);
     return tDoc;
   }
 
-  public static createAnonymous(): TDoc {
+  public static async createAnonymous(): Promise<TDoc> {
     const tDoc = new this('anonymous', { anonymous: true });
-    tDoc.initialize();
+    await tDoc.initialize(this.observerClasses);
     return tDoc;
-  }
-
-  public static on(event: 'open', listener: (tDoc: TDoc)=>void): typeof TDoc {
-    this.eventEmitter.on(event, listener.bind(this));
-    return this;
   }
 
   public static async open(notebookPath: NotebookPath, options: TDocOptions): Promise<TDoc> {
@@ -124,18 +104,24 @@ export class TDoc extends EventEmitter {
     if (openTDoc) { return openTDoc; }
     const json = await readNotebookFile(notebookPath);
     const obj = JSON.parse(json);
-    const tDoc = this.fromJSON(obj, notebookPath, options);
+    const tDoc = await this.fromJSON(obj, notebookPath, options);
+    this.tDocs.set(notebookPath, tDoc);
     return tDoc;
   }
 
-  // Public Instance Properties
+  public static registerObserver(source: StyleSource, observerClass: ObserverClass): void {
+    debug(`Registering observer: ${source}`);
+    this.observerClasses.set(source, observerClass);
+  }
+
+  // Instance Properties
 
   public version: string;
   public nextId: StyleId;
   // NOTE: Properties with an underscore prefix are not persisted.
   public _path: NotebookPath;
 
-  // Public Instance Property Functions
+  // Instance Property Functions
 
   public absoluteDirectoryPath(): AbsDirectoryPath {
     return absDirPathFromNotebookPath(this._path);
@@ -143,16 +129,18 @@ export class TDoc extends EventEmitter {
 
   // REVIEW: Return an iterator?
   public allRelationships(): RelationshipObject[] {
-    return Object.values(this.relationshipMap);
+    const sortedIds: RelationshipId[] = Object.keys(this.relationshipMap).map(k=>parseInt(k,10)).sort();
+    return sortedIds.map(id=>this.relationshipMap[id]);
   }
 
   public relationshipsOf(id: StyleId): RelationshipObject[] {
-    return this.allRelationships().filter(r=>(r.sourceId == id || r.targetId == id));
+    return this.allRelationships().filter(r=>(r.fromId == id || r.toId == id));
   }
 
   // REVIEW: Return an iterator?
   public allStyles(): StyleObject[] {
-    return Object.values(this.styleMap);
+    const sortedIds: StyleId[] = Object.keys(this.styleMap).map(k=>parseInt(k,10)).sort();
+    return sortedIds.map(id=>this.styleMap[id]);
   }
 
   // Returns all thoughts in notebook order
@@ -164,7 +152,7 @@ export class TDoc extends EventEmitter {
   }
 
   // find all children of given type and meaning
-  public findChildStyleOfType(id: StyleId, type: StyleType, meaning?: StyleMeaning): StyleObject[] {
+  public findChildStylesOfType(id: StyleId, type: StyleType, meaning?: StyleMeaning): StyleObject[] {
 
     // we will count ourselves as a child here....
     const rval: StyleObject[] = [];
@@ -179,10 +167,16 @@ export class TDoc extends EventEmitter {
     // DANGER! this makes this function asymptotic quadratic or worse...
     const kids = this.childStylesOf(id);
     for(const k of kids) {
-      const kmatch = this.findChildStyleOfType(k.id, type, meaning);
+      const kmatch = this.findChildStylesOfType(k.id, type, meaning);
       for(let km of kmatch) { rval.push(km); }
     }
 
+    return rval;
+  }
+
+  public getRelationshipById(id: RelationshipId): RelationshipObject {
+    const rval = this.relationshipMap[id];
+    if (!rval) { throw new Error(`Relationship ${id} doesn't exist.`); }
     return rval;
   }
 
@@ -210,21 +204,17 @@ export class TDoc extends EventEmitter {
       throw new Error("INTERNAL ERROR: did not produce ancenstor: ");
     }
     rs.forEach(r => {
-      const rp = this.topLevelStyleOf(r.targetId);
+      const rp = this.topLevelStyleOf(r.toId);
       if (!rp) {
         console.error("INTERNAL ERROR: did not produce ancenstor: ",style.id);
         throw new Error("INTERNAL ERROR: did not produce ancenstor: ");
       }
       if (rp.id == mp.id) {
         // We are a user of this definition...
-        symbolStyles.push(this.getStyleById(r.sourceId));
+        symbolStyles.push(this.getStyleById(r.fromId));
       }
     });
     return symbolStyles;
-  }
-
-  public jsonPrinter(): string {
-    return JSON.stringify(this,null,' ');
   }
 
   public numStyles(tname: StyleType, meaning?: StyleMeaning) : number {
@@ -254,13 +244,11 @@ export class TDoc extends EventEmitter {
     ;
   }
 
-  // Remove fields that are not supposed to be persisted:
-  //   Event emitter adds "domain" and a couple of underscore-prefixed properties.
-  //   We add an underscore prefix on any of our own fields that we do not want persisted.
+  // Remove fields with an underscore prefix, because they are not supposed to be persisted.
   public toJSON(): TDocObject {
     const obj = { ...this };
     for (const key in obj) {
-      if (key.startsWith('_') || key == 'domain') { delete obj[key]; }
+      if (key.startsWith('_')) { delete obj[key]; }
     }
     return <TDocObject><unknown>obj;
   }
@@ -272,113 +260,95 @@ export class TDoc extends EventEmitter {
     return this.topLevelStyleOf(style.parentId);
   }
 
-  // Public Instance Methods
+  // Instance Methods
 
   public async close(): Promise<void> {
+    // TODO: Ensure notebook is not in the middle of processing change requests or saving.
     if (this._closed) { throw new Error("Closing TDoc that is already closed."); }
     debug(`closing: ${this._path}`);
     this._closed = true;
     if (!this._options.anonymous) { TDoc.tDocs.delete(this._path); }
-    this.emit('close');
+    await Promise.all(Array.from(this._observerInstances.values()).map(o=>o.onClose()));
 
-    // If the tdoc is waiting to be saved, then save it now.
-    if (this._saveTimeout) {
-      clearTimeout(this._saveTimeout);
-      delete this._saveTimeout;
-      await this.save();
-    }
     debug(`closed: ${this._path}`);
   }
 
-  // Deletes the specified relationship.
-  // Emits a TDoc 'change' event.
-  public deleteRelationship(relationshipId: RelationshipId): void {
-    this.deleteRelationshipEntryAndEmit(relationshipId);
+  public registerObserver(source: StyleSource, observerInstance: ObserverInstance): void {
+    this._observerInstances.set(source, observerInstance);
   }
 
-  // Deletes the specified style and any styles or relationships attached to it recursively.
-  // Emits TDoc 'change' events in a depth-first postorder.
-  public deleteStyle(id: StyleId): void {
-    this.assertNotClosed('deleteStyle');
+  public async requestChanges(source: StyleSource, changeRequests: NotebookChangeRequest[]): Promise<NotebookChange[]> {
 
-    const style = this.styleMap[id];
-    if (!style) { throw new Error(`Deleting unknown style ${id}`); }
+    // TODO: Don't allow multiple asynchronous requestChanges to be operating at the same time.
 
-    // Delete any relationships attached to this style.
-    const relationships = this.relationshipsOf(id);
-    for(const relationship of relationships) { this.deleteRelationship(relationship.id); }
+    debug(`requestChanges ${changeRequests.length}`);
+    this.assertNotClosed('requestChanges');
 
-    // Delete any styles attached to this style
-    const styles = this.childStylesOf(id);
-    for(const style of styles) { this.deleteStyle(style.id); }
+    // Make the requested changes to the notebook.
+    let allChanges: NotebookChange[] = [];
+    let changes: NotebookChange[] = this.makeRequestedChangesToTDoc(source, changeRequests);
 
-    if (!style.parentId) {
-      const i = this.styleOrder.indexOf(id);
-      this.styleOrder.splice(i,1);  
-    }
+    for (
+      let round = 0;
+      changes.length>0 && round<MAX_CHANGE_ROUNDS;
+      round++
+    ) {
 
-    delete this.styleMap[id];
+      // Pass the changes to each observer to determine if it wants to make
+      // additional changes as the result of the previous changes.
+      const observerChangeRequests: Map<StyleSource, NotebookChangeRequest[]> = new Map();
 
-    const change: NotebookChange = { type: 'styleDeleted', styleId: id, parentId: style.parentId };
-    this.notifyChange(change);
-  }
+      // Ask the observers what change requests they would like to make.
+      // LATER: Submit to all observers in parallel.
+      for (const [source, observer] of this._observerInstances) {
+        // TODO: timeout on observer changes.
+        const changeRequests = await observer.onChanges(changes);
+        observerChangeRequests.set(source, changeRequests);
+      };
 
-  public insertRelationship(
-    source: StyleObject|StyleObject,
-    target: StyleObject|StyleObject,
-    props: RelationshipProperties,
-  ): RelationshipObject {
-    this.assertNotClosed('insertRelationship');
-    const relationship: RelationshipObject = { ...props, id: this.nextId++, sourceId: source.id, targetId: target.id };
-    debug(`inserting relationship ${JSON.stringify(relationship)}`)
-    this.relationshipMap[relationship.id] = relationship;
-    const change: NotebookChange = { type: 'relationshipInserted', relationship };
-    this.notifyChange(change);
-    return relationship;
-  }
-
-  // afterId: ID of thought to insert after or 0 for beginning, or -1 for end.
-  public insertStyle(parentStyle: StyleObject|undefined, props: StyleProperties, afterId: StyleId = 0): StyleObject {
-    this.assertNotClosed('insertStyle');
-    const style: StyleObject = { ...props, id: this.nextId++, parentId: (parentStyle ? parentStyle.id : 0) };
-    const styleMinusData = { ...style, data: '...' };
-    debug(`inserting style after ${afterId}: ${JSON.stringify(styleMinusData)}`)
-    this.styleMap[style.id] = style;
-    if (!parentStyle) {
-      if (afterId===0) {
-        this.styleOrder.unshift(style.id);
-      } else if (afterId===-1) {
-        this.styleOrder.push(style.id);
-      } else {
-        const i = this.styleOrder.indexOf(afterId);
-        if (i<0) { throw new Error(`Cannot insert thought after unknown thought ${afterId}`); }
-        this.styleOrder.splice(i+1, 0, style.id);
+      // Make the changes requested by the observers.
+      let newChanges: NotebookChange[] = [];
+      for (const [source, changeRequests] of observerChangeRequests) {
+        newChanges = newChanges.concat(this.makeRequestedChangesToTDoc(source, changeRequests));
       }
+
+      allChanges = allChanges.concat(changes);
+      changes = newChanges;
     }
-    const change: NotebookChange = { type: 'styleInserted', style: style };
-    if (!parentStyle) { change.afterId = afterId ;}
-    this.notifyChange(change);
-    // TODO: update this.styleOrder if top-level style
-    return style;
+
+    if (changes.length>0) {
+      // TODO: Error, we ran out of rounds.
+    }
+
+    // If the notebook is persistent, then save.
+    if (!this._options.anonymous) { await this.save(); }
+
+    return allChanges;
   }
 
-  public useTool(styleId: StyleId, source: StyleSource, info: ToolInfo): void {
-    debug(`Emmiting useTool`);
-    this.emit('useTool', styleId, source, info);
-    debug(`done Emmiting useTool`);
+  public async useTool(styleId: StyleId): Promise<NotebookChange[]> {
+    debug(`useTool ${styleId}`);
+    this.assertNotClosed('useTool');
+    const style = this.getStyleById(styleId);
+    const source = style.source;
+    if (!style) { throw new Error(`TDoc useTool style ID not found: ${styleId}`); }
+    const observer = this._observerInstances.get(source);
+    const changeRequests = await observer!.useTool(style);
+    const changes = await this.requestChanges(source, changeRequests);
+    return changes;
   }
 
   // --- PRIVATE ---
 
   // Private Class Properties
 
-  private static eventEmitter = new EventEmitter();
   // TODO: inspector page where we can see a list of the open TDocs.
+  private static observerClasses: Map<StyleSource, ObserverClass> = new Map();
   private static tDocs = new Map<NotebookPath, TDoc>();
 
   // Private Class Methods
 
-  private static fromJSON(obj: TDocObject, notebookPath: NotebookPath, options: TDocOptions): TDoc {
+  private static async fromJSON(obj: TDocObject, notebookPath: NotebookPath, options: TDocOptions): Promise<TDoc> {
     // Validate the object
     if (!obj.nextId) { throw new Error("Invalid TDoc object JSON."); }
     if (obj.version != VERSION) { throw new Error("TDoc in unexpected version."); }
@@ -387,24 +357,25 @@ export class TDoc extends EventEmitter {
     // REVIEW: We never call the constructor. Maybe we should?
     const tDoc: TDoc = Object.assign(Object.create(TDoc.prototype), obj);
     tDoc._path = notebookPath;
+    tDoc._observerInstances = new Map();
     tDoc._options = { ...DEFAULT_OPTIONS, ...options };
-    tDoc.initialize();
+    await tDoc.initialize(this.observerClasses);
     return tDoc;
   }
 
   // Private Constructor
 
   private constructor(notebookPath: NotebookPath, options: TDocOptions) {
-    super();
-
     this.nextId = 1;
     this.relationshipMap = {};
     this.styleMap = {};
     this.styleOrder = [];
     this.version = VERSION;
-    this._path = notebookPath;
+    // IMPORTANT: If you add any non-persistent fields (underscore-prefixed)
+    // that need to be initialized, initialize them below, and also in fromJSON.
     this._options = { ...DEFAULT_OPTIONS, ...options };
-    this.on('removeListener', this.onRemoveListener);
+    this._observerInstances = new Map();
+    this._path = notebookPath;
   }
 
   // Private Instance Properties
@@ -415,8 +386,8 @@ export class TDoc extends EventEmitter {
 
   // NOTE: Properties with an underscore prefix are not persisted.
   private _closed?: boolean;
+  private _observerInstances: Map<StyleSource,ObserverInstance>;
   private _options: TDocOptions;
-  private _saveTimeout?: NodeJS.Timeout|undefined;
   private _saving?: boolean;
 
   private assertNotClosed(action: string): void {
@@ -425,60 +396,181 @@ export class TDoc extends EventEmitter {
 
   // Private Event Handlers
 
-  private onRemoveListener(eventName: string) {
-    if (eventName == 'change') {
-      if (this.listenerCount('change') == 0) {
-        debug("LAST CHANGE LISTENER REMOVED");
-      }
-    }
-  }
-
   // Private Instance Methods
 
-  // Delete a specific relationship entry and emits a 'change' event.
-  private deleteRelationshipEntryAndEmit(id: RelationshipId): void {
-    this.assertNotClosed('deleteRelationshipEntryAndEmit');
+  private deleteRelationship(id: RelationshipId): NotebookChange {
+    // TODO: relationship may have already been deleted by another observer.
+
     const relationship = this.relationshipMap[id];
     if (!relationship) { throw new Error(`Deleting unknown relationship ${id}`); }
     delete this.relationshipMap[id];
     const change: NotebookChange = { type: 'relationshipDeleted', relationship };
-    this.notifyChange(change);
+    return change;
+  }
+
+  // Deletes the specified style and any styles or relationships attached to it recursively.
+  private deleteStyle(id: StyleId): NotebookChange[] {
+
+    // TODO: style may have already been deleted by another observer. Not an error?
+    const style = this.styleMap[id];
+    if (!style) { throw new Error(`Deleting unknown style ${id}`); }
+
+    let changes: NotebookChange[] = [];
+
+    // Delete any styles attached to this style
+    const styles = this.childStylesOf(id);
+    for(const style of styles) {
+      changes = changes.concat(this.deleteStyle(style.id));
+    }
+
+    // Delete any relationships attached to this style.
+    const relationships = this.relationshipsOf(id);
+    for(const relationship of relationships) {
+      changes.push(this.deleteRelationship(relationship.id));
+    }
+
+    // If this is a top-level style then remove it from the top-level style order.
+    if (!style.parentId) {
+      const i = this.styleOrder.indexOf(id);
+      this.styleOrder.splice(i,1);
+    }
+
+    delete this.styleMap[id];
+
+    const change: NotebookChange = { type: 'styleDeleted', styleId: id, parentId: style.parentId };
+    changes.push(change);
+
+    return changes;
   }
 
   // This should be called on any newly created TDoc immediately after the constructor.
-  private initialize(): void {
+  private async initialize(observerClasses: Map<StyleSource,ObserverClass>): Promise<void> {
+
     if (!this._options.anonymous) {
       if (TDoc.tDocs.has(this._path)) { throw new Error(`Initializing a TDoc with a name that already exists.`); }
       TDoc.tDocs.set(this._path, this);
     }
-    TDoc.eventEmitter.emit('open', this);
-  }
 
-  // Call this method whenever you modify the tdoc.
-  private notifyChange(change: NotebookChange) {
-    this.emit('change', change);
-    if (!this._options.anonymous) { this.scheduleSave(); }
-  }
-
-  // Do not call this directly.
-  // Methods that change the document should call notifyChange.
-  // notifyChange will call this method if the TDoc is persistent.
-  private scheduleSave(): void {
-    if (this._saveTimeout) {
-      debug(`postponing save timeout: ${this._path}`);
-      clearTimeout(this._saveTimeout);
-    } else {
-      debug(`scheduling save timeout: ${this._path}`);
+    // Call "onOpen" to get an observer instance for every registered observer class.
+    for (const [name, observerClass] of observerClasses.entries()) {
+      const observerInstance = await observerClass.onOpen(this);
+      this._observerInstances.set(name, observerInstance);
     }
-    this._saveTimeout = setTimeout(async ()=>{
-      delete this._saveTimeout;
-      try {
-        await this.save();
-      } catch(err) {
-        console.error(`ERROR ${MODULE}: error saving ${this._path}: ${err.message}`);
-        // TODO: What else should we do besides log an error?
+  }
+
+  private insertRelationship(
+    source: StyleSource,
+    fromId: StyleId,
+    toId: StyleId,
+    props: RelationshipProperties
+  ): NotebookChange {
+    const relationship: RelationshipObject = {
+      source,
+      id: this.nextId++,
+      fromId,
+      toId,
+      ...props,
+    };
+    debug(`inserting relationship ${JSON.stringify(relationship)}`)
+    this.relationshipMap[relationship.id] = relationship;
+    const change: NotebookChange = { type: 'relationshipInserted', relationship };
+    return change;
+  }
+
+  // Inserts the style and any specified substyles or to/from relationships.
+  private insertStyle(
+    source: StyleSource,      // Observer inserting the style
+    parentId: StyleId,        // Parent style. 0 for top-level style.
+    styleProps: StylePropertiesWithSubprops, // Style data
+    afterId: StyleId,         // For top-level styles, ID of thought to insert after, 0 for beginning, or -1 for end.
+  ): NotebookChange[] {
+
+    const style: StyleObject = {
+      data: styleProps.data,
+      id: this.nextId++,
+      meaning: styleProps.meaning,
+      parentId: parentId || 0,
+      source,
+      type: styleProps.type,
+    };
+
+    debug(`inserting style after ${afterId}: ${style.source} ${style.id} ${style.meaning}`);
+
+    // Add the style to the TDoc
+    this.styleMap[style.id] = style;
+
+    // If this is a top-level style, then insert it in the correct place in the style order.
+    if (!parentId) {
+      if (afterId===0) {
+        this.styleOrder.unshift(style.id);
+      } else if (afterId===-1) {
+        this.styleOrder.push(style.id);
+      } else {
+        const i = this.styleOrder.indexOf(afterId);
+        if (i<0) { throw new Error(`Cannot insert thought after unknown thought ${afterId}`); }
+        this.styleOrder.splice(i+1, 0, style.id);
       }
-    }, SAVE_TIMEOUT_MS);
+    }
+
+    const change: NotebookChange = { type: 'styleInserted', style: style };
+    if (!parentId) { change.afterId = afterId; }
+    let changes: NotebookChange[] = [ change ];
+
+    if (styleProps.subprops) {
+      for (const substyleProps of styleProps.subprops) {
+        changes = changes.concat(this.insertStyle(source, style.id, substyleProps, -1));
+      }
+    }
+
+    if (styleProps.relationsFrom) {
+      for (const [idStr, props] of Object.entries(styleProps.relationsFrom)) {
+        changes.push(this.insertRelationship(source, parseInt(idStr, 10), style.id, props));
+      }
+    }
+
+    if (styleProps.relationsTo) {
+      for (const [idStr, props] of Object.entries(styleProps.relationsTo)) {
+        changes.push(this.insertRelationship(source, style.id, parseInt(idStr, 10), props));
+      }
+    }
+
+    return changes;
+  }
+
+  private makeRequestedChangesToTDoc(
+    source: StyleSource,
+    changeRequests: NotebookChangeRequest[],
+  ): NotebookChange[] {
+    let changes: NotebookChange[] = [];
+    for (const changeRequest of changeRequests) {
+      switch(changeRequest.type) {
+        case 'deleteRelationship':
+          changes.push(this.deleteRelationship(changeRequest.id));
+          break;
+        case 'deleteStyle':
+          changes = changes.concat(this.deleteStyle(changeRequest.styleId));
+          break;
+        case 'insertRelationship':
+          changes.push(this.insertRelationship(
+            source,
+            changeRequest.fromId,
+            changeRequest.toId,
+            changeRequest.props,
+          ));
+          break;
+        case 'insertStyle':
+          changes = changes.concat(this.insertStyle(
+            source,
+            changeRequest.parentId||0,
+            changeRequest.styleProps,
+            changeRequest.afterId||-1,
+          ));
+          break;
+        default:
+          throw new Error("Unexpected.");
+      }
+    }
+    return changes;
   }
 
   // Do not call this directly.
@@ -486,7 +578,7 @@ export class TDoc extends EventEmitter {
   // which will schedule a save, eventually getting here.
   private async save(): Promise<void> {
     // TODO: Handle this in a more robust way.
-    if (this._saving) { throw new Error(`Taking longer that ${SAVE_TIMEOUT_MS}ms to save.`); }
+    if (this._saving) { throw new Error(`Trying to save while save already in progress.`); }
     debug(`saving ${this._path}`);
     this._saving = true;
     const json = JSON.stringify(this);

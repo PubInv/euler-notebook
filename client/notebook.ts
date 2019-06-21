@@ -23,10 +23,14 @@ import { ServerSocket } from './server-socket.js';
 
 import { NotebookName, StyleId, StyleObject, NotebookChange,
          RelationshipId, RelationshipObject, UseTool, InsertStyle,
-         StyleSource, ToolInfo, StylePropertiesWithSubprops, DeleteStyle } from './math-tablet-api.js';
+         StylePropertiesWithSubprops, DeleteStyle, TDocObject } from './math-tablet-api.js';
 // import { Jiix, StrokeGroups } from './myscript-types.js';
 import { ThoughtElement } from './thought-element.js';
 import { $new, escapeHtml, Html } from './dom.js';
+
+// Types
+
+interface StyleIndex { [id:string]: StyleId[] }
 
 // Exported Class
 
@@ -38,11 +42,16 @@ export class Notebook {
     return this.notebooks.get(notebookName);
   }
 
-  public static open(socket: ServerSocket, notebookName: NotebookName): Notebook {
+  public static open(
+    socket: ServerSocket,
+    notebookName: NotebookName,
+    tDoc: TDocObject,
+  ): Notebook {
     let notebook = this.notebooks.get(notebookName);
     if (!notebook) {
       notebook = new this(socket, notebookName);
       this.notebooks.set(notebookName, notebook);
+      notebook.populateFromTDoc(tDoc);
     }
     return notebook;
   }
@@ -111,25 +120,25 @@ export class Notebook {
     this.selectedStyles.push(styleId);
   }
 
-  public useTool(thoughtElt: ThoughtElement, source: StyleSource, info: ToolInfo): void {
+  public useTool(id: StyleId): void {
     const msg: UseTool = {
       action: 'useTool',
       notebookName: this.notebookName,
-      info,
-      source,
-      styleId: thoughtElt.style.id!,
+      styleId: id,
     };
     this.socket.sendMessage(msg);
   }
 
   // Server Message Handlers
 
-  public smChange(change: NotebookChange): void {
-    switch (change.type) {
-      case 'relationshipDeleted': this.chDeleteRelationship(change.relationship); break;
-      case 'relationshipInserted': this.chInsertRelationship(change.relationship); break;
-      case 'styleDeleted': this.chDeleteStyle(change.styleId); break;
-      case 'styleInserted': this.chInsertStyle(change.style); break;
+  public smChange(changes: NotebookChange[]): void {
+    for (const change of changes) {
+      switch (change.type) {
+        case 'relationshipDeleted': this.chDeleteRelationship(change.relationship); break;
+        case 'relationshipInserted': this.chInsertRelationship(change.relationship); break;
+        case 'styleDeleted': this.chDeleteStyle(change.styleId); break;
+        case 'styleInserted': this.chInsertStyle(change.style); break;
+      }
     }
   }
 
@@ -166,7 +175,7 @@ export class Notebook {
   // Private Instance Property Functions
 
   private relationshipsAttachedToStyle(s: StyleObject): RelationshipObject[] {
-    return Array.from(this.relationships.values()).filter(r=>r.sourceId==s.id);
+    return Array.from(this.relationships.values()).filter(r=>r.fromId==s.id);
   }
 
   private stylesAttachedToStyle(s: StyleObject): StyleObject[] {
@@ -186,8 +195,8 @@ export class Notebook {
     // as a preamble of a thought. It would probably be easiest
     // to re-render the thought.
     if (relationship.meaning == 'EQUIVALENCE') {
-      const srcStyle = this.styles.get(relationship.sourceId);
-      const tarStyle = this.styles.get(relationship.targetId);
+      const srcStyle = this.styles.get(relationship.fromId);
+      const tarStyle = this.styles.get(relationship.toId);
       if (srcStyle && tarStyle) {
         const srcStyleElt = this.topLevelStyleOf(srcStyle);
         const tarStyleElt = this.topLevelStyleOf(tarStyle);
@@ -214,7 +223,7 @@ export class Notebook {
   private chInsertRelationship(relationship: RelationshipObject): void {
     this.relationships.set(relationship.id, relationship);
     if (relationship.meaning == 'EQUIVALENCE') {
-      let style = this.styles.get(relationship.targetId);
+      let style = this.styles.get(relationship.toId);
       if (style) {
         // Here I try to find the target to try to add the
         // equivalence preamble...
@@ -245,7 +254,7 @@ export class Notebook {
   }
 
   private debugRelationshipHtml(relationship: RelationshipObject): Html {
-    return `<div><span class="leaf">R${relationship.id} &#x27a1; ${relationship.targetId}</span></div>`;
+    return `<div><span class="leaf">R${relationship.id} &#x27a1; ${relationship.toId}</span></div>`;
   }
 
   private debugStyleHtml(style: StyleObject): Html {
@@ -265,6 +274,26 @@ export class Notebook {
     ${relationshipsHtml}
   </div>
 </div>`;
+    }
+  }
+
+  private populateFromTDoc(tDoc: TDocObject): void {
+    const index: StyleIndex = { '0':[] };
+    for (const styleId of Object.keys(tDoc.styleMap)) { index[styleId] = []; }
+    for (const style of Object.values(tDoc.styleMap)) { index[style.parentId].push(style.id); }
+    for (const styleId of tDoc.styleOrder) {
+      this.populateStyleRecursively(tDoc, index, styleId);
+    }
+    for (const relationship of Object.values(tDoc.relationshipMap)) {
+      this.chInsertRelationship(relationship);
+    }
+  }
+
+  private populateStyleRecursively(tDoc: TDocObject, index: StyleIndex, styleId: StyleId) {
+    const style = tDoc.styleMap[styleId];
+    this.chInsertStyle(style);
+    for (const subStyleId of index[styleId]) {
+      this.populateStyleRecursively(tDoc, index, subStyleId)
     }
   }
 

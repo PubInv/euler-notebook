@@ -22,89 +22,171 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 // import * as debug1 from 'debug';
 // const MODULE = __filename.split(/[/\\]/).slice(-1)[0].slice(0,-3);
 // const debug = debug1(`server:${MODULE}`);
-
-import { TDoc }  from '../tdoc';
-
 import { assert } from 'chai';
 import 'mocha';
+import * as sinon from 'sinon';
 
-describe('tdoc', function() {
-  describe('tdoc Structure', function() {
-    it('Can create a tdoc', function() {
-      let td = TDoc.createAnonymous();
-      assert.ok(td);
+import { NotebookChangeRequest, StyleInsertRequest, StylePropertiesWithSubprops, StyleType, NotebookChange, ToolInfo, StyleInserted, StyleObject } from '../../client/math-tablet-api';
+import { TDoc, ObserverInstance, VERSION }  from '../tdoc';
+import { Config } from '../config';
+
+// Test Observer
+
+export class TestObserver implements ObserverInstance {
+  static async initialize(_config: Config): Promise<void> { }
+  static async onOpen(_tDoc: TDoc): Promise<TestObserver> { return new this(); }
+  constructor() {}
+  async onChanges(_changes: NotebookChange[]): Promise<NotebookChangeRequest[]> { return []; }
+  async onClose(): Promise<void> {}
+  async useTool(_style: StyleObject): Promise<NotebookChangeRequest[]> { return []; }
+}
+
+// Unit Tests
+
+describe("TDoc", function() {
+
+  describe("Structure access", function() {
+
+    const styleData = ['a', 'b', 'c'];
+    let td: TDoc;
+
+    before("Create a tdoc with three styles", async function(){
+      td = await createTDocFromText('TEXT', styleData.join(';'));
     });
-    it('tdocs have the same version', function() {
-      let td0 = TDoc.createAnonymous();
-      let td1 = TDoc.createAnonymous();
-      assert.equal(td0.version, td1.version);
+
+    it("Converts to and from a JSON object", async function() {
+      const obj = td.toJSON();
+      assert.deepEqual(obj, {
+        "nextId": 4,
+        "relationshipMap": {},
+        "styleMap": {
+          "1": { "data": "a", "id": 1, "meaning": "INPUT", "parentId": 0, "source": "TEST", "type": "TEXT", },
+          "2": { "data": "b", "id": 2, "meaning": "INPUT", "parentId": 0, "source": "TEST", "type": "TEXT", },
+          "3": { "data": "c", "id": 3, "meaning": "INPUT", "parentId": 0, "source": "TEST", "type": "TEXT", }
+        },
+        "styleOrder": [ 1, 2, 3 ],
+        "version": VERSION,
+      });
+      // TODO: create td from obj.
     });
-    it('tdocs can add and retrieve a style', function() {
-      let td0 = TDoc.createAnonymous();
-      let st = td0.insertStyle(undefined, { type: 'TEXT', data: "spud boy", meaning: 'INPUT', source: 'TEST' });
-      assert.equal(td0.topLevelStyleOrder().length, 1);
-      assert.equal(td0.topLevelStyleOrder()[0], st.id);
-      assert.equal(td0.allStyles().length, 1);
-      assert.equal(td0.allStyles()[0].id, st.id);
-      assert.equal(td0.allStyles()[0].source, 'TEST');
+
+    it("Retrieves styles with allStyles and getStyleById", async function() {
+      const styles = td.allStyles();
+      assert.equal(styles.length, 3);
+      assert.equal(styles[0].data, styleData[0]);
+
+      const styleObject = td.getStyleById(styles[0].id);
+      assert.equal(styleObject, styles[0]);
     });
+
   });
-});
 
-describe('tdoc', function() {
-  describe('tdoc Structure', function() {
-    it('we can generate a tdoc with a compiler', function() {
-      let td = createTDocFromText('TEXT', "x = 4; y = 5; x + y = 3");
-      assert.equal(td.topLevelStyleOrder().length, 3);
+  describe("TDoc Observer", function(){
+
+    let tDoc: TDoc;
+    let observer: TestObserver;
+
+    const onOpenSpy: sinon.SinonSpy<[TDoc], Promise<ObserverInstance>> = sinon.spy(TestObserver, 'onOpen');
+    let onChangesSpy: sinon.SinonSpy<[NotebookChange[]], Promise<NotebookChangeRequest[]>>;
+    let onCloseSpy: sinon.SinonSpy<[], Promise<void>>;
+    let useToolSpy: sinon.SinonSpy<[StyleObject], Promise<NotebookChangeRequest[]>>;
+
+
+    before("onOpen is called when tDoc is created", async function(){
+      // Register the observer
+      TDoc.registerObserver('TEST', TestObserver);
+
+      // Create a tDoc
+      tDoc = await TDoc.createAnonymous();
+
+      // Observer's onOpen should be called with tDoc as an argument
+      // and return an observer instance. Spy on the observer.
+      assert(onOpenSpy.calledOnce);
+     assert.equal(onOpenSpy.lastCall.args[0], tDoc);
+      observer = <TestObserver>(await onOpenSpy.lastCall.returnValue);
+      onChangesSpy = sinon.spy(observer, 'onChanges');
+      onCloseSpy = sinon.spy(observer, 'onClose');
+      useToolSpy = sinon.spy(observer, 'useTool');
     });
-  });
-});
 
-describe('renderer', function() {
-  describe('jsonPrinter', function() {
-    it('we can jsonPrint a tdoc', function() {
-      let td = createTDocFromText('TEXT',"x = 4; y = 5; x + y = 3");
-      let jp = td.jsonPrinter();
-      assert.ok(jp);
+    after("onClose is called when tDoc is closed", async function(){
+      // tDoc should be open and observer's onClose should not have been called.
+      // TODO: assert tDoc is not closed.
+      assert.equal(onCloseSpy.callCount, 0);
+
+      // Close the tDoc.
+      await tDoc.close();
+
+      // Observer's onClose should be called for the first and only time.
+      // onClose takes no arguments.
+      assert.equal(onCloseSpy.callCount, 1);
+
+      sinon.restore();
     });
-  });
-});
 
-describe('tdoctextcompiler', function() {
-  it('we can create a tdoc from a csv', function() {
-    let td = createTDocFromText('TEXT', "x = 4; y = 5; x + y = 3");
-    let s0s = td.allStyles();
-    assert.equal(td.numStyles('TEXT'), 3);
-    assert.equal(s0s.length, 3);
-    assert.ok(td);
-  });
-});
+    it("onChanges is called when style is inserted", async function(){
+      const callCount = onChangesSpy.callCount;
+      const styleProps: StylePropertiesWithSubprops = { type: 'TEXT', meaning: 'INPUT', data: 'foo' };
+      const insertRequest: StyleInsertRequest = { type: 'insertStyle', styleProps };
+      const changeRequests = [insertRequest];
+      await tDoc.requestChanges('TEST', changeRequests);
+      assert.equal(onChangesSpy.callCount, callCount + 1);
+      const expectedNotebookChange: StyleInserted = {
+        type: 'styleInserted',
+        style: {
+          id: 1,
+          parentId: 0,
+          source: 'TEST',
+          ...styleProps,
+        },
+        afterId: -1,
+      }
+      assert.deepEqual(onChangesSpy.lastCall.args[0], [ expectedNotebookChange ]);
+    });
 
-describe('utility computations', function() {
-  it('we can create a tdoc from a csv (case 2)', function() {
-    let td = createTDocFromText('TEXT', "x = 4; y = 5; x + y = 3");
-    let s0 = td.allStyles()[0];
-    td.insertStyle(s0, { type: 'TEXT', data: "this is a style on a style", meaning: 'EVALUATION', source: 'TEST' })
-    assert.ok(td.styleHasChildOfType(s0, 'TEXT'));
-    assert.ok(!td.styleHasChildOfType(s0, 'LATEX'));
+    it("useTool is called when tool is used", async function(){
+
+      // Insert a top-level style with a tool style attached.
+      const toolInfo: ToolInfo = { name: 'test-tool', html: "Check Equivalences", data: "tool-data" };
+      const styleProps: StylePropertiesWithSubprops = {
+        type: 'TEXT', meaning: 'INPUT', data: 'tool-parent',
+        subprops: [
+          { type: 'TOOL', meaning: 'ATTRIBUTE', data: toolInfo },
+        ]
+      };
+      const insertRequest: StyleInsertRequest = { type: 'insertStyle', styleProps };
+      await tDoc.requestChanges('TEST', [insertRequest]);
+
+      // Observer's onChange should be called with two new styles.
+      // Pick out the tool style.
+      const changes: NotebookChange[] = onChangesSpy.lastCall.args[0];
+      assert.equal(changes.length, 2);
+      const toolChange = changes.find(c=>c.type=='styleInserted' && c.style.type=='TOOL');
+      assert.exists(toolChange);
+      const toolStyle = (<StyleInserted>toolChange).style;
+
+      // Invoke the tool.
+      const callCount = useToolSpy.callCount;
+      await tDoc.useTool(toolStyle.id);
+
+      // Observer's useTool method should be called, passing the tool style.
+      assert.equal(useToolSpy.callCount, callCount+1);
+      assert.deepEqual(useToolSpy.lastCall.args[0], toolStyle);
+    });
   });
 });
 
 // Helper Functions
 
-function createTDocFromText(type: 'MATHJS'|'TEXT', text: string): TDoc {
-  const td =  TDoc.createAnonymous();
-  const ths = text.split(";").map(s=>s.trim());
-  for (text of ths) {
-    switch(type){
-    case 'TEXT':
-      td.insertStyle(undefined, { type: 'TEXT', data: text, meaning: 'INPUT', source: 'TEST' });
-      break;
-    case 'MATHJS':
-      td.insertStyle(undefined, { type: 'MATHJS', data: text, meaning: 'INPUT', source: 'TEST' });
-      break;
-    }
-  }
+async function createTDocFromText(type: StyleType, text: string): Promise<TDoc> {
+  const td = await TDoc.createAnonymous();
+  const changeRequests: NotebookChangeRequest[] = text.split(";").map(s=>{
+    const data = s.trim();
+    const styleProps: StylePropertiesWithSubprops = { type, meaning: 'INPUT', data };
+    const rval: StyleInsertRequest = { type: 'insertStyle', styleProps }
+    return rval;
+  });
+  await td.requestChanges('TEST', changeRequests);
   return td;
 }
 

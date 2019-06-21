@@ -68,30 +68,30 @@ export type StyleMeaning =
   'UNIVARIATE-QUADRATIC'|// A quadratic expression, presumably worth plotting.
   'SUBTRIVARIATE';    // An expression in one or two variables presumable plottable.
 
-  export type StyleType =
+export type StyleType =
   'HTML' |            // Html: HTML-formatted text
   'IMAGE' |           // ImageData: URL of image relative to notebook folder.
   'JIIX' |            // Jiix: MyScript JIIX export from 'MATH' editor.
   'LATEX' |           // LatexData: LaTeX string
-  'MATHEMATICA' |     // Mathematica style (evaluation)
   /* DEPRECATED: */ 'CLASSIFICATION'|   // A classifcication of the style.
   'MATHJS' |          // MathJsData: MathJS plain text expression
   'MATHML' |          // MathMlData: MathML Presentation XML
   'STROKE' |          // StrokeGroups: MyScript strokeGroups export from 'TEXT' editor.
   'SYMBOL' |          // SymbolData: symbol in a definition or expression.
   'TEXT' |            // TextData: Plain text
-  'TOOL-MENU' |       // ToolMenu: Menu of tools that an observer can apply to a style.
-  'BOOLEAN-MAP' |     // StyleIdToBooleanMap: An object mapping style ids into boolean
+  'TOOL' |            // ToolInfo: Tool that can be applied to the parent style.
   'WOLFRAM';          // WolframData: Wolfram language expression
 
-  export type StyleSource =
-  'TEST' |            // An example source used only by our test system
-  'USER' |            // Directly entered by user
-  'MATHJS' |          // The Mathjs Computer Algebra System system
+export type StyleSource =
   'MATHEMATICA' |     // Mathematica style (evaluation)
+  'MATHJS' |          // The Mathjs Computer Algebra System system
   'MATHSTEPS' |       // The Mathsteps CAS system
   'SANDBOX' |         // Sandbox for temporary experiments
-  'SYSTEM'            // The Math-Tablet app itself, not the user or an observer.
+  'SUBTRIV-CLASSIFIER'|
+  'SYMBOL-CLASSIFIER'|
+  'SYSTEM'|           // The Math-Tablet app itself, not the user or an observer.
+  'TEST' |            // An example source used only by our test system
+  'USER'              // Directly entered by user
 
 // MyScript Types
 
@@ -115,43 +115,59 @@ export interface ToolInfo {
   html: /* TYPESCRIPT: Html? */ string;
   data?: any;
 }
-export type ToolMenu = ToolInfo[];
 
 // Plain object version of TDoc
 
 export type RelationshipId = number;
 export type StyleId = number;
 
-export interface StyleIdToBooleanMap
-{
-  [key: number]: boolean;
+export interface RelationshipMap {
+  [id: /* RelationshipId */number]: RelationshipObject;
 }
-
 
 export interface RelationshipProperties {
   meaning: RelationshipMeaning;
 }
 
+export interface RelationshipPropertiesMap {
+  [id: /* StyleId */number]: RelationshipProperties;
+}
+
 export interface RelationshipObject extends RelationshipProperties {
   id: RelationshipId;
-  sourceId: StyleId;
-  targetId: StyleId;
+  source: StyleSource;
+  fromId: StyleId;
+  toId: StyleId;
+}
+
+export interface StyleMap {
+  [id: /* StyleId */number]: StyleObject;
 }
 
 export interface StyleProperties {
   data: any;
   meaning: StyleMeaning;
-  source: StyleSource;
   type: StyleType;
 }
 
 export interface StylePropertiesWithSubprops extends StyleProperties {
   subprops?: StylePropertiesWithSubprops[];
+  relationsTo?: RelationshipPropertiesMap;
+  relationsFrom?: RelationshipPropertiesMap;
 }
 
 export interface StyleObject extends StyleProperties {
   id: StyleId;
   parentId: StyleId; // 0 if top-level style.
+  source: StyleSource;
+}
+
+export interface TDocObject {
+  nextId: StyleId;
+  relationshipMap: RelationshipMap;
+  styleMap: StyleMap;
+  styleOrder: StyleId[];
+  version: string;
 }
 
 // Notebook Change types:
@@ -186,6 +202,38 @@ export interface StyleInserted {
   afterId?: StyleId;
 }
 
+// Notebook Change Requests
+
+export type NotebookChangeRequest =
+  RelationshipDeleteRequest|
+  RelationshipInsertRequest|
+  StyleDeleteRequest|
+  StyleInsertRequest;
+
+  export interface RelationshipDeleteRequest {
+    type: 'deleteRelationship';
+    id: number;
+  }
+
+  export interface RelationshipInsertRequest {
+    type: 'insertRelationship';
+    fromId: StyleId;
+    toId: StyleId;
+    props: RelationshipProperties;
+  }
+
+export interface StyleDeleteRequest {
+  type: 'deleteStyle';
+  styleId: number;
+}
+
+export interface StyleInsertRequest {
+  type: 'insertStyle';
+  afterId?: StyleId; // or 0, -1.
+  parentId?: StyleId; // or 0.
+  styleProps: StylePropertiesWithSubprops;
+}
+
 // Messages from the server
 
 export type ServerMessage = NotebookChanged|NotebookClosed|NotebookOpened;
@@ -193,17 +241,18 @@ export type ServerMessage = NotebookChanged|NotebookClosed|NotebookOpened;
 export interface NotebookChanged {
   action: 'notebookChanged';
   notebookName: NotebookName;
-  change: NotebookChange;
+  changes: NotebookChange[];
 }
 
-interface NotebookClosed {
+export interface NotebookClosed {
   action: 'notebookClosed';
   notebookName: NotebookName;
 }
 
-interface NotebookOpened {
+export interface NotebookOpened {
   action: 'notebookOpened';
   notebookName: NotebookName;
+  tDoc: TDocObject;
 }
 
 // Messages from the client
@@ -237,8 +286,6 @@ export interface OpenNotebook {
 
 export interface UseTool {
   action: 'useTool';
-  info: ToolInfo;
   notebookName: NotebookName;
-  source: StyleSource;
   styleId: StyleId;
 }

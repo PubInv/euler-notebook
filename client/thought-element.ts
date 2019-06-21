@@ -21,7 +21,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 import { $new, escapeHtml, Html } from './dom.js';
 import { getKatex } from './katex-types.js';
-import { StyleObject, LatexData, ToolMenu, StyleId, RelationshipObject } from './math-tablet-api.js';
+import { StyleObject, LatexData, StyleId, RelationshipObject, ToolInfo } from './math-tablet-api.js';
 import { Notebook } from './notebook.js';
 
 // Exported Class
@@ -68,7 +68,7 @@ export class ThoughtElement {
     console.log(`Inserting style ${style.id} ${style.meaning} ${style.type}`);
     switch(style.meaning) {
       case 'ATTRIBUTE':
-        if (style.type == 'TOOL-MENU') { this.renderToolMenu(style); }
+        if (style.type == 'TOOL') { this.renderTool(style); }
         break;
       case 'ERROR': this.renderErrorMessage(style); break;
       case 'EXPOSITION':
@@ -103,7 +103,7 @@ export class ThoughtElement {
 
   public insertEquivalence(relationship: RelationshipObject): void {
     const $formulaElt = this.$elt.querySelector('.formula');
-    let childStyle = this.notebook.getStyleFromKey(relationship.sourceId);
+    let childStyle = this.notebook.getStyleFromKey(relationship.fromId);
     if (childStyle) {
       const thought = this.notebook.topLevelStyleOf(childStyle).style.id;
       const preamble = `<p id=${"relationship"+relationship.id}> = { (${thought}) (From Mathematica CAS) } </p>`;
@@ -214,16 +214,14 @@ export class ThoughtElement {
     $formulaElt!.innerHTML = escapeHtml(text);
   }
 
-  private renderToolMenu(style: StyleObject): void {
-    const toolMenu: ToolMenu = style.data;
+  private renderTool(style: StyleObject): void {
+    const info: ToolInfo = style.data;
     const $toolsElt = this.$elt.querySelector('.tools');
-    for (const info of toolMenu) {
-      const $button = $new('button', { class: 'tool', html: info.html });
-      $button.addEventListener('click', (_event: MouseEvent)=>{
-        this.notebook.useTool(this, style.source, info);
-      });
-      $toolsElt!.appendChild($button);
-    };
+    const $button = $new('button', { class: 'tool', html: info.html });
+    $button.addEventListener('click', (_event: MouseEvent)=>{
+      this.notebook.useTool(style.id);
+    });
+    $toolsElt!.appendChild($button);
   }
 
 }
