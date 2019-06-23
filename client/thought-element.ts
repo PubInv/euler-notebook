@@ -21,8 +21,9 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 import { $new, escapeHtml, Html } from './dom.js';
 import { getKatex } from './katex-types.js';
-import { StyleObject, LatexData, StyleId, RelationshipObject, ToolInfo } from './math-tablet-api.js';
-import { Notebook } from './notebook.js';
+import { StyleObject, StyleId, RelationshipObject } from './notebook.js';
+import { LatexData, ToolInfo } from './math-tablet-api.js';
+import { HtmlNotebook } from './html-notebook.js';
 
 // Exported Class
 
@@ -30,7 +31,7 @@ export class ThoughtElement {
 
   // Class Methods
 
-  static insert(notebook: Notebook, style: StyleObject): ThoughtElement {
+  static insert(notebook: HtmlNotebook, style: StyleObject): ThoughtElement {
     var rval = new this(notebook, style);
     notebook.$elt.appendChild(rval.$elt);
     return rval;
@@ -40,7 +41,7 @@ export class ThoughtElement {
 
   public $elt: HTMLDivElement;
   public style: StyleObject;
-  public notebook: Notebook;
+  public notebook: HtmlNotebook;
 
   // Instance Methods
 
@@ -123,7 +124,7 @@ export class ThoughtElement {
 
   // Private Constructor
 
-  private constructor(notebook: Notebook, thought: StyleObject) {
+  private constructor(notebook: HtmlNotebook, thought: StyleObject) {
     this.notebook = notebook;
     this.style = thought;
     this.$elt = this.createElement();

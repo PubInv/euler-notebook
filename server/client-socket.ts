@@ -26,8 +26,8 @@ import { Request } from 'express';
 import * as WebSocket from 'ws';
 
 // TODO: Handle websocket lifecycle: closing, unexpected disconnects, errors, etc.
-
-import { ClientMessage, NotebookPath, NotebookName, StyleDeleteRequest, InsertStyle, StyleInsertRequest, NotebookChanged, ServerMessage, CloseNotebook, DeleteStyle, OpenNotebook, UseTool, NotebookChange, NotebookOpened } from '../client/math-tablet-api';
+import { NotebookChange } from '../client/notebook';
+import { ClientMessage, NotebookPath, NotebookName, StyleDeleteRequest, InsertStyle, StyleInsertRequest, NotebookChanged, ServerMessage, CloseNotebook, DeleteStyle, OpenNotebook, UseTool, NotebookOpened } from '../client/math-tablet-api';
 
 import { PromiseResolver, runAsync } from './common';
 // REVIEW: This file should not be dependent on any specific observers.

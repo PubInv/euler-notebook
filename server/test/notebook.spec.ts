@@ -26,8 +26,8 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 import { assert } from 'chai';
 import 'mocha';
 
-import { NotebookChangeRequest, StyleInsertRequest, StylePropertiesWithSubprops, StyleType } from '../../client/math-tablet-api';
-import { VERSION }  from '../notebook';
+import { StyleType, VERSION }  from '../../client/notebook';
+import { NotebookChangeRequest, StyleInsertRequest, StylePropertiesWithSubprops } from '../../client/math-tablet-api';
 import { ServerNotebook }  from '../server-notebook';
 
 // Unit Tests

@@ -24,7 +24,8 @@ const MODULE = __filename.split(/[/\\]/).slice(-1)[0].slice(0,-3);
 const debug = debug1(`server:${MODULE}`);
 
 // import { MthMtcaText } from '../client/math-tablet-api';
-import { StyleObject, NotebookChange, StyleId, NotebookChangeRequest, StyleInsertRequest, StylePropertiesWithSubprops, RelationshipProperties, RelationshipInsertRequest } from '../../client/math-tablet-api';
+import { StyleObject, NotebookChange, StyleId, RelationshipProperties } from '../../client/notebook';
+import { NotebookChangeRequest, StyleInsertRequest, StylePropertiesWithSubprops, RelationshipInsertRequest } from '../../client/math-tablet-api';
 import { ServerNotebook, ObserverInstance } from '../server-notebook';
 import { execute, constructSubstitution, checkEquiv, NVPair } from './wolframscript';
 import * as fs from 'fs';

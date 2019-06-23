@@ -26,9 +26,12 @@ import { assert } from 'chai';
 import 'mocha';
 // import * as sinon from 'sinon';
 
+import { NotebookChange, StyleInserted, StyleMeaning, StyleObject, StyleType } from '../../client/notebook';
+import { StylePropertiesWithSubprops, StyleInsertRequest } from '../../client/math-tablet-api';
+
+
 import { ServerNotebook } from '../server-notebook';
 import { MathJsObserver } from '../observers/mathjs-cas';
-import { NotebookChange, StylePropertiesWithSubprops, StyleInsertRequest, StyleInserted, StyleMeaning, StyleObject, StyleType } from '../../client/math-tablet-api';
 
 // Constants
 

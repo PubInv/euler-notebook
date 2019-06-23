@@ -24,12 +24,12 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 import { addErrorMessageToHeader } from './global.js';
 import { ClientMessage, NotebookName, ServerMessage, NotebookOpened, NotebookClosed, NotebookChanged } from './math-tablet-api.js';
-import { Notebook } from './notebook.js';
+import { HtmlNotebook } from './html-notebook.js';
 
 // Types
 
 type ConnectPromise = PromiseResolver<ServerSocket>;
-type OpenPromise = PromiseResolver<Notebook>;
+type OpenPromise = PromiseResolver<HtmlNotebook>;
 
 // REVIEW: This is also defined in server/common.ts.
 interface PromiseResolver<T> {
@@ -53,7 +53,7 @@ export class ServerSocket {
 
   // Instance Methods
 
-  public async openNotebook(notebookName: NotebookName): Promise<Notebook> {
+  public async openNotebook(notebookName: NotebookName): Promise<HtmlNotebook> {
     this.sendMessage({ action: 'openNotebook', notebookName });
     return new Promise((resolve, reject)=>this.openPromises.set(notebookName, { resolve, reject }))
   }
@@ -145,7 +145,7 @@ export class ServerSocket {
   private smNotebookOpened(msg: NotebookOpened): void {
     const openRequest = this.openPromises.get(msg.notebookName);
     if (!openRequest) { throw new Error(`Notebook opened message for unknown notebook: ${msg.notebookName}`); }
-    const notebook = Notebook.open(this, msg.notebookName, msg.obj);
+    const notebook = HtmlNotebook.open(this, msg.notebookName, msg.obj);
     openRequest.resolve(notebook);
     this.openPromises.delete(msg.notebookName);
   }
@@ -153,13 +153,13 @@ export class ServerSocket {
   // TODO: notebook open failure
 
   private smNotebookClosed(msg: NotebookClosed): void {
-    const notebook = Notebook.get(msg.notebookName);
+    const notebook = HtmlNotebook.get(msg.notebookName);
     if (!notebook) { throw new Error(`Unknown notebook closed: ${msg.notebookName}`); }
     notebook.smClose();
   }
 
   private smNotebookChanged(msg: NotebookChanged): void {
-    const notebook = Notebook.get(msg.notebookName);
+    const notebook = HtmlNotebook.get(msg.notebookName);
     if (!notebook) { throw new Error(`Notebook change from hnknown notebook: ${msg.notebookName}`); }
     notebook.smChange(msg.changes);
   }

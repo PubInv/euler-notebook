@@ -17,284 +17,360 @@ You should have received a copy of the GNU Affero General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-// Requirements
+// Requirement
 
-import { ServerSocket } from './server-socket.js';
-
-import { NotebookName, StyleId, StyleObject, NotebookChange,
-         RelationshipId, RelationshipObject, UseTool, InsertStyle,
-         StylePropertiesWithSubprops, DeleteStyle, NotebookObject } from './math-tablet-api.js';
-// import { Jiix, StrokeGroups } from './myscript-types.js';
-import { ThoughtElement } from './thought-element.js';
-import { $new, escapeHtml, Html } from './dom.js';
+// NO REQUIREMENTS. SELF-CONTAINED!
+// Try to keep it that way.
 
 // Types
 
-interface StyleIndex { [id:string]: StyleId[] }
+export type NotebookChange = RelationshipDeleted|RelationshipInserted|StyleDeleted|StyleInserted;
+interface RelationshipDeleted {
+  type: 'relationshipDeleted';
+  relationship: RelationshipObject;
+}
+export interface RelationshipInserted {
+  type: 'relationshipInserted';
+  relationship: RelationshipObject;
+}
+export interface StyleDeleted {
+  type: 'styleDeleted';
+  style: StyleObject;
+}
+export interface StyleInserted {
+  type: 'styleInserted';
+  style: StyleObject;
+  afterId?: StyleId;
+}
+
+export interface NotebookObject {
+  nextId: StyleId;
+  relationshipMap: RelationshipMap;
+  styleMap: StyleMap;
+  styleOrder: StyleId[];
+  version: string;
+}
+
+export type RelationshipId = number;
+
+export interface RelationshipObject extends RelationshipProperties {
+  id: RelationshipId;
+  source: StyleSource;
+  fromId: StyleId;
+  toId: StyleId;
+}
+
+export type RelationshipMeaning =
+  'SYMBOL-DEPENDENCY' |
+  'EQUIVALENCE';
+
+export interface RelationshipMap {
+  [id: /* RelationshipId */number]: RelationshipObject;
+}
+
+export interface RelationshipProperties {
+  meaning: RelationshipMeaning;
+}
+
+export type StyleId = number;
+
+export interface StyleMap {
+  [id: /* StyleId */number]: StyleObject;
+}
+
+export type StyleMeaning =
+  'ATTRIBUTE' |       // Generic attribute. Meaning implied by type.
+  'ERROR' |           // An error message. Type should be text.
+  'EVALUATION'|       // CAS evaluation of an expression.
+  'EVALUATION-ERROR' |// Error in CAS evaluation of an expression.
+  'EXPOSITION' |      // A longer discussion or description.
+  'FORMULA-ALT' |     // Alternative representation of a formula.
+  'HANDWRITING' |     // REVIEW: Used? Deprecate? Stroke information for the user's handwriting.
+  'INPUT' |           // Primary representation of something that the user has input.
+  'INPUT-ALT' |       // An alternative representation, e.g. LaTeX version of handwritten math.
+  'QUADRATIC' |       // DEPRECATED: A quadratic expression, presumably worth plotting.
+  'SIMPLIFICATION' |  // CAS simplification of expression or equation.
+  'PLOT' |            // Plot of a formula
+  'SYMBOL' |          // Symbols extracted from an expression.
+  'SYMBOL-DEFINITION'|// Definition of a symbol.
+  'SYMBOL-USE' |      // Use of a symbol.
+  'EQUIVALENT-CHECKS'|// Checking expression equivalence of with other styles
+  'UNIVARIATE-QUADRATIC'|// A quadratic expression, presumably worth plotting.
+  'SUBTRIVARIATE';    // An expression in one or two variables presumable plottable.
+
+export interface StyleObject extends StyleProperties {
+  id: StyleId;
+  parentId: StyleId; // 0 if top-level style.
+  source: StyleSource;
+}
+
+export interface StyleProperties {
+  data: any;
+  meaning: StyleMeaning;
+  type: StyleType;
+}
+
+export type StyleType =
+  'HTML' |            // Html: HTML-formatted text
+  'IMAGE' |           // ImageData: URL of image relative to notebook folder.
+  'JIIX' |            // Jiix: MyScript JIIX export from 'MATH' editor.
+  'LATEX' |           // LatexData: LaTeX string
+  /* DEPRECATED: */ 'CLASSIFICATION'|   // A classifcication of the style.
+  'MATHJS' |          // MathJsData: MathJS plain text expression
+  'MATHML' |          // MathMlData: MathML Presentation XML
+  'STROKE' |          // StrokeGroups: MyScript strokeGroups export from 'TEXT' editor.
+  'SYMBOL' |          // SymbolData: symbol in a definition or expression.
+  'TEXT' |            // TextData: Plain text
+  'TOOL' |            // ToolInfo: Tool that can be applied to the parent style.
+  'WOLFRAM';          // WolframData: Wolfram language expression
+
+export type StyleSource =
+  'MATHEMATICA' |     // Mathematica style (evaluation)
+  'MATHJS' |          // The Mathjs Computer Algebra System system
+  'MATHSTEPS' |       // The Mathsteps CAS system
+  'SANDBOX' |         // Sandbox for temporary experiments
+  'SUBTRIV-CLASSIFIER'|
+  'SYMBOL-CLASSIFIER'|
+  'SYSTEM'|           // The Math-Tablet app itself, not the user or an observer.
+  'TEST' |            // An example source used only by our test system
+  'USER'              // Directly entered by user
+
+// Constants
+
+export const VERSION = "0.0.8";
 
 // Exported Class
 
 export class Notebook {
 
-  // Class Methods
+  // Constructor
 
-  public static get(notebookName: NotebookName): Notebook|undefined {
-    return this.notebooks.get(notebookName);
-  }
-
-  public static open(
-    socket: ServerSocket,
-    notebookName: NotebookName,
-    tDoc: NotebookObject,
-  ): Notebook {
-    let notebook = this.notebooks.get(notebookName);
-    if (!notebook) {
-      notebook = new this(socket, notebookName);
-      this.notebooks.set(notebookName, notebook);
-      notebook.populateFromTDoc(tDoc);
+  public constructor(obj?: NotebookObject) {
+    if (!obj) {
+      this.nextId = 1;
+      this.relationshipMap = {};
+      this.styleMap = {};
+      this.styleOrder = [];
+      this.version = VERSION;
+      // IMPORTANT: If you add any non-persistent fields (underscore-prefixed)
+      // that need to be initialized, initialize them below, and also in fromJSON.
+    } else {
+      if (!obj.nextId) { throw new Error("Invalid notebook object JSON."); }
+      if (obj.version != VERSION) { throw new Error("Unexpected version for notebook."); }
+      this.nextId = obj.nextId;
+      this.relationshipMap = obj.relationshipMap;
+      this.styleMap = obj.styleMap;
+      this.styleOrder = obj.styleOrder;
+      this.version = obj.version;
     }
-    return notebook;
   }
 
   // Instance Properties
 
-  public $elt: HTMLElement;
-  public notebookName: NotebookName;
+  public version: string;
+  public nextId: StyleId;
 
   // Instance Property Functions
 
-  public debugHtml(): Html {
-    return Array.from(this.styleElements.values())
-    .map(s=>this.debugStyleHtml(s.style)).join('');
+  // REVIEW: Return an iterator?
+  public allRelationships(): RelationshipObject[] {
+    const sortedIds: RelationshipId[] = Object.keys(this.relationshipMap).map(k=>parseInt(k,10)).sort();
+    return sortedIds.map(id=>this.relationshipMap[id]);
   }
 
-  // This is just to have public access..
-  public getStyleFromKey(key: StyleId): StyleObject | null {
-    const g = this.styles.get(key);
-    return g ? g : null;
+  public relationshipsOf(id: StyleId): RelationshipObject[] {
+    return this.allRelationships().filter(r=>(r.fromId == id || r.toId == id));
   }
 
-  public topLevelStyleOf(style: StyleObject): ThoughtElement {
-    for (; style.parentId; style = this.styles.get(style.parentId)!);
-    const styleElt = this.styleElements.get(style.id);
-    return styleElt!;
+  // REVIEW: Return an iterator?
+  public allStyles(): StyleObject[] {
+    const sortedIds: StyleId[] = Object.keys(this.styleMap).map(k=>parseInt(k,10)).sort();
+    return sortedIds.map(id=>this.styleMap[id]);
+  }
+
+  // Returns all thoughts in notebook order
+  // REVIEW: Return an iterator?
+  public topLevelStyleOrder(): StyleId[] { return this.styleOrder; }
+
+  public childStylesOf(id: StyleId): StyleObject[] {
+    return this.allStyles().filter(s=>(s.parentId==id));
+  }
+
+  // find all children of given type and meaning
+  public findChildStylesOfType(id: StyleId, type: StyleType, meaning?: StyleMeaning): StyleObject[] {
+
+    // we will count ourselves as a child here....
+    const rval: StyleObject[] = [];
+
+    const style = this.styleMap[id];
+    if (style && style.type == type && (!meaning || style.meaning == meaning)) {
+      // we match, so we add ourselves...
+      rval.push(<StyleObject>style);
+    } // else { assert(this.thoughtMap[id] }
+
+    // now for each kid, recurse...
+    // DANGER! this makes this function asymptotic quadratic or worse...
+    const kids = this.childStylesOf(id);
+    for(const k of kids) {
+      const kmatch = this.findChildStylesOfType(k.id, type, meaning);
+      for(let km of kmatch) { rval.push(km); }
+    }
+
+    return rval;
+  }
+
+  public getRelationshipById(id: RelationshipId): RelationshipObject {
+    const rval = this.relationshipMap[id];
+    if (!rval) { throw new Error(`Relationship ${id} doesn't exist.`); }
+    return rval;
+  }
+
+  public getStyleById(id: StyleId): StyleObject {
+    const rval = this.styleMap[id];
+    if (!rval) { throw new Error(`Style ${id} doesn't exist.`); }
+    return rval;
+  }
+
+  // Return all StyleObjects which are Symbols for which
+  // the is a Symbol Dependency relationship with this
+  // object as the the target
+  // Note: The defintion is the "source" of the relationship
+  // and the "use" is "target" of the relationship.
+  public getSymbolStylesIDependOn(style:StyleObject): StyleObject[] {
+    // simplest way to do this is to iterate over all relationships,
+    // computing the source and target thoughts. If the target thought
+    // is the same as our ancestor thought, then we return the
+    // source style, which should be of type Symbol and meaning Definition.
+    const rs = this.allRelationships();
+    var symbolStyles: StyleObject[] = [];
+    const mp = this.topLevelStyleOf(style.id);
+    if (!mp) {
+      console.error("INTERNAL ERROR: did not produce ancenstor: ",style.id);
+      throw new Error("INTERNAL ERROR: did not produce ancenstor: ");
+    }
+    rs.forEach(r => {
+      const rp = this.topLevelStyleOf(r.toId);
+      if (!rp) {
+        console.error("INTERNAL ERROR: did not produce ancenstor: ",style.id);
+        throw new Error("INTERNAL ERROR: did not produce ancenstor: ");
+      }
+      if (rp.id == mp.id) {
+        // We are a user of this definition...
+        symbolStyles.push(this.getStyleById(r.fromId));
+      }
+    });
+    return symbolStyles;
+  }
+
+  public numStyles(tname: StyleType, meaning?: StyleMeaning) : number {
+    return this.allStyles().reduce(
+      function(total,x){
+        return (x.type == tname && (!meaning || x.meaning == meaning))
+          ?
+          total+1 : total},
+      0);
+  }
+
+  // This can be asymptotically improved later.
+  public styleHasChildOfType(style: StyleObject, tname: StyleType, meaning?: StyleMeaning): boolean {
+    const id = style.id;
+    return !!this.childStylesOf(id).find(s => s.type == tname && (!meaning || s.meaning == meaning));
+  }
+
+  // Remove fields with an underscore prefix, because they are not supposed to be persisted.
+  public toJSON(): NotebookObject {
+    const obj = { ...this };
+    for (const key in obj) {
+      if (key.startsWith('_')) { delete obj[key]; }
+    }
+    return <NotebookObject><unknown>obj;
+  }
+
+  public topLevelStyleOf(id: StyleId): StyleObject {
+    const style = this.styleMap[id];
+    if (!style) { throw new Error("Cannot find top-level style."); }
+    if (!style.parentId) { return style; }
+    return this.topLevelStyleOf(style.parentId);
   }
 
   // Instance Methods
 
-  public close() {
-    // TODO: remove event listeners?
-    // TODO: delete element?
-    // TODO: mark closed?
-    this.clear();
-    Notebook.notebooks.delete(this.notebookName);
-  }
-
-  public deleteStyle(styleId: StyleId): void {
-    const msg: DeleteStyle = { action: 'deleteStyle', notebookName: this.notebookName, styleId };
-    this.socket.sendMessage(msg);
-  }
-
-  public insertStyle(styleProps: StylePropertiesWithSubprops): void {
-   const msg: InsertStyle = {
-      action: 'insertStyle',
-      afterId: -1,
-      notebookName: this.notebookName,
-      styleProps,
-    }
-    this.socket.sendMessage(msg);
-  }
-
-  public selectStyle(styleId: StyleId, event: MouseEvent): void {
-
-    // If neither shift nor command held down then unselect prior selection
-    if (!event.shiftKey && !event.metaKey) {
-      while (this.selectedStyles.length>0) {
-        const styleId = this.selectedStyles.pop();
-        const $styleElt = this.styleElements.get(styleId!);
-        $styleElt!.unselect();
-      }
-    }
-    // TODO: if event.shiftKey, select all intervening thoughts.
-    this.styleElements.get(styleId)!.select();
-    this.selectedStyles.push(styleId);
-  }
-
-  public useTool(id: StyleId): void {
-    const msg: UseTool = {
-      action: 'useTool',
-      notebookName: this.notebookName,
-      styleId: id,
-    };
-    this.socket.sendMessage(msg);
-  }
-
-  // Server Message Handlers
-
-  public smChange(changes: NotebookChange[]): void {
-    for (const change of changes) {
-      switch (change.type) {
-        case 'relationshipDeleted': this.chDeleteRelationship(change.relationship); break;
-        case 'relationshipInserted': this.chInsertRelationship(change.relationship); break;
-        case 'styleDeleted': this.chDeleteStyle(change.style.id); break;
-        case 'styleInserted': this.chInsertStyle(change.style); break;
-      }
+  public applyChange(change: NotebookChange): void {
+    switch(change.type) {
+      case 'relationshipDeleted':
+        this.deleteRelationship(change.relationship);
+        break;
+      case 'relationshipInserted':
+        this.insertRelationship(change.relationship);
+        break;
+      case 'styleDeleted':
+        this.deleteStyle(change.style);
+        break;
+      case 'styleInserted':
+        this.insertStyle(change.style, change.afterId);
+        break;
+      default:
+        throw new Error("Unexpected");
     }
   }
 
-  public smClose(): void { return this.close(); }
+  public applyChanges(changes: NotebookChange[]): void {
+    for (const change of changes) { this.applyChange(change); }
+  }
 
-  // -- PRIVATE --
+  // --- PRIVATE ---
 
   // Private Class Properties
 
-  private static notebooks: Map<NotebookName, Notebook> = new Map();
-
-  // Private Constructor
-
-  private constructor(socket: ServerSocket, notebookName: NotebookName) {
-    this.socket = socket;
-    this.notebookName = notebookName;
-
-    this.$elt = $new('div', { id: notebookName, class: 'tdoc' });
-
-    this.relationships = new Map();
-    this.styles = new Map();
-    this.styleElements = new Map();
-    this.selectedStyles = [];
-  }
+  // Private Class Methods
 
   // Private Instance Properties
 
-  private socket: ServerSocket;
-  private relationships: Map<RelationshipId, RelationshipObject>;
-  private selectedStyles: StyleId[];
-  private styles: Map<StyleId, StyleObject>;
-  private styleElements: Map<StyleId, ThoughtElement>;
+  private relationshipMap: RelationshipMap;
+  private styleMap: StyleMap;     // Mapping from style ids to style objects.
+  private styleOrder: StyleId[];  // List of style ids in the top-down order they appear in the notebook.
 
-  // Private Instance Property Functions
-
-  private relationshipsAttachedToStyle(s: StyleObject): RelationshipObject[] {
-    return Array.from(this.relationships.values()).filter(r=>r.fromId==s.id);
-  }
-
-  private stylesAttachedToStyle(s: StyleObject): StyleObject[] {
-    return Array.from(this.styles.values()).filter(s2=>s2.parentId==s.id);
-  }
+  // NOTE: Properties with an underscore prefix are not persisted.
 
   // Private Event Handlers
 
-  // Private Change Event Handlers
-
-  private chDeleteRelationship(relationship: RelationshipObject): void {
-    const relationshipElt = this.relationships.get(relationship.id);
-    if (!relationshipElt) { throw new Error("Delete relationship message for unknown style"); }
-    this.relationships.delete(relationship.id);
-
-    // if the relationship is an equivalence, it has been rendered
-    // as a preamble of a thought. It would probably be easiest
-    // to re-render the thought.
-    if (relationship.meaning == 'EQUIVALENCE') {
-      const srcStyle = this.styles.get(relationship.fromId);
-      const tarStyle = this.styles.get(relationship.toId);
-      if (srcStyle && tarStyle) {
-        const srcStyleElt = this.topLevelStyleOf(srcStyle);
-        const tarStyleElt = this.topLevelStyleOf(tarStyle);
-        srcStyleElt.deleteEquivalence(relationship);
-        tarStyleElt.deleteEquivalence(relationship);
-        console.log(srcStyleElt,tarStyleElt);
-      }
-    }
-  }
-
-  private chDeleteStyle(styleId: StyleId): void {
-    const style = this.styles.get(styleId);
-    if (!style) { throw new Error("Delete style message for unknown style"); }
-    this.styles.delete(styleId);
-    const styleElt = this.topLevelStyleOf(style);
-    if (!styleElt) { throw new Error(`Delete style message for style without top-level element`); }
-    styleElt.deleteStyle(style);
-    if (!style.parentId) {
-      styleElt.delete();
-      this.styleElements.delete(style.id);
-    }
-  }
-
-  private chInsertRelationship(relationship: RelationshipObject): void {
-    this.relationships.set(relationship.id, relationship);
-    if (relationship.meaning == 'EQUIVALENCE') {
-      let style = this.styles.get(relationship.toId);
-      if (style) {
-        // Here I try to find the target to try to add the
-        // equivalence preamble...
-        let thoughtElt = this.topLevelStyleOf(style);
-        thoughtElt.insertEquivalence(relationship);
-      }
-    }
-  }
-
-  private chInsertStyle(style: StyleObject): void {
-    this.styles.set(style.id, style);
-    let thoughtElt: ThoughtElement;
-    if (!style.parentId) {
-      thoughtElt = ThoughtElement.insert(this, style);
-      this.styleElements.set(style.id, thoughtElt);
-    } else {
-      thoughtElt = this.topLevelStyleOf(style);
-    }
-    thoughtElt.insertStyle(style);
-  }
-
   // Private Instance Methods
 
-  private clear(): void {
-    this.$elt.innerHTML = '';
-    this.styleElements.clear();
-    this.styles.clear();
+  private deleteRelationship(relationship: RelationshipObject): void {
+    // TODO: relationship may have already been deleted by another observer.
+    const id = relationship.id;
+    if (!this.relationshipMap[id]) { throw new Error(`Deleting unknown relationship ${id}`); }
+    delete this.relationshipMap[id];
   }
 
-  private debugRelationshipHtml(relationship: RelationshipObject): Html {
-    return `<div><span class="leaf">R${relationship.id} &#x27a1; ${relationship.toId}</span></div>`;
+  private deleteStyle(style: StyleObject): void {
+    const id = style.id;
+    if (!this.styleMap[id]) { throw new Error(`Deleting unknown style ${id}`); }
+    // If this is a top-level style then remove it from the top-level style order.
+    if (!style.parentId) {
+      const i = this.styleOrder.indexOf(id);
+      this.styleOrder.splice(i,1);
+    }
+    delete this.styleMap[id];
   }
 
-  private debugStyleHtml(style: StyleObject): Html {
-    const styleElements = this.stylesAttachedToStyle(style);
-    const relationshipElements = this.relationshipsAttachedToStyle(style);
-    const json = escapeHtml(JSON.stringify(style.data));
-    if (styleElements.length == 0 && relationshipElements.length == 0 && json.length<30) {
-      return `<div><span class="leaf">S${style.id} ${style.type} ${style.meaning} ${style.source} <tt>${json}</tt></span></div>`;
-    } else {
-      const stylesHtml = styleElements.map(s=>this.debugStyleHtml(s)).join('');
-      const relationshipsHtml = relationshipElements.map(r=>this.debugRelationshipHtml(r)).join('');
-      const [ shortJsonTt, longJsonTt ] = json.length<30 ? [` <tt>${json}</tt>`, ''] : [ '', `<tt>${json}</tt>` ];
-      return `<div>
-  <span class="collapsed">S${style.id} ${style.type} ${style.meaning} ${style.source}${shortJsonTt}</span>
-  <div class="nested" style="display:none">${longJsonTt}
-    ${stylesHtml}
-    ${relationshipsHtml}
-  </div>
-</div>`;
+  private insertRelationship(relationship: RelationshipObject): void {
+    this.relationshipMap[relationship.id] = relationship;
+  }
+
+  private insertStyle(style: StyleObject, afterId?: StyleId): void {
+    this.styleMap[style.id] = style;
+    // Insert top-level styles in the style order.
+    if (!style.parentId) {
+      if (!afterId || afterId===0) {
+        this.styleOrder.unshift(style.id);
+      } else if (afterId===-1) {
+        this.styleOrder.push(style.id);
+      } else {
+        const i = this.styleOrder.indexOf(afterId);
+        if (i<0) { throw new Error(`Cannot insert thought after unknown thought ${afterId}`); }
+        this.styleOrder.splice(i+1, 0, style.id);
+      }
     }
   }
-
-  private populateFromTDoc(tDoc: NotebookObject): void {
-    const index: StyleIndex = { '0':[] };
-    for (const styleId of Object.keys(tDoc.styleMap)) { index[styleId] = []; }
-    for (const style of Object.values(tDoc.styleMap)) { index[style.parentId].push(style.id); }
-    for (const styleId of tDoc.styleOrder) {
-      this.populateStyleRecursively(tDoc, index, styleId);
-    }
-    for (const relationship of Object.values(tDoc.relationshipMap)) {
-      this.chInsertRelationship(relationship);
-    }
-  }
-
-  private populateStyleRecursively(tDoc: NotebookObject, index: StyleIndex, styleId: StyleId) {
-    const style = tDoc.styleMap[styleId];
-    this.chInsertStyle(style);
-    for (const subStyleId of index[styleId]) {
-      this.populateStyleRecursively(tDoc, index, subStyleId)
-    }
-  }
-
 }

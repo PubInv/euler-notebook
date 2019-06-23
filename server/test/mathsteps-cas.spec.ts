@@ -29,7 +29,8 @@ import 'mocha';
 import { MathStepsObserver } from '../observers/mathsteps-cas';
 
 import { ServerNotebook } from '../server-notebook';
-import { StyleProperties, StyleInsertRequest, StylePropertiesWithSubprops, NotebookChange, StyleInserted, ToolName, StyleId, StyleObject } from '../../client/math-tablet-api';
+import { StyleProperties, NotebookChange, StyleInserted, StyleId, StyleObject } from '../../client/notebook';
+import { StyleInsertRequest, StylePropertiesWithSubprops, ToolName } from '../../client/math-tablet-api';
 
 // Constants
 

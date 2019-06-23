@@ -24,7 +24,8 @@ const MODULE = __filename.split(/[/\\]/).slice(-1)[0].slice(0,-3);
 const debug = debug1(`server:${MODULE}`);
 import * as math from 'mathjs';
 
-import { NotebookChange, NotebookChangeRequest, StyleObject, StyleInserted, StyleInsertRequest, StylePropertiesWithSubprops } from '../../client/math-tablet-api';
+import { NotebookChange, StyleObject, StyleInserted } from '../../client/notebook';
+import { NotebookChangeRequest,  StyleInsertRequest, StylePropertiesWithSubprops } from '../../client/math-tablet-api';
 import { ObserverInstance, ServerNotebook }  from '../server-notebook';
 import { Config } from '../config';
 

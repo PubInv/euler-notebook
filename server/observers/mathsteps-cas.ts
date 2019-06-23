@@ -25,7 +25,8 @@ const debug = debug1(`server:${MODULE}`);
 import * as mathsteps from 'mathsteps';
 import * as math from 'mathjs';
 
-import { StyleObject, NotebookChange, StyleProperties, ToolInfo, NotebookChangeRequest, StyleInsertRequest } from '../../client/math-tablet-api';
+import { StyleObject, NotebookChange, StyleProperties } from '../../client/notebook';
+import { ToolInfo, NotebookChangeRequest, StyleInsertRequest } from '../../client/math-tablet-api';
 import { ServerNotebook, ObserverInstance }  from '../server-notebook';
 import { Config } from '../config';
 

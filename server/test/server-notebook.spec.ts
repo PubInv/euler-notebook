@@ -26,7 +26,8 @@ import { assert } from 'chai';
 import 'mocha';
 import * as sinon from 'sinon';
 
-import { NotebookChangeRequest, StyleInsertRequest, StylePropertiesWithSubprops, NotebookChange, ToolInfo, StyleInserted, StyleObject } from '../../client/math-tablet-api';
+import { NotebookChange, StyleInserted, StyleObject } from '../../client/notebook';
+import { NotebookChangeRequest, StyleInsertRequest, StylePropertiesWithSubprops, ToolInfo } from '../../client/math-tablet-api';
 import { ServerNotebook, ObserverInstance }  from '../server-notebook';
 import { Config } from '../config';
 

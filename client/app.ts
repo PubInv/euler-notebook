@@ -25,9 +25,10 @@ import { getMyScript, Configuration, Editor, EditorElement, EditorChangedEvent, 
 import { addErrorMessageToHeader, /* addSuccessMessageToHeader */} from './global.js';
 // import { apiPostRequest } from './api.js';
 // import { StyleObject, StyleObject }  from './math-tablet-api.js';
-import { Notebook } from './notebook.js';
+import { HtmlNotebook } from './html-notebook.js';
 import { ServerSocket } from './server-socket.js';
-import { Jiix, LatexData, MathMlData, StyleType, StylePropertiesWithSubprops } from './math-tablet-api.js';
+import { StyleType } from './notebook.js';
+import { Jiix, LatexData, MathMlData, StylePropertiesWithSubprops } from './math-tablet-api.js';
 
 // Types
 
@@ -40,7 +41,7 @@ const INITIAL_INPUT_METHOD: InputMethod = 'Keyboard';
 // Global Variables
 
 let gSocket: ServerSocket;
-let gNotebook: Notebook;
+let gNotebook: HtmlNotebook;
 let gEditor: Editor|undefined;
 let gInputMethod: InputMethod|undefined;
 
