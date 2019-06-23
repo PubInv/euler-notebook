@@ -24,8 +24,8 @@ const MODULE = __filename.split(/[/\\]/).slice(-1)[0].slice(0,-3);
 const debug = debug1(`server:${MODULE}`);
 
 import { Notebook, NotebookChange, StyleObject, StyleSource, StyleId, NotebookObject, RelationshipObject, RelationshipId, RelationshipProperties } from '../client/notebook';
-import { NotebookChangeRequest, NotebookPath, StylePropertiesWithSubprops } from '../client/math-tablet-api';
-import { readNotebookFile, AbsDirectoryPath, absDirPathFromNotebookPath, writeNotebookFile } from './files-and-folders';
+import { NotebookChangeRequest, StylePropertiesWithSubprops } from '../client/math-tablet-api';
+import { readNotebookFile, AbsDirectoryPath, absDirPathFromNotebookPath, writeNotebookFile, NotebookPath } from './files-and-folders';
 
 // Types
 

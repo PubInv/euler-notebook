@@ -28,7 +28,7 @@ const MODULE = __filename.split(/[/\\]/).slice(-1)[0].slice(0,-3);
 const debug = debug1(`server:${MODULE}`);
 import * as rimraf from 'rimraf';
 
-import { NotebookName, NotebookPath } from '../client/math-tablet-api';
+import { NotebookName } from '../client/math-tablet-api';
 
 const mkdir2 = promisify(mkdir);
 const readdir2 = promisify(readdir);
@@ -51,6 +51,12 @@ export type FolderName = string;
 // Note that we always use forward slash, even on Windows where the filesystem
 // separator is a backslash.
 export type FolderPath = string;
+
+// Notebook paths are a FolderPath (see files-and-folders.ts) followed by a NotebookName,
+// then a '.mtnb' extension, and a slash.
+// Note that we always use forward slash, even on Windows where the filesystem
+// separator is a backslash.
+export type NotebookPath = string;
 
 interface FolderEntry {
   name: FolderName;
@@ -102,7 +108,7 @@ export async function createFolder(folderPath: FolderPath): Promise<void> {
 export async function deleteFolder(folderPath: FolderPath): Promise<undefined|string> {
   const path = absDirPathFromNotebookPath(folderPath);
   debug(`Deleting folder directory ${path}`);
-  try { await rmdir2(path); } 
+  try { await rmdir2(path); }
   catch(err) { return err.code; }
   return undefined;
 }

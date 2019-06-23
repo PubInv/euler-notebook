@@ -25,16 +25,14 @@ const debug = debug1(`server:${MODULE}`);
 
 import { NextFunction, Request, Response, Router } from 'express';
 
-// import { NotebookPath } from '../../client/math-tablet-api';
-
 import { ClientSocket } from '../client-socket';
 import { ServerNotebook } from '../server-notebook';
 import { isValidNotebookPath, getListOfNotebooksAndFoldersInFolder,
-          isValidFolderName, createFolder, FolderPath, FOLDER_PATH_RE, isValidNotebookName,
+          isValidFolderName, createFolder, FolderPath, NotebookPath, FOLDER_PATH_RE, isValidNotebookName,
           notebookPathFromFolderPathAndName, NOTEBOOK_PATH_RE, isValidFolderPath, deleteFolder, deleteNotebook } from '../files-and-folders';
 import { Credentials, getCredentials } from '../config';
 
-import { NotebookName, NotebookPath } from '../../client/math-tablet-api';
+import { NotebookName } from '../../client/math-tablet-api';
 
 // Exports
 
