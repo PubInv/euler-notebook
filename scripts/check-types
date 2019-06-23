@@ -1,0 +1,7 @@
+#!/usr/bin/env bash
+pushd client
+npm run check-types
+popd
+pushd server
+npm run check-types
+popd
