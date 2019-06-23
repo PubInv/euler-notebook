@@ -23,7 +23,7 @@ import { ServerSocket } from './server-socket.js';
 
 import { NotebookName, StyleId, StyleObject, NotebookChange,
          RelationshipId, RelationshipObject, UseTool, InsertStyle,
-         StylePropertiesWithSubprops, DeleteStyle, TDocObject } from './math-tablet-api.js';
+         StylePropertiesWithSubprops, DeleteStyle, NotebookObject } from './math-tablet-api.js';
 // import { Jiix, StrokeGroups } from './myscript-types.js';
 import { ThoughtElement } from './thought-element.js';
 import { $new, escapeHtml, Html } from './dom.js';
@@ -45,7 +45,7 @@ export class Notebook {
   public static open(
     socket: ServerSocket,
     notebookName: NotebookName,
-    tDoc: TDocObject,
+    tDoc: NotebookObject,
   ): Notebook {
     let notebook = this.notebooks.get(notebookName);
     if (!notebook) {
@@ -136,7 +136,7 @@ export class Notebook {
       switch (change.type) {
         case 'relationshipDeleted': this.chDeleteRelationship(change.relationship); break;
         case 'relationshipInserted': this.chInsertRelationship(change.relationship); break;
-        case 'styleDeleted': this.chDeleteStyle(change.styleId); break;
+        case 'styleDeleted': this.chDeleteStyle(change.style.id); break;
         case 'styleInserted': this.chInsertStyle(change.style); break;
       }
     }
@@ -277,7 +277,7 @@ export class Notebook {
     }
   }
 
-  private populateFromTDoc(tDoc: TDocObject): void {
+  private populateFromTDoc(tDoc: NotebookObject): void {
     const index: StyleIndex = { '0':[] };
     for (const styleId of Object.keys(tDoc.styleMap)) { index[styleId] = []; }
     for (const style of Object.values(tDoc.styleMap)) { index[style.parentId].push(style.id); }
@@ -289,7 +289,7 @@ export class Notebook {
     }
   }
 
-  private populateStyleRecursively(tDoc: TDocObject, index: StyleIndex, styleId: StyleId) {
+  private populateStyleRecursively(tDoc: NotebookObject, index: StyleIndex, styleId: StyleId) {
     const style = tDoc.styleMap[styleId];
     this.chInsertStyle(style);
     for (const subStyleId of index[styleId]) {

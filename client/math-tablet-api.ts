@@ -116,8 +116,6 @@ export interface ToolInfo {
   data?: any;
 }
 
-// Plain object version of TDoc
-
 export type RelationshipId = number;
 export type StyleId = number;
 
@@ -162,7 +160,7 @@ export interface StyleObject extends StyleProperties {
   source: StyleSource;
 }
 
-export interface TDocObject {
+export interface NotebookObject {
   nextId: StyleId;
   relationshipMap: RelationshipMap;
   styleMap: StyleMap;
@@ -176,9 +174,6 @@ export type NotebookChange = RelationshipDeleted|RelationshipInserted|StyleDelet
 
 interface RelationshipDeleted {
   type: 'relationshipDeleted';
-  // REVIEW: This is probably not sufficient info,
-  //         as the style has already been deleted from
-  //         the TDoc when this event is fired.
   relationship: RelationshipObject;
 }
 
@@ -189,11 +184,7 @@ interface RelationshipInserted {
 
 interface StyleDeleted {
   type: 'styleDeleted';
-  // REVIEW: This is probably not sufficient info,
-  //         as the style has already been deleted from
-  //         the TDoc when this event is fired.
-  parentId: StyleId;
-  styleId: StyleId;
+  style: StyleObject;
 }
 
 export interface StyleInserted {
@@ -252,7 +243,7 @@ export interface NotebookClosed {
 export interface NotebookOpened {
   action: 'notebookOpened';
   notebookName: NotebookName;
-  tDoc: TDocObject;
+  obj: NotebookObject;
 }
 
 // Messages from the client

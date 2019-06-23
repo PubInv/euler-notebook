@@ -25,7 +25,7 @@ const debug = debug1(`server:${MODULE}`);
 import * as math from 'mathjs';
 
 import { NotebookChange, NotebookChangeRequest, StyleObject, StyleInserted, StyleInsertRequest, StylePropertiesWithSubprops } from '../../client/math-tablet-api';
-import { ObserverInstance, TDoc }  from '../tdoc';
+import { ObserverInstance, ServerNotebook }  from '../server-notebook';
 import { Config } from '../config';
 
 // Exported Class
@@ -38,9 +38,9 @@ export class MathJsObserver implements ObserverInstance {
     debug(`initialize`);
   }
 
-  public static async onOpen(tDoc: /* REVIEW: ReadOnlyTDoc */TDoc): Promise<ObserverInstance> {
+  public static async onOpen(notebook: ServerNotebook): Promise<ObserverInstance> {
     debug(`onOpen`);
-    return new this(tDoc);
+    return new this(notebook);
   }
 
   // Instance Methods
@@ -56,12 +56,12 @@ export class MathJsObserver implements ObserverInstance {
   }
 
   public async onClose(): Promise<void> {
-    debug(`onClose ${this.tDoc._path}`);
-    delete this.tDoc;
+    debug(`onClose ${this.notebook._path}`);
+    delete this.notebook;
   }
 
   public async useTool(style: StyleObject): Promise<NotebookChangeRequest[]> {
-    debug(`useTool ${this.tDoc._path} ${style.id}`);
+    debug(`useTool ${this.notebook._path} ${style.id}`);
     return [];
   }
 
@@ -69,20 +69,20 @@ export class MathJsObserver implements ObserverInstance {
 
   // Private Constructor
 
-  private constructor(tDoc: TDoc) {
-    this.tDoc = tDoc;
+  private constructor(notebook: ServerNotebook) {
+    this.notebook = notebook;
     this.parser = math.parser();
   }
 
   // Private Instance Properties
 
-  private tDoc: TDoc;
+  private notebook: ServerNotebook;
   private parser: math.Parser;
 
   // Private Instance Methods
 
   private onChange(change: NotebookChange, rval: NotebookChangeRequest[]) {
-    debug(`onChange ${this.tDoc._path} ${change.type}`);
+    debug(`onChange ${this.notebook._path} ${change.type}`);
     switch (change.type) {
       case 'styleInserted': this.chStyleInserted(change, rval); break;
       default: break;
@@ -100,10 +100,10 @@ export class MathJsObserver implements ObserverInstance {
       try {
         node = math.parse(style.data);
       } catch(err) {
-        const styleProps: StylePropertiesWithSubprops = { 
-          type: 'TEXT', 
-          meaning: 'ERROR', 
-          data: err.message, 
+        const styleProps: StylePropertiesWithSubprops = {
+          type: 'TEXT',
+          meaning: 'ERROR',
+          data: err.message,
         };
         const changeReq: StyleInsertRequest = {
           type: 'insertStyle',
@@ -134,8 +134,8 @@ export class MathJsObserver implements ObserverInstance {
     if (style.meaning!='INPUT' && style.meaning!='INPUT-ALT') { return; }
 
     // Do not evaluate more than once.
-    if ((this.tDoc.styleHasChildOfType(style, 'MATHJS', 'EVALUATION')) ||
-        (this.tDoc.styleHasChildOfType(style, 'TEXT', 'EVALUATION-ERROR'))) {
+    if ((this.notebook.styleHasChildOfType(style, 'MATHJS', 'EVALUATION')) ||
+        (this.notebook.styleHasChildOfType(style, 'TEXT', 'EVALUATION-ERROR'))) {
       return;
     }
 
@@ -172,7 +172,7 @@ export class MathJsObserver implements ObserverInstance {
     if (style.meaning!='INPUT' && style.meaning!='INPUT-ALT') { return; }
 
     // Do not extract symbols more than once.
-    if (this.tDoc.styleHasChildOfType(style, 'MATHJS', 'SYMBOL')) { return; }
+    if (this.notebook.styleHasChildOfType(style, 'MATHJS', 'SYMBOL')) { return; }
 
     const parse = math.parse(style.data);
     if (!parse) { return; }
@@ -195,7 +195,7 @@ export class MathJsObserver implements ObserverInstance {
     if (style.meaning!='INPUT' && style.meaning!='INPUT-ALT') { return; }
 
     // Do not apply simplification more than once.
-    if (this.tDoc.styleHasChildOfType(style, 'MATHJS', 'SIMPLIFICATION')) { return; }
+    if (this.notebook.styleHasChildOfType(style, 'MATHJS', 'SIMPLIFICATION')) { return; }
 
     let simpler;
     try {

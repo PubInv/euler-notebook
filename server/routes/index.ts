@@ -28,7 +28,7 @@ import { NextFunction, Request, Response, Router } from 'express';
 // import { NotebookPath } from '../../client/math-tablet-api';
 
 import { ClientSocket } from '../client-socket';
-import { TDoc } from '../tdoc';
+import { ServerNotebook } from '../server-notebook';
 import { isValidNotebookPath, getListOfNotebooksAndFoldersInFolder,
           isValidFolderName, createFolder, FolderPath, FOLDER_PATH_RE, isValidNotebookName,
           notebookPathFromFolderPathAndName, NOTEBOOK_PATH_RE, isValidFolderPath, deleteFolder, deleteNotebook } from '../files-and-folders';
@@ -100,7 +100,7 @@ async function onDashboard(req: Request, res: Response) {
       case 'closeNotebook': {
         for (const notebookName of Object.keys(req.body.notebooks)) {
           debug(`Closing client ${notebookName}`);
-          await TDoc.close(notebookName);
+          await ServerNotebook.close(notebookName);
         }
         break;
       }
@@ -113,9 +113,9 @@ async function onDashboard(req: Request, res: Response) {
     // REVIEW: Does Pug support iteration over iterables? If so, then we don't need to convert to an array.
     //         Pug issue 2559 (https://github.com/pugjs/pug/issues/2559), last updated Mar 2017, says no.
     const clientSockets: ClientSocket[] = Array.from(ClientSocket.allSockets());
-    const tDocs: TDoc[] = Array.from(TDoc.allTDocs());
+    const notebooks: ServerNotebook[] = Array.from(ServerNotebook.allNotebooks());
 
-    res.render('dashboard', { clientSockets, tDocs });
+    res.render('dashboard', { clientSockets, notebooks });
   } catch(err) {
     console.error(err.message);
     debug(err.stack);
@@ -161,7 +161,7 @@ async function onNotebookPage(req: Request, res: Response, next: NextFunction): 
     const notebookName = pathSegments.pop()!.slice(0, -5);
     if (!gCredentials) { gCredentials = await getCredentials(); }
     if (!isValidNotebookPath(notebookPath)) { return next(); }
-    await TDoc.open(notebookPath, {/* default options */});
+    await ServerNotebook.open(notebookPath);
     const locals = { credentials: gCredentials, /* messages, */ notebookName, pathSegments };
     res.render('notebook', locals);
   } catch(err) {
@@ -254,8 +254,8 @@ async function newNotebook(body: FolderPageBody, folderPath: FolderPath, message
 
   // Attempt to open the notebook file, hoping to fail.
   try {
-    /*const tDoc = */ await TDoc.open(notebookPath, {/* default options */});
-    // TODO: Close TDoc? But what if it has listeners?
+    await ServerNotebook.open(notebookPath);
+    // TODO: Close notebook? But what if it has listeners?
     throw new Error(`Notebook already exists: ${notebookPath}`);
   } catch(err) {
     // Good! Notebook doesn't exist!
@@ -263,7 +263,7 @@ async function newNotebook(body: FolderPageBody, folderPath: FolderPath, message
 
   // Create the notebook folder, then create the notebook JSON file.
   await createFolder(notebookPath);
-  await TDoc.create(notebookPath, {/* default options */});
+  await ServerNotebook.create(notebookPath);
 
   messages.success.push(`Notebook '${notebookName}' created successfully.`);
   return `${notebookPath}`;

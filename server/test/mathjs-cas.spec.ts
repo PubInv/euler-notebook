@@ -26,7 +26,7 @@ import { assert } from 'chai';
 import 'mocha';
 // import * as sinon from 'sinon';
 
-import { TDoc } from '../tdoc';
+import { ServerNotebook } from '../server-notebook';
 import { MathJsObserver } from '../observers/mathjs-cas';
 import { NotebookChange, StylePropertiesWithSubprops, StyleInsertRequest, StyleInserted, StyleMeaning, StyleObject, StyleType } from '../../client/math-tablet-api';
 
@@ -39,12 +39,12 @@ const EXPR1 = "2+2";
 
 describe("mathjs-cas", function(){
 
-  let tDoc: TDoc;
+  let notebook: ServerNotebook;
 
   before(async function(): Promise<void>{
     await MathJsObserver.initialize({});
-    await TDoc.registerObserver('MATHJS', MathJsObserver);
-    tDoc = await TDoc.createAnonymous();
+    await ServerNotebook.registerObserver('MATHJS', MathJsObserver);
+    notebook = await ServerNotebook.createAnonymous();
   });
 
 
@@ -53,10 +53,10 @@ describe("mathjs-cas", function(){
     // Insert a MATHJS INPUT style "2+2"
     const styleProps: StylePropertiesWithSubprops = { type: 'MATHJS', meaning: 'INPUT', data: EXPR1 };
     const changeRequest: StyleInsertRequest = { type: 'insertStyle', styleProps };
-    const changes: NotebookChange[] = await tDoc.requestChanges('USER', [changeRequest]);
+    const changes: NotebookChange[] = await notebook.requestChanges('USER', [changeRequest]);
     assert.equal(changes.length, 5);
 
-    // The tDoc has the INPUT style
+    // The notebook has the INPUT style
     const insertedStyles = changes.filter(c=>c.type=='styleInserted').map(c=>(<StyleInserted>c).style);
     const inputStyle = assertHasStyle(insertedStyles, 'MATHJS', 'INPUT', EXPR1);
 
@@ -74,10 +74,10 @@ describe("mathjs-cas", function(){
 
     const styleProps: StylePropertiesWithSubprops = { type: 'MATHJS', meaning: 'INPUT', data: EQUA1 };
     const changeRequest: StyleInsertRequest = { type: 'insertStyle', styleProps };
-    const changes: NotebookChange[] = await tDoc.requestChanges('USER', [changeRequest]);
+    const changes: NotebookChange[] = await notebook.requestChanges('USER', [changeRequest]);
     assert.equal(changes.length, 8);
 
-    // The tDoc has the INPUT style
+    // The notebook has the INPUT style
     const insertedStyles = changes.filter(c=>c.type=='styleInserted').map(c=>(<StyleInserted>c).style);
     const inputStyle = assertHasStyle(insertedStyles, 'MATHJS', 'INPUT', EQUA1);
 

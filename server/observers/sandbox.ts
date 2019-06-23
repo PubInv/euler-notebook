@@ -26,7 +26,7 @@ const MODULE = __filename.split(/[/\\]/).slice(-1)[0].slice(0,-3);
 const debug = debug1(`server:${MODULE}`);
 
 import { NotebookChange, NotebookChangeRequest, StyleObject } from '../../client/math-tablet-api';
-import { TDoc, ObserverInstance  } from '../tdoc';
+import { ServerNotebook, ObserverInstance  } from '../server-notebook';
 import { Config } from '../config';
 
 // Exported Class
@@ -39,9 +39,9 @@ export class SandboxObserver implements ObserverInstance {
     debug(`initialize`);
   }
 
-  public static async onOpen(tDoc: /* REVIEW: ReadOnlyTDoc */TDoc): Promise<ObserverInstance> {
+  public static async onOpen(notebook: ServerNotebook): Promise<ObserverInstance> {
     debug(`onOpen`);
-    return new this(tDoc);
+    return new this(notebook);
   }
 
   // Instance Methods
@@ -57,12 +57,12 @@ export class SandboxObserver implements ObserverInstance {
   }
 
   public async onClose(): Promise<void> {
-    debug(`onClose ${this.tDoc._path}`);
-    delete this.tDoc;
+    debug(`onClose ${this.notebook._path}`);
+    delete this.notebook;
   }
 
   public async useTool(style: StyleObject): Promise<NotebookChangeRequest[]> {
-    debug(`useTool ${this.tDoc._path} ${style.id}`);
+    debug(`useTool ${this.notebook._path} ${style.id}`);
     return [];
   }
 
@@ -70,18 +70,18 @@ export class SandboxObserver implements ObserverInstance {
 
   // Private Constructor
 
-  private constructor(tDoc: TDoc) {
-    this.tDoc = tDoc;
+  private constructor(notebook: ServerNotebook) {
+    this.notebook = notebook;
   }
 
   // Private Instance Properties
 
-  private tDoc: TDoc;
+  private notebook: ServerNotebook;
 
   // Private Instance Methods
 
   private async onChange(change: NotebookChange, _rval: NotebookChangeRequest[]): Promise<void> {
-    debug(`onChange ${this.tDoc._path} ${change.type}`);
+    debug(`onChange ${this.notebook._path} ${change.type}`);
   }
 
 }

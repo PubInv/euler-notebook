@@ -27,7 +27,7 @@ import { MathStepsObserver } from './mathsteps-cas';
 import { SandboxObserver } from './sandbox';
 import { SubtrivClassifierObserver } from './subtriv-classifier';
 import { SymbolClassifierObserver } from './symbol-classifier';
-import { TDoc } from '../tdoc';
+import { ServerNotebook } from '../server-notebook';
 
 // Exported functions
 
@@ -35,18 +35,18 @@ export async function initialize(config: Config): Promise<void> {
 
   if (config.mathematica) {
     await MathematicaObserver.initialize(config);
-    TDoc.registerObserver('MATHEMATICA', MathematicaObserver);
-    TDoc.registerObserver('SUBTRIV-CLASSIFIER', SubtrivClassifierObserver);
-    TDoc.registerObserver('SYMBOL-CLASSIFIER', SymbolClassifierObserver);
+    ServerNotebook.registerObserver('MATHEMATICA', MathematicaObserver);
+    ServerNotebook.registerObserver('SUBTRIV-CLASSIFIER', SubtrivClassifierObserver);
+    ServerNotebook.registerObserver('SYMBOL-CLASSIFIER', SymbolClassifierObserver);
   }
   if (config.mathjs) {
     await MathJsObserver.initialize(config);
-    TDoc.registerObserver('MATHJS', MathJsObserver); 
+    ServerNotebook.registerObserver('MATHJS', MathJsObserver);
   }
   if (config.mathsteps) {
     await MathStepsObserver.initialize(config);
-    TDoc.registerObserver('MATHSTEPS', MathStepsObserver); 
+    ServerNotebook.registerObserver('MATHSTEPS', MathStepsObserver);
   }
   await SandboxObserver.initialize(config);
-  TDoc.registerObserver('SANDBOX', SandboxObserver);
+  ServerNotebook.registerObserver('SANDBOX', SandboxObserver);
 }

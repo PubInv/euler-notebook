@@ -26,7 +26,7 @@ const MODULE = __filename.split(/[/\\]/).slice(-1)[0].slice(0,-3);
 const debug = debug1(`server:${MODULE}`);
 
 import { NotebookChange, NotebookChangeRequest, StyleObject } from '../../client/math-tablet-api';
-import { TDoc, ObserverInstance  } from '../tdoc';
+import { ServerNotebook, ObserverInstance  } from '../server-notebook';
 import { Config } from '../config';
 import { ClientSocket } from '../client-socket';
 
@@ -40,45 +40,48 @@ export class ClientObserver implements ObserverInstance {
     debug(`initialize`);
   }
 
-  public static open(tDoc: TDoc, clientSocket: ClientSocket): ClientObserver {
-    const rval = new this(tDoc, clientSocket);
+  public static open(notebook: ServerNotebook, clientSocket: ClientSocket): ClientObserver {
+    const rval = new this(notebook, clientSocket);
     // REVIEW: Should the observer be called 'CLIENT' instead of 'USER'?
     // REVIEW: const clientId = clientSocket.id;
-    tDoc.registerObserver('USER', rval);
+    notebook.registerObserver('USER', rval);
     return rval;
   }
 
   // Class Event Handlers
 
-  public static async onOpen(tDoc: /* REVIEW: ReadOnlyTDoc */TDoc): Promise<ObserverInstance> {
-    // This should never happen because our class isn't registered with the TDoc class.
-    // Instead we register a client observer instance with each tDoc instance.
-    throw new Error(`Unexpected onOpen event in client observer: tDoc ${tDoc._path}.`);
+  // REVIEW: Have a "read-only" notebook that only lets you read but not make any changes?
+  //         This would enforce all changes being made through the observer interfaces
+  //         rather than directly on the notebook.
+  public static async onOpen(notebook: ServerNotebook): Promise<ObserverInstance> {
+    // This should never happen because our class isn't registered with the ServerNotebook class.
+    // Instead we register a client observer instance with each notebook instance.
+    throw new Error(`Unexpected onOpen event in client observer: notebook ${notebook._path}.`);
   }
 
   // Instance Properties
 
   public clientSocket: ClientSocket;
-  public tDoc: TDoc;
+  public notebook: ServerNotebook;
 
   // Instance Methods
 
   public async close() {
-    // TODO: Deregister observer with TDoc.
+    // TODO: Deregister observer with ServerNotebook.
   }
 
   // Event Handlers
 
   public async onChanges(changes: NotebookChange[]): Promise<NotebookChangeRequest[]> {
     debug(`onChanges ${changes.length}`);
-    this.clientSocket.notebookChanged(this.tDoc, changes);
+    this.clientSocket.notebookChanged(this.notebook, changes);
     return [];
   }
 
   public async onClose(): Promise<void> {
-    debug(`onClose ${this.tDoc._path}`);
+    debug(`onClose ${this.notebook._path}`);
     this.clientSocket.close(/* REVIEW: code? reason? */);
-    delete this.tDoc;
+    delete this.notebook;
   }
 
   public async useTool(_style: StyleObject): Promise<NotebookChangeRequest[]> {
@@ -87,8 +90,8 @@ export class ClientObserver implements ObserverInstance {
 
   // --- PRIVATE ---
 
-  private constructor(tDoc: TDoc, clientSocket: ClientSocket) {
-    this.tDoc = tDoc;
+  private constructor(notebook: ServerNotebook, clientSocket: ClientSocket) {
+    this.notebook = notebook;
     this.clientSocket = clientSocket;
   }
 

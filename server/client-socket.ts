@@ -31,7 +31,7 @@ import { ClientMessage, NotebookPath, NotebookName, StyleDeleteRequest, InsertSt
 
 import { PromiseResolver, runAsync } from './common';
 // REVIEW: This file should not be dependent on any specific observers.
-import { TDoc } from './tdoc';
+import { ServerNotebook } from './server-notebook';
 import { ClientObserver } from './observers/client-observer';
 
 // Types
@@ -68,14 +68,9 @@ export class ClientSocket {
 
   // Instance Properties
 
-  // public tDoc: TDoc;
   public id: ClientId;
 
   // Instance Property Functions
-
-  // public allNotebooks(): IterableIterator<TDoc> {
-  //   return this.tDocs.values();
-  // }
 
   // Instance Methods
 
@@ -107,11 +102,12 @@ export class ClientSocket {
   }
 
   // REVIEW: Async using socket sending callback?
-  public notebookChanged(tDoc: TDoc, changes: NotebookChange[]): void {
-    // REVIEW: verify that tDoc is one of our opened ones?
+  public notebookChanged(notebook: ServerNotebook, changes: NotebookChange[]): void {
+    // REVIEW: verify that notebook is one of our opened ones?
+    if (!notebook._path) { throw new Error("Unexpected."); }
     const msg: NotebookChanged = {
       action: 'notebookChanged',
-      notebookName: tDoc._path,
+      notebookName: notebook._path,
       changes,
     };
     this.sendMessage(msg);
@@ -222,7 +218,7 @@ export class ClientSocket {
     if (!clientObserver) { throw new Error(`Unknown notebook ${msg.notebookName} for client message delete-style.`); }
     const changeReq: StyleDeleteRequest = { type: 'deleteStyle', styleId: msg.styleId };
     // REVIEW: source client id?
-    await clientObserver.tDoc.requestChanges('USER', [changeReq]);
+    await clientObserver.notebook.requestChanges('USER', [changeReq]);
   }
 
   private async cmInsertStyle(msg: InsertStyle): Promise<void> {
@@ -234,7 +230,7 @@ export class ClientSocket {
       styleProps: msg.styleProps,
       afterId: msg.afterId,
     };
-    await clientObserver.tDoc.requestChanges('USER', [changeReq]);
+    await clientObserver.notebook.requestChanges('USER', [changeReq]);
   }
 
   private async cmOpenNotebook(msg: OpenNotebook): Promise<void> {
@@ -251,7 +247,7 @@ export class ClientSocket {
   private async cmUseTool(msg: UseTool): Promise<void> {
     const clientObserver = this.clientObservers.get(msg.notebookName);
     if (!clientObserver) { throw new Error(`Unknown notebook ${msg.notebookName} for client message use-tool.`); }
-    await clientObserver.tDoc.useTool(msg.styleId);
+    await clientObserver.notebook.useTool(msg.styleId);
   }
 
   // Private Instance Methods
@@ -277,13 +273,13 @@ export class ClientSocket {
   }
 
   private async openNotebook(notebookName: NotebookName): Promise<void> {
-    const tDoc = await TDoc.open(notebookName, {/* default options*/});
-    const clientObserver = ClientObserver.open(tDoc, this);
-    this.clientObservers.set(tDoc._path, clientObserver);
+    const notebook = await ServerNotebook.open(notebookName);
+    const clientObserver = ClientObserver.open(notebook, this);
+    this.clientObservers.set(notebook._path!, clientObserver);
     const msg: NotebookOpened = {
       action: 'notebookOpened',
       notebookName,
-      tDoc: tDoc.toJSON(),
+      obj: notebook.toJSON(),
     }
     this.sendMessage(msg);
   }
@@ -296,7 +292,7 @@ export class ClientSocket {
       // REVIEW: Should we use the callback to see if the message went through?
       this.socket.send(json);
     } catch(err) {
-      console.error(`ERROR: OpenTDoc sending websocket message: ${this.socket.readyState} ${(<any>err).code} ${err.message}`)
+      console.error(`ERROR: Sending websocket message: ${this.socket.readyState} ${(<any>err).code} ${err.message}`)
     }
   }
 }

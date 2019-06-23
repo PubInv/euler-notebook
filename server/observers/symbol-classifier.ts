@@ -24,7 +24,7 @@ const MODULE = __filename.split(/[/\\]/).slice(-1)[0].slice(0,-3);
 const debug = debug1(`server:${MODULE}`);
 
 import { NotebookChange, StyleObject, SymbolData, WolframData, NotebookChangeRequest, StyleInsertRequest, StylePropertiesWithSubprops, RelationshipPropertiesMap } from '../../client/math-tablet-api';
-import { TDoc, ObserverInstance } from '../tdoc';
+import { ServerNotebook, ObserverInstance } from '../server-notebook';
 import { execute as executeWolframscript, draftChangeContextName } from './wolframscript';
 import { Config } from '../config';
 
@@ -36,9 +36,9 @@ export class SymbolClassifierObserver implements ObserverInstance {
     debug(`initialize`);
   }
 
-  public static async onOpen(tDoc: /* REVIEW: ReadOnlyTDoc */TDoc): Promise<ObserverInstance> {
+  public static async onOpen(notebook: ServerNotebook): Promise<ObserverInstance> {
     debug(`onOpen`);
-    return new this(tDoc);
+    return new this(notebook);
   }
 
   // Instance Methods
@@ -54,12 +54,12 @@ export class SymbolClassifierObserver implements ObserverInstance {
   }
 
   public async onClose(): Promise<void> {
-    debug(`onClose ${this.tDoc._path}`);
-    delete this.tDoc;
+    debug(`onClose ${this.notebook._path}`);
+    delete this.notebook;
   }
 
   public async useTool(style: StyleObject): Promise<NotebookChangeRequest[]> {
-    debug(`useTool ${this.tDoc._path} ${style.id}`);
+    debug(`useTool ${this.notebook._path} ${style.id}`);
     return [];
   }
 
@@ -67,18 +67,18 @@ export class SymbolClassifierObserver implements ObserverInstance {
 
   // Private Constructor
 
-  private constructor(tDoc: TDoc) {
-    this.tDoc = tDoc;
+  private constructor(notebook: ServerNotebook) {
+    this.notebook = notebook;
   }
 
   // Private Instance Properties
 
-  private tDoc: TDoc;
+  private notebook: ServerNotebook;
 
   // Private Instance Methods
 
   private async onChange(change: NotebookChange, rval: NotebookChangeRequest[]): Promise<void> {
-    debug(`onChange ${this.tDoc._path} ${change.type}`);
+    debug(`onChange ${this.notebook._path} ${change.type}`);
     switch (change.type) {
       case 'styleInserted': {
         const style = change.style;
@@ -109,7 +109,7 @@ export class SymbolClassifierObserver implements ObserverInstance {
         // Add the symbol-definition style
         const relationsTo: RelationshipPropertiesMap = {};
         // Add any symbol-dependency relationships as a result of the new symbol-def style
-        for (const otherStyle of this.tDoc.allStyles()) {
+        for (const otherStyle of this.notebook.allStyles()) {
           if (otherStyle.type == 'SYMBOL' &&
               otherStyle.meaning == 'SYMBOL-USE' &&
               otherStyle.data.name == name) {
@@ -148,7 +148,7 @@ export class SymbolClassifierObserver implements ObserverInstance {
       // Add the symbol-use style
       const relationsFrom: RelationshipPropertiesMap = {};
       // Add any symbol-dependency relationships as a result of the new symbol-use style
-      for (const otherStyle of this.tDoc.allStyles()) {
+      for (const otherStyle of this.notebook.allStyles()) {
         if (otherStyle.type == 'SYMBOL' &&
             otherStyle.meaning == 'SYMBOL-DEFINITION' &&
             otherStyle.data.name == s) {

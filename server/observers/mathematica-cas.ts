@@ -25,7 +25,7 @@ const debug = debug1(`server:${MODULE}`);
 
 // import { MthMtcaText } from '../client/math-tablet-api';
 import { StyleObject, NotebookChange, StyleId, NotebookChangeRequest, StyleInsertRequest, StylePropertiesWithSubprops, RelationshipProperties, RelationshipInsertRequest } from '../../client/math-tablet-api';
-import { TDoc, ObserverInstance } from '../tDoc';
+import { ServerNotebook, ObserverInstance } from '../server-notebook';
 import { execute, constructSubstitution, checkEquiv, NVPair } from './wolframscript';
 import * as fs from 'fs';
 import { Config } from '../config';
@@ -46,9 +46,9 @@ export class MathematicaObserver implements ObserverInstance {
     debug(`initialize`);
   }
 
-  public static async onOpen(tDoc: /* REVIEW: ReadOnlyTDoc */TDoc): Promise<ObserverInstance> {
+  public static async onOpen(notebook: ServerNotebook): Promise<ObserverInstance> {
     debug(`onOpen`);
-    return new this(tDoc);
+    return new this(notebook);
   }
 
   // Instance Methods
@@ -65,8 +65,8 @@ export class MathematicaObserver implements ObserverInstance {
   }
 
   public async onClose(): Promise<void> {
-    debug(`onClose ${this.tDoc._path}`);
-    delete this.tDoc;
+    debug(`onClose ${this.notebook._path}`);
+    delete this.notebook;
   }
 
   public async useTool(style: StyleObject): Promise<NotebookChangeRequest[]> {
@@ -82,20 +82,16 @@ export class MathematicaObserver implements ObserverInstance {
 
   // Private Constructor
 
-  private constructor(tDoc: TDoc) {
-    this.tDoc = tDoc;
+  private constructor(notebook: ServerNotebook) {
+    this.notebook = notebook;
   }
 
   // Private Instance Properties
 
-  private tDoc: TDoc;
+  private notebook: ServerNotebook;
 
-  // We are apply this rule to top level expressions, so
-  // we style a thought---which is rather confusing.
-  //  const parent = tDoc.getStyleById(style.parentId);
-  //  debug("PARENT STYLE",style);
   private getSubstitutionsForStyle(style : StyleObject) :  NVPair[]  {
-    const rs = this.tDoc.getSymbolStylesIDependOn(style);
+    const rs = this.notebook.getSymbolStylesIDependOn(style);
     debug("RS",rs);
     try {
       let variables: string[] = [];
@@ -136,11 +132,11 @@ export class MathematicaObserver implements ObserverInstance {
       debug("sustitutions",substitutions);
       debug("sub_expr",sub_expr);
 
-      const parentThought =  this.tDoc.topLevelStyleOf(style.id);
+      const parentThought =  this.notebook.topLevelStyleOf(style.id);
 
-      const expressions = this.tDoc.allStyles().filter(
+      const expressions = this.notebook.allStyles().filter(
         (s: StyleObject, _index: number, _array: StyleObject[]) => {
-          const anc = this.tDoc.topLevelStyleOf(s.id);
+          const anc = this.notebook.topLevelStyleOf(s.id);
           if (anc == parentThought) return false;
           else {
             debug(s);
@@ -176,7 +172,7 @@ export class MathematicaObserver implements ObserverInstance {
         debug("key,value",key,expressionEquivalence[keynum]);
         if (expressionEquivalence[keynum]) {
           styleIds.push(keynum);
-          const eqstyle = this.tDoc.getStyleById(<StyleId><unknown>keynum);
+          const eqstyle = this.notebook.getStyleById(<StyleId><unknown>keynum);
           let src : StyleObject;
           let tar : StyleObject;
           if (style.id < keynum) {
@@ -197,7 +193,7 @@ export class MathematicaObserver implements ObserverInstance {
           debug("adding relationship");
         }
       }
-      debug("tDoc Relationships",this.tDoc.allRelationships());
+      debug("notebook Relationships",this.notebook.allRelationships());
     } catch (e) {
       debug("MATHEMATICA Check Equivalence :",e);
     }
@@ -262,9 +258,9 @@ export class MathematicaObserver implements ObserverInstance {
     // and if so, move it into the notebook directory and create
     // a style.  This is a bit of a hacky means that allows
     // us to avoid having to understand too much about the expression.
-    var path = this.tDoc.absoluteDirectoryPath();
+    var path = this.notebook.absoluteDirectoryPath();
     debug("path",path);
-    // we do not yet have the code to use the tDoc path quite ready, so instead we are going to use
+    // we do not yet have the code to use the notebook path quite ready, so instead we are going to use
     // public/tmp as a place for images until we are ready.
     const targetPath = "./public/tmp";
     const urlPath = "/tmp";

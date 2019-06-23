@@ -25,7 +25,7 @@ const debug = debug1(`server:${MODULE}`);
 
 import { NotebookChange, StyleObject, RelationshipObject,
          ToolInfo, NotebookChangeRequest, StyleInsertRequest, StylePropertiesWithSubprops, StyleDeleteRequest } from '../../client/math-tablet-api';
-import { TDoc, ObserverInstance } from '../tdoc';
+import { ServerNotebook, ObserverInstance } from '../server-notebook';
 import { execute, constructSubstitution } from './wolframscript';
 import { Config } from '../config';
 // import * as uuid from 'uuid-js';
@@ -40,9 +40,9 @@ export class SubtrivClassifierObserver implements ObserverInstance {
     debug(`initialize`);
   }
 
-  public static async onOpen(tDoc: /* REVIEW: ReadOnlyTDoc */TDoc): Promise<ObserverInstance> {
+  public static async onOpen(notebook: ServerNotebook): Promise<ObserverInstance> {
     debug(`onOpen`);
-    return new this(tDoc);
+    return new this(notebook);
   }
 
   // Instance Methods
@@ -58,18 +58,18 @@ export class SubtrivClassifierObserver implements ObserverInstance {
   }
 
   public async onClose(): Promise<void> {
-    debug(`onClose ${this.tDoc._path}`);
-    delete this.tDoc;
+    debug(`onClose ${this.notebook._path}`);
+    delete this.notebook;
   }
 
   public async useTool(toolStyle: StyleObject): Promise<NotebookChangeRequest[]> {
-    debug(`useTool ${this.tDoc._path} ${toolStyle.id}`);
+    debug(`useTool ${this.notebook._path} ${toolStyle.id}`);
 
     // The parent of the TOOL/ATTRIBUTE style will be a WOLFRAM/EVALUATION style
-    const evaluationStyle = this.tDoc.getStyleById(toolStyle.parentId);
+    const evaluationStyle = this.notebook.getStyleById(toolStyle.parentId);
 
     // The WOLFRAM/EVALUATION style will have a CLASSIFICATION/SUBTRIVARIATE child.
-    const classificationStyle = this.tDoc.findChildStylesOfType(evaluationStyle.id, 'CLASSIFICATION', 'SUBTRIVARIATE')[0];
+    const classificationStyle = this.notebook.findChildStylesOfType(evaluationStyle.id, 'CLASSIFICATION', 'SUBTRIVARIATE')[0];
     if (!classificationStyle) { throw new Error(`Classification style not found.`); }
 
     const targetPath = "./public/tmp";
@@ -80,7 +80,7 @@ export class SubtrivClassifierObserver implements ObserverInstance {
     const fullFilename = targetPath + "/" + plotName;
 
     // We are only plottable if we make the normal substitutions...
-    const rs = this.tDoc.getSymbolStylesIDependOn(evaluationStyle);
+    const rs = this.notebook.getSymbolStylesIDependOn(evaluationStyle);
     debug("RS",rs);
     debug("STYLE DATA",classificationStyle.data);
     let createdPlotSuccessfully: boolean = false;
@@ -139,18 +139,18 @@ export class SubtrivClassifierObserver implements ObserverInstance {
 
   // Private Constructor
 
-  private constructor(tDoc: TDoc) {
-    this.tDoc = tDoc;
+  private constructor(notebook: ServerNotebook) {
+    this.notebook = notebook;
   }
 
   // Private Instance Properties
 
-  private tDoc: TDoc;
+  private notebook: ServerNotebook;
 
   // Private Instance Methods
 
   private async onChange(change: NotebookChange, rval: NotebookChangeRequest[]): Promise<void> {
-    debug(`onChange ${this.tDoc._path} ${change.type}`);
+    debug(`onChange ${this.notebook._path} ${change.type}`);
     switch (change.type) {
       case 'styleInserted':
         await this.subtrivariateClassifierRule(change.style, rval);
@@ -172,7 +172,7 @@ export class SubtrivClassifierObserver implements ObserverInstance {
     var isSubTrivariate;
     try {
       // here I attempt to find the dependency relationships....
-      const rs = this.tDoc.getSymbolStylesIDependOn(style);
+      const rs = this.notebook.getSymbolStylesIDependOn(style);
       debug("RS ",rs);
       // Now each member of rs should have a name and a value
       // that we should use in our quadratic classification....
@@ -218,7 +218,7 @@ export class SubtrivClassifierObserver implements ObserverInstance {
 
     debug("RELATIONSHIP",relationship);
 
-    const target_ancestor = this.tDoc.topLevelStyleOf(relationship.toId);
+    const target_ancestor = this.notebook.topLevelStyleOf(relationship.toId);
 
     if (target_ancestor == null) {
       throw new Error("Could not find ancestor Thought: "+relationship.toId);
@@ -228,11 +228,11 @@ export class SubtrivClassifierObserver implements ObserverInstance {
     // this ancestor thought...
 
     const candidate_styles =
-          this.tDoc.findChildStylesOfType(target_ancestor.id, 'WOLFRAM','EVALUATION');
+          this.notebook.findChildStylesOfType(target_ancestor.id, 'WOLFRAM','EVALUATION');
     debug("candidate styles",candidate_styles);
     // Not really sure what to do here if there is more than one!!!
 
-    const beforeChangeClassifiedAsSubTrivariate = this.tDoc.styleHasChildOfType(candidate_styles[0],'CLASSIFICATION','SUBTRIVARIATE');
+    const beforeChangeClassifiedAsSubTrivariate = this.notebook.styleHasChildOfType(candidate_styles[0],'CLASSIFICATION','SUBTRIVARIATE');
     debug(beforeChangeClassifiedAsSubTrivariate);
 
     // Now it is possible that any classifications need to be removed;
@@ -249,7 +249,7 @@ export class SubtrivClassifierObserver implements ObserverInstance {
     var isSubTrivariate;
     try {
       // here I attempt to find the dependency relationships....
-      const rs = this.tDoc.getSymbolStylesIDependOn(unique_style);
+      const rs = this.notebook.getSymbolStylesIDependOn(unique_style);
       debug("RS ",rs);
       // Now each member of rs should have a name and a value
       // that we should use in our quadratic classification....
@@ -276,7 +276,7 @@ export class SubtrivClassifierObserver implements ObserverInstance {
     if (!isSubTrivariate && beforeChangeClassifiedAsSubTrivariate) {
       debug("CHOOSING DELETION");
       const classifications =
-        this.tDoc.findChildStylesOfType(target_ancestor.id,'CLASSIFICATION','SUBTRIVARIATE');
+        this.notebook.findChildStylesOfType(target_ancestor.id,'CLASSIFICATION','SUBTRIVARIATE');
       const changeReq: StyleDeleteRequest = {
         type: 'deleteStyle',
         styleId: classifications[0].id

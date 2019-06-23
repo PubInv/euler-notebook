@@ -54,16 +54,16 @@ block content
     table
       tr
         th(colspan=2) Open Notebooks
-      if tDocs.length == 0
+      if notebooks.length == 0
         tr
           td(colspan=2)
             i No open notebooks.
-      each tDoc in tDocs
+      each notebook in notebooks
         tr
           td
-            input(type='checkbox', name=`notebooks[${tDoc._name}]`)
+            input(type='checkbox', name=`notebooks[${notebook._name}]`)
           td
-            a(href=`/${tDoc._name}`)= tDoc._name
+            a(href=`/${notebook._name}`)= notebook._name
       tr
         td(colspan=2)
           button(type='submit', name='action', value='closeNotebook') Close

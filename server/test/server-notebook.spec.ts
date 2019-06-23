@@ -26,15 +26,15 @@ import { assert } from 'chai';
 import 'mocha';
 import * as sinon from 'sinon';
 
-import { NotebookChangeRequest, StyleInsertRequest, StylePropertiesWithSubprops, StyleType, NotebookChange, ToolInfo, StyleInserted, StyleObject } from '../../client/math-tablet-api';
-import { TDoc, ObserverInstance, VERSION }  from '../tdoc';
+import { NotebookChangeRequest, StyleInsertRequest, StylePropertiesWithSubprops, NotebookChange, ToolInfo, StyleInserted, StyleObject } from '../../client/math-tablet-api';
+import { ServerNotebook, ObserverInstance }  from '../server-notebook';
 import { Config } from '../config';
 
 // Test Observer
 
 export class TestObserver implements ObserverInstance {
   static async initialize(_config: Config): Promise<void> { }
-  static async onOpen(_tDoc: TDoc): Promise<TestObserver> { return new this(); }
+  static async onOpen(_notebook: ServerNotebook): Promise<TestObserver> { return new this(); }
   constructor() {}
   async onChanges(_changes: NotebookChange[]): Promise<NotebookChangeRequest[]> { return []; }
   async onClose(): Promise<void> {}
@@ -43,79 +43,43 @@ export class TestObserver implements ObserverInstance {
 
 // Unit Tests
 
-describe("TDoc", function() {
+describe("server notebook", function() {
 
-  describe("Structure access", function() {
+  describe("observer", function(){
 
-    const styleData = ['a', 'b', 'c'];
-    let td: TDoc;
-
-    before("Create a tdoc with three styles", async function(){
-      td = await createTDocFromText('TEXT', styleData.join(';'));
-    });
-
-    it("Converts to and from a JSON object", async function() {
-      const obj = td.toJSON();
-      assert.deepEqual(obj, {
-        "nextId": 4,
-        "relationshipMap": {},
-        "styleMap": {
-          "1": { "data": "a", "id": 1, "meaning": "INPUT", "parentId": 0, "source": "TEST", "type": "TEXT", },
-          "2": { "data": "b", "id": 2, "meaning": "INPUT", "parentId": 0, "source": "TEST", "type": "TEXT", },
-          "3": { "data": "c", "id": 3, "meaning": "INPUT", "parentId": 0, "source": "TEST", "type": "TEXT", }
-        },
-        "styleOrder": [ 1, 2, 3 ],
-        "version": VERSION,
-      });
-      // TODO: create td from obj.
-    });
-
-    it("Retrieves styles with allStyles and getStyleById", async function() {
-      const styles = td.allStyles();
-      assert.equal(styles.length, 3);
-      assert.equal(styles[0].data, styleData[0]);
-
-      const styleObject = td.getStyleById(styles[0].id);
-      assert.equal(styleObject, styles[0]);
-    });
-
-  });
-
-  describe("TDoc Observer", function(){
-
-    let tDoc: TDoc;
+    let notebook: ServerNotebook;
     let observer: TestObserver;
 
-    const onOpenSpy: sinon.SinonSpy<[TDoc], Promise<ObserverInstance>> = sinon.spy(TestObserver, 'onOpen');
+    const onOpenSpy: sinon.SinonSpy<[ServerNotebook], Promise<ObserverInstance>> = sinon.spy(TestObserver, 'onOpen');
     let onChangesSpy: sinon.SinonSpy<[NotebookChange[]], Promise<NotebookChangeRequest[]>>;
     let onCloseSpy: sinon.SinonSpy<[], Promise<void>>;
     let useToolSpy: sinon.SinonSpy<[StyleObject], Promise<NotebookChangeRequest[]>>;
 
 
-    before("onOpen is called when tDoc is created", async function(){
+    before("onOpen is called when notebook is created", async function(){
       // Register the observer
-      TDoc.registerObserver('TEST', TestObserver);
+      ServerNotebook.registerObserver('TEST', TestObserver);
 
-      // Create a tDoc
-      tDoc = await TDoc.createAnonymous();
+      // Create a notebook
+      notebook = await ServerNotebook.createAnonymous();
 
-      // Observer's onOpen should be called with tDoc as an argument
+      // Observer's onOpen should be called with notebook as an argument
       // and return an observer instance. Spy on the observer.
       assert(onOpenSpy.calledOnce);
-     assert.equal(onOpenSpy.lastCall.args[0], tDoc);
+     assert.equal(onOpenSpy.lastCall.args[0], notebook);
       observer = <TestObserver>(await onOpenSpy.lastCall.returnValue);
       onChangesSpy = sinon.spy(observer, 'onChanges');
       onCloseSpy = sinon.spy(observer, 'onClose');
       useToolSpy = sinon.spy(observer, 'useTool');
     });
 
-    after("onClose is called when tDoc is closed", async function(){
-      // tDoc should be open and observer's onClose should not have been called.
-      // TODO: assert tDoc is not closed.
+    after("onClose is called when notebook is closed", async function(){
+      // notebook should be open and observer's onClose should not have been called.
+      // TODO: assert notebook is not closed.
       assert.equal(onCloseSpy.callCount, 0);
 
-      // Close the tDoc.
-      await tDoc.close();
+      // Close the notebook.
+      await notebook.close();
 
       // Observer's onClose should be called for the first and only time.
       // onClose takes no arguments.
@@ -129,7 +93,7 @@ describe("TDoc", function() {
       const styleProps: StylePropertiesWithSubprops = { type: 'TEXT', meaning: 'INPUT', data: 'foo' };
       const insertRequest: StyleInsertRequest = { type: 'insertStyle', styleProps };
       const changeRequests = [insertRequest];
-      await tDoc.requestChanges('TEST', changeRequests);
+      await notebook.requestChanges('TEST', changeRequests);
       assert.equal(onChangesSpy.callCount, callCount + 1);
       const expectedNotebookChange: StyleInserted = {
         type: 'styleInserted',
@@ -155,7 +119,7 @@ describe("TDoc", function() {
         ]
       };
       const insertRequest: StyleInsertRequest = { type: 'insertStyle', styleProps };
-      await tDoc.requestChanges('TEST', [insertRequest]);
+      await notebook.requestChanges('TEST', [insertRequest]);
 
       // Observer's onChange should be called with two new styles.
       // Pick out the tool style.
@@ -167,7 +131,7 @@ describe("TDoc", function() {
 
       // Invoke the tool.
       const callCount = useToolSpy.callCount;
-      await tDoc.useTool(toolStyle.id);
+      await notebook.useTool(toolStyle.id);
 
       // Observer's useTool method should be called, passing the tool style.
       assert.equal(useToolSpy.callCount, callCount+1);
@@ -175,18 +139,4 @@ describe("TDoc", function() {
     });
   });
 });
-
-// Helper Functions
-
-async function createTDocFromText(type: StyleType, text: string): Promise<TDoc> {
-  const td = await TDoc.createAnonymous();
-  const changeRequests: NotebookChangeRequest[] = text.split(";").map(s=>{
-    const data = s.trim();
-    const styleProps: StylePropertiesWithSubprops = { type, meaning: 'INPUT', data };
-    const rval: StyleInsertRequest = { type: 'insertStyle', styleProps }
-    return rval;
-  });
-  await td.requestChanges('TEST', changeRequests);
-  return td;
-}
 

@@ -28,7 +28,7 @@ import 'mocha';
 
 import { MathStepsObserver } from '../observers/mathsteps-cas';
 
-import { TDoc } from '../tdoc';
+import { ServerNotebook } from '../server-notebook';
 import { StyleProperties, StyleInsertRequest, StylePropertiesWithSubprops, NotebookChange, StyleInserted, ToolName, StyleId, StyleObject } from '../../client/math-tablet-api';
 
 // Constants
@@ -152,69 +152,69 @@ describe('mathsteps-cas', function(){
 
   before(async function(): Promise<void>{
     await MathStepsObserver.initialize({});
-    await TDoc.registerObserver('MATHSTEPS', MathStepsObserver);
+    await ServerNotebook.registerObserver('MATHSTEPS', MathStepsObserver);
   });
 
   it(`Adds a 'steps' tool to '${EXPR1}' that adds simplification steps`, async function(){
 
-    const tDoc = await TDoc.createAnonymous();
+    const notebook = await ServerNotebook.createAnonymous();
 
     // Create a thought with a MathJS expression input style.
     const styleProps: StylePropertiesWithSubprops = { type: 'MATHJS', meaning: 'INPUT', data: EXPR1 };
     const changeRequest: StyleInsertRequest = { type: 'insertStyle', styleProps };
-    const changes: NotebookChange[] = await tDoc.requestChanges('USER', [changeRequest]);
+    const changes: NotebookChange[] = await notebook.requestChanges('USER', [changeRequest]);
     const firstChange = changes[0];
     assert(firstChange.type == 'styleInserted');
     const style = (<StyleInserted>firstChange).style;
 
     // Check that a tool menu was added to the thought.
-    const toolStyle = findToolStyle(tDoc, style.id, "steps");
+    const toolStyle = findToolStyle(notebook, style.id, "steps");
     assert.exists(toolStyle);
     assert.deepEqual(toolStyle!.data.data, { expr: true });
 
     // Use the tool
-    await tDoc.useTool(toolStyle!.id);
+    await notebook.useTool(toolStyle!.id);
 
     // Check an exposition style was added with the steps.
-    const expoStyles = tDoc.findChildStylesOfType(0, 'HTML', 'EXPOSITION');
+    const expoStyles = notebook.findChildStylesOfType(0, 'HTML', 'EXPOSITION');
     assert.equal(expoStyles.length, 1);
     assert.equal(expoStyles[0].data, EXPR1_SIMPLIFICATION);
 
-    await tDoc.close();
+    await notebook.close();
   });
 
   it(`Adds a 'steps' tool to '${EQUA1}' that adds solution steps`, async function(){
 
-    const tDoc = await TDoc.createAnonymous();
+    const notebook = await ServerNotebook.createAnonymous();
 
     // Create a thought with a MathJS expression input style.
     const styleProps: StyleProperties = { type: 'MATHJS', meaning: 'INPUT', data: EQUA1 };
     const changeRequest: StyleInsertRequest = { type: 'insertStyle', styleProps };
-    const changes: NotebookChange[] = await tDoc.requestChanges('USER', [changeRequest]);
+    const changes: NotebookChange[] = await notebook.requestChanges('USER', [changeRequest]);
     const firstChange = changes[0];
     assert(firstChange.type == 'styleInserted');
     const style = (<StyleInserted>firstChange).style;
 
     // Check that a tool menu was added to the thought.
-    const toolStyle = findToolStyle(tDoc, style.id, "steps");
+    const toolStyle = findToolStyle(notebook, style.id, "steps");
     assert.exists(toolStyle);
     assert.deepEqual(toolStyle!.data.data, { expr: false });
 
     // Use the tool
-    await tDoc.useTool(toolStyle!.id);
+    await notebook.useTool(toolStyle!.id);
 
     // Check an exposition style was added with the steps.
-    const expoStyles = tDoc.findChildStylesOfType(0, 'HTML', 'EXPOSITION');
+    const expoStyles = notebook.findChildStylesOfType(0, 'HTML', 'EXPOSITION');
     assert.equal(expoStyles.length, 1);
     assert.equal(expoStyles[0].data, EQUA1_SOLUTION);
 
-    await tDoc.close();
+    await notebook.close();
   });
 
 });
 
 // Helper Functions
 
-function findToolStyle(tDoc: TDoc, styleId: StyleId, name: ToolName): StyleObject|undefined {
-  return tDoc.findChildStylesOfType(styleId, 'TOOL').find(s=>s.data.name==name);
+function findToolStyle(notebook: ServerNotebook, styleId: StyleId, name: ToolName): StyleObject|undefined {
+  return notebook.findChildStylesOfType(styleId, 'TOOL').find(s=>s.data.name==name);
 }

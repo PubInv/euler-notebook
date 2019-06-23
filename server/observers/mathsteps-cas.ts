@@ -26,7 +26,7 @@ import * as mathsteps from 'mathsteps';
 import * as math from 'mathjs';
 
 import { StyleObject, NotebookChange, StyleProperties, ToolInfo, NotebookChangeRequest, StyleInsertRequest } from '../../client/math-tablet-api';
-import { TDoc, ObserverInstance }  from '../tdoc';
+import { ServerNotebook, ObserverInstance }  from '../server-notebook';
 import { Config } from '../config';
 
 // Types
@@ -52,9 +52,9 @@ export class MathStepsObserver implements ObserverInstance {
     debug(`initialize`);
   }
 
-  public static async onOpen(tDoc: /* REVIEW: ReadOnlyTDoc */TDoc): Promise<ObserverInstance> {
+  public static async onOpen(notebook: ServerNotebook): Promise<ObserverInstance> {
     debug(`onOpen`);
-    return new this(tDoc);
+    return new this(notebook);
   }
 
   // Instance Methods
@@ -70,14 +70,14 @@ export class MathStepsObserver implements ObserverInstance {
   }
 
   public async onClose(): Promise<void> {
-    debug(`onClose ${this.tDoc._path}`);
-    delete this.tDoc;
+    debug(`onClose ${this.notebook._path}`);
+    delete this.notebook;
   }
 
   public async useTool(toolStyle: StyleObject): Promise<NotebookChangeRequest[]> {
-    debug(`useTool ${this.tDoc._path} ${toolStyle.id}`);
+    debug(`useTool ${this.notebook._path} ${toolStyle.id}`);
 
-    const parentStyle = this.tDoc.getStyleById(toolStyle.parentId);
+    const parentStyle = this.notebook.getStyleById(toolStyle.parentId);
 
     const isExpression: boolean = toolStyle.data.data.expr;
     const steps: Step[] = (isExpression ?
@@ -100,18 +100,18 @@ export class MathStepsObserver implements ObserverInstance {
 
   // Private Constructor
 
-  private constructor(tDoc: TDoc) {
-    this.tDoc = tDoc;
+  private constructor(notebook: ServerNotebook) {
+    this.notebook = notebook;
   }
 
   // Private Instance Properties
 
-  private tDoc: TDoc;
+  private notebook: ServerNotebook;
 
   // Private Instance Methods
 
   private async onChange(change: NotebookChange, rval: NotebookChangeRequest[]): Promise<void> {
-    debug(`onChange ${this.tDoc._path} ${change.type}`);
+    debug(`onChange ${this.notebook._path} ${change.type}`);
     switch (change.type) {
       case 'styleInserted': this.chStyleInserted(change.style, rval); break;
       default: break;
@@ -129,7 +129,7 @@ export class MathStepsObserver implements ObserverInstance {
     const steps: Step[] = mathsteps.simplifyExpression(style.data);
     if (steps.length > 0) {
 
-      const parentStyle = (style.meaning == 'INPUT' ? style : this.tDoc.getStyleById(style.parentId));
+      const parentStyle = (style.meaning == 'INPUT' ? style : this.notebook.getStyleById(style.parentId));
       const toolInfo: ToolInfo = { name: 'steps', html: 'Steps', data: { expr: true } };
       const styleProps: StyleProperties = { type: 'TOOL', meaning: 'ATTRIBUTE', data: toolInfo };
       const changeReq: StyleInsertRequest = {
@@ -143,7 +143,7 @@ export class MathStepsObserver implements ObserverInstance {
       // Doesn't simplify as expression. Try to solve it as an equation.
       const steps2: Step[] = mathsteps.solveEquation(style.data);
       if (steps2.length > 0) {
-        const parentStyle = (style.meaning == 'INPUT' ? style : this.tDoc.getStyleById(style.parentId));
+        const parentStyle = (style.meaning == 'INPUT' ? style : this.notebook.getStyleById(style.parentId));
         const toolInfo: ToolInfo = { name: 'steps', html: 'Steps', data: { expr: false } };
         const styleProps: StyleProperties = { type: 'TOOL', meaning: 'ATTRIBUTE', data: toolInfo };
         const changeReq: StyleInsertRequest = {

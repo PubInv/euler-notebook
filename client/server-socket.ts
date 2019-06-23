@@ -145,7 +145,7 @@ export class ServerSocket {
   private smNotebookOpened(msg: NotebookOpened): void {
     const openRequest = this.openPromises.get(msg.notebookName);
     if (!openRequest) { throw new Error(`Notebook opened message for unknown notebook: ${msg.notebookName}`); }
-    const notebook = Notebook.open(this, msg.notebookName, msg.tDoc);
+    const notebook = Notebook.open(this, msg.notebookName, msg.obj);
     openRequest.resolve(notebook);
     this.openPromises.delete(msg.notebookName);
   }
