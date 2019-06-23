@@ -54,7 +54,7 @@ export class ServerSocket {
   // Instance Methods
 
   public async openNotebook(notebookName: NotebookName): Promise<HtmlNotebook> {
-    this.sendMessage({ action: 'openNotebook', notebookName });
+    this.sendMessage({ type: 'openNotebook', notebookName });
     return new Promise((resolve, reject)=>this.openPromises.set(notebookName, { resolve, reject }))
   }
 
@@ -115,14 +115,14 @@ export class ServerSocket {
   private onWsMessage(event: MessageEvent): void {
     try {
       const msg: ServerMessage = JSON.parse(event.data);
-      console.log(`Notebook Conn: socket message: ${msg.action}`);
+      console.log(`Notebook Conn: socket message: ${msg.type}`);
       // console.dir(msg);
-      switch(msg.action) {
+      switch(msg.type) {
       case 'notebookChanged': this.smNotebookChanged(msg); break;
       case 'notebookClosed':  this.smNotebookClosed(msg); break;
       case 'notebookOpened':  this.smNotebookOpened(msg); break;
       default:
-        console.error(`Unexpected action '${(<any>msg).action}' in WebSocket message`);
+        console.error(`Unexpected server message type '${(<any>msg).type}' in WebSocket message`);
         break;
       }
     } catch(err) {

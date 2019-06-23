@@ -27,7 +27,7 @@ import * as WebSocket from 'ws';
 
 // TODO: Handle websocket lifecycle: closing, unexpected disconnects, errors, etc.
 import { NotebookChange } from '../client/notebook';
-import { ClientMessage, NotebookPath, NotebookName, StyleDeleteRequest, InsertStyle, StyleInsertRequest, NotebookChanged, ServerMessage, CloseNotebook, DeleteStyle, OpenNotebook, UseTool, NotebookOpened } from '../client/math-tablet-api';
+import { ClientMessage, NotebookPath, NotebookName, NotebookChanged, ServerMessage, CloseNotebook, OpenNotebook, UseTool, NotebookOpened, ChangeNotebook } from '../client/math-tablet-api';
 
 import { PromiseResolver, runAsync } from './common';
 // REVIEW: This file should not be dependent on any specific observers.
@@ -106,7 +106,7 @@ export class ClientSocket {
     // REVIEW: verify that notebook is one of our opened ones?
     if (!notebook._path) { throw new Error("Unexpected."); }
     const msg: NotebookChanged = {
-      action: 'notebookChanged',
+      type: 'notebookChanged',
       notebookName: notebook._path,
       changes,
     };
@@ -179,26 +179,22 @@ export class ClientSocket {
   private onWsMessage(_ws: WebSocket, message: WebSocket.Data): void {
     try {
       const msg: ClientMessage = JSON.parse(message.toString());
-      debug(`Client Socket: received socket message: ${msg.action} ${msg.notebookName}`);
-      switch(msg.action) {
-        // TODO: 'changeNotebook' taking array of change requests.
-        case 'openNotebook':
-          runAsync(this.cmOpenNotebook(msg), MODULE, 'cmOpenNotebook');
+      debug(`Client Socket: received socket message: ${msg.type} ${msg.notebookName}`);
+      switch(msg.type) {
+        case 'changeNotebook':
+          runAsync(this.cmChangeNotebook(msg), MODULE, 'cmCloseNotebook');
           break;
         case 'closeNotebook':
           runAsync(this.cmCloseNotebook(msg), MODULE, 'cmCloseNotebook');
           break;
-        case 'deleteStyle':
-          runAsync( this.cmDeleteStyle(msg), MODULE, 'cmDeleteStyle');
-          break;
-        case 'insertStyle':
-          runAsync(this.cmInsertStyle(msg), MODULE, 'cmInsertStyle');
+        case 'openNotebook':
+          runAsync(this.cmOpenNotebook(msg), MODULE, 'cmOpenNotebook');
           break;
         case 'useTool':
           runAsync(this.cmUseTool(msg), MODULE, 'cmUseTool');
           break;
         default: {
-          console.error(`Client Socket: unexpected WebSocket message action ${(<any>msg).action}. Ignoring.`);
+          console.error(`Client Socket: unexpected WebSocket message type ${(<any>msg).type}. Ignoring.`);
           break;
         }
       }
@@ -209,28 +205,15 @@ export class ClientSocket {
 
   // Private Client Message Handlers
 
-  private async cmCloseNotebook(msg: CloseNotebook): Promise<void> {
-    await this.closeNotebook(msg.notebookName, true);
-  }
-
-  private async cmDeleteStyle(msg: DeleteStyle): Promise<void> {
+  private async cmChangeNotebook(msg: ChangeNotebook): Promise<void> {
     const clientObserver = this.clientObservers.get(msg.notebookName);
     if (!clientObserver) { throw new Error(`Unknown notebook ${msg.notebookName} for client message delete-style.`); }
-    const changeReq: StyleDeleteRequest = { type: 'deleteStyle', styleId: msg.styleId };
     // REVIEW: source client id?
-    await clientObserver.notebook.requestChanges('USER', [changeReq]);
+    await clientObserver.notebook.requestChanges('USER', msg.changeRequests);
   }
 
-  private async cmInsertStyle(msg: InsertStyle): Promise<void> {
-    const clientObserver = this.clientObservers.get(msg.notebookName);
-    if (!clientObserver) { throw new Error(`Unknown notebook ${msg.notebookName} for client message insert-style.`); }
-    const changeReq: StyleInsertRequest = {
-      type: 'insertStyle',
-      parentId: 0,
-      styleProps: msg.styleProps,
-      afterId: msg.afterId,
-    };
-    await clientObserver.notebook.requestChanges('USER', [changeReq]);
+  private async cmCloseNotebook(msg: CloseNotebook): Promise<void> {
+    await this.closeNotebook(msg.notebookName, true);
   }
 
   private async cmOpenNotebook(msg: OpenNotebook): Promise<void> {
@@ -268,7 +251,7 @@ export class ClientSocket {
     this.clientObservers.delete(notebookName);
     clientObserver.close();
     if (notify) {
-      this.sendMessage({ action: 'notebookClosed', notebookName });
+      this.sendMessage({ type: 'notebookClosed', notebookName });
     }
   }
 
@@ -277,7 +260,7 @@ export class ClientSocket {
     const clientObserver = ClientObserver.open(notebook, this);
     this.clientObservers.set(notebook._path!, clientObserver);
     const msg: NotebookOpened = {
-      action: 'notebookOpened',
+      type: 'notebookOpened',
       notebookName,
       obj: notebook.toJSON(),
     }
@@ -286,7 +269,7 @@ export class ClientSocket {
 
   private sendMessage(msg: ServerMessage): void {
     const json = JSON.stringify(msg);
-    debug(`Client Socket: sending socket message ${msg.action}.`);
+    debug(`Client Socket: sending socket message ${msg.type}.`);
     try {
       // REVIEW: Should we check ws.readyState
       // REVIEW: Should we use the callback to see if the message went through?

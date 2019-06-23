@@ -22,8 +22,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 import { ServerSocket } from './server-socket.js';
 
 import { StyleId, StyleObject, NotebookChange, RelationshipId, RelationshipObject, NotebookObject } from './notebook.js';
-import { NotebookName, UseTool, InsertStyle,
-         StylePropertiesWithSubprops, DeleteStyle } from './math-tablet-api.js';
+import { NotebookName, UseTool, StylePropertiesWithSubprops, ChangeNotebook, StyleDeleteRequest, StyleInsertRequest } from './math-tablet-api.js';
 // import { Jiix, StrokeGroups } from './myscript-types.js';
 import { ThoughtElement } from './thought-element.js';
 import { $new, escapeHtml, Html } from './dom.js';
@@ -91,16 +90,28 @@ export class HtmlNotebook {
   }
 
   public deleteStyle(styleId: StyleId): void {
-    const msg: DeleteStyle = { action: 'deleteStyle', notebookName: this.notebookName, styleId };
+    const changeRequest: StyleDeleteRequest = {
+      type: 'deleteStyle',
+      styleId,
+    }
+    const msg: ChangeNotebook = {
+      type: 'changeNotebook',
+      notebookName: this.notebookName,
+      changeRequests: [ changeRequest ],
+    }
     this.socket.sendMessage(msg);
   }
 
   public insertStyle(styleProps: StylePropertiesWithSubprops): void {
-   const msg: InsertStyle = {
-      action: 'insertStyle',
+    const changeRequest: StyleInsertRequest = {
+      type: 'insertStyle',
       afterId: -1,
-      notebookName: this.notebookName,
       styleProps,
+    }
+    const msg: ChangeNotebook = {
+      type: 'changeNotebook',
+      notebookName: this.notebookName,
+      changeRequests: [ changeRequest ],
     }
     this.socket.sendMessage(msg);
   }
@@ -122,7 +133,7 @@ export class HtmlNotebook {
 
   public useTool(id: StyleId): void {
     const msg: UseTool = {
-      action: 'useTool',
+      type: 'useTool',
       notebookName: this.notebookName,
       styleId: id,
     };

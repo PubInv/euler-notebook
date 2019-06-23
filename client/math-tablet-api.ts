@@ -61,7 +61,6 @@ export interface StrokeGroups {
   // TYPESCRIPT: TODO
 }
 
-
 export type ToolName = string;
 export interface ToolInfo {
   name: ToolName;
@@ -79,8 +78,6 @@ export interface StylePropertiesWithSubprops extends StyleProperties {
   relationsFrom?: RelationshipPropertiesMap;
 }
 
-// Notebook Change types:
-
 // Notebook Change Requests
 
 export type NotebookChangeRequest =
@@ -88,24 +85,20 @@ export type NotebookChangeRequest =
   RelationshipInsertRequest|
   StyleDeleteRequest|
   StyleInsertRequest;
-
-  export interface RelationshipDeleteRequest {
-    type: 'deleteRelationship';
-    id: number;
-  }
-
-  export interface RelationshipInsertRequest {
-    type: 'insertRelationship';
-    fromId: StyleId;
-    toId: StyleId;
-    props: RelationshipProperties;
-  }
-
+export interface RelationshipDeleteRequest {
+  type: 'deleteRelationship';
+  id: number;
+}
+export interface RelationshipInsertRequest {
+  type: 'insertRelationship';
+  fromId: StyleId;
+  toId: StyleId;
+  props: RelationshipProperties;
+}
 export interface StyleDeleteRequest {
   type: 'deleteStyle';
   styleId: number;
 }
-
 export interface StyleInsertRequest {
   type: 'insertStyle';
   afterId?: StyleId; // or 0, -1.
@@ -116,55 +109,39 @@ export interface StyleInsertRequest {
 // Messages from the server
 
 export type ServerMessage = NotebookChanged|NotebookClosed|NotebookOpened;
-
 export interface NotebookChanged {
-  action: 'notebookChanged';
+  type: 'notebookChanged';
   notebookName: NotebookName;
   changes: NotebookChange[];
 }
-
 export interface NotebookClosed {
-  action: 'notebookClosed';
+  type: 'notebookClosed';
   notebookName: NotebookName;
 }
-
 export interface NotebookOpened {
-  action: 'notebookOpened';
+  type: 'notebookOpened';
   notebookName: NotebookName;
   obj: NotebookObject;
 }
 
 // Messages from the client
 
-// REVIEW: Unify with NotebookChange?
-
-export type ClientMessage = CloseNotebook|DeleteStyle|InsertStyle|OpenNotebook|UseTool;
-
+export type ClientMessage = ChangeNotebook|CloseNotebook|OpenNotebook|UseTool;
+export interface ChangeNotebook {
+  type: 'changeNotebook';
+  notebookName: NotebookName;
+  changeRequests: NotebookChangeRequest[];
+}
 export interface CloseNotebook {
-  action: 'closeNotebook';
+  type: 'closeNotebook';
   notebookName: NotebookName;
 }
-
-export interface DeleteStyle {
-  action: 'deleteStyle';
-  notebookName: NotebookName;
-  styleId: number;
-}
-
-export interface InsertStyle {
-  action: 'insertStyle';
-  notebookName: NotebookName;
-  styleProps: StylePropertiesWithSubprops;
-  afterId: StyleId; // or 0, -1.
-}
-
 export interface OpenNotebook {
-  action: 'openNotebook';
+  type: 'openNotebook';
   notebookName: NotebookName;
 }
-
 export interface UseTool {
-  action: 'useTool';
+  type: 'useTool';
   notebookName: NotebookName;
   styleId: StyleId;
 }
