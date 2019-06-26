@@ -1,0 +1,16 @@
+
+body {
+  background-color: green;
+  height: 100%;
+  margin: 0;
+  /* user-select: none; Why isn't this working? */
+}
+
+div#writingArea {
+  background-color: yellow;
+  position: absolute;
+  top: 5%;
+  left: 50%;
+  width: 45%;
+  height: 90%
+}
