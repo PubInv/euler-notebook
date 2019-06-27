@@ -11,23 +11,32 @@
     delete strokes[event.pointerId];
   }
 
-  function endStroke(strokes, event) {
+  function endStroke(clientRect, strokes, event) {
     const stroke = strokes[event.pointerId];
     if (!stroke) { console.error(`No stroke to end: ${event.pointerId}`); return }
-    extendStroke(strokes, event);
-    $lastStroke.innerText = `${stroke.type}\nx: ${stroke.x.join(',')}\ny: ${stroke.y.join(',')}\np: ${stroke.p.join(',')}\ntx: ${stroke.tx.join(',')}\nty: ${stroke.ty.join(',')}`;
+    extendStroke(clientRect, strokes, event);
+    $lastStroke.innerText = `${stroke.type}\nx: ${stroke.x.join(',')}\ny: ${stroke.y.join(',')}\nt: ${stroke.t.join(',')}\np: ${stroke.p.join(',')}\ntx: ${stroke.tx.join(',')}\nty: ${stroke.ty.join(',')}`;
     abortStroke(strokes, event);
   }
 
-  function extendStroke(strokes, event) {
+  function extendStroke(clientRect, strokes, event) {
     const stroke = strokes[event.pointerId];
     if (!stroke) {
       console.error(`Can't add coordinates to unknown stroke: ${event.pointerId}`);
       return;
     }
-    $moveCoords.innerText = `(${event.x}, ${event.y})`;
-    stroke.x.push(event.x);
-    stroke.y.push(event.y);
+
+    let x = event.clientX - clientRect.left;
+    let y = event.clientY - clientRect.top;
+
+    // Round to one decimal
+    x = Math.round(x*10)/10;
+    y = Math.round(y*10)/10;
+
+    $moveCoords.innerText = `(${x}, ${y})`;
+    stroke.x.push(x);
+    stroke.y.push(y);
+    stroke.t.push(Date.now());
     stroke.p.push(event.pressure);
     stroke.tx.push(event.tiltX);
     stroke.ty.push(event.tiltY);
@@ -37,13 +46,13 @@
     return !!strokes[event.pointerId];
   }
 
-  function startStroke(strokes, event) {
-    strokes[event.pointerId] = { type: event.pointerType, x: [], y: [], p: [], tx: [], ty: [] };
-    extendStroke(strokes, event);
+  function startStroke(clientRect, strokes, event) {
+    strokes[event.pointerId] = { type: event.pointerType, x: [], y: [], t: [], p: [], tx: [], ty: [] };
+    extendStroke(clientRect, strokes, event);
   }
 
   window.addEventListener('DOMContentLoaded', (event) => {
-    console.log('DOMContentLoaded');
+    // console.log('DOMContentLoaded');
 
     $lastStroke = document.getElementById('lastStroke');
     $moveCoords = document.getElementById('moveCoords');
@@ -67,9 +76,10 @@
         console.error(`Down event without prior up event for pointer ${event.pointerId}.`);
         abortStroke(strokes, event);
       }
-      // console.dir(event);
+      console.dir(event);
       this.setPointerCapture(event.pointerId);
-      startStroke(strokes, event);
+      const clientRect = this.getBoundingClientRect();
+      startStroke(clientRect, strokes, event);
     });
 
     $writingArea.addEventListener('pointerup', function(event){
@@ -78,12 +88,14 @@
         return;
       }
       this.releasePointerCapture(event.pointerId);
-      endStroke(strokes, event);
+      const clientRect = this.getBoundingClientRect();
+      endStroke(clientRect, strokes, event);
     });
 
     $writingArea.addEventListener('pointermove', function(event){
       if (!isStroking(strokes, event)) { return; }
-      extendStroke(strokes, event);
+      const clientRect = this.getBoundingClientRect();
+      extendStroke(clientRect, strokes, event);
     });
   });
 

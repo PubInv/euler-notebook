@@ -12,5 +12,6 @@ div#writingArea {
   top: 5%;
   left: 50%;
   width: 45%;
-  height: 90%
+  height: 90%;
+  touch-action: none;
 }
