@@ -3,12 +3,20 @@
 
   const POINTER_EVENTS = [ 'pointerover', 'pointerout', 'pointerenter', 'pointerleave' ];
 
-  let $lastStoke;
+  let $canvas;
   let $moveCoords;
   let strokes = {}; // indexed by pointer id.
 
   function abortStroke(strokes, event) {
     delete strokes[event.pointerId];
+  }
+
+  function drawDot(x, y) {
+    var $circle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+    $circle.setAttributeNS(null, 'cx', x);
+    $circle.setAttributeNS(null, 'cy', y);
+    $circle.setAttributeNS(null, 'r', 2);
+    $canvas.appendChild($circle);
   }
 
   function endStroke(clientRect, strokes, event) {
@@ -40,6 +48,8 @@
     stroke.p.push(event.pressure);
     stroke.tx.push(event.tiltX);
     stroke.ty.push(event.tiltY);
+
+    drawDot(x,y);
   }
 
   function isStroking(strokes, event) {
@@ -54,24 +64,23 @@
   window.addEventListener('DOMContentLoaded', (event) => {
     // console.log('DOMContentLoaded');
 
+    $canvas = document.getElementById('canvas');
     $lastStroke = document.getElementById('lastStroke');
     $moveCoords = document.getElementById('moveCoords');
-    const $writingArea = document.getElementById('writingArea');
 
     // for (const eventName of POINTER_EVENTS) {
-    //   $writingArea.addEventListener(eventName, function(event){
+    //   $canvas.addEventListener(eventName, function(event){
     //     console.log(event.type);
     //   });
     // }
 
-    $writingArea.addEventListener('pointercancel', function(event){
-      if (!isStroking(strokes, event)) { return; }
-      // REVIEW: do we need to?: this.releasePointerCapture(event.pointerId);
+    $canvas.addEventListener('pointercancel', function(event){
+      // REVIEW: do we need to releasePointerCapture(event.pointerId)?
       console.log('pointer cancel');
-      abortStroke(strokes, event);
+      if (isStroking(strokes, event)) { abortStroke(strokes, event); }
     });
 
-    $writingArea.addEventListener('pointerdown', function(event){
+    $canvas.addEventListener('pointerdown', function(event){
       if (isStroking(strokes, event)) {
         console.error(`Down event without prior up event for pointer ${event.pointerId}.`);
         abortStroke(strokes, event);
@@ -82,7 +91,7 @@
       startStroke(clientRect, strokes, event);
     });
 
-    $writingArea.addEventListener('pointerup', function(event){
+    $canvas.addEventListener('pointerup', function(event){
       if (!isStroking(strokes, event)) {
         console.log(`Ignoring up event for pointer ${event.pointerId}.`);
         return;
@@ -92,7 +101,7 @@
       endStroke(clientRect, strokes, event);
     });
 
-    $writingArea.addEventListener('pointermove', function(event){
+    $canvas.addEventListener('pointermove', function(event){
       if (!isStroking(strokes, event)) { return; }
       const clientRect = this.getBoundingClientRect();
       extendStroke(clientRect, strokes, event);
