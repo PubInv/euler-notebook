@@ -164,7 +164,6 @@ export class MathematicaObserver implements ObserverInstance {
           debug("error evaluting equivalentce",e);
           expressionEquivalence[expressID] = false;
         }
-
       }
       debug("expressions",expressionEquivalence);
       let styleIds = [];
@@ -183,15 +182,22 @@ export class MathematicaObserver implements ObserverInstance {
             src = eqstyle;
             tar = style;
           }
-          const props: RelationshipProperties = { meaning: 'EQUIVALENCE' };
-          const cr: RelationshipInsertRequest = {
-            type: 'insertRelationship',
-            fromId: src.id,
-            toId: tar.id,
-            props,
+          // At present, we have a bug where we  are getting the equivalence
+          // attached to both the thought and the style. I'm not sure how to
+          // deal with this. I'm guessing that we ONLY want to attach
+          // to a wolfram input style. This is arguable; but this the advantage of
+          // producing a "thought" to "thought" approach.
+          if (!((src.meaning == 'EVALUATION') || (tar.meaning == 'EVALUATION'))) {
+            const props: RelationshipProperties = { meaning: 'EQUIVALENCE' };
+            const cr: RelationshipInsertRequest = {
+              type: 'insertRelationship',
+              fromId: src.id,
+              toId: tar.id,
+              props,
+            }
+            rval.push(cr);
+            debug("adding relationship");
           }
-          rval.push(cr);
-          debug("adding relationship");
         }
       }
       debug("notebook Relationships",this.notebook.allRelationships());

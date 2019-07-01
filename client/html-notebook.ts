@@ -265,7 +265,7 @@ export class HtmlNotebook {
   }
 
   private debugRelationshipHtml(relationship: RelationshipObject): Html {
-    return `<div><span class="leaf">R${relationship.id} &#x27a1; ${relationship.toId}</span></div>`;
+    return `<div><span class="leaf">R${relationship.id} ${relationship.fromId} &#x27a1; ${relationship.toId} Meaning: ${relationship.meaning}</span></div>`;
   }
 
   private debugStyleHtml(style: StyleObject): Html {
