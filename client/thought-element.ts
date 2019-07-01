@@ -93,22 +93,25 @@ export class ThoughtElement {
     }
   }
 
-  // TODO: There is significant conde duplication between these two
-  // routines which would be abstracted into a function called by both.
-  public deleteEquivalence(relationship: RelationshipObject): void {
-//    const $formulaElt = this.$elt.querySelector('.formula');
-    console.log(relationship);
+  public constructEquivalencePreamble() : string{
     const element = document.getElementById("relationship"+this.style.id);
     if (element != null) {
       // @ts-ignore
       element.parentNode.removeChild(element);
     }
+    this.equivalentStyles = this.equivalentStyles.sort();
+    const preamble = (this.equivalentStyles.length > 0) ?
+      `<p id=${"relationship"+this.style.id}> = { (${this.equivalentStyles}) (From Mathematica CAS) } </p>` :
+      "";
+    return preamble;
+  }
+
+  public deleteEquivalence(relationship: RelationshipObject): void {
     var index = this.equivalentStyles.indexOf(relationship.fromId);
     if (index !== -1) this.equivalentStyles.splice(index, 1);
-    this.equivalentStyles = this.equivalentStyles.sort();
-    const preamble = (this.equivalentStyles.length > 0) ?  `<p id=${"relationship"+this.style.id}> = { (${this.equivalentStyles}) (From Mathematica CAS) } </p>` : "";
-      // This is a code duplication; it would be better if this
-    // were done functionally, so it could be in one place.
+
+    const preamble = this.constructEquivalencePreamble();
+
     const $formulaElt = this.$elt.querySelector('.formula');
     $formulaElt!.innerHTML = preamble + `<tt>${escapeHtml(this.style.data)}</tt>`;
 
@@ -122,17 +125,7 @@ export class ThoughtElement {
       }
       this.equivalentStyles = this.equivalentStyles.sort();
 
-
-      // we will first remove the existing preamble elment...
-      const element = document.getElementById("relationship"+this.style.id);
-      if (element != null) {
-        // @ts-ignore
-        element.parentNode.removeChild(element);
-      }
-
-      const preamble = `<p id=${"relationship"+this.style.id}> = { (${this.equivalentStyles}) (From Mathematica CAS) } </p>`;
-      // This is a code duplication; it would be better if this
-      // were done functionally, so it could be in one place.
+      const preamble = this.constructEquivalencePreamble();
       $formulaElt!.innerHTML = preamble + `<tt>${escapeHtml(this.style.data)}</tt>`;
     }
   }
