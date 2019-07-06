@@ -76,16 +76,17 @@
 
     $canvas.addEventListener('pointercancel', function(event){
       // REVIEW: do we need to releasePointerCapture(event.pointerId)?
-      console.log('pointer cancel');
+      console.log(`${event.pointerType} ${event.pointerId} cancel`);
       if (isStroking(strokes, event)) { abortStroke(strokes, event); }
     });
 
     $canvas.addEventListener('pointerdown', function(event){
+      console.log(`${event.pointerType} ${event.pointerId} down`);
+      // console.dir(event);
       if (isStroking(strokes, event)) {
         console.error(`Down event without prior up event for pointer ${event.pointerId}.`);
         abortStroke(strokes, event);
       }
-      console.dir(event);
       this.setPointerCapture(event.pointerId);
       const clientRect = this.getBoundingClientRect();
       startStroke(clientRect, strokes, event);
@@ -96,6 +97,7 @@
         console.log(`Ignoring up event for pointer ${event.pointerId}.`);
         return;
       }
+      console.log(`${event.pointerType} ${event.pointerId} up`);
       this.releasePointerCapture(event.pointerId);
       const clientRect = this.getBoundingClientRect();
       endStroke(clientRect, strokes, event);
