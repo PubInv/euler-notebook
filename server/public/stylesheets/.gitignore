@@ -1,4 +1,5 @@
 *.css
 !katex*.css
+!myscript-4.3.0.min.css
 !.gitignore
 
