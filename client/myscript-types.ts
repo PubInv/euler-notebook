@@ -38,6 +38,7 @@ export interface Editor {
   clear(): void;
   convert(): void;
   redo(): void;
+  resize(): void;
   undo(): void;
 }
 

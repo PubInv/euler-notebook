@@ -62,24 +62,21 @@ block content
     button#clearButton(disabled=true) Cl
     button#convertButton(disabled=true) Co
   +menuBar
-  #input
+
+  .thought
     .handle
     .status
-    #inputCol
-      #previewArea
-        #previewText(style='display:none')
-        #previewMath(style='display:none')
-        #previewKeyboard(style='display:none')
-        #previewControls
-          button#insertButton(disabled=true) I
-      #inputArea('data-applicationkey'=credentials.myscript.applicationKey, 'data-hmackey'=credentials.myscript.hmacKey)
-        #inputText(style='display:none')
-        #inputMath(style='display:none')
-        #inputKeyboard(style='display:none')
-          select()
-            option(value='LATEX') LaTeX
-            option(value='MATHJS', selected=true) MathJS
-            option(value='MATHML') MathML
-            option(value='TEXT') Text
-            option(value='WOLFRAM') Wolfram
-          input(type='text', placeholder="e.g. r = x^2 + y^2" size=60)
+    #preview.formula
+    button#insertButton(disabled=true) I
+
+  #inputArea('data-applicationkey'=credentials.myscript.applicationKey, 'data-hmackey'=credentials.myscript.hmacKey)
+    #inputText(style='display:none')
+    #inputMath(style='display:none')
+    #inputKeyboard(style='display:none')
+      select()
+        option(value='LATEX') LaTeX
+        option(value='MATHJS', selected=true) MathJS
+        option(value='MATHML') MathML
+        option(value='TEXT') Text
+        option(value='WOLFRAM') Wolfram
+      input(type='text', placeholder="e.g. r = x^2 + y^2" size=60)

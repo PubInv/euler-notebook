@@ -77,13 +77,9 @@ function onDebugWindowClicked(event: MouseEvent) {
 async function onDomReady(_event: Event){
   try {
 
-    // Menu
+    window.addEventListener('resize', onResize);
     $('#debugMenu').addEventListener<'click'>('click', onDebugMenuClicked);
-
-    // Preview area
     $('#insertButton').addEventListener<'click'>('click', onInsertButtonClicked);
-
-    // Input area
     $('#inputMathButton').addEventListener<'click'>('click', _event=>switchInput('Math'));
     $('#inputKeyboardButton').addEventListener<'click'>('click', _event=>switchInput('Keyboard'));
     $('#inputTextButton').addEventListener<'click'>('click', _event=>switchInput('Text'));
@@ -97,8 +93,6 @@ async function onDomReady(_event: Event){
     $('#redoButton').addEventListener<'click'>('click', _event=>gEditor && gEditor.redo());
     $('#clearButton').addEventListener<'click'>('click', _event=>gEditor && gEditor.clear());
     $('#convertButton').addEventListener<'click'>('click', _event=>gEditor && gEditor.convert());
-
-    // Debug window
     $('#debugWindow').addEventListener<'click'>('click', onDebugWindowClicked);
 
     switchInput(INITIAL_INPUT_METHOD);
@@ -165,7 +159,7 @@ function onInsertButtonClicked(_event: Event) {
       const text = $inputField.value;
       const styleProps: StylePropertiesWithSubprops = { type: styleType, data: text, meaning: 'INPUT' };
       gNotebook.insertStyle(styleProps);
-      $inputField.value = $('#previewKeyboard').innerText = '';
+      $inputField.value = $('#preview').innerText = '';
       break;
     }
     case 'Text': {
@@ -198,7 +192,7 @@ function onKeyboardInputInput(this: HTMLElement, _event: Event): void {
     const $field: HTMLInputElement = this /* TYPESCRIPT: */ as HTMLInputElement;
     const text: string = $field.value;
     const isValid = (text.length>0); // LATER: Validate expression.
-    $('#previewKeyboard').innerText = text;
+    $('#preview').innerText = text;
     $<HTMLButtonElement>('#insertButton').disabled = !isValid;
   } catch(err) {
     showErrorMessage("Error on keyboard-input input event.", err);
@@ -218,10 +212,10 @@ function onMathExported(event: EditorExportedEvent) {
     if (event.detail.exports) {
       const latex = cleanLatex(event.detail.exports['application/x-latex']);
       // TODO: Catch and report katex errors
-      getKatex().render(latex, $('#previewMath'), { throwOnError: false });
+      getKatex().render(latex, $('#preview'), { throwOnError: false });
       $<HTMLButtonElement>('#insertButton').disabled = false;
     } else {
-      $<HTMLButtonElement>('#previewMath').innerText = '';
+      $<HTMLButtonElement>('#preview').innerText = '';
       $<HTMLButtonElement>('#insertButton').disabled = true;
     }
   } catch(err) {
@@ -229,13 +223,27 @@ function onMathExported(event: EditorExportedEvent) {
   }
 }
 
+function onResize(_event: UIEvent) {
+  switch(gInputMethod) {
+    case 'Math':
+     $<EditorElement>('#inputMath').editor.resize();
+      break;
+    case 'Text':
+      $<EditorElement>('#inputText').editor.resize();
+      break;
+    default:
+      // Nothing to do.
+      break;
+  }
+}
+
 function onTextExported(event: EditorExportedEvent) {
   try {
     if (event.detail.exports) {
-      $('#previewText').innerText = event.detail.exports['text/plain'];
+      $('#preview').innerText = event.detail.exports['text/plain'];
       $<HTMLButtonElement>('#insertButton').disabled = false;
     } else {
-      $('#previewText').innerText = '';
+      $('#preview').innerText = '';
       $<HTMLButtonElement>('#insertButton').disabled = true;
     }
   } catch(err) {
@@ -327,14 +335,12 @@ function switchInput(method: InputMethod): void {
     // Disable the current input method
     if (gInputMethod) {
       $(`#input${gInputMethod}`).style.display = 'none';
-      $(`#preview${gInputMethod}`).style.display = 'none';
       $<HTMLButtonElement>(`#input${gInputMethod}Button`).disabled = false;
     }
 
     // Enable the new input method
     gInputMethod = method;
     $(`#input${gInputMethod}`).style.display = 'block';
-    $(`#preview${gInputMethod}`).style.display = 'block';
     $<HTMLButtonElement>(`#input${gInputMethod}Button`).disabled = true;
 
     switch(gInputMethod) {
@@ -347,6 +353,10 @@ function switchInput(method: InputMethod): void {
     default:
       gEditor = undefined;
     }
+
+    // In case the window has resized while the editor was hidden:
+    if (gEditor) { gEditor.resize(); }
+
   } catch(err) {
     showErrorMessage("Error switching input method.", err);
   }

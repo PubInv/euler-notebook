@@ -48,13 +48,11 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #inputArea
   border 1px solid #cccccc
 
-#inputCol
-  flex-grow 1
-
 #inputMath
 #inputText
   height 1in
   pen-action none
+  touch-action none
 
 #leftDock
   background-color #c0c0c0
@@ -64,6 +62,9 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
   position fixed
   top 20%
 
+  button
+    width 50pt
+    height 50pt
 #menu
   align-items center
   background-color #cccccc
@@ -80,17 +81,6 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
     font inherit
     padding 0!important
     text-decoration underline
-
-#previewArea
-  border 1px solid #cccccc
-  display flex
-  flex-direction row
-
-#previewMath
-#previewKeyboard
-#previewText
-  flex 1
-  height 2em
 
 // Element classes
 
@@ -118,7 +108,6 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
   text-align left
   width 36px
 
-#input
 .thought
   align-items center
   display flex
