@@ -141,7 +141,7 @@ function onInsertButtonClicked(_event: Event) {
       const edExports = editor.exports;
       if (!edExports) { throw new Error("MyScript math editor has no exports."); }
       const jiix: Jiix = edExports['application/vnd.myscript.jiix'];
-      const latex: LatexData = edExports['application/x-latex'];
+      const latex: LatexData = cleanLatex(edExports['application/x-latex']);
       const mathMl: MathMlData = edExports['application/mathml+xml'];
       if (!jiix || !latex || !mathMl) { throw new Error("Missing export from MyScript math editor."); }
       console.dir(mathMl);
@@ -216,7 +216,7 @@ function onKeyboardInputKeyup(this: HTMLElement, event: KeyboardEvent): void {
 function onMathExported(event: EditorExportedEvent) {
   try {
     if (event.detail.exports) {
-      const latex = event.detail.exports['application/x-latex'];
+      const latex = cleanLatex(event.detail.exports['application/x-latex']);
       // TODO: Catch and report katex errors
       getKatex().render(latex, $('#previewMath'), { throwOnError: false });
       $<HTMLButtonElement>('#insertButton').disabled = false;
@@ -244,6 +244,32 @@ function onTextExported(event: EditorExportedEvent) {
 }
 
 // Helper Functions
+
+// This function comes from MyScript sample code.
+// Apparently, the LaTeX exported from MyScript needs to be modified before
+// passing it to KaTeX.
+// https://github.com/MyScript/MyScriptJS/blob/master/examples/v4/websocket_math_iink.html.
+// REVIEW: Which is more correct? MyScript's version or KaTeX's version?
+//         Currently we are storing KaTeX's version. Alternatively, we could
+//         store MyScript's version, and convert just before passing to KaTeX.
+function cleanLatex(latex: LatexData): LatexData {
+  if (latex.includes('\\\\')) {
+    const steps = '\\begin{align*}' + latex + '\\end{align*}';
+    return steps.replace("\\overrightarrow", "\\vec")
+    .replace("\\begin{aligned}", "")
+    .replace("\\end{aligned}", "")
+    .replace("\\llbracket", "\\lbracket")
+    .replace("\\rrbracket", "\\rbracket")
+    .replace("\\widehat", "\\hat")
+    .replace(new RegExp("(align.{1})", "g"), "aligned");
+  }
+  return latex
+  .replace("\\overrightarrow", "\\vec")
+  .replace("\\llbracket", "\\lbracket")
+  .replace("\\rrbracket", "\\rbracket")
+  .replace("\\widehat", "\\hat")
+  .replace(new RegExp("(align.{1})", "g"), "aligned");
+}
 
 function getMyScriptConfig(editorType: EditorType): Configuration {
   return {
@@ -273,7 +299,7 @@ function getMyScriptKeys(): ServerKeys {
   const applicationKey = inputAreaElt.dataset.applicationkey;
   const hmacKey = inputAreaElt.dataset.hmackey;
   if (!applicationKey || !hmacKey) { throw new Error(); }
-  return { applicationKey, hmacKey }
+  return { applicationKey, hmacKey };
 }
 
 function initializeEditor($elt: EditorElement, editorType: EditorType) {
