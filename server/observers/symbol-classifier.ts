@@ -103,47 +103,84 @@ export class SymbolClassifierObserver implements ObserverInstance {
       const name_matches = name_matcher.exec(result);
       const value_matcher = /,\s+(.+)\]\]/g;
       const value_matches = value_matcher.exec(result);
+      debug(`name_matches ${name_matches}`);
+      debug(`value_matches ${value_matches}`);
       if (name_matches && value_matches) {
         // We have a symbol definition.
         const name = name_matches[1];
-        const value = value_matches[1];
-        // Add the symbol-definition style
-        const relationsTo: RelationshipPropertiesMap = {};
-        // Add any symbol-dependency relationships as a result of the new symbol-def style
-        for (const otherStyle of this.notebook.allStyles()) {
-          if (otherStyle.type == 'SYMBOL' &&
-              otherStyle.meaning == 'SYMBOL-USE' &&
-              otherStyle.data.name == name) {
-            relationsTo[otherStyle.id] = { meaning: 'SYMBOL-DEPENDENCY' };
-            debug(`Inserting relationship`);
+        // here we wat to check that this is a symbolic name, and a solitary one.
+
+        debug(`name ${name}`);
+
+          const value = value_matches[1];
+          // Add the symbol-definition style
+          const relationsTo: RelationshipPropertiesMap = {};
+          // Add any symbol-dependency relationships as a result of the new symbol-def style
+          for (const otherStyle of this.notebook.allStyles()) {
+            if (otherStyle.type == 'SYMBOL' &&
+                otherStyle.meaning == 'SYMBOL-USE' &&
+                otherStyle.data.name == name) {
+              relationsTo[otherStyle.id] = { meaning: 'SYMBOL-DEPENDENCY' };
+              debug(`Inserting relationship`);
+            }
           }
-        }
-        const data = { name, value };
-        const styleProps: StylePropertiesWithSubprops = {
-          type: 'SYMBOL',
-          data,
-          meaning: 'SYMBOL-DEFINITION',
-          relationsTo,
+
+
+        var styleProps: StylePropertiesWithSubprops;
+        if (name.match(/^[a-z]+$/i)) {
+          const data = { name, value };
+          styleProps = {
+            type: 'SYMBOL',
+            data,
+            meaning: 'SYMBOL-DEFINITION',
+            relationsTo,
+          }
+        } else {
+          // treat this as an equation
+          debug('defining equation');
+          // In math, "lval" and "rval" are conventions, without
+          // the force of meaning they have in programming langues.
+          const leq = name_matches[1];
+          const req = value_matches[1];
+          debug(`leq,req ${leq} ${req}`);
+          const data = { leq, req };
+          styleProps = {
+            type: 'EQUATION',
+            data,
+            meaning: 'EQUATION-DEFINITION',
+            relationsTo,
+          }
+          // In this case, we need to treat lval and rvals as expressions which may produce their own uses....
+          await this.addSymbolUseStylesFromString(leq, style, rval);
+          await this.addSymbolUseStylesFromString(req, style, rval);
         }
         const changeReq: StyleInsertRequest = { type: 'insertStyle', parentId: style.id, styleProps };
         rval.push(changeReq);
 
         debug(`Inserting def style.`);
-
       }
     }
   }
 
-  private async  addSymbolUseStyles(style: StyleObject, rval: NotebookChangeRequest[]): Promise<void> {
-    const script = `runPrivate[Variables[${style.data}]]`;
+  private async  findSymbols(math: string): Promise<string[]> {
+    const script = `runPrivate[Variables[` + math + `]]`;
     const oresult = await execute(script);
-    if (!oresult) { return; }
+    if (!oresult) { return []; }
     debug("BEFORE: "+oresult);
     const result = draftChangeContextName(oresult);
     debug("CONTEXT REMOVED: "+result);
 
     // TODO: validate return value is in expected format with regex.
     const symbols = result.slice(1,-1).split(', ').filter( s => !!s)
+    debug(`symbols ${symbols}`);
+    return symbols;
+  }
+
+  private async  addSymbolUseStyles(style: StyleObject, rval: NotebookChangeRequest[]): Promise<void> {
+    await this.addSymbolUseStylesFromString(style.data, style, rval);
+  }
+  private async  addSymbolUseStylesFromString(data: string,style: StyleObject, rval: NotebookChangeRequest[]): Promise<void> {
+    const symbols = await this.findSymbols(data);
     symbols.forEach(s => {
 
       // Add the symbol-use style
@@ -187,5 +224,3 @@ async function execute(script: WolframData): Promise<WolframData|undefined> {
   debug(`Wolfram '${script}' returned '${result}'`);
   return result;
 }
-
-
