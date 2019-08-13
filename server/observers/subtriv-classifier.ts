@@ -69,7 +69,7 @@ export class SubtrivClassifierObserver implements ObserverInstance {
     const evaluationStyle = this.notebook.getStyleById(toolStyle.parentId);
 
     // The WOLFRAM/EVALUATION style will have a CLASSIFICATION/SUBTRIVARIATE child.
-    const classificationStyle = this.notebook.findChildStylesOfType(evaluationStyle.id, 'CLASSIFICATION', 'SUBTRIVARIATE')[0];
+  const classificationStyle = this.notebook.findChildStylesOfType(evaluationStyle.id, 'CLASSIFICATION', 'SUBTRIVARIATE')[0];
     if (!classificationStyle) { throw new Error(`Classification style not found.`); }
 
     const targetPath = "./public/tmp";
@@ -82,31 +82,19 @@ export class SubtrivClassifierObserver implements ObserverInstance {
     // We are only plottable if we make the normal substitutions...
     const rs = this.notebook.getSymbolStylesIDependOn(evaluationStyle);
     debug("RS",rs);
-    debug("STYLE DATA",classificationStyle.data);
     let createdPlotSuccessfully: boolean = false;
+
     try {
-      // Now style.data contains the variables in the expression "parent.data",
-      // but the rs map may have allowed some to be defined, and these must
-      // be removed.
       let variables: string[] = [];
       for(var s in classificationStyle.data) {
         variables.push(classificationStyle.data[s]);
       }
 
-      debug("variables, pre-process",variables);
-      const sub_expr =
-            constructSubstitution(evaluationStyle.data,
-                                  rs.map(
-                                    s => {
-                                      variables = variables.filter(ele => (
-                                        ele != s.data.name));
-                                      return { name: s.data.name,
-                                               value: s.data.value};
-                                    }
-                                  ));
-      debug("variables, post-process",variables);
-
-      createdPlotSuccessfully = await plotSubtrivariate(sub_expr,variables,fullFilename);
+      const [rvars,sub_expr] = this.notebook.substitutionExpression(
+        evaluationStyle.data,
+        variables,
+        toolStyle);
+      createdPlotSuccessfully = await plotSubtrivariate(sub_expr,rvars,fullFilename);
       debug("PLOTTER SUCCESS SAYS:",createdPlotSuccessfully);
     } catch (e) {
       debug("MATHEMATICA QUAD PLOT FAILED :",e);

@@ -73,17 +73,40 @@ export class SymbolClassifierObserver implements ObserverInstance {
 
     const usedSymbols = this.notebook.getSymbolStylesIDependOn(parent);
 
+    // We need to compute the variables from the two halves of the
+    // equation, then filter on uses if we have them.
+    let variables: string[] = [];
+    const lhsScript = `InputForm[Variables[${equationStyle.data.lhs}]]`;
+    const rhsScript = `InputForm[Variables[${equationStyle.data.rhs}]]`;
+    let lhsvarstr = await execute(lhsScript);
+    let rhsvarstr = await execute(rhsScript);
+
+    let lhsvs = (lhsvarstr) ? lhsvarstr.replace(/\{|\}/g,"").split(",") : [];
+    lhsvs = lhsvs.map(s => s.trim());
+
+    let rhsvs = (rhsvarstr) ? rhsvarstr.replace(/\{|\}/g,"").split(",") : [];
+    rhsvs = rhsvs.map(s => s.trim());
+    variables = [...lhsvs,...rhsvs];
+    variables = variables.filter( ele => (ele.length > 0));
+
+
+    const [rvars,sub_expr] = this.notebook.substitutionExpression(
+      `${equationStyle.data.lhs} == ${equationStyle.data.rhs}`,
+      variables,
+      toolStyle);
+    // We actually need to know which variables still remain!
+    // So I need to put that back!
+
     debug(`usedSymbls ${usedSymbols}`);
+    debug(`sub_expr ${sub_expr}, ${variables}`);
 
     const symbolUses = this.notebook.findChildStylesOfType(parent.id,'SYMBOL','SYMBOL-USE');
 
     debug(`symbolUses ${symbolUses}`);
 
     const newsolutions : NotebookChangeRequest[] = [];
-    for (const val of symbolUses) {
-      debug(`values ${val.data.name}`);
-      const varname = val.data.name;
-      const script = `Solve[${equationStyle.data.lhs} == ${equationStyle.data.rhs},${varname}]`;
+    for (const varname of rvars) {
+      const script = `InputForm[Solve[${sub_expr},${varname}]]`;
       let result = await execute(script);
       var styleProps: StylePropertiesWithSubprops;
       styleProps = {
@@ -95,6 +118,7 @@ export class SymbolClassifierObserver implements ObserverInstance {
       }
       const changeReq: StyleInsertRequest = {
         type: 'insertStyle',
+        parentId: parent.id,
         styleProps,
       };
       newsolutions.push(changeReq);

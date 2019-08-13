@@ -26,7 +26,7 @@ const debug = debug1(`server:${MODULE}`);
 import { Notebook, NotebookChange, StyleObject, StyleSource, StyleId, NotebookObject, RelationshipObject, RelationshipId, RelationshipProperties } from '../client/notebook';
 import { NotebookChangeRequest, StylePropertiesWithSubprops } from '../client/math-tablet-api';
 import { readNotebookFile, AbsDirectoryPath, absDirPathFromNotebookPath, writeNotebookFile, NotebookPath } from './files-and-folders';
-
+import { constructSubstitution } from './observers/wolframscript';
 // Types
 
 export interface ObserverInstance {
@@ -99,6 +99,33 @@ export class ServerNotebook extends Notebook {
   public static registerObserver(source: StyleSource, observerClass: ObserverClass): void {
     debug(`Registering observer: ${source}`);
     this.observerClasses.set(source, observerClass);
+  }
+  // I think "variables" should be a parameter...
+  // That parameter will be different when used by
+  // SUBTRIVARIATE, and when used by EQUATION
+  public substitutionExpression(text: string,variables : string[],toolStyle: StyleObject) : [string[],string] {
+
+      // The parent of the TOOL/ATTRIBUTE style will be a WOLFRAM/EVALUATION style
+    const evaluationStyle = this.getStyleById(toolStyle.parentId);
+
+    // We are only plottable if we make the normal substitutions...
+    const rs = this.getSymbolStylesIDependOn(evaluationStyle);
+    debug("RS",rs);
+
+    var cvariables  = [...variables];
+
+    const namevalues = rs.map(
+                              s => {
+                                cvariables = cvariables.filter(ele => (
+                                  ele != s.data.name));
+                                return { name: s.data.name,
+                                         value: s.data.value};
+                              });
+
+    const sub_expr =
+      constructSubstitution(text,
+                            namevalues);
+    return [cvariables,sub_expr];
   }
 
   // Instance Properties

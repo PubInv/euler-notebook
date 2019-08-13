@@ -88,7 +88,10 @@ export class ThoughtElement {
         if (style.type == 'LATEX') { this.renderLatexFormula(style.data); }
         else if (style.type == 'TEXT') { this.renderText(style.data); }
         break;
-      case 'PLOT': this.renderPlot(style); break;
+      case 'PLOT': this.renderPlot(style);
+        break;
+      case 'EQUATION-SOLUTION': this.renderSolution(style);
+        break;
       default:
     }
   }
@@ -228,6 +231,14 @@ export class ThoughtElement {
     const $formulaElt = this.$elt.querySelector('.formula');
     $formulaElt!.innerHTML = `<image src="${url}"/>`
   }
+
+  private renderSolution(style: StyleObject): void {
+    const $formulaElt = this.$elt.querySelector('.formula');
+    const current = $formulaElt!.innerHTML;
+    console.log("current",current);
+    $formulaElt!.innerHTML = current + '<br>' + '<font size="1">'+style.data + "</font>";
+  }
+
 
   private renderText(text: string): void {
     const $formulaElt = this.$elt.querySelector('.formula');
