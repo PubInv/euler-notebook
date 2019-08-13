@@ -4,7 +4,7 @@ Copyright (C) 2019 Public Invention
 https://pubinv.github.io/PubInv/
 
 This program is free software: you can redistribute it and/or modify
-it under the terms of the GNU Affero General Public License as published by
+oit under the terms of the GNU Affero General Public License as published by
 the Free Software Foundation, either version 3 of the License, or
 (at your option) any later version.
 
@@ -228,63 +228,66 @@ export class SubtrivClassifierObserver implements ObserverInstance {
     // this ancestor thought...
 
     const candidate_styles =
-          this.notebook.findChildStylesOfType(target_ancestor.id, 'WOLFRAM','EVALUATION');
+      this.notebook.findChildStylesOfType(target_ancestor.id, 'WOLFRAM','EVALUATION');
     debug("candidate styles",candidate_styles);
     // Not really sure what to do here if there is more than one!!!
+    // TODO: This can also be empty!!! The code below needs
+    // to respect this.
+    if (candidate_styles.length >= 1) {
 
-    const beforeChangeClassifiedAsSubTrivariate = this.notebook.styleHasChildOfType(candidate_styles[0],'CLASSIFICATION','SUBTRIVARIATE');
-    debug(beforeChangeClassifiedAsSubTrivariate);
+      const beforeChangeClassifiedAsSubTrivariate = this.notebook.styleHasChildOfType(candidate_styles[0],'CLASSIFICATION','SUBTRIVARIATE');
+      debug(beforeChangeClassifiedAsSubTrivariate);
 
-    // Now it is possible that any classifications need to be removed;
-    // it is also possible that that a new classification should be added.
+      // Now it is possible that any classifications need to be removed;
+      // it is also possible that that a new classification should be added.
 
-    // A simple thing would be to rmove all classifications and regenerate.
-    // However, we want to be as minimal as possible. I think we shold distinguish
-    // the case: Either we are adding a UNIVARIATE-QUADRATIC, or disqalifying one.
-    // So we should just check if this EVALAUTION is plottable. If so, we
-    // should make sure one exists, by adding a CLASSIFICATION if it does not.
-    // if one does exist, we whold remove it if we are not.
-    const unique_style = candidate_styles[0];
+      // A simple thing would be to rmove all classifications and regenerate.
+      // However, we want to be as minimal as possible. I think we shold distinguish
+      // the case: Either we are adding a UNIVARIATE-QUADRATIC, or disqalifying one.
+      // So we should just check if this EVALAUTION is plottable. If so, we
+      // should make sure one exists, by adding a CLASSIFICATION if it does not.
+      // if one does exist, we whold remove it if we are not.
+      const unique_style = candidate_styles[0];
 
-    var isSubTrivariate;
-    try {
-      // here I attempt to find the dependency relationships....
-      const rs = this.notebook.getSymbolStylesIDependOn(unique_style);
-      debug("RS ",rs);
-      // Now each member of rs should have a name and a value
-      // that we should use in our quadratic classification....
-      isSubTrivariate = await isExpressionSubTrivariate(unique_style.data,rs);
-      debug("SUBTRI CLASSIFER SAYS:",isSubTrivariate);
-    } catch (e) {
-      debug("MATHEMATICA EVALUATION FAILED :",e);
-    }
-    debug("IS PLOTTABLE",isSubTrivariate);
-    debug("IS BEFOREQUDRATIC",beforeChangeClassifiedAsSubTrivariate);
-    if (isSubTrivariate && !beforeChangeClassifiedAsSubTrivariate) {
-      const styleProps: StylePropertiesWithSubprops = {
-        type: 'CLASSIFICATION',
-        data: isSubTrivariate,
-        meaning: 'SUBTRIVARIATE',
+      var isSubTrivariate;
+      try {
+        // here I attempt to find the dependency relationships....
+        const rs = this.notebook.getSymbolStylesIDependOn(unique_style);
+        debug("RS ",rs);
+        // Now each member of rs should have a name and a value
+        // that we should use in our quadratic classification....
+        isSubTrivariate = await isExpressionSubTrivariate(unique_style.data,rs);
+        debug("SUBTRI CLASSIFER SAYS:",isSubTrivariate);
+      } catch (e) {
+        debug("MATHEMATICA EVALUATION FAILED :",e);
       }
-      const changeReq: StyleInsertRequest = {
-        type: 'insertStyle',
-        parentId: unique_style.id,
-        styleProps,
-      };
-      rval.push(changeReq);
-    }
-    if (!isSubTrivariate && beforeChangeClassifiedAsSubTrivariate) {
-      debug("CHOOSING DELETION");
-      const classifications =
-        this.notebook.findChildStylesOfType(target_ancestor.id,'CLASSIFICATION','SUBTRIVARIATE');
-      const changeReq: StyleDeleteRequest = {
-        type: 'deleteStyle',
-        styleId: classifications[0].id
-      };
-      rval.push(changeReq);
+      debug("IS PLOTTABLE",isSubTrivariate);
+      debug("IS BEFOREQUDRATIC",beforeChangeClassifiedAsSubTrivariate);
+      if (isSubTrivariate && !beforeChangeClassifiedAsSubTrivariate) {
+        const styleProps: StylePropertiesWithSubprops = {
+          type: 'CLASSIFICATION',
+          data: isSubTrivariate,
+          meaning: 'SUBTRIVARIATE',
+        }
+        const changeReq: StyleInsertRequest = {
+          type: 'insertStyle',
+          parentId: unique_style.id,
+          styleProps,
+        };
+        rval.push(changeReq);
+      }
+      if (!isSubTrivariate && beforeChangeClassifiedAsSubTrivariate) {
+        debug("CHOOSING DELETION");
+        const classifications =
+          this.notebook.findChildStylesOfType(target_ancestor.id,'CLASSIFICATION','SUBTRIVARIATE');
+        const changeReq: StyleDeleteRequest = {
+          type: 'deleteStyle',
+          styleId: classifications[0].id
+        };
+        rval.push(changeReq);
+      }
     }
   }
-
 }
 
 // Private Functions

@@ -24,7 +24,7 @@ const MODULE = __filename.split(/[/\\]/).slice(-1)[0].slice(0,-3);
 const debug = debug1(`server:${MODULE}`);
 
 import { NotebookChange, StyleObject } from '../../client/notebook';
-import { SymbolData, WolframData, NotebookChangeRequest, StyleInsertRequest, StylePropertiesWithSubprops, RelationshipPropertiesMap } from '../../client/math-tablet-api';
+import { ToolInfo, SymbolData, WolframData, NotebookChangeRequest, StyleInsertRequest, StylePropertiesWithSubprops, RelationshipPropertiesMap } from '../../client/math-tablet-api';
 import { ServerNotebook, ObserverInstance } from '../server-notebook';
 import { execute as executeWolframscript, draftChangeContextName } from './wolframscript';
 import { Config } from '../config';
@@ -59,9 +59,48 @@ export class SymbolClassifierObserver implements ObserverInstance {
     delete this.notebook;
   }
 
-  public async useTool(style: StyleObject): Promise<NotebookChangeRequest[]> {
-    debug(`useTool ${this.notebook._path} ${style.id}`);
-    return [];
+  public async useTool(toolStyle: StyleObject): Promise<NotebookChangeRequest[]> {
+    debug(`useTool ${this.notebook._path} ${toolStyle.id}`);
+    const parent = this.notebook.getStyleById(toolStyle.parentId);
+    debug(`parent ${parent}`);
+
+    // We're looking for the EQUATION style...
+    const equationStyle = this.notebook.findChildStylesOfType(parent.id, 'EQUATION', 'EQUATION-DEFINITION')[0];
+
+    if (!equationStyle) { throw new Error(`EQUATION style not found.`); }
+
+    debug(`equation ${equationStyle.data.lhs} ${equationStyle.data.rhs}`);
+
+    const usedSymbols = this.notebook.getSymbolStylesIDependOn(parent);
+
+    debug(`usedSymbls ${usedSymbols}`);
+
+    const symbolUses = this.notebook.findChildStylesOfType(parent.id,'SYMBOL','SYMBOL-USE');
+
+    debug(`symbolUses ${symbolUses}`);
+
+    const newsolutions : NotebookChangeRequest[] = [];
+    for (const val of symbolUses) {
+      debug(`values ${val.data.name}`);
+      const varname = val.data.name;
+      const script = `Solve[${equationStyle.data.lhs} == ${equationStyle.data.rhs},${varname}]`;
+      let result = await execute(script);
+      var styleProps: StylePropertiesWithSubprops;
+      styleProps = {
+        type: 'SOLUTION',
+        // This is a Wolfram-specific string, we probably don't want to do this...but it
+        // will be acceptable for debugging
+        data: result,
+        meaning: 'EQUATION-SOLUTION'
+      }
+      const changeReq: StyleInsertRequest = {
+        type: 'insertStyle',
+        styleProps,
+      };
+      newsolutions.push(changeReq);
+    }
+
+    return newsolutions;
   }
 
   // --- PRIVATE ---
@@ -140,10 +179,10 @@ export class SymbolClassifierObserver implements ObserverInstance {
           debug('defining equation');
           // In math, "lval" and "rval" are conventions, without
           // the force of meaning they have in programming langues.
-          const leq = name_matches[1];
-          const req = value_matches[1];
-          debug(`leq,req ${leq} ${req}`);
-          const data = { leq, req };
+          const lhs = name_matches[1];
+          const rhs = value_matches[1];
+          debug(`lhs,rhs ${lhs} ${rhs}`);
+          const data = { lhs, rhs };
           styleProps = {
             type: 'EQUATION',
             data,
@@ -151,8 +190,22 @@ export class SymbolClassifierObserver implements ObserverInstance {
             relationsTo,
           }
           // In this case, we need to treat lval and rvals as expressions which may produce their own uses....
-          await this.addSymbolUseStylesFromString(leq, style, rval);
-          await this.addSymbolUseStylesFromString(req, style, rval);
+          await this.addSymbolUseStylesFromString(lhs, style, rval);
+          await this.addSymbolUseStylesFromString(rhs, style, rval);
+          // Now let's try to add a tool tip to solve:
+
+          const toolInfo: ToolInfo = { name: 'solve', html: "Solve Equation (draft)" };
+          const styleProps2: StylePropertiesWithSubprops = {
+            type: 'TOOL',
+            meaning: 'ATTRIBUTE',
+            data: toolInfo,
+          }
+          const changeReq2: StyleInsertRequest = {
+            type: 'insertStyle',
+            parentId: style.id,
+            styleProps: styleProps2
+          };
+          rval.push(changeReq2);
         }
         const changeReq: StyleInsertRequest = { type: 'insertStyle', parentId: style.id, styleProps };
         rval.push(changeReq);

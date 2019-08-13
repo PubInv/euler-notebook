@@ -92,10 +92,11 @@ export type StyleMeaning =
   'SIMPLIFICATION' |  // CAS simplification of expression or equation.
   'PLOT' |            // Plot of a formula
   'EQUATION' |        // An equation
+  'EQUATION-SOLUTION' |        // An equation
   'EQUATION-DEFINITION' | // A simple equality relation defined
   'SYMBOL' |          // Symbols extracted from an expression.
   'SYMBOL-DEFINITION'|// Definition of a symbol.
-  'SYMBOL-USE' |      // Use of a symbol.
+'SYMBOL-USE' |      // Use of a symbol.
   'EQUIVALENT-CHECKS'|// Checking expression equivalence of with other styles
   'UNIVARIATE-QUADRATIC'|// A quadratic expression, presumably worth plotting.
   'SUBTRIVARIATE';    // An expression in one or two variables presumable plottable.
@@ -122,6 +123,7 @@ export type StyleType =
   'MATHML' |          // MathMlData: MathML Presentation XML
   'STROKE' |          // StrokeGroups: MyScript strokeGroups export from 'TEXT' editor.
   'SYMBOL' |          // SymbolData: symbol in a definition or expression.
+  'SOLUTION' |      // The result of a "solve" operation
   'EQUATION' |        // An equation (ambiguously assertion or relation)
   'TEXT' |            // TextData: Plain text
   'TOOL' |            // ToolInfo: Tool that can be applied to the parent style.
