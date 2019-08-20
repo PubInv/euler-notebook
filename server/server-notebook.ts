@@ -295,7 +295,9 @@ export class ServerNotebook extends Notebook {
       changes.push(this.deleteRelationshipChange(relationship.id));
     }
     const style = this.getStyleById(id);
-    changes.push({ type: 'styleDeleted', style });
+    if (style) {
+      changes.push({ type: 'styleDeleted', style });
+    }
     return changes;
   }
 

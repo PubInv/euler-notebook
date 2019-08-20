@@ -22,7 +22,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 import { $new, escapeHtml, Html } from './dom.js';
 import { getKatex } from './katex-types.js';
 import { StyleObject, StyleId, RelationshipObject } from './notebook.js';
-import { LatexData, ToolInfo } from './math-tablet-api.js';
+import { LatexData, ToolInfo, NameValuePair } from './math-tablet-api.js';
 import { HtmlNotebook } from './html-notebook.js';
 
 // Exported Class
@@ -66,6 +66,15 @@ export class ThoughtElement {
   // REVIEW: This is very fragile in the ordering of style insertions.
   //         For example, if LaTeX input-alt comes in after error, the error message
   //         will be obliterated.
+  // In fact I don't belive dealing with this on a per-style input basis
+  // is a bad idea; a thought should be rendered based on being able to
+  // render the entirety of the styles in the thought. As present,
+  // These styles seem to "stomp on" each other.
+  // On the other hand each "style" may legitimately be thought of as a
+  // decoration; the problem here is that we have poor representation of
+  // what has yet been rendered.  Dealing with the HTML itself is rather
+  // awkward.  Looing at the parent of the style may work, but is
+  // awkward in a different way.
   public insertStyle(style: StyleObject): void {
     console.log(`Inserting style ${style.id} ${style.meaning} ${style.type}`);
     switch(style.meaning) {
@@ -80,11 +89,10 @@ export class ThoughtElement {
         else { throw new Error(`Unexpected data type for exposition: ${style.type}.`); }
         break;
       case 'INPUT':
+        console.log("INPUT",style.data);
         if (style.type == 'LATEX') { this.renderLatexFormula(style.data); }
         else if (style.type == 'TEXT') { this.renderText(style.data); }
         else { this.renderOtherInput(style); }
-
-
         break;
       case 'INPUT-ALT':
         if (style.type == 'LATEX') { this.renderLatexFormula(style.data); }
@@ -101,7 +109,7 @@ export class ThoughtElement {
         if (style.type == 'SYMBOL')
         {
           console.log('render',style.data);
-          this.renderDefinition(style.data); }
+          this.renderDefinition(style); }
         break;
       default:
     }
@@ -256,12 +264,19 @@ export class ThoughtElement {
     $formulaElt!.innerHTML = escapeHtml(text);
   }
 
-  private renderDefinition(nvp: any): void {
+  private renderDefinition(style: StyleObject): void {
     const $formulaElt = this.$elt.querySelector('.formula');
 
-    // NOT completely obvious this is beste rendering.
-    const render = nvp.name + " = " + nvp.value;
-    $formulaElt!.innerHTML = escapeHtml(render);
+    const nvp : NameValuePair = style.data;
+    console.log("PREVIOUS:",$formulaElt!.innerHTML);
+
+    // This is a hack; but if we are alread an input, we don't
+    // want to overwrite therei.
+    if (!$formulaElt!.innerHTML) {
+      // NOT completely obvious this is best rendering.
+      const render = nvp.name + " = " + nvp.value;
+      $formulaElt!.innerHTML = escapeHtml(render);
+    }
   }
 
   private renderTool(style: StyleObject): void {

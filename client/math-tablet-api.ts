@@ -139,3 +139,8 @@ export interface UseTool {
   notebookName: NotebookName;
   styleId: StyleId;
 }
+
+export interface NameValuePair {
+    name: string;
+    value: string;
+  }

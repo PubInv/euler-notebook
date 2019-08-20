@@ -28,7 +28,8 @@ import { NotebookChange, StyleObject,
        } from '../../client/notebook';
 import { ToolInfo, NotebookChangeRequest, StyleInsertRequest, StylePropertiesWithSubprops,
          //         StyleDeleteRequest
-         RelationshipPropertiesMap
+         RelationshipPropertiesMap,
+         NameValuePair
        } from '../../client/math-tablet-api';
 import { ServerNotebook, ObserverInstance } from '../server-notebook';
 import { execute,
@@ -40,10 +41,6 @@ import { Config } from '../config';
 // import { v4 as uuid } from 'uuid';
 
 
-  interface NameValuePair {
-    name: string;
-    value: string;
-  }
 
 export class EquationSolverObserver implements ObserverInstance {
 
@@ -90,6 +87,7 @@ export class EquationSolverObserver implements ObserverInstance {
     //   meaning: 'SYMBOL-DEFINITION',
     //   relationsTo,
     // };
+    debug("npv.value",nvp.value);
     const styleProps: StylePropertiesWithSubprops = {
       type: 'WOLFRAM',
       data: nvp.name + ' = ' + nvp.value,

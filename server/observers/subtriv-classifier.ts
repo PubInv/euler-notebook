@@ -206,10 +206,15 @@ export class SubtrivClassifierObserver implements ObserverInstance {
 
     debug("RELATIONSHIP",relationship);
 
-    const target_ancestor = this.notebook.topLevelStyleOf(relationship.toId);
-
+    var target_ancestor = null;
+    try {
+      target_ancestor = this.notebook.topLevelStyleOf(relationship.toId);
+    } catch (e) {
+      return;
+    }
     if (target_ancestor == null) {
       throw new Error("Could not find ancestor Thought: "+relationship.toId);
+      return;
     }
 
     // now we want to find any potentially (re)classifiable style on
