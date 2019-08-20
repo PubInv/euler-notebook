@@ -103,10 +103,10 @@ export class ServerNotebook extends Notebook {
   // I think "variables" should be a parameter...
   // That parameter will be different when used by
   // SUBTRIVARIATE, and when used by EQUATION
-  public substitutionExpression(text: string,variables : string[],toolStyle: StyleObject) : [string[],string] {
+  public substitutionExpression(text: string,variables : string[],style: StyleObject) : [string[],string] {
 
       // The parent of the TOOL/ATTRIBUTE style will be a WOLFRAM/EVALUATION style
-    const evaluationStyle = this.getStyleById(toolStyle.parentId);
+    const evaluationStyle = this.getStyleById(style.parentId);
 
     // We are only plottable if we make the normal substitutions...
     const rs = this.getSymbolStylesIDependOn(evaluationStyle);

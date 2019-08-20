@@ -83,6 +83,8 @@ export class ThoughtElement {
         if (style.type == 'LATEX') { this.renderLatexFormula(style.data); }
         else if (style.type == 'TEXT') { this.renderText(style.data); }
         else { this.renderOtherInput(style); }
+
+
         break;
       case 'INPUT-ALT':
         if (style.type == 'LATEX') { this.renderLatexFormula(style.data); }
@@ -91,6 +93,15 @@ export class ThoughtElement {
       case 'PLOT': this.renderPlot(style);
         break;
       case 'EQUATION-SOLUTION': this.renderSolution(style);
+        break;
+        // This is currently a "promotion" which is a form of input,
+        // so make it a high-level thought is slightly inconsistent.
+      case 'SYMBOL-DEFINITION':
+        console.log('Symbol defintion found');
+        if (style.type == 'SYMBOL')
+        {
+          console.log('render',style.data);
+          this.renderDefinition(style.data); }
         break;
       default:
     }
@@ -243,6 +254,14 @@ export class ThoughtElement {
   private renderText(text: string): void {
     const $formulaElt = this.$elt.querySelector('.formula');
     $formulaElt!.innerHTML = escapeHtml(text);
+  }
+
+  private renderDefinition(nvp: any): void {
+    const $formulaElt = this.$elt.querySelector('.formula');
+
+    // NOT completely obvious this is beste rendering.
+    const render = nvp.name + " = " + nvp.value;
+    $formulaElt!.innerHTML = escapeHtml(render);
   }
 
   private renderTool(style: StyleObject): void {

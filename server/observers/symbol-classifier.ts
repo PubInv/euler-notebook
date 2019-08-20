@@ -59,72 +59,11 @@ export class SymbolClassifierObserver implements ObserverInstance {
     delete this.notebook;
   }
 
+
+  // Note: This can be separated into an attempt to compute new solutions..
   public async useTool(toolStyle: StyleObject): Promise<NotebookChangeRequest[]> {
     debug(`useTool ${this.notebook._path} ${toolStyle.id}`);
-    const parent = this.notebook.getStyleById(toolStyle.parentId);
-    debug(`parent ${parent}`);
-
-    // We're looking for the EQUATION style...
-    const equationStyle = this.notebook.findChildStylesOfType(parent.id, 'EQUATION', 'EQUATION-DEFINITION')[0];
-
-    if (!equationStyle) { throw new Error(`EQUATION style not found.`); }
-
-    debug(`equation ${equationStyle.data.lhs} ${equationStyle.data.rhs}`);
-
-    const usedSymbols = this.notebook.getSymbolStylesIDependOn(parent);
-
-    // We need to compute the variables from the two halves of the
-    // equation, then filter on uses if we have them.
-    let variables: string[] = [];
-    const lhsScript = `InputForm[Variables[${equationStyle.data.lhs}]]`;
-    const rhsScript = `InputForm[Variables[${equationStyle.data.rhs}]]`;
-    let lhsvarstr = await execute(lhsScript);
-    let rhsvarstr = await execute(rhsScript);
-
-    let lhsvs = (lhsvarstr) ? lhsvarstr.replace(/\{|\}/g,"").split(",") : [];
-    lhsvs = lhsvs.map(s => s.trim());
-
-    let rhsvs = (rhsvarstr) ? rhsvarstr.replace(/\{|\}/g,"").split(",") : [];
-    rhsvs = rhsvs.map(s => s.trim());
-    variables = [...lhsvs,...rhsvs];
-    variables = variables.filter( ele => (ele.length > 0));
-
-
-    const [rvars,sub_expr] = this.notebook.substitutionExpression(
-      `${equationStyle.data.lhs} == ${equationStyle.data.rhs}`,
-      variables,
-      toolStyle);
-    // We actually need to know which variables still remain!
-    // So I need to put that back!
-
-    debug(`usedSymbls ${usedSymbols}`);
-    debug(`sub_expr ${sub_expr}, ${variables}`);
-
-    const symbolUses = this.notebook.findChildStylesOfType(parent.id,'SYMBOL','SYMBOL-USE');
-
-    debug(`symbolUses ${symbolUses}`);
-
-    const newsolutions : NotebookChangeRequest[] = [];
-    for (const varname of rvars) {
-      const script = `InputForm[Solve[${sub_expr},${varname}]]`;
-      let result = await execute(script);
-      var styleProps: StylePropertiesWithSubprops;
-      styleProps = {
-        type: 'SOLUTION',
-        // This is a Wolfram-specific string, we probably don't want to do this...but it
-        // will be acceptable for debugging
-        data: result,
-        meaning: 'EQUATION-SOLUTION'
-      }
-      const changeReq: StyleInsertRequest = {
-        type: 'insertStyle',
-        parentId: parent.id,
-        styleProps,
-      };
-      newsolutions.push(changeReq);
-    }
-
-    return newsolutions;
+    return [];
   }
 
   // --- PRIVATE ---
@@ -154,6 +93,8 @@ export class SymbolClassifierObserver implements ObserverInstance {
       }
     }
   }
+
+  // refactor this to be style independent so that we can figure it out later
 
   private async addSymbolDefStyles(style: StyleObject, rval: NotebookChangeRequest[]): Promise<void> {
     const script = `FullForm[Hold[${style.data}]]`;
@@ -217,6 +158,12 @@ export class SymbolClassifierObserver implements ObserverInstance {
           await this.addSymbolUseStylesFromString(lhs, style, rval);
           await this.addSymbolUseStylesFromString(rhs, style, rval);
           // Now let's try to add a tool tip to solve:
+
+          // Note: We have now decided instead to make the "solve" automatic,
+          // and to add tool tips for the promotion of the solutions. I think it makes
+          // most sense from a development point of view to add the "promotion" tools
+          // first, and then automate the solution.
+
 
           const toolInfo: ToolInfo = { name: 'solve', html: "Solve Equation (draft)" };
           const styleProps2: StylePropertiesWithSubprops = {

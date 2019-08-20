@@ -135,6 +135,7 @@ export type StyleSource =
   'MATHSTEPS' |       // The Mathsteps CAS system
   'SANDBOX' |         // Sandbox for temporary experiments
   'SUBTRIV-CLASSIFIER'|
+  'EQUATION-SOLVER' |  // Attempt to expose Wolfram solutions
   'SYMBOL-CLASSIFIER'|
   'SYSTEM'|           // The Math-Tablet app itself, not the user or an observer.
   'TEST' |            // An example source used only by our test system
