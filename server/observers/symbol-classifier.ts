@@ -1,20 +1,20 @@
 /*
-Math Tablet
-Copyright (C) 2019 Public Invention
-https://pubinv.github.io/PubInv/
+  Math Tablet
+  Copyright (C) 2019 Public Invention
+  https://pubinv.github.io/PubInv/
 
-This program is free software: you can redistribute it and/or modify
-it under the terms of the GNU Affero General Public License as published by
-the Free Software Foundation, either version 3 of the License, or
-(at your option) any later version.
+  This program is free software: you can redistribute it and/or modify
+  it under the terms of the GNU Affero General Public License as published by
+  the Free Software Foundation, either version 3 of the License, or
+  (at your option) any later version.
 
-This program is distributed in the hope that it will be useful,
-but WITHOUT ANY WARRANTY; without even the implied warranty of
-MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-GNU Affero General Public License for more details.
+  This program is distributed in the hope that it will be useful,
+  but WITHOUT ANY WARRANTY; without even the implied warranty of
+  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+  GNU Affero General Public License for more details.
 
-You should have received a copy of the GNU Affero General Public License
-along with this program.  If not, see <http://www.gnu.org/licenses/>.
+  You should have received a copy of the GNU Affero General Public License
+  along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
 // Requirements
@@ -24,7 +24,7 @@ const MODULE = __filename.split(/[/\\]/).slice(-1)[0].slice(0,-3);
 const debug = debug1(`server:${MODULE}`);
 
 import { NotebookChange, StyleObject } from '../../client/notebook';
-import { ToolInfo, SymbolData, WolframData, NotebookChangeRequest, StyleInsertRequest, StylePropertiesWithSubprops, RelationshipPropertiesMap } from '../../client/math-tablet-api';
+import { SymbolData, WolframData, NotebookChangeRequest, StyleInsertRequest, StylePropertiesWithSubprops, RelationshipPropertiesMap } from '../../client/math-tablet-api';
 import { ServerNotebook, ObserverInstance } from '../server-notebook';
 import { execute as executeWolframscript, draftChangeContextName } from './wolframscript';
 import { Config } from '../config';
@@ -116,18 +116,18 @@ export class SymbolClassifierObserver implements ObserverInstance {
 
         debug(`name ${name}`);
 
-          const value = value_matches[1];
-          // Add the symbol-definition style
-          const relationsTo: RelationshipPropertiesMap = {};
-          // Add any symbol-dependency relationships as a result of the new symbol-def style
-          for (const otherStyle of this.notebook.allStyles()) {
-            if (otherStyle.type == 'SYMBOL' &&
-                otherStyle.meaning == 'SYMBOL-USE' &&
-                otherStyle.data.name == name) {
-              relationsTo[otherStyle.id] = { meaning: 'SYMBOL-DEPENDENCY' };
-              debug(`Inserting relationship`);
-            }
+        const value = value_matches[1];
+        // Add the symbol-definition style
+        const relationsTo: RelationshipPropertiesMap = {};
+        // Add any symbol-dependency relationships as a result of the new symbol-def style
+        for (const otherStyle of this.notebook.allStyles()) {
+          if (otherStyle.type == 'SYMBOL' &&
+              otherStyle.meaning == 'SYMBOL-USE' &&
+              otherStyle.data.name == name) {
+            relationsTo[otherStyle.id] = { meaning: 'SYMBOL-DEPENDENCY' };
+            debug(`Inserting relationship`);
           }
+        }
 
 
         var styleProps: StylePropertiesWithSubprops;
@@ -159,29 +159,11 @@ export class SymbolClassifierObserver implements ObserverInstance {
           await this.addSymbolUseStylesFromString(rhs, style, rval);
           // Now let's try to add a tool tip to solve:
 
-          // Note: We have now decided instead to make the "solve" automatic,
-          // and to add tool tips for the promotion of the solutions. I think it makes
-          // most sense from a development point of view to add the "promotion" tools
-          // first, and then automate the solution.
+          const changeReq: StyleInsertRequest = { type: 'insertStyle', parentId: style.id, styleProps };
+          rval.push(changeReq);
 
-
-          const toolInfo: ToolInfo = { name: 'solve', html: "Solve Equation (draft)" };
-          const styleProps2: StylePropertiesWithSubprops = {
-            type: 'TOOL',
-            meaning: 'ATTRIBUTE',
-            data: toolInfo,
-          }
-          const changeReq2: StyleInsertRequest = {
-            type: 'insertStyle',
-            parentId: style.id,
-            styleProps: styleProps2
-          };
-          rval.push(changeReq2);
+          debug(`Inserting def style.`);
         }
-        const changeReq: StyleInsertRequest = { type: 'insertStyle', parentId: style.id, styleProps };
-        rval.push(changeReq);
-
-        debug(`Inserting def style.`);
       }
     }
   }
@@ -234,17 +216,17 @@ export class SymbolClassifierObserver implements ObserverInstance {
 
 }
 
-// Helper Functios
+  // Helper Functios
 
-async function execute(script: WolframData): Promise<WolframData|undefined> {
-  let result: WolframData;
-  try {
-    // debug(`Executing: ${script}`)
-    result = await executeWolframscript(script);
-  } catch (err) {
-    debug(`Wolfram '${script}' failed with '${err.message}'`);
-    return;
+  async function execute(script: WolframData): Promise<WolframData|undefined> {
+    let result: WolframData;
+    try {
+      // debug(`Executing: ${script}`)
+      result = await executeWolframscript(script);
+    } catch (err) {
+      debug(`Wolfram '${script}' failed with '${err.message}'`);
+      return;
+    }
+    debug(`Wolfram '${script}' returned '${result}'`);
+    return result;
   }
-  debug(`Wolfram '${script}' returned '${result}'`);
-  return result;
-}

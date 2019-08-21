@@ -136,7 +136,7 @@ export class TeXFormatterObserver implements ObserverInstance {
         const styleProps: StylePropertiesWithSubprops = {
           type: 'LATEX',
           // This is the best meaning without creating one specifically for this purpose..
-          meaning: 'INPUT-ALT',
+          meaning: 'DECORATION',
           data: tex,
         }
 
@@ -161,7 +161,7 @@ export class TeXFormatterObserver implements ObserverInstance {
         const styleProps: StylePropertiesWithSubprops = {
           type: 'LATEX',
           // This is the best meaning without creating one specifically for this purpose..
-          meaning: 'INPUT-ALT',
+          meaning: 'DECORATION',
           /// This is a bit of a guess..
           data: texlhs + " = " + texrhs,
         }

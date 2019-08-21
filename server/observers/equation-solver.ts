@@ -201,7 +201,8 @@ export class EquationSolverObserver implements ObserverInstance {
         });
       }
 
-    // The act of computing this could trigger the addition of new tool tips
+      // The act of computing this could trigger the addition of new tool tips
+      debug("NEWSOLUTIONS",newsolutions);
     return newsolutions;
     }
   }
@@ -211,6 +212,8 @@ export class EquationSolverObserver implements ObserverInstance {
     debug("INSIDE SOLVER RULE :",style);
 
     const solutions : NameValuePair[] = await this.computeSolutionsOfThought(style);
+
+    debug("Solutions.length",solutions.length);
 
     // TODO: if we have a high-order polynomial, we may well have too many solutions
     // for a good solution.  In this case, we really need to creat HTML that
@@ -223,7 +226,7 @@ export class EquationSolverObserver implements ObserverInstance {
       // I'm adding data here to make it more obvious that is where
       // the official solution is....though it remains unparsed
       const toolInfo: ToolInfo = { name: 'promote',
-                                   html: sol.name + "<-" + sol.value,
+                                   html: sol.name + "<-" + sol.value + " ",
                                    data: JSON.stringify(sol) };
       const styleProps2: StylePropertiesWithSubprops = {
         type: 'TOOL',

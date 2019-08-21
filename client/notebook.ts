@@ -97,6 +97,7 @@ export type StyleMeaning =
   'SYMBOL' |          // Symbols extracted from an expression.
   'SYMBOL-DEFINITION'|// Definition of a symbol.
 'SYMBOL-USE' |      // Use of a symbol.
+  'DECORATION' | // Clearly indicates this is NOT the input but a decoration
   'EQUIVALENT-CHECKS'|// Checking expression equivalence of with other styles
   'UNIVARIATE-QUADRATIC'|// A quadratic expression, presumably worth plotting.
   'SUBTRIVARIATE';    // An expression in one or two variables presumable plottable.
