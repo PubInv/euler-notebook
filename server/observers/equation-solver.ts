@@ -211,6 +211,11 @@ export class EquationSolverObserver implements ObserverInstance {
     debug("INSIDE SOLVER RULE :",style);
 
     const solutions : NameValuePair[] = await this.computeSolutionsOfThought(style);
+
+    // TODO: if we have a high-order polynomial, we may well have too many solutions
+    // for a good solution.  In this case, we really need to creat HTML that
+    // is some sort of "pop-up". That is outside our normal format, so I will
+    // limit this to 4 solutions...
     for(const sol of solutions)
     {
 

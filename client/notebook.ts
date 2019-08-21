@@ -137,6 +137,7 @@ export type StyleSource =
   'SUBTRIV-CLASSIFIER'|
   'EQUATION-SOLVER' |  // Attempt to expose Wolfram solutions
   'SYMBOL-CLASSIFIER'|
+  'TEX-FORMATTER' |
   'SYSTEM'|           // The Math-Tablet app itself, not the user or an observer.
   'TEST' |            // An example source used only by our test system
   'USER'              // Directly entered by user

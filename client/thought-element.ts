@@ -95,6 +95,9 @@ export class ThoughtElement {
         else { this.renderOtherInput(style); }
         break;
       case 'INPUT-ALT':
+        // This does not currently distinguish from Tex input from
+        // an input device (via handwriting analysis) and Mathematica or
+        // other deduction. We may need more information here.
         if (style.type == 'LATEX') { this.renderLatexFormula(style.data); }
         else if (style.type == 'TEXT') { this.renderText(style.data); }
         break;

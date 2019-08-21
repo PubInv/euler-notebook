@@ -27,6 +27,7 @@ import { MathStepsObserver } from './mathsteps-cas';
 import { SandboxObserver } from './sandbox';
 import { SubtrivClassifierObserver } from './subtriv-classifier';
 import { EquationSolverObserver } from './equation-solver';
+import { TeXFormatterObserver } from './tex-formatter';
 import { SymbolClassifierObserver } from './symbol-classifier';
 import { ServerNotebook } from '../server-notebook';
 
@@ -40,6 +41,7 @@ export async function initialize(config: Config): Promise<void> {
     ServerNotebook.registerObserver('SUBTRIV-CLASSIFIER', SubtrivClassifierObserver);
     ServerNotebook.registerObserver('SYMBOL-CLASSIFIER', SymbolClassifierObserver);
     ServerNotebook.registerObserver('EQUATION-SOLVER', EquationSolverObserver);
+    ServerNotebook.registerObserver('TEX-FORMATTER', TeXFormatterObserver);
   }
   if (config.mathjs) {
     await MathJsObserver.initialize(config);
