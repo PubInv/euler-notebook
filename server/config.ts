@@ -32,7 +32,6 @@ const readFile2 = promisify(readFile);
 export interface Config {
   mathematica?: MathematicaConfig;
   mathjs?: {};
-  mathsteps?: {};
 }
 
 export interface Credentials {

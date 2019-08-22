@@ -23,7 +23,6 @@ import { Config } from '../config';
 
 import { MathematicaObserver } from './mathematica-cas';
 import { MathJsObserver } from './mathjs-cas';
-import { MathStepsObserver } from './mathsteps-cas';
 import { SandboxObserver } from './sandbox';
 import { SubtrivClassifierObserver } from './subtriv-classifier';
 import { EquationSolverObserver } from './equation-solver';
@@ -46,10 +45,6 @@ export async function initialize(config: Config): Promise<void> {
   if (config.mathjs) {
     await MathJsObserver.initialize(config);
     ServerNotebook.registerObserver('MATHJS', MathJsObserver);
-  }
-  if (config.mathsteps) {
-    await MathStepsObserver.initialize(config);
-    ServerNotebook.registerObserver('MATHSTEPS', MathStepsObserver);
   }
   await SandboxObserver.initialize(config);
   ServerNotebook.registerObserver('SANDBOX', SandboxObserver);
