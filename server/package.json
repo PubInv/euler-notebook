@@ -3,7 +3,7 @@
   "version": "0.0.1",
   "private": false,
   "scripts": {
-    "check-types": "tsc -p tsconfig.json",
+    "check-types": "tsc -p tsconfig.no-output.json",
     "clean": "git clean -dfqx",
     "start": "ts-node ./app.ts",
     "test": "mocha -r ts-node/register test/*.spec.ts",

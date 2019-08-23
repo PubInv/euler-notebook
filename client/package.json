@@ -4,7 +4,7 @@
   "private": false,
   "scripts": {
     "build": "tsc -p tsconfig.json",
-    "check-types": "tsc -p tsconfig.json"
+    "check-types": "tsc -p tsconfig.no-output.json"
   },
   "dependencies": {
     "svg.js": "^2.7.1"
