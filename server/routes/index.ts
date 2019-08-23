@@ -74,6 +74,8 @@ let gCredentials: Credentials|undefined;
 router.get('/dashboard', onDashboard);
 router.post('/dashboard', onDashboard);
 
+router.get('/drawing', onDrawing);
+
 router.get(NOTEBOOK_PATH_RE, onNotebookPage);
 router.post(NOTEBOOK_PATH_RE, onNotebookPage);
 
@@ -119,6 +121,10 @@ async function onDashboard(req: Request, res: Response) {
     debug(err.stack);
     res.send(`Server crash in onDashboard: ${err.message}`);
   }
+}
+
+function onDrawing(_req: Request, res: Response) {
+  res.render('drawing', {});
 }
 
 async function onFolderPage(req: Request, res: Response, _next: NextFunction): Promise<void> {

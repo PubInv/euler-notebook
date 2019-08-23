@@ -19,7 +19,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 // Requirements
 
-import { $, $new, Html, HtmlElementClass } from './dom.js';
+import { $, $new, Html, ElementClass } from './dom.js';
 
 // Types
 
@@ -59,7 +59,7 @@ function onFixedHeaderClick(event: Event): void {
 
 // Helper functions
 
-function addMessageToHeader(type: HtmlElementClass, html: Html, autoDismiss?: boolean): void {
+function addMessageToHeader(type: ElementClass, html: Html, autoDismiss?: boolean): void {
   const $elt = $new<HTMLDivElement>('div', { class: type, html});
   const $button = $new<HTMLButtonElement>('button', { class: 'close', html: "&#x2715;" });
   $elt.appendChild($button);

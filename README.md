@@ -76,7 +76,7 @@ good way to kill the kernel except by hand at present.
 
 ## Credits
 
-* Folder icon, [IconMonster](https://iconmonstr.com/folder-thin-svg/).
+* Various icons, [IconMonster](https://iconmonstr.com/).
 
 ## Development
 

@@ -48,7 +48,7 @@ let gInputMethod: InputMethod|undefined;
 // Event Handlers
 
 function onDebugMenuClicked(_event: MouseEvent) {
-  const $window = $('#debugWindow');
+  const $window = $<HTMLElement>('#debugWindow');
   if ($window.style.display == 'none') {
     const html = gNotebook ? gNotebook.debugHtml() : "<i>No open notebook</i>"
     $window.innerHTML = html;
@@ -78,22 +78,22 @@ async function onDomReady(_event: Event){
   try {
 
     window.addEventListener('resize', onResize);
-    $('#debugMenu').addEventListener<'click'>('click', onDebugMenuClicked);
-    $('#insertButton').addEventListener<'click'>('click', onInsertButtonClicked);
-    $('#inputMathButton').addEventListener<'click'>('click', _event=>switchInput('Math'));
-    $('#inputKeyboardButton').addEventListener<'click'>('click', _event=>switchInput('Keyboard'));
-    $('#inputTextButton').addEventListener<'click'>('click', _event=>switchInput('Text'));
+    $<HTMLButtonElement>('#debugMenu').addEventListener<'click'>('click', onDebugMenuClicked);
+    $<HTMLButtonElement>('#insertButton').addEventListener<'click'>('click', onInsertButtonClicked);
+    $<HTMLButtonElement>('#inputMathButton').addEventListener<'click'>('click', _event=>switchInput('Math'));
+    $<HTMLButtonElement>('#inputKeyboardButton').addEventListener<'click'>('click', _event=>switchInput('Keyboard'));
+    $<HTMLButtonElement>('#inputTextButton').addEventListener<'click'>('click', _event=>switchInput('Text'));
 
-    const keyboardInputField = $('#inputKeyboard>input');
+    const keyboardInputField = $<HTMLInputElement>('#inputKeyboard>input');
     keyboardInputField.addEventListener<'input'>('input', onKeyboardInputInput);
     keyboardInputField.addEventListener<'keyup'>('keyup', onKeyboardInputKeyup);
 
     // TODO: Make undo, redo etc work with Keyboard input.
-    $('#undoButton').addEventListener<'click'>('click', _event=>gEditor && gEditor.undo());
-    $('#redoButton').addEventListener<'click'>('click', _event=>gEditor && gEditor.redo());
-    $('#clearButton').addEventListener<'click'>('click', _event=>gEditor && gEditor.clear());
-    $('#convertButton').addEventListener<'click'>('click', _event=>gEditor && gEditor.convert());
-    $('#debugWindow').addEventListener<'click'>('click', onDebugWindowClicked);
+    $<HTMLButtonElement>('#undoButton').addEventListener<'click'>('click', _event=>gEditor && gEditor.undo());
+    $<HTMLButtonElement>('#redoButton').addEventListener<'click'>('click', _event=>gEditor && gEditor.redo());
+    $<HTMLButtonElement>('#clearButton').addEventListener<'click'>('click', _event=>gEditor && gEditor.clear());
+    $<HTMLButtonElement>('#convertButton').addEventListener<'click'>('click', _event=>gEditor && gEditor.convert());
+    $<HTMLButtonElement>('#debugWindow').addEventListener<'click'>('click', onDebugWindowClicked);
 
     switchInput(INITIAL_INPUT_METHOD);
 
@@ -159,7 +159,7 @@ function onInsertButtonClicked(_event: Event) {
       const text = $inputField.value;
       const styleProps: StylePropertiesWithSubprops = { type: styleType, data: text, meaning: 'INPUT' };
       gNotebook.insertStyle(styleProps);
-      $inputField.value = $('#preview').innerText = '';
+      $inputField.value = $<HTMLDivElement>('#preview').innerText = '';
       break;
     }
     case 'Text': {
@@ -192,7 +192,7 @@ function onKeyboardInputInput(this: HTMLElement, _event: Event): void {
     const $field: HTMLInputElement = this /* TYPESCRIPT: */ as HTMLInputElement;
     const text: string = $field.value;
     const isValid = (text.length>0); // LATER: Validate expression.
-    $('#preview').innerText = text;
+    $<HTMLDivElement>('#preview').innerText = text;
     $<HTMLButtonElement>('#insertButton').disabled = !isValid;
   } catch(err) {
     showErrorMessage("Error on keyboard-input input event.", err);
@@ -240,10 +240,10 @@ function onResize(_event: UIEvent) {
 function onTextExported(event: EditorExportedEvent) {
   try {
     if (event.detail.exports) {
-      $('#preview').innerText = event.detail.exports['text/plain'];
+      $<HTMLDivElement>('#preview').innerText = event.detail.exports['text/plain'];
       $<HTMLButtonElement>('#insertButton').disabled = false;
     } else {
-      $('#preview').innerText = '';
+      $<HTMLDivElement>('#preview').innerText = '';
       $<HTMLButtonElement>('#insertButton').disabled = true;
     }
   } catch(err) {
@@ -303,7 +303,7 @@ function getMyScriptConfig(editorType: EditorType): Configuration {
 }
 
 function getMyScriptKeys(): ServerKeys {
-  const inputAreaElt = $('#inputArea');
+  const inputAreaElt = $<HTMLDivElement>('#inputArea');
   const applicationKey = inputAreaElt.dataset.applicationkey;
   const hmacKey = inputAreaElt.dataset.hmackey;
   if (!applicationKey || !hmacKey) { throw new Error(); }
@@ -334,13 +334,13 @@ function switchInput(method: InputMethod): void {
   try {
     // Disable the current input method
     if (gInputMethod) {
-      $(`#input${gInputMethod}`).style.display = 'none';
+      $<HTMLDivElement>(`#input${gInputMethod}`).style.display = 'none';
       $<HTMLButtonElement>(`#input${gInputMethod}Button`).disabled = false;
     }
 
     // Enable the new input method
     gInputMethod = method;
-    $(`#input${gInputMethod}`).style.display = 'block';
+    $<HTMLDivElement>(`#input${gInputMethod}`).style.display = 'block';
     $<HTMLButtonElement>(`#input${gInputMethod}Button`).disabled = true;
 
     switch(gInputMethod) {

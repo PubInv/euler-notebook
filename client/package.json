@@ -6,7 +6,9 @@
     "build": "tsc -p tsconfig.json",
     "check-types": "tsc -p tsconfig.json"
   },
-  "dependencies": {},
+  "dependencies": {
+    "svg.js": "^2.7.1"
+  },
   "devDependencies": {
     "typescript": "^3.5.3"
   },
