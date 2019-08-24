@@ -78,7 +78,10 @@ async function onDomReady(_event: Event){
   try {
 
     window.addEventListener('resize', onResize);
+
     $<HTMLButtonElement>('#debugMenu').addEventListener<'click'>('click', onDebugMenuClicked);
+    $<HTMLButtonElement>('#userMenu').addEventListener<'click'>('click', _event=>{ alert("User menu not yet implemented."); });
+
     $<HTMLButtonElement>('#insertButton').addEventListener<'click'>('click', onInsertButtonClicked);
     $<HTMLButtonElement>('#inputMathButton').addEventListener<'click'>('click', _event=>switchInput('Math'));
     $<HTMLButtonElement>('#inputKeyboardButton').addEventListener<'click'>('click', _event=>switchInput('Keyboard'));
