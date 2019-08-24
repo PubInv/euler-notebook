@@ -105,9 +105,8 @@ async function onDomReady(_event: Event){
     const notebookName = window.location.pathname;
     gNotebook = await gSocket.openNotebook(notebookName);
 
-    // Insert the TDoc after the menu
-    const $menu = $('#menu');
-    $menu.parentNode!.insertBefore(gNotebook.$elt, $menu.nextSibling);
+    // Insert the TDoc at the top of the "column"
+    $('#column').insertBefore(gNotebook.$elt, $('#preview'));
 
   } catch (err) {
     showErrorMessage("Error initializing math tablet.", err);
@@ -159,7 +158,7 @@ function onInsertButtonClicked(_event: Event) {
       const text = $inputField.value;
       const styleProps: StylePropertiesWithSubprops = { type: styleType, data: text, meaning: 'INPUT' };
       gNotebook.insertStyle(styleProps);
-      $inputField.value = $<HTMLDivElement>('#preview').innerText = '';
+      $inputField.value = $<HTMLDivElement>('#preview>.formula').innerText = '';
       break;
     }
     case 'Text': {
@@ -192,7 +191,7 @@ function onKeyboardInputInput(this: HTMLElement, _event: Event): void {
     const $field: HTMLInputElement = this /* TYPESCRIPT: */ as HTMLInputElement;
     const text: string = $field.value;
     const isValid = (text.length>0); // LATER: Validate expression.
-    $<HTMLDivElement>('#preview').innerText = text;
+    $<HTMLDivElement>('#preview>.formula').innerText = text;
     $<HTMLButtonElement>('#insertButton').disabled = !isValid;
   } catch(err) {
     showErrorMessage("Error on keyboard-input input event.", err);
@@ -212,10 +211,10 @@ function onMathExported(event: EditorExportedEvent) {
     if (event.detail.exports) {
       const latex = cleanLatex(event.detail.exports['application/x-latex']);
       // TODO: Catch and report katex errors
-      getKatex().render(latex, $('#preview'), { throwOnError: false });
+      getKatex().render(latex, $('#preview>.formula'), { throwOnError: false });
       $<HTMLButtonElement>('#insertButton').disabled = false;
     } else {
-      $<HTMLButtonElement>('#preview').innerText = '';
+      $<HTMLButtonElement>('#preview>.formula').innerText = '';
       $<HTMLButtonElement>('#insertButton').disabled = true;
     }
   } catch(err) {
@@ -240,10 +239,10 @@ function onResize(_event: UIEvent) {
 function onTextExported(event: EditorExportedEvent) {
   try {
     if (event.detail.exports) {
-      $<HTMLDivElement>('#preview').innerText = event.detail.exports['text/plain'];
+      $<HTMLDivElement>('#preview>.formula').innerText = event.detail.exports['text/plain'];
       $<HTMLButtonElement>('#insertButton').disabled = false;
     } else {
-      $<HTMLDivElement>('#preview').innerText = '';
+      $<HTMLDivElement>('#preview>.formula').innerText = '';
       $<HTMLButtonElement>('#insertButton').disabled = true;
     }
   } catch(err) {

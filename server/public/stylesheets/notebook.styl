@@ -19,6 +19,12 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 // Specific elements
 
+:root
+  --sidebar-width 60px
+
+#column
+  margin-left var(--sidebar-width)
+
 #debugWindow
   background-color #eeeeee
   border 1px solid black
@@ -55,17 +61,6 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
   pen-action none
   touch-action none
 
-#leftDock
-  background-color #c0c0c0
-  display flex
-  flex-direction column
-  left 0
-  position fixed
-  top 20%
-
-  button
-    width 50pt
-    height 50pt
 #menu
   align-items center
   background-color #cccccc
@@ -83,6 +78,22 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
     padding-right 0!important
     padding-left 2
     text-decoration underline
+
+#sideBar
+  background-color darkgray
+  height 100%
+  left 0
+  position fixed
+  top 0
+  width var(--sidebar-width)
+
+  .separator
+    height 4px
+
+  button
+    height var(--sidebar-width)
+    width var(--sidebar-width)
+
 
 // Element classes
 
