@@ -1,6 +1,6 @@
 {
   "compilerOptions": {
-    "lib": [ "es2017", "dom", "dom.iterable" ],
+    "lib": [ "es2018", "dom", "dom.iterable" ],
     "moduleResolution": "node",
     "noFallthroughCasesInSwitch": true,
     "noImplicitReturns": true,
@@ -8,6 +8,6 @@
     "noUnusedParameters": true,
     "outDir": "../server/public/javascripts",
     "strict": true,
-    "target": "es2017"
+    "target": "es2018"
   }
 }
