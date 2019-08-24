@@ -18,8 +18,8 @@
 
 extends layout
 
-mixin menuBar
-  #menu
+mixin header
+  #header
     button#debugMenu(title="Debug window")
       //- https://iconmonstr.com/bug-12-svg/
       svg(viewBox="0 0 24 24")
@@ -37,7 +37,24 @@ mixin menuBar
       svg(viewBox="0 0 24 24")
         path(d="M20.822 18.096c-3.439-.794-6.64-1.49-5.09-4.418 4.72-8.912 1.251-13.678-3.732-13.678-5.082 0-8.464 4.949-3.732 13.678 1.597 2.945-1.725 3.641-5.09 4.418-3.073.71-3.188 2.236-3.178 4.904l.004 1h23.99l.004-.969c.012-2.688-.092-4.222-3.176-4.935z")
 
-mixin sideBar
+mixin footer
+  #footer
+    #preview
+
+    #inputArea('data-applicationkey'=credentials.myscript.applicationKey, 'data-hmackey'=credentials.myscript.hmacKey)
+      #inputText(style='display:none')
+      #inputMath(style='display:none')
+      #inputKeyboard(style='display:none')
+        select()
+          option(value='LATEX') LaTeX
+          option(value='MATHJS') MathJS
+          option(value='MATHML') MathML
+          option(value='TEXT') Text
+          option(value='WOLFRAM', selected=true) Wolfram
+        input(type='text', placeholder="e.g. r = x^2 + y^2" size=60)
+
+
+mixin sidebar
   #sideBar
     button#thumbnailViewBtn(disabled=true, title="Page thumbnail view")
       //- https://iconmonstr.com/file-11-svg/
@@ -82,6 +99,10 @@ mixin sideBar
       //- https://iconmonstr.com/arrow-13-svg/
       svg(viewBox="0 0 24 24")
         path(d="M24 12l-8.991 6.228v-2.722c2.54-1.757 5.053-3.506 5.053-3.506s-2.513-1.718-5.053-3.474v-2.722l8.991 6.196zm-6.96 0l-9.04-6.118v3.118h-8v6h8v3.118l9.04-6.118z")
+    button#insertButton(disabled=true, title="Insert input into notebook")
+      //- https://iconmonstr.com/arrow-4-svg/
+      svg(viewBox="0 0 24 24")
+        path(d="M13 18v-4h-7v-4h7v-4l6 6-6 6zm-1-16c5.514 0 10 4.486 10 10s-4.486 10-10 10-10-4.486-10-10 4.486-10 10-10zm0-2c-6.627 0-12 5.373-12 12s5.373 12 12 12 12-5.373 12-12-5.373-12-12-12z")
 
 block metatags
   //- These meta tags are copied from MyScript samples.
@@ -103,23 +124,7 @@ block scripts
 
 block content
   #debugWindow(style='display:none')
-  +menuBar
-  +sideBar
+  +header
+  +sidebar
+  +footer
   #column
-    #preview.thought
-      .handle
-      .status
-      .formula
-      button#insertButton(disabled=true) I
-
-    #inputArea('data-applicationkey'=credentials.myscript.applicationKey, 'data-hmackey'=credentials.myscript.hmacKey)
-      #inputText(style='display:none')
-      #inputMath(style='display:none')
-      #inputKeyboard(style='display:none')
-        select()
-          option(value='LATEX') LaTeX
-          option(value='MATHJS', selected=true) MathJS
-          option(value='MATHML') MathML
-          option(value='TEXT') Text
-          option(value='WOLFRAM') Wolfram
-        input(type='text', placeholder="e.g. r = x^2 + y^2" size=60)

@@ -99,6 +99,9 @@ async function onDomReady(_event: Event){
     $<HTMLButtonElement>('#debugWindow').addEventListener<'click'>('click', onDebugWindowClicked);
 
     switchInput(INITIAL_INPUT_METHOD);
+    if (INITIAL_INPUT_METHOD == 'Keyboard') {
+      $<HTMLInputElement>('#inputKeyboard>input').focus();
+    }
 
     // Make websocket connection to the notebook.
     const wsUrl = `ws://${window.location.host}/`;
@@ -109,7 +112,7 @@ async function onDomReady(_event: Event){
     gNotebook = await gSocket.openNotebook(notebookName);
 
     // Insert the TDoc at the top of the "column"
-    $('#column').insertBefore(gNotebook.$elt, $('#preview'));
+    $('#column').appendChild(gNotebook.$elt);
 
   } catch (err) {
     showErrorMessage("Error initializing math tablet.", err);
@@ -161,7 +164,7 @@ function onInsertButtonClicked(_event: Event) {
       const text = $inputField.value;
       const styleProps: StylePropertiesWithSubprops = { type: styleType, data: text, meaning: 'INPUT' };
       gNotebook.insertStyle(styleProps);
-      $inputField.value = $<HTMLDivElement>('#preview>.formula').innerText = '';
+      $inputField.value = $<HTMLDivElement>('#preview').innerText = '';
       break;
     }
     case 'Text': {
@@ -194,7 +197,7 @@ function onKeyboardInputInput(this: HTMLElement, _event: Event): void {
     const $field: HTMLInputElement = this /* TYPESCRIPT: */ as HTMLInputElement;
     const text: string = $field.value;
     const isValid = (text.length>0); // LATER: Validate expression.
-    $<HTMLDivElement>('#preview>.formula').innerText = text;
+    $<HTMLDivElement>('#preview').innerText = text;
     $<HTMLButtonElement>('#insertButton').disabled = !isValid;
   } catch(err) {
     showErrorMessage("Error on keyboard-input input event.", err);
@@ -214,10 +217,10 @@ function onMathExported(event: EditorExportedEvent) {
     if (event.detail.exports) {
       const latex = cleanLatex(event.detail.exports['application/x-latex']);
       // TODO: Catch and report katex errors
-      getKatex().render(latex, $('#preview>.formula'), { throwOnError: false });
+      getKatex().render(latex, $('#preview'), { throwOnError: false });
       $<HTMLButtonElement>('#insertButton').disabled = false;
     } else {
-      $<HTMLButtonElement>('#preview>.formula').innerText = '';
+      $<HTMLButtonElement>('#preview').innerText = '';
       $<HTMLButtonElement>('#insertButton').disabled = true;
     }
   } catch(err) {
@@ -242,10 +245,10 @@ function onResize(_event: UIEvent) {
 function onTextExported(event: EditorExportedEvent) {
   try {
     if (event.detail.exports) {
-      $<HTMLDivElement>('#preview>.formula').innerText = event.detail.exports['text/plain'];
+      $<HTMLDivElement>('#preview').innerText = event.detail.exports['text/plain'];
       $<HTMLButtonElement>('#insertButton').disabled = false;
     } else {
-      $<HTMLDivElement>('#preview>.formula').innerText = '';
+      $<HTMLDivElement>('#preview').innerText = '';
       $<HTMLButtonElement>('#insertButton').disabled = true;
     }
   } catch(err) {

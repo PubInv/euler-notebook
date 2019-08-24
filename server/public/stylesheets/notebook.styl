@@ -24,6 +24,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 #column
   margin-left var(--sidebar-width)
+  width calc(100% - var(sidebar-width))
 
 #debugWindow
   background-color #eeeeee
@@ -51,17 +52,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
   .leaf::before
     content "\0025cf "
 
-#inputArea
-  border 1px solid #cccccc
-  margin-left 50pt
-
-#inputMath
-#inputText
-  height 1in
-  pen-action none
-  touch-action none
-
-#menu
+#header
   align-items center
   background-color #cccccc
   display flex
@@ -82,6 +73,31 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
     // padding-right 0!important
     // padding-left 2
     // text-decoration underline
+
+#footer
+  border-top 1px solid black
+  bottom 0
+  height 20%
+  left var(--sidebar-width)
+  position fixed
+  right 0
+
+#inputArea
+  border-top 1px solid #cccccc
+
+#inputMath
+#inputText
+  height 1in
+  pen-action none
+  touch-action none
+
+#insertButton
+  bottom 0
+  left 0
+  position absolute
+
+#preview
+  height 25%
 
 #sideBar
   background-color darkgray
