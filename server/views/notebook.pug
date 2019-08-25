@@ -24,6 +24,12 @@ mixin header
   #header
     button#debugMenu(title="Debug window")
       +svgIconBug12
+    select#keyboardInputType()
+      option(value='LATEX') LaTeX
+      option(value='MATHJS') MathJS
+      option(value='MATHML') MathML
+      option(value='TEXT') Text
+      option(value='WOLFRAM', selected=true) Wolfram
     div
       a(href='/') home
       | /
@@ -43,12 +49,6 @@ mixin footer
       #inputText(style='display:none')
       #inputMath(style='display:none')
       #inputKeyboard(style='display:none')
-        select()
-          option(value='LATEX') LaTeX
-          option(value='MATHJS') MathJS
-          option(value='MATHML') MathML
-          option(value='TEXT') Text
-          option(value='WOLFRAM', selected=true) Wolfram
         textarea(placeholder="e.g. r = x^2 + y^2")
 
 

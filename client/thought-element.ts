@@ -76,20 +76,18 @@ export class ThoughtElement {
   // awkward.  Looing at the parent of the style may work, but is
   // awkward in a different way.
   public insertStyle(style: StyleObject): void {
-    console.log(`Inserting style ${style.id} ${style.meaning} ${style.type}`);
+    // console.log(`Inserting style ${style.id} ${style.meaning} ${style.type}`);
     switch(style.meaning) {
       case 'ATTRIBUTE':
         if (style.type == 'TOOL') { this.renderTool(style); }
         break;
       case 'ERROR': this.renderErrorMessage(style); break;
       case 'EXPOSITION':
-        console.dir(style);
         if (style.type == 'HTML') { this.renderHtml(style.data); }
         else if (style.type == 'TEXT') { this.renderText(style.data); }
         else { throw new Error(`Unexpected data type for exposition: ${style.type}.`); }
         break;
       case 'INPUT':
-        console.log("INPUT",style.data);
         if (style.type == 'LATEX') { this.renderLatexFormula(style.data); }
         else if (style.type == 'TEXT') { this.renderText(style.data); }
         else { this.renderOtherInput(style); }

@@ -143,7 +143,7 @@ function onInsertButtonClicked(_event: Event) {
       const latex: LatexData = cleanLatex(edExports['application/x-latex']);
       const mathMl: MathMlData = edExports['application/mathml+xml'];
       if (!jiix || !latex || !mathMl) { throw new Error("Missing export from MyScript math editor."); }
-      console.dir(mathMl);
+      // console.dir(mathMl);
       const styleProps: StylePropertiesWithSubprops = {
         type: 'JIIX',
         data: jiix,
@@ -158,7 +158,7 @@ function onInsertButtonClicked(_event: Event) {
       break;
     }
     case 'Keyboard': {
-      const $typeSelector = $<HTMLSelectElement>('#inputKeyboard>select');
+      const $typeSelector = $<HTMLSelectElement>('#keyboardInputType');
       const styleType: StyleType = <StyleType>$typeSelector.value;
       const $inputField = $<HTMLInputElement>('#inputKeyboard>textarea');
       const text = $inputField.value;
