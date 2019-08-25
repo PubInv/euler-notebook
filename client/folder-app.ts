@@ -24,18 +24,19 @@ import { showErrorMessage } from './global.js';
 
 // Types
 
-type View = 'createFile' | 'createFolder' | 'filesAndFolders';
+type View = 'createFile' | 'createFolder' | 'filesAndFolders' | 'importFile';
 
 // Constants
 
 // REVIEW: Any way to extract this array from the View type or vice versa?
-const VIEWS = [ 'createFile', 'createFolder', 'filesAndFolders' ];
+//         We need to exclude 'filesAndFolders', though.
+const VIEWS = [ 'createFile', 'createFolder', 'importFile' ];
 
 // Global Variables
 
 // Event Handlers
 
-function onCreateFileButtonClicked(_event: Event) {
+function onCreateFileViewButtonClicked(_event: Event): void {
   try {
     switchView('createFile');
   } catch (err) {
@@ -43,7 +44,7 @@ function onCreateFileButtonClicked(_event: Event) {
   }
 }
 
-function onCreateFolderButtonClicked(_event: Event) {
+function onCreateFolderViewButtonClicked(_event: Event): void {
   try {
     switchView('createFolder');
   } catch (err) {
@@ -51,11 +52,12 @@ function onCreateFolderButtonClicked(_event: Event) {
   }
 }
 
-async function onDomReady(_event: Event){
+function onDomReady(_event: Event): void {
   try {
-    $<HTMLButtonElement>('#filesAndFoldersButton').addEventListener<'click'>('click', onFilesAndFoldersButtonClicked);
-    $<HTMLButtonElement>('#createFolderButton').addEventListener<'click'>('click', onCreateFolderButtonClicked);
-    $<HTMLButtonElement>('#createFileButton').addEventListener<'click'>('click', onCreateFileButtonClicked);
+    $<HTMLButtonElement>('#filesAndFoldersViewButton').addEventListener<'click'>('click', onFilesAndFoldersViewButtonClicked);
+    $<HTMLButtonElement>('#createFolderViewButton').addEventListener<'click'>('click', onCreateFolderViewButtonClicked);
+    $<HTMLButtonElement>('#createFileViewButton').addEventListener<'click'>('click', onCreateFileViewButtonClicked);
+    $<HTMLButtonElement>('#importFileViewButton').addEventListener<'click'>('click', onImportFileViewButtonClicked);
 
     switchView('filesAndFolders');
 
@@ -64,11 +66,19 @@ async function onDomReady(_event: Event){
   }
 }
 
-function onFilesAndFoldersButtonClicked(_event: Event) {
+function onFilesAndFoldersViewButtonClicked(_event: Event): void {
   try {
     switchView('filesAndFolders');
   } catch (err) {
     showErrorMessage("Error showing create folder form", err);
+  }
+}
+
+function onImportFileViewButtonClicked(_event: Event): void {
+  try {
+    switchView('importFile');
+  } catch (err) {
+    showErrorMessage("Error showing import file form", err);
   }
 }
 
@@ -77,14 +87,14 @@ function onFilesAndFoldersButtonClicked(_event: Event) {
 function switchView(view: View): void {
   for (const otherView of VIEWS) {
     const show = (otherView == view);
-    $<HTMLDivElement>(`#${otherView}`).style.display = (show ? 'block' : 'none');
-    $<HTMLButtonElement>(`#${otherView}Button`).disabled = show;
+    $<HTMLDivElement>(`#${otherView}View`).style.display = (show ? 'block' : 'none');
+    $<HTMLButtonElement>(`#${otherView}ViewButton`).disabled = show;
   }
 }
 
 // Application Entry Point
 
-function main(){
+function main(): void {
   window.addEventListener('DOMContentLoaded', onDomReady);
 }
 

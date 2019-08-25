@@ -38,12 +38,14 @@ mixin header
 
 mixin sidebar
   #sidebar
-    button#filesAndFoldersButton
+    button#filesAndFoldersViewButton
       +svgIconFolder15
-    button#createFolderButton
+    button#createFolderViewButton
       +svgIconFolder5
-    button#createFileButton
+    button#createFileViewButton
       +svgIconFile15
+    button#importFileViewButton
+      +svgIconUpload21
 
 block styles
   link(rel='stylesheet', href='/stylesheets/folder.css')
@@ -55,7 +57,23 @@ block content
   +header
   +sidebar
   #content
-    #filesAndFolders
+
+    #createFolderView(style='display:none')
+      form(method='POST')
+        input(type='text', name='folderName', placeholder="Folder name")
+        button(type='submit', name='action', value='newFolder') New Folder
+
+    #createFileView(style='display:none')
+      form(method='POST')
+        input(type='text', name='notebookName', placeholder="Notebook name")
+        button(type='submit', name='action', value='newNotebook') New Notebook
+
+    #importFileView
+      form(method='POST')
+        input(type='file', name='importedFile', accept='.mti')
+        button(type='submit', name='action', value='uploadNotebook') Import
+
+    #filesAndFoldersView
       - const isEmpty = folders.length==0 && notebooks.length==0
       table
 
@@ -83,14 +101,3 @@ block content
           td
           td(colspan=2)
             button(type='submit', name='action', value='deleteSelected', disabled=isEmpty) Delete Selected
-
-    #createFolder(style='display:none')
-      form(method='POST')
-        input(type='text', name='folderName', placeholder="Folder name")
-        button(type='submit', name='action', value='newFolder') New Folder
-
-    #createFile(style='display:none')
-      form(method='POST')
-        input(type='text', name='notebookName', placeholder="Notebook name")
-        button(type='submit', name='action', value='newNotebook') New Notebook
-
