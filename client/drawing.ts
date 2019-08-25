@@ -23,6 +23,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 import { $, $newSvg } from './dom.js';
 import { Cell, CellData, Length, Size } from './cell.js';
+// import { NotebookChange, UndoStack } from './undo-stack';
 
 // Types
 
@@ -141,12 +142,14 @@ class App {
 
     this.$body = $body;
 
+    // const $undoButton = $<HTMLButtonElement>('#undoBtn');
+    // const $redoButton = $<HTMLButtonElement>('#redoBtn');
+    // this.undoStack = UndoStack.create($undoButton, $redoButton);
+
     const that = this;
     $<HTMLButtonElement>('#thumbnailViewBtn').addEventListener('click', function(e: MouseEvent) { that.onButtonClickedView(<HTMLButtonElement>this, e) });
     $<HTMLButtonElement>('#pageViewBtn').addEventListener('click', function(e: MouseEvent) { that.onButtonClickedView(<HTMLButtonElement>this, e) });
     $<HTMLButtonElement>('#cellViewBtn').addEventListener('click', function(e: MouseEvent) { that.onButtonClickedView(<HTMLButtonElement>this, e) });
-    $<HTMLButtonElement>('#undoBtn').addEventListener('click', e=>this.onButtonClickedUndo(e));
-    $<HTMLButtonElement>('#redoBtn').addEventListener('click', e=>this.onButtonClickedRedo(e));
 
     const $cellView = this.$cellView = $<HTMLDivElement>('#cellView');
     const $pageView = this.$pageView = $<HTMLDivElement>('#pageView');
@@ -192,6 +195,7 @@ class App {
   private $body: HTMLBodyElement;
   private $cellView: HTMLDivElement;
   private $pageView: HTMLDivElement;
+  // private undoStack: UndoStack;
 
   private firstCellOfPage(pageId: PageId): CellId {
     // TODO: This will not work when cells can be added or removed.
@@ -206,14 +210,6 @@ class App {
   private onButtonClickedView($button: HTMLButtonElement, _event: MouseEvent): void {
     const view: View = <View>$button.id.slice(0,-3);
     this.switchView(view);
-  }
-
-  private onButtonClickedRedo(_event: MouseEvent): void {
-    console.log('TODO: Redo');
-  }
-
-  private onButtonClickedUndo(_event: MouseEvent): void {
-    console.log('TODO: Undo');
   }
 
   private onPageClicked(event: MouseEvent): void {

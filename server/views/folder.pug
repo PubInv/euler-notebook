@@ -18,19 +18,14 @@
 
 extends layout
 
-mixin folderIcon
-  img.icon(src='/images/folder.svg')
+//- Inline SVG icons from https://iconmonstr.com.
+include iconmonstr
 
-block styles
-  link(rel='stylesheet', href='/stylesheets/folder.css')
-
-block content
-  h1
-    if pathSegments.length == 0
-      | home
-    else
-      a(href='/') home
-      | /
+mixin header
+  #header
+    button#homeButton(title="Math Tablet home")
+      +svgIconHome6
+    div
       each segment, i in pathSegments
         if i < pathSegments.length-1
           - const url = '/' + pathSegments.slice(0,i+1).join('/') + '/'
@@ -38,45 +33,64 @@ block content
           | /
         else
           = segment
-  form(method='POST')
-    - const isEmpty = folders.length==0 && notebooks.length==0
-    table
+    button#userButton(title="User settings")
+      +svgIconUser1
 
-      if isEmpty
+mixin sidebar
+  #sidebar
+    button#filesAndFoldersButton
+      +svgIconFolder15
+    button#createFolderButton
+      +svgIconFolder5
+    button#createFileButton
+      +svgIconFile15
+
+block styles
+  link(rel='stylesheet', href='/stylesheets/folder.css')
+
+block scripts
+  script(type='module', src='/javascripts/folder-app.js')
+
+block content
+  +header
+  +sidebar
+  #content
+    #filesAndFolders
+      - const isEmpty = folders.length==0 && notebooks.length==0
+      table
+
+        if isEmpty
+          tr
+            td
+            td(colspan=2)
+              i Folder is empty.
+
+        each entry in folders
+          tr
+            td
+              input(type='checkbox', name=`folders[${entry.name}]`, value=entry.path)
+            td(colspan=2)
+              +svgIconFolder2('icon')
+              a(href=`${entry.path}`)= entry.name
+
+        each entry in notebooks
+          tr
+            td
+              input(type='checkbox', name=`notebooks[${entry.name}]`, value=entry.path)
+            td(colspan=2)
+              a(href=`${entry.path}`)= entry.name
         tr
           td
           td(colspan=2)
-            i Folder is empty.
+            button(type='submit', name='action', value='deleteSelected', disabled=isEmpty) Delete Selected
 
-      each entry in folders
-        tr
-          td
-            input(type='checkbox', name=`folders[${entry.name}]`, value=entry.path)
-          td(colspan=2)
-            +folderIcon
-            a(href=`${entry.path}`)= entry.name
+    #createFolder(style='display:none')
+      form(method='POST')
+        input(type='text', name='folderName', placeholder="Folder name")
+        button(type='submit', name='action', value='newFolder') New Folder
 
-      tr
-        td
-        td
-          input(type='text', name='folderName', placeholder="Folder name")
-        td
-          button(type='submit', name='action', value='newFolder') New Folder
-
-      each entry in notebooks
-        tr
-          td
-            input(type='checkbox', name=`notebooks[${entry.name}]`, value=entry.path)
-          td(colspan=2)
-            a(href=`${entry.path}`)= entry.name
-      tr
-        td
-        td
-          input(type='text', name='notebookName', placeholder="Notebook name")
-        td
-          button(type='submit', name='action', value='newNotebook') New Notebook
-      tr
-        td
-        td(colspan=2)
-          button(type='submit', name='action', value='deleteSelected', disabled=isEmpty) Delete Selected
+    #createFile(style='display:none')
+      form(method='POST')
+        input(type='text', name='notebookName', placeholder="Notebook name")
+        button(type='submit', name='action', value='newNotebook') New Notebook
 

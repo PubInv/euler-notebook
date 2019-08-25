@@ -19,10 +19,10 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 // Requirements
 
-import { $, Html } from './dom.js';
+import { $ } from './dom.js';
 import { getKatex } from './katex-types.js';
 import { getMyScript, Configuration, Editor, EditorElement, EditorChangedEvent, EditorExportedEvent, EditorType, ServerKeys } from './myscript-types.js';
-import { addErrorMessageToHeader, /* addSuccessMessageToHeader */} from './global.js';
+import { showErrorMessage } from './global.js';
 // import { apiPostRequest } from './api.js';
 // import { StyleObject, StyleObject }  from './math-tablet-api.js';
 import { HtmlNotebook } from './html-notebook.js';
@@ -47,15 +47,19 @@ let gInputMethod: InputMethod|undefined;
 
 // Event Handlers
 
-function onDebugMenuClicked(_event: MouseEvent) {
-  const $window = $<HTMLElement>('#debugWindow');
-  if ($window.style.display == 'none') {
-    const html = gNotebook ? gNotebook.debugHtml() : "<i>No open notebook</i>"
-    $window.innerHTML = html;
-    $window.style.display = 'block';
-  } else {
-    $window.style.display = 'none';
-    $window.innerHTML = '';
+function onDebugButtonClicked(_event: MouseEvent) {
+  try {
+    const $window = $<HTMLElement>('#debugWindow');
+    if ($window.style.display == 'none') {
+      const html = gNotebook ? gNotebook.debugHtml() : "<i>No open notebook</i>"
+      $window.innerHTML = html;
+      $window.style.display = 'block';
+    } else {
+      $window.style.display = 'none';
+      $window.innerHTML = '';
+    }
+  } catch(err) {
+    showErrorMessage("Error showing debug window", err);
   }
 }
 
@@ -79,9 +83,7 @@ async function onDomReady(_event: Event){
 
     window.addEventListener('resize', onResize);
 
-    $<HTMLButtonElement>('#homeButton').addEventListener<'click'>('click', _event=>{ window.location.href = '/' });
-    $<HTMLButtonElement>('#debugButton').addEventListener<'click'>('click', onDebugMenuClicked);
-    $<HTMLButtonElement>('#userButton').addEventListener<'click'>('click', _event=>{ alert("User menu not yet implemented."); });
+    $<HTMLButtonElement>('#debugButton').addEventListener<'click'>('click', onDebugButtonClicked);
 
     $<HTMLButtonElement>('#insertButton').addEventListener<'click'>('click', onInsertButtonClicked);
     $<HTMLButtonElement>('#inputMathButton').addEventListener<'click'>('click', _event=>switchInput('Math'));
@@ -116,7 +118,8 @@ async function onDomReady(_event: Event){
     $('#content').appendChild(gNotebook.$elt);
 
   } catch (err) {
-    showErrorMessage("Error initializing math tablet.", err);
+    showErrorMessage(`Initialization error: ${err.message}`);
+    throw err;
   }
 }
 
@@ -324,17 +327,6 @@ function initializeEditor($elt: EditorElement, editorType: EditorType) {
   $elt.addEventListener('exported', </* TYPESCRIPT: */EventListener>onExportedFn);
   return $elt.editor;
 }
-
-function showErrorMessage(html: Html, err?: Error): void {
-  if (err) {
-    html += `<br/><pre>${err.message}</pre>`;
-  }
-  addErrorMessageToHeader(html);
-}
-
-// function showSuccessMessage(html: Html): void {
-//   addSuccessMessageToHeader(html);
-// }
 
 function switchInput(method: InputMethod): void {
   try {

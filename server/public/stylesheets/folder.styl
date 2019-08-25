@@ -17,11 +17,26 @@ You should have received a copy of the GNU Affero General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-table
-  border-collapse collapse
+// Globals
 
-th
-  text-align left
+// Specific elements
+
+#content
+  height calc(100% - var(--header-height))
+  left var(--sidebar-width)
+  overflow scroll
+  padding 60px
+  position fixed
+  top var(--header-height)
+  width calc(100% - var(--sidebar-width))
+
+// Element classes
 
 .icon
   height 1em
+  width 1em
+
+// Element types
+
+table
+  border-collapse collapse

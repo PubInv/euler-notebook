@@ -26,7 +26,7 @@ html(lang='en')
     script(type='module', src='/javascripts/global.js')
     block scripts
   body
-    #fixedHeader
+    #banner
       if messages
         each html in messages.banner || []
           .banner!= html

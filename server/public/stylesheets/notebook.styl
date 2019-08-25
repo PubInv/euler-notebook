@@ -17,12 +17,12 @@ You should have received a copy of the GNU Affero General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-// Specific elements
+// Globals
 
 :root
   --footer-height 192px
-  --header-height 32px
-  --sidebar-width 60px
+
+// Specific elements
 
 #content
   height calc(100% - var(--header-height) - var(--footer-height))
@@ -57,29 +57,6 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
   .leaf::before
     content "\0025cf "
-
-#header
-  align-items center
-  background-color #cccccc
-  display flex
-  flex-direction row
-  height var(--header-height)
-  justify-content space-between
-  margin-left var(--sidebar-width)
-  padding 0 6pt 0 6pt
-
-  button
-    height 30px
-    padding 2px
-    width 30px
-    // background none!important
-    // border none
-    // color blue
-    // cursor pointer
-    // font inherit
-    // padding-right 0!important
-    // padding-left 2
-    // text-decoration underline
 
 #footer
   border-top 1px solid black
@@ -119,23 +96,6 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #previewContainer
   display flex
   height 25%
-
-#sideBar
-  background-color darkgray
-  height 100%
-  left 0
-  position fixed
-  top 0
-  width var(--sidebar-width)
-
-  .separator
-    height 4px
-
-  button
-    height var(--sidebar-width)
-    padding 4px
-    width var(--sidebar-width)
-
 
 // Element classes
 
@@ -198,9 +158,3 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 // Element types
 
-body
-  height 100%
-  margin 0
-
-html
-  height 100%

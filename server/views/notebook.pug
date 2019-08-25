@@ -18,6 +18,7 @@
 
 extends layout
 
+//- Inline SVG icons from https://iconmonstr.com.
 include iconmonstr
 
 mixin header
@@ -53,12 +54,12 @@ mixin footer
 
 
 mixin sidebar
-  #sideBar
-    button#thumbnailViewBtn(disabled=true, title="Page thumbnail view")
-      +svgIconFile11
-    button#pageViewBtn(disabled=true, title="Reading view")
-      +svgIconFile4
-    button#cellViewBtn(disabled=true, title="Editing view")
+  #sidebar
+    button#thumbnailViewButton(disabled=true, title="Page thumbnail view")
+      +svgIconFile12
+    button#pageViewButton(disabled=true, title="Reading view")
+      +svgIconFile5
+    button#cellViewButton(disabled=true, title="Editing view")
       +svgIconFile18
     .separator
     button#inputMathButton(title="Handwritten math")

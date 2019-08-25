@@ -17,6 +17,8 @@ You should have received a copy of the GNU Affero General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
+// TODO: Disable home button when we are on the home page.
+
 // Requirements
 
 import { $, $new, Html, ElementClass } from './dom.js';
@@ -30,20 +32,35 @@ export function addErrorMessageToHeader(html: Html) { addMessageToHeader('error'
 export function addSuccessMessageToHeader(html: Html) { addMessageToHeader('success', html, true); }
 export function addWarningMessageToHeader(html: Html) { addMessageToHeader('warning', html); }
 
+export function showErrorMessage(html: Html, err?: Error): void {
+  if (err) {
+    html += `<br/><pre>${err.message}</pre>`;
+  }
+  addErrorMessageToHeader(html);
+  throw err;
+}
+
+// export function showSuccessMessage(html: Html): void {
+//   addSuccessMessageToHeader(html);
+// }
+
 
 // Event handlers
 
 function onDomReady(_event: Event) {
   try {
-    $('#fixedHeader').addEventListener('click', onFixedHeaderClick);
+    $('#banner').addEventListener('click', onBannerClick);
+    $<HTMLButtonElement>('#homeButton').addEventListener<'click'>('click', _event=>{ window.location.href = '/' });
+    $<HTMLButtonElement>('#userButton').addEventListener<'click'>('click', _event=>{ alert("User menu not yet implemented."); });
   } catch(err) {
-    addErrorMessageToHeader("Error in global page initialization.");
+    addErrorMessageToHeader(`Iinitialization error: ${err.message}`);
+    throw err;
   }
 }
 
 // Event handlers
 
-function onFixedHeaderClick(event: Event): void {
+function onBannerClick(event: Event): void {
   // If the user pressed a close button, then remove the entry from the header.
   // IMPORTANT: we assume the button is a direct child of the entry,
   //            and the entry is a direct child of the header.
@@ -63,10 +80,10 @@ function addMessageToHeader(type: ElementClass, html: Html, autoDismiss?: boolea
   const $elt = $new<HTMLDivElement>('div', { class: type, html});
   const $button = $new<HTMLButtonElement>('button', { class: 'close', html: "&#x2715;" });
   $elt.appendChild($button);
-  const $header = $('#fixedHeader');
-  $header.appendChild($elt);
+  const $banner = $('#banner');
+  $banner.appendChild($elt);
   if (autoDismiss) {
-    setTimeout(function(){ try { $header.removeChild($elt); } catch(err){} }, 3000);
+    setTimeout(function(){ try { $banner.removeChild($elt); } catch(err){} }, 3000);
   }
 }
 
