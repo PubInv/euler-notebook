@@ -87,9 +87,9 @@ async function onDomReady(_event: Event){
     $<HTMLButtonElement>('#inputKeyboardButton').addEventListener<'click'>('click', _event=>switchInput('Keyboard'));
     $<HTMLButtonElement>('#inputTextButton').addEventListener<'click'>('click', _event=>switchInput('Text'));
 
-    const keyboardInputField = $<HTMLInputElement>('#inputKeyboard>input');
-    keyboardInputField.addEventListener<'input'>('input', onKeyboardInputInput);
-    keyboardInputField.addEventListener<'keyup'>('keyup', onKeyboardInputKeyup);
+    const keyboardInputTextArea = $<HTMLTextAreaElement>('#inputKeyboard>textarea');
+    keyboardInputTextArea.addEventListener<'input'>('input', onKeyboardInputInput);
+    keyboardInputTextArea.addEventListener<'keyup'>('keyup', onKeyboardInputKeyup);
 
     // TODO: Make undo, redo etc work with Keyboard input.
     $<HTMLButtonElement>('#undoButton').addEventListener<'click'>('click', _event=>gEditor && gEditor.undo());
@@ -100,7 +100,7 @@ async function onDomReady(_event: Event){
 
     switchInput(INITIAL_INPUT_METHOD);
     if (INITIAL_INPUT_METHOD == 'Keyboard') {
-      $<HTMLInputElement>('#inputKeyboard>input').focus();
+      $<HTMLInputElement>('#inputKeyboard>textarea').focus();
     }
 
     // Make websocket connection to the notebook.
@@ -160,7 +160,7 @@ function onInsertButtonClicked(_event: Event) {
     case 'Keyboard': {
       const $typeSelector = $<HTMLSelectElement>('#inputKeyboard>select');
       const styleType: StyleType = <StyleType>$typeSelector.value;
-      const $inputField = $<HTMLInputElement>('#inputKeyboard>input');
+      const $inputField = $<HTMLInputElement>('#inputKeyboard>textarea');
       const text = $inputField.value;
       const styleProps: StylePropertiesWithSubprops = { type: styleType, data: text, meaning: 'INPUT' };
       gNotebook.insertStyle(styleProps);

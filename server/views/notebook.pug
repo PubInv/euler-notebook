@@ -37,8 +37,8 @@ mixin header
 
 mixin footer
   #footer
-    #preview
-
+    #previewContainer
+      #preview
     #inputArea('data-applicationkey'=credentials.myscript.applicationKey, 'data-hmackey'=credentials.myscript.hmacKey)
       #inputText(style='display:none')
       #inputMath(style='display:none')
@@ -49,7 +49,7 @@ mixin footer
           option(value='MATHML') MathML
           option(value='TEXT') Text
           option(value='WOLFRAM', selected=true) Wolfram
-        input(type='text', placeholder="e.g. r = x^2 + y^2" size=60)
+        textarea(placeholder="e.g. r = x^2 + y^2")
 
 
 mixin sidebar
