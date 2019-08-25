@@ -111,8 +111,8 @@ async function onDomReady(_event: Event){
     const notebookName = window.location.pathname;
     gNotebook = await gSocket.openNotebook(notebookName);
 
-    // Insert the TDoc at the top of the "column"
-    $('#column').appendChild(gNotebook.$elt);
+    // Insert the TDoc into the content window
+    $('#content').appendChild(gNotebook.$elt);
 
   } catch (err) {
     showErrorMessage("Error initializing math tablet.", err);

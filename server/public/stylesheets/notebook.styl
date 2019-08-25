@@ -20,11 +20,17 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 // Specific elements
 
 :root
+  --footer-height 192px
+  --header-height 32px
   --sidebar-width 60px
 
-#column
-  margin-left var(--sidebar-width)
-  width calc(100% - var(sidebar-width))
+#content
+  height calc(100% - var(--header-height) - var(--footer-height))
+  left var(--sidebar-width)
+  overflow scroll
+  position fixed
+  top var(--header-height)
+  width calc(100% - var(--sidebar-width))
 
 #debugWindow
   background-color #eeeeee
@@ -57,6 +63,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
   background-color #cccccc
   display flex
   flex-direction row
+  height var(--header-height)
   justify-content space-between
   margin-left var(--sidebar-width)
   padding 0 6pt 0 6pt
@@ -77,7 +84,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #footer
   border-top 1px solid black
   bottom 0
-  height 20%
+  height var(--footer-height)
   left var(--sidebar-width)
   position fixed
   right 0
