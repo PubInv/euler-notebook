@@ -79,8 +79,9 @@ async function onDomReady(_event: Event){
 
     window.addEventListener('resize', onResize);
 
-    $<HTMLButtonElement>('#debugMenu').addEventListener<'click'>('click', onDebugMenuClicked);
-    $<HTMLButtonElement>('#userMenu').addEventListener<'click'>('click', _event=>{ alert("User menu not yet implemented."); });
+    $<HTMLButtonElement>('#homeButton').addEventListener<'click'>('click', _event=>{ window.location.href = '/' });
+    $<HTMLButtonElement>('#debugButton').addEventListener<'click'>('click', onDebugMenuClicked);
+    $<HTMLButtonElement>('#userButton').addEventListener<'click'>('click', _event=>{ alert("User menu not yet implemented."); });
 
     $<HTMLButtonElement>('#insertButton').addEventListener<'click'>('click', onInsertButtonClicked);
     $<HTMLButtonElement>('#inputMathButton').addEventListener<'click'>('click', _event=>switchInput('Math'));

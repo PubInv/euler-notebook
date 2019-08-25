@@ -22,7 +22,9 @@ include iconmonstr
 
 mixin header
   #header
-    button#debugMenu(title="Debug window")
+    button#homeButton(title="Math Tablet home")
+      +svgIconHome6
+    button#debugButton(title="Debug window")
       +svgIconBug12
     select#keyboardInputType()
       option(value='LATEX') LaTeX
@@ -31,14 +33,12 @@ mixin header
       option(value='TEXT') Text
       option(value='WOLFRAM', selected=true) Wolfram
     div
-      a(href='/') home
-      | /
       each segment, i in pathSegments
         - const url = '/' + pathSegments.slice(0,i+1).join('/') + '/';
         a(href=url)= segment
         | /
       = notebookName
-    button#userMenu(title="User settings")
+    button#userButton(title="User settings")
       +svgIconUser1
 
 mixin footer
