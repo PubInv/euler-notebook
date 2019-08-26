@@ -123,21 +123,23 @@ export class TeXFormatterObserver implements ObserverInstance {
     // and then treat the "EQUATION" style separately!  Hairy---but this
     // project is all about the hair.
 
-    if (style.type == 'WOLFRAM') {
+    if (style.type == 'SYMBOL' && style.meaning == 'SYMBOL-DEFINITION') {
 
       var text: string = style.data;
       debug("INSIDE SOLVER RULE :",text);
 
-      const tex : string = await this.findTeXForm(style.data);
-      debug("Tex formatter", text, tex);
-      if (tex) {
+      const lhs : string = await this.findTeXForm(style.data.name);
+      const rhs : string = await this.findTeXForm(style.data.value);
+      debug("Tex formatter", text, lhs,rhs);
+      const tex_def = lhs + " = " + rhs;
+      if (tex_def) {
 
         // Create the latex
         const styleProps: StylePropertiesWithSubprops = {
           type: 'LATEX',
           // This is the best meaning without creating one specifically for this purpose..
           meaning: 'DECORATION',
-          data: tex,
+          data: tex_def,
         }
 
         const changeReq: StyleInsertRequest = {
@@ -154,7 +156,7 @@ export class TeXFormatterObserver implements ObserverInstance {
       const texlhs : string = await this.findTeXForm(style.data.lhs);
       const texrhs : string = await this.findTeXForm(style.data.rhs);
 
-      debug("Tex formatter", texlhs, texrhs);
+      debug("Tex formatter", texlhs,"/", texrhs);
       if (texrhs && texlhs) {
 
         // Create the latex

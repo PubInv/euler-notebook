@@ -97,6 +97,7 @@ export class SymbolClassifierObserver implements ObserverInstance {
   // refactor this to be style independent so that we can figure it out later
 
   private async addSymbolDefStyles(style: StyleObject, rval: NotebookChangeRequest[]): Promise<void> {
+    debug('addSymbolDefStyles');
     const script = `FullForm[Hold[${style.data}]]`;
     const result = await execute(script);
     if (!result) { return; }
@@ -131,7 +132,9 @@ export class SymbolClassifierObserver implements ObserverInstance {
 
 
         var styleProps: StylePropertiesWithSubprops;
+
         if (name.match(/^[a-z]+$/i)) {
+          debug('defining symbol',name);
           const data = { name, value };
           styleProps = {
             type: 'SYMBOL',
@@ -158,12 +161,13 @@ export class SymbolClassifierObserver implements ObserverInstance {
           await this.addSymbolUseStylesFromString(lhs, style, rval);
           await this.addSymbolUseStylesFromString(rhs, style, rval);
           // Now let's try to add a tool tip to solve:
-
-          const changeReq: StyleInsertRequest = { type: 'insertStyle', parentId: style.id, styleProps };
-          rval.push(changeReq);
-
-          debug(`Inserting def style.`);
         }
+
+        const changeReq: StyleInsertRequest = { type: 'insertStyle', parentId: style.id, styleProps };
+        rval.push(changeReq);
+
+        debug(`Inserting def style.`);
+
       }
     }
   }
