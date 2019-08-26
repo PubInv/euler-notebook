@@ -69,9 +69,9 @@ block content
         button(type='submit', name='action', value='newNotebook') New Notebook
 
     #importFileView
-      form(method='POST')
-        input(type='file', name='importedFile', accept='.mti')
-        button(type='submit', name='action', value='uploadNotebook') Import
+      form(method='POST', enctype="multipart/form-data")
+        input(type='file', name='importFile', accept='.json')
+        button(type='submit', name='action', value='importFile') Import
 
     #filesAndFoldersView
       - const isEmpty = folders.length==0 && notebooks.length==0

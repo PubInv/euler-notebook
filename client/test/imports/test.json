@@ -1,0 +1,7 @@
+[
+  { "type": "insertStyle", "styleProps": { "type": "LATEX", "meaning": "INPUT", "data": "x_1" }},
+  { "type": "insertStyle", "styleProps": { "type": "LATEX", "meaning": "INPUT", "data": "x_2" }},
+  { "type": "insertStyle", "styleProps": { "type": "LATEX", "meaning": "INPUT", "data": "x_3" }},
+  { "type": "insertStyle", "styleProps": { "type": "LATEX", "meaning": "INPUT", "data": "x_4" }},
+  { "type": "insertStyle", "styleProps": { "type": "LATEX", "meaning": "INPUT", "data": "x_5" }}
+]

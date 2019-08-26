@@ -100,6 +100,8 @@ export class ServerNotebook extends Notebook {
     debug(`Registering observer: ${source}`);
     this.observerClasses.set(source, observerClass);
   }
+
+  // NFC: Move this to instance methods section.
   // I think "variables" should be a parameter...
   // That parameter will be different when used by
   // SUBTRIVARIATE, and when used by EQUATION

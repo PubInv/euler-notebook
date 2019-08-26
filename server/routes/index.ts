@@ -20,8 +20,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 // Requirements
 
 import * as debug1 from 'debug';
-const MODULE = __filename.split(/[/\\]/).slice(-1)[0].slice(0,-3);
-const debug = debug1(`server:${MODULE}`);
+import * as multer from 'multer'
 
 import { NextFunction, Request, Response, Router } from 'express';
 
@@ -32,18 +31,21 @@ import { isValidNotebookPath, getListOfNotebooksAndFoldersInFolder,
           notebookPathFromFolderPathAndName, NOTEBOOK_PATH_RE, isValidFolderPath, deleteFolder, deleteNotebook } from '../files-and-folders';
 import { Credentials, getCredentials } from '../config';
 
-import { NotebookName } from '../../client/math-tablet-api';
+import { NotebookName, NotebookChangeRequest } from '../../client/math-tablet-api';
 
-// Exports
+const MODULE = __filename.split(/[/\\]/).slice(-1)[0].slice(0,-3);
+const debug = debug1(`server:${MODULE}`);
 
-export var router = Router();
+const upload = multer(); // defaults to memory storage.
 
 // Types
+
+type ImportFile = NotebookChangeRequest[];
 
 type Uri = string;
 
 interface FolderPageBody {
-  action: 'deleteSelected'|'newFolder'|'newNotebook';
+  action: 'deleteSelected'|'importFile'|'newFolder'|'newNotebook';
 
   // 'deleteSelected' fields
   folders?: { [ path: string]: FolderPath },
@@ -67,6 +69,8 @@ interface PageMessages {
 
 // Globals
 
+export var router = Router();
+
 let gCredentials: Credentials|undefined;
 
 // Routes
@@ -80,7 +84,7 @@ router.get(NOTEBOOK_PATH_RE, onNotebookPage);
 router.post(NOTEBOOK_PATH_RE, onNotebookPage);
 
 router.get(FOLDER_PATH_RE, onFolderPage);
-router.post(FOLDER_PATH_RE, onFolderPage);
+router.post(FOLDER_PATH_RE, upload.single('importFile'), onFolderPage);
 
 // Route Handler Functions
 
@@ -139,6 +143,7 @@ async function onFolderPage(req: Request, res: Response, _next: NextFunction): P
       const action = body.action;
       switch (action) {
       case 'deleteSelected':  redirectUri = await deleteSelected(body, path, messages); break;
+      case 'importFile':      redirectUri = await importFile(req.file, path, messages); break;
       case 'newFolder':       redirectUri = await newFolder(body, path, messages); break;
       case 'newNotebook':     redirectUri = await newNotebook(body, path, messages); break;
       default:
@@ -229,6 +234,56 @@ function generateScratchNotebookName(): string {
   return rval;
 }
 
+async function importFile(multerFile: Express.Multer.File, folderPath: FolderPath, messages: PageMessages): Promise<Uri|undefined> {
+  console.log(`Importing ${multerFile.originalname} into ${folderPath}.`);
+
+  // Convert the file buffer to a JSON object
+  const json = multerFile.buffer.toString();
+  let changes: ImportFile;
+  try {
+    changes = JSON.parse(json);
+  } catch(err) {
+    messages.error.push(`Import failed. '${multerFile.originalname}' isn't valid JSON: ${err.message}`);
+    return undefined;
+  }
+
+  const invalidReason = validateImportData(changes);
+  if (invalidReason) {
+    messages.error.push(`Import failed. '${multerFile.originalname}' isn't valid: ${invalidReason}`);
+    return undefined;
+  }
+
+  // Notebook name is original filename minus the .json extension.
+  const notebookName = multerFile.originalname.slice(0, -5);
+  if (!isValidNotebookName(notebookName)) {
+    // TODO: Let user specify notebook name, or generate a valid one instead of failing.
+    messages.error.push(`Import failed: Invalid notebook name: '${notebookName}'`);
+    return undefined;
+  }
+
+  const notebookPath = notebookPathFromFolderPathAndName(folderPath, notebookName);
+
+  // Attempt to open the notebook file, hoping to fail.
+  try {
+    await ServerNotebook.open(notebookPath);
+    // TODO: Close notebook? But what if it has listeners?
+    // TODO: Generate alternate notebook name, e.g. add increasing number suffix.
+    throw new Error(`Import failed: Notebook already exists: ${notebookPath}`);
+  } catch(err) {
+    // Good! Notebook doesn't exist!
+  }
+
+  // Create the notebook folder, then create the notebook JSON file.
+  await createFolder(notebookPath);
+  const notebook = await ServerNotebook.create(notebookPath);
+
+  // Insert imported data into the notebook.
+  await notebook.requestChanges('USER', changes);
+
+  messages.success.push(`File imported successfully.`);
+  return notebookPath;
+}
+
 // Returns URI for the new folder to redirect to if creation succeeds.
 // Otherwise, returns undefined, and messages contains an error message to be displayed.
 async function newFolder(body: FolderPageBody, folderPath: FolderPath, messages: PageMessages): Promise<Uri|undefined> {
@@ -270,7 +325,28 @@ async function newNotebook(body: FolderPageBody, folderPath: FolderPath, message
   await ServerNotebook.create(notebookPath);
 
   messages.success.push(`Notebook '${notebookName}' created successfully.`);
-  return `${notebookPath}`;
+  return notebookPath;
+}
+
+function validateImportData(obj: any): string|undefined {
+  // Returns undefined if the object is valid,
+  // or a string describing why the object is invalid.
+  let rval: string|undefined = undefined;
+  if (!(obj instanceof Array)) {
+    rval = "Does not have array at top level.";
+  } else {
+    for (let i=0; i<obj.length; i++) {
+      rval = validateNotebookChangeRequest(obj[i], i)
+      if (rval) { break; }
+    }
+  }
+  return rval;
+}
+
+function validateNotebookChangeRequest(_entry: NotebookChangeRequest, _i: number): string|undefined {
+
+  // TODO:
+  return undefined;
 }
 
 function zeroPad(n: number): string {

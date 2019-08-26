@@ -78,29 +78,31 @@ export interface StyleMap {
   [id: /* StyleId */number]: StyleObject;
 }
 
-export type StyleMeaning =
-  'ATTRIBUTE' |       // Generic attribute. Meaning implied by type.
-  'ERROR' |           // An error message. Type should be text.
-  'EVALUATION'|       // CAS evaluation of an expression.
-  'EVALUATION-ERROR' |// Error in CAS evaluation of an expression.
-  'EXPOSITION' |      // A longer discussion or description.
-  'FORMULA-ALT' |     // Alternative representation of a formula.
-  'HANDWRITING' |     // REVIEW: Used? Deprecate? Stroke information for the user's handwriting.
-  'INPUT' |           // Primary representation of something that the user has input.
-  'INPUT-ALT' |       // An alternative representation, e.g. LaTeX version of handwritten math.
-  'QUADRATIC' |       // DEPRECATED: A quadratic expression, presumably worth plotting.
-  'SIMPLIFICATION' |  // CAS simplification of expression or equation.
-  'PLOT' |            // Plot of a formula
-  'EQUATION' |        // An equation
-  'EQUATION-SOLUTION' |        // An equation
-  'EQUATION-DEFINITION' | // A simple equality relation defined
-  'SYMBOL' |          // Symbols extracted from an expression.
-  'SYMBOL-DEFINITION'|// Definition of a symbol.
-'SYMBOL-USE' |      // Use of a symbol.
-  'DECORATION' | // Clearly indicates this is NOT the input but a decoration
-  'EQUIVALENT-CHECKS'|// Checking expression equivalence of with other styles
-  'UNIVARIATE-QUADRATIC'|// A quadratic expression, presumably worth plotting.
-  'SUBTRIVARIATE';    // An expression in one or two variables presumable plottable.
+export const STYLE_MEANINGS = [
+  'ATTRIBUTE',       // Generic attribute. Meaning implied by type.
+  'ERROR',           // An error message. Type should be text.
+  'EVALUATION',      // CAS evaluation of an expression.
+  'EVALUATION-ERROR',// Error in CAS evaluation of an expression.
+  'EXPOSITION',      // A longer discussion or description.
+  'FORMULA-ALT',     // Alternative representation of a formula.
+  'HANDWRITING',     // REVIEW: Used? Deprecate? Stroke information for the user's handwriting.
+  'INPUT',           // Primary representation of something that the user has input.
+  'INPUT-ALT',       // An alternative representation, e.g. LaTeX version of handwritten math.
+  'QUADRATIC',       // DEPRECATED: A quadratic expression, presumably worth plotting.
+  'SIMPLIFICATION',  // CAS simplification of expression or equation.
+  'PLOT',            // Plot of a formula
+  'EQUATION',        // An equation
+  'EQUATION-SOLUTION',        // An equation
+  'EQUATION-DEFINITION', // A simple equality relation defined
+  'SYMBOL',          // Symbols extracted from an expression.
+  'SYMBOL-DEFINITION',// Definition of a symbol.
+  'SYMBOL-USE',      // Use of a symbol.
+  'DECORATION', // Clearly indicates this is NOT the input but a decoration
+  'EQUIVALENT-CHECKS',// Checking expression equivalence of with other styles
+  'UNIVARIATE-QUADRATIC',// A quadratic expression, presumably worth plotting.
+  'SUBTRIVARIATE',    // An expression in one or two variables presumable plottable.
+] as const;
+export type StyleMeaning = typeof STYLE_MEANINGS[number];
 
 export interface StyleObject extends StyleProperties {
   id: StyleId;
@@ -114,34 +116,38 @@ export interface StyleProperties {
   type: StyleType;
 }
 
-export type StyleType =
-  'HTML' |            // Html: HTML-formatted text
-  'IMAGE' |           // ImageData: URL of image relative to notebook folder.
-  'JIIX' |            // Jiix: MyScript JIIX export from 'MATH' editor.
-  'LATEX' |           // LatexData: LaTeX string
-  /* DEPRECATED: */ 'CLASSIFICATION'|   // A classifcication of the style.
-  'MATHJS' |          // MathJsData: MathJS plain text expression
-  'MATHML' |          // MathMlData: MathML Presentation XML
-  'STROKE' |          // StrokeGroups: MyScript strokeGroups export from 'TEXT' editor.
-  'SYMBOL' |          // SymbolData: symbol in a definition or expression.
-  'SOLUTION' |      // The result of a "solve" operation
-  'EQUATION' |        // An equation (ambiguously assertion or relation)
-  'TEXT' |            // TextData: Plain text
-  'TOOL' |            // ToolInfo: Tool that can be applied to the parent style.
-  'WOLFRAM';          // WolframData: Wolfram language expression
+export const STYLE_TYPES = [
+  'HTML',            // Html: HTML-formatted text
+  'IMAGE',           // ImageData: URL of image relative to notebook folder.
+  'JIIX',            // Jiix: MyScript JIIX export from 'MATH' editor.
+  'LATEX',           // LatexData: LaTeX string
+  /* DEPRECATED: */ 'CLASSIFICATION',    // A classifcication of the style.
+  'MATHJS',          // MathJsData: MathJS plain text expression
+  'MATHML',          // MathMlData: MathML Presentation XML
+  'STROKE',          // StrokeGroups: MyScript strokeGroups export from 'TEXT' editor.
+  'SYMBOL',          // SymbolData: symbol in a definition or expression.
+  'SOLUTION',      // The result of a "solve" operation
+  'EQUATION',        // An equation (ambiguously assertion or relation)
+  'TEXT',            // TextData: Plain text
+  'TOOL',            // ToolInfo: Tool that can be applied to the parent style.
+  'WOLFRAM',          // WolframData: Wolfram language expression
+] as const;
+export type StyleType = typeof STYLE_TYPES[number];
 
-export type StyleSource =
-  'MATHEMATICA' |     // Mathematica style (evaluation)
-  'MATHJS' |          // The Mathjs Computer Algebra System system
-  'MATHSTEPS' |       // The Mathsteps CAS system
-  'SANDBOX' |         // Sandbox for temporary experiments
-  'SUBTRIV-CLASSIFIER'|
-  'EQUATION-SOLVER' |  // Attempt to expose Wolfram solutions
-  'SYMBOL-CLASSIFIER'|
-  'TEX-FORMATTER' |
-  'SYSTEM'|           // The Math-Tablet app itself, not the user or an observer.
-  'TEST' |            // An example source used only by our test system
+export const STYLE_SOURCES = [
+  'MATHEMATICA',      // Mathematica style (evaluation)
+  'MATHJS',           // The Mathjs Computer Algebra System system
+  'MATHSTEPS',        // The Mathsteps CAS system
+  'SANDBOX',          // Sandbox for temporary experiments
+  'SUBTRIV-CLASSIFIER',
+  'EQUATION-SOLVER',  // Attempt to expose Wolfram solutions
+  'SYMBOL-CLASSIFIER',
+  'TEX-FORMATTER',
+  'SYSTEM',           // The Math-Tablet app itself, not the user or an observer.
+  'TEST',             // An example source used only by our test system
   'USER'              // Directly entered by user
+] as const;
+export type StyleSource = typeof STYLE_SOURCES[number];
 
 // Constants
 
