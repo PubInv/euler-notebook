@@ -33,12 +33,9 @@ import { ToolInfo, NotebookChangeRequest, StyleInsertRequest, StylePropertiesWit
        } from '../../client/math-tablet-api';
 import { ServerNotebook, ObserverInstance } from '../server-notebook';
 import { execute,
-//         constructSubstitution
+         findTeXForm
        } from './wolframscript';
 import { Config } from '../config';
-// import * as uuid from 'uuid-js';
-// import uuid = require('uuid');
-// import { v4 as uuid } from 'uuid';
 
 
 
@@ -225,8 +222,15 @@ export class EquationSolverObserver implements ObserverInstance {
       debug("Adding promotsion of solution", sol);
       // I'm adding data here to make it more obvious that is where
       // the official solution is....though it remains unparsed
+      // Although it make some time, I want the "Tex" format for the tool tip here, and
+      // I have no recourse but to go get it...
+      const lhs : string = await findTeXForm(sol.name);
+      const rhs : string = await findTeXForm(sol.value);
+      debug("Equation Solver Tex", lhs,rhs);
+      const tex_def = lhs + " = " + rhs;
+
       const toolInfo: ToolInfo = { name: 'promote',
-                                   html: sol.name + "<-" + sol.value + " ",
+                                   tex: tex_def,
                                    data: JSON.stringify(sol) };
       const styleProps2: StylePropertiesWithSubprops = {
         type: 'TOOL',

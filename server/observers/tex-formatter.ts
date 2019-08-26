@@ -28,9 +28,10 @@ import { NotebookChange, StyleObject,
 import {  NotebookChangeRequest, StyleInsertRequest, StylePropertiesWithSubprops,
        } from '../../client/math-tablet-api';
 import { ServerNotebook, ObserverInstance } from '../server-notebook';
-import { execute,
+import { findTeXForm
        } from './wolframscript';
 import { Config } from '../config';
+
 
 
 
@@ -100,15 +101,6 @@ export class TeXFormatterObserver implements ObserverInstance {
     }
   }
 
-  private async findTeXForm(text: string): Promise<string> {
-    const getTex = `TeXForm[${text}]`;
-    try {
-      const tex = await execute(getTex);
-      return tex;
-    }  catch (e) {
-      return "";
-    }
-  }
 
   private async latexFormatterRule(style: StyleObject, rval: NotebookChangeRequest[]): Promise<void> {
     // At present, it only makes sense to operate on styles of type "WOLFRAM",
@@ -122,39 +114,57 @@ export class TeXFormatterObserver implements ObserverInstance {
     // I think the best thing here is to catch the error, allow it to fail,
     // and then treat the "EQUATION" style separately!  Hairy---but this
     // project is all about the hair.
-
-    if (style.type == 'SYMBOL' && style.meaning == 'SYMBOL-DEFINITION') {
-
-      var text: string = style.data;
-      debug("INSIDE SOLVER RULE :",text);
-
-      const lhs : string = await this.findTeXForm(style.data.name);
-      const rhs : string = await this.findTeXForm(style.data.value);
-      debug("Tex formatter", text, lhs,rhs);
-      const tex_def = lhs + " = " + rhs;
-      if (tex_def) {
-
-        // Create the latex
-        const styleProps: StylePropertiesWithSubprops = {
-          type: 'LATEX',
-          // This is the best meaning without creating one specifically for this purpose..
-          meaning: 'DECORATION',
-          data: tex_def,
+      if (style.type == 'WOLFRAM' && style.meaning == 'INPUT') {
+        var text: string = style.data;
+        debug("INSIDE SOLVER RULE :",text);
+        const tex : string = await findTeXForm(style.data);
+        if (tex) {
+          // Create the latex
+          const styleProps: StylePropertiesWithSubprops = {
+            type: 'LATEX',
+            // This is the best meaning without creating one specifically for this purpose..
+            meaning: 'DECORATION',
+            data: tex,
+          }
+          const changeReq: StyleInsertRequest = {
+            type: 'insertStyle',
+            parentId: style.id,
+            styleProps: styleProps
+          };
+          rval.push(changeReq);
         }
+      } else if (style.type == 'SYMBOL' && style.meaning == 'SYMBOL-DEFINITION') {
 
-        const changeReq: StyleInsertRequest = {
-          type: 'insertStyle',
-          parentId: style.id,
-          styleProps: styleProps
-        };
-        rval.push(changeReq);
-      }
-      return;
-    } else if (style.type == 'EQUATION') {
+        var text: string = style.data;
+        debug("INSIDE SOLVER RULE :",text);
+
+        const lhs : string = style.data.name;
+        const rhs : string = await findTeXForm(style.data.value);
+        debug("Tex formatter", text, lhs,rhs);
+        const tex_def = lhs + " = " + rhs;
+        if (tex_def) {
+
+          // Create the latex
+          const styleProps: StylePropertiesWithSubprops = {
+            type: 'LATEX',
+            // This is the best meaning without creating one specifically for this purpose..
+            meaning: 'DECORATION',
+            data: tex_def,
+          }
+
+          const changeReq: StyleInsertRequest = {
+            type: 'insertStyle',
+            parentId: style.id,
+            styleProps: styleProps
+          };
+          rval.push(changeReq);
+        }
+        return;
+      } else if (style.type == 'EQUATION' && style.meaning == 'EQUATION-DEFINITION') {
       // Here we have a bit of a problem...we should probably just conjoin the tex
       // from the lhs and rhs...
-      const texlhs : string = await this.findTeXForm(style.data.lhs);
-      const texrhs : string = await this.findTeXForm(style.data.rhs);
+      const texlhs : string = await findTeXForm(style.data.lhs);
+      const texrhs : string = await findTeXForm(style.data.rhs);
 
       debug("Tex formatter", texlhs,"/", texrhs);
       if (texrhs && texlhs) {

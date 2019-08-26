@@ -233,3 +233,16 @@ export async function checkEquiv(a:string, b:string) : Promise<boolean> {
   const result = await execute(wrapped);
   return (result == 'True');
 }
+
+// Note: As often happens, this does not handle the input
+// being an assignment properly...it is best to texify
+// both sides of an assignment and handle that way.
+export async function findTeXForm(text: string): Promise<string> {
+    const getTex = `TeXForm[${text}]`;
+    try {
+      const tex = await execute(getTex);
+      return tex;
+    }  catch (e) {
+      return "";
+    }
+  }

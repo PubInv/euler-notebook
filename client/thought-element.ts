@@ -284,7 +284,11 @@ export class ThoughtElement {
   private renderTool(style: StyleObject): void {
     const info: ToolInfo = style.data;
     const $toolsElt = this.$elt.querySelector('.tools');
-    const $button = $new('button', { class: 'tool', html: info.html });
+    const input = (info.tex) ?
+      getKatex().renderToString(info.tex, {}) :
+      info.html;
+
+    const $button = $new('button', { class: 'tool', html: input });
     $button.addEventListener('click', (_event: MouseEvent)=>{
       this.notebook.useTool(style.id);
     });

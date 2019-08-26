@@ -58,7 +58,11 @@ export interface StrokeGroups {
 export type ToolName = string;
 export interface ToolInfo {
   name: ToolName;
-  html: /* TYPESCRIPT: Html? */ string;
+  html?: /* TYPESCRIPT: Html? */ string;
+  // This is needed because we don't want to try to do
+  // TeX rendering into HTML on the server side; so we must
+  // inform the tool processor what we want in some way.
+  tex?: string;
   data?: any;
 }
 
@@ -143,4 +147,4 @@ export interface UseTool {
 export interface NameValuePair {
     name: string;
     value: string;
-  }
+}
