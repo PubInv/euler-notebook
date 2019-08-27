@@ -95,7 +95,9 @@ export interface RelationshipInsertRequest {
 }
 export interface StyleDeleteRequest {
   type: 'deleteStyle';
-  styleId: number;
+  // Why is this a number and not a StyleId? - rlr
+  styleId: StyleId;
+//  styleId: number;
 }
 export interface StyleInsertRequest {
   type: 'insertStyle';

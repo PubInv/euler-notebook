@@ -24,8 +24,11 @@ const MODULE = __filename.split(/[/\\]/).slice(-1)[0].slice(0,-3);
 const debug = debug1(`server:${MODULE}`);
 
 import { NotebookChange, StyleObject,
+         RelationshipObject,
+         StyleId
        } from '../../client/notebook';
-import {  NotebookChangeRequest, StyleInsertRequest, StylePropertiesWithSubprops,
+import {  NotebookChangeRequest, StyleInsertRequest,
+          StyleDeleteRequest, StylePropertiesWithSubprops,
        } from '../../client/math-tablet-api';
 import { ServerNotebook, ObserverInstance } from '../server-notebook';
 import { findTeXForm
@@ -91,17 +94,33 @@ export class TeXFormatterObserver implements ObserverInstance {
       case 'styleInserted':
         await this.latexFormatterRule(change.style, rval);
         break;
-      // case 'relationshipInserted':
-      //   await this.equationSolverChangedRule(change.relationship, rval);
-      //   break;
-      // case 'relationshipDeleted':
-      //   await this.equationSolverChangedRule(change.relationship, rval);
-      //   break;
+      case 'relationshipInserted':
+        await this.texFormatterChangedRule(change.relationship, rval);
+        break;
+      case 'relationshipDeleted':
+        await this.texFormatterChangedRule(change.relationship, rval);
+        break;
       default: break;
     }
   }
 
+  private async texFormatterChangedRule(relationship: RelationshipObject, rval: NotebookChangeRequest[]): Promise<void> {
+    const style : StyleObject = this.notebook.getStyleById(relationship.toId);
+    // Now, we will simply delete everyting and recalculate as an
+    // initial strategy.
+        const texs : StyleObject[] =
+      this.notebook.findChildStylesOfType(style.id,'LATEX','DECORATION');
+    for(const itex of texs) {
+      const sid : StyleId = itex.id;
+      const changeReq: StyleDeleteRequest = {
+        type: 'deleteStyle',
+        styleId: sid
+      };
+      rval.push(changeReq);
+    }
+    this.latexFormatterRule(style,rval);
 
+  }
   private async latexFormatterRule(style: StyleObject, rval: NotebookChangeRequest[]): Promise<void> {
     // At present, it only makes sense to operate on styles of type "WOLFRAM",
     // the some styles, such as "EQUATION", may have components where are WOLFRAM

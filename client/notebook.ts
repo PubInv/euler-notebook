@@ -71,7 +71,6 @@ export interface RelationshipMap {
 export interface RelationshipProperties {
   meaning: RelationshipMeaning;
 }
-
 export type StyleId = number;
 
 export interface StyleMap {

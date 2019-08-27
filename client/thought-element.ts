@@ -53,12 +53,24 @@ export class ThoughtElement {
   }
 
   public deleteStyle(style: StyleObject): void {
+    console.log("delete Style",style);
     if (!style.parentId) {
 
     } else {
       if (style.type == 'LATEX') {
         const $formulaElt = this.$elt.querySelector('.formula');
         $formulaElt!.innerHTML = '';
+      }
+      if (style.type == 'TOOL') {
+        const $toolsElt = this.$elt.querySelector('.tools');
+        // TODO: This is not TRULY correct, because we are doing event
+        // processing; we could be delete only one of many tool attributes
+        // which is written into the HTML. To handle properly, we would
+        // have to unambiguously identify the HTML element and remove it.
+        // This would almost certainly necessitates adding ids to
+        // elements.  IF all the deletes come before all the inserts,
+        // this will actually work; but it is fragile.
+        $toolsElt!.innerHTML = '';
       }
     }
   }
@@ -107,10 +119,8 @@ export class ThoughtElement {
         // This is currently a "promotion" which is a form of input,
         // so make it a high-level thought is slightly inconsistent.
       case 'SYMBOL-DEFINITION':
-        console.log('Symbol defintion found');
         if (style.type == 'SYMBOL')
         {
-          console.log('render',style.data);
           this.renderDefinition(style); }
         break;
       default:

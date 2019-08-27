@@ -24,10 +24,11 @@ const MODULE = __filename.split(/[/\\]/).slice(-1)[0].slice(0,-3);
 const debug = debug1(`server:${MODULE}`);
 
 import { NotebookChange, StyleObject,
-//         RelationshipObject
+         RelationshipObject,
+         StyleId
        } from '../../client/notebook';
 import { ToolInfo, NotebookChangeRequest, StyleInsertRequest, StylePropertiesWithSubprops,
-         //         StyleDeleteRequest
+         StyleDeleteRequest,
          RelationshipPropertiesMap,
          NameValuePair
        } from '../../client/math-tablet-api';
@@ -118,12 +119,12 @@ export class EquationSolverObserver implements ObserverInstance {
       case 'styleInserted':
         await this.equationSolverRule(change.style, rval);
         break;
-      // case 'relationshipInserted':
-      //   await this.equationSolverChangedRule(change.relationship, rval);
-      //   break;
-      // case 'relationshipDeleted':
-      //   await this.equationSolverChangedRule(change.relationship, rval);
-      //   break;
+      case 'relationshipInserted':
+        await this.equationSolverChangedRule(change.relationship, rval);
+        break;
+      case 'relationshipDeleted':
+        await this.equationSolverChangedRule(change.relationship, rval);
+        break;
       default: break;
     }
   }
@@ -167,12 +168,15 @@ export class EquationSolverObserver implements ObserverInstance {
       // We actually need to know which variables still remain!
       // So I need to put that back!
 
+      debug(`rvars ${rvars}`);
       debug(`usedSymbls ${usedSymbols}`);
       debug(`sub_expr ${sub_expr}, ${variables}`);
 
       const symbolUses = this.notebook.findChildStylesOfType(parent.id,'SYMBOL','SYMBOL-USE');
 
       debug(`symbolUses ${symbolUses}`);
+
+      debug(`symbolUses ${rvars}`);
 
 
       for (const varname of rvars) {
@@ -204,6 +208,33 @@ export class EquationSolverObserver implements ObserverInstance {
     }
   }
 
+  private async solutionInsert(sol : NameValuePair, styleId: StyleId): Promise<StyleInsertRequest> {
+    debug("Adding promotsion of solution", sol);
+    // I'm adding data here to make it more obvious that is where
+    // the official solution is....though it remains unparsed
+    // Although it make some time, I want the "Tex" format for the tool tip here, and
+    // I have no recourse but to go get it...
+    const lhs : string = await findTeXForm(sol.name);
+    const rhs : string = await findTeXForm(sol.value);
+    debug("Equation Solver Tex", lhs,rhs);
+    const tex_def = lhs + " = " + rhs;
+
+    const toolInfo: ToolInfo = { name: 'promote',
+                                 tex: tex_def,
+                                 data: JSON.stringify(sol) };
+    const styleProps2: StylePropertiesWithSubprops = {
+      type: 'TOOL',
+      meaning: 'ATTRIBUTE',
+      data: toolInfo,
+    }
+    const changeReq2: StyleInsertRequest = {
+      type: 'insertStyle',
+      parentId: styleId,
+      styleProps: styleProps2
+    };
+    return changeReq2;
+  }
+
   private async equationSolverRule(style: StyleObject, rval: NotebookChangeRequest[]): Promise<void> {
     if (style.type != 'EQUATION' || style.meaning != 'EQUATION-DEFINITION') { return; }
     debug("INSIDE SOLVER RULE :",style);
@@ -218,33 +249,65 @@ export class EquationSolverObserver implements ObserverInstance {
     // limit this to 4 solutions...
     for(const sol of solutions)
     {
+      const changeReq2: StyleInsertRequest = await this.solutionInsert(sol,style.id);
+      rval.push(changeReq2);
+    }
+  }
 
-      debug("Adding promotsion of solution", sol);
-      // I'm adding data here to make it more obvious that is where
-      // the official solution is....though it remains unparsed
-      // Although it make some time, I want the "Tex" format for the tool tip here, and
-      // I have no recourse but to go get it...
-      const lhs : string = await findTeXForm(sol.name);
-      const rhs : string = await findTeXForm(sol.value);
-      debug("Equation Solver Tex", lhs,rhs);
-      const tex_def = lhs + " = " + rhs;
 
-      const toolInfo: ToolInfo = { name: 'promote',
-                                   tex: tex_def,
-                                   data: JSON.stringify(sol) };
-      const styleProps2: StylePropertiesWithSubprops = {
-        type: 'TOOL',
-        meaning: 'ATTRIBUTE',
-        data: toolInfo,
-      }
-      const changeReq2: StyleInsertRequest = {
-        type: 'insertStyle',
-        parentId: style.id,
-        styleProps: styleProps2
-      };
+  private async equationSolverChangedRule(relationship: RelationshipObject, rval: NotebookChangeRequest[]): Promise<void> {
+
+    if (relationship.meaning != 'SYMBOL-DEPENDENCY') return;
+
+    debug("RELATIONSHIP",relationship);
+
+    var target_ancestor = null;
+    try {
+      target_ancestor = this.notebook.topLevelStyleOf(relationship.toId);
+    } catch (e) {
+      return;
+    }
+    if (target_ancestor == null) {
+      throw new Error("Could not find ancestor Thought: "+relationship.toId);
+      return;
+    }
+
+    // I'm just going to try to handle this as a straight recomputation...
+    // The alternative would be to see if a definion has been inserted
+    // which I use....
+    // We want to delete and recstruct the tools...
+    // So we find the TOOL style...might need to distinguish by source
+    // but for now we will just find it.
+        const tools =
+      this.notebook.findChildStylesOfType(target_ancestor.id,'TOOL','ATTRIBUTE');
+    debug("tools in changed",tools);
+    for(const tool of tools) {
+      const changeReq: StyleDeleteRequest = {
+          type: 'deleteStyle',
+          styleId: tool.id
+        };
+      rval.push(changeReq);
+    }
+
+    // This is basically a pure recomputation, and a duplcation of code above,
+    // so duplication should at least be removed via a refactoring.
+
+    // now we basically just recompute...
+    const style : StyleObject = this.notebook.getStyleById(relationship.toId);
+    debug("style in changed",style);
+    const solutions : NameValuePair[] =
+      await this.computeSolutionsOfThought(style);
+
+    debug("solutions",solutions);
+    debug("Solutions.length",solutions.length);
+
+    for(const sol of solutions)
+    {
+      const changeReq2: StyleInsertRequest =
+        await this.solutionInsert(sol,
+                                  relationship.toId);
       rval.push(changeReq2);
     }
   }
 }
-
 // Private Functions
