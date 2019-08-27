@@ -31,10 +31,8 @@ export class ThoughtElement {
 
   // Class Methods
 
-  static insert(notebook: HtmlNotebook, style: StyleObject): ThoughtElement {
-    var rval = new this(notebook, style);
-    notebook.$elt.appendChild(rval.$elt);
-    return rval;
+  public static create(notebook: HtmlNotebook, style: StyleObject): ThoughtElement {
+    return new this(notebook, style);
   }
 
   // Instance Properties
@@ -188,38 +186,54 @@ export class ThoughtElement {
     this.equivalentStyles = [];
   }
 
+  // Private Event Handlers
+
+  private onClick(event: MouseEvent): void {
+    this.notebook.selectStyle(this.style.id, event);
+  }
+
+  private onDeleteButtonClick(_event: MouseEvent): void {
+    try {
+      this.notebook.deleteStyle(this.style.id);
+    } catch(err) {
+      console.error(`Error in ThoughtElement delete click handler: ${err.message}`);
+      throw err;
+    }
+  }
+
+  private onDoubleClick(_event: MouseEvent): void {
+    console.log("ThoughtElement double-clicked!");
+    throw new Error('BUGBUG');
+  }
 
   // Private Instance Methods
 
   private createElement(): HTMLDivElement {
     const styleId: StyleId = this.style.id!;
-    const $rval = $new<HTMLDivElement>('div', {
-      id: `T${styleId}`,
+
+    // Create our div.
+    const $elt = $new<HTMLDivElement>('div', {
       class: 'thought',
+      id: `T${styleId}`,
+      listeners: {
+        'click': event=>this.onClick(event),
+        'dblclick':  event=>this.onDoubleClick(event),
+      },
     });
 
-    // <div class="handle">(1)</div>
-    const selectClickHandler = (event: MouseEvent)=>{ this.notebook.selectStyle(styleId, event); };
-    const $handle = $new<HTMLDivElement>('div', { class: 'handle', html: `(${styleId})`, appendTo: $rval });
-    $handle.addEventListener('click', selectClickHandler);
-
-    // <div class="status"></div>
-    const $status = $new<HTMLDivElement>('div', { class: 'status', html: "&nbsp;", appendTo: $rval });
-    $status.addEventListener('click', selectClickHandler);
-
-    // <div class="formula"></div>
-    $new<HTMLDivElement>('div', { class: 'formula', appendTo: $rval });
-
-    // <div class="tools"></div>`
-    $new<HTMLDivElement>('div', { class: 'tools', appendTo: $rval });
-
-    // <button class="deleteStyle"></button>`);
-    const $deleteButton = $new<HTMLButtonElement>('button', { class: 'deleteStyle', html: "&#x2715;", appendTo: $rval });
-    $deleteButton.addEventListener('click', (_event: MouseEvent)=>{
-      this.notebook.deleteStyle(styleId);
+    // Create our child elements: handle, status, formula, tools, and delete button.
+    $new<HTMLDivElement>('div', { class: 'handle', html: `(${styleId})`, appendTo: $elt });
+    $new<HTMLDivElement>('div', { class: 'status', html: "&nbsp;", appendTo: $elt });
+    $new<HTMLDivElement>('div', { class: 'formula', appendTo: $elt });
+    $new<HTMLDivElement>('div', { class: 'tools', appendTo: $elt });
+    $new<HTMLButtonElement>('button', {
+      appendTo: $elt,
+      class: 'deleteStyle',
+      html: "&#x2715;",
+      listeners: { 'click': event=>this.onDeleteButtonClick(event) }
     });
 
-    return $rval;
+    return $elt;
   }
 
   private renderErrorMessage(style: StyleObject): void {

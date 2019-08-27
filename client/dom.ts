@@ -20,12 +20,20 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 // Types
 
 type CssSelector = string;
+type ElementId = string;
 type ElementTag = string;
 export type ElementClass = string;
+type EventName = 'click'|'dblclick'; // TYPESCRIPT: Already defined somewhere?
 export type Html = string;
+type Listener<E extends Event> = (event: E)=>void;
 
 interface Attributes {
   [name: string]: string|number,
+}
+
+interface Listeners {
+  click?: Listener<MouseEvent>;
+  dblclick?: Listener<MouseEvent>;
 }
 
 interface NewOptions {
@@ -34,7 +42,8 @@ interface NewOptions {
   class?: ElementClass;
   classes?: ElementClass[];
   html?: Html;
-  id?: string;
+  id?: ElementId;
+  listeners?: Listeners;
   style?: string;
 }
 
@@ -93,4 +102,32 @@ function configure($elt: Element, options: NewOptions): void {
   if (options.style) { $elt.setAttribute('style', options.style); }
 
   if (options.appendTo) { options.appendTo.appendChild($elt); }
+
+  if (options.listeners) {
+    const eventNames = <EventName[]>Object.keys(options.listeners);
+    for (const eventName of eventNames) {
+      const listener = options.listeners[eventName]!;
+      $elt.addEventListener(eventName, listenerWrapper</* TYPESCRIPT: */any>($elt, eventName, listener))
+    }
+  }
+}
+
+function listenerError(err: Error, $elt: Element, eventName: EventName): never {
+  let specifier = $elt.tagName;
+  if ($elt.id) { specifier += `#${$elt.id}` }
+  for (let i = 0; i<$elt.classList.length; i++) {
+    specifier += `.${$elt.classList.item(i)}`
+  }
+  console.error(`Error in ${specifier} ${eventName} listener: ${err.message}`);
+  throw err;
+}
+
+function listenerWrapper<E extends Event>($elt: Element, eventName: EventName, listener: Listener<E>): (event: E)=>void {
+  return function(event: E): void {
+    try {
+      listener(event);
+    } catch(err) {
+      listenerError(err, $elt, eventName);
+    }
+  };
 }
