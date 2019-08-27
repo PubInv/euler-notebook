@@ -248,7 +248,8 @@ export class HtmlNotebook {
     this.styles.set(style.id, style);
     let thoughtElt: ThoughtElement;
     if (!style.parentId) {
-      thoughtElt = ThoughtElement.insert(this, style);
+      thoughtElt = ThoughtElement.create(this, style);
+      this.$elt.appendChild(thoughtElt.$elt);
       this.styleElements.set(style.id, thoughtElt);
     } else {
       thoughtElt = this.topLevelStyleOf(style);
