@@ -175,6 +175,7 @@ export class ServerNotebook extends Notebook {
       changes.length>0 && round<MAX_CHANGE_ROUNDS;
       round++
     ) {
+      debug("ROUND",round);
 
       // Pass the changes to each observer to determine if it wants to make
       // additional changes as the result of the previous changes.
@@ -377,6 +378,7 @@ export class ServerNotebook extends Notebook {
     changeRequests: NotebookChangeRequest[]
   ): NotebookChange[] {
     let rval: NotebookChange[] = [];
+    debug("changeREQUESTS",changeRequests);
     for (const changeRequest of changeRequests) {
       const changes = this.convertChangeRequestToChanges(source, changeRequest);
       this.applyChanges(changes);

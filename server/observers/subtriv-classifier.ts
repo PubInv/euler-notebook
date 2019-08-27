@@ -26,7 +26,7 @@ const debug = debug1(`server:${MODULE}`);
 import { NotebookChange, StyleObject, RelationshipObject } from '../../client/notebook';
 import { ToolInfo, NotebookChangeRequest, StyleInsertRequest, StylePropertiesWithSubprops, StyleDeleteRequest } from '../../client/math-tablet-api';
 import { ServerNotebook, ObserverInstance } from '../server-notebook';
-import { execute, constructSubstitution } from './wolframscript';
+import { execute, constructSubstitution} from './wolframscript';
 import { Config } from '../config';
 // import * as uuid from 'uuid-js';
 // import uuid = require('uuid');

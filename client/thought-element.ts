@@ -52,6 +52,14 @@ export class ThoughtElement {
     $parent.removeChild(this.$elt);
   }
 
+  public deleteTool(styleId: StyleId): void {
+    const element = document.getElementById("tool"+styleId);
+    if (element != null) {
+      // @ts-ignore
+      element.parentNode.removeChild(element);
+    }
+  }
+
   public deleteStyle(style: StyleObject): void {
     console.log("delete Style",style);
     if (!style.parentId) {
@@ -62,15 +70,12 @@ export class ThoughtElement {
         $formulaElt!.innerHTML = '';
       }
       if (style.type == 'TOOL') {
-        const $toolsElt = this.$elt.querySelector('.tools');
-        // TODO: This is not TRULY correct, because we are doing event
-        // processing; we could be delete only one of many tool attributes
-        // which is written into the HTML. To handle properly, we would
-        // have to unambiguously identify the HTML element and remove it.
-        // This would almost certainly necessitates adding ids to
-        // elements.  IF all the deletes come before all the inserts,
-        // this will actually work; but it is fragile.
-        $toolsElt!.innerHTML = '';
+        // We embed the id into the HTML so that we can delete
+        // specific objects, so taht multiple tools can in theory be
+        // delete and added to a given thought. The fundamental problem
+        // we are trying to solve is that they mutate, but there are many
+        // potential tools on one thought.
+        this.deleteTool(style.id);
       }
     }
   }
@@ -297,8 +302,9 @@ export class ThoughtElement {
     const input = (info.tex) ?
       getKatex().renderToString(info.tex, {}) :
       info.html;
+    const wrapped = `<span id="tool${style.id}">${input}</span>`;
 
-    const $button = $new('button', { class: 'tool', html: input });
+    const $button = $new('button', { class: 'tool', html: wrapped });
     $button.addEventListener('click', (_event: MouseEvent)=>{
       this.notebook.useTool(style.id);
     });

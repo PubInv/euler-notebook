@@ -137,7 +137,12 @@ export class EquationSolverObserver implements ObserverInstance {
     // We're looking for the EQUATION style...
     const equationStyle = this.notebook.findChildStylesOfType(parent.id, 'EQUATION', 'EQUATION-DEFINITION')[0];
     const newsolutions : NameValuePair[] = [];
-    if (!equationStyle) { throw new Error(`EQUATION style not found.`); }
+    if (!equationStyle) {
+  // In some cases, this is not really an error, I guess.
+ //     debug("equationStyle not found",style.id,parent.id);
+      //      throw new Error(`EQUATION style not found. ${style}`);
+      return newsolutions;
+    }
     else {
 
       debug(`equation ${equationStyle.data.lhs} ${equationStyle.data.rhs}`);
@@ -271,6 +276,8 @@ export class EquationSolverObserver implements ObserverInstance {
       throw new Error("Could not find ancestor Thought: "+relationship.toId);
       return;
     }
+
+      if (target_ancestor.type != 'EQUATION' || target_ancestor.meaning != 'EQUATION-DEFINITION') { return; }
 
     // I'm just going to try to handle this as a straight recomputation...
     // The alternative would be to see if a definion has been inserted
