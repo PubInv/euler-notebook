@@ -22,7 +22,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 import { assert } from './common.js';
 import { escapeHtml, $new, Html } from './dom.js';
 import { getKatex } from './katex-types.js';
-import { HtmlNotebook } from './html-notebook.js';
+import { NotebookView } from './notebook-view.js';
 import { KeyboardInputPanel } from './keyboard-input-panel.js';
 import { StyleObject, StyleId, RelationshipObject } from './notebook.js';
 import { LatexData, ToolInfo, NameValuePair } from './math-tablet-api.js';
@@ -34,7 +34,7 @@ export class ThoughtElement {
 
   // Class Methods
 
-  public static create(notebook: HtmlNotebook, style: StyleObject): ThoughtElement {
+  public static create(notebook: NotebookView, style: StyleObject): ThoughtElement {
     return new this(notebook, style);
   }
 
@@ -42,7 +42,7 @@ export class ThoughtElement {
 
   public $elt: HTMLDivElement;
   public style: StyleObject;
-  public notebook: HtmlNotebook;
+  public notebook: NotebookView;
   public equivalentStyles: StyleId[];
 
   // Instance Methods
@@ -191,7 +191,7 @@ export class ThoughtElement {
 
   // Private Constructor
 
-  private constructor(notebook: HtmlNotebook, thought: StyleObject) {
+  private constructor(notebook: NotebookView, thought: StyleObject) {
     this.notebook = notebook;
     this.style = thought;
     this.$elt = this.createElement();

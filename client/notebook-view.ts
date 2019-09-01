@@ -41,11 +41,11 @@ interface StyleIndex { [id:string]: StyleId[] }
 
 // Exported Class
 
-export class HtmlNotebook {
+export class NotebookView {
 
   // Class Methods
 
-  public static get(notebookName: NotebookName): HtmlNotebook|undefined {
+  public static get(notebookName: NotebookName): NotebookView|undefined {
     return this.notebooks.get(notebookName);
   }
 
@@ -53,7 +53,7 @@ export class HtmlNotebook {
     socket: ServerSocket,
     notebookName: NotebookName,
     tDoc: NotebookObject,
-  ): HtmlNotebook {
+  ): NotebookView {
     let notebook = this.notebooks.get(notebookName);
     if (!notebook) {
       notebook = new this(socket, notebookName);
@@ -94,7 +94,7 @@ export class HtmlNotebook {
     // TODO: delete element?
     // TODO: mark closed?
     this.clear();
-    HtmlNotebook.notebooks.delete(this.notebookName);
+    NotebookView.notebooks.delete(this.notebookName);
   }
 
   public changeStyle(styleId: StyleId, data: any): void {
@@ -156,7 +156,7 @@ export class HtmlNotebook {
 
   // Private Class Properties
 
-  private static notebooks: Map<NotebookName, HtmlNotebook> = new Map();
+  private static notebooks: Map<NotebookName, NotebookView> = new Map();
 
   // Private Constructor
 
