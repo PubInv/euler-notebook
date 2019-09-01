@@ -45,12 +45,17 @@ export class CellView {
   public notebook: NotebookView;
   public equivalentStyles: StyleId[];
 
+  public isSelected(): boolean {
+    return this.$elt.classList.contains('selected');
+  }
+
   // Instance Methods
 
-  public delete(): void {
-    const $parent = this.$elt.parentElement;
-    assert($parent, "Thought element has no parent in delete.");
-    $parent!.removeChild(this.$elt);
+  public changeStyle(style: StyleObject, data: any): void {
+    // TODO:
+    console.log(`CHANGE STYLE ${style.id}`);
+    console.log(style.data);
+    console.dir(data);
   }
 
   public deleteTool(styleId: StyleId): void {
@@ -59,13 +64,6 @@ export class CellView {
       // @ts-ignore
       element.parentNode.removeChild(element);
     }
-  }
-
-  public changeStyle(style: StyleObject, data: any): void {
-    // TODO:
-    console.log(`CHANGE STYLE ${style.id}`);
-    console.log(style.data);
-    console.dir(data);
   }
 
   public deleteStyle(style: StyleObject): void {
@@ -84,6 +82,30 @@ export class CellView {
       // potential tools on one thought.
       this.deleteTool(style.id);
     }
+  }
+
+  public editMode(): boolean {
+    // Returns true iff cell was put into edit mode.
+
+    // REVIEW: Not completely sure we will not get double-clicks.
+    //         We may need to stopPropagation or preventDefault
+    //         in the right places.
+    assert(!this.keyboardInputPanel);
+
+    // Only allow editing of user input cells, which have a data type
+    // that is string-based, with a renderer.
+    const renderer = rendererMap.get(this.style.type);
+    if (this.style.meaning!='INPUT' || typeof this.style.data!='string') { return false; }
+
+    this.keyboardInputPanel = KeyboardInputPanel.create(
+      this.style.data,
+      renderer!,
+      (text)=>this.onKeyboardInputPanelDismissed(text)
+    );
+    this.$elt.parentElement!.insertBefore(this.keyboardInputPanel.$elt, this.$elt.nextSibling);
+    this.keyboardInputPanel.focus();
+    this.hide();
+    return true;
   }
 
   // REVIEW: This is very fragile in the ordering of style insertions.
@@ -204,42 +226,13 @@ export class CellView {
 
   // Private Event Handlers
 
-  private onClick(event: MouseEvent): void {
-    this.notebook.selectStyle(this.style.id, event);
-  }
-
   private onDeleteButtonClick(_event: MouseEvent): void {
     try {
-      this.notebook.deleteStyle(this.style.id);
+      this.notebook.deleteCellsRequest([this]);
     } catch(err) {
       console.error(`Error in ThoughtElement delete click handler: ${err.message}`);
       throw err;
     }
-  }
-
-  private onDoubleClick(_event: MouseEvent): void {
-    // REVIEW: Not completely sure we will not get double-clicks.
-    //         We may need to stopPropagation or preventDefault
-    //         in the right places.
-    assert(!this.keyboardInputPanel);
-
-    // Only allow editing of user input cells, which have a data type
-    // that is string-based, with a renderer.
-    const renderer = rendererMap.get(this.style.type);
-    if (this.style.meaning!='INPUT' || typeof this.style.data!='string') {
-      // REVIEW: Beep or something? Alert?
-      console.log(`Keyboard input panel not available for cell: ${this.style.meaning}/${this.style.type}`)
-      return;
-    }
-
-    this.keyboardInputPanel = KeyboardInputPanel.create(
-      this.style.data,
-      renderer!,
-      (text)=>this.onKeyboardInputPanelDismissed(text)
-    );
-    this.$elt.parentElement!.insertBefore(this.keyboardInputPanel.$elt, this.$elt.nextSibling);
-    this.keyboardInputPanel.focus();
-    this.hide();
   }
 
   private onKeyboardInputPanelDismissed(text: string|undefined): void {
@@ -260,11 +253,7 @@ export class CellView {
     // Create our div.
     const $elt = $new<HTMLDivElement>('div', {
       class: 'thought',
-      id: `T${styleId}`,
-      listeners: {
-        'click': event=>this.onClick(event),
-        'dblclick':  event=>this.onDoubleClick(event),
-      },
+      id: `C${styleId}`,
     });
 
     // Create our child elements: handle, status, formula, tools, and delete button.

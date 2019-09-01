@@ -102,9 +102,6 @@ async function onDomReady(_event: Event){
     $<HTMLButtonElement>('#debugWindow').addEventListener<'click'>('click', onDebugWindowClicked);
 
     switchInput(INITIAL_INPUT_METHOD);
-    if (INITIAL_INPUT_METHOD == 'Keyboard') {
-      $<HTMLInputElement>('#inputKeyboard>textarea').focus();
-    }
 
     // Make websocket connection to the notebook.
     const wsUrl = `ws://${window.location.host}/`;
@@ -117,6 +114,7 @@ async function onDomReady(_event: Event){
     // Insert the TDoc into the content window
     $('#content').appendChild(gNotebook.$elt);
 
+    gNotebook.$elt.focus();
   } catch (err) {
     showErrorMessage(`Initialization error: ${err.message}`);
     throw err;
@@ -210,7 +208,7 @@ function onKeyboardInputInput(this: HTMLElement, _event: Event): void {
 
 function onKeyboardInputKeyup(this: HTMLElement, event: KeyboardEvent): void {
   try {
-    if (event.keyCode == 13 && event.ctrlKey) { onInsertButtonClicked.call(this, event); }
+    if (event.key == "Enter" && event.ctrlKey) { onInsertButtonClicked.call(this, event); }
   } catch(err) {
     showErrorMessage("Error on keyboard-input keyup event.", err);
   }

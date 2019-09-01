@@ -28,10 +28,6 @@ type DismissCallback = (text: string|undefined)=>void;
 
 // Constants
 
-// Key codes
-const CARRIAGE_RETURN = 13;
-const ESCAPE = 27;
-
 // Exported Class
 
 export class KeyboardInputPanel {
@@ -121,12 +117,12 @@ export class KeyboardInputPanel {
   }
 
   private onKeyUp(event: KeyboardEvent): void {
-    switch(event.keyCode) {
-      case CARRIAGE_RETURN:
+    switch(event.key) {
+      case "Enter":
         // TODO: Do not allow submission if there is an error.
         if (event.ctrlKey) { this.dismiss(true); }
         break;
-      case ESCAPE: // Escape
+      case "Escape":
         this.dismiss(false);
         break;
     }

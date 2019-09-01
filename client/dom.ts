@@ -32,8 +32,10 @@ interface Attributes {
 }
 
 interface Listeners {
+  blur?: Listener<FocusEvent>;
   click?: Listener<MouseEvent>;
   dblclick?: Listener<MouseEvent>;
+  focus?: Listener<FocusEvent>;
   input?: Listener<Event>; // REVIEW: More specific event type?
   keyup?: Listener<KeyboardEvent>;
 }
@@ -125,7 +127,7 @@ function listenerError(err: Error, $elt: Element, eventName: EventName): never {
   throw err;
 }
 
-function listenerWrapper<E extends Event>($elt: Element, eventName: EventName, listener: Listener<E>): (event: E)=>void {
+export function listenerWrapper<E extends Event>($elt: Element, eventName: EventName, listener: Listener<E>): (event: E)=>void {
   return function(event: E): void {
     try {
       listener(event);
