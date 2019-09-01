@@ -23,24 +23,21 @@ include iconmonstr
 
 mixin header
   #header
-    button#homeButton(title="Math Tablet home")
-      +svgIconHome6
-    button#debugButton(title="Debug window")
-      +svgIconBug12
-    select#keyboardInputType()
-      option(value='LATEX') LaTeX
-      option(value='MATHJS') MathJS
-      option(value='MATHML') MathML
-      option(value='TEXT') Text
-      option(value='WOLFRAM', selected=true) Wolfram
+    span
+      button#homeButton(title="Math Tablet home")
+        +svgIconHome6
+      +keyboardInputSelector
     div
       each segment, i in pathSegments
         - const url = '/' + pathSegments.slice(0,i+1).join('/') + '/';
         a(href=url)= segment
         | /
       = notebookName
-    button#userButton(title="User settings")
-      +svgIconUser1
+    span
+      button#debugButton(title="Debug window")
+        +svgIconBug12
+      button#userButton(title="User settings")
+        +svgIconUser1
 
 mixin footer
   #footer
@@ -52,6 +49,14 @@ mixin footer
       #inputKeyboard(style='display:none')
         textarea(placeholder="e.g. r = x^2 + y^2")
 
+
+mixin keyboardInputSelector
+  select#keyboardInputType()
+    option(value='LATEX') LaTeX
+    option(value='MATHJS') MathJS
+    option(value='MATHML') MathML
+    option(value='TEXT') Text
+    option(value='WOLFRAM', selected=true) Wolfram
 
 mixin sidebar
   #sidebar

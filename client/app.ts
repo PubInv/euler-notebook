@@ -210,7 +210,7 @@ function onKeyboardInputInput(this: HTMLElement, _event: Event): void {
 
 function onKeyboardInputKeyup(this: HTMLElement, event: KeyboardEvent): void {
   try {
-    if (event.keyCode == 13) { onInsertButtonClicked.call(this, event); }
+    if (event.keyCode == 13 && event.ctrlKey) { onInsertButtonClicked.call(this, event); }
   } catch(err) {
     showErrorMessage("Error on keyboard-input keyup event.", err);
   }

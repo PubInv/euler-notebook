@@ -119,6 +119,25 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
   text-align right
   width 48px
 
+.keyboardInputErrorMessage
+  color red
+  font-size x-small
+  min-height 20px
+  padding 2px
+
+.keyboardInputPanel
+  outline 1px solid blue
+
+.keyboardInputPanel>textArea
+  display block
+  height 1in
+  padding 8px
+  width calc(100% - 8px)
+
+.keyboardInputPreview
+  min-height 60px
+  padding 8px
+
 .status
   text-align left
   width 36px
@@ -130,7 +149,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
   margin 18px 0 18px 0
 
 .thought.selected
-  background-color: #f0f0f0
+  outline 1px dotted blue
 
 .thought.selected .deleteStyle
   visibility visible

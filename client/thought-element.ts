@@ -19,11 +19,14 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 // Requirements
 
-import { $new, escapeHtml, Html } from './dom.js';
+import { assert } from './common.js';
+import { escapeHtml, $new, Html } from './dom.js';
 import { getKatex } from './katex-types.js';
+import { HtmlNotebook } from './html-notebook.js';
+import { KeyboardInputPanel } from './keyboard-input-panel.js';
 import { StyleObject, StyleId, RelationshipObject } from './notebook.js';
 import { LatexData, ToolInfo, NameValuePair } from './math-tablet-api.js';
-import { HtmlNotebook } from './html-notebook.js';
+import { rendererMap } from './renderers.js';
 
 // Exported Class
 
@@ -46,8 +49,8 @@ export class ThoughtElement {
 
   public delete(): void {
     const $parent = this.$elt.parentElement;
-    if (!$parent) { throw new Error("Thought element has no parent in delete."); }
-    $parent.removeChild(this.$elt);
+    assert($parent, "Thought element has no parent in delete.");
+    $parent!.removeChild(this.$elt);
   }
 
   public deleteTool(styleId: StyleId): void {
@@ -58,23 +61,28 @@ export class ThoughtElement {
     }
   }
 
+  public changeStyle(style: StyleObject, data: any): void {
+    // TODO:
+    console.log(`CHANGE STYLE ${style.id}`);
+    console.log(style.data);
+    console.dir(data);
+  }
+
   public deleteStyle(style: StyleObject): void {
     console.log("delete Style",style);
-    if (!style.parentId) {
+    if (!style.parentId) { return; }
 
-    } else {
-      if (style.type == 'LATEX') {
-        const $formulaElt = this.$elt.querySelector('.formula');
-        $formulaElt!.innerHTML = '';
-      }
-      if (style.type == 'TOOL') {
-        // We embed the id into the HTML so that we can delete
-        // specific objects, so taht multiple tools can in theory be
-        // delete and added to a given thought. The fundamental problem
-        // we are trying to solve is that they mutate, but there are many
-        // potential tools on one thought.
-        this.deleteTool(style.id);
-      }
+    if (style.type == 'LATEX') {
+      const $formulaElt = this.$elt.querySelector('.formula');
+      $formulaElt!.innerHTML = '';
+    }
+    if (style.type == 'TOOL') {
+      // We embed the id into the HTML so that we can delete
+      // specific objects, so taht multiple tools can in theory be
+      // delete and added to a given thought. The fundamental problem
+      // we are trying to solve is that they mutate, but there are many
+      // potential tools on one thought.
+      this.deleteTool(style.id);
     }
   }
 
@@ -88,7 +96,7 @@ export class ThoughtElement {
   // On the other hand each "style" may legitimately be thought of as a
   // decoration; the problem here is that we have poor representation of
   // what has yet been rendered.  Dealing with the HTML itself is rather
-  // awkward.  Looing at the parent of the style may work, but is
+  // awkward.  Looking at the parent of the style may work, but is
   // awkward in a different way.
   public insertStyle(style: StyleObject): void {
     // console.log(`Inserting style ${style.id} ${style.meaning} ${style.type}`);
@@ -100,7 +108,7 @@ export class ThoughtElement {
       case 'EXPOSITION':
         if (style.type == 'HTML') { this.renderHtml(style.data); }
         else if (style.type == 'TEXT') { this.renderText(style.data); }
-        else { throw new Error(`Unexpected data type for exposition: ${style.type}.`); }
+        else { assert(false, `Unexpected data type for exposition: ${style.type}.`); }
         break;
       case 'INPUT':
         if (style.type == 'LATEX') { this.renderLatexFormula(style.data); }
@@ -115,16 +123,15 @@ export class ThoughtElement {
         if (style.type == 'LATEX') { this.renderLatexFormula(style.data); }
         else if (style.type == 'TEXT') { this.renderText(style.data); }
         break;
-      case 'PLOT': this.renderPlot(style);
+      case 'PLOT':
+        this.renderPlot(style);
         break;
       case 'EQUATION-SOLUTION': this.renderSolution(style);
         break;
         // This is currently a "promotion" which is a form of input,
         // so make it a high-level thought is slightly inconsistent.
       case 'SYMBOL-DEFINITION':
-        if (style.type == 'SYMBOL')
-        {
-          this.renderDefinition(style); }
+        if (style.type == 'SYMBOL') { this.renderDefinition(style); }
         break;
       default:
     }
@@ -172,6 +179,11 @@ export class ThoughtElement {
   }
 
   public unselect(): void {
+    if (this.keyboardInputPanel) {
+      // 'dismiss' will call the callback function, onKeyboardInputPanelDismissed,
+      // which will delete the keyboard input panel and show ourself.
+      this.keyboardInputPanel.dismiss(false);
+    }
     this.$elt.classList.remove('selected');
   }
 
@@ -185,6 +197,10 @@ export class ThoughtElement {
     this.$elt = this.createElement();
     this.equivalentStyles = [];
   }
+
+  // Private Instance Properties
+
+  private keyboardInputPanel?: KeyboardInputPanel;
 
   // Private Event Handlers
 
@@ -202,8 +218,38 @@ export class ThoughtElement {
   }
 
   private onDoubleClick(_event: MouseEvent): void {
-    console.log("ThoughtElement double-clicked!");
-    throw new Error('BUGBUG');
+    // REVIEW: Not completely sure we will not get double-clicks.
+    //         We may need to stopPropagation or preventDefault
+    //         in the right places.
+    assert(!this.keyboardInputPanel);
+
+    // Only allow editing of user input cells, which have a data type
+    // that is string-based, with a renderer.
+    const renderer = rendererMap.get(this.style.type);
+    if (this.style.meaning!='INPUT' || typeof this.style.data!='string') {
+      // REVIEW: Beep or something? Alert?
+      console.log(`Keyboard input panel not available for cell: ${this.style.meaning}/${this.style.type}`)
+      return;
+    }
+
+    this.keyboardInputPanel = KeyboardInputPanel.create(
+      this.style.data,
+      renderer!,
+      (text)=>this.onKeyboardInputPanelDismissed(text)
+    );
+    this.$elt.parentElement!.insertBefore(this.keyboardInputPanel.$elt, this.$elt.nextSibling);
+    this.keyboardInputPanel.focus();
+    this.hide();
+  }
+
+  private onKeyboardInputPanelDismissed(text: string|undefined): void {
+    if (text) {
+      this.notebook.changeStyle(this.style.id, text);
+    }
+    this.$elt.parentElement!.removeChild(this.keyboardInputPanel!.$elt);
+    delete this.keyboardInputPanel;
+
+    this.show();
   }
 
   // Private Instance Methods
@@ -236,6 +282,10 @@ export class ThoughtElement {
     return $elt;
   }
 
+  private hide(): void {
+    this.$elt.style.display = 'none';
+  }
+
   private renderErrorMessage(style: StyleObject): void {
     if (style.type != 'TEXT') {
       console.error(`Don't know how to render ${style.type} error.`);
@@ -254,13 +304,12 @@ export class ThoughtElement {
 
   private renderLatexFormula(latexData: LatexData): void {
     const $formulaElt = this.$elt.querySelector('.formula');
-    let html;
-    try {
-      html = getKatex().renderToString(latexData, {});
-    } catch(err) {
-      html = `<div class="error">${escapeHtml(err.message)}</div><tt>${escapeHtml(latexData)}</tt>`
+    const renderer = rendererMap.get('LATEX');
+    let { html, errorHtml } = renderer!(latexData);
+    if (errorHtml) {
+      html = `<div class="error">${errorHtml}</div><tt>${escapeHtml(latexData)}</tt>`;
     }
-    $formulaElt!.innerHTML = html;
+    $formulaElt!.innerHTML = html!;
   }
 
   private renderOtherInput(style: StyleObject): void {
@@ -299,7 +348,6 @@ export class ThoughtElement {
     const $formulaElt = this.$elt.querySelector('.formula');
 
     const nvp : NameValuePair = style.data;
-    console.log("PREVIOUS:",$formulaElt!.innerHTML);
 
     // This is a hack; but if we are alread an input, we don't
     // want to overwrite therei.
@@ -313,6 +361,7 @@ export class ThoughtElement {
   private renderTool(style: StyleObject): void {
     const info: ToolInfo = style.data;
     const $toolsElt = this.$elt.querySelector('.tools');
+    // TODO: Use latexRenderer fro renderers.ts.
     const input = (info.tex) ?
       getKatex().renderToString(info.tex, {}) :
       info.html;
@@ -325,4 +374,9 @@ export class ThoughtElement {
     $toolsElt!.appendChild($button);
   }
 
+  private show(): void {
+    this.$elt.style.display = 'flex';
+  }
+
 }
+

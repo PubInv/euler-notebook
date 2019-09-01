@@ -34,6 +34,8 @@ interface Attributes {
 interface Listeners {
   click?: Listener<MouseEvent>;
   dblclick?: Listener<MouseEvent>;
+  input?: Listener<Event>; // REVIEW: More specific event type?
+  keyup?: Listener<KeyboardEvent>;
 }
 
 interface NewOptions {
@@ -77,11 +79,12 @@ export function $newSvg<T extends SVGElement>(tag: ElementTag, options?: NewOpti
   return $elt;
 }
 
+
 // From: http://shebang.brandonmintern.com/foolproof-html-escaping-in-javascript/
 export function escapeHtml(str: string): Html {
-  var div = document.createElement('div');
-  div.appendChild(document.createTextNode(str));
-  return div.innerHTML;
+  var $div = document.createElement('div');
+  $div.appendChild(document.createTextNode(str));
+  return $div.innerHTML;
 }
 
 // HELPER FUNCTIONS

@@ -24,7 +24,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 // Types
 
-export type NotebookChange = RelationshipDeleted|RelationshipInserted|StyleDeleted|StyleInserted;
+export type NotebookChange = RelationshipDeleted|RelationshipInserted|StyleChanged|StyleDeleted|StyleInserted;
 interface RelationshipDeleted {
   type: 'relationshipDeleted';
   relationship: RelationshipObject;
@@ -32,6 +32,11 @@ interface RelationshipDeleted {
 export interface RelationshipInserted {
   type: 'relationshipInserted';
   relationship: RelationshipObject;
+}
+export interface StyleChanged {
+  type: 'styleChanged';
+  style: StyleObject;
+  data: any;
 }
 export interface StyleDeleted {
   type: 'styleDeleted';
@@ -78,28 +83,28 @@ export interface StyleMap {
 }
 
 export const STYLE_MEANINGS = [
-  'ATTRIBUTE',       // Generic attribute. Meaning implied by type.
-  'ERROR',           // An error message. Type should be text.
-  'EVALUATION',      // CAS evaluation of an expression.
-  'EVALUATION-ERROR',// Error in CAS evaluation of an expression.
-  'EXPOSITION',      // A longer discussion or description.
-  'FORMULA-ALT',     // Alternative representation of a formula.
-  'HANDWRITING',     // REVIEW: Used? Deprecate? Stroke information for the user's handwriting.
-  'INPUT',           // Primary representation of something that the user has input.
-  'INPUT-ALT',       // An alternative representation, e.g. LaTeX version of handwritten math.
-  'QUADRATIC',       // DEPRECATED: A quadratic expression, presumably worth plotting.
-  'SIMPLIFICATION',  // CAS simplification of expression or equation.
-  'PLOT',            // Plot of a formula
-  'EQUATION',        // An equation
-  'EQUATION-SOLUTION',        // An equation
-  'EQUATION-DEFINITION', // A simple equality relation defined
-  'SYMBOL',          // Symbols extracted from an expression.
-  'SYMBOL-DEFINITION',// Definition of a symbol.
-  'SYMBOL-USE',      // Use of a symbol.
-  'DECORATION', // Clearly indicates this is NOT the input but a decoration
-  'EQUIVALENT-CHECKS',// Checking expression equivalence of with other styles
-  'UNIVARIATE-QUADRATIC',// A quadratic expression, presumably worth plotting.
-  'SUBTRIVARIATE',    // An expression in one or two variables presumable plottable.
+  'ATTRIBUTE',            // Generic attribute. Meaning implied by type.
+  'ERROR',                // An error message. Type should be text.
+  'EVALUATION',           // CAS evaluation of an expression.
+  'EVALUATION-ERROR',     // Error in CAS evaluation of an expression.
+  'EXPOSITION',           // A longer discussion or description.
+  'FORMULA-ALT',          // Alternative representation of a formula.
+  'HANDWRITING',          // REVIEW: Used? Deprecate? Stroke information for the user's handwriting.
+  'INPUT',                // Primary representation of something that the user has input.
+  'INPUT-ALT',            // An alternative representation, e.g. LaTeX version of handwritten math.
+  'QUADRATIC',            // DEPRECATED: A quadratic expression, presumably worth plotting.
+  'SIMPLIFICATION',       // CAS simplification of expression or equation.
+  'PLOT',                 // Plot of a formula
+  'EQUATION',             // An equation
+  'EQUATION-SOLUTION',    // An equation
+  'EQUATION-DEFINITION',  // A simple equality relation defined
+  'SYMBOL',               // Symbols extracted from an expression.
+  'SYMBOL-DEFINITION',    // Definition of a symbol.
+  'SYMBOL-USE',           // Use of a symbol.
+  'DECORATION',           // Clearly indicates this is NOT the input but a decoration
+  'EQUIVALENT-CHECKS',    // Checking expression equivalence of with other styles
+  'UNIVARIATE-QUADRATIC', // A quadratic expression, presumably worth plotting.
+  'SUBTRIVARIATE',        // An expression in one or two variables presumable plottable.
 ] as const;
 export type StyleMeaning = typeof STYLE_MEANINGS[number];
 
@@ -120,16 +125,16 @@ export const STYLE_TYPES = [
   'IMAGE',           // ImageData: URL of image relative to notebook folder.
   'JIIX',            // Jiix: MyScript JIIX export from 'MATH' editor.
   'LATEX',           // LatexData: LaTeX string
-  /* DEPRECATED: */ 'CLASSIFICATION',    // A classifcication of the style.
+  'CLASSIFICATION',  // DEPRECATED: A classifcication of the style.
   'MATHJS',          // MathJsData: MathJS plain text expression
   'MATHML',          // MathMlData: MathML Presentation XML
   'STROKE',          // StrokeGroups: MyScript strokeGroups export from 'TEXT' editor.
   'SYMBOL',          // SymbolData: symbol in a definition or expression.
-  'SOLUTION',      // The result of a "solve" operation
+  'SOLUTION',        // The result of a "solve" operation
   'EQUATION',        // An equation (ambiguously assertion or relation)
   'TEXT',            // TextData: Plain text
   'TOOL',            // ToolInfo: Tool that can be applied to the parent style.
-  'WOLFRAM',          // WolframData: Wolfram language expression
+  'WOLFRAM',         // WolframData: Wolfram language expression
 ] as const;
 export type StyleType = typeof STYLE_TYPES[number];
 
@@ -316,6 +321,9 @@ export class Notebook {
       case 'relationshipInserted':
         this.insertRelationship(change.relationship);
         break;
+      case 'styleChanged':
+        this.changeStyle(change.style, change.data);
+        break;
       case 'styleDeleted':
         this.deleteStyle(change.style);
         break;
@@ -348,6 +356,10 @@ export class Notebook {
   // Private Event Handlers
 
   // Private Instance Methods
+
+  private changeStyle(style: StyleObject, data: any): void {
+    style.data = data;
+  }
 
   private deleteRelationship(relationship: RelationshipObject): void {
     // TODO: relationship may have already been deleted by another observer.

@@ -20,9 +20,17 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 // Requirements
 
 import { ServerSocket } from './server-socket.js';
-
 import { StyleId, StyleObject, NotebookChange, RelationshipId, RelationshipObject, NotebookObject } from './notebook.js';
-import { NotebookName, UseTool, StylePropertiesWithSubprops, ChangeNotebook, StyleDeleteRequest, StyleInsertRequest } from './math-tablet-api.js';
+import {
+  ChangeNotebook,
+  NotebookChangeRequest,
+  NotebookName,
+  StyleChangeRequest,
+  StyleDeleteRequest,
+  StyleInsertRequest,
+  StylePropertiesWithSubprops,
+  UseTool,
+} from './math-tablet-api.js';
 // import { Jiix, StrokeGroups } from './myscript-types.js';
 import { ThoughtElement } from './thought-element.js';
 import { $new, escapeHtml, Html } from './dom.js';
@@ -89,31 +97,19 @@ export class HtmlNotebook {
     HtmlNotebook.notebooks.delete(this.notebookName);
   }
 
+  public changeStyle(styleId: StyleId, data: any): void {
+    const changeRequest: StyleChangeRequest = { type: 'changeStyle', styleId, data, };
+    this.sendChangeRequest(changeRequest);
+  }
+
   public deleteStyle(styleId: StyleId): void {
-    const changeRequest: StyleDeleteRequest = {
-      type: 'deleteStyle',
-      styleId,
-    }
-    const msg: ChangeNotebook = {
-      type: 'changeNotebook',
-      notebookName: this.notebookName,
-      changeRequests: [ changeRequest ],
-    }
-    this.socket.sendMessage(msg);
+    const changeRequest: StyleDeleteRequest = { type: 'deleteStyle', styleId, };
+    this.sendChangeRequest(changeRequest);
   }
 
   public insertStyle(styleProps: StylePropertiesWithSubprops): void {
-    const changeRequest: StyleInsertRequest = {
-      type: 'insertStyle',
-      afterId: -1,
-      styleProps,
-    }
-    const msg: ChangeNotebook = {
-      type: 'changeNotebook',
-      notebookName: this.notebookName,
-      changeRequests: [ changeRequest ],
-    }
-    this.socket.sendMessage(msg);
+    const changeRequest: StyleInsertRequest = { type: 'insertStyle', afterId: -1, styleProps, }
+    this.sendChangeRequest(changeRequest);
   }
 
   public selectStyle(styleId: StyleId, event: MouseEvent): void {
@@ -147,6 +143,7 @@ export class HtmlNotebook {
       switch (change.type) {
         case 'relationshipDeleted': this.chDeleteRelationship(change.relationship); break;
         case 'relationshipInserted': this.chInsertRelationship(change.relationship); break;
+        case 'styleChanged': this.chChangeStyle(change.style.id, change.data); break;
         case 'styleDeleted': this.chDeleteStyle(change.style.id); break;
         case 'styleInserted': this.chInsertStyle(change.style); break;
       }
@@ -197,9 +194,17 @@ export class HtmlNotebook {
 
   // Private Change Event Handlers
 
+  private chChangeStyle(styleId: StyleId, data: any): void {
+    const style = this.styles.get(styleId);
+    if (!style) { throw new Error(`Change style message for unknown style: ${styleId}`); }
+    const styleElt = this.topLevelStyleOf(style!);
+    if (!styleElt) { throw new Error(`Change style message for style without top-level element`); }
+    styleElt.changeStyle(style, data);
+  }
+
   private chDeleteRelationship(relationship: RelationshipObject): void {
     const relationshipElt = this.relationships.get(relationship.id);
-    if (!relationshipElt) { throw new Error("Delete relationship message for unknown style"); }
+    if (!relationshipElt) { throw new Error(`Delete relationship message for unknown relationship`); }
     this.relationships.delete(relationship.id);
 
     // if the relationship is an equivalence, it has been rendered
@@ -222,12 +227,12 @@ export class HtmlNotebook {
     const style = this.styles.get(styleId);
     if (!style) { throw new Error("Delete style message for unknown style"); }
     this.styles.delete(styleId);
-    const styleElt = this.topLevelStyleOf(style);
+    const styleElt = this.topLevelStyleOf(style!);
     if (!styleElt) { throw new Error(`Delete style message for style without top-level element`); }
-    styleElt.deleteStyle(style);
-    if (!style.parentId) {
+    styleElt.deleteStyle(style!);
+    if (!style!.parentId) {
       styleElt.delete();
-      this.styleElements.delete(style.id);
+      this.styleElements.delete(style!.id);
     }
   }
 
@@ -309,4 +314,12 @@ export class HtmlNotebook {
     }
   }
 
+  private sendChangeRequest(changeRequest: NotebookChangeRequest): void {
+    const msg: ChangeNotebook = {
+      type: 'changeNotebook',
+      notebookName: this.notebookName,
+      changeRequests: [ changeRequest ],
+    }
+    this.socket.sendMessage(msg);
+  }
 }

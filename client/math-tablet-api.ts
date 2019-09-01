@@ -81,6 +81,7 @@ export interface StylePropertiesWithSubprops extends StyleProperties {
 export type NotebookChangeRequest =
   RelationshipDeleteRequest|
   RelationshipInsertRequest|
+  StyleChangeRequest|
   StyleDeleteRequest|
   StyleInsertRequest;
 export interface RelationshipDeleteRequest {
@@ -93,11 +94,14 @@ export interface RelationshipInsertRequest {
   toId: StyleId;
   props: RelationshipProperties;
 }
+export interface StyleChangeRequest {
+  type: 'changeStyle';
+  styleId: StyleId;
+  data: any;
+}
 export interface StyleDeleteRequest {
   type: 'deleteStyle';
-  // Why is this a number and not a StyleId? - rlr
   styleId: StyleId;
-//  styleId: number;
 }
 export interface StyleInsertRequest {
   type: 'insertStyle';

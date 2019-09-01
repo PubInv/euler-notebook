@@ -269,6 +269,8 @@ export class ServerNotebook extends Notebook {
     switch(changeRequest.type) {
       case 'deleteRelationship':
         return [ this.deleteRelationshipChange(changeRequest.id) ];
+      case 'changeStyle':
+        return [ this.changeStyleChange(changeRequest.styleId, changeRequest.data) ];
       case 'deleteStyle':
         return this.deleteStyleChanges(changeRequest.styleId);
       case 'insertRelationship':
@@ -278,6 +280,11 @@ export class ServerNotebook extends Notebook {
       default:
         throw new Error("Unexpected.");
     }
+  }
+
+  private changeStyleChange(id: StyleId, data: any): NotebookChange {
+    const style = this.getStyleById(id);
+    return { type: 'styleChanged', style, data };
   }
 
   private deleteRelationshipChange(id: RelationshipId): NotebookChange {
