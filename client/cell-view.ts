@@ -30,11 +30,11 @@ import { rendererMap } from './renderers.js';
 
 // Exported Class
 
-export class ThoughtElement {
+export class CellView {
 
   // Class Methods
 
-  public static create(notebook: NotebookView, style: StyleObject): ThoughtElement {
+  public static create(notebook: NotebookView, style: StyleObject): CellView {
     return new this(notebook, style);
   }
 

@@ -32,7 +32,7 @@ import {
   UseTool,
 } from './math-tablet-api.js';
 // import { Jiix, StrokeGroups } from './myscript-types.js';
-import { ThoughtElement } from './thought-element.js';
+import { CellView } from './cell-view.js';
 import { $new, escapeHtml, Html } from './dom.js';
 
 // Types
@@ -81,7 +81,7 @@ export class NotebookView {
     return g ? g : null;
   }
 
-  public topLevelStyleOf(style: StyleObject): ThoughtElement {
+  public topLevelStyleOf(style: StyleObject): CellView {
     for (; style.parentId; style = this.styles.get(style.parentId)!);
     const styleElt = this.styleElements.get(style.id);
     return styleElt!;
@@ -178,7 +178,7 @@ export class NotebookView {
   private relationships: Map<RelationshipId, RelationshipObject>;
   private selectedStyles: StyleId[];
   private styles: Map<StyleId, StyleObject>;
-  private styleElements: Map<StyleId, ThoughtElement>;
+  private styleElements: Map<StyleId, CellView>;
 
   // Private Instance Property Functions
 
@@ -251,9 +251,9 @@ export class NotebookView {
 
   private chInsertStyle(style: StyleObject): void {
     this.styles.set(style.id, style);
-    let thoughtElt: ThoughtElement;
+    let thoughtElt: CellView;
     if (!style.parentId) {
-      thoughtElt = ThoughtElement.create(this, style);
+      thoughtElt = CellView.create(this, style);
       this.$elt.appendChild(thoughtElt.$elt);
       this.styleElements.set(style.id, thoughtElt);
     } else {
