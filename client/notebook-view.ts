@@ -90,8 +90,9 @@ export class NotebookView {
 
   public topLevelCellOf(style: StyleObject): CellView {
     for (; style.parentId; style = this.styles.get(style.parentId)!);
-    const styleElt = this.cellViews.get(style.id);
-    return styleElt!;
+    const cell = this.cellViews.get(style.id);
+    assert(cell);
+    return cell!;
   }
 
   // Instance Methods
@@ -105,7 +106,7 @@ export class NotebookView {
   }
 
   public changeStyle(styleId: StyleId, data: any): void {
-    const changeRequest: StyleChangeRequest = { type: 'changeStyle', styleId, data, };
+    const changeRequest: StyleChangeRequest = { type: 'changeStyle', styleId, data };
     this.sendChangeRequest(changeRequest);
   }
 
@@ -115,7 +116,7 @@ export class NotebookView {
   }
 
   public insertStyle(styleProps: StylePropertiesWithSubprops): void {
-    const changeRequest: StyleInsertRequest = { type: 'insertStyle', afterId: -1, styleProps, }
+    const changeRequest: StyleInsertRequest = { type: 'insertStyle', afterId: -1, styleProps }
     this.sendChangeRequest(changeRequest);
   }
 
@@ -136,7 +137,7 @@ export class NotebookView {
       switch (change.type) {
         case 'relationshipDeleted': this.chDeleteRelationship(change.relationship); break;
         case 'relationshipInserted': this.chInsertRelationship(change.relationship); break;
-        case 'styleChanged': this.chChangeStyle(change.style.id, change.data); break;
+        case 'styleChanged': this.chChangeStyle(change.style.id, change.style.data, change.previousData); break;
         case 'styleDeleted': this.chDeleteStyle(change.style.id); break;
         case 'styleInserted': this.chInsertStyle(change.style); break;
       }
@@ -227,9 +228,9 @@ export class NotebookView {
 
   // Private Event Handlers
 
-  private onBlur(event: FocusEvent): void {
-    console.log("BLUR!!!");
-    console.dir(event);
+  private onBlur(_event: FocusEvent): void {
+    // console.log("BLUR!!!");
+    // console.dir(event);
   }
 
   private onCellClick(cellView: CellView, event: MouseEvent): void {
@@ -244,12 +245,15 @@ export class NotebookView {
     }
   }
 
-  private onFocus(event: FocusEvent): void {
-    console.log("FOCUS!!!");
-    console.dir(event);
+  private onFocus(_event: FocusEvent): void {
+    // console.log("FOCUS!!!");
+    // console.dir(event);
   }
 
   private onKeyUp(event: KeyboardEvent): void {
+    // Ignore event if it is from a sub-element.
+    if (document.activeElement != this.$elt) { return; }
+
     switch(event.key) {
       case "ArrowDown": this.keyArrowDown(event); break;
       case "ArrowUp": this.keyArrowUp(event); break;
@@ -264,12 +268,13 @@ export class NotebookView {
 
   // Private Change Event Handlers
 
-  private chChangeStyle(styleId: StyleId, data: any): void {
+  private chChangeStyle(styleId: StyleId, data: any, previousData: any): void {
     const style = this.styles.get(styleId);
     if (!style) { throw new Error(`Change style message for unknown style: ${styleId}`); }
-    const styleElt = this.topLevelCellOf(style!);
-    if (!styleElt) { throw new Error(`Change style message for style without top-level element`); }
-    styleElt.changeStyle(style, data);
+    style.data = data;
+    const cell = this.topLevelCellOf(style!);
+    if (!cell) { throw new Error(`Change style message for style without top-level element`); }
+    cell.changeStyle(style, previousData);
   }
 
   private chDeleteRelationship(relationship: RelationshipObject): void {
@@ -297,9 +302,9 @@ export class NotebookView {
     const style = this.styles.get(styleId);
     if (!style) { throw new Error("Delete style message for unknown style"); }
     this.styles.delete(styleId);
-    const styleElt = this.topLevelCellOf(style!);
-    if (!styleElt) { throw new Error(`Delete style message for style without top-level element`); }
-    styleElt.deleteStyle(style!);
+    const cell = this.topLevelCellOf(style!);
+    if (!cell) { throw new Error(`Delete style message for style without top-level element`); }
+    cell.deleteStyle(style!);
     if (!style!.parentId) {
       // This is a top-level style so delete the associated cell.
       const cellView = this.cellViews.get(styleId);
@@ -359,6 +364,7 @@ export class NotebookView {
   }
 
   private keyBackspace(_event: KeyboardEvent): void {
+    console.log("BACKSPACE -- DELETING SELECTED CELLS!");
     const cellViews = this.selectedCells();
     this.deleteCellsRequest(cellViews);
   }

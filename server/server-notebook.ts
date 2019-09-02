@@ -284,7 +284,10 @@ export class ServerNotebook extends Notebook {
 
   private changeStyleChange(id: StyleId, data: any): NotebookChange {
     const style = this.getStyleById(id);
-    return { type: 'styleChanged', style, data };
+    const previousData = style.data;
+    style.data = data;
+    const change: NotebookChange = { type: 'styleChanged', style, previousData };
+    return change;
   }
 
   private deleteRelationshipChange(id: RelationshipId): NotebookChange {
@@ -385,7 +388,7 @@ export class ServerNotebook extends Notebook {
     changeRequests: NotebookChangeRequest[]
   ): NotebookChange[] {
     let rval: NotebookChange[] = [];
-    debug("changeREQUESTS",changeRequests);
+    debug("changeREQUESTS", changeRequests);
     for (const changeRequest of changeRequests) {
       const changes = this.convertChangeRequestToChanges(source, changeRequest);
       this.applyChanges(changes);

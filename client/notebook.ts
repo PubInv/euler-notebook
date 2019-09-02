@@ -36,7 +36,7 @@ export interface RelationshipInserted {
 export interface StyleChanged {
   type: 'styleChanged';
   style: StyleObject;
-  data: any;
+  previousData: any;
 }
 export interface StyleDeleted {
   type: 'styleDeleted';
@@ -322,7 +322,7 @@ export class Notebook {
         this.insertRelationship(change.relationship);
         break;
       case 'styleChanged':
-        this.changeStyle(change.style, change.data);
+        // style.data was changed in convertChangeRequestToChanges.
         break;
       case 'styleDeleted':
         this.deleteStyle(change.style);
@@ -356,10 +356,6 @@ export class Notebook {
   // Private Event Handlers
 
   // Private Instance Methods
-
-  private changeStyle(style: StyleObject, data: any): void {
-    style.data = data;
-  }
 
   private deleteRelationship(relationship: RelationshipObject): void {
     // TODO: relationship may have already been deleted by another observer.

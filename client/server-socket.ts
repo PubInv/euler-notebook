@@ -115,8 +115,8 @@ export class ServerSocket {
   private onWsMessage(event: MessageEvent): void {
     try {
       const msg: ServerMessage = JSON.parse(event.data);
-      console.log(`Notebook Conn: socket message: ${msg.type}`);
-      // console.dir(msg);
+      console.log(`Message from server: ${msg.type}`);
+      console.dir(msg);
       switch(msg.type) {
       case 'notebookChanged': this.smNotebookChanged(msg); break;
       case 'notebookClosed':  this.smNotebookClosed(msg); break;
@@ -145,23 +145,23 @@ export class ServerSocket {
   private smNotebookOpened(msg: NotebookOpened): void {
     const openRequest = this.openPromises.get(msg.notebookName);
     if (!openRequest) { throw new Error(`Notebook opened message for unknown notebook: ${msg.notebookName}`); }
-    const notebook = NotebookView.open(this, msg.notebookName, msg.obj);
-    openRequest.resolve(notebook);
+    const notebookView = NotebookView.open(this, msg.notebookName, msg.obj);
+    openRequest.resolve(notebookView);
     this.openPromises.delete(msg.notebookName);
   }
 
   // TODO: notebook open failure
 
   private smNotebookClosed(msg: NotebookClosed): void {
-    const notebook = NotebookView.get(msg.notebookName);
-    if (!notebook) { throw new Error(`Unknown notebook closed: ${msg.notebookName}`); }
-    notebook.smClose();
+    const notebookView = NotebookView.get(msg.notebookName);
+    if (!notebookView) { throw new Error(`Unknown notebook closed: ${msg.notebookName}`); }
+    notebookView.smClose();
   }
 
   private smNotebookChanged(msg: NotebookChanged): void {
-    const notebook = NotebookView.get(msg.notebookName);
-    if (!notebook) { throw new Error(`Notebook change from hnknown notebook: ${msg.notebookName}`); }
-    notebook.smChange(msg.changes);
+    const notebookView = NotebookView.get(msg.notebookName);
+    if (!notebookView) { throw new Error(`Notebook change from unknown notebook: ${msg.notebookName}`); }
+    notebookView.smChange(msg.changes);
   }
 
   // Private Instance Methods

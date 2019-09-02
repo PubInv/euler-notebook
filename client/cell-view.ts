@@ -51,11 +51,10 @@ export class CellView {
 
   // Instance Methods
 
-  public changeStyle(style: StyleObject, data: any): void {
-    // TODO:
-    console.log(`CHANGE STYLE ${style.id}`);
-    console.log(style.data);
-    console.dir(data);
+  public changeStyle(style: StyleObject, _previousData: any): void {
+    // TEMPORARY HACK: The way rendering is currently implemented ("Last one wins"), it doesn't matter whether the
+    // style is being inserted or changed.
+    this.insertStyle(style);
   }
 
   public deleteTool(styleId: StyleId): void {
