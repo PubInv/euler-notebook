@@ -66,7 +66,6 @@ export class CellView {
   }
 
   public deleteStyle(style: StyleObject): void {
-    console.log("delete Style",style);
     if (!style.parentId) { return; }
 
     if (style.type == 'LATEX') {
@@ -225,15 +224,6 @@ export class CellView {
 
   // Private Event Handlers
 
-  private onDeleteButtonClick(_event: MouseEvent): void {
-    try {
-      this.notebook.deleteCellsRequest([this]);
-    } catch(err) {
-      console.error(`Error in ThoughtElement delete click handler: ${err.message}`);
-      throw err;
-    }
-  }
-
   private onKeyboardInputPanelDismissed(text: string|undefined): void {
     if (text) {
       this.notebook.changeStyle(this.style.id, text);
@@ -260,12 +250,6 @@ export class CellView {
     $new<HTMLDivElement>('div', { class: 'status', html: "&nbsp;", appendTo: $elt });
     $new<HTMLDivElement>('div', { class: 'formula', appendTo: $elt });
     $new<HTMLDivElement>('div', { class: 'tools', appendTo: $elt });
-    $new<HTMLButtonElement>('button', {
-      appendTo: $elt,
-      class: 'deleteStyle',
-      html: "&#x2715;",
-      listeners: { 'click': event=>this.onDeleteButtonClick(event) }
-    });
 
     return $elt;
   }

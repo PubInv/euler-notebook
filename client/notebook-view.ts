@@ -40,6 +40,10 @@ import { ServerSocket } from './server-socket.js';
 
 interface StyleIndex { [id:string]: StyleId[] }
 
+export interface SelectionChangedEventDetail {
+  empty: boolean;
+}
+
 // Exported Class
 
 export class NotebookView {
@@ -110,7 +114,9 @@ export class NotebookView {
     this.sendChangeRequest(changeRequest);
   }
 
-  public deleteCellsRequest(cellViews: CellView[]): void {
+  public deleteSelectedCells(): void {
+    const cellViews = this.selectedCells();
+    this.unselectAll(true);
     const changeRequests = cellViews.map<StyleDeleteRequest>(c=>({ type: 'deleteStyle', styleId: c.style.id }));
     this.sendChangeRequests(changeRequests);
   }
@@ -364,9 +370,7 @@ export class NotebookView {
   }
 
   private keyBackspace(_event: KeyboardEvent): void {
-    console.log("BACKSPACE -- DELETING SELECTED CELLS!");
-    const cellViews = this.selectedCells();
-    this.deleteCellsRequest(cellViews);
+    this.deleteSelectedCells();
   }
 
   private keyEnter(_event: KeyboardEvent): void {
@@ -376,7 +380,7 @@ export class NotebookView {
   }
 
   private keyEscape(_event: KeyboardEvent): void {
-    this.unselectAll();
+    this.unselectAll(true);
   }
 
   // Private Instance Methods
@@ -426,7 +430,12 @@ export class NotebookView {
     }
     this.$elt.removeChild(cellView.$elt);
     this.cellViews.delete(cellView.style.id);
-}
+  }
+
+  private emitSelectionChangedEvent(detail: SelectionChangedEventDetail): void {
+    const event = new CustomEvent<SelectionChangedEventDetail>('selection-changed', { detail });
+    this.$elt.dispatchEvent(event);
+  }
 
   private populateFromTDoc(tDoc: NotebookObject): void {
     const index: StyleIndex = { '0':[] };
@@ -453,9 +462,10 @@ export class NotebookView {
     rangeExtending: boolean, // Extending selection by a contiguous range.
     indivExtending: boolean, // Extending selection by an individual cell, possibly non-contiguous.
   ): void {
-    if (!rangeExtending && !indivExtending) { this.unselectAll(); }
+    if (!rangeExtending && !indivExtending) { this.unselectAll(false); }
     cellView.select();
     this.lastCellSelected = cellView;
+    this.emitSelectionChangedEvent({ empty: false });
   }
 
   private sendChangeRequest(changeRequest: NotebookChangeRequest): void {
@@ -472,10 +482,11 @@ export class NotebookView {
     this.socket.sendMessage(msg);
   }
 
-  private unselectAll(): void {
+  private unselectAll(emit: boolean): void {
     for (const cellView of this.cellViews.values()) {
       if (cellView.isSelected()) { cellView.unselect(); }
     }
     delete this.lastCellSelected;
+    if (emit) { this.emitSelectionChangedEvent({ empty: true }); }
   }
 }

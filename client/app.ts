@@ -25,7 +25,7 @@ import { getMyScript, Configuration, Editor, EditorElement, EditorChangedEvent, 
 import { showErrorMessage } from './global.js';
 // import { apiPostRequest } from './api.js';
 // import { StyleObject, StyleObject }  from './math-tablet-api.js';
-import { NotebookView } from './notebook-view.js';
+import { NotebookView, SelectionChangedEventDetail } from './notebook-view.js';
 import { ServerSocket } from './server-socket.js';
 import { StyleType } from './notebook.js';
 import { Jiix, LatexData, MathMlData, StylePropertiesWithSubprops } from './math-tablet-api.js';
@@ -99,7 +99,10 @@ async function onDomReady(_event: Event){
     $<HTMLButtonElement>('#redoButton').addEventListener<'click'>('click', _event=>gEditor && gEditor.redo());
     $<HTMLButtonElement>('#clearButton').addEventListener<'click'>('click', _event=>gEditor && gEditor.clear());
     $<HTMLButtonElement>('#convertButton').addEventListener<'click'>('click', _event=>gEditor && gEditor.convert());
-    $<HTMLButtonElement>('#debugWindow').addEventListener<'click'>('click', onDebugWindowClicked);
+
+    $<HTMLButtonElement>('#trashButton').addEventListener<'click'>('click', onTrashButtonClicked);
+
+    $<HTMLDivElement>('#debugWindow').addEventListener<'click'>('click', onDebugWindowClicked);
 
     switchInput(INITIAL_INPUT_METHOD);
 
@@ -114,6 +117,12 @@ async function onDomReady(_event: Event){
     // Insert the TDoc into the content window
     $('#content').appendChild(gNotebook.$elt);
 
+    // LATER: If the notebook could have a non-empty selection initially
+    //        (e.g. selection was saved across browser refresh) then we
+    //        need to enable or disable the #trashButton here
+    //        depending on whether the selection is empty or not.
+    // $<HTMLButtonElement>('#trashButton') = gNotebook.selectionIsEmpty();
+    gNotebook.$elt.addEventListener('selection-changed', </* TYPESCRIPT: */any>onSelectionChanged);
     gNotebook.$elt.focus();
   } catch (err) {
     showErrorMessage(`Initialization error: ${err.message}`);
@@ -230,17 +239,29 @@ function onMathExported(event: EditorExportedEvent) {
   }
 }
 
-function onResize(_event: UIEvent) {
-  switch(gInputMethod) {
-    case 'Math':
-     $<EditorElement>('#inputMath').editor.resize();
-      break;
-    case 'Text':
-      $<EditorElement>('#inputText').editor.resize();
-      break;
-    default:
-      // Nothing to do.
-      break;
+function onResize(_event: UIEvent): void {
+  try {
+    switch(gInputMethod) {
+      case 'Math':
+      $<EditorElement>('#inputMath').editor.resize();
+        break;
+      case 'Text':
+        $<EditorElement>('#inputText').editor.resize();
+        break;
+      default:
+        // Nothing to do.
+        break;
+    }
+  } catch(err) {
+    showErrorMessage("Error handling resize event.", err);
+  }
+}
+
+function onSelectionChanged(event: CustomEvent<SelectionChangedEventDetail>): void {
+  try {
+    $<HTMLButtonElement>('#trashButton').disabled = event.detail.empty;
+  } catch(err) {
+    showErrorMessage("Error handling selection-changed.", err);
   }
 }
 
@@ -255,6 +276,14 @@ function onTextExported(event: EditorExportedEvent) {
     }
   } catch(err) {
     showErrorMessage("Error updating text preview.", err);
+  }
+}
+
+function onTrashButtonClicked(_event: MouseEvent): void {
+  try {
+    gNotebook.deleteSelectedCells();
+  } catch(err) {
+    showErrorMessage("Error on trash button click.", err);
   }
 }
 
