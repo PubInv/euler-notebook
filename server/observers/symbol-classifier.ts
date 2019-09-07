@@ -24,7 +24,7 @@ const MODULE = __filename.split(/[/\\]/).slice(-1)[0].slice(0,-3);
 const debug = debug1(`server:${MODULE}`);
 
 import { NotebookChange, StyleObject } from '../../client/notebook';
-import { SymbolData, WolframData, NotebookChangeRequest, StyleInsertRequest, StylePropertiesWithSubprops, RelationshipPropertiesMap } from '../../client/math-tablet-api';
+import { SymbolData, WolframData, NotebookChangeRequest, StyleInsertRequest, StylePropertiesWithSubprops, RelationshipPropertiesMap, RelationshipInsertRequest } from '../../client/math-tablet-api';
 import { ServerNotebook, ObserverInstance } from '../server-notebook';
 import { execute as executeWolframscript, draftChangeContextName } from './wolframscript';
 import { Config } from '../config';
@@ -85,9 +85,47 @@ export class SymbolClassifierObserver implements ObserverInstance {
     switch (change.type) {
       case 'styleInserted': {
         const style = change.style;
+        // I believe listening only for the WOLFRAM/INPUT forces
+        // a serialization that we don't want to support. We also must
+        // listen for definition and use and handle them separately...
         if (style.type == 'WOLFRAM' && style.meaning == 'INPUT' ||style.meaning == 'INPUT-ALT') {
           await this.addSymbolUseStyles(style, rval);
           await this.addSymbolDefStyles(style, rval);
+        }
+        // I believe we need to explicitly add the relations here;
+        // which may mean that we could remove them from the code
+        // which adds them as part of the insertion, in order to
+        // create greater independence of responsibility
+        if (style.type == 'SYMBOL' && (style.meaning == 'SYMBOL-USE' || style.meaning == 'SYMBOL-DEFINITION')) {
+          debug('UUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUU');
+          const name = (style.meaning == 'SYMBOL-USE') ?
+            style.data :
+            style.data.name;
+          debug('name',name);
+          const lookFor = (style.meaning == 'SYMBOL-USE') ? 'SYMBOL-DEFINITION' :
+            'SYMBOL-USE';
+
+          const relations: RelationshipPropertiesMap =
+            this.getAllMatchingNameAndType(name,lookFor);
+
+          if (relations) {
+            for (const [idStr, props] of Object.entries(relations)) {
+              const changeReq: RelationshipInsertRequest =
+                { type: 'insertRelationship',
+                  fromId:
+                    (style.meaning == 'SYMBOL-USE') ?
+                      parseInt(idStr, 10) :
+                      style.id,
+                  toId:
+                    (style.meaning == 'SYMBOL-USE') ?
+                      style.id :
+                      parseInt(idStr, 10),
+                  props: props };
+              rval.push(
+                changeReq
+              );
+            }
+          }
         }
         break;
       }
@@ -118,18 +156,20 @@ export class SymbolClassifierObserver implements ObserverInstance {
         debug(`name ${name}`);
 
         const value = value_matches[1];
-        // Add the symbol-definition style
-        const relationsTo: RelationshipPropertiesMap = {};
-        // Add any symbol-dependency relationships as a result of the new symbol-def style
-        for (const otherStyle of this.notebook.allStyles()) {
-          if (otherStyle.type == 'SYMBOL' &&
-              otherStyle.meaning == 'SYMBOL-USE' &&
-              otherStyle.data.name == name) {
-            relationsTo[otherStyle.id] = { meaning: 'SYMBOL-DEPENDENCY' };
-            debug(`Inserting relationship`);
-          }
-        }
+        // // Add the symbol-definition style
+        // const relationsTo: RelationshipPropertiesMap = {};
+        // // Add any symbol-dependency relationships as a result of the new symbol-def style
+        // for (const otherStyle of this.notebook.allStyles()) {
+        //   if (otherStyle.type == 'SYMBOL' &&
+        //       otherStyle.meaning == 'SYMBOL-USE' &&
+        //       otherStyle.data.name == name) {
+        //     relationsTo[otherStyle.id] = { meaning: 'SYMBOL-DEPENDENCY' };
+        //     debug(`Inserting relationship`);
+        //   }
+        // }
 
+      const relationsTo: RelationshipPropertiesMap =
+        this.getAllMatchingNameAndType(name,'SYMBOL-USE');
 
         var styleProps: StylePropertiesWithSubprops;
 
@@ -186,6 +226,21 @@ export class SymbolClassifierObserver implements ObserverInstance {
     return symbols;
   }
 
+  private getAllMatchingNameAndType(name: string,
+                                    useOrDef: 'SYMBOL-DEFINITION' | 'SYMBOL-USE') :  RelationshipPropertiesMap {
+      // Add the symbol-use style
+      const relationsFrom: RelationshipPropertiesMap = {};
+      // Add any symbol-dependency relationships as a result of the new symbol-use style
+      for (const otherStyle of this.notebook.allStyles()) {
+        if (otherStyle.type == 'SYMBOL' &&
+            otherStyle.meaning == useOrDef &&
+            otherStyle.data.name == name) {
+          relationsFrom[otherStyle.id] = { meaning: 'SYMBOL-DEPENDENCY' };
+          debug(`Inserting relationship`);
+        }
+      }
+    return relationsFrom;
+  }
   private async  addSymbolUseStyles(style: StyleObject, rval: NotebookChangeRequest[]): Promise<void> {
     await this.addSymbolUseStylesFromString(style.data, style, rval);
   }
@@ -193,17 +248,21 @@ export class SymbolClassifierObserver implements ObserverInstance {
     const symbols = await this.findSymbols(data);
     symbols.forEach(s => {
 
-      // Add the symbol-use style
-      const relationsFrom: RelationshipPropertiesMap = {};
-      // Add any symbol-dependency relationships as a result of the new symbol-use style
-      for (const otherStyle of this.notebook.allStyles()) {
-        if (otherStyle.type == 'SYMBOL' &&
-            otherStyle.meaning == 'SYMBOL-DEFINITION' &&
-            otherStyle.data.name == s) {
-          relationsFrom[otherStyle.id] = { meaning: 'SYMBOL-DEPENDENCY' };
-          debug(`Inserting relationship`);
-        }
-      }
+      // // Add the symbol-use style
+      // const relationsFrom: RelationshipPropertiesMap = {};
+      // // Add any symbol-dependency relationships as a result of the new symbol-use style
+      // for (const otherStyle of this.notebook.allStyles()) {
+      //   if (otherStyle.type == 'SYMBOL' &&
+      //       otherStyle.meaning == 'SYMBOL-DEFINITION' &&
+      //       otherStyle.data.name == s) {
+      //     relationsFrom[otherStyle.id] = { meaning: 'SYMBOL-DEPENDENCY' };
+      //     debug(`Inserting relationship`);
+      //   }
+      // }
+
+      const relationsFrom: RelationshipPropertiesMap =
+        this.getAllMatchingNameAndType(s,'SYMBOL-DEFINITION');
+
       const data: SymbolData = { name: s };
       const styleProps: StylePropertiesWithSubprops = {
         type: 'SYMBOL',

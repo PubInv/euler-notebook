@@ -265,7 +265,8 @@ export class MathematicaObserver implements ObserverInstance {
     // and if so, move it into the notebook directory and create
     // a style.  This is a bit of a hacky means that allows
     // us to avoid having to understand too much about the expression.
-    var path = this.notebook.absoluteDirectoryPath();
+    var path = ".";
+//      = this.notebook.absoluteDirectoryPath();
     debug("path",path);
     // we do not yet have the code to use the notebook path quite ready, so instead we are going to use
     // public/tmp as a place for images until we are ready.

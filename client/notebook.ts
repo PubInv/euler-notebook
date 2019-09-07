@@ -333,8 +333,8 @@ export class Notebook {
       default:
         throw new Error("Unexpected");
     }
-  }
 
+}
   public applyChanges(changes: NotebookChange[]): void {
     for (const change of changes) { this.applyChange(change); }
   }

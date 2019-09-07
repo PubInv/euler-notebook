@@ -112,7 +112,15 @@ export class TeXFormatterObserver implements ObserverInstance {
 //    const style : StyleObject = this.notebook.getStyleById();
 //    debug("processing changed relations to",style);
     // we need to ge the parent here..
-    const top = this.notebook.topLevelStyleOf(relationship.toId);
+    var top;
+    try {
+      top = this.notebook.topLevelStyleOf(relationship.toId);
+    } catch (e) {
+      // if the relationship is not found, it has probably been deleted.
+      // Until we add more discipline about deleting relationships,
+      // returning may be the best thing to do here.
+      return;
+    }
 
     // Now, we will simply delete everyting and recalculate as an
     // initial strategy.

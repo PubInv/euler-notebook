@@ -168,7 +168,7 @@ export class ServerNotebook extends Notebook {
 
     // Make the requested changes to the notebook.
     let allChanges: NotebookChange[] = [];
-    let changes: NotebookChange[] = this.makeRequestedChanges(source, changeRequests);
+    let changes: NotebookChange[] = await this.makeRequestedChanges(source, changeRequests);
 
     for (
       let round = 0;
@@ -192,7 +192,7 @@ export class ServerNotebook extends Notebook {
       // Make the changes requested by the observers.
       let newChanges: NotebookChange[] = [];
       for (const [source, changeRequests] of observerChangeRequests) {
-        newChanges = newChanges.concat(this.makeRequestedChanges(source, changeRequests));
+        newChanges = newChanges.concat(await this.makeRequestedChanges(source, changeRequests));
       }
 
       allChanges = allChanges.concat(changes);
@@ -383,15 +383,15 @@ export class ServerNotebook extends Notebook {
     return changes;
 }
 
-  private makeRequestedChanges(
+  private async makeRequestedChanges(
     source: StyleSource,
     changeRequests: NotebookChangeRequest[]
-  ): NotebookChange[] {
+  ): Promise<NotebookChange[]> {
     let rval: NotebookChange[] = [];
     debug("changeREQUESTS", changeRequests);
     for (const changeRequest of changeRequests) {
       const changes = this.convertChangeRequestToChanges(source, changeRequest);
-      this.applyChanges(changes);
+      await this.applyChanges(changes);
       rval = rval.concat(changes);
     }
     return rval;
