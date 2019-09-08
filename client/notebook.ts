@@ -67,6 +67,7 @@ export interface RelationshipObject extends RelationshipProperties {
 
 export type RelationshipMeaning =
   'SYMBOL-DEPENDENCY' |
+  'DUPLICATE-DEFINITION' |
   'EQUIVALENCE';
 
 export interface RelationshipMap {

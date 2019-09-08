@@ -23,7 +23,7 @@ import * as debug1 from 'debug';
 const MODULE = __filename.split(/[/\\]/).slice(-1)[0].slice(0,-3);
 const debug = debug1(`server:${MODULE}`);
 
-import { NotebookChange, StyleObject } from '../../client/notebook';
+import { NotebookChange, StyleObject, RelationshipProperties } from '../../client/notebook';
 import { SymbolData, WolframData, NotebookChangeRequest, StyleInsertRequest, StylePropertiesWithSubprops, RelationshipPropertiesMap, RelationshipInsertRequest } from '../../client/math-tablet-api';
 import { ServerNotebook, ObserverInstance } from '../server-notebook';
 import { execute as executeWolframscript, draftChangeContextName } from './wolframscript';
@@ -97,16 +97,18 @@ export class SymbolClassifierObserver implements ObserverInstance {
         // which adds them as part of the insertion, in order to
         // create greater independence of responsibility
         if (style.type == 'SYMBOL' && (style.meaning == 'SYMBOL-USE' || style.meaning == 'SYMBOL-DEFINITION')) {
-          debug('UUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUU');
           const name = (style.meaning == 'SYMBOL-USE') ?
             style.data :
             style.data.name;
           debug('name',name);
-          const lookFor = (style.meaning == 'SYMBOL-USE') ? 'SYMBOL-DEFINITION' :
-            'SYMBOL-USE';
-
-          const relations: RelationshipPropertiesMap =
-            this.getAllMatchingNameAndType(name,lookFor);
+//          const lookFor = (style.meaning == 'SYMBOL-USE') ? 'SYMBOL-DEFINITION' :
+//            'SYMBOL-USE';
+          const relationsUse: RelationshipPropertiesMap =
+            this.getAllMatchingNameAndType(name,'SYMBOL-USE');
+          const relationsDef: RelationshipPropertiesMap =
+            this.getAllMatchingNameAndType(name,'SYMBOL-DEFINITION');
+          const relations = (style.meaning == 'SYMBOL-USE') ? relationsDef :
+            relationsUse;
 
           if (relations) {
             for (const [idStr, props] of Object.entries(relations)) {
@@ -124,6 +126,52 @@ export class SymbolClassifierObserver implements ObserverInstance {
               rval.push(
                 changeReq
               );
+            }
+          }
+          // Now we need to check for inconsistency
+          if (style.meaning == 'SYMBOL-DEFINITION') {
+
+            // In reality, we need to order by Top level object!
+            // So when we have the ids, we have to sort by
+            // a function based on top-level object!
+            var defs:number[] = [];
+            // @ts-ignore
+            for (const [idStr, _props] of Object.entries(relationsDef)) {
+              const v =  parseInt(idStr,10);
+
+              if (v < style.id)
+                defs.push(v);
+            }
+            const tops = this.notebook.topLevelStyleOrder();
+            debug("relationsDef",defs,defs.length);
+            defs = defs.sort((n1,n2) => {
+              const tln1 = this.notebook.topLevelStyleOf(n1).id;
+              const tln2 = this.notebook.topLevelStyleOf(n2).id;
+              const idx1 = tops.indexOf(tln1);
+              const idx2 = tops.indexOf(tln2);
+              return (idx1 == idx2) ? 0 :
+                (idx1 < idx2) ? idx1 : idx2;
+            });
+            debug("relationsDef",defs,defs.length);
+            if (defs.length >= 1) {
+              const dup_prop : RelationshipProperties =
+                { meaning: 'DUPLICATE-DEFINITION' };
+              // What we really need to do now is to compute the
+              // last (not counting just added)
+              // (in thought order). For now I will just use
+              // the last one, but this will have to be expanded.
+              const last_def = defs[defs.length-1];
+              if (last_def < style.id) {
+                // @ts-ignore
+                const changeReq: RelationshipInsertRequest =
+                  { type: 'insertRelationship',
+                    fromId: last_def,
+                    toId: style.id,
+                    props: dup_prop };
+                rval.push(
+                  changeReq
+                );
+              }
             }
           }
         }
@@ -156,17 +204,6 @@ export class SymbolClassifierObserver implements ObserverInstance {
         debug(`name ${name}`);
 
         const value = value_matches[1];
-        // // Add the symbol-definition style
-        // const relationsTo: RelationshipPropertiesMap = {};
-        // // Add any symbol-dependency relationships as a result of the new symbol-def style
-        // for (const otherStyle of this.notebook.allStyles()) {
-        //   if (otherStyle.type == 'SYMBOL' &&
-        //       otherStyle.meaning == 'SYMBOL-USE' &&
-        //       otherStyle.data.name == name) {
-        //     relationsTo[otherStyle.id] = { meaning: 'SYMBOL-DEPENDENCY' };
-        //     debug(`Inserting relationship`);
-        //   }
-        // }
 
       const relationsTo: RelationshipPropertiesMap =
         this.getAllMatchingNameAndType(name,'SYMBOL-USE');

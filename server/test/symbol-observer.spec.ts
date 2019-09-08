@@ -51,18 +51,26 @@ export class TestObserver implements ObserverInstance {
 
 const data:string[] = [
   "X = 4",
-  "X + Y"];
+  "X + Y",
+  "X = 5",
+  "X = 6"];
 
 const styleProps:StylePropertiesWithSubprops[] =
   [
     { type: 'WOLFRAM', meaning: 'INPUT', data: data[0] },
     { type: 'WOLFRAM', meaning: 'INPUT', data: data[1] },
+    { type: 'WOLFRAM', meaning: 'INPUT', data: data[2] },
+    { type: 'WOLFRAM', meaning: 'INPUT', data: data[3] },
   ];
 
 const insertRequest:StyleInsertRequest[] = [{ type: 'insertStyle',
                                               styleProps: styleProps[0] },
                                             { type: 'insertStyle',
-                                              styleProps: styleProps[1] }];
+                                              styleProps: styleProps[1] },
+                                           { type: 'insertStyle',
+                                             styleProps: styleProps[2] },
+                                            { type: 'insertStyle',
+                                              styleProps: styleProps[3] }];
 
 
 describe("test symbol observer", function() {
@@ -126,10 +134,6 @@ describe("test symbol observer", function() {
     });
     it("a definition and a use creates a relationship if combined", async function(){
       const changeRequests = [insertRequest[0],insertRequest[1]];
-
-      // TODO: This should work; but it doesn't, which we need to fix
-      // Doing the change requests separate works, however. This should
-      // be a determinant action!
       await notebook.requestChanges('TEST', changeRequests);
       const style = notebook.topLevelStyleOf(1);
       assert.deepEqual(style.type,
@@ -149,10 +153,26 @@ describe("test symbol observer", function() {
 
     it("deleting used doesn't fail", async function(){
       const changeRequests = [insertRequest[0],insertRequest[1]];
+      await notebook.requestChanges('TEST', changeRequests);
+      const style = notebook.topLevelStyleOf(1);
+      assert.deepEqual(style.type,
+                       'WOLFRAM'
+                      );
+      console.log(notebook);
+      console.log("Relationships",notebook.allRelationships());
+      assert.equal(notebook.allRelationships().length,1);
+      const deleteReq : StyleDeleteRequest = { type: 'deleteStyle',
+                           styleId: style.id };
 
-      // TODO: This should work; but it doesn't, which we need to fix
-      // Doing the change requests separate works, however. This should
-      // be a determinant action!
+      await notebook.requestChanges('TEST', [deleteReq]);
+      assert.equal(notebook.allRelationships().length,0);
+    });
+    it("multiple definitions create inconsistencies",async function(){
+
+      // Our goal here is to mark two defintions as inconsistent,
+      // but still keep a linear chain.
+      const changeRequests = [insertRequest[0],insertRequest[2],insertRequest[3]];
+
       await notebook.requestChanges('TEST', changeRequests);
 
       const style = notebook.topLevelStyleOf(1);
@@ -161,20 +181,11 @@ describe("test symbol observer", function() {
                       );
       console.log(notebook);
       console.log("Relationships",notebook.allRelationships());
-      assert.equal(notebook.allRelationships().length,1);
+      assert.equal(notebook.allRelationships().length,2);
+      // We want to check that the relaionship is "duplicate def".
       const r : RelationshipObject = notebook.allRelationships()[0];
-      const fromObj : StyleObject = notebook.topLevelStyleOf(r.fromId);
-      const toObj : StyleObject =  notebook.topLevelStyleOf(r.toId);
-      console.log("from",fromObj.data );
-      console.log("to",toObj.data);
-
-      const deleteReq : StyleDeleteRequest = { type: 'deleteStyle',
-                           styleId: style.id };
-
-      await notebook.requestChanges('TEST', [deleteReq]);
-      assert.equal(notebook.allRelationships().length,0);
+      assert.equal(r.meaning,'DUPLICATE-DEFINITION');
     });
-    // it("multiple definitions create inconsistencies")
     // it("two defs and a use create an inconsistency and a use")
     // it("two defs uses the latter definition")
     // it("imposing inserted defintion in inconsistencies maintains chain")
