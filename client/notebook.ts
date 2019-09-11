@@ -312,6 +312,15 @@ export class Notebook {
     return this.topLevelStyleOf(style.parentId);
   }
 
+  // Return the order-dependent position of the top level thought
+  // this is attached to; this is used in "causal ordering".
+  // getThoughtIndex(A) < getThoughtIndex(B) implies A may not
+  // in anyway depend on B.
+  public getThoughtIndex(id: StyleId): number {
+    const top = this.topLevelStyleOf(id);
+    return this.styleOrder.indexOf(top.id);
+  }
+
   // Instance Methods
 
   public applyChange(change: NotebookChange): void {

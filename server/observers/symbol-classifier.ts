@@ -24,7 +24,9 @@ const MODULE = __filename.split(/[/\\]/).slice(-1)[0].slice(0,-3);
 const debug = debug1(`server:${MODULE}`);
 
 import { NotebookChange, StyleObject, RelationshipProperties } from '../../client/notebook';
-import { SymbolData, WolframData, NotebookChangeRequest, StyleInsertRequest, StylePropertiesWithSubprops, RelationshipPropertiesMap, RelationshipInsertRequest } from '../../client/math-tablet-api';
+import { SymbolData, WolframData, NotebookChangeRequest, StyleInsertRequest, StylePropertiesWithSubprops, RelationshipPropertiesMap, RelationshipInsertRequest,
+//         RelationshipDeleteRequest
+       } from '../../client/math-tablet-api';
 import { ServerNotebook, ObserverInstance } from '../server-notebook';
 import { execute as executeWolframscript, draftChangeContextName } from './wolframscript';
 import { Config } from '../config';
@@ -80,11 +82,34 @@ export class SymbolClassifierObserver implements ObserverInstance {
 
   // Private Instance Methods
 
+  private getLatestOfListOfStyleIds(styles: number[]) : number {
+    debug("INPUT STYLES",styles);
+    const [max,maxstyle] = styles.reduce(
+      (acc,val) => {
+          const idx = this.notebook.getThoughtIndex(val);
+          const max = acc[0];
+          if (idx > max) {
+            return [idx,val]
+          } else {
+            return acc;
+          }
+      },[-1,-1]
+    );
+
+    debug("GREATEST",maxstyle);
+    if (max >= 0)
+      return maxstyle;
+    else
+      return -1; // This would actually be an internal error
+  }
+
   private async onChange(change: NotebookChange, rval: NotebookChangeRequest[]): Promise<void> {
     debug(`onChange ${this.notebook._path} ${change.type}`);
     switch (change.type) {
       case 'styleInserted': {
         const style = change.style;
+
+        const tlid = this.notebook.topLevelStyleOf(style.id).id;
         // I believe listening only for the WOLFRAM/INPUT forces
         // a serialization that we don't want to support. We also must
         // listen for definition and use and handle them separately...
@@ -100,9 +125,9 @@ export class SymbolClassifierObserver implements ObserverInstance {
           const name = (style.meaning == 'SYMBOL-USE') ?
             style.data :
             style.data.name;
-          debug('name',name);
-//          const lookFor = (style.meaning == 'SYMBOL-USE') ? 'SYMBOL-DEFINITION' :
-//            'SYMBOL-USE';
+          //          debug('name',name);
+          //          const lookFor = (style.meaning == 'SYMBOL-USE') ? 'SYMBOL-DEFINITION' :
+          //            'SYMBOL-USE';
           const relationsUse: RelationshipPropertiesMap =
             this.getAllMatchingNameAndType(name,'SYMBOL-USE');
           const relationsDef: RelationshipPropertiesMap =
@@ -110,25 +135,96 @@ export class SymbolClassifierObserver implements ObserverInstance {
           const relations = (style.meaning == 'SYMBOL-USE') ? relationsDef :
             relationsUse;
 
+          // TODO: These are using chronological order, not
+          // users-specified order
+
+          // In reality, we need to order by Top level object!
+          // So when we have the ids, we have to sort by
+          // a function based on top-level object!
+          var defs:number[] = [];
+          // @ts-ignore
+          for (const [idStr, _props] of Object.entries(relationsDef)) {
+            const v =  parseInt(idStr,10);
+            const tlidv = this.notebook.topLevelStyleOf(v).id;
+            if (tlidv < tlid)
+              defs.push(v);
+          }
+
+          // In reality, we need to order by Top level object!
+          // So when we have the ids, we have to sort by
+          // a function based on top-level object!
+          var uses:number[] = [];
+          // @ts-ignore
+          for (const [idStr, _props] of Object.entries(relationsUse)) {
+            const v =  parseInt(idStr,10);
+            const tlidv = this.notebook.topLevelStyleOf(v).id;
+            // This is a little weird; uses must occur AFTER their
+            // defintions, though this is very confusing
+            if (tlidv > tlid)
+              uses.push(v);
+          }
+
           if (relations) {
-            for (const [idStr, props] of Object.entries(relations)) {
+            const index = (style.meaning == 'SYMBOL-USE') ?
+              this.getLatestOfListOfStyleIds(defs) :
+              this.getLatestOfListOfStyleIds(uses);
+            if (index >= 0) {
+              const props : RelationshipProperties = { meaning: 'SYMBOL-DEPENDENCY' };
+
               const changeReq: RelationshipInsertRequest =
                 { type: 'insertRelationship',
                   fromId:
-                    (style.meaning == 'SYMBOL-USE') ?
-                      parseInt(idStr, 10) :
-                      style.id,
+                  (style.meaning == 'SYMBOL-USE') ?
+                  index :
+                  style.id,
                   toId:
-                    (style.meaning == 'SYMBOL-USE') ?
-                      style.id :
-                      parseInt(idStr, 10),
+                  (style.meaning == 'SYMBOL-USE') ?
+                  style.id :
+                  index,
                   props: props };
               rval.push(
                 changeReq
               );
             }
           }
-          // Now we need to check for inconsistency
+
+          // // Additionally, we have the problem that this
+          // // definition may relationships from earlier styles,
+          // // if they are for the same variable.
+          // const rels = this.notebook.allRelationships();
+          // console.log("RELATIONS",rels);
+          // for(const r of rels) {
+          //   // See if we are on the same symbol...
+          //   console.log("RRR",r);
+          //   if (r.source == 'SYMBOL-CLASSIFIER') {
+          //     var def_name = this.notebook.getStyleById(r.fromId).data;
+          //     console.log("DEF_NANE",name.name,def_name.name);
+          //     if (name.name == def_name.name) {
+          //       const tlidf = this.notebook.topLevelStyleOf(r.fromId).id;
+          //       const tlidt = this.notebook.topLevelStyleOf(r.toId).id;
+          //       //
+          //       console.log("tlid,tldidf,tlidt", tlid, tlidf,tlidt);
+          //       if (tlidf < tlid) {
+          //         console.log("deleting");
+          //         // In this case, we are deletable.
+          //         const changeReq: RelationshipDeleteRequest =
+          //           { type: 'deleteRelationship',
+          //             id: r.id,
+          //           }
+          //         rval.push(
+          //           changeReq
+          //         );
+          //       }
+          //     }
+          //     // See if we are ealier....
+          //     // then invalidate
+          //   }
+          // }
+
+          // So we run over all relationships that may be earlier
+          // and delete some of them....
+
+          // Now we need to check for inconsistency;
           if (style.meaning == 'SYMBOL-DEFINITION') {
 
             // In reality, we need to order by Top level object!
@@ -138,29 +234,21 @@ export class SymbolClassifierObserver implements ObserverInstance {
             // @ts-ignore
             for (const [idStr, _props] of Object.entries(relationsDef)) {
               const v =  parseInt(idStr,10);
-
               if (v < style.id)
                 defs.push(v);
             }
-            const tops = this.notebook.topLevelStyleOrder();
-            debug("relationsDef",defs,defs.length);
-            defs = defs.sort((n1,n2) => {
-              const tln1 = this.notebook.topLevelStyleOf(n1).id;
-              const tln2 = this.notebook.topLevelStyleOf(n2).id;
-              const idx1 = tops.indexOf(tln1);
-              const idx2 = tops.indexOf(tln2);
-              return (idx1 == idx2) ? 0 :
-                (idx1 < idx2) ? idx1 : idx2;
-            });
-            debug("relationsDef",defs,defs.length);
+            //            const tops = this.notebook.topLevelStyleOrder();
+            //            debug("relationsDef",defs,defs.length);
+            //            debug("relationsDef",defs,defs.length);
             if (defs.length >= 1) {
               const dup_prop : RelationshipProperties =
                 { meaning: 'DUPLICATE-DEFINITION' };
-              // What we really need to do now is to compute the
-              // last (not counting just added)
-              // (in thought order). For now I will just use
-              // the last one, but this will have to be expanded.
-              const last_def = defs[defs.length-1];
+              //             const last_def = defs[defs.length-1];
+
+              //              const last_def_new = this.getLatestOfListOfStyleIds(defs);
+              const last_def = this.getLatestOfListOfStyleIds(defs);
+              //              console.log("LAST_OLD, LAST_NEW",last_def, last_def_new);
+
               if (last_def < style.id) {
                 // @ts-ignore
                 const changeReq: RelationshipInsertRequest =
@@ -168,14 +256,16 @@ export class SymbolClassifierObserver implements ObserverInstance {
                     fromId: last_def,
                     toId: style.id,
                     props: dup_prop };
+                console.log("PUSHHHHH BBB",changeReq);
                 rval.push(
                   changeReq
                 );
               }
             }
           }
+          //        console.log("RVAL",rval);
+          break;
         }
-        break;
       }
     }
   }
@@ -267,7 +357,9 @@ export class SymbolClassifierObserver implements ObserverInstance {
                                     useOrDef: 'SYMBOL-DEFINITION' | 'SYMBOL-USE') :  RelationshipPropertiesMap {
       // Add the symbol-use style
       const relationsFrom: RelationshipPropertiesMap = {};
-      // Add any symbol-dependency relationships as a result of the new symbol-use style
+    // Add any symbol-dependency relationships as a result of the new symbol-use style
+    if (this.notebook) {
+    console.log("ALL STYLES",this.notebook);
       for (const otherStyle of this.notebook.allStyles()) {
         if (otherStyle.type == 'SYMBOL' &&
             otherStyle.meaning == useOrDef &&
@@ -276,29 +368,69 @@ export class SymbolClassifierObserver implements ObserverInstance {
           debug(`Inserting relationship`);
         }
       }
+    } else {
+      // Surely this is an error?!?
+    }
     return relationsFrom;
   }
-  private async  addSymbolUseStyles(style: StyleObject, rval: NotebookChangeRequest[]): Promise<void> {
+
+  private getLatestMatchingNameAndType(name: string,
+                                       useOrDef: 'SYMBOL-DEFINITION' | 'SYMBOL-USE') :  RelationshipPropertiesMap {
+    // Add the symbol-use style
+
+    const relationsFrom: RelationshipPropertiesMap = {};
+    // Add any symbol-dependency relationships as a result of the new symbol-use style
+    console.log("ALL STYLES",this.notebook);
+    // This code as actually longer than doing it
+    // in a loop; nontheless I prefer this "reduce" style
+    // because I suspect we will have to do "sorting" by thought
+    // order at some point, and this basic approach with then become
+    // reusable.  In fact, I cold implment a "sort" now and use it
+    // to compute the "lates" but that is a tad wastefule. - rlr
+    const [max,maxstyle] = this.notebook.allStyles().reduce(
+      (acc,val) => {
+        if (val.type == 'SYMBOL' &&
+          val.meaning == useOrDef &&
+            val.data.name == name) {
+          const idx = this.notebook.getThoughtIndex(val.id);
+          const max = acc[0];
+          if (idx > max) {
+            return [idx,val.id]
+          } else {
+            return acc;
+          }
+        } else {
+          return acc;
+        }
+      },[-1,-1]
+    );;
+
+    // for (const otherStyle of this.notebook.allStyles()) {
+    //   if (otherStyle.type == 'SYMBOL' &&
+    //       otherStyle.meaning == useOrDef &&
+    //       otherStyle.data.name == name) {
+    //     debug(`Inserting relationship`);
+    //     // This really needs to use top-level tought order!
+    //     const idx = this.notebook.getThoughtIndex(otherStyle.id);
+    //     if (idx > max) {
+    //       max = idx;
+    //       maxstyle = otherStyle.id;
+    //     }
+    //   }
+    // }
+    if (max >=0) {
+      relationsFrom[maxstyle] = { meaning: 'SYMBOL-DEPENDENCY' };
+    }
+    return relationsFrom;
+  }
+private async  addSymbolUseStyles(style: StyleObject, rval: NotebookChangeRequest[]): Promise<void> {
     await this.addSymbolUseStylesFromString(style.data, style, rval);
   }
   private async  addSymbolUseStylesFromString(data: string,style: StyleObject, rval: NotebookChangeRequest[]): Promise<void> {
     const symbols = await this.findSymbols(data);
     symbols.forEach(s => {
-
-      // // Add the symbol-use style
-      // const relationsFrom: RelationshipPropertiesMap = {};
-      // // Add any symbol-dependency relationships as a result of the new symbol-use style
-      // for (const otherStyle of this.notebook.allStyles()) {
-      //   if (otherStyle.type == 'SYMBOL' &&
-      //       otherStyle.meaning == 'SYMBOL-DEFINITION' &&
-      //       otherStyle.data.name == s) {
-      //     relationsFrom[otherStyle.id] = { meaning: 'SYMBOL-DEPENDENCY' };
-      //     debug(`Inserting relationship`);
-      //   }
-      // }
-
       const relationsFrom: RelationshipPropertiesMap =
-        this.getAllMatchingNameAndType(s,'SYMBOL-DEFINITION');
+        this.getLatestMatchingNameAndType(s,'SYMBOL-DEFINITION');
 
       const data: SymbolData = { name: s };
       const styleProps: StylePropertiesWithSubprops = {

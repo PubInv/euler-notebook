@@ -48,12 +48,20 @@ export class TestObserver implements ObserverInstance {
 }
 
 // Unit Tests
+// I don't know why this might work....
+async function serializeChangeRequests(notebook: ServerNotebook,
+                                 changes: NotebookChangeRequest[]) {
+  for(const cr of changes) {
+      await notebook.requestChanges('TEST', [cr]);
+  }
+}
 
 const data:string[] = [
   "X = 4",
   "X + Y",
   "X = 5",
-  "X = 6"];
+  "X = 6",
+  "X^2"];
 
 const styleProps:StylePropertiesWithSubprops[] =
   [
@@ -61,6 +69,7 @@ const styleProps:StylePropertiesWithSubprops[] =
     { type: 'WOLFRAM', meaning: 'INPUT', data: data[1] },
     { type: 'WOLFRAM', meaning: 'INPUT', data: data[2] },
     { type: 'WOLFRAM', meaning: 'INPUT', data: data[3] },
+    { type: 'WOLFRAM', meaning: 'INPUT', data: data[4] },
   ];
 
 const insertRequest:StyleInsertRequest[] = [{ type: 'insertStyle',
@@ -70,7 +79,9 @@ const insertRequest:StyleInsertRequest[] = [{ type: 'insertStyle',
                                            { type: 'insertStyle',
                                              styleProps: styleProps[2] },
                                             { type: 'insertStyle',
-                                              styleProps: styleProps[3] }];
+                                              styleProps: styleProps[3] },
+                                            { type: 'insertStyle',
+                                              styleProps: styleProps[4] }];
 
 
 describe("test symbol observer", function() {
@@ -118,9 +129,7 @@ describe("test symbol observer", function() {
       await notebook.requestChanges('TEST', [changeRequests[0]]);
       await notebook.requestChanges('TEST', [changeRequests[1]]);
       const style = notebook.topLevelStyleOf(1);
-      assert.deepEqual(style.type,
-                       'WOLFRAM'
-                      );
+      assert.deepEqual(style.type,'WOLFRAM');
       console.log(notebook);
       console.log("Relationships",notebook.allRelationships());
       assert.equal(notebook.allRelationships().length,1);
@@ -139,14 +148,12 @@ describe("test symbol observer", function() {
       assert.deepEqual(style.type,
                        'WOLFRAM'
                       );
-      console.log(notebook);
-      console.log("Relationships",notebook.allRelationships());
+
       assert.equal(notebook.allRelationships().length,1);
       const r : RelationshipObject = notebook.allRelationships()[0];
       const fromObj : StyleObject = notebook.topLevelStyleOf(r.fromId);
       const toObj : StyleObject =  notebook.topLevelStyleOf(r.toId);
-      console.log("from",fromObj.data );
-      console.log("to",toObj.data);
+
       assert.equal(fromObj.data,data[0]);
       assert.equal(toObj.data,data[1]);
     });
@@ -155,11 +162,8 @@ describe("test symbol observer", function() {
       const changeRequests = [insertRequest[0],insertRequest[1]];
       await notebook.requestChanges('TEST', changeRequests);
       const style = notebook.topLevelStyleOf(1);
-      assert.deepEqual(style.type,
-                       'WOLFRAM'
-                      );
-      console.log(notebook);
-      console.log("Relationships",notebook.allRelationships());
+      assert.deepEqual(style.type,'WOLFRAM');
+
       assert.equal(notebook.allRelationships().length,1);
       const deleteReq : StyleDeleteRequest = { type: 'deleteStyle',
                            styleId: style.id };
@@ -168,25 +172,33 @@ describe("test symbol observer", function() {
       assert.equal(notebook.allRelationships().length,0);
     });
     it("multiple definitions create inconsistencies",async function(){
-
       // Our goal here is to mark two defintions as inconsistent,
       // but still keep a linear chain.
-      const changeRequests = [insertRequest[0],insertRequest[2],insertRequest[3]];
-
-      await notebook.requestChanges('TEST', changeRequests);
+      const changeRequests0 = [insertRequest[0],insertRequest[2]];
+      const changeRequests1 = [insertRequest[3]];
+      await notebook.requestChanges('TEST', changeRequests0);
+      await notebook.requestChanges('TEST', changeRequests1);
 
       const style = notebook.topLevelStyleOf(1);
-      assert.deepEqual(style.type,
-                       'WOLFRAM'
-                      );
-      console.log(notebook);
-      console.log("Relationships",notebook.allRelationships());
+      assert.deepEqual(style.type,'WOLFRAM');
       assert.equal(notebook.allRelationships().length,2);
       // We want to check that the relaionship is "duplicate def".
       const r : RelationshipObject = notebook.allRelationships()[0];
       assert.equal(r.meaning,'DUPLICATE-DEFINITION');
     });
-    // it("two defs and a use create an inconsistency and a use")
+    it("two defs and a use create an inconsistency and a use",async function(){
+      const changeRequests = [insertRequest[0],insertRequest[2],insertRequest[4]];
+      await serializeChangeRequests(notebook,changeRequests);
+
+
+      assert.equal(2,notebook.allRelationships().length);
+      // We want to check that the relaionship is "duplicate def".
+      const rd : RelationshipObject = notebook.allRelationships()[0];
+
+      const ru : RelationshipObject = notebook.allRelationships()[1];
+      assert.equal(ru.meaning,'DUPLICATE-DEFINITION');
+      assert.equal(rd.meaning,'SYMBOL-DEPENDENCY');
+    });
     // it("two defs uses the latter definition")
     // it("imposing inserted defintion in inconsistencies maintains chain")
     // it("deletion keeeps chain connected")
