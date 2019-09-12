@@ -106,6 +106,28 @@ export class SymbolClassifierObserver implements ObserverInstance {
   private async onChange(change: NotebookChange, rval: NotebookChangeRequest[]): Promise<void> {
     debug(`onChange ${this.notebook._path} ${change.type}`);
     switch (change.type) {
+      case 'styleDeleted': {
+        // TODO: Implementing this is perhaps the highest priority.
+
+        // If this is a definition, there is considerable work
+        // to do.
+        // In this case, uses of this definition need to be removed,
+        // but possibly re-routed to any now uncovered defintions which
+        // this removal may make valid.
+        // If this is the target of a duplicat-definition relationship
+        // that relationship can be removed; however, a more recent
+        // definition might now be a duplication of an ealier definition.
+        // Anything which has a tex-formatter after this may need
+        // to be refreshed, which may create a new set of refreshments.
+
+
+
+        // If this style has uses reaching it, those relationships
+        // should be removed.
+
+        break;
+      }
+
       case 'styleInserted': {
         const style = change.style;
 

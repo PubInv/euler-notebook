@@ -26,14 +26,15 @@ import { assert } from 'chai';
 import 'mocha';
 // import * as sinon from 'sinon';
 
-import { NotebookChange,  StyleObject, RelationshipObject } from '../../client/notebook';
+import { NotebookChange,  StyleObject, RelationshipObject, StyleId } from '../../client/notebook';
 import { NotebookChangeRequest, StyleInsertRequest,
-         StyleDeleteRequest,
-         StylePropertiesWithSubprops } from '../../client/math-tablet-api';
+         StyleDeleteRequest } from '../../client/math-tablet-api';
 import { ServerNotebook, ObserverInstance }  from '../server-notebook';
 
 import { SymbolClassifierObserver } from '../observers/symbol-classifier';
+import { EquationSolverObserver } from '../observers/equation-solver';
 import { MathematicaObserver } from '../observers/mathematica-cas';
+import { TeXFormatterObserver } from '../observers/tex-formatter';
 import { start as startWolframscript } from '../observers/wolframscript';
 import { Config, getConfig } from '../config';
 // Test Observer
@@ -56,33 +57,44 @@ async function serializeChangeRequests(notebook: ServerNotebook,
   }
 }
 
+function generateInsertRequests(inputs :string[]) : StyleInsertRequest[] {
+  var reqs : StyleInsertRequest[] = [];
+  for(const i of inputs) {
+    reqs.push( { type: 'insertStyle',
+            styleProps: { type: 'WOLFRAM', meaning: 'INPUT', data: i } }
+        );
+  }
+  return reqs;
+}
+
 const data:string[] = [
   "X = 4",
   "X + Y",
   "X = 5",
   "X = 6",
-  "X^2"];
+  "Y = X^2"];
 
-const styleProps:StylePropertiesWithSubprops[] =
-  [
-    { type: 'WOLFRAM', meaning: 'INPUT', data: data[0] },
-    { type: 'WOLFRAM', meaning: 'INPUT', data: data[1] },
-    { type: 'WOLFRAM', meaning: 'INPUT', data: data[2] },
-    { type: 'WOLFRAM', meaning: 'INPUT', data: data[3] },
-    { type: 'WOLFRAM', meaning: 'INPUT', data: data[4] },
-  ];
+// const styleProps:StylePropertiesWithSubprops[] =
+//   [
+//     { type: 'WOLFRAM', meaning: 'INPUT', data: data[0] },
+//     { type: 'WOLFRAM', meaning: 'INPUT', data: data[1] },
+//     { type: 'WOLFRAM', meaning: 'INPUT', data: data[2] },
+//     { type: 'WOLFRAM', meaning: 'INPUT', data: data[3] },
+//     { type: 'WOLFRAM', meaning: 'INPUT', data: data[4] },
+//   ];
 
-const insertRequest:StyleInsertRequest[] = [{ type: 'insertStyle',
-                                              styleProps: styleProps[0] },
-                                            { type: 'insertStyle',
-                                              styleProps: styleProps[1] },
-                                           { type: 'insertStyle',
-                                             styleProps: styleProps[2] },
-                                            { type: 'insertStyle',
-                                              styleProps: styleProps[3] },
-                                            { type: 'insertStyle',
-                                              styleProps: styleProps[4] }];
+// const insertRequest:StyleInsertRequest[] = [{ type: 'insertStyle',
+//                                               styleProps: styleProps[0] },
+//                                             { type: 'insertStyle',
+//                                               styleProps: styleProps[1] },
+//                                            { type: 'insertStyle',
+//                                              styleProps: styleProps[2] },
+//                                             { type: 'insertStyle',
+//                                               styleProps: styleProps[3] },
+//                                             { type: 'insertStyle',
+//                                               styleProps: styleProps[4] }];
 
+const insertRequest:StyleInsertRequest[] = generateInsertRequests(data);
 
 describe("test symbol observer", function() {
   let notebook: ServerNotebook;
@@ -104,6 +116,8 @@ describe("test symbol observer", function() {
     // We are specifically testing this one...
     ServerNotebook.registerObserver('SYMBOL-CLASSIFIER', SymbolClassifierObserver);
     ServerNotebook.registerObserver('MATHEMATICA', MathematicaObserver);
+    ServerNotebook.registerObserver('EQUATION-SOLVER', EquationSolverObserver);
+    ServerNotebook.registerObserver('TEX-FORMATTER', TeXFormatterObserver);
 
 
   });
@@ -130,14 +144,10 @@ describe("test symbol observer", function() {
       await notebook.requestChanges('TEST', [changeRequests[1]]);
       const style = notebook.topLevelStyleOf(1);
       assert.deepEqual(style.type,'WOLFRAM');
-      console.log(notebook);
-      console.log("Relationships",notebook.allRelationships());
       assert.equal(notebook.allRelationships().length,1);
       const r : RelationshipObject = notebook.allRelationships()[0];
       const fromObj : StyleObject = notebook.topLevelStyleOf(r.fromId);
       const toObj : StyleObject =  notebook.topLevelStyleOf(r.toId);
-      console.log("from",fromObj.data );
-      console.log("to",toObj.data);
       assert.equal(fromObj.data,data[0]);
       assert.equal(toObj.data,data[1]);
     });
@@ -199,7 +209,77 @@ describe("test symbol observer", function() {
       assert.equal(ru.meaning,'DUPLICATE-DEFINITION');
       assert.equal(rd.meaning,'SYMBOL-DEPENDENCY');
     });
-    // it("two defs uses the latter definition")
+    it("three defs cause the final one to be used",async function(){
+      const data:string[] = [
+        "X = 4",
+        "X = 5",
+        "X = 6",
+        "Y = X^2"];
+      const changeRequests = generateInsertRequests(data);
+
+      await serializeChangeRequests(notebook,changeRequests);
+
+      // Now that we have this, the Final one, X^2, should evaulte to 36
+      assert.equal(3,notebook.allRelationships().length);
+      // Now we have want to take the last one, and observe an evaluation.
+      // This raises the question: should we add an evaluation to the
+      // notebook itself, which would be a bit expensive, but
+      // allow us to directly see the evaluation.
+
+      // To try to make this robust, we will specifically construct
+      // the value. We also need to be able to get the last thought.
+      const lastThoughtId = notebook.topLevelStyleOrder().slice(-1)[0];
+
+      // now that we have the lastThought, we want to get the
+      // LATEX type...
+      const lastThought = notebook.getStyleById(lastThoughtId);
+
+      const children = notebook.findChildStylesOfType(lastThought.id,
+                                                      'LATEX');
+      const texformatter = children[0];
+      assert.equal('Y = 36',texformatter.data);
+
+    });
+    it.skip("three defs and a delete cause the final one to be used",async function(){
+      const data:string[] = [
+        "X = 4",
+        "X = 5",
+        "X = 6",
+        "Y = X^2"];
+      const insertRequests = generateInsertRequests(data);
+      await serializeChangeRequests(notebook,insertRequests);
+
+      const secondThoughtId : StyleId = notebook.topLevelStyleOrder()[1];
+
+      const deleteRequest : StyleDeleteRequest = { type: 'deleteStyle',
+                              styleId: secondThoughtId };
+
+      await serializeChangeRequests(notebook,[deleteRequest]);
+
+      console.log(notebook);
+
+      // Now that we have this, the Final one, X^2, should evaulte to 36
+      assert.equal(1,notebook.allRelationships().length);
+      // Now we have want to take the last one, and observe an evaluation.
+      // This raises the question: should we add an evaluation to the
+      // notebook itself, which would be a bit expensive, but
+      // allow us to directly see the evaluation.
+
+      // To try to make this robust, we will specifically construct
+      // the value. We also need to be able to get the last thought.
+      const lastThoughtId = notebook.topLevelStyleOrder().slice(-1)[0];
+
+      // now that we have the lastThought, we want to get the
+      // LATEX type...
+      const lastThought = notebook.getStyleById(lastThoughtId);
+
+      const children = notebook.findChildStylesOfType(lastThought.id,
+                                                      'LATEX');
+      const texformatter = children[0];
+      assert.equal('Y = 25',texformatter.data);
+
+
+    });
     // it("imposing inserted defintion in inconsistencies maintains chain")
     // it("deletion keeeps chain connected")
     // it("reordering of inserts correctly changes order of change")
