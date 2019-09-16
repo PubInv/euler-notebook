@@ -313,35 +313,42 @@ describe("test symbol observer", function() {
 
 
     });
-    it("multiples defs and a deletes are handled",async function(){
-      const NUM = 10;
+    it.only("multiples defs and a deletes are handled",async function(){
+      const NUM = 8;
       let data:string[] = [];
 
       for(var i = 0; i < NUM; i++) {
-        data[i] = "X = "+i;
+        data[i] = "X = "+(i+3);
       }
       data.push("Y = X^2");
+      console.log(data);
       const insertRequests = generateInsertRequests(data);
       await serializeChangeRequests(notebook,insertRequests);
+      console.log("XXXXX",notebook);
 
-      let penultimate = getThought(notebook,-2);
 
-      // We need a function to
-      const deleteRequest : StyleDeleteRequest = { type: 'deleteStyle',
-                              styleId: penultimate };
+      for(var i = NUM-1; i > 1; i--) {
 
-      await serializeChangeRequests(notebook,[deleteRequest]);
+        let penultimate = getThought(notebook,-2);
+        const deleteRequest : StyleDeleteRequest = { type: 'deleteStyle',
+                                                     styleId: penultimate };
 
-      // Now that we have this, the Final one, X^2, should evaulte to 36
-      assert.equal(NUM+1,notebook.allRelationships().length);
-      // Now we have want to take the last one, and observe an evaluation.
-      // This raises the question: should we add an evaluation to the
-      // notebook itself, which would be a bit expensive, but
-      // allow us to directly see the evaluation.
+        await serializeChangeRequests(notebook,[deleteRequest]);
 
-      const lasttex = texformatOfLastThought(notebook);
+//        console.log("penultimate id",penultimate);
+//        console.log("notebook IIIII",i,notebook);
 
-      assert.equal('Y = '+(NUM-2)*(NUM-2),lasttex);
+        // Now that we have this, the Final one, X^2, should evaulte to 36
+//        assert.equal(NUM-2,notebook.allRelationships().length);
+        // Now we have want to take the last one, and observe an evaluation.
+        // This raises the question: should we add an evaluation to the
+        // notebook itself, which would be a bit expensive, but
+        // allow us to directly see the evaluation.
+
+        const lasttex = texformatOfLastThought(notebook);
+
+        assert.equal('Y = '+(i+2)*(i+2),lasttex);
+      }
 
       // Now we must delete objects!!!
     });
