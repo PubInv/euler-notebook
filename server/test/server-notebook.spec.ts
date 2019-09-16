@@ -126,7 +126,7 @@ describe("server notebook", function() {
       // Pick out the tool style.
       const changes: NotebookChange[] = onChangesSpy.lastCall.args[0];
       assert.equal(changes.length, 2);
-      const toolChange = changes.find(c=>c.type=='styleInserted' && c.style.type=='TOOL');
+      const toolChange = changes.find(c=> c && c.type=='styleInserted' && c.style.type=='TOOL');
       assert.exists(toolChange);
       const toolStyle = (<StyleInserted>toolChange).style;
 
@@ -140,4 +140,3 @@ describe("server notebook", function() {
     });
   });
 });
-

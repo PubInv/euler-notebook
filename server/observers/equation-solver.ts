@@ -114,6 +114,7 @@ export class EquationSolverObserver implements ObserverInstance {
   // Private Instance Methods
 
   private async onChange(change: NotebookChange, rval: NotebookChangeRequest[]): Promise<void> {
+    if (change == null) return;
     debug(`onChange ${this.notebook._path} ${change.type}`);
     switch (change.type) {
       case 'styleInserted':

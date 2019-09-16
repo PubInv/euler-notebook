@@ -185,7 +185,13 @@ function showInvisible(s: string): string {
 
 async function startProcess(): Promise<void> {
 
-  if (gServerStartingPromise) { throw new Error("WolframScript already started."); }
+
+  // Rob someone did something that makes this throw...
+  // Is this an error condition or a warning?
+  if (gServerStartingPromise) {
+//    throw new Error("WolframScript already started.");
+    return;
+  }
 
   gServerStartingPromise = new Promise((resolve, reject)=>{
     const child = gChildProcess = spawn(WOLFRAMSCRIPT_PATH);

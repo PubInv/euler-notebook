@@ -26,7 +26,9 @@ import { assert } from 'chai';
 import 'mocha';
 // import * as sinon from 'sinon';
 
-import { NotebookChange,  StyleObject, RelationshipObject, StyleId } from '../../client/notebook';
+import { NotebookChange,  StyleObject, RelationshipObject,
+         StyleId
+       } from '../../client/notebook';
 import { NotebookChangeRequest, StyleInsertRequest,
          StyleDeleteRequest } from '../../client/math-tablet-api';
 import { ServerNotebook, ObserverInstance }  from '../server-notebook';
@@ -93,6 +95,26 @@ const data:string[] = [
 //                                               styleProps: styleProps[3] },
 //                                             { type: 'insertStyle',
 //                                               styleProps: styleProps[4] }];
+
+function texformatOfLastThought(notebook : ServerNotebook) : string {
+  // To try to make this robust, we will specifically construct
+  // the value. We also need to be able to get the last thought.
+  const lastThoughtId = getThought(notebook,-1);
+
+  // now that we have the lastThought, we want to get the
+  // LATEX type...
+  const lastThought = notebook.getStyleById(lastThoughtId);
+  const children = notebook.findChildStylesOfType(lastThought.id,
+                                                  'LATEX');
+  const texformatter = children[0];
+  return texformatter.data;
+}
+function getThought(notebook : ServerNotebook,n : number) : StyleId {
+  const tls = notebook.topLevelStyleOrder();
+  const thoughtId = tls.slice(n)[0];
+  return thoughtId;
+}
+
 
 const insertRequest:StyleInsertRequest[] = generateInsertRequests(data);
 
@@ -240,23 +262,34 @@ describe("test symbol observer", function() {
       assert.equal('Y = 36',texformatter.data);
 
     });
-    it.skip("three defs and a delete cause the final one to be used",async function(){
+    it("getSymbolStylesThatDependOnMe works",async function(){
       const data:string[] = [
-        "X = 4",
-        "X = 5",
         "X = 6",
         "Y = X^2"];
       const insertRequests = generateInsertRequests(data);
       await serializeChangeRequests(notebook,insertRequests);
 
-      const secondThoughtId : StyleId = notebook.topLevelStyleOrder()[1];
+      const rs = notebook.allRelationships();
+      assert.equal(1,rs.length);
+      const defStyle = notebook.getStyleById(rs[0].fromId);
+      const U = notebook.getSymbolStylesThatDependOnMe(defStyle);
+      assert.equal(1,U.length);
 
+
+    });
+    it("two defs and a delete cause the final one to be used",async function(){
+      const data:string[] = [
+        "X = 4",
+        "X = 6",
+        "Y = X^2"];
+      const insertRequests = generateInsertRequests(data);
+      await serializeChangeRequests(notebook,insertRequests);
+
+      const secondThoughtId = notebook.topLevelStyleOrder()[1];
       const deleteRequest : StyleDeleteRequest = { type: 'deleteStyle',
                               styleId: secondThoughtId };
 
       await serializeChangeRequests(notebook,[deleteRequest]);
-
-      console.log(notebook);
 
       // Now that we have this, the Final one, X^2, should evaulte to 36
       assert.equal(1,notebook.allRelationships().length);
@@ -276,9 +309,41 @@ describe("test symbol observer", function() {
       const children = notebook.findChildStylesOfType(lastThought.id,
                                                       'LATEX');
       const texformatter = children[0];
-      assert.equal('Y = 25',texformatter.data);
+      assert.equal('Y = 16',texformatter.data);
 
 
+    });
+    it("multiples defs and a deletes are handled",async function(){
+      const NUM = 10;
+      let data:string[] = [];
+
+      for(var i = 0; i < NUM; i++) {
+        data[i] = "X = "+i;
+      }
+      data.push("Y = X^2");
+      const insertRequests = generateInsertRequests(data);
+      await serializeChangeRequests(notebook,insertRequests);
+
+      let penultimate = getThought(notebook,-2);
+
+      // We need a function to
+      const deleteRequest : StyleDeleteRequest = { type: 'deleteStyle',
+                              styleId: penultimate };
+
+      await serializeChangeRequests(notebook,[deleteRequest]);
+
+      // Now that we have this, the Final one, X^2, should evaulte to 36
+      assert.equal(NUM+1,notebook.allRelationships().length);
+      // Now we have want to take the last one, and observe an evaluation.
+      // This raises the question: should we add an evaluation to the
+      // notebook itself, which would be a bit expensive, but
+      // allow us to directly see the evaluation.
+
+      const lasttex = texformatOfLastThought(notebook);
+
+      assert.equal('Y = '+(NUM-2)*(NUM-2),lasttex);
+
+      // Now we must delete objects!!!
     });
     // it("imposing inserted defintion in inconsistencies maintains chain")
     // it("deletion keeeps chain connected")

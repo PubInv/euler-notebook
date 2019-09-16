@@ -209,15 +209,17 @@ export class MathematicaObserver implements ObserverInstance {
 
   private async onChange(change: NotebookChange): Promise<NotebookChangeRequest[]> {
     let rval: NotebookChangeRequest[] = [];
-    switch (change.type) {
-      case 'styleInserted':
-        rval = rval.concat(
-          await this.mathMathematicaRule(change.style),
-          await this.convertMathMlToWolframRule(change.style),
-          await this.checkEquivalenceRule(change.style),
-        );
-        break;
-      default: break;
+    if (change != null) {
+      switch (change.type) {
+        case 'styleInserted':
+          rval = rval.concat(
+            await this.mathMathematicaRule(change.style),
+            await this.convertMathMlToWolframRule(change.style),
+            await this.checkEquivalenceRule(change.style),
+          );
+          break;
+        default: break;
+      }
     }
     return rval;
   }

@@ -268,6 +268,7 @@ export class ServerNotebook extends Notebook {
   ): NotebookChange[] {
     switch(changeRequest.type) {
       case 'deleteRelationship':
+        debug("deleteRelationship case ins erver-notebook.ts");
         return [ this.deleteRelationshipChange(changeRequest.id) ];
       case 'changeStyle':
         return [ this.changeStyleChange(changeRequest.styleId, changeRequest.data) ];
@@ -292,7 +293,9 @@ export class ServerNotebook extends Notebook {
 
   private deleteRelationshipChange(id: RelationshipId): NotebookChange {
     const relationship = this.getRelationshipById(id);
-    return { type: 'relationshipDeleted', relationship };
+
+    return relationship ? { type: 'relationshipDeleted', relationship } :
+      null;
   }
 
   private deleteStyleChanges(id: StyleId): NotebookChange[] {
@@ -302,11 +305,15 @@ export class ServerNotebook extends Notebook {
     for(const style of styles) {
       changes = changes.concat(this.deleteStyleChanges(style.id));
     }
-    // Delete any relationships attached to this style.
-    const relationships = this.relationshipsOf(id);
-    for(const relationship of relationships) {
-      changes.push(this.deleteRelationshipChange(relationship.id));
-    }
+    // Note: We actually can't do this automatically.
+    // Although deleting a "from" or "to" style in a relationship
+    // certainly invalidates that relationship, we may need the
+    // relationship to compute how to "repair" or "reroute" the dependency
+    // // Delete any relationships attached to this style.
+    // const relationships = this.relationshipsOf(id);
+    // for(const relationship of relationships) {
+    //   changes.push(this.deleteRelationshipChange(relationship.id));
+    // }
     const style = this.getStyleById(id);
     if (style) {
       changes.push({ type: 'styleDeleted', style });

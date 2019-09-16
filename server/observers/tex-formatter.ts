@@ -89,6 +89,7 @@ export class TeXFormatterObserver implements ObserverInstance {
   // Private Instance Methods
 
   private async onChange(change: NotebookChange, rval: NotebookChangeRequest[]): Promise<void> {
+    if (change == null) return;
     debug(`onChange ${this.notebook._path} ${change.type}`);
     switch (change.type) {
       case 'styleInserted':
@@ -183,8 +184,11 @@ export class TeXFormatterObserver implements ObserverInstance {
       const parent = this.notebook.topLevelStyleOf(style.id);
 
       debug("getting dependencies",style,parent);
-      const usedSymbols = this.notebook.getSymbolStylesIDependOn(parent);
+      var usedSymbols = this.notebook.getSymbolStylesIDependOn(parent);
       debug("usedSymbols",usedSymbols);
+      usedSymbols = usedSymbols.filter(function( element ) {
+   return element !== undefined;
+});
       const sub_expr_lhs : string =
         constructSubstitution(style.data.name,
                               usedSymbols.map(

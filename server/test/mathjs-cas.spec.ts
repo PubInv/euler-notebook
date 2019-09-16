@@ -60,7 +60,7 @@ describe("mathjs-cas", function(){
     assert.equal(changes.length, 5);
 
     // The notebook has the INPUT style
-    const insertedStyles = changes.filter(c=>c.type=='styleInserted').map(c=>(<StyleInserted>c).style);
+    const insertedStyles = changes.filter(c=> c && c.type=='styleInserted').map(c=>(<StyleInserted>c).style);
     const inputStyle = assertHasStyle(insertedStyles, 'MATHJS', 'INPUT', EXPR1);
 
     // MathJS has attached the appropriate substyles
@@ -81,7 +81,7 @@ describe("mathjs-cas", function(){
     assert.equal(changes.length, 8);
 
     // The notebook has the INPUT style
-    const insertedStyles = changes.filter(c=>c.type=='styleInserted').map(c=>(<StyleInserted>c).style);
+    const insertedStyles = changes.filter(c=>c && c.type=='styleInserted').map(c=>(<StyleInserted>c).style);
     const inputStyle = assertHasStyle(insertedStyles, 'MATHJS', 'INPUT', EQUA1);
 
     // MathJS has attached the appropriate substyles

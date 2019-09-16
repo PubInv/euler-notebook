@@ -24,7 +24,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 // Types
 
-export type NotebookChange = RelationshipDeleted|RelationshipInserted|StyleChanged|StyleDeleted|StyleInserted;
+export type NotebookChange = RelationshipDeleted|RelationshipInserted|StyleChanged|StyleDeleted|StyleInserted|null;
 interface RelationshipDeleted {
   type: 'relationshipDeleted';
   relationship: RelationshipObject;
@@ -240,18 +240,28 @@ export class Notebook {
 
   public getRelationshipById(id: RelationshipId): RelationshipObject {
     const rval = this.relationshipMap[id];
-    if (!rval) { throw new Error(`Relationship ${id} doesn't exist.`); }
+//    if (!rval) { throw new Error(`Relationship ${id} doesn't exist.`); }
     return rval;
   }
 
   public getStyleById(id: StyleId): StyleObject {
     const rval = this.styleMap[id];
-    if (!rval) { throw new Error(`Style ${id} doesn't exist.`); }
+//    if (!rval) { throw new Error(`Style ${id} doesn't exist.`); }
     return rval;
   }
 
+
+  public getSymbolStylesThatDependOnMe(style:StyleObject): StyleObject[] {
+    const rs = this.allRelationships();
+    var symbolStyles: StyleObject[] = [];
+    rs.forEach(r => {
+      if (r.fromId == style.id)
+        symbolStyles.push(this.getStyleById(r.toId));
+    });
+    return symbolStyles;
+  }
   // Return all StyleObjects which are Symbols for which
-  // the is a Symbol Dependency relationship with this
+  // there is a Symbol Dependency relationship with this
   // object as the the target
   // Note: The defintion is the "source" of the relationship
   // and the "use" is "target" of the relationship.
@@ -324,27 +334,29 @@ export class Notebook {
   // Instance Methods
 
   public applyChange(change: NotebookChange): void {
-    switch(change.type) {
-      case 'relationshipDeleted':
-        this.deleteRelationship(change.relationship);
-        break;
-      case 'relationshipInserted':
-        this.insertRelationship(change.relationship);
-        break;
-      case 'styleChanged':
-        // style.data was changed in convertChangeRequestToChanges.
-        break;
-      case 'styleDeleted':
-        this.deleteStyle(change.style);
-        break;
-      case 'styleInserted':
-        this.insertStyle(change.style, change.afterId);
-        break;
-      default:
-        throw new Error("Unexpected");
+    if (change != null) {
+      switch(change.type) {
+        case 'relationshipDeleted':
+          console.log("calling deleteRelationship in notebook.ts");
+          this.deleteRelationship(change.relationship);
+          break;
+        case 'relationshipInserted':
+          this.insertRelationship(change.relationship);
+          break;
+        case 'styleChanged':
+          // style.data was changed in convertChangeRequestToChanges.
+          break;
+        case 'styleDeleted':
+          this.deleteStyle(change.style);
+          break;
+        case 'styleInserted':
+          this.insertStyle(change.style, change.afterId);
+          break;
+        default:
+          throw new Error("Unexpected");
+      }
     }
-
-}
+  }
   public applyChanges(changes: NotebookChange[]): void {
     for (const change of changes) { this.applyChange(change); }
   }

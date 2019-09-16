@@ -23,7 +23,7 @@ import * as debug1 from 'debug';
 const MODULE = __filename.split(/[/\\]/).slice(-1)[0].slice(0,-3);
 const debug = debug1(`server:${MODULE}`);
 
-import { NotebookChange, StyleObject, RelationshipProperties } from '../../client/notebook';
+import { NotebookChange, StyleObject, RelationshipObject, RelationshipProperties } from '../../client/notebook';
 import { SymbolData, WolframData, NotebookChangeRequest, StyleInsertRequest, StylePropertiesWithSubprops, RelationshipPropertiesMap, RelationshipInsertRequest,
 //         RelationshipDeleteRequest
        } from '../../client/math-tablet-api';
@@ -104,6 +104,8 @@ export class SymbolClassifierObserver implements ObserverInstance {
   }
 
   private async onChange(change: NotebookChange, rval: NotebookChangeRequest[]): Promise<void> {
+    if (change == null) return;
+
     debug(`onChange ${this.notebook._path} ${change.type}`);
     switch (change.type) {
       case 'styleDeleted': {
@@ -119,9 +121,79 @@ export class SymbolClassifierObserver implements ObserverInstance {
         // definition might now be a duplication of an ealier definition.
         // Anything which has a tex-formatter after this may need
         // to be refreshed, which may create a new set of refreshments.
+        // that appears to be accomplished by deleting and then inserting
+        // relationships, so perhaps that is easy.
+
+        // As a useful invariant, we want to keep everything correct
+        // up to a given thought order. So finding the earliest affected
+        // thought order is probably a good starting point. In fact
+        // it is clear that we can compute a graph of the top-level thoughts;
+        // I personally suspect reifying that graph entirely is a good idea
+        // but I will try to avoid that for the time being. - rlr
 
 
+        // Because we have set up our definition to be chains (unbranching)
+        // we can make a basic decision: Does there exist an earlier
+        // defintion?  If not, we just remove all use relationships.
+        // If so, we remove all use relationships and reconstruct them.
+        // So our basic algorithm is to delete D is:
+        // Find all use relationships U
+        // Extract all target (use) style ids S
+        // Delete all relationships in U
+        // If D is the target of a duplicate dependency (A->D),
+        // Then insert relationships from A to (s in S) for all s.
+        const style = change.style;
+//        console.log("DELETION CHANGE",change);
+        if (style.type == 'SYMBOL' && (style.meaning == 'SYMBOL-USE' || style.meaning == 'SYMBOL-DEFINITION')) {
 
+          if (style.meaning == 'SYMBOL-DEFINITION') {
+            const did = change.style.id;
+//            console.log("change.style",change.style);
+
+            // not this is nullable, and is a Relationship.
+            var duplicateof : RelationshipObject | undefined;
+            const rs = this.notebook.allRelationships();
+            rs.forEach(r => {
+              if ((r.toId == did) && r.meaning == 'DUPLICATE-DEFINITION') {
+                if (duplicateof != null) {
+                  debug("INTERNAL ERROR: Linearity of defintions broken1!");
+                  throw new Error("INTERNAL ERROR: Linearity of defintions broken1!"+r);
+                }
+                duplicateof = r;
+              }
+            });
+//          console.log("rs = ",rs);
+
+            const U = this.notebook.getSymbolStylesThatDependOnMe(change.style);
+//            console.log("U = ",U);
+            const users : number[] = [];
+            for(const u of U) {
+              users.push(u.id);
+            }
+            for(const r of rs) {
+              if ((r.fromId == did) || (r.toId == did)) {
+//                console.log("pushing delete of relationship:",r,r.id);
+                rval.push({ type: 'deleteRelationship',
+                            id: r.id });
+              }
+            }
+//            console.log("users of me",users);
+//            console.log("duplicateof",duplicateof);
+            if (!(duplicateof === undefined)) {
+              rval.push({ type: 'deleteRelationship',
+                          id: duplicateof.id });
+              for(const u of users) {
+                const props : RelationshipProperties = { meaning: 'SYMBOL-DEPENDENCY' };
+//                console.log("pushing insert, from, to",duplicateof.fromId,u);
+                rval.push({ type: 'insertRelationship',
+                            fromId: duplicateof.fromId,
+                            toId: u,
+                            props: props,
+                          });
+              }
+            }
+          }
+        }
         // If this style has uses reaching it, those relationships
         // should be removed.
 
@@ -278,7 +350,7 @@ export class SymbolClassifierObserver implements ObserverInstance {
                     fromId: last_def,
                     toId: style.id,
                     props: dup_prop };
-                console.log("PUSHHHHH BBB",changeReq);
+//                console.log("PUSHHHHH BBB",changeReq);
                 rval.push(
                   changeReq
                 );
@@ -381,7 +453,6 @@ export class SymbolClassifierObserver implements ObserverInstance {
       const relationsFrom: RelationshipPropertiesMap = {};
     // Add any symbol-dependency relationships as a result of the new symbol-use style
     if (this.notebook) {
-    console.log("ALL STYLES",this.notebook);
       for (const otherStyle of this.notebook.allStyles()) {
         if (otherStyle.type == 'SYMBOL' &&
             otherStyle.meaning == useOrDef &&
@@ -402,7 +473,6 @@ export class SymbolClassifierObserver implements ObserverInstance {
 
     const relationsFrom: RelationshipPropertiesMap = {};
     // Add any symbol-dependency relationships as a result of the new symbol-use style
-    console.log("ALL STYLES",this.notebook);
     // This code as actually longer than doing it
     // in a loop; nontheless I prefer this "reduce" style
     // because I suspect we will have to do "sorting" by thought

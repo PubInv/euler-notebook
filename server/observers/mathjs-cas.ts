@@ -83,10 +83,12 @@ export class MathJsObserver implements ObserverInstance {
   // Private Instance Methods
 
   private onChange(change: NotebookChange, rval: NotebookChangeRequest[]) {
-    debug(`onChange ${this.notebook._path} ${change.type}`);
-    switch (change.type) {
-      case 'styleInserted': this.chStyleInserted(change, rval); break;
-      default: break;
+    if (change) {
+      debug(`onChange ${this.notebook._path} ${change.type}`);
+      switch (change.type) {
+        case 'styleInserted': this.chStyleInserted(change, rval); break;
+        default: break;
+      }
     }
   }
 
@@ -243,4 +245,3 @@ function collectSymbols(node: math.MathNode) : string[] {
   });
   return symbols;
 }
-
