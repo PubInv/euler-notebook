@@ -23,8 +23,8 @@ import * as debug1 from 'debug';
 const MODULE = __filename.split(/[/\\]/).slice(-1)[0].slice(0,-3);
 const debug = debug1(`server:${MODULE}`);
 
-import { Notebook, NotebookChange, StyleObject, StyleSource, StyleId, NotebookObject, RelationshipObject, RelationshipId, RelationshipProperties } from '../client/notebook';
-import { NotebookChangeRequest, StylePropertiesWithSubprops } from '../client/math-tablet-api';
+import { Notebook, NotebookChange, StyleObject, StyleSource, StyleId, NotebookObject, RelationshipObject, RelationshipId, RelationshipProperties, StyleMoved, StylePosition } from '../client/notebook';
+import { NotebookChangeRequest, StylePropertiesWithSubprops, StyleMoveRequest } from '../client/math-tablet-api';
 import { readNotebookFile, AbsDirectoryPath, absDirPathFromNotebookPath, writeNotebookFile, NotebookPath } from './files-and-folders';
 import { constructSubstitution } from './observers/wolframscript';
 // Types
@@ -278,6 +278,8 @@ export class ServerNotebook extends Notebook {
         return [ this.insertRelationshipChange(source, changeRequest.fromId, changeRequest.toId, changeRequest.props) ];
       case 'insertStyle':
         return this.insertStyleChanges(source, changeRequest.parentId||0, changeRequest.styleProps, changeRequest.afterId||-1);
+      case 'moveStyle':
+        return [ this.moveStyleChange(changeRequest) ];
       default:
         throw new Error("Unexpected.");
     }
@@ -386,7 +388,34 @@ export class ServerNotebook extends Notebook {
     }
 
     return changes;
-}
+  }
+
+  private moveStyleChange(request: StyleMoveRequest): NotebookChange {
+
+    const { styleId, afterId } = request;
+    if (afterId == styleId) { throw new Error(`Style ${styleId} can't be moved after itself.`); }
+
+    const oldPosition: StylePosition = this.styleOrder.indexOf(styleId);
+    if (oldPosition < 0) { throw new Error(`Style ${styleId} can't be moved: not found in styleOrder array.`); }
+
+    let newPosition: StylePosition;
+    if (afterId == 0) { newPosition = 0; }
+    else if (afterId == -1) { newPosition = this.styleOrder.length  - 1; }
+    else {
+      newPosition = this.styleOrder.indexOf(afterId);
+      if (newPosition < 0) { throw new Error(`Style ${styleId} can't be moved: other style ${afterId} not found in styleOrder array.`); }
+      if (oldPosition > newPosition) { newPosition++; }
+    }
+
+    const rval: StyleMoved = {
+      type: 'styleMoved',
+      styleId: request.styleId,
+      afterId: request.afterId,
+      oldPosition,
+      newPosition,
+    };
+    return rval;
+  }
 
   private async makeRequestedChanges(
     source: StyleSource,
