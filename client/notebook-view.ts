@@ -99,6 +99,61 @@ export class NotebookView {
     return cell!;
   }
 
+  // Commands
+  // (Public instance methods bound to keystrokes)
+
+  public deleteSelectedCells(): void {
+    const cellViews = this.selectedCells();
+    this.unselectAll();
+    const changeRequests = cellViews.map<StyleDeleteRequest>(c=>({ type: 'deleteStyle', styleId: c.style.id }));
+    this.sendChangeRequests(changeRequests);
+  }
+
+  public moveSelectionDown(): void {
+    // TODO: scroll into view if necessary.
+
+  }
+
+  public moveSelectionUp(): void {
+    // TODO: scroll into view if necessary.
+
+  }
+
+  public selectDown(extend?: boolean): void {
+    const cellView = this.lastCellSelected ? this.nextCell(this.lastCellSelected): this.firstCell();
+    if (cellView) {
+      this.selectCell(cellView, false, !!extend);
+    }
+  }
+
+  public selectDownExtended(): void {
+    this.selectDown(true);
+  }
+
+  public selectUp(extend?: boolean): void {
+    // TODO: scroll into view if necessary.
+    // Select the cell immediately before the last one previously.
+    // If no cell was previously selected, then select the last cell.
+    // If the first cell was previously selected, do nothing.
+    // Note: Holding the shift key will extend the selection.
+    const cellView = this.lastCellSelected ? this.previousCell(this.lastCellSelected): this.lastCell();
+    if (cellView) {
+      this.selectCell(cellView, false, !!extend);
+    }
+  }
+
+  public selectUpExtended(): void {
+    this.selectUp(true);
+  }
+
+  public unselectAll(noEmit?: boolean): void {
+    for (const cellView of this.cellViews.values()) {
+      if (cellView.isSelected()) { cellView.unselect(); }
+    }
+    delete this.lastCellSelected;
+    if (!noEmit) { this.emitSelectionChangedEvent({ empty: true }); }
+  }
+
   // Instance Methods
 
   public close() {
@@ -112,13 +167,6 @@ export class NotebookView {
   public changeStyle(styleId: StyleId, data: any): void {
     const changeRequest: StyleChangeRequest = { type: 'changeStyle', styleId, data };
     this.sendChangeRequest(changeRequest);
-  }
-
-  public deleteSelectedCells(): void {
-    const cellViews = this.selectedCells();
-    this.unselectAll(true);
-    const changeRequests = cellViews.map<StyleDeleteRequest>(c=>({ type: 'deleteStyle', styleId: c.style.id }));
-    this.sendChangeRequests(changeRequests);
   }
 
   public insertStyle(styleProps: StylePropertiesWithSubprops): void {
@@ -346,27 +394,45 @@ export class NotebookView {
   // Private Key Event Handlers
 
   private keyArrowDown(event: KeyboardEvent): void {
-    // Select the cell immediately after the last one previously.
+    // If no modifier key is pressed then change selection to the cell after
+    // the last cell selected.
     // If no cell was previously selected, then select the first cell.
     // If the last cell was previously selected, do nothing.
-    // Note: Holding the shift key will extend the selection.
-    const cellView = this.lastCellSelected ? this.nextCell(this.lastCellSelected): this.firstCell();
-    if (cellView) {
-      this.selectCell(cellView, false, event.shiftKey);
+    // REVIEW: Wrap around?
+    const { altKey, ctrlKey, metaKey, shiftKey } = event;
+    if (!altKey && !ctrlKey && !metaKey && !shiftKey) {
+      this.selectDown();
+    // If shift+arrow pressed then extend the selection to the cell after the last cell selected.
+    } else if (!altKey && !ctrlKey && !metaKey && shiftKey) {
+        this.selectDownExtended();
+    // If option(alt)+arrow pressed then move the selected cells down one cell.
+    } else if (altKey && !ctrlKey && !metaKey && !shiftKey) {
+      this.moveSelectionDown();
+    // If another combination of modifier keys is pressed then ignore.
+    } else {
+      // REVIEW: Else beep or something?
     }
-    // REVIEW: Else beep?
   }
 
   private keyArrowUp(event: KeyboardEvent): void {
-    // Select the cell immediately before the last one previously.
+    // If no modifier key is pressed then change selection to the cell before
+    // the last cell selected.
     // If no cell was previously selected, then select the last cell.
     // If the first cell was previously selected, do nothing.
-    // Note: Holding the shift key will extend the selection.
-    const cellView = this.lastCellSelected ? this.previousCell(this.lastCellSelected): this.lastCell();
-    if (cellView) {
-      this.selectCell(cellView, false, event.shiftKey);
+    // REVIEW: Wrap around?
+    const { altKey, ctrlKey, metaKey, shiftKey } = event;
+    if (!altKey && !ctrlKey && !metaKey && !shiftKey) {
+      this.selectUp();
+    // If shift+arrow pressed then extend the selection to the cell following the last cell selected.
+    } else if (!altKey && !ctrlKey && !metaKey && shiftKey) {
+        this.selectUpExtended();
+    // If option(alt)+arrow pressed then move the selected cells down one cell.
+    } else if (altKey && !ctrlKey && !metaKey && !shiftKey) {
+      this.moveSelectionUp();
+    // If another combination of modifier keys is pressed then ignore.
+    } else {
+      // REVIEW: Else beep or something?
     }
-    // REVIEW: Else beep?
   }
 
   private keyBackspace(_event: KeyboardEvent): void {
@@ -380,7 +446,7 @@ export class NotebookView {
   }
 
   private keyEscape(_event: KeyboardEvent): void {
-    this.unselectAll(true);
+    this.unselectAll();
   }
 
   // Private Instance Methods
@@ -462,7 +528,7 @@ export class NotebookView {
     rangeExtending: boolean, // Extending selection by a contiguous range.
     indivExtending: boolean, // Extending selection by an individual cell, possibly non-contiguous.
   ): void {
-    if (!rangeExtending && !indivExtending) { this.unselectAll(false); }
+    if (!rangeExtending && !indivExtending) { this.unselectAll(true); }
     cellView.select();
     this.lastCellSelected = cellView;
     this.emitSelectionChangedEvent({ empty: false });
@@ -482,11 +548,4 @@ export class NotebookView {
     this.socket.sendMessage(msg);
   }
 
-  private unselectAll(emit: boolean): void {
-    for (const cellView of this.cellViews.values()) {
-      if (cellView.isSelected()) { cellView.unselect(); }
-    }
-    delete this.lastCellSelected;
-    if (emit) { this.emitSelectionChangedEvent({ empty: true }); }
-  }
 }
