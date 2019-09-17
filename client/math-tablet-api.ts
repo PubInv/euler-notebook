@@ -83,7 +83,8 @@ export type NotebookChangeRequest =
   RelationshipInsertRequest|
   StyleChangeRequest|
   StyleDeleteRequest|
-  StyleInsertRequest;
+  StyleInsertRequest|
+  StyleMoveRequest;
 export interface RelationshipDeleteRequest {
   type: 'deleteRelationship';
   id: number;
@@ -105,9 +106,14 @@ export interface StyleDeleteRequest {
 }
 export interface StyleInsertRequest {
   type: 'insertStyle';
-  afterId?: StyleId; // or 0, -1.
+  afterId?: StyleId; // or 0 (top), -1 (bottom).
   parentId?: StyleId; // or 0.
   styleProps: StylePropertiesWithSubprops;
+}
+export interface StyleMoveRequest {
+  type: 'moveStyle';
+  styleId: StyleId;
+  afterId: StyleId; // or 0 (top), -1 (bottom).
 }
 
 // Messages from the server

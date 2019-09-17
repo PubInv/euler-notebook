@@ -22,7 +22,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 import { CellView } from './cell-view.js';
 import { assert } from './common.js';
 import { $new, escapeHtml, Html, listenerWrapper } from './dom.js';
-import { StyleId, StyleObject, NotebookChange, RelationshipId, RelationshipObject, NotebookObject } from './notebook.js';
+import { StyleId, StyleObject, NotebookChange, RelationshipId, RelationshipObject, NotebookObject, StyleMoved } from './notebook.js';
 import {
   ChangeNotebook,
   NotebookChangeRequest,
@@ -32,6 +32,7 @@ import {
   StyleInsertRequest,
   StylePropertiesWithSubprops,
   UseTool,
+  StyleMoveRequest,
 } from './math-tablet-api.js';
 // import { Jiix, StrokeGroups } from './myscript-types.js';
 import { ServerSocket } from './server-socket.js';
@@ -110,13 +111,49 @@ export class NotebookView {
   }
 
   public moveSelectionDown(): void {
+    // TODO: contiguous multiple selection
+    // TODO: discontiguous multiple selection
     // TODO: scroll into view if necessary.
+    if (!this.lastCellSelected) {
+      // Nothing selected to move.
+      // REVIEW: Beep or something?
+      return;
+    }
+    const styleId = this.lastCellSelected.style.id;
 
+    const nextCell = this.nextCell(this.lastCellSelected);
+    if (!nextCell) {
+      // Selected cell is already the last cell. Nowhere down to go.
+      return;
+    }
+    const nextNextCell = this.nextCell(nextCell);
+    const afterId = nextNextCell ? nextCell.style.id : /* bottom */ -1;
+
+    const request: StyleMoveRequest = { type: 'moveStyle', styleId, afterId };
+    this.sendChangeRequest(request);
   }
 
   public moveSelectionUp(): void {
+    // TODO: contiguous multiple selection
+    // TODO: discontiguous multiple selection
     // TODO: scroll into view if necessary.
+    if (!this.lastCellSelected) {
+      // Nothing selected to move.
+      // REVIEW: Beep or something?
+      return;
+    }
+    const styleId = this.lastCellSelected.style.id;
 
+    const previousCell = this.previousCell(this.lastCellSelected);
+    if (!previousCell) {
+      // Selected cell is already the first cell. Nowhere up to go.
+      return;
+    }
+    const previousPreviousCell = this.previousCell(previousCell);
+    const afterId = previousPreviousCell ? previousPreviousCell.style.id : /* top */ 0;
+
+    const request: StyleMoveRequest = { type: 'moveStyle', styleId, afterId };
+    this.sendChangeRequest(request);
   }
 
   public selectDown(extend?: boolean): void {
@@ -174,7 +211,6 @@ export class NotebookView {
     this.sendChangeRequest(changeRequest);
   }
 
-
   public useTool(id: StyleId): void {
     const msg: UseTool = {
       type: 'useTool',
@@ -194,6 +230,8 @@ export class NotebookView {
         case 'styleChanged': this.chChangeStyle(change.style.id, change.style.data, change.previousData); break;
         case 'styleDeleted': this.chDeleteStyle(change.style.id); break;
         case 'styleInserted': this.chInsertStyle(change.style); break;
+        case 'styleMoved': this.chMoveStyle(change); break;
+        default: throw new Error(`Unexpected change type ${(<any>change).type}`);
       }
     }
   }
@@ -389,6 +427,22 @@ export class NotebookView {
       cellView = this.topLevelCellOf(style);
     }
     cellView.insertStyle(style);
+  }
+
+  private chMoveStyle(change: StyleMoved): void {
+    const { styleId, afterId} = change;
+    const movedCell = this.cellViews.get(styleId);
+    if (!movedCell) { throw new Error(`Cannot move unknown cell ${styleId}`); }
+
+    if (afterId == /* top */ 0) {
+      this.$elt.prepend(movedCell.$elt);
+    } else if (afterId == /* bottom */ -1) {
+      this.$elt.append(movedCell.$elt);
+    } else {
+      const afterCell = this.cellViews.get(afterId);
+      if (!afterCell) { throw new Error(`Cannot move cell after unknown cell ${afterId}`); }
+      afterCell.$elt.insertAdjacentElement('afterend', movedCell.$elt);
+    }
   }
 
   // Private Key Event Handlers

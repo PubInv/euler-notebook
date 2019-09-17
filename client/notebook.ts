@@ -24,8 +24,8 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 // Types
 
-export type NotebookChange = RelationshipDeleted|RelationshipInserted|StyleChanged|StyleDeleted|StyleInserted;
-interface RelationshipDeleted {
+export type NotebookChange = RelationshipDeleted|RelationshipInserted|StyleChanged|StyleDeleted|StyleInserted|StyleMoved;
+export interface RelationshipDeleted {
   type: 'relationshipDeleted';
   relationship: RelationshipObject;
 }
@@ -46,6 +46,14 @@ export interface StyleInserted {
   type: 'styleInserted';
   style: StyleObject;
   afterId?: StyleId;
+  // REVIEW: position?: StylePosition for top-level styles?
+}
+export interface StyleMoved {
+  type: 'styleMoved';
+  styleId: StyleId;
+  afterId: StyleId; // or 0 (top), -1 (bottom).
+  oldPosition: StylePosition;
+  newPosition: StylePosition;
 }
 
 export interface NotebookObject {
@@ -77,6 +85,7 @@ export interface RelationshipMap {
 export interface RelationshipProperties {
   meaning: RelationshipMeaning;
 }
+
 export type StyleId = number;
 
 export interface StyleMap {
@@ -114,6 +123,11 @@ export interface StyleObject extends StyleProperties {
   parentId: StyleId; // 0 if top-level style.
   source: StyleSource;
 }
+
+// Position of style in the notebook.
+// Applies only to top-level styles.
+// Position 0 is the first cell of the notebook.
+export type StylePosition = number;
 
 export interface StyleProperties {
   data: any;
@@ -250,7 +264,6 @@ export class Notebook {
     return rval;
   }
 
-
   public getSymbolStylesThatDependOnMe(style:StyleObject): StyleObject[] {
     const rs = this.allRelationships();
     var symbolStyles: StyleObject[] = [];
@@ -260,6 +273,7 @@ export class Notebook {
     });
     return symbolStyles;
   }
+
   // Return all StyleObjects which are Symbols for which
   // there is a Symbol Dependency relationship with this
   // object as the the target
@@ -334,6 +348,7 @@ export class Notebook {
   // Instance Methods
 
   public applyChange(change: NotebookChange): void {
+    // REVIEW: Can change be null?
     if (change != null) {
       switch(change.type) {
         case 'relationshipDeleted':
@@ -352,11 +367,15 @@ export class Notebook {
         case 'styleInserted':
           this.insertStyle(change.style, change.afterId);
           break;
+        case 'styleMoved':
+          this.moveStyle(change);
+          break;
         default:
           throw new Error("Unexpected");
       }
     }
   }
+
   public applyChanges(changes: NotebookChange[]): void {
     for (const change of changes) { this.applyChange(change); }
   }
@@ -371,7 +390,7 @@ export class Notebook {
 
   private relationshipMap: RelationshipMap;
   private styleMap: StyleMap;     // Mapping from style ids to style objects.
-  private styleOrder: StyleId[];  // List of style ids in the top-down order they appear in the notebook.
+  protected styleOrder: StyleId[];  // List of style ids in the top-down order they appear in the notebook.
 
   // NOTE: Properties with an underscore prefix are not persisted.
 
@@ -415,5 +434,10 @@ export class Notebook {
         this.styleOrder.splice(i+1, 0, style.id);
       }
     }
+  }
+
+  private moveStyle(change: StyleMoved): void {
+    this.styleOrder.splice(change.oldPosition, 1);
+    this.styleOrder.splice(change.newPosition, 0, change.styleId);
   }
 }
