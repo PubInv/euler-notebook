@@ -89,7 +89,7 @@ export class TeXFormatterObserver implements ObserverInstance {
   // Private Instance Methods
 
 
-  // Overwrite a with b
+  // // Overwrite a with b
   private overWrite(a : NotebookChangeRequest[], b : NotebookChangeRequest[]) {
     let j = b.length;
     for(var i = 0; i < j; i++) {
