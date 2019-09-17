@@ -293,9 +293,7 @@ export class ServerNotebook extends Notebook {
 
   private deleteRelationshipChange(id: RelationshipId): NotebookChange {
     const relationship = this.getRelationshipById(id);
-
-    return relationship ? { type: 'relationshipDeleted', relationship } :
-      null;
+    return { type: 'relationshipDeleted', relationship };
   }
 
   private deleteStyleChanges(id: StyleId): NotebookChange[] {

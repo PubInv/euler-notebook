@@ -24,7 +24,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 // Types
 
-export type NotebookChange = RelationshipDeleted|RelationshipInserted|StyleChanged|StyleDeleted|StyleInserted|null;
+export type NotebookChange = RelationshipDeleted|RelationshipInserted|StyleChanged|StyleDeleted|StyleInserted;
 interface RelationshipDeleted {
   type: 'relationshipDeleted';
   relationship: RelationshipObject;
@@ -240,13 +240,13 @@ export class Notebook {
 
   public getRelationshipById(id: RelationshipId): RelationshipObject {
     const rval = this.relationshipMap[id];
-//    if (!rval) { throw new Error(`Relationship ${id} doesn't exist.`); }
+    if (!rval) { throw new Error(`Relationship ${id} doesn't exist.`); }
     return rval;
   }
 
   public getStyleById(id: StyleId): StyleObject {
     const rval = this.styleMap[id];
-//    if (!rval) { throw new Error(`Style ${id} doesn't exist.`); }
+    if (!rval) { throw new Error(`Style ${id} doesn't exist.`); }
     return rval;
   }
 
