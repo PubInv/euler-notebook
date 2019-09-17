@@ -170,18 +170,22 @@ export class SymbolClassifierObserver implements ObserverInstance {
             for(const u of U) {
               users.push(u.id);
             }
+            const rids = new Set<number>();
             for(const r of rs) {
               if ((r.fromId == did) || (r.toId == did)) {
 //                console.log("pushing delete of relationship:",r,r.id);
-                rval.push({ type: 'deleteRelationship',
-                            id: r.id });
+//                rval.push({ type: 'deleteRelationship',
+//                            id: r.id });
+                rids.add(r.id);
               }
             }
-//            console.log("users of me",users);
-//            console.log("duplicateof",duplicateof);
+            debug("RIDS = ",rids);
+            console.log("users of me",users);
+            console.log("duplicateof",duplicateof);
             if (!(duplicateof === undefined)) {
-              rval.push({ type: 'deleteRelationship',
-                          id: duplicateof.id });
+              rids.add(duplicateof.id);
+//              rval.push({ type: 'deleteRelationship',
+//                          id: duplicateof.id });
               for(const u of users) {
                 const props : RelationshipProperties = { meaning: 'SYMBOL-DEPENDENCY' };
 //                console.log("pushing insert, from, to",duplicateof.fromId,u);
@@ -192,11 +196,13 @@ export class SymbolClassifierObserver implements ObserverInstance {
                           });
               }
             }
+            rids.forEach(id => rval.push({ type: 'deleteRelationship',
+                                           id: id }));
           }
         }
         // If this style has uses reaching it, those relationships
         // should be removed.
-
+        debug("RVAL ====XXXX",rval);
         break;
       }
 
@@ -362,6 +368,7 @@ export class SymbolClassifierObserver implements ObserverInstance {
         }
       }
     }
+    debug("RVAL =========",rval);
   }
 
   // refactor this to be style independent so that we can figure it out later

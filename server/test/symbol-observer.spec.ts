@@ -313,7 +313,7 @@ describe("test symbol observer", function() {
 
 
     });
-    it.only("multiples defs and a deletes are handled",async function(){
+    it("multiples defs and a deletes are handled",async function(){
       const NUM = 8;
       let data:string[] = [];
 
@@ -321,7 +321,6 @@ describe("test symbol observer", function() {
         data[i] = "X = "+(i+3);
       }
       data.push("Y = X^2");
-      console.log(data);
       const insertRequests = generateInsertRequests(data);
       await serializeChangeRequests(notebook,insertRequests);
       console.log("XXXXX",notebook);

@@ -88,30 +88,54 @@ export class TeXFormatterObserver implements ObserverInstance {
 
   // Private Instance Methods
 
+
+  // Overwrite a with b
+  private overWrite(a : NotebookChangeRequest[], b : NotebookChangeRequest[]) {
+    let j = b.length;
+    for(var i = 0; i < j; i++) {
+      a[i] = b[i];
+    }
+
+    a.length = j;
+    return a;
+
+  }
+
+
+  // This I am only implementing this because I can't
+  // figure out where the duplication is coming from.
+  // It think because we recompute on both a deletion and an insertion,
+  // we endup creating duplicate deletions. But precisely how this happens
+  // I don't really know.
+  private deDupChanges(rval : NotebookChangeRequest[]) {
+    rval = rval.filter((thing,index) => {
+      return index === rval.findIndex(obj => {
+        return JSON.stringify(obj) === JSON.stringify(thing);
+      });
+    });
+    return rval;
+  }
+
   private async onChange(change: NotebookChange, rval: NotebookChangeRequest[]): Promise<void> {
     if (change == null) return;
     debug(`onChange ${this.notebook._path} ${change.type}`);
     switch (change.type) {
       case 'styleInserted':
         await this.latexFormatterRule(change.style, rval);
-        debug("BASIC RULE!");
         break;
       case 'relationshipInserted':
         await this.texFormatterChangedRule(change.relationship, rval);
-        debug("done:",rval);
+        this.overWrite(rval,this.deDupChanges(rval));
         break;
       case 'relationshipDeleted':
         await this.texFormatterChangedRule(change.relationship, rval);
-        debug("done:",rval);
+        this.overWrite(rval,this.deDupChanges(rval));
         break;
       default: break;
     }
   }
 
   private async texFormatterChangedRule(relationship: RelationshipObject, rval: NotebookChangeRequest[]): Promise<void> {
-    debug("CHANGE RELATIONSHIP",relationship);
-//    const style : StyleObject = this.notebook.getStyleById();
-//    debug("processing changed relations to",style);
     // we need to ge the parent here..
     var top;
     try {
@@ -127,21 +151,21 @@ export class TeXFormatterObserver implements ObserverInstance {
     // initial strategy.
         const texs : StyleObject[] =
       this.notebook.findChildStylesOfType(top.id,'LATEX','DECORATION');
-    debug("texs " ,texs);
+    const rids = new Set<number>();
     for(const itex of texs) {
       const sid : StyleId = itex.id;
-      const changeReq: StyleDeleteRequest = {
-        type: 'deleteStyle',
-        styleId: sid
-      };
+      rids.add(sid);
       const styleRemoved = this.notebook.getStyleById(sid);
       const styleToReconsider = this.notebook.getStyleById(styleRemoved.parentId);
-      rval.push(changeReq);
-      debug("styleRemoved,styleToReconsider",styleRemoved,styleToReconsider);
       await this.latexFormatterRule(styleToReconsider,rval);
-      debug("rval after invocation",rval);
     }
-    debug("XXXXXXXXXXXXXXXXXXXXXXXXXXXX",rval);
+    rids.forEach(id => {
+      const changeReq: StyleDeleteRequest = {
+         type: 'deleteStyle',
+         styleId: id
+      };
+      rval.push(changeReq);
+    });
   }
   private async latexFormatterRule(style: StyleObject, rval: NotebookChangeRequest[]): Promise<void> {
     // At present, it only makes sense to operate on styles of type "WOLFRAM",
