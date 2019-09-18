@@ -21,8 +21,8 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 import { CellView } from './cell-view.js';
 import { assert } from './common.js';
-import { $new, escapeHtml, Html, listenerWrapper } from './dom.js';
-import { StyleId, StyleObject, NotebookChange, RelationshipId, RelationshipObject, NotebookObject, StyleMoved } from './notebook.js';
+import { $, $new, escapeHtml, Html, listenerWrapper } from './dom.js';
+import { StyleId, StyleObject, NotebookChange, RelationshipId, RelationshipObject, NotebookObject, StyleMoved, StyleType, StyleInserted } from './notebook.js';
 import {
   ChangeNotebook,
   NotebookChangeRequest,
@@ -76,6 +76,7 @@ const KEY_MAP: [ KeyName, KeyMods, CommandName][] = [
   [ 'ArrowUp', KeyMod.Alt, 'moveSelectionUp'],
   [ 'Backspace', KeyMod.None, 'deleteSelectedCells'],
   [ 'Enter', KeyMod.None, 'editSelectedCell'],
+  [ 'Enter', KeyMod.Alt, 'insertKeyboardCellAboveSelected'],
   [ 'Escape', KeyMod.None, 'unselectAll'],
 ];
 
@@ -153,6 +154,35 @@ export class NotebookView {
       return;
     }
     this.lastCellSelected.editMode();
+  }
+
+  public insertKeyboardCellAboveSelected(): void {
+    // If cells are selected then in insert a keyboard input cell
+    // above the last cell selected.
+    // Otherwise, insert at the end of the noteboo.
+
+    // REVIEW: We shouldn't be assuming a specific HTML control on the page.
+    const $typeSelector = $<HTMLSelectElement>('#keyboardInputType');
+
+    const styleProps: StylePropertiesWithSubprops = {
+      type: <StyleType>$typeSelector.value,
+      meaning: 'INPUT',
+      data: "",
+    };
+
+    let afterId: StyleId;
+    if (this.lastCellSelected) {
+      const previousCell = this.previousCell(this.lastCellSelected);
+      afterId = previousCell ? previousCell.style.id : 0;
+    } else {
+      afterId = 0;
+    }
+    this.insertStyle(styleProps, afterId);
+
+    // TODO: wait for style to be inserted
+    // TODO: Scroll into view.
+    // TODO: Select it?
+    // TODO: Open it for editing.
   }
 
   public moveSelectionDown(): void {
@@ -251,8 +281,8 @@ export class NotebookView {
     this.sendChangeRequest(changeRequest);
   }
 
-  public insertStyle(styleProps: StylePropertiesWithSubprops): void {
-    const changeRequest: StyleInsertRequest = { type: 'insertStyle', afterId: -1, styleProps }
+  public insertStyle(styleProps: StylePropertiesWithSubprops, afterId: StyleId = -1): void {
+    const changeRequest: StyleInsertRequest = { type: 'insertStyle', afterId, styleProps }
     this.sendChangeRequest(changeRequest);
   }
 
@@ -274,7 +304,7 @@ export class NotebookView {
         case 'relationshipInserted': this.chInsertRelationship(change.relationship); break;
         case 'styleChanged': this.chChangeStyle(change.style.id, change.style.data, change.previousData); break;
         case 'styleDeleted': this.chDeleteStyle(change.style.id); break;
-        case 'styleInserted': this.chInsertStyle(change.style); break;
+        case 'styleInserted': this.chInsertStyle(change); break;
         case 'styleMoved': this.chMoveStyle(change); break;
         default: throw new Error(`Unexpected change type ${(<any>change).type}`);
       }
@@ -473,11 +503,13 @@ export class NotebookView {
     }
   }
 
-  private chInsertStyle(style: StyleObject): void {
+  private chInsertStyle(change: StyleInserted): void {
+    const { style, afterId } = change;
+
     this.styles.set(style.id, style);
     let cellView: CellView;
     if (!style.parentId) {
-      cellView = this.createCell(style);
+      cellView = this.createCell(style, afterId!);
     } else {
       cellView = this.topLevelCellOf(style);
     }
@@ -485,19 +517,12 @@ export class NotebookView {
   }
 
   private chMoveStyle(change: StyleMoved): void {
-    const { styleId, afterId} = change;
+    const { styleId, afterId } = change;
     const movedCell = this.cellViews.get(styleId);
     if (!movedCell) { throw new Error(`Cannot move unknown cell ${styleId}`); }
-
-    if (afterId == /* top */ 0) {
-      this.$elt.prepend(movedCell.$elt);
-    } else if (afterId == /* bottom */ -1) {
-      this.$elt.append(movedCell.$elt);
-    } else {
-      const afterCell = this.cellViews.get(afterId);
-      if (!afterCell) { throw new Error(`Cannot move cell after unknown cell ${afterId}`); }
-      afterCell.$elt.insertAdjacentElement('afterend', movedCell.$elt);
-    }
+    // Note: DOM methods ensure the element will be removed from
+    //       its current parent.
+    this.insertCell(movedCell, afterId);
   }
 
   // Private Instance Methods
@@ -508,12 +533,12 @@ export class NotebookView {
     this.styles.clear();
   }
 
-  private createCell(style: StyleObject): CellView {
+  private createCell(style: StyleObject, afterId: StyleId): CellView {
     const cellView = CellView.create(this, style);
     cellView.$elt.addEventListener('click', listenerWrapper( cellView.$elt, 'click', event=>this.onCellClick(cellView, event)));
     cellView.$elt.addEventListener('dblclick', listenerWrapper( cellView.$elt, 'dblclick', event=>this.onCellDoubleClick(cellView, event)));
-    this.$elt.appendChild(cellView.$elt);
     this.cellViews.set(style.id, cellView);
+    this.insertCell(cellView, afterId);
     return cellView;
   }
 
@@ -549,6 +574,18 @@ export class NotebookView {
     this.cellViews.delete(cellView.style.id);
   }
 
+  private insertCell(cellView: CellView, afterId: StyleId): void {
+    if (afterId == /* top */ 0) {
+      this.$elt.prepend(cellView.$elt);
+    } else if (afterId == /* bottom */ -1) {
+      this.$elt.append(cellView.$elt);
+    } else {
+      const afterCell = this.cellViews.get(afterId);
+      if (!afterCell) { throw new Error(`Cannot insert cell after unknown cell ${afterId}`); }
+      afterCell.$elt.insertAdjacentElement('afterend', cellView.$elt);
+    }
+  }
+
   private emitSelectionChangedEvent(detail: SelectionChangedEventDetail): void {
     const event = new CustomEvent<SelectionChangedEventDetail>('selection-changed', { detail });
     this.$elt.dispatchEvent(event);
@@ -568,7 +605,9 @@ export class NotebookView {
 
   private populateStyleRecursively(tDoc: NotebookObject, index: StyleIndex, styleId: StyleId) {
     const style = tDoc.styleMap[styleId];
-    this.chInsertStyle(style);
+    const change: StyleInserted = { type: 'styleInserted', style };
+    if (!style.parentId) { change.afterId = -1; }
+    this.chInsertStyle(change);
     for (const subStyleId of index[styleId]) {
       this.populateStyleRecursively(tDoc, index, subStyleId)
     }
