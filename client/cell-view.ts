@@ -42,7 +42,7 @@ export class CellView {
 
   public $elt: HTMLDivElement;
   public style: StyleObject;
-  public notebook: NotebookView;
+  public notebookView: NotebookView;
   public equivalentStyles: StyleId[];
 
   public isSelected(): boolean {
@@ -212,7 +212,7 @@ export class CellView {
   // Private Constructor
 
   private constructor(notebook: NotebookView, thought: StyleObject) {
-    this.notebook = notebook;
+    this.notebookView = notebook;
     this.style = thought;
     this.$elt = this.createElement();
     this.equivalentStyles = [];
@@ -226,12 +226,13 @@ export class CellView {
 
   private onKeyboardInputPanelDismissed(text: string|undefined): void {
     if (text) {
-      this.notebook.changeStyle(this.style.id, text);
+      this.notebookView.changeStyle(this.style.id, text);
     }
     this.$elt.parentElement!.removeChild(this.keyboardInputPanel!.$elt);
     delete this.keyboardInputPanel;
 
     this.show();
+    // this.notebookView.$elt.focus();
   }
 
   // Private Instance Methods
@@ -341,7 +342,7 @@ export class CellView {
 
     const $button = $new('button', { class: 'tool', html: wrapped });
     $button.addEventListener('click', (_event: MouseEvent)=>{
-      this.notebook.useTool(style.id);
+      this.notebookView.useTool(style.id);
     });
     $toolsElt!.appendChild($button);
   }

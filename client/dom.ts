@@ -117,14 +117,15 @@ function configure($elt: Element, options: NewOptions): void {
   }
 }
 
-function listenerError(err: Error, $elt: Element, eventName: EventName): never {
+function listenerError(err: Error, $elt: Element, eventName: EventName): void {
   let specifier = $elt.tagName;
   if ($elt.id) { specifier += `#${$elt.id}` }
   for (let i = 0; i<$elt.classList.length; i++) {
     specifier += `.${$elt.classList.item(i)}`
   }
   console.error(`Error in ${specifier} ${eventName} listener: ${err.message}`);
-  throw err;
+  // TODO: Report error to the server.
+  // TODO: Display error to the user.
 }
 
 export function listenerWrapper<E extends Event>($elt: Element, eventName: EventName, listener: Listener<E>): (event: E)=>void {

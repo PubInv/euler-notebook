@@ -39,11 +39,47 @@ import { ServerSocket } from './server-socket.js';
 
 // Types
 
+type CommandName = string;
+
+type CommandFunction = (this: NotebookView)=>void;
+
+enum KeyMod {
+  None = 0,
+  Alt = 1,    // Option key on Mac.
+  Ctrl = 2,
+  Meta = 4,   // Command key on Mac, Windows key on Windows.
+  Shift = 8,
+}
+
+type KeyMods = number;    // Bitwise or of KeyMod. // TYPESCRIPT:??
+
+type KeyName = string;
+type KeyCombo = string;   // KeyName followed by KeyMods, e.g. 'Enter8' for shift+enter.
+
 interface StyleIndex { [id:string]: StyleId[] }
 
 export interface SelectionChangedEventDetail {
   empty: boolean;
 }
+
+// Constants
+
+const IGNORED_KEYUPS = [ 'Alt', 'Control', 'Meta', 'Shift' ];
+
+// LATER: Load key bindings from user-editable configuration.
+const KEY_MAP: [ KeyName, KeyMods, CommandName][] = [
+  [ 'ArrowDown', KeyMod.None, 'selectDown'],
+  [ 'ArrowDown', KeyMod.Alt, 'moveSelectionDown'],
+  [ 'ArrowDown', KeyMod.Shift, 'selectDownExtended'],
+  [ 'ArrowUp', KeyMod.None, 'selectUp'],
+  [ 'ArrowUp', KeyMod.Shift, 'selectUpExtended'],
+  [ 'ArrowUp', KeyMod.Alt, 'moveSelectionUp'],
+  [ 'Backspace', KeyMod.None, 'deleteSelectedCells'],
+  [ 'Enter', KeyMod.None, 'editSelectedCell'],
+  [ 'Escape', KeyMod.None, 'unselectAll'],
+];
+
+const KEY_BINDINGS = new Map<KeyCombo, CommandName>(KEY_MAP.map(([ keyName, keyMods, commandName])=>[ `${keyName}${keyMods}`, commandName ]));
 
 // Exported Class
 
@@ -108,6 +144,15 @@ export class NotebookView {
     this.unselectAll();
     const changeRequests = cellViews.map<StyleDeleteRequest>(c=>({ type: 'deleteStyle', styleId: c.style.id }));
     this.sendChangeRequests(changeRequests);
+  }
+
+  public editSelectedCell(): void {
+    if (!this.lastCellSelected) {
+      // Nothing selected to move.
+      // REVIEW: Beep or something?
+      return;
+    }
+    this.lastCellSelected.editMode();
   }
 
   public moveSelectionDown(): void {
@@ -346,15 +391,25 @@ export class NotebookView {
     // Ignore event if it is from a sub-element.
     if (document.activeElement != this.$elt) { return; }
 
-    switch(event.key) {
-      case "ArrowDown": this.keyArrowDown(event); break;
-      case "ArrowUp": this.keyArrowUp(event); break;
-      case "Backspace": this.keyBackspace(event); break;
-      case "Enter": this.keyEnter(event); break;
-      case "Escape": this.keyEscape(event); break;
-      default:
-        console.log(`NotebookView keyup : ${event.key}`);
-        break;
+    const keyName: KeyName = event.key;
+    let keyMods = 0;
+    if (event.altKey) { keyMods += KeyMod.Alt; }
+    if (event.ctrlKey) { keyMods += KeyMod.Ctrl; }
+    if (event.metaKey) { keyMods += KeyMod.Meta; }
+    if (event.shiftKey) { keyMods += KeyMod.Shift; }
+
+    const keyCombo: KeyCombo = `${keyName}${keyMods}`;
+    const commandName = KEY_BINDINGS.get(keyCombo);
+    if (commandName) {
+      const commandFn = <CommandFunction|undefined>((</* TYPESCRIPT: */any>this)[commandName]);
+      if (!commandFn) { throw new Error(`Unknown command ${commandName} for key ${keyCombo}`); }
+      commandFn.call(this);
+    } else {
+      if (IGNORED_KEYUPS.indexOf(keyName)<0) {
+        console.log(`NotebookView unrecognized keyup : ${keyCombo}`);
+      }
+      // No command bound to that key.
+      // REVIEW: Beep or something?
     }
   }
 
@@ -443,64 +498,6 @@ export class NotebookView {
       if (!afterCell) { throw new Error(`Cannot move cell after unknown cell ${afterId}`); }
       afterCell.$elt.insertAdjacentElement('afterend', movedCell.$elt);
     }
-  }
-
-  // Private Key Event Handlers
-
-  private keyArrowDown(event: KeyboardEvent): void {
-    // If no modifier key is pressed then change selection to the cell after
-    // the last cell selected.
-    // If no cell was previously selected, then select the first cell.
-    // If the last cell was previously selected, do nothing.
-    // REVIEW: Wrap around?
-    const { altKey, ctrlKey, metaKey, shiftKey } = event;
-    if (!altKey && !ctrlKey && !metaKey && !shiftKey) {
-      this.selectDown();
-    // If shift+arrow pressed then extend the selection to the cell after the last cell selected.
-    } else if (!altKey && !ctrlKey && !metaKey && shiftKey) {
-        this.selectDownExtended();
-    // If option(alt)+arrow pressed then move the selected cells down one cell.
-    } else if (altKey && !ctrlKey && !metaKey && !shiftKey) {
-      this.moveSelectionDown();
-    // If another combination of modifier keys is pressed then ignore.
-    } else {
-      // REVIEW: Else beep or something?
-    }
-  }
-
-  private keyArrowUp(event: KeyboardEvent): void {
-    // If no modifier key is pressed then change selection to the cell before
-    // the last cell selected.
-    // If no cell was previously selected, then select the last cell.
-    // If the first cell was previously selected, do nothing.
-    // REVIEW: Wrap around?
-    const { altKey, ctrlKey, metaKey, shiftKey } = event;
-    if (!altKey && !ctrlKey && !metaKey && !shiftKey) {
-      this.selectUp();
-    // If shift+arrow pressed then extend the selection to the cell following the last cell selected.
-    } else if (!altKey && !ctrlKey && !metaKey && shiftKey) {
-        this.selectUpExtended();
-    // If option(alt)+arrow pressed then move the selected cells down one cell.
-    } else if (altKey && !ctrlKey && !metaKey && !shiftKey) {
-      this.moveSelectionUp();
-    // If another combination of modifier keys is pressed then ignore.
-    } else {
-      // REVIEW: Else beep or something?
-    }
-  }
-
-  private keyBackspace(_event: KeyboardEvent): void {
-    this.deleteSelectedCells();
-  }
-
-  private keyEnter(_event: KeyboardEvent): void {
-    if (this.lastCellSelected) {
-      this.lastCellSelected.editMode();
-    }
-  }
-
-  private keyEscape(_event: KeyboardEvent): void {
-    this.unselectAll();
   }
 
   // Private Instance Methods
