@@ -27,16 +27,15 @@ import { showErrorMessage } from './global.js';
 // import { StyleObject, StyleObject }  from './math-tablet-api.js';
 import { NotebookView, SelectionChangedEventDetail } from './notebook-view.js';
 import { ServerSocket } from './server-socket.js';
-import { StyleType } from './notebook.js';
 import { Jiix, LatexData, MathMlData, StylePropertiesWithSubprops } from './math-tablet-api.js';
 
 // Types
 
-type InputMethod = 'Math'|'Keyboard'|'Text';
+type InputMethod = 'Math'|'Text';
 
 // Constants
 
-const INITIAL_INPUT_METHOD: InputMethod = 'Keyboard';
+const INITIAL_INPUT_METHOD: InputMethod = 'Math';
 
 // Global Variables
 
@@ -87,12 +86,8 @@ async function onDomReady(_event: Event){
 
     $<HTMLButtonElement>('#insertButton').addEventListener<'click'>('click', onInsertButtonClicked);
     $<HTMLButtonElement>('#inputMathButton').addEventListener<'click'>('click', _event=>switchInput('Math'));
-    $<HTMLButtonElement>('#inputKeyboardButton').addEventListener<'click'>('click', _event=>switchInput('Keyboard'));
+    $<HTMLButtonElement>('#inputKeyboardButton').addEventListener<'click'>('click', onKeyboardButtonClicked);
     $<HTMLButtonElement>('#inputTextButton').addEventListener<'click'>('click', _event=>switchInput('Text'));
-
-    const keyboardInputTextArea = $<HTMLTextAreaElement>('#inputKeyboard>textarea');
-    keyboardInputTextArea.addEventListener<'input'>('input', onKeyboardInputInput);
-    keyboardInputTextArea.addEventListener<'keyup'>('keyup', onKeyboardInputKeyup);
 
     // TODO: Make undo, redo etc work with Keyboard input.
     $<HTMLButtonElement>('#undoButton').addEventListener<'click'>('click', _event=>gEditor && gEditor.undo());
@@ -168,16 +163,6 @@ function onInsertButtonClicked(_event: Event) {
       editor.clear();
       break;
     }
-    case 'Keyboard': {
-      const $typeSelector = $<HTMLSelectElement>('#keyboardInputType');
-      const styleType: StyleType = <StyleType>$typeSelector.value;
-      const $inputField = $<HTMLInputElement>('#inputKeyboard>textarea');
-      const text = $inputField.value;
-      const styleProps: StylePropertiesWithSubprops = { type: styleType, data: text, meaning: 'INPUT' };
-      gNotebook.insertStyle(styleProps);
-      $inputField.value = $<HTMLDivElement>('#preview').innerText = '';
-      break;
-    }
     case 'Text': {
       const editor = gEditor; // TODO: grab from DOM.editor instead
       if (!editor) { throw new Error(); }
@@ -203,23 +188,11 @@ function onInsertButtonClicked(_event: Event) {
   }
 }
 
-function onKeyboardInputInput(this: HTMLElement, _event: Event): void {
+function onKeyboardButtonClicked(): void {
   try {
-    const $field: HTMLInputElement = this /* TYPESCRIPT: */ as HTMLInputElement;
-    const text: string = $field.value;
-    const isValid = (text.length>0); // LATER: Validate expression.
-    $<HTMLDivElement>('#preview').innerText = text;
-    $<HTMLButtonElement>('#insertButton').disabled = !isValid;
+    gNotebook.insertKeyboardCellAboveSelected();
   } catch(err) {
-    showErrorMessage("Error on keyboard-input input event.", err);
-  }
-}
-
-function onKeyboardInputKeyup(this: HTMLElement, event: KeyboardEvent): void {
-  try {
-    if (event.key == "Enter" && event.ctrlKey) { onInsertButtonClicked.call(this, event); }
-  } catch(err) {
-    showErrorMessage("Error on keyboard-input keyup event.", err);
+    showErrorMessage("Error on keyboard button clicked.", err);
   }
 }
 

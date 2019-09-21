@@ -161,7 +161,7 @@ export class ServerSocket {
   private smNotebookChanged(msg: NotebookChanged): void {
     const notebookView = NotebookView.get(msg.notebookName);
     if (!notebookView) { throw new Error(`Notebook change from unknown notebook: ${msg.notebookName}`); }
-    notebookView.smChange(msg.changes);
+    notebookView.smChange(msg);
   }
 
   // Private Instance Methods

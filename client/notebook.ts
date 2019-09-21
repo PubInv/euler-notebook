@@ -441,3 +441,10 @@ export class Notebook {
     this.styleOrder.splice(change.newPosition, 0, change.styleId);
   }
 }
+
+//
+
+export function StyleInsertedFromNotebookChange(change: NotebookChange): StyleInserted {
+  if (change.type != 'styleInserted') { throw new Error("Not StyleInserted chagne."); }
+  return change;
+}

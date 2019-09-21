@@ -46,9 +46,6 @@ mixin footer
     #inputArea('data-applicationkey'=credentials.myscript.applicationKey, 'data-hmackey'=credentials.myscript.hmacKey)
       #inputText(style='display:none')
       #inputMath(style='display:none')
-      #inputKeyboard(style='display:none')
-        textarea(placeholder="e.g. r = x^2 + y^2")
-
 
 mixin keyboardInputSelector
   select#keyboardInputType()
@@ -67,10 +64,6 @@ mixin sidebar
     button#cellViewButton(disabled=true, title="Editing view")
       +svgIconFile18
     .separator
-    button#inputMathButton(title="Handwritten math")
-      +svgIconText8
-    button#inputTextButton(title="Handwritten text")
-      +svgIconText1
     button#inputKeyboardButton(title="Keyboard input")
       +svgIconKeyboard2
     .separator
@@ -79,15 +72,19 @@ mixin sidebar
     button#redoButton(disabled=true, title="Redo")
       +svgIconRedo4
     .separator
-    button#clearButton(disabled=true, title="Clear handwriting input")
-      +svgIconEraser2
-    button#convertButton(disabled=true, title="Convert handwriting")
-      +svgIconArrow13
-    button#insertButton(disabled=true, title="Insert input into notebook")
-      +svgIconArrow4
-    .separator
     button#trashButton(disabled=true, title="Trash")
       +svgIconTrashCan2
+    #inputAreaButtons
+      button#inputMathButton(title="Handwritten math")
+        +svgIconText8
+      button#inputTextButton(title="Handwritten text")
+        +svgIconText1
+      button#clearButton(disabled=true, title="Clear handwriting input")
+        +svgIconEraser2
+      button#convertButton(disabled=true, title="Convert handwriting")
+        +svgIconArrow13
+      button#insertButton(disabled=true, title="Insert input into notebook")
+        +svgIconArrow4
 
 block metatags
   //- These meta tags are copied from MyScript samples.

@@ -22,7 +22,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 import { CellView } from './cell-view.js';
 import { assert } from './common.js';
 import { $, $new, escapeHtml, Html, listenerWrapper } from './dom.js';
-import { StyleId, StyleObject, NotebookChange, RelationshipId, RelationshipObject, NotebookObject, StyleMoved, StyleType, StyleInserted } from './notebook.js';
+import { StyleId, StyleObject, NotebookChange, RelationshipId, RelationshipObject, NotebookObject, StyleMoved, StyleType, StyleInserted, StyleInsertedFromNotebookChange } from './notebook.js';
 import {
   ChangeNotebook,
   NotebookChangeRequest,
@@ -33,6 +33,8 @@ import {
   StylePropertiesWithSubprops,
   UseTool,
   StyleMoveRequest,
+  Tracker,
+  NotebookChanged,
 } from './math-tablet-api.js';
 // import { Jiix, StrokeGroups } from './myscript-types.js';
 import { ServerSocket } from './server-socket.js';
@@ -177,12 +179,18 @@ export class NotebookView {
     } else {
       afterId = 0;
     }
-    this.insertStyle(styleProps, afterId);
 
-    // TODO: wait for style to be inserted
-    // TODO: Scroll into view.
-    // TODO: Select it?
-    // TODO: Open it for editing.
+    // Insert top-level style and wait for it to be inserted.
+    this.insertStyleTracked(styleProps, afterId)
+    .then(styleId=>{
+      const cellView = this.cellViewFromStyleId(styleId);
+      this.scrollCellIntoView(cellView);
+      this.selectCell(cellView);
+      cellView.editMode();
+    })
+    .catch(err=>{
+      console.error(`Error inserting keyboard style: ${err.message}\n${err.stack}`);
+    });
   }
 
   public moveSelectionDown(): void {
@@ -282,8 +290,19 @@ export class NotebookView {
   }
 
   public insertStyle(styleProps: StylePropertiesWithSubprops, afterId: StyleId = -1): void {
-    const changeRequest: StyleInsertRequest = { type: 'insertStyle', afterId, styleProps }
+    const changeRequest: StyleInsertRequest = { type: 'insertStyle', afterId, styleProps };
     this.sendChangeRequest(changeRequest);
+  }
+
+  public async insertStyleTracked(styleProps: StylePropertiesWithSubprops, afterId: StyleId = -1): Promise<StyleId> {
+    const changeRequest: StyleInsertRequest = { type: 'insertStyle', afterId, styleProps };
+    const changes = await this.sendTrackedChangeRequest(changeRequest);
+
+    // The style we inserted will be the first change that comes back.
+    assert(changes.length>0);
+    const change = StyleInsertedFromNotebookChange(changes[0]);
+    const style = change.style;
+    return style.id;
   }
 
   public useTool(id: StyleId): void {
@@ -297,7 +316,9 @@ export class NotebookView {
 
   // Server Message Handlers
 
-  public smChange(changes: NotebookChange[]): void {
+  public smChange(msg: NotebookChanged): void {
+
+    const changes = msg.changes;
     for (const change of changes) {
       switch (change.type) {
         case 'relationshipDeleted': this.chDeleteRelationship(change.relationship); break;
@@ -307,6 +328,28 @@ export class NotebookView {
         case 'styleInserted': this.chInsertStyle(change); break;
         case 'styleMoved': this.chMoveStyle(change); break;
         default: throw new Error(`Unexpected change type ${(<any>change).type}`);
+      }
+    }
+
+    // REVIEW: Are all of the above changes synchronous?
+    //         If not, then we will need to wait for them to complete
+    //         before resolving the tracking promise, below.
+    // If the changes were tracked then accumulate the changes
+    // and resolve the tracking promise if complete.
+    if (msg.tracker) {
+      const previousChanges = this.trackedChangeResponses.get(msg.tracker) || [];
+      assert(previousChanges);
+      const accumulatedChanges = previousChanges.concat(changes);
+      if (!msg.complete) {
+        this.trackedChangeResponses.set(msg.tracker, accumulatedChanges);
+      } else {
+        this.trackedChangeResponses.delete(msg.tracker);
+        const fns = this.trackedChangeRequests.get(msg.tracker);
+        this.trackedChangeRequests.delete(msg.tracker);
+        assert(fns);
+        const resolve = fns![0];
+        // REVIEW: Is there any way the promise could be rejected?
+        resolve(accumulatedChanges);
       }
     }
   }
@@ -341,6 +384,8 @@ export class NotebookView {
     this.relationships = new Map();
     this.styles = new Map();
     this.cellViews = new Map();
+    this.trackedChangeRequests = new Map();
+    this.trackedChangeResponses = new Map();
   }
 
   // Private Instance Properties
@@ -350,11 +395,17 @@ export class NotebookView {
   private relationships: Map<RelationshipId, RelationshipObject>;
   private socket: ServerSocket;
   private styles: Map<StyleId, StyleObject>;
+  private trackedChangeRequests: Map<Tracker, [ (changes: NotebookChange[])=>void, (reason: any)=>void ]>;
+  private trackedChangeResponses: Map<Tracker, NotebookChange[]>;
+
+  private cellViewFromStyleId(styleId: StyleId): CellView {
+    return this.cellViews.get(styleId)!;
+  }
 
   private cellViewFromElement($elt: HTMLDivElement): CellView {
     // Strip 'C' prefix from cell ID to get the style id.
     const styleId: StyleId = parseInt($elt.id.slice(1), 10);
-    return this.cellViews.get(styleId)!;
+    return this.cellViewFromStyleId(styleId);
   }
 
   private firstCell(): CellView | undefined {
@@ -615,8 +666,8 @@ export class NotebookView {
 
   private selectCell(
     cellView: CellView,
-    rangeExtending: boolean, // Extending selection by a contiguous range.
-    indivExtending: boolean, // Extending selection by an individual cell, possibly non-contiguous.
+    rangeExtending?: boolean, // Extending selection by a contiguous range.
+    indivExtending?: boolean, // Extending selection by an individual cell, possibly non-contiguous.
   ): void {
     if (!rangeExtending && !indivExtending) { this.unselectAll(true); }
     cellView.select();
@@ -624,18 +675,35 @@ export class NotebookView {
     this.emitSelectionChangedEvent({ empty: false });
   }
 
-  private sendChangeRequest(changeRequest: NotebookChangeRequest): void {
-    this.sendChangeRequests([ changeRequest ]);
+  private scrollCellIntoView(cellView: CellView): void {
+    cellView.$elt.scrollIntoView();
   }
 
-  private sendChangeRequests(changeRequests: NotebookChangeRequest[]): void {
+  private sendChangeRequest(changeRequest: NotebookChangeRequest, tracker?: Tracker): void {
+    this.sendChangeRequests([ changeRequest ], tracker);
+  }
+
+  private sendChangeRequests(changeRequests: NotebookChangeRequest[], tracker?: Tracker): void {
     if (changeRequests.length == 0) { return; }
     const msg: ChangeNotebook = {
       type: 'changeNotebook',
       notebookName: this.notebookName,
       changeRequests,
+      tracker,
     }
     this.socket.sendMessage(msg);
+  }
+
+  private sendTrackedChangeRequest(changeRequest: NotebookChangeRequest): Promise<NotebookChange[]> {
+    return this.sendTrackedChangeRequests([ changeRequest ]);
+  }
+
+  private sendTrackedChangeRequests(changeRequests: NotebookChangeRequest[]): Promise<NotebookChange[]> {
+    return new Promise((resolve, reject)=>{
+      const tracker: Tracker = Date.now().toString();
+      this.trackedChangeRequests.set(tracker, [ resolve, reject ]);
+      this.sendChangeRequests(changeRequests, tracker);
+    });
   }
 
 }

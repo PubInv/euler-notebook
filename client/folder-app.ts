@@ -24,13 +24,10 @@ import { showErrorMessage } from './global.js';
 
 // Types
 
-type View = 'createFile' | 'createFolder' | 'filesAndFolders' | 'importFile';
+const VIEWS = [ 'createFile', 'createFolder', 'filesAndFolders', 'importFile' ] as const;
+type View = typeof VIEWS[number];
 
 // Constants
-
-// REVIEW: Any way to extract this array from the View type or vice versa?
-//         We need to exclude 'filesAndFolders', though.
-const VIEWS = [ 'createFile', 'createFolder', 'importFile' ];
 
 // Global Variables
 
@@ -38,9 +35,13 @@ const VIEWS = [ 'createFile', 'createFolder', 'importFile' ];
 
 function onCreateFileViewButtonClicked(_event: Event): void {
   try {
+    // REVIEW: It would be nice if double-clicking the create-file button
+    //         would create an 'anonymous' notebook, but currently we disable
+    //         the button as soon as it is clicked the first time so we cannot
+    //         get the second click.
     switchView('createFile');
   } catch (err) {
-    showErrorMessage("Error showing create file form", err);
+    showErrorMessage("Unexpected error in onCreateFileViewButtonClicked", err);
   }
 }
 
@@ -48,7 +49,7 @@ function onCreateFolderViewButtonClicked(_event: Event): void {
   try {
     switchView('createFolder');
   } catch (err) {
-    showErrorMessage("Error showing create folder form", err);
+    showErrorMessage("Unexpected error in onCreateFolderViewButtonClicked", err);
   }
 }
 
@@ -70,7 +71,7 @@ function onFilesAndFoldersViewButtonClicked(_event: Event): void {
   try {
     switchView('filesAndFolders');
   } catch (err) {
-    showErrorMessage("Error showing create folder form", err);
+    showErrorMessage("Unexpected error in onFilesAndFoldersViewButtonClicked", err);
   }
 }
 
@@ -78,17 +79,32 @@ function onImportFileViewButtonClicked(_event: Event): void {
   try {
     switchView('importFile');
   } catch (err) {
-    showErrorMessage("Error showing import file form", err);
+    showErrorMessage("Unexpected error in onImportFileViewButtonClicked", err);
   }
 }
 
 // Helper Functions
 
 function switchView(view: View): void {
+  // Show/hide view panels and enable/disable sidebar buttons.
   for (const otherView of VIEWS) {
-    const show = (otherView == view);
+    const disabled = (otherView == view);
+    const show = (otherView==view || otherView=='filesAndFolders')
     $<HTMLDivElement>(`#${otherView}View`).style.display = (show ? 'block' : 'none');
-    $<HTMLButtonElement>(`#${otherView}ViewButton`).disabled = show;
+    $<HTMLButtonElement>(`#${otherView}ViewButton`).disabled = disabled;
+  }
+
+  // Set focus
+  switch(view) {
+    case 'createFile':
+      $<HTMLInputElement>('input[name="notebookName"]').focus();
+      break;
+    case 'createFolder':
+      $<HTMLInputElement>('input[name="folderName"]').focus();
+      break;
+    case 'importFile':
+      $<HTMLInputElement>('input[name="importFile"]').focus();
+      break;
   }
 }
 

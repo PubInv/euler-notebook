@@ -183,7 +183,6 @@ async function onNotebookPage(req: Request, res: Response, next: NextFunction): 
 async function deleteSelected(body: FolderPageBody, _folderPath: FolderPath, messages: PageMessages): Promise<Uri|undefined> {
 
   // LATER: The way we construct the success message is not easily localized.
-
   if (!body.folders && !body.notebooks) {
     messages.warning.push("No folders or files selected. Select using checkboxes.");
     return undefined;

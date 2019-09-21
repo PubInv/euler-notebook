@@ -17,6 +17,10 @@ You should have received a copy of the GNU Affero General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
+// REVIEW: Have a "read-only" notebook that only lets you read but not make any changes?
+//         This would enforce all changes being made through the observer interfaces
+//         rather than directly on the notebook.
+
 // Requirements
 
 import * as debug1 from 'debug';
@@ -24,9 +28,12 @@ const MODULE = __filename.split(/[/\\]/).slice(-1)[0].slice(0,-3);
 const debug = debug1(`server:${MODULE}`);
 
 import { Notebook, NotebookChange, StyleObject, StyleSource, StyleId, NotebookObject, RelationshipObject, RelationshipId, RelationshipProperties, StyleMoved, StylePosition } from '../client/notebook';
-import { NotebookChangeRequest, StylePropertiesWithSubprops, StyleMoveRequest } from '../client/math-tablet-api';
+import { NotebookChangeRequest, StylePropertiesWithSubprops, StyleMoveRequest, Tracker } from '../client/math-tablet-api';
 import { readNotebookFile, AbsDirectoryPath, absDirPathFromNotebookPath, writeNotebookFile, NotebookPath } from './files-and-folders';
 import { constructSubstitution } from './observers/wolframscript';
+import { ClientId } from './client-socket';
+import { ClientObserver } from './observers/client-observer';
+
 // Types
 
 export interface ObserverInstance {
@@ -37,6 +44,11 @@ export interface ObserverInstance {
 
 export interface ObserverClass {
   onOpen: (notebook: ServerNotebook)=>Promise<ObserverInstance>;
+}
+
+export interface RequestChangesOptions {
+  clientId?: ClientId;
+  tracker?: Tracker;
 }
 
 // Constants
@@ -150,18 +162,41 @@ export class ServerNotebook extends Notebook {
     debug(`closing: ${this._path}`);
     this._closed = true;
     if (this._path) { ServerNotebook.persistentNotebooks.delete(this._path); }
-    await Promise.all(Array.from(this._observerInstances.values()).map(o=>o.onClose()));
+    await Promise.all(Array.from(this._observers.values()).map(o=>o.onClose()));
+    for (const observer of this._clientObservers.values()) {
+      observer.onClose();
+    };
 
     debug(`closed: ${this._path}`);
   }
 
-  public registerObserver(source: StyleSource, observerInstance: ObserverInstance): void {
-    this._observerInstances.set(source, observerInstance);
+  public deregisterClientObserver(clientId: ClientId): void {
+    const deleted = this._clientObservers.delete(clientId);
+    if (!deleted) {
+      console.error(`Cannot deregister non-registered client observer: ${clientId}`);
+    }
   }
 
-  public async requestChanges(source: StyleSource, changeRequests: NotebookChangeRequest[]): Promise<NotebookChange[]> {
+  public registerClientObserver(clientId: ClientId, instance: ClientObserver): void {
+    this._clientObservers.set(clientId, instance)
+  }
 
+  public registerObserver(source: StyleSource, instance: ObserverInstance): void {
+    this._observers.set(source, instance);
+  }
+
+  public async requestChanges(
+    source: StyleSource,
+    changeRequests: NotebookChangeRequest[],
+    options?: RequestChangesOptions,
+  ): Promise<NotebookChange[]> {
+    // TODO: separate synchronous observer stage that is deterministic?
+    // TODO: submit changes to asynchronous observers simultaneously.
+    // TODO: send changes to clients as soon as they come back
+    //       such that we can still return the 'complete' flag.
+    // TODO: timeout on observer processing of changes.
     // TODO: Don't allow multiple asynchronous requestChanges to be operating at the same time.
+    options = options || {};
 
     debug(`requestChanges ${changeRequests.length}`);
     this.assertNotClosed('requestChanges');
@@ -183,8 +218,7 @@ export class ServerNotebook extends Notebook {
       // IMPORTANT: We don't actually make the changes to the notebook
       // until *after* all observers have submitted their change requests for this round.
       const observerChangeRequests: Map<StyleSource, NotebookChangeRequest[]> = new Map();
-      for (const [source, observer] of this._observerInstances) {
-        // TODO: timeout on observer changes.
+      for (const [source, observer] of this._observers) {
         const changeRequests = await observer.onChanges(changes);
         observerChangeRequests.set(source, changeRequests);
       };
@@ -200,10 +234,18 @@ export class ServerNotebook extends Notebook {
     }
 
     if (changes.length>0) {
-      // TODO: Error, we ran out of rounds.
+      // TODO: What do we do? Just drop the changes on the floor?
+      console.error(`Dropping changes due to running out of rounds: ${changes.length}`);
     }
 
     if (this._path) { await this.save(); }
+
+    // Send all changes to all clients
+    for (const [ clientId, observer ] of this._clientObservers) {
+      let tracker = (options.tracker && clientId == options.clientId ? options.tracker : undefined);
+      const complete = true;
+      observer.onChanges(allChanges, complete, tracker);
+    };
 
     return allChanges;
   }
@@ -214,7 +256,7 @@ export class ServerNotebook extends Notebook {
     const style = this.getStyleById(styleId);
     const source = style.source;
     if (!style) { throw new Error(`Notebook useTool style ID not found: ${styleId}`); }
-    const observer = this._observerInstances.get(source);
+    const observer = this._observers.get(source);
     const changeRequests = await observer!.useTool(style);
     const changes = await this.requestChanges(source, changeRequests);
     return changes;
@@ -243,15 +285,19 @@ export class ServerNotebook extends Notebook {
   ) {
     super(obj);
     // NOTE: underscore-prefixed fields are non-persistent.
-    this._observerInstances = new Map();
+    // REVIEW: This is confusing given TypeScript's convention of underscore prefix for unused parameters.
+
+    this._clientObservers = new Map();
+    this._observers = new Map();
     this._path = notebookPath;
   }
 
   // Private Instance Properties
 
   // NOTE: Properties with an underscore prefix are not persisted.
+  private _clientObservers: Map<ClientId, ClientObserver>;
   private _closed?: boolean;
-  private _observerInstances: Map<StyleSource,ObserverInstance>;
+  private _observers: Map<StyleSource, ObserverInstance>;
   private _saving?: boolean;
 
   // Private Instance Property Functions
@@ -331,8 +377,8 @@ export class ServerNotebook extends Notebook {
 
     // Call "onOpen" to get an observer instance for every registered observer class.
     for (const [name, observerClass] of observerClasses.entries()) {
-      const observerInstance = await observerClass.onOpen(this);
-      this._observerInstances.set(name, observerInstance);
+      const instance = await observerClass.onOpen(this);
+      this.registerObserver(name, instance)
     }
   }
 

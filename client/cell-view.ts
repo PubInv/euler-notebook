@@ -242,7 +242,7 @@ export class CellView {
 
     // Create our div.
     const $elt = $new<HTMLDivElement>('div', {
-      class: 'thought',
+      class: 'cell',
       id: `C${styleId}`,
     });
 

@@ -70,25 +70,16 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
   border-top 1px solid #cccccc
   height 75%
 
-#inputKeyboard
-  height 100%
-  padding 4px
-
-#inputKeyboard>textarea
-  display block
-  width calc(100% - 8px)
-  height calc(100% - 14px)
+#inputAreaButtons
+  bottom 0
+  left 0
+  position absolute
 
 #inputMath
 #inputText
   height 100%
   pen-action none
   touch-action none
-
-#insertButton
-  bottom 0
-  left 0
-  position absolute
 
 #preview
   margin auto 0 auto 24px
@@ -99,13 +90,14 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 // Element classes
 
-.deleteStyle
-  color inherit
-  background-color transparent
-  border none
-  padding 0
-  width 36px
-  visibility hidden
+.cell
+  align-items center
+  display flex
+  flex-direction row
+  padding 9px 0 9px 0
+
+.cell.selected
+  background-color cyan
 
 .error
   color red
@@ -138,24 +130,22 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
   min-height 60px
   padding 8px
 
+.notebookView
+  min-height 100%
+
 .notebookView:focus
+  background-color lemonchiffon
   outline none
 
-  .thought.selected
+  .cell.selected
     outline 1px dotted blue
 
 .status
   text-align left
   width 36px
 
-.thought
-  align-items center
-  display flex
-  flex-direction row
-  margin 18px 0 18px 0
-
-.thought.selected .tools
-  visibility visible
+  .tools
+    visibility visible
 
 .tool
   color blue
@@ -171,8 +161,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 @media (hover: hover) {
   .thought:hover .tools { visibility: visible }
-  .thought:hover { background-color:#fcfcfc }
-  .thought:hover .deleteStyle { visibility: visible }
+  //- .thought:hover { background-color:#fcfcfc }
 }
 
 // Element types

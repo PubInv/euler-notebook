@@ -40,10 +40,10 @@ mixin sidebar
   #sidebar
     button#filesAndFoldersViewButton
       +svgIconFolder15
-    button#createFolderViewButton
-      +svgIconFolder5
     button#createFileViewButton
       +svgIconFile15
+    button#createFolderViewButton
+      +svgIconFolder5
     button#importFileViewButton
       +svgIconUpload21
 
@@ -74,30 +74,30 @@ block content
         button(type='submit', name='action', value='importFile') Import
 
     #filesAndFoldersView
-      - const isEmpty = folders.length==0 && notebooks.length==0
-      table
+      form(method='POST')
+        - const isEmpty = folders.length==0 && notebooks.length==0
+        table
+          if isEmpty
+            tr
+              td
+              td(colspan=2)
+                i Folder is empty.
 
-        if isEmpty
+          each entry in folders
+            tr
+              td
+                input(type='checkbox', name=`folders[${entry.name}]`, value=entry.path)
+              td(colspan=2)
+                +svgIconFolder2('icon')
+                a(href=`${entry.path}`)= entry.name
+
+          each entry in notebooks
+            tr
+              td
+                input(type='checkbox', name=`notebooks[${entry.name}]`, value=entry.path)
+              td(colspan=2)
+                a(href=`${entry.path}`)= entry.name
           tr
             td
             td(colspan=2)
-              i Folder is empty.
-
-        each entry in folders
-          tr
-            td
-              input(type='checkbox', name=`folders[${entry.name}]`, value=entry.path)
-            td(colspan=2)
-              +svgIconFolder2('icon')
-              a(href=`${entry.path}`)= entry.name
-
-        each entry in notebooks
-          tr
-            td
-              input(type='checkbox', name=`notebooks[${entry.name}]`, value=entry.path)
-            td(colspan=2)
-              a(href=`${entry.path}`)= entry.name
-        tr
-          td
-          td(colspan=2)
-            button(type='submit', name='action', value='deleteSelected', disabled=isEmpty) Delete Selected
+              button(type='submit', name='action', value='deleteSelected', disabled=isEmpty) Delete Selected

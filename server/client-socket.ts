@@ -27,12 +27,12 @@ import * as WebSocket from 'ws';
 
 // TODO: Handle websocket lifecycle: closing, unexpected disconnects, errors, etc.
 import { NotebookChange } from '../client/notebook';
-import { ClientMessage, NotebookName, NotebookChanged, ServerMessage, CloseNotebook, OpenNotebook, UseTool, NotebookOpened, ChangeNotebook } from '../client/math-tablet-api';
+import { ClientMessage, NotebookName, NotebookChanged, ServerMessage, CloseNotebook, OpenNotebook, UseTool, NotebookOpened, ChangeNotebook, Tracker } from '../client/math-tablet-api';
 
 import { PromiseResolver, runAsync } from './common';
 import { NotebookPath } from './files-and-folders';
 // REVIEW: This file should not be dependent on any specific observers.
-import { ServerNotebook } from './server-notebook';
+import { ServerNotebook, RequestChangesOptions } from './server-notebook';
 import { ClientObserver } from './observers/client-observer';
 
 // Types
@@ -103,14 +103,16 @@ export class ClientSocket {
   }
 
   // REVIEW: Async using socket sending callback?
-  public notebookChanged(notebook: ServerNotebook, changes: NotebookChange[]): void {
+  public notebookChanged(
+    notebook: ServerNotebook,
+    changes: NotebookChange[],
+    complete: boolean,
+    tracker?: Tracker,
+  ): void {
     // REVIEW: verify that notebook is one of our opened ones?
     if (!notebook._path) { throw new Error("Unexpected."); }
-    const msg: NotebookChanged = {
-      type: 'notebookChanged',
-      notebookName: notebook._path,
-      changes,
-    };
+    const notebookName = notebook._path;
+    const msg: NotebookChanged = { type: 'notebookChanged', notebookName, changes, complete, tracker };
     this.sendMessage(msg);
   }
 
@@ -212,7 +214,9 @@ export class ClientSocket {
     const clientObserver = this.clientObservers.get(msg.notebookName);
     if (!clientObserver) { throw new Error(`Unknown notebook ${msg.notebookName} for client message delete-style.`); }
     // REVIEW: source client id?
-    await clientObserver.notebook.requestChanges('USER', msg.changeRequests);
+
+    const options: RequestChangesOptions = { tracker: msg.tracker, clientId: this.id };
+    await clientObserver.notebook.requestChanges('USER', msg.changeRequests, options);
   }
 
   private async cmCloseNotebook(msg: CloseNotebook): Promise<void> {

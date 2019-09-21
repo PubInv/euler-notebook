@@ -30,6 +30,7 @@ export type MathMlData = string;
 export type MthMtcaData = string;
 export type Symbol = string;
 export type TextData = string;
+export type Tracker = string; // Tracking identifier supplied by the client.
 export type WolframData = string;
 
 export interface SymbolData {
@@ -123,6 +124,10 @@ export interface NotebookChanged {
   type: 'notebookChanged';
   notebookName: NotebookName;
   changes: NotebookChange[];
+  tracker?: Tracker;            // An optional, client-supplied, tracking
+                                // identifier from the original change request.
+  complete?: boolean;            // True iff this is the last set of changes
+                                // resulting from the original request.
 }
 export interface NotebookClosed {
   type: 'notebookClosed';
@@ -141,6 +146,7 @@ export interface ChangeNotebook {
   type: 'changeNotebook';
   notebookName: NotebookName;
   changeRequests: NotebookChangeRequest[];
+  tracker?: Tracker;
 }
 export interface CloseNotebook {
   type: 'closeNotebook';

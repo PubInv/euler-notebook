@@ -27,7 +27,16 @@ export interface PromiseResolver<T> {
   reject: (err: Error)=>void
 }
 
+// Constants
+
+const NOT_EXISTS_MESSAGE = "Unexpected error. Object doesn't exist.";
+
 // Exported Functions
+
+export function ensureExists<T>(val: T|undefined, message?: string): T {
+  if (!val) { throw new Error(message || NOT_EXISTS_MESSAGE); }
+  return val;
+}
 
 // If the promise fails, then log the error, but otherwise continue.
 export function runAsync<T>(promise: Promise<T>, module: string, functionName: string): void {
