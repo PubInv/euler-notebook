@@ -172,7 +172,7 @@ export class CellView {
 
   public deleteEquivalence(relationship: RelationshipObject): void {
     var index = this.equivalentStyles.indexOf(relationship.fromId);
-    if (index !== -1) this.equivalentStyles.splice(index, 1);
+    if (index >= 0) this.equivalentStyles.splice(index, 1);
 
     const preamble = this.constructEquivalencePreamble();
 

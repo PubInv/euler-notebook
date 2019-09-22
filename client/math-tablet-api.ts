@@ -19,7 +19,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 // Requirements
 
-import { RelationshipProperties, StyleProperties, StyleId, NotebookChange, NotebookObject } from './notebook.js';
+import { RelationshipProperties, StyleProperties, StyleId, NotebookChange, NotebookObject, StyleRelativePosition } from './notebook.js';
 
 // Types
 
@@ -107,14 +107,14 @@ export interface StyleDeleteRequest {
 }
 export interface StyleInsertRequest {
   type: 'insertStyle';
-  afterId?: StyleId; // or 0 (top), -1 (bottom).
-  parentId?: StyleId; // or 0.
+  afterId?: StyleRelativePosition;
+  parentId?: StyleId; // undefined or 0 means top-level.
   styleProps: StylePropertiesWithSubprops;
 }
 export interface StyleMoveRequest {
   type: 'moveStyle';
   styleId: StyleId;
-  afterId: StyleId; // or 0 (top), -1 (bottom).
+  afterId: StyleRelativePosition;
 }
 
 // Messages from the server

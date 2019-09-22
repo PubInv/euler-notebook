@@ -190,7 +190,7 @@ function onInsertButtonClicked(_event: Event) {
 
 function onKeyboardButtonClicked(): void {
   try {
-    gNotebook.insertKeyboardCellAboveSelected();
+    gNotebook.insertKeyboardCellBelow();
   } catch(err) {
     showErrorMessage("Error on keyboard button clicked.", err);
   }

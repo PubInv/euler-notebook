@@ -22,7 +22,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 import { CellView } from './cell-view.js';
 import { assert } from './common.js';
 import { $, $new, escapeHtml, Html, listenerWrapper } from './dom.js';
-import { StyleId, StyleObject, NotebookChange, RelationshipId, RelationshipObject, NotebookObject, StyleMoved, StyleType, StyleInserted, StyleInsertedFromNotebookChange } from './notebook.js';
+import { StyleId, StyleObject, NotebookChange, RelationshipId, RelationshipObject, NotebookObject, StyleMoved, StyleType, StyleInserted, StyleInsertedFromNotebookChange, StyleRelativePosition, StylePosition } from './notebook.js';
 import {
   ChangeNotebook,
   NotebookChangeRequest,
@@ -78,7 +78,8 @@ const KEY_MAP: [ KeyName, KeyMods, CommandName][] = [
   [ 'ArrowUp', KeyMod.Alt, 'moveSelectionUp'],
   [ 'Backspace', KeyMod.None, 'deleteSelectedCells'],
   [ 'Enter', KeyMod.None, 'editSelectedCell'],
-  [ 'Enter', KeyMod.Alt, 'insertKeyboardCellAboveSelected'],
+  [ 'Enter', KeyMod.Alt, 'insertKeyboardCellBelow'],
+  [ 'Enter', KeyMod.Alt|KeyMod.Shift, 'insertKeyboardCellAbove'],
   [ 'Escape', KeyMod.None, 'unselectAll'],
 ];
 
@@ -158,39 +159,25 @@ export class NotebookView {
     this.lastCellSelected.editMode();
   }
 
-  public insertKeyboardCellAboveSelected(): void {
+  public insertKeyboardCellAbove(): void {
     // If cells are selected then in insert a keyboard input cell
     // above the last cell selected.
-    // Otherwise, insert at the end of the noteboo.
-
-    // REVIEW: We shouldn't be assuming a specific HTML control on the page.
-    const $typeSelector = $<HTMLSelectElement>('#keyboardInputType');
-
-    const styleProps: StylePropertiesWithSubprops = {
-      type: <StyleType>$typeSelector.value,
-      meaning: 'INPUT',
-      data: "",
-    };
-
-    let afterId: StyleId;
+    // Otherwise, insert at the beginning of the notebook.
+    let afterId: StyleRelativePosition;
     if (this.lastCellSelected) {
       const previousCell = this.previousCell(this.lastCellSelected);
-      afterId = previousCell ? previousCell.style.id : 0;
-    } else {
-      afterId = 0;
-    }
+      afterId = previousCell ? previousCell.style.id : StylePosition.Top;
+    } else { afterId = StylePosition.Top; }
+    this.insertKeyboardCellAndEdit(afterId);
+  }
 
-    // Insert top-level style and wait for it to be inserted.
-    this.insertStyleTracked(styleProps, afterId)
-    .then(styleId=>{
-      const cellView = this.cellViewFromStyleId(styleId);
-      this.scrollCellIntoView(cellView);
-      this.selectCell(cellView);
-      cellView.editMode();
-    })
-    .catch(err=>{
-      console.error(`Error inserting keyboard style: ${err.message}\n${err.stack}`);
-    });
+  public insertKeyboardCellBelow(): void {
+    // If cells are selected then in insert a keyboard input cell below the last cell selected.
+    // Otherwise, insert at the end of the notebook.
+    let afterId: StyleRelativePosition;
+    if (this.lastCellSelected) { afterId = this.lastCellSelected.style.id; }
+    else { afterId = StylePosition.Bottom; }
+    this.insertKeyboardCellAndEdit(afterId);
   }
 
   public moveSelectionDown(): void {
@@ -210,7 +197,7 @@ export class NotebookView {
       return;
     }
     const nextNextCell = this.nextCell(nextCell);
-    const afterId = nextNextCell ? nextCell.style.id : /* bottom */ -1;
+    const afterId = nextNextCell ? nextCell.style.id : StylePosition.Bottom;
 
     const request: StyleMoveRequest = { type: 'moveStyle', styleId, afterId };
     this.sendChangeRequest(request);
@@ -289,12 +276,12 @@ export class NotebookView {
     this.sendChangeRequest(changeRequest);
   }
 
-  public insertStyle(styleProps: StylePropertiesWithSubprops, afterId: StyleId = -1): void {
+  public insertStyle(styleProps: StylePropertiesWithSubprops, afterId: StyleRelativePosition = StylePosition.Bottom): void {
     const changeRequest: StyleInsertRequest = { type: 'insertStyle', afterId, styleProps };
     this.sendChangeRequest(changeRequest);
   }
 
-  public async insertStyleTracked(styleProps: StylePropertiesWithSubprops, afterId: StyleId = -1): Promise<StyleId> {
+  public async insertStyleTracked(styleProps: StylePropertiesWithSubprops, afterId: StyleRelativePosition = StylePosition.Bottom): Promise<StyleId> {
     const changeRequest: StyleInsertRequest = { type: 'insertStyle', afterId, styleProps };
     const changes = await this.sendTrackedChangeRequest(changeRequest);
 
@@ -584,7 +571,7 @@ export class NotebookView {
     this.styles.clear();
   }
 
-  private createCell(style: StyleObject, afterId: StyleId): CellView {
+  private createCell(style: StyleObject, afterId: StyleRelativePosition): CellView {
     const cellView = CellView.create(this, style);
     cellView.$elt.addEventListener('click', listenerWrapper( cellView.$elt, 'click', event=>this.onCellClick(cellView, event)));
     cellView.$elt.addEventListener('dblclick', listenerWrapper( cellView.$elt, 'dblclick', event=>this.onCellDoubleClick(cellView, event)));
@@ -625,16 +612,42 @@ export class NotebookView {
     this.cellViews.delete(cellView.style.id);
   }
 
-  private insertCell(cellView: CellView, afterId: StyleId): void {
-    if (afterId == /* top */ 0) {
+  private insertCell(cellView: CellView, afterId: StyleRelativePosition): void {
+    if (afterId == StylePosition.Top) {
       this.$elt.prepend(cellView.$elt);
-    } else if (afterId == /* bottom */ -1) {
+    } else if (afterId == StylePosition.Bottom) {
       this.$elt.append(cellView.$elt);
     } else {
       const afterCell = this.cellViews.get(afterId);
       if (!afterCell) { throw new Error(`Cannot insert cell after unknown cell ${afterId}`); }
       afterCell.$elt.insertAdjacentElement('afterend', cellView.$elt);
     }
+  }
+
+  private insertKeyboardCellAndEdit(afterId: StyleRelativePosition): void {
+    // Shared implementation of 'insertKeyboardCellAbove' and 'insertKeyboardCellBelow'
+    // Inserts a cell into the notebook, and opens it for editing.
+
+    // REVIEW: We shouldn't be assuming a specific HTML control on the page.
+    const $typeSelector = $<HTMLSelectElement>('#keyboardInputType');
+
+    const styleProps: StylePropertiesWithSubprops = {
+      type: <StyleType>$typeSelector.value,
+      meaning: 'INPUT',
+      data: "",
+    };
+
+    // Insert top-level style and wait for it to be inserted.
+    this.insertStyleTracked(styleProps, afterId)
+    .then(styleId=>{
+      const cellView = this.cellViewFromStyleId(styleId);
+      this.scrollCellIntoView(cellView);
+      this.selectCell(cellView);
+      cellView.editMode();
+    })
+    .catch(err=>{
+      console.error(`Error inserting keyboard style: ${err.message}\n${err.stack}`);
+    });
   }
 
   private emitSelectionChangedEvent(detail: SelectionChangedEventDetail): void {
@@ -657,7 +670,7 @@ export class NotebookView {
   private populateStyleRecursively(tDoc: NotebookObject, index: StyleIndex, styleId: StyleId) {
     const style = tDoc.styleMap[styleId];
     const change: StyleInserted = { type: 'styleInserted', style };
-    if (!style.parentId) { change.afterId = -1; }
+    if (!style.parentId) { change.afterId = StylePosition.Bottom; }
     this.chInsertStyle(change);
     for (const subStyleId of index[styleId]) {
       this.populateStyleRecursively(tDoc, index, subStyleId)

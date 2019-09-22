@@ -45,15 +45,15 @@ export interface StyleDeleted {
 export interface StyleInserted {
   type: 'styleInserted';
   style: StyleObject;
-  afterId?: StyleId;
+  afterId?: StyleRelativePosition;
   // REVIEW: position?: StylePosition for top-level styles?
 }
 export interface StyleMoved {
   type: 'styleMoved';
   styleId: StyleId;
-  afterId: StyleId; // or 0 (top), -1 (bottom).
-  oldPosition: StylePosition;
-  newPosition: StylePosition;
+  afterId: StyleRelativePosition;
+  oldPosition: StyleOrdinalPosition;
+  newPosition: StyleOrdinalPosition;
 }
 
 export interface NotebookObject {
@@ -127,7 +127,7 @@ export interface StyleObject extends StyleProperties {
 // Position of style in the notebook.
 // Applies only to top-level styles.
 // Position 0 is the first cell of the notebook.
-export type StylePosition = number;
+export type StyleOrdinalPosition = number;
 
 export interface StyleProperties {
   data: any;
@@ -135,6 +135,12 @@ export interface StyleProperties {
   type: StyleType;
 }
 
+export type StyleRelativePosition = StyleId | StylePosition;
+
+export enum StylePosition {
+  Top = 0,
+  Bottom = -1,
+}
 export const STYLE_TYPES = [
   'HTML',            // Html: HTML-formatted text
   'IMAGE',           // ImageData: URL of image relative to notebook folder.
@@ -420,13 +426,13 @@ export class Notebook {
     this.relationshipMap[relationship.id] = relationship;
   }
 
-  private insertStyle(style: StyleObject, afterId?: StyleId): void {
+  private insertStyle(style: StyleObject, afterId?: StyleRelativePosition): void {
     this.styleMap[style.id] = style;
     // Insert top-level styles in the style order.
     if (!style.parentId) {
-      if (!afterId || afterId===0) {
+      if (!afterId || afterId===StylePosition.Top) {
         this.styleOrder.unshift(style.id);
-      } else if (afterId===-1) {
+      } else if (afterId===StylePosition.Bottom) {
         this.styleOrder.push(style.id);
       } else {
         const i = this.styleOrder.indexOf(afterId);
