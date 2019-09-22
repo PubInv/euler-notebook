@@ -118,12 +118,16 @@ export class KeyboardInputPanel {
 
   private onKeyUp(event: KeyboardEvent): void {
     switch(event.key) {
-      case "Enter":
+      case 'Enter':
         // TODO: Do not allow submission if there is an error.
-        if (event.ctrlKey) { this.dismiss(true); }
+        if (event.ctrlKey) {
+          event.stopPropagation();
+          this.dismiss(true);
+        }
         break;
-      case "Escape":
-        this.dismiss(false);
+      case 'Escape':
+          event.stopPropagation();
+          this.dismiss(false);
         break;
     }
   }

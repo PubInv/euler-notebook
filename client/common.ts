@@ -19,8 +19,19 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 // Requirements
 
+// Types
+
+type StackTrace = string;
+
 // Exported Functions
 
 export function assert(value: any, message?: string): void {
   if (!value) { throw new Error(message); }
+}
+
+export function stackTrace(): StackTrace {
+  let rval: string;
+  try { throw new Error('StackTrace'); }
+  catch(err) { rval = err.stack; }
+  return rval;
 }

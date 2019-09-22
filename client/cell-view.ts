@@ -19,7 +19,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 // Requirements
 
-import { assert } from './common.js';
+import { assert, stackTrace } from './common.js';
 import { escapeHtml, $new, Html } from './dom.js';
 import { getKatex } from './katex-types.js';
 import { NotebookView } from './notebook-view.js';
@@ -232,7 +232,7 @@ export class CellView {
     delete this.keyboardInputPanel;
 
     this.show();
-    // this.notebookView.$elt.focus();
+    this.notebookView.$elt.focus();
   }
 
   // Private Instance Methods

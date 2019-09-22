@@ -471,6 +471,7 @@ export class NotebookView {
     if (commandName) {
       const commandFn = <CommandFunction|undefined>((</* TYPESCRIPT: */any>this)[commandName]);
       if (!commandFn) { throw new Error(`Unknown command ${commandName} for key ${keyCombo}`); }
+      console.log(`Command: ${commandName}`);
       commandFn.call(this);
     } else {
       if (IGNORED_KEYUPS.indexOf(keyName)<0) {
