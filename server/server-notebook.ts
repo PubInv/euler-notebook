@@ -28,7 +28,7 @@ const MODULE = __filename.split(/[/\\]/).slice(-1)[0].slice(0,-3);
 const debug = debug1(`server:${MODULE}`);
 
 import { Notebook, NotebookChange, StyleObject, StyleSource, StyleId, NotebookObject, RelationshipObject, RelationshipId, RelationshipProperties, StyleMoved, StylePosition } from '../client/notebook';
-import { NotebookChangeRequest, StylePropertiesWithSubprops, StyleMoveRequest, Tracker } from '../client/math-tablet-api';
+import { NotebookChangeRequest, StyleMoveRequest, Tracker, StyleInsertRequest } from '../client/math-tablet-api';
 import { readNotebookFile, AbsDirectoryPath, absDirPathFromNotebookPath, writeNotebookFile, NotebookPath } from './files-and-folders';
 import { constructSubstitution } from './observers/wolframscript';
 import { ClientId } from './client-socket';
@@ -323,9 +323,9 @@ export class ServerNotebook extends Notebook {
       case 'insertRelationship':
         return [ this.insertRelationshipChange(source, changeRequest.fromId, changeRequest.toId, changeRequest.props) ];
       case 'insertStyle':
-        return this.insertStyleChanges(source, changeRequest.parentId||0, changeRequest.styleProps, changeRequest.afterId||-1);
+        return this.insertStyleChanges(source, changeRequest);
       case 'moveStyle':
-        return [ this.moveStyleChange(changeRequest) ];
+        return [ this.moveStyleChange(source, changeRequest) ];
       default:
         throw new Error("Unexpected.");
     }
@@ -398,12 +398,11 @@ export class ServerNotebook extends Notebook {
     return { type: 'relationshipInserted', relationship };
   }
 
-  private insertStyleChanges(
-    source: StyleSource,
-    parentId: StyleId,
-    styleProps: StylePropertiesWithSubprops,
-    afterId: StyleId,
-  ): NotebookChange[] {
+  private insertStyleChanges(source: StyleSource, request: StyleInsertRequest): NotebookChange[] {
+    const parentId = request.parentId||0;
+    const styleProps = request.styleProps;
+    const afterId = request.hasOwnProperty('afterId') ? request.afterId : -1;
+
     let changes: NotebookChange[] = [];
     const style: StyleObject = {
       data: styleProps.data,
@@ -417,7 +416,8 @@ export class ServerNotebook extends Notebook {
 
     if (styleProps.subprops) {
       for (const substyleProps of styleProps.subprops) {
-        changes = changes.concat(this.insertStyleChanges(source, style.id, substyleProps, -1));
+        const request2: StyleInsertRequest = { type: 'insertStyle', parentId: style.id, styleProps: substyleProps };
+        changes = changes.concat(this.insertStyleChanges(source, request2));
       }
     }
 
@@ -436,7 +436,7 @@ export class ServerNotebook extends Notebook {
     return changes;
   }
 
-  private moveStyleChange(request: StyleMoveRequest): NotebookChange {
+  private moveStyleChange(_source: StyleSource, request: StyleMoveRequest): NotebookChange {
 
     const { styleId, afterId } = request;
     if (afterId == styleId) { throw new Error(`Style ${styleId} can't be moved after itself.`); }
