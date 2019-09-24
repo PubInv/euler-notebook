@@ -58,28 +58,36 @@ export class CellView {
   }
 
   public deleteTool(styleId: StyleId): void {
-    const element = document.getElementById("tool"+styleId);
+    this.deleteTagged("tool",styleId);
+  }
+  public deleteStyleHtml(styleId: StyleId): void {
+    this.deleteTagged("style",styleId);
+  }
+  public deleteTagged(tag:string,styleId: StyleId): void {
+    const element = document.getElementById(tag+styleId);
     if (element != null) {
       // @ts-ignore
       element.parentNode.removeChild(element);
     }
   }
 
+  // I think now we must embed the style id in ANY
+  // HTML.
   public deleteStyle(style: StyleObject): void {
     if (!style.parentId) { return; }
-
-    if (style.type == 'LATEX') {
-      const $formulaElt = this.$elt.querySelector('.formula');
-      $formulaElt!.innerHTML = '';
-    }
-    if (style.type == 'TOOL') {
       // We embed the id into the HTML so that we can delete
       // specific objects, so taht multiple tools can in theory be
       // delete and added to a given thought. The fundamental problem
       // we are trying to solve is that they mutate, but there are many
       // potential tools on one thought.
+
+    if (style.type == 'LATEX') {
+      this.deleteStyleHtml(style.id);
+    }
+    if (style.type == 'TOOL') {
       this.deleteTool(style.id);
     }
+    const $formulaElt = this.$elt.querySelector('.formula');
   }
 
   public editMode(): boolean {
@@ -119,7 +127,7 @@ export class CellView {
   // awkward.  Looking at the parent of the style may work, but is
   // awkward in a different way.
   public insertStyle(style: StyleObject): void {
-    // console.log(`Inserting style ${style.id} ${style.meaning} ${style.type}`);
+    console.log(`Inserting style ${style.id} ${style.meaning} ${style.type} ${style.data}`);
     switch(style.meaning) {
       case 'ATTRIBUTE':
         if (style.type == 'TOOL') { this.renderTool(style); }
@@ -127,21 +135,21 @@ export class CellView {
       case 'ERROR': this.renderErrorMessage(style); break;
       case 'EXPOSITION':
         if (style.type == 'HTML') { this.renderHtml(style.data); }
-        else if (style.type == 'TEXT') { this.renderText(style.data); }
+        else if (style.type == 'TEXT') { this.renderText(style.id,style.data); }
         else { assert(false, `Unexpected data type for exposition: ${style.type}.`); }
         break;
       case 'INPUT':
-        if (style.type == 'LATEX') { this.renderLatexFormula(style.data); }
-        else if (style.type == 'TEXT') { this.renderText(style.data); }
+        if (style.type == 'LATEX') { this.renderLatexFormula(style.id,style.data); }
+        else if (style.type == 'TEXT') { this.renderText(style.id,style.data); }
         else { this.renderOtherInput(style); }
         break;
       case 'INPUT-ALT':
-        if (style.type == 'LATEX') { this.renderLatexFormula(style.data); }
-        else if (style.type == 'TEXT') { this.renderText(style.data); }
+        if (style.type == 'LATEX') { this.renderLatexFormula(style.id,style.data); }
+        else if (style.type == 'TEXT') { this.renderText(style.id,style.data); }
         break;
       case 'DECORATION':
-        if (style.type == 'LATEX') { this.renderLatexFormula(style.data); }
-        else if (style.type == 'TEXT') { this.renderText(style.data); }
+        if (style.type == 'LATEX') { this.renderLatexFormula(style.id,style.data); }
+        else if (style.type == 'TEXT') { this.renderText(style.id,style.data); }
         break;
       case 'PLOT':
         this.renderPlot(style);
@@ -155,6 +163,8 @@ export class CellView {
         break;
       default:
     }
+    const $formulaElt = this.$elt.querySelector('.formula');
+    console.log("CELL",$formulaElt!.innerHTML);
   }
 
   public constructEquivalencePreamble() : string{
@@ -275,14 +285,19 @@ export class CellView {
     $formulaElt!.innerHTML = html;
   }
 
-  private renderLatexFormula(latexData: LatexData): void {
+  private renderLatexFormula(id: number,latexData: LatexData): void {
+    console.log("LATEX",latexData);
     const $formulaElt = this.$elt.querySelector('.formula');
     const renderer = rendererMap.get('LATEX');
     let { html, errorHtml } = renderer!(latexData);
+    console.log("RENDER LATEX HTML",html);
+    console.log("RENDER LATEX errorHTML",errorHtml);
     if (errorHtml) {
       html = `<div class="error">${errorHtml}</div><tt>${escapeHtml(latexData)}</tt>`;
     }
-    $formulaElt!.innerHTML = html!;
+    const wrapped = `<span id="style${id}">${html!}</span>`;
+    $formulaElt!.innerHTML = wrapped;
+    console.log("INNER",$formulaElt!.innerHTML);
   }
 
   private renderOtherInput(style: StyleObject): void {
@@ -308,13 +323,15 @@ export class CellView {
     const $formulaElt = this.$elt.querySelector('.formula');
     const current = $formulaElt!.innerHTML;
     console.log("current",current);
-    $formulaElt!.innerHTML = current + '<br>' + '<font size="1">'+style.data + "</font>";
+    const wrapped = `<span id="style${style.id}">+ '<br>' + '<font size="1">'+ ${style.data} + "</font>"</span>`;
+    $formulaElt!.innerHTML = current + wrapped;
   }
 
 
-  private renderText(text: string): void {
+  private renderText(id: number,text: string): void {
     const $formulaElt = this.$elt.querySelector('.formula');
-    $formulaElt!.innerHTML = escapeHtml(text);
+    const wrapped = `<span id="style${id}">${text}</span>`;
+    $formulaElt!.innerHTML = escapeHtml(wrapped);
   }
 
   private renderDefinition(style: StyleObject): void {
@@ -327,7 +344,8 @@ export class CellView {
     if (!$formulaElt!.innerHTML) {
       // NOT completely obvious this is best rendering.
       const render = nvp.name + " = " + nvp.value;
-      $formulaElt!.innerHTML = escapeHtml(render);
+      const wrapped = `<span id="style${style.id}">${render}</span>`;
+      $formulaElt!.innerHTML = escapeHtml(wrapped);
     }
   }
 
