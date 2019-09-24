@@ -29,7 +29,7 @@ const debug = debug1(`server:${MODULE}`);
 
 import { Notebook, NotebookObject, NotebookChange,
          StyleObject, StyleSource, StyleId, StyleIdDoesNotExistError,
-         RelationshipObject, RelationshipId, RelationshipProperties,
+         RelationshipObject, RelationshipId, RelationshipIdDoesNotExistError, RelationshipProperties,
          StyleMoved, StylePosition } from '../client/notebook';
 import { NotebookChangeRequest, StyleMoveRequest, Tracker, StyleInsertRequest } from '../client/math-tablet-api';
 import { readNotebookFile, AbsDirectoryPath, absDirPathFromNotebookPath, writeNotebookFile, NotebookPath } from './files-and-folders';
@@ -318,7 +318,7 @@ export class ServerNotebook extends Notebook {
     switch(changeRequest.type) {
       case 'deleteRelationship':
         debug("deleteRelationship case ins erver-notebook.ts");
-        return [ this.deleteRelationshipChange(changeRequest.id) ];
+        return this.deleteRelationshipChange(changeRequest.id);
       case 'changeStyle':
         return [ this.changeStyleChange(changeRequest.styleId, changeRequest.data) ];
       case 'deleteStyle':
@@ -342,9 +342,21 @@ export class ServerNotebook extends Notebook {
     return change;
   }
 
-  private deleteRelationshipChange(id: RelationshipId): NotebookChange {
-    const relationship = this.getRelationshipById(id);
-    return { type: 'relationshipDeleted', relationship };
+  private deleteRelationshipChange(id: RelationshipId): NotebookChange[] {
+    try {
+      const relationship = this.getRelationshipById(id);
+      return [{ type: 'relationshipDeleted', relationship }];
+    }  catch (e) {
+      if (e instanceof RelationshipIdDoesNotExistError) {
+        // We do not consider this an error condition, as we
+        // support multiple concurrent users.
+        return [];
+      } else {
+        debug("uncaught error on attempted delete relationship",e);
+        throw new Error("Interal Errror on delete relationship"+e.name);
+      }
+    }
+    throw new Error("Interal Errror on delete relationship");
   }
 
   private deleteStyleChanges(id: StyleId): NotebookChange[] {

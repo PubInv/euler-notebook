@@ -189,6 +189,15 @@ export class StyleIdDoesNotExistError extends Error {
     }
 }
 
+export class RelationshipIdDoesNotExistError extends Error {
+    constructor(m: string) {
+      super(m);
+      // Set the prototype explicitly to make work
+      Object.setPrototypeOf(this, RelationshipIdDoesNotExistError.prototype);
+      this.name = "RelationshipIdDoesNotExistError";
+    }
+}
+
 export class Notebook {
 
   // Constructor
@@ -269,7 +278,7 @@ export class Notebook {
 
   public getRelationshipById(id: RelationshipId): RelationshipObject {
     const rval = this.relationshipMap[id];
-    if (!rval) { throw new Error(`Relationship ${id} doesn't exist.`); }
+    if (!rval) { throw new RelationshipIdDoesNotExistError(`Relationship ${id} doesn't exist.`); }
     return rval;
   }
 
@@ -283,8 +292,16 @@ export class Notebook {
     const rs = this.allRelationships();
     var symbolStyles: StyleObject[] = [];
     rs.forEach(r => {
-      if (r.fromId == style.id)
-        symbolStyles.push(this.getStyleById(r.toId));
+      if (r.fromId == style.id) {
+        try {
+          symbolStyles.push(this.getStyleById(r.toId));
+        } catch (e) {
+          if (e instanceof StyleIdDoesNotExistError) {
+          } else {
+            throw new Error("Internal Error"+e.name);
+          }
+        }
+      }
     });
     return symbolStyles;
   }
