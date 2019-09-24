@@ -19,7 +19,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 // Requirements
 
-import { assert, stackTrace } from './common.js';
+import { assert } from './common.js';
 import { escapeHtml, $new, Html } from './dom.js';
 import { getKatex } from './katex-types.js';
 import { NotebookView } from './notebook-view.js';
@@ -352,4 +352,3 @@ export class CellView {
   }
 
 }
-
