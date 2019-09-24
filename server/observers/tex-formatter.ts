@@ -123,6 +123,8 @@ export class TeXFormatterObserver implements ObserverInstance {
       case 'styleInserted':
         await this.latexFormatterRule(change.style, rval);
         break;
+
+        // I believe it must be wrong to call the same thing here; if only because it produced duplication.
       case 'relationshipInserted':
         await this.texFormatterChangedRule(change.relationship, rval);
         this.overWrite(rval,this.deDupChanges(rval));
@@ -167,131 +169,82 @@ export class TeXFormatterObserver implements ObserverInstance {
       rval.push(changeReq);
     });
   }
+
+  // This routine is responsible for inserting any tex formats we can deduce from a given style.
+  // At present these are:
+  // * Symbol-defintion
+  // * Equation-definition
+  // These should be straitforward, but do depend on the "environment",
+  // that is, any defined symbols which are used therein. Thus changes
+  // in thoughts related to, but not the same as, this thought, may require
+  // recomputation.
   private async latexFormatterRule(style: StyleObject, rval: NotebookChangeRequest[]): Promise<void> {
-    // At present, it only makes sense to operate on styles of type "WOLFRAM",
-    // the some styles, such as "EQUATION", may have components where are WOLFRAM
-    // expression, exposing some underlying inconsistency in data treatment.
 
-    // We happen to know that even if they use "wolfram", we are interpreting
-    // an "equation" specially.  That is, we consider "4 = x^2 + y^2" a legal
-    // input expression, which we interpret at "4 == x^2 + y^2".  So in a
-    // sense we need to detext this case, wich we treat as an equation.
-    // I think the best thing here is to catch the error, allow it to fail,
-    // and then treat the "EQUATION" style separately!  Hairy---but this
-    // project is all about the hair.
-    // if (style.type == 'WOLFRAM' && style.meaning == 'INPUT') {
-    //   var text: string = style.data;
-    //   debug("INSIDE SOLVER RULE :",text);
-    //   const tex : string = await findTeXForm(style.data);
-    //   if (tex) {
-    //     // Create the latex
-    //     const styleProps: StylePropertiesWithSubprops = {
-    //       type: 'LATEX',
-    //       // This is the best meaning without creating one specifically for this purpose..
-    //       meaning: 'DECORATION',
-    //       data: tex,
-    //     }
-    //     const changeReq: StyleInsertRequest = {
-    //       type: 'insertStyle',
-    //       parentId: style.id,
-    //       styleProps: styleProps
-    //     };
-    //     rval.push(changeReq);
-    //   }
-    // } else
+    if (!((style.type == 'SYMBOL' && style.meaning == 'SYMBOL-DEFINITION')
+          || (style.type == 'EQUATION' && style.meaning == 'EQUATION-DEFINITION')
+         )) {
+      return;
+    }
+
+    const parent = this.notebook.topLevelStyleOf(style.id);
+    debug("getting dependencies",style,parent);
+    var usedSymbols = this.notebook.getSymbolStylesIDependOn(parent);
+    debug("usedSymbols",usedSymbols);
+    usedSymbols = usedSymbols.filter(function( element ) {
+      return element !== undefined;
+    });
+    debug("usedSymbols",usedSymbols);
+
+    var lhs = null;
+    var rhs = null;
     if (style.type == 'SYMBOL' && style.meaning == 'SYMBOL-DEFINITION') {
+      lhs = style.data.name;
+      rhs = style.data.value;
+    } else if (style.type == 'EQUATION' && style.meaning == 'EQUATION-DEFINITION') {
+      lhs = style.data.lhs;
+      rhs = style.data.rhs;
+    } else {
+      throw new Error("internal error");
+    }
+    const sub_expr_lhs : string =
+      constructSubstitution(lhs,
+                            usedSymbols.map(
+                              s => ({ name: s.data.name,
+                                      value: s.data.value})));
+    const sub_expr_rhs : string =
+      constructSubstitution(rhs,
+                            usedSymbols.map(
+                              s => ({ name: s.data.name,
+                                      value: s.data.value})));
+    const texrhs : string = await findTeXForm(sub_expr_rhs);
 
-      var text: string = style.data;
-      debug("INSIDE SOLVER RULE :",text);
+    var tex_def = null;
+    if (style.type == 'SYMBOL' && style.meaning == 'SYMBOL-DEFINITION') {
+      tex_def = style.data.name + " = " + texrhs;
+    } else if (style.type == 'EQUATION' && style.meaning == 'EQUATION-DEFINITION') {
+      const texlhs : string = await findTeXForm(sub_expr_lhs);
+      if (texrhs && texlhs) {
+        tex_def = texlhs + " = " + texrhs
+      } // otherwise tex_def remains null and will not be pushed...
+    }
 
-      // We need to compute the top ancestor here, since the symbol uses hang off that.
-      const parent = this.notebook.topLevelStyleOf(style.id);
-
-      debug("getting dependencies",style,parent);
-      var usedSymbols = this.notebook.getSymbolStylesIDependOn(parent);
-      debug("usedSymbols",usedSymbols);
-      usedSymbols = usedSymbols.filter(function( element ) {
-   return element !== undefined;
-});
-      const sub_expr_lhs : string =
-        constructSubstitution(style.data.name,
-                              usedSymbols.map(
-                                s => ({ name: s.data.name,
-                                        value: s.data.value})));
-      const sub_expr_rhs : string =
-        constructSubstitution(style.data.value,
-                              usedSymbols.map(
-                                s => ({ name: s.data.name,
-                                        value: s.data.value})));
-
-      const lhs : string = sub_expr_lhs;
-      debug("LHS",lhs);
-      const rhs : string = await findTeXForm(sub_expr_rhs);
-      debug("RHS",rhs);
-      debug("Tex formatter", text, lhs,rhs);
-      const tex_def = style.data.name + " = " + rhs;
-      debug("Tex_def", tex_def);
-
+    if (tex_def != null) {
       // Create the latex
       const styleProps: StylePropertiesWithSubprops = {
         type: 'LATEX',
-        // This is the best meaning without creating one specifically for this purpose..
         meaning: 'DECORATION',
         data: tex_def,
       }
-
       const changeReq: StyleInsertRequest = {
         type: 'insertStyle',
         parentId: style.id,
         styleProps: styleProps
       };
-
       rval.push(changeReq);
-      debug("pushed rval",rval);
-      return;
-    } else if (style.type == 'EQUATION' && style.meaning == 'EQUATION-DEFINITION') {
-
-      const parent = this.notebook.topLevelStyleOf(style.id);
-
-      const usedSymbols = this.notebook.getSymbolStylesIDependOn(parent);
-      debug("usedSymbols",usedSymbols);
-      const sub_expr_lhs : string =
-        constructSubstitution(style.data.lhs,
-                              usedSymbols.map(
-                                s => ({ name: s.data.name,
-                                        value: s.data.value})));
-      const sub_expr_rhs : string =
-        constructSubstitution(style.data.rhs,
-                              usedSymbols.map(
-                                s => ({ name: s.data.name,
-                                        value: s.data.value})));
-
-      // Here we have a bit of a problem...we should probably just conjoin the tex
-      // from the lhs and rhs...
-      const texlhs : string = await findTeXForm(sub_expr_lhs);
-      const texrhs : string = await findTeXForm(sub_expr_rhs);
-
-      debug("Tex formatter", texlhs,"/", texrhs);
-      if (texrhs && texlhs) {
-
-        // Create the latex
-        const styleProps: StylePropertiesWithSubprops = {
-          type: 'LATEX',
-          // This is the best meaning without creating one specifically for this purpose..
-          meaning: 'DECORATION',
-          /// This is a bit of a guess..
-          data: texlhs + " = " + texrhs,
-        }
-
-        const changeReq: StyleInsertRequest = {
-          type: 'insertStyle',
-          parentId: style.id,
-          styleProps: styleProps
-        };
-        rval.push(changeReq);
-      }
-      return;
     }
+
+    debug("pushed rval",rval);
+    return;
 
   }
 
