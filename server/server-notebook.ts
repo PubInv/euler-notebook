@@ -27,7 +27,10 @@ import * as debug1 from 'debug';
 const MODULE = __filename.split(/[/\\]/).slice(-1)[0].slice(0,-3);
 const debug = debug1(`server:${MODULE}`);
 
-import { Notebook, NotebookChange, StyleObject, StyleSource, StyleId, NotebookObject, RelationshipObject, RelationshipId, RelationshipProperties, StyleMoved, StylePosition } from '../client/notebook';
+import { Notebook, NotebookObject, NotebookChange,
+         StyleObject, StyleSource, StyleId, StyleIdDoesNotExistError,
+         RelationshipObject, RelationshipId, RelationshipProperties,
+         StyleMoved, StylePosition } from '../client/notebook';
 import { NotebookChangeRequest, StyleMoveRequest, Tracker, StyleInsertRequest } from '../client/math-tablet-api';
 import { readNotebookFile, AbsDirectoryPath, absDirPathFromNotebookPath, writeNotebookFile, NotebookPath } from './files-and-folders';
 import { constructSubstitution } from './observers/wolframscript';
@@ -360,9 +363,19 @@ export class ServerNotebook extends Notebook {
     // for(const relationship of relationships) {
     //   changes.push(this.deleteRelationshipChange(relationship.id));
     // }
-    const style = this.getStyleById(id);
-    if (style) {
-      changes.push({ type: 'styleDeleted', style });
+    try {
+      const style = this.getStyleById(id);
+      if (style) {
+        changes.push({ type: 'styleDeleted', style });
+      }
+    } catch (e) {
+      if (e instanceof StyleIdDoesNotExistError) {
+        // We do not consider this an error condition, as we
+        // support multiple concurrent users.
+      } else {
+        debug("uncaught error on attempted delete",e);
+        throw new Error("spud"+e.name);
+      }
     }
     return changes;
   }

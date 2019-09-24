@@ -180,6 +180,15 @@ export const VERSION = "0.0.8";
 
 // Exported Class
 
+export class StyleIdDoesNotExistError extends Error {
+    constructor(m: string) {
+      super(m);
+      // Set the prototype explicitly to make work
+      Object.setPrototypeOf(this, StyleIdDoesNotExistError.prototype);
+      this.name = "StyleIdDoesNotExistError";
+    }
+}
+
 export class Notebook {
 
   // Constructor
@@ -266,7 +275,7 @@ export class Notebook {
 
   public getStyleById(id: StyleId): StyleObject {
     const rval = this.styleMap[id];
-    if (!rval) { throw new Error(`Style ${id} doesn't exist.`); }
+    if (!rval) { throw new StyleIdDoesNotExistError(`Style ${id} doesn't exist.`); }
     return rval;
   }
 

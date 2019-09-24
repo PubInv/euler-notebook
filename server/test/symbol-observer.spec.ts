@@ -76,26 +76,6 @@ const data:string[] = [
   "X = 6",
   "Y = X^2"];
 
-// const styleProps:StylePropertiesWithSubprops[] =
-//   [
-//     { type: 'WOLFRAM', meaning: 'INPUT', data: data[0] },
-//     { type: 'WOLFRAM', meaning: 'INPUT', data: data[1] },
-//     { type: 'WOLFRAM', meaning: 'INPUT', data: data[2] },
-//     { type: 'WOLFRAM', meaning: 'INPUT', data: data[3] },
-//     { type: 'WOLFRAM', meaning: 'INPUT', data: data[4] },
-//   ];
-
-// const insertRequest:StyleInsertRequest[] = [{ type: 'insertStyle',
-//                                               styleProps: styleProps[0] },
-//                                             { type: 'insertStyle',
-//                                               styleProps: styleProps[1] },
-//                                            { type: 'insertStyle',
-//                                              styleProps: styleProps[2] },
-//                                             { type: 'insertStyle',
-//                                               styleProps: styleProps[3] },
-//                                             { type: 'insertStyle',
-//                                               styleProps: styleProps[4] }];
-
 function texformatOfLastThought(notebook : ServerNotebook) : string {
   // To try to make this robust, we will specifically construct
   // the value. We also need to be able to get the last thought.

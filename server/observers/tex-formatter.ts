@@ -102,11 +102,19 @@ export class TeXFormatterObserver implements ObserverInstance {
   }
 
 
-  // This I am only implementing this because I can't
-  // figure out where the duplication is coming from.
-  // It think because we recompute on both a deletion and an insertion,
-  // we endup creating duplicate deletions. But precisely how this happens
-  // I don't really know.
+  // A fundamental problem here is that a common pattern is to
+  // delete a relationship and then immediately insert a similar
+  // relationship. If these are processed asynchronously (before
+  // a deletion cauesd by the first change takes affect), this
+  // leads to double duplication of the TEX-Style.  This cannot
+  // be solved in any simple way.  I have therefore implemented
+  // the de-dup code above. However in discussion with DJE we have
+  // decided that in any case we must handle some inconsistency because
+  // we support concurrent editing by multiple users. -rlr
+
+  // Note: This is a good candidate for integrating into the metra-framework,
+  // as it is probably useful outside this observer. However, I have
+  // no reason to do so yet, and wish to be conservative. -rlr
   private deDupChanges(rval : NotebookChangeRequest[]) {
     rval = rval.filter((thing,index) => {
       return index === rval.findIndex(obj => {
@@ -115,7 +123,6 @@ export class TeXFormatterObserver implements ObserverInstance {
     });
     return rval;
   }
-
   private async onChange(change: NotebookChange, rval: NotebookChangeRequest[]): Promise<void> {
     if (change == null) return;
     debug(`onChange ${this.notebook._path} ${change.type}`);
@@ -197,6 +204,9 @@ export class TeXFormatterObserver implements ObserverInstance {
 
     var lhs = null;
     var rhs = null;
+
+    // These types have slightly different data morphologies, but are
+    // similar enough we can process almost the same way
     if (style.type == 'SYMBOL' && style.meaning == 'SYMBOL-DEFINITION') {
       lhs = style.data.name;
       rhs = style.data.value;
@@ -248,6 +258,6 @@ export class TeXFormatterObserver implements ObserverInstance {
 
   }
 
-
 // Private Functions
+
 }
