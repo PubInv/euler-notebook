@@ -208,10 +208,12 @@ export class MathematicaObserver implements ObserverInstance {
   }
 
   private async onChange(change: NotebookChange): Promise<NotebookChangeRequest[]> {
+    debug("OnChange change:",change);
     let rval: NotebookChangeRequest[] = [];
     if (change != null) {
       switch (change.type) {
         case 'styleInserted':
+          debug("styleInserted : style",change.style);
           rval = rval.concat(
             await this.mathMathematicaRule(change.style),
             await this.convertMathMlToWolframRule(change.style),
@@ -237,7 +239,7 @@ export class MathematicaObserver implements ObserverInstance {
   // REVIEW: This does not need to be exported, as it does not occur anywhere else in the source.
   private async mathMathematicaRule(style: StyleObject): Promise<NotebookChangeRequest[]> {
 
-    //  debug("INSIDE RULE :",style);
+    debug("INSIDE RULE :",style);
     // We only extract symbols from Wolfram expressions that are user input.
     if (style.type != 'WOLFRAM') { return []; }
     if (style.meaning!='INPUT' && style.meaning!='INPUT-ALT') { return []; }
@@ -247,6 +249,8 @@ export class MathematicaObserver implements ObserverInstance {
     var assoc;
     try {
       //    assoc = await evaluateExpressionPromiseWS(style.data);
+
+      debug("mathMathematicaRule, style.data",style.data);
       assoc = await this.evaluateExpressionPromiseWS(style.data);
 
       debug("ASSOC RETURNED",assoc,assoc.toString());

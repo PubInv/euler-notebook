@@ -87,7 +87,6 @@ export class CellView {
     if (style.type == 'TOOL') {
       this.deleteTool(style.id);
     }
-    const $formulaElt = this.$elt.querySelector('.formula');
   }
 
   public editMode(): boolean {
@@ -358,6 +357,7 @@ export class CellView {
       info.html;
     const wrapped = `<span id="tool${style.id}">${input}</span>`;
 
+    // At present the ".tools" visibility is hidden...I don't know why.
     const $button = $new('button', { class: 'tool', html: wrapped });
     $button.addEventListener('click', (_event: MouseEvent)=>{
       this.notebookView.useTool(style.id);
