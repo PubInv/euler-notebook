@@ -324,6 +324,7 @@ export class Notebook {
       throw new Error("INTERNAL ERROR: did not produce ancenstor: ");
     }
     rs.forEach(r => {
+      console.log("r.toId ", r.toId);
       const rp = this.topLevelStyleOf(r.toId);
       if (!rp) {
         console.error("INTERNAL ERROR: did not produce ancenstor: ",style.id);

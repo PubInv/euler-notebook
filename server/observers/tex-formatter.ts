@@ -193,9 +193,16 @@ export class TeXFormatterObserver implements ObserverInstance {
       return;
     }
 
+
+    debug("TEX-FORMATTER ",style);
+    // This is throwing an error. I assume because of concurrency.
+    // We may have to handle with a try-catch, but we must understand
+    // the problem first.
     const parent = this.notebook.topLevelStyleOf(style.id);
+
     debug("getting dependencies",style,parent);
-    var usedSymbols = this.notebook.getSymbolStylesIDependOn(parent);
+    //    var usedSymbols = this.notebook.getSymbolStylesIDependOn(parent);
+    var usedSymbols = this.notebook.getSymbolStylesIDependOn(style);
     debug("usedSymbols",usedSymbols);
     usedSymbols = usedSymbols.filter(function( element ) {
       return element !== undefined;
