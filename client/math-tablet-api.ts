@@ -166,3 +166,7 @@ export interface NameValuePair {
     name: string;
     value: string;
 }
+
+export function isEmptyOrSpaces(str: string) : boolean{
+    return str === null || str.match(/^ *$/) !== null;
+  }

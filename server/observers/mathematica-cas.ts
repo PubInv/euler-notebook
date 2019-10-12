@@ -25,7 +25,7 @@ const debug = debug1(`server:${MODULE}`);
 
 // import { MthMtcaText } from '../client/math-tablet-api';
 import { StyleObject, NotebookChange, StyleId, RelationshipProperties } from '../../client/notebook';
-import { NotebookChangeRequest, StyleInsertRequest, StylePropertiesWithSubprops, RelationshipInsertRequest } from '../../client/math-tablet-api';
+import { NotebookChangeRequest, StyleInsertRequest, StyleDeleteRequest, StylePropertiesWithSubprops, RelationshipInsertRequest, isEmptyOrSpaces } from '../../client/math-tablet-api';
 import { ServerNotebook, ObserverInstance } from '../server-notebook';
 import { execute, constructSubstitution, checkEquiv, NVPair } from './wolframscript';
 import * as fs from 'fs';
@@ -122,6 +122,9 @@ export class MathematicaObserver implements ObserverInstance {
   private async checkEquivalenceRule(style: StyleObject): Promise<NotebookChangeRequest[]> {
     if (style.type != 'WOLFRAM') { return []; }
 
+    // We must be able to
+    if (isEmptyOrSpaces(style.data)) { return []; }
+
     const rval: NotebookChangeRequest[] = [];
 
     try {
@@ -212,7 +215,12 @@ export class MathematicaObserver implements ObserverInstance {
     let rval: NotebookChangeRequest[] = [];
     if (change != null) {
       switch (change.type) {
+          // I am unsure what to do here. I think it is best that we make sure
+          // each rule is idempotent. Possibly this will be shown wrong later.
+          // The basic prinicple is that if we do insert something, we should
+          // make sure that any other inserted rules are deleted.
         case 'styleInserted':
+        case 'styleChanged':
           debug("styleInserted : style",change.style);
           rval = rval.concat(
             await this.mathMathematicaRule(change.style),
@@ -226,11 +234,17 @@ export class MathematicaObserver implements ObserverInstance {
     return rval;
   }
 
+
   private async evaluateExpressionPromiseWS(expr: string) : Promise<string> {
     debug("INSIDE EVALUATE WS",expr);
     // WARNING! This works to make definitions private
     // from wolframscript, but not when executed here!?!
-    let result : string = await execute("InputForm[runPrivate["+expr+"]]");
+    let result : string;
+    if (isEmptyOrSpaces(expr)) {
+      result = "";
+    } else {
+      result = await execute("InputForm[runPrivate["+expr+"]]");
+    }
     debug("RESULT FROM WS",result);
     return result;
   }
@@ -254,8 +268,8 @@ export class MathematicaObserver implements ObserverInstance {
       assoc = await this.evaluateExpressionPromiseWS(style.data);
 
       debug("ASSOC RETURNED",assoc,assoc.toString());
-      //    assoc = draftChangeContextName(assoc);
       debug("After context switch",assoc,assoc.toString());
+      if (!assoc) assoc = null;
     } catch (e) {
       debug("MATHEMATICA EVALUATION FAILED :",e);
       assoc = null;
@@ -324,23 +338,6 @@ export class MathematicaObserver implements ObserverInstance {
         styleProps: styleProps2,
       };
       rval.push(cr2);
-
-      // const data: ToolInfo = {
-      //   name: 'checkeqv',
-      //   html: "Check Equivalences",
-      //   data: { styleId: style.id }
-      // };
-      // const styleProps3: StyleProperties = {
-      //   type: 'TOOL',
-      //   meaning: 'ATTRIBUTE',
-      //   data
-      // };
-      // const cr3: StyleInsertRequest = {
-      //   type: 'insertStyle',
-      //   parentId: style.id,
-      //   styleProps: styleProps3,
-      // };
-      // rval.push(cr3);
     }
     return rval;
   }
@@ -366,6 +363,18 @@ export class MathematicaObserver implements ObserverInstance {
       if (results == null) throw new Error("could not match pattern:"+data);
       if (results[1] == null) throw new Error("could not match pattern:"+data);
       const wolframexpr = results[1];
+
+      // I believe that we should delete a type of of the same if it exists.
+      // In fact this is a meta-rule --- for some styles, there is only one style
+      // of a type allowed. It will be best to add that into the metaframework.
+      let kids = this.notebook.findChildStylesOfType(style.id, 'WOLFRAM');
+      for(const k of kids) {
+        const changeReq: StyleDeleteRequest = {
+          type: 'deleteStyle',
+          styleId: k.id
+        };
+        rval.push(changeReq);
+      }
 
       const styleProps: StylePropertiesWithSubprops = {
         type: 'WOLFRAM',

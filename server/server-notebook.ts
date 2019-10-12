@@ -359,6 +359,7 @@ export class ServerNotebook extends Notebook {
     throw new Error("Interal Errror on delete relationship");
   }
 
+
   private deleteStyleChanges(id: StyleId): NotebookChange[] {
     let changes: NotebookChange[] = [];
     // Delete substyles recursively
