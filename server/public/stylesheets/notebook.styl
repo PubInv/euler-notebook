@@ -159,7 +159,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 .tools
   width 80px
-  visibility hidden
+  visibility visible // visibility hidden --- there is a subtle bug here preventing event bubbling when visibility changes - rlr
 
 @media (hover: hover) {
   .thought:hover .tools { visibility: visible }
