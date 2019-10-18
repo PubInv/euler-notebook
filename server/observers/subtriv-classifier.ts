@@ -141,6 +141,7 @@ export class SubtrivClassifierObserver implements ObserverInstance {
     debug(`onChange ${this.notebook._path} ${change.type}`);
     switch (change.type) {
       case 'styleInserted':
+      case 'styleChanged':
         await this.subtrivariateClassifierRule(change.style, rval);
         break;
       case 'relationshipInserted':
@@ -176,6 +177,7 @@ export class SubtrivClassifierObserver implements ObserverInstance {
         type: 'CLASSIFICATION',
         data: isSubTrivariate,
         meaning: 'SUBTRIVARIATE',
+        exclusiveChildTypeAndMeaning: true,
       };
       const changeReq: StyleInsertRequest = {
         type: 'insertStyle',
@@ -261,6 +263,7 @@ export class SubtrivClassifierObserver implements ObserverInstance {
           type: 'CLASSIFICATION',
           data: isSubTrivariate,
           meaning: 'SUBTRIVARIATE',
+//          exclusiveChildTypeAndMeaning: true,
         }
         const changeReq: StyleInsertRequest = {
           type: 'insertStyle',

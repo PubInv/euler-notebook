@@ -27,6 +27,7 @@ import { NotebookChange, StyleObject, RelationshipObject, RelationshipProperties
          , StyleInserted, StyleChanged
        } from '../../client/notebook';
 import { SymbolData, WolframData, NotebookChangeRequest, StyleInsertRequest,
+         StyleDeleteRequest,
          StylePropertiesWithSubprops, RelationshipPropertiesMap,
          RelationshipInsertRequest,  isEmptyOrSpaces
 //         RelationshipDeleteRequest
@@ -205,141 +206,127 @@ export class SymbolClassifierObserver implements ObserverInstance {
   }
 
 
+
+  // Since a relationship may already exist and this code is trying to handle
+  // both inserts and changes, we have to decide how we make sure there are not duplicates.
+  // This is a little tricky, as we may be part of a chain. Possibly I should make a unit test
+  // for this, to test that a change does not result int
   private async insertRule(change: StyleInserted | StyleChanged, rval: NotebookChangeRequest[]) : Promise<NotebookChangeRequest[]>  {
-        const style = change.style;
+    const style = change.style;
 
     debug("AAAA in insertRule",change);
     var tlStyle;
     try {
-       tlStyle = this.notebook.topLevelStyleOf(style.id);
+      tlStyle = this.notebook.topLevelStyleOf(style.id);
     } catch (e) { // If we can't find a topLevelStyle, we have in
       // inconsistency most likely caused by concurrency in some way
     }
     if (!tlStyle) return rval;
-        const tlid = tlStyle.id;
-        // I believe listening only for the WOLFRAM/INPUT forces
-        // a serialization that we don't want to support. We also must
-        // listen for definition and use and handle them separately...
-        if (style.type == 'WOLFRAM' && style.meaning == 'INPUT' ||style.meaning == 'INPUT-ALT') {
-          await this.addSymbolUseStyles(style, rval);
-          await this.addSymbolDefStyles(style, rval);
-          debug("BBB rval",rval);
+    const tlid = tlStyle.id;
+    // I believe listening only for the WOLFRAM/INPUT forces
+    // a serialization that we don't want to support. We also must
+    // listen for definition and use and handle them separately...
+    if (style.type == 'WOLFRAM' && style.meaning == 'INPUT' ||style.meaning == 'INPUT-ALT') {
+      // at this point, we are doing a complete "recomputtion" based the use.
+      await this.addSymbolUseStyles(style, rval);
+      await this.addSymbolDefStyles(style, rval);
+      debug("BBB rval",rval);
+    }
+
+    if (style.type == 'SYMBOL' && (style.meaning == 'SYMBOL-USE' || style.meaning == 'SYMBOL-DEFINITION')) {
+      const name = (style.meaning == 'SYMBOL-USE') ?
+        style.data :
+        style.data.name;
+      const relationsUse: RelationshipPropertiesMap =
+        this.getAllMatchingNameAndType(name,'SYMBOL-USE');
+      const relationsDef: RelationshipPropertiesMap =
+        this.getAllMatchingNameAndType(name,'SYMBOL-DEFINITION');
+      const relations = (style.meaning == 'SYMBOL-USE') ? relationsDef : relationsUse;
+
+        var defs:number[] = [];
+      // @ts-ignore
+      for (const [idStr, _props] of Object.entries(relationsDef)) {
+        const v =  parseInt(idStr,10);
+        const tlidv = this.notebook.topLevelStyleOf(v).id;
+        if (tlidv < tlid)
+          defs.push(v);
+      }
+
+      // In reality, we need to order by Top level object!
+      // So when we have the ids, we have to sort by
+      // a function based on top-level object!
+      var uses:number[] = [];
+      // @ts-ignore
+      for (const [idStr, _props] of Object.entries(relationsUse)) {
+        const v =  parseInt(idStr,10);
+        const tlidv = this.notebook.topLevelStyleOf(v).id;
+        // This is a little weird; uses must occur AFTER their
+        // defintions, though this is very confusing
+        if (tlidv > tlid)
+          uses.push(v);
+      }
+
+      if (relations) {
+        const index = (style.meaning == 'SYMBOL-USE') ?
+          this.getLatestOfListOfStyleIds(defs) :
+          this.getLatestOfListOfStyleIds(uses);
+        if (index >= 0) {
+          const props : RelationshipProperties = { meaning: 'SYMBOL-DEPENDENCY' };
+
+
+          const changeReq: RelationshipInsertRequest =
+            { type: 'insertRelationship',
+              fromId:
+              (style.meaning == 'SYMBOL-USE') ?
+              index :
+              style.id,
+              toId:
+              (style.meaning == 'SYMBOL-USE') ?
+              style.id :
+              index,
+              props: props };
+          rval.push(
+            changeReq
+          );
         }
-        // I believe we need to explicitly add the relations here;
-        // which may mean that we could remove them from the code
-        // which adds them as part of the insertion, in order to
-        // create greater independence of responsibility
-        if (style.type == 'SYMBOL' && (style.meaning == 'SYMBOL-USE' || style.meaning == 'SYMBOL-DEFINITION')) {
-          const name = (style.meaning == 'SYMBOL-USE') ?
-            style.data :
-            style.data.name;
-          //          debug('name',name);
-          //          const lookFor = (style.meaning == 'SYMBOL-USE') ? 'SYMBOL-DEFINITION' :
-          //            'SYMBOL-USE';
-          const relationsUse: RelationshipPropertiesMap =
-            this.getAllMatchingNameAndType(name,'SYMBOL-USE');
-          const relationsDef: RelationshipPropertiesMap =
-            this.getAllMatchingNameAndType(name,'SYMBOL-DEFINITION');
-          const relations = (style.meaning == 'SYMBOL-USE') ? relationsDef :
-            relationsUse;
+      }
 
-          // TODO: These are using chronological order, not
-          // users-specified order
+      // So we run over all relationships that may be earlier
+      // and delete some of them....
 
-          // In reality, we need to order by Top level object!
-          // So when we have the ids, we have to sort by
-          // a function based on top-level object!
-          var defs:number[] = [];
-          // @ts-ignore
-          for (const [idStr, _props] of Object.entries(relationsDef)) {
-            const v =  parseInt(idStr,10);
-            const tlidv = this.notebook.topLevelStyleOf(v).id;
-            if (tlidv < tlid)
-              defs.push(v);
-          }
+      // Now we need to check for inconsistency;
+      if (style.meaning == 'SYMBOL-DEFINITION') {
 
-          // In reality, we need to order by Top level object!
-          // So when we have the ids, we have to sort by
-          // a function based on top-level object!
-          var uses:number[] = [];
-          // @ts-ignore
-          for (const [idStr, _props] of Object.entries(relationsUse)) {
-            const v =  parseInt(idStr,10);
-            const tlidv = this.notebook.topLevelStyleOf(v).id;
-            // This is a little weird; uses must occur AFTER their
-            // defintions, though this is very confusing
-            if (tlidv > tlid)
-              uses.push(v);
-          }
+        // In reality, we need to order by Top level object!
+        // So when we have the ids, we have to sort by
+        // a function based on top-level object!
+        var defs:number[] = [];
+        // @ts-ignore
+        for (const [idStr, _props] of Object.entries(relationsDef)) {
+          const v =  parseInt(idStr,10);
+          if (v < style.id)
+            defs.push(v);
+        }
+        if (defs.length >= 1) {
+          const dup_prop : RelationshipProperties =
+            { meaning: 'DUPLICATE-DEFINITION' };
 
-          if (relations) {
-            const index = (style.meaning == 'SYMBOL-USE') ?
-              this.getLatestOfListOfStyleIds(defs) :
-              this.getLatestOfListOfStyleIds(uses);
-            if (index >= 0) {
-              const props : RelationshipProperties = { meaning: 'SYMBOL-DEPENDENCY' };
+          const last_def = this.getLatestOfListOfStyleIds(defs);
 
-              const changeReq: RelationshipInsertRequest =
-                { type: 'insertRelationship',
-                  fromId:
-                  (style.meaning == 'SYMBOL-USE') ?
-                  index :
-                  style.id,
-                  toId:
-                  (style.meaning == 'SYMBOL-USE') ?
-                  style.id :
-                  index,
-                  props: props };
-              rval.push(
-                changeReq
-              );
-            }
-          }
-
-          // So we run over all relationships that may be earlier
-          // and delete some of them....
-
-          // Now we need to check for inconsistency;
-          if (style.meaning == 'SYMBOL-DEFINITION') {
-
-            // In reality, we need to order by Top level object!
-            // So when we have the ids, we have to sort by
-            // a function based on top-level object!
-            var defs:number[] = [];
+          if (last_def < style.id) {
             // @ts-ignore
-            for (const [idStr, _props] of Object.entries(relationsDef)) {
-              const v =  parseInt(idStr,10);
-              if (v < style.id)
-                defs.push(v);
-            }
-            //            const tops = this.notebook.topLevelStyleOrder();
-            //            debug("relationsDef",defs,defs.length);
-            //            debug("relationsDef",defs,defs.length);
-            if (defs.length >= 1) {
-              const dup_prop : RelationshipProperties =
-                { meaning: 'DUPLICATE-DEFINITION' };
-              //             const last_def = defs[defs.length-1];
-
-              //              const last_def_new = this.getLatestOfListOfStyleIds(defs);
-              const last_def = this.getLatestOfListOfStyleIds(defs);
-              //              console.log("LAST_OLD, LAST_NEW",last_def, last_def_new);
-
-              if (last_def < style.id) {
-                // @ts-ignore
-                const changeReq: RelationshipInsertRequest =
-                  { type: 'insertRelationship',
-                    fromId: last_def,
-                    toId: style.id,
-                    props: dup_prop };
-//                console.log("PUSHHHHH BBB",changeReq);
-                rval.push(
-                  changeReq
-                );
-              }
-            }
+            const changeReq: RelationshipInsertRequest =
+              { type: 'insertRelationship',
+                fromId: last_def,
+                toId: style.id,
+                props: dup_prop };
+            rval.push(
+              changeReq
+            );
           }
-          //        console.log("RVAL",rval);
         }
+      }
+    }
     debug("END of INSERT rval",rval);
     return rval;
   }
@@ -405,6 +392,7 @@ export class SymbolClassifierObserver implements ObserverInstance {
             type: 'SYMBOL',
             data,
             meaning: 'SYMBOL-DEFINITION',
+            exclusiveChildTypeAndMeaning: true,
             relationsTo,
           }
         } else {
@@ -523,9 +511,29 @@ export class SymbolClassifierObserver implements ObserverInstance {
     }
     return relationsFrom;
   }
-private async  addSymbolUseStyles(style: StyleObject, rval: NotebookChangeRequest[]): Promise<void> {
+  // There is only one "def", so we can handle that by exclusivity of the children, but in the case
+  // of the uses, there may be more than one use. We therefore have little choice but to delete all
+  // SYMBOL-USE / SYMBOL children before add these in.
+  private async removeAllCurrentUses(style: StyleObject, rval: NotebookChangeRequest[]): Promise<void> {
+    const children = this.notebook.findChildStylesOfType(style.id,
+                                                         'SYMBOL');
+
+    children.forEach( kid => {
+      if ((kid.parentId == style.id) &&
+          (kid.type == 'SYMBOL') &&
+          (kid.meaning == 'SYMBOL-USE')) {
+        const deleteReq : StyleDeleteRequest = { type: 'deleteStyle',
+                                                 styleId: kid.id };
+        rval.push(deleteReq);
+      };
+    });
+
+  }
+  private async  addSymbolUseStyles(style: StyleObject, rval: NotebookChangeRequest[]): Promise<void> {
+    await this.removeAllCurrentUses(style,rval);
     await this.addSymbolUseStylesFromString(style.data, style, rval);
   }
+
   private async  addSymbolUseStylesFromString(data: string,style: StyleObject, rval: NotebookChangeRequest[]): Promise<void> {
     const symbols = await this.findSymbols(data);
     debug("SSS USES",data,symbols);

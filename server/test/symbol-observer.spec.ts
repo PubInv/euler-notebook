@@ -30,6 +30,7 @@ import { NotebookChange,  StyleObject, RelationshipObject,
          StyleId
        } from '../../client/notebook';
 import { NotebookChangeRequest, StyleInsertRequest,
+         StyleChangeRequest,
          StyleDeleteRequest, StylePropertiesWithSubprops
        } from '../../client/math-tablet-api';
 import { ServerNotebook, ObserverInstance }  from '../server-notebook';
@@ -262,6 +263,31 @@ describe("test symbol observer", function() {
       assert.equal(ru.meaning,'DUPLICATE-DEFINITION');
       assert.equal(rd.meaning,'SYMBOL-DEPENDENCY');
     });
+    it.only("An input and change does produces only one relationhsip",async function(){
+      const data:string[] = [
+        "X = 4",
+        "X^2 + Y"];
+      const changeRequests = generateInsertRequests(data);
+
+      await serializeChangeRequests(notebook,changeRequests);
+
+      // Now that we have this, the Final one, X^2, should evaulte to 36
+      assert.equal(1,notebook.allRelationships().length);
+
+      const rd : RelationshipObject = notebook.allRelationships()[0];
+      const fromId = rd.fromId;
+
+      const cr: StyleChangeRequest = {
+        type: 'changeStyle',
+        styleId: fromId,
+        data: "X = 5",
+      };
+      await serializeChangeRequests(notebook,[cr]);
+
+      assert.equal(1,notebook.allRelationships().length);
+
+    });
+
     it("three defs cause the final one to be used",async function(){
       const data:string[] = [
         "X = 4",
