@@ -253,6 +253,8 @@ export class MathematicaObserver implements ObserverInstance {
   // REVIEW: This does not need to be exported, as it does not occur anywhere else in the source.
   private async mathMathematicaRule(style: StyleObject): Promise<NotebookChangeRequest[]> {
 
+
+    // TODO: Woflram evaluation is an "only child rule"
     debug("INSIDE RULE :",style);
     // We only extract symbols from Wolfram expressions that are user input.
     if (style.type != 'WOLFRAM') { return []; }
@@ -331,6 +333,7 @@ export class MathematicaObserver implements ObserverInstance {
         type: 'WOLFRAM',
         data: <string>result,
         meaning: 'EVALUATION',
+        exclusiveChildTypeAndMeaning: true,
       }
       const cr2: StyleInsertRequest = {
         type: 'insertStyle',
@@ -392,7 +395,8 @@ export class MathematicaObserver implements ObserverInstance {
       const styleProps: StylePropertiesWithSubprops = {
         type: 'TEXT',
         meaning: 'EVALUATION-ERROR',
-        data: `Cannot convert to Wolfram expression: ${err.message}`
+        data: `Cannot convert to Wolfram expression: ${err.message}`,
+        exclusiveChildTypeAndMeaning: true,
       };
       const cr: StyleInsertRequest = {
         type: 'insertStyle',

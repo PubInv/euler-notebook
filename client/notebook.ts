@@ -324,7 +324,6 @@ export class Notebook {
       throw new Error("INTERNAL ERROR: did not produce ancenstor: ");
     }
     rs.forEach(r => {
-      console.log("r.toId ", r.toId);
       const rp = this.topLevelStyleOf(r.toId);
       if (!rp) {
         console.error("INTERNAL ERROR: did not produce ancenstor: ",style.id);
@@ -454,6 +453,7 @@ export class Notebook {
   }
 
   private insertStyle(style: StyleObject, afterId?: StyleRelativePosition): void {
+
     this.styleMap[style.id] = style;
     // Insert top-level styles in the style order.
     if (!style.parentId) {

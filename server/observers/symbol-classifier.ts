@@ -209,7 +209,14 @@ export class SymbolClassifierObserver implements ObserverInstance {
         const style = change.style;
 
     debug("AAAA in insertRule",change);
-        const tlid = this.notebook.topLevelStyleOf(style.id).id;
+    var tlStyle;
+    try {
+       tlStyle = this.notebook.topLevelStyleOf(style.id);
+    } catch (e) { // If we can't find a topLevelStyle, we have in
+      // inconsistency most likely caused by concurrency in some way
+    }
+    if (!tlStyle) return rval;
+        const tlid = tlStyle.id;
         // I believe listening only for the WOLFRAM/INPUT forces
         // a serialization that we don't want to support. We also must
         // listen for definition and use and handle them separately...

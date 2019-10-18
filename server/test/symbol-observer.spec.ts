@@ -30,7 +30,8 @@ import { NotebookChange,  StyleObject, RelationshipObject,
          StyleId
        } from '../../client/notebook';
 import { NotebookChangeRequest, StyleInsertRequest,
-         StyleDeleteRequest } from '../../client/math-tablet-api';
+         StyleDeleteRequest, StylePropertiesWithSubprops
+       } from '../../client/math-tablet-api';
 import { ServerNotebook, ObserverInstance }  from '../server-notebook';
 
 import { SymbolClassifierObserver } from '../observers/symbol-classifier';
@@ -139,6 +140,56 @@ describe("test symbol observer", function() {
 
 
   describe("observer", function(){
+    // Note: Doing this for WOLFRAM / INPUT is not really
+    // the intended use case for our "exclusivity", but it will serve.
+    it("two insert requests, if marked exclusive, only produce one child", async function(){
+      const data:string[] = [
+        "X = 4"];
+      const changeRequests = generateInsertRequests(data);
+
+
+      await notebook.requestChanges('TEST', [changeRequests[0]]);
+      const style = notebook.topLevelStyleOf(1);
+      assert.deepEqual(style.type,'WOLFRAM');
+
+      // Now we want to try to create two child requests,
+      // and see that only one is created
+      const fake_result = "4";
+      const styleProps1: StylePropertiesWithSubprops = {
+        type: 'WOLFRAM',
+        data: <string>fake_result,
+        meaning: 'EVALUATION',
+        exclusiveChildTypeAndMeaning: true,
+      }
+      const cr1: StyleInsertRequest = {
+        type: 'insertStyle',
+        parentId: style.id,
+        styleProps: styleProps1,
+      };
+
+      const styleProps2: StylePropertiesWithSubprops = {
+        type: 'WOLFRAM',
+        data: <string>fake_result,
+        meaning: 'EVALUATION',
+        exclusiveChildTypeAndMeaning: true,
+      }
+      const cr2: StyleInsertRequest = {
+        type: 'insertStyle',
+        parentId: style.id,
+        styleProps: styleProps2,
+      };
+      await notebook.requestChanges('TEST', [cr1,cr2]);
+
+      // Now we want to assert that "style" has only one WOLFRAM EVALUATION
+      // child.
+      const children = notebook.findChildStylesOfType(style.id,
+                                                      'WOLFRAM');
+      const properChildren = children.filter(c => (c.parentId == style.id));
+      console.log("children:",properChildren);
+      assert(properChildren.length == 1,"There should be one child, but there are:"+children.length);
+
+    });
+
     it("a definition and a use creates a relationship if separate", async function(){
 
       const changeRequests = [insertRequest[0],insertRequest[1]];
