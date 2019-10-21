@@ -109,100 +109,112 @@ export class SymbolClassifierObserver implements ObserverInstance {
   }
 
   private async deleteRule(change: StyleDeleted, rval: NotebookChangeRequest[]) : Promise<void>  {
-        // TODO: Implementing this is perhaps the highest priority.
+    // TODO: Implementing this is perhaps the highest priority.
 
-        // If this is a definition, there is considerable work
-        // to do.
-        // In this case, uses of this definition need to be removed,
-        // but possibly re-routed to any now uncovered defintions which
-        // this removal may make valid.
-        // If this is the target of a duplicat-definition relationship
-        // that relationship can be removed; however, a more recent
-        // definition might now be a duplication of an ealier definition.
-        // Anything which has a tex-formatter after this may need
-        // to be refreshed, which may create a new set of refreshments.
-        // that appears to be accomplished by deleting and then inserting
-        // relationships, so perhaps that is easy.
+    // If this is a definition, there is considerable work
+    // to do.
+    // In this case, uses of this definition need to be removed,
+    // but possibly re-routed to any now uncovered defintions which
+    // this removal may make valid.
+    // If this is the target of a duplicat-definition relationship
+    // that relationship can be removed; however, a more recent
+    // definition might now be a duplication of an ealier definition.
+    // Anything which has a tex-formatter after this may need
+    // to be refreshed, which may create a new set of refreshments.
+    // that appears to be accomplished by deleting and then inserting
+    // relationships, so perhaps that is easy.
 
-        // As a useful invariant, we want to keep everything correct
-        // up to a given thought order. So finding the earliest affected
-        // thought order is probably a good starting point. In fact
-        // it is clear that we can compute a graph of the top-level thoughts;
-        // I personally suspect reifying that graph entirely is a good idea
-        // but I will try to avoid that for the time being. - rlr
+    // As a useful invariant, we want to keep everything correct
+    // up to a given thought order. So finding the earliest affected
+    // thought order is probably a good starting point. In fact
+    // it is clear that we can compute a graph of the top-level thoughts;
+    // I personally suspect reifying that graph entirely is a good idea
+    // but I will try to avoid that for the time being. - rlr
 
 
-        // Because we have set up our definition to be chains (unbranching)
-        // we can make a basic decision: Does there exist an earlier
-        // defintion?  If not, we just remove all use relationships.
-        // If so, we remove all use relationships and reconstruct them.
-        // So our basic algorithm is to delete D is:
-        // Find all use relationships U
-        // Extract all target (use) style ids S
-        // Delete all relationships in U
-        // If D is the target of a duplicate dependency (A->D),
-        // Then insert relationships from A to (s in S) for all s.
-        const style = change.style;
-//        console.log("DELETION CHANGE",change);
-        if (style.type == 'SYMBOL' && (style.meaning == 'SYMBOL-USE' || style.meaning == 'SYMBOL-DEFINITION')) {
+    // Because we have set up our definition to be chains (unbranching)
+    // we can make a basic decision: Does there exist an earlier
+    // defintion?  If not, we just remove all use relationships.
+    // If so, we remove all use relationships and reconstruct them.
+    // So our basic algorithm is to delete D is:
+    // Find all use relationships U
+    // Extract all target (use) style ids S
+    // Delete all relationships in U
+    // If D is the target of a duplicate dependency (A->D),
+    // Then insert relationships from A to (s in S) for all s.
+    const style = change.style;
+    //        console.log("DELETION CHANGE",change);
+    if (style.type == 'SYMBOL' && (style.meaning == 'SYMBOL-USE' || style.meaning == 'SYMBOL-DEFINITION')) {
 
-          if (style.meaning == 'SYMBOL-DEFINITION') {
-            const did = change.style.id;
-//            console.log("change.style",change.style);
+      if (style.meaning == 'SYMBOL-DEFINITION') {
+        const did = change.style.id;
 
-            // not this is nullable, and is a Relationship.
-            var duplicateof : RelationshipObject | undefined;
-            const rs = this.notebook.allRelationships();
-            rs.forEach(r => {
-              if ((r.toId == did) && r.meaning == 'DUPLICATE-DEFINITION') {
-                if (duplicateof != null) {
-                  debug("INTERNAL ERROR: Linearity of defintions broken1!");
-                  throw new Error("INTERNAL ERROR: Linearity of defintions broken1!"+r);
-                }
-                duplicateof = r;
-              }
-            });
-//          console.log("rs = ",rs);
-
-            const U = this.notebook.getSymbolStylesThatDependOnMe(change.style);
-//            console.log("U = ",U);
-            const users : number[] = [];
-            for(const u of U) {
-              users.push(u.id);
+        // not this is nullable, and is a Relationship.
+        var duplicateof : RelationshipObject | undefined;
+        const rs = this.notebook.allRelationships();
+        rs.forEach(r => {
+          if ((r.toId == did) && r.meaning == 'DUPLICATE-DEFINITION') {
+            if (duplicateof != null) {
+              debug("INTERNAL ERROR: Linearity of defintions broken1!");
+              throw new Error("INTERNAL ERROR: Linearity of defintions broken1!"+r);
             }
-            const rids = new Set<number>();
-            for(const r of rs) {
-              if ((r.fromId == did) || (r.toId == did)) {
-//                console.log("pushing delete of relationship:",r,r.id);
-//                rval.push({ type: 'deleteRelationship',
-//                            id: r.id });
-                rids.add(r.id);
-              }
-            }
-            debug("RIDS = ",rids);
-            console.log("users of me",users);
-            console.log("duplicateof",duplicateof);
-            if (!(duplicateof === undefined)) {
-              rids.add(duplicateof.id);
-//              rval.push({ type: 'deleteRelationship',
-//                          id: duplicateof.id });
-              for(const u of users) {
-                const props : RelationshipProperties = { meaning: 'SYMBOL-DEPENDENCY' };
-//                console.log("pushing insert, from, to",duplicateof.fromId,u);
-                rval.push({ type: 'insertRelationship',
-                            fromId: duplicateof.fromId,
-                            toId: u,
-                            props: props,
-                          });
-              }
-            }
-            rids.forEach(id => rval.push({ type: 'deleteRelationship',
-                                           id: id }));
+            duplicateof = r;
+          }
+        });
+
+        const U = this.notebook.getSymbolStylesThatDependOnMe(change.style);
+        const users : number[] = [];
+        for(const u of U) {
+          users.push(u.id);
+        }
+        const rids = new Set<number>();
+        for(const r of rs) {
+          if ((r.fromId == did) || (r.toId == did)) {
+            rids.add(r.id);
           }
         }
-        // If this style has uses reaching it, those relationships
-        // should be removed.
-        debug("RVAL ====XXXX",rval);
+        debug("RIDS = ",rids);
+        console.log("users of me",users);
+        console.log("duplicateof",duplicateof);
+        if (!(duplicateof === undefined)) {
+          rids.add(duplicateof.id);
+          for(const u of users) {
+            const props : RelationshipProperties = { meaning: 'SYMBOL-DEPENDENCY' };
+            rval.push({ type: 'insertRelationship',
+                        fromId: duplicateof.fromId,
+                        toId: u,
+                        props: props,
+                      });
+          }
+        }
+        rids.forEach(id => rval.push({ type: 'deleteRelationship',
+                                       id: id }));
+      } else if  (style.meaning == 'SYMBOL-USE') {
+        // Note: Deleting a use shold be simpler; a use is not a definition.
+        // We have already insisted that the code keep a linear chain
+        // of relationships; no matter what the definition chain, the
+        // use just gets rid of the relationships that use it.
+        const did = change.style.id;
+        // note this is nullable, and is a Relationship.
+        var singleuseof : RelationshipObject | undefined;
+        const rs = this.notebook.allRelationships();
+        rs.forEach(r => {
+          if ((r.toId == did)) {
+            if (singleuseof != null) {
+              debug("INTERNAL ERROR: Linearity of defintions broken1!");
+              throw new Error("INTERNAL ERROR: Linearity of defintions broken1!"+r);
+            }
+            singleuseof = r;
+          }
+        });
+        if (singleuseof)
+          rval.push({ type: 'deleteRelationship',
+                      id: singleuseof.id });
+      }
+    }
+    // If this style has uses reaching it, those relationships
+    // should be removed.
+    debug("RVAL ====XXXX",rval);
   }
 
 

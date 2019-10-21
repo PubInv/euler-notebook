@@ -263,7 +263,7 @@ describe("test symbol observer", function() {
       assert.equal(ru.meaning,'DUPLICATE-DEFINITION');
       assert.equal(rd.meaning,'SYMBOL-DEPENDENCY');
     });
-    it.only("An input and change does produces only one relationhsip",async function(){
+    it("An input and change does produces only one relationhsip",async function(){
       const data:string[] = [
         "X = 4",
         "X^2 + Y"];
@@ -276,6 +276,7 @@ describe("test symbol observer", function() {
 
       const rd : RelationshipObject = notebook.allRelationships()[0];
       const fromId = rd.fromId;
+      console.log("YYYYYYYYYYY to Id",rd.toId);
 
       const cr: StyleChangeRequest = {
         type: 'changeStyle',
@@ -286,6 +287,54 @@ describe("test symbol observer", function() {
 
       assert.equal(1,notebook.allRelationships().length);
 
+    });
+
+    it("Deleting a use correctly deletes relationships.",async function(){
+      const data:string[] = [
+        "X = 4",
+        "X^2 + Y"];
+      const changeRequests = generateInsertRequests(data);
+
+      await serializeChangeRequests(notebook,changeRequests);
+
+      // Now that we have this, the Final one, X^2, should evaulte to 36
+      assert.equal(1,notebook.allRelationships().length);
+
+      const rd : RelationshipObject = notebook.allRelationships()[0];
+      const toId = rd.toId;
+
+      const cr: StyleDeleteRequest = {
+        type: 'deleteStyle',
+        styleId: toId,
+      };
+      await serializeChangeRequests(notebook,[cr]);
+      assert.equal(0,notebook.allRelationships().length);
+    });
+
+    // Note: I'm leaving this in because it is an example of
+    // where the serialization works, but the performing all
+    // requests doesn't. However, nobody ever really deletes
+    // a use in the same instant it is inserted, so this
+    // should be considered a strange case!
+    it.skip("Deleting a use without serialization correctly deletes relationships.",async function(){
+      const data:string[] = [
+        "X = 4",
+        "X^2 + Y"];
+      const changeRequests = generateInsertRequests(data);
+
+      // This was experimentally deteremined!!
+      const toId = 6;
+      const cr: StyleDeleteRequest = {
+        type: 'deleteStyle',
+        styleId: toId,
+      };
+
+      // This will fail
+      await notebook.requestChanges('TEST',[...changeRequests,cr]);
+      // This will work
+//      await serializeChangeRequests(notebook,[...changeRequests,cr]);
+
+      assert.equal(0,notebook.allRelationships().length);
     });
 
     it("three defs cause the final one to be used",async function(){
