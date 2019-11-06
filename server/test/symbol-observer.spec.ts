@@ -31,6 +31,7 @@ import { NotebookChange,  StyleObject, RelationshipObject,
        } from '../../client/notebook';
 import { NotebookChangeRequest, StyleInsertRequest,
          StyleChangeRequest,
+         StyleMoveRequest,
          StyleDeleteRequest, StylePropertiesWithSubprops
        } from '../../client/math-tablet-api';
 import { ServerNotebook, ObserverInstance }  from '../server-notebook';
@@ -39,6 +40,7 @@ import { SymbolClassifierObserver } from '../observers/symbol-classifier';
 import { EquationSolverObserver } from '../observers/equation-solver';
 import { MathematicaObserver } from '../observers/mathematica-cas';
 import { TeXFormatterObserver } from '../observers/tex-formatter';
+import { AnyInputObserver } from '../observers/any-input';
 import { start as startWolframscript } from '../observers/wolframscript';
 import { Config, getConfig } from '../config';
 // Test Observer
@@ -116,12 +118,15 @@ describe("test symbol observer", function() {
     }
 
     // Register the observer
+    // TODO: It would be nice to be able to de-register
+    // somthing to make things easier when we are testing.
     ServerNotebook.registerObserver('TEST', TestObserver);
     // We are specifically testing this one...
     ServerNotebook.registerObserver('SYMBOL-CLASSIFIER', SymbolClassifierObserver);
     ServerNotebook.registerObserver('MATHEMATICA', MathematicaObserver);
     ServerNotebook.registerObserver('EQUATION-SOLVER', EquationSolverObserver);
     ServerNotebook.registerObserver('TEX-FORMATTER', TeXFormatterObserver);
+    ServerNotebook.registerObserver('ANY-INPUT', AnyInputObserver);
 
 
   });
@@ -288,6 +293,31 @@ describe("test symbol observer", function() {
       assert.equal(1,notebook.allRelationships().length);
 
     });
+    it("An input and change does produces only one relationhsip",async function(){
+      const data:string[] = [
+        "X = 4",
+        "X^2 + Y"];
+      const changeRequests = generateInsertRequests(data);
+
+      await serializeChangeRequests(notebook,changeRequests);
+
+      // Now that we have this, the Final one, X^2, should evaulte to 36
+      assert.equal(1,notebook.allRelationships().length);
+
+      const rd : RelationshipObject = notebook.allRelationships()[0];
+      const fromId = rd.fromId;
+      console.log("YYYYYYYYYYY to Id",rd.toId);
+
+      const cr: StyleChangeRequest = {
+        type: 'changeStyle',
+        styleId: fromId,
+        data: "X = 5",
+      };
+      await serializeChangeRequests(notebook,[cr]);
+
+      assert.equal(1,notebook.allRelationships().length);
+
+    });
 
     it("Deleting a use correctly deletes relationships.",async function(){
       const data:string[] = [
@@ -309,6 +339,26 @@ describe("test symbol observer", function() {
       };
       await serializeChangeRequests(notebook,[cr]);
       assert.equal(0,notebook.allRelationships().length);
+    });
+    it.only("Relationships can be completely recomputed",async function(){
+      // const data:string[] = [
+      //   "X = 4",
+      //   "X = 5",
+      //   "Y = 6",
+      //   "X^2 + Y"];
+      const data:string[] = [
+        "X = 1",
+        "X = 2",
+        "X^2"];
+      const changeRequests = generateInsertRequests(data);
+
+      await serializeChangeRequests(notebook,changeRequests);
+      console.log("NOTEBOOK",notebook);
+
+      // We want to compute relationship computation...
+      const rels = notebook.recomputeAllSymbolRelationships();
+      assert.equal(notebook.allRelationships().length,rels.length);
+      console.log("RELATIONSHIPS",rels);
     });
 
     // Note: I'm leaving this in because it is an example of
@@ -366,6 +416,8 @@ describe("test symbol observer", function() {
                                                       'LATEX');
       const texformatter = children[0];
       assert.equal('Y = 36',texformatter.data);
+      const rels = notebook.recomputeAllSymbolRelationships();
+      assert.equal(notebook.allRelationships().length,rels.length);
 
     });
     it("getSymbolStylesThatDependOnMe works",async function(){
@@ -453,13 +505,63 @@ describe("test symbol observer", function() {
         const lasttex = texformatOfLastThought(notebook);
 
         assert.equal('Y = '+(i+2)*(i+2),lasttex);
+        const rels = notebook.recomputeAllSymbolRelationships();
+        assert.equal(notebook.allRelationships().length,rels.length);
       }
 
       // Now we must delete objects!!!
     });
-    // it("imposing inserted defintion in inconsistencies maintains chain")
-    // it("deletion keeeps chain connected")
-    // it("reordering of inserts correctly changes order of change")
-    // it(" ")
+
+    it("reorderings are supported",async function(){
+  //    const NUM = 2;
+      let data:string[] = [];
+      notebook.deRegisterObserver('MATHEMATICA');
+      notebook.deRegisterObserver('EQUATION-SOLVER');
+      notebook.deRegisterObserver('TEX-FORMATTER');
+
+//      for(var i = 0; i < NUM; i++) {
+//        data[i] = "X = "+(i+3);
+      //      }
+      data.push("X = 1");
+      data.push("X = 2");
+      data.push("Y = X^2");
+      const insertRequests = generateInsertRequests(data);
+      await serializeChangeRequests(notebook,insertRequests);
+
+      // Okay, now we have a bunch of assignments set up.
+      // The simplest thing is to take the last one and
+      // move it in relative order, then test that
+      // we have updated the orders correctly.
+
+      let penultimate = getThought(notebook,-2);
+      let initialThought = getThought(notebook,0);
+      console.log("penultimate id",penultimate);
+      console.log("initial",initialThought);
+      const moveRequest : StyleMoveRequest = { type: 'moveStyle',
+                                                 styleId: penultimate,
+                                                 afterId: 0
+                                               };
+
+
+      console.log("BEFORE MOVE REQUEST",notebook);
+
+      // TODO: it think these are wrong:
+      console.error("PRE TLS",notebook.topLevelStyleOrder());
+      await serializeChangeRequests(notebook,[moveRequest]);
+
+      console.error("POST TLS",notebook.topLevelStyleOrder());
+      const rel_r =  notebook.allRelationships();
+      const rel_recomp = notebook.recomputeAllSymbolRelationships();
+
+      console.error("notebook.allRelationships()", rel_r);
+      console.error("notebook.recomputeAllSymbolRelationships()",rel_recomp );
+      console.log("AFTER MOVE REQUEST",notebook);
+      // TODO: I believe at least one error here is that after this operation
+      // the top-level styles no long match; this should not happen!
+      console.log("ICREMENTAL, RECOMPUT",rel_r.length,
+                   rel_recomp.length);
+      assert.equal(rel_r.length,
+                   rel_recomp.length);
+    });
   });
 });

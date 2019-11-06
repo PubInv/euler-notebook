@@ -408,5 +408,4 @@ export class MathematicaObserver implements ObserverInstance {
 
     return rval;
   }
-
 }

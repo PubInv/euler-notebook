@@ -23,13 +23,16 @@ import * as debug1 from 'debug';
 const MODULE = __filename.split(/[/\\]/).slice(-1)[0].slice(0,-3);
 const debug = debug1(`server:${MODULE}`);
 
-import { NotebookChange, StyleObject, RelationshipObject, RelationshipProperties, StyleDeleted
-         , StyleInserted, StyleChanged
+import { NotebookChange, StyleObject, StyleId,
+         RelationshipObject, RelationshipProperties,
+         StyleDeleted,
+         StyleMoved,
+         StyleInserted, StyleChanged
        } from '../../client/notebook';
 import { SymbolData, WolframData, NotebookChangeRequest, StyleInsertRequest,
          StyleDeleteRequest,
          StylePropertiesWithSubprops, RelationshipPropertiesMap,
-         RelationshipInsertRequest,  isEmptyOrSpaces
+         RelationshipInsertRequest,  isEmptyOrSpaces,
 //         RelationshipDeleteRequest
        } from '../../client/math-tablet-api';
 import { ServerNotebook, ObserverInstance } from '../server-notebook';
@@ -109,45 +112,18 @@ export class SymbolClassifierObserver implements ObserverInstance {
   }
 
   private async deleteRule(change: StyleDeleted, rval: NotebookChangeRequest[]) : Promise<void>  {
-    // TODO: Implementing this is perhaps the highest priority.
 
-    // If this is a definition, there is considerable work
-    // to do.
-    // In this case, uses of this definition need to be removed,
-    // but possibly re-routed to any now uncovered defintions which
-    // this removal may make valid.
-    // If this is the target of a duplicat-definition relationship
-    // that relationship can be removed; however, a more recent
-    // definition might now be a duplication of an ealier definition.
-    // Anything which has a tex-formatter after this may need
-    // to be refreshed, which may create a new set of refreshments.
-    // that appears to be accomplished by deleting and then inserting
-    // relationships, so perhaps that is easy.
-
-    // As a useful invariant, we want to keep everything correct
-    // up to a given thought order. So finding the earliest affected
-    // thought order is probably a good starting point. In fact
-    // it is clear that we can compute a graph of the top-level thoughts;
-    // I personally suspect reifying that graph entirely is a good idea
-    // but I will try to avoid that for the time being. - rlr
-
-
-    // Because we have set up our definition to be chains (unbranching)
-    // we can make a basic decision: Does there exist an earlier
-    // defintion?  If not, we just remove all use relationships.
-    // If so, we remove all use relationships and reconstruct them.
-    // So our basic algorithm is to delete D is:
-    // Find all use relationships U
-    // Extract all target (use) style ids S
-    // Delete all relationships in U
-    // If D is the target of a duplicate dependency (A->D),
-    // Then insert relationships from A to (s in S) for all s.
     const style = change.style;
-    //        console.log("DELETION CHANGE",change);
     if (style.type == 'SYMBOL' && (style.meaning == 'SYMBOL-USE' || style.meaning == 'SYMBOL-DEFINITION')) {
+      this.deleteRelationships(style, rval);
+    }
+  }
 
+  private async deleteRelationships(style: StyleObject, rval: NotebookChangeRequest[]) : Promise<void>  {
+
+    debug("style.meaing",style.meaning);
       if (style.meaning == 'SYMBOL-DEFINITION') {
-        const did = change.style.id;
+        const did = style.id;
 
         // not this is nullable, and is a Relationship.
         var duplicateof : RelationshipObject | undefined;
@@ -162,7 +138,7 @@ export class SymbolClassifierObserver implements ObserverInstance {
           }
         });
 
-        const U = this.notebook.getSymbolStylesThatDependOnMe(change.style);
+        const U = this.notebook.getSymbolStylesThatDependOnMe(style);
         const users : number[] = [];
         for(const u of U) {
           users.push(u.id);
@@ -194,7 +170,7 @@ export class SymbolClassifierObserver implements ObserverInstance {
         // We have already insisted that the code keep a linear chain
         // of relationships; no matter what the definition chain, the
         // use just gets rid of the relationships that use it.
-        const did = change.style.id;
+        const did = style.id;
         // note this is nullable, and is a Relationship.
         var singleuseof : RelationshipObject | undefined;
         const rs = this.notebook.allRelationships();
@@ -211,10 +187,9 @@ export class SymbolClassifierObserver implements ObserverInstance {
           rval.push({ type: 'deleteRelationship',
                       id: singleuseof.id });
       }
-    }
     // If this style has uses reaching it, those relationships
     // should be removed.
-    debug("RVAL ====XXXX",rval);
+    debug("RVAL deletion ====XXXX",rval);
   }
 
 
@@ -244,6 +219,15 @@ export class SymbolClassifierObserver implements ObserverInstance {
       await this.addSymbolDefStyles(style, rval);
       debug("BBB rval",rval);
     }
+    this.recomputeRelationships(tlid,style,rval);
+    return rval;
+  }
+
+  private async recomputeRelationships(tlid: StyleId,
+                                       style: StyleObject,
+                                       rval: NotebookChangeRequest[])
+  : Promise<NotebookChangeRequest[]>
+  {
 
     if (style.type == 'SYMBOL' && (style.meaning == 'SYMBOL-USE' || style.meaning == 'SYMBOL-DEFINITION')) {
       const name = (style.meaning == 'SYMBOL-USE') ?
@@ -255,6 +239,12 @@ export class SymbolClassifierObserver implements ObserverInstance {
         this.getAllMatchingNameAndType(name,'SYMBOL-DEFINITION');
       const relations = (style.meaning == 'SYMBOL-USE') ? relationsDef : relationsUse;
 
+      // defs and uses below are ment to be toplevel styles that participate in
+      // a definition or a use
+
+      // I believe these two pieces of code rely on the principle that only
+      // thoughts that are previous to us can affect us. This may not work for the case
+      // of a reordering.
         var defs:number[] = [];
       // @ts-ignore
       for (const [idStr, _props] of Object.entries(relationsDef)) {
@@ -278,6 +268,11 @@ export class SymbolClassifierObserver implements ObserverInstance {
           uses.push(v);
       }
 
+      debug("defs",defs);
+      debug("uses",uses);
+      debug("rels",relations);
+
+      // I've completely forgotten what I intended here. This makes little sense now.
       if (relations) {
         const index = (style.meaning == 'SYMBOL-USE') ?
           this.getLatestOfListOfStyleIds(defs) :
@@ -303,8 +298,7 @@ export class SymbolClassifierObserver implements ObserverInstance {
         }
       }
 
-      // So we run over all relationships that may be earlier
-      // and delete some of them....
+
 
       // Now we need to check for inconsistency;
       if (style.meaning == 'SYMBOL-DEFINITION') {
@@ -342,6 +336,36 @@ export class SymbolClassifierObserver implements ObserverInstance {
     debug("END of INSERT rval",rval);
     return rval;
   }
+
+  private async moveRule(change: StyleMoved, rval: NotebookChangeRequest[]) : Promise<NotebookChangeRequest[]>  {
+    debug("AAAA in moveRule",change);
+    console.log("move (old) to (new)",change.oldPosition,change.newPosition);
+
+    // Our basic algorithm here is:
+    // Delete all realtionships that we use or that use the moved style.
+    // Invoke insert rule for the style style in the new position.
+    // If we are a definition, invoke the insert rule for any definition
+    // which we were a duplicate of.
+
+    const style = this.notebook.getStyleById(change.styleId);
+    this.deleteRelationships(style, rval);
+    var tlStyle;
+    try {
+      tlStyle = this.notebook.topLevelStyleOf(style.id);
+    } catch (e) { // If we can't find a topLevelStyle, we have in
+      // inconsistency most likely caused by concurrency in some way
+    }
+    if (!tlStyle) return rval;
+    const tlid = tlStyle.id;
+    this.recomputeRelationships(tlid,style,rval);
+
+
+
+    // Note, I am not removing any duplicates; I am not sure if that is needed yet.
+
+
+    return rval;
+  }
   private async onChange(change: NotebookChange, rval: NotebookChangeRequest[]): Promise<void> {
     if (change == null) return;
 
@@ -349,6 +373,10 @@ export class SymbolClassifierObserver implements ObserverInstance {
     switch (change.type) {
       case 'styleDeleted': {
         this.deleteRule(change,rval);
+        break;
+      }
+      case 'styleMoved': {
+        this.moveRule(change,rval);
         break;
       }
       case 'styleChanged': {
@@ -362,8 +390,6 @@ export class SymbolClassifierObserver implements ObserverInstance {
         break;
         }
     }
-    debug("XXXXXX insert RVAL =========",rval);
-    debug("RVAL =========",rval);
   }
 
   // refactor this to be style independent so that we can figure it out later

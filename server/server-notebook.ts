@@ -189,6 +189,10 @@ export class ServerNotebook extends Notebook {
     this._observers.set(source, instance);
   }
 
+  public deRegisterObserver(source: StyleSource): void {
+    this._observers.delete(source);
+  }
+
   public async requestChanges(
     source: StyleSource,
     changeRequests: NotebookChangeRequest[],
@@ -330,7 +334,11 @@ export class ServerNotebook extends Notebook {
         debug('insertStyle in convert Change',source,changeRequest);
         return this.insertStyleChanges(source, changeRequest);
       case 'moveStyle':
-        return [ this.moveStyleChange(source, changeRequest) ];
+        const msc = this.moveStyleChange(source, changeRequest);
+        if (msc)
+          return [ msc ];
+        else
+          return [];
       default:
         throw new Error("Unexpected.");
     }
@@ -479,12 +487,20 @@ export class ServerNotebook extends Notebook {
     return changes;
   }
 
-  private moveStyleChange(_source: StyleSource, request: StyleMoveRequest): NotebookChange {
+  private moveStyleChange(_source: StyleSource, request: StyleMoveRequest): NotebookChange | null {
 
     const { styleId, afterId } = request;
     if (afterId == styleId) { throw new Error(`Style ${styleId} can't be moved after itself.`); }
 
-    const oldPosition: StylePosition = this.styleOrder.indexOf(styleId);
+    const tl = this.topLevelStyleOf(styleId);
+//    if (tl.id != styleId) {  // In this case we are trying to a move a non-thought;
+//          // This situation occurs because we have to move children in a general way,
+//      // but there is nothing to to here.
+//      return null;
+//    }
+
+    //    const oldPosition: StylePosition = this.styleOrder.indexOf(styleId);
+    const oldPosition: StylePosition = this.styleOrder.indexOf(tl.id);
     if (oldPosition < 0) { throw new Error(`Style ${styleId} can't be moved: not found in styleOrder array.`); }
 
     let newPosition: StylePosition;
