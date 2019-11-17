@@ -11,7 +11,7 @@ including drawing diagrams, performing calculations, and producing proofs.
 
 ## Governance
 
-Math Tablet was create by David Jeschke, and he is the Invention Coach and "Benevelont Dictator For Now" of this project.
+Math Tablet was created by David Jeschke, and he is the Invention Coach and "Benevelont Dictator For Now" of this project.
 The project is currently licensed under the [Affero GPL](https://www.gnu.org/licenses/agpl-3.0.en.html).
 We are actively seeking volunteers and contributors.
 
@@ -27,17 +27,20 @@ Step 1: Create a [MyScript developer account](https://developer.myscript.com/get
 to obtain application keys for their handwriting recognition services.
 After you create an account, MyScript will send you an email message with an <tt>applicationKey</tt>and an <tt>hmacKey</tt>.
 
-Step 2: Install [node](https://nodejs.org/en/) if you don't have it already.
+Step 2: Install the [Free Wolfram Engine for Developers](https://www.wolfram.com/engine/).
+Also install WolframScript.
+You will need to set up a Wolfram Account to get a license.
+Run the Wolfram Engine app once in order to activate it.
 
-Step 3: Create a credentials and configuration directory:
+Step 3: Install [node](https://nodejs.org/en/).
+
+Step 4: Create a credentials and configuration directory:
 
 ```bash
 cp -r ~/math-tablet/server/config-dir/ ~/.math-tablet
 ```
 
 Edit ~/.math-tablet/credentials.json to insert your MyScript applicationKey and hmacKey.
-
-If you don't have Mathematica, then edit ~/.math-tablet/config.json to remove the "mathematica" section.
 
 Step 4: Create a directory to store user notebooks.
 In your HOME directory, create a subdirectory <tt>math-tablet-usr</tt>.
@@ -49,13 +52,13 @@ The following command should do the trick on Mac and Linux:
 mkdir -p ~/math-tablet-usr/$USER
 ```
 
-Step 4: Install dependencies, build, test, and run math-tablet:
+Step 5: Install dependencies, build, test, and run math-tablet:
 
 ```bash
 scripts/go
 ```
 
-Step 5: Open a browser to [localhost:3000](http://localhost:3000) and enjoy!
+Step 6: Open a browser to [localhost:3000](http://localhost:3000) and enjoy!
 
 ## Mathematica Integration
 

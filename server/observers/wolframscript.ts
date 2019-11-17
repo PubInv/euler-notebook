@@ -34,6 +34,9 @@ export interface NVPair { name: string; value: string }
 // Constants
 
 const WOLFRAM_LICENSE_EXPIRING_MSG = "\n\tWolfram Language 12.0.0 Engine license you are using is expiring.\n\tPlease contact Wolfram Research or an authorized\n\tWolfram product distributor to extend your license and\n\tobtain a new password.\n"
+
+// TODO: What if it is installed in another location?
+// TODO: This will not work on Windows or Linux.
 const WOLFRAMSCRIPT_PATH = '/usr/local/bin/wolframscript';
 
 const INPUT_PROMPT_RE = /\s*In\[(\d+)\]:=\s*$/;
@@ -185,11 +188,10 @@ function showInvisible(s: string): string {
 
 async function startProcess(): Promise<void> {
 
-
-  // Rob someone did something that makes this throw...
-  // Is this an error condition or a warning?
   if (gServerStartingPromise) {
-//    throw new Error("WolframScript already started.");
+    // REVIEW: Should this throw an error or be ignored?
+    // throw new Error("WolframScript already started.");
+    console.warn("WARNING: Attempting to start WolframScript process when it is already started. Ignoring.");
     return;
   }
 
