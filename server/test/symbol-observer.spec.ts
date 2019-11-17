@@ -191,7 +191,7 @@ describe("test symbol observer", function() {
       const children = notebook.findChildStylesOfType(style.id,
                                                       'WOLFRAM');
       const properChildren = children.filter(c => (c.parentId == style.id));
-      console.log("children:",properChildren);
+      // console.log("children:",properChildren);
       assert(properChildren.length == 1,"There should be one child, but there are:"+children.length);
 
     });
@@ -281,7 +281,7 @@ describe("test symbol observer", function() {
 
       const rd : RelationshipObject = notebook.allRelationships()[0];
       const fromId = rd.fromId;
-      console.log("YYYYYYYYYYY to Id",rd.toId);
+      // console.log("YYYYYYYYYYY to Id",rd.toId);
 
       const cr: StyleChangeRequest = {
         type: 'changeStyle',
@@ -306,7 +306,7 @@ describe("test symbol observer", function() {
 
       const rd : RelationshipObject = notebook.allRelationships()[0];
       const fromId = rd.fromId;
-      console.log("YYYYYYYYYYY to Id",rd.toId);
+      // console.log("YYYYYYYYYYY to Id",rd.toId);
 
       const cr: StyleChangeRequest = {
         type: 'changeStyle',
@@ -340,7 +340,7 @@ describe("test symbol observer", function() {
       await serializeChangeRequests(notebook,[cr]);
       assert.equal(0,notebook.allRelationships().length);
     });
-    it.only("Relationships can be completely recomputed",async function(){
+    it("Relationships can be completely recomputed",async function(){
       // const data:string[] = [
       //   "X = 4",
       //   "X = 5",
@@ -353,12 +353,12 @@ describe("test symbol observer", function() {
       const changeRequests = generateInsertRequests(data);
 
       await serializeChangeRequests(notebook,changeRequests);
-      console.log("NOTEBOOK",notebook);
+      // console.log("NOTEBOOK",notebook);
 
       // We want to compute relationship computation...
       const rels = notebook.recomputeAllSymbolRelationships();
       assert.equal(notebook.allRelationships().length,rels.length);
-      console.log("RELATIONSHIPS",rels);
+      // console.log("RELATIONSHIPS",rels);
     });
 
     // Note: I'm leaving this in because it is an example of
@@ -481,7 +481,7 @@ describe("test symbol observer", function() {
       data.push("Y = X^2");
       const insertRequests = generateInsertRequests(data);
       await serializeChangeRequests(notebook,insertRequests);
-      console.log("XXXXX",notebook);
+      // console.log("XXXXX",notebook);
 
 
       for(var i = NUM-1; i > 1; i--) {
@@ -534,32 +534,32 @@ describe("test symbol observer", function() {
       // we have updated the orders correctly.
 
       let penultimate = getThought(notebook,-2);
-      let initialThought = getThought(notebook,0);
-      console.log("penultimate id",penultimate);
-      console.log("initial",initialThought);
+      // let initialThought = getThought(notebook,0);
+      // console.log("penultimate id",penultimate);
+      // console.log("initial",initialThought);
       const moveRequest : StyleMoveRequest = { type: 'moveStyle',
                                                  styleId: penultimate,
                                                  afterId: 0
                                                };
 
 
-      console.log("BEFORE MOVE REQUEST",notebook);
+      // console.log("BEFORE MOVE REQUEST",notebook);
 
       // TODO: it think these are wrong:
-      console.error("PRE TLS",notebook.topLevelStyleOrder());
+      // console.error("PRE TLS",notebook.topLevelStyleOrder());
       await serializeChangeRequests(notebook,[moveRequest]);
 
-      console.error("POST TLS",notebook.topLevelStyleOrder());
+      // console.error("POST TLS",notebook.topLevelStyleOrder());
       const rel_r =  notebook.allRelationships();
       const rel_recomp = notebook.recomputeAllSymbolRelationships();
 
-      console.error("notebook.allRelationships()", rel_r);
-      console.error("notebook.recomputeAllSymbolRelationships()",rel_recomp );
-      console.log("AFTER MOVE REQUEST",notebook);
+      // console.error("notebook.allRelationships()", rel_r);
+      // console.error("notebook.recomputeAllSymbolRelationships()",rel_recomp );
+      // console.log("AFTER MOVE REQUEST",notebook);
       // TODO: I believe at least one error here is that after this operation
       // the top-level styles no long match; this should not happen!
-      console.log("ICREMENTAL, RECOMPUT",rel_r.length,
-                   rel_recomp.length);
+      // console.log("ICREMENTAL, RECOMPUT",rel_r.length,
+                  //  rel_recomp.length);
       assert.equal(rel_r.length,
                    rel_recomp.length);
     });

@@ -88,7 +88,7 @@ describe("wolframscript", function(){
       gWolframStarted = true;
     });
 
-    // it.only("test case", async function(){
+    // it("test case", async function(){
     //   //throw new Error("CRASH");
     //   try {
     //     const [ expr, expected ] = TEST_CASES[3];
