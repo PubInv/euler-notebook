@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
-pushd server
+set -e
+pushd server > /dev/null
 npm test
-popd
+popd > /dev/null

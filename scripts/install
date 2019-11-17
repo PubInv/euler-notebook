@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
-pushd client
+set -e
+pushd client > /dev/null
 npm install
-popd
-pushd server
+popd > /dev/null
+pushd server > /dev/null
 npm install
-popd
+popd > /dev/null

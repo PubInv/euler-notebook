@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
-pushd server
+set -e
+pushd server > /dev/null
 mocha -r ./node_modules/ts-node/register test/symbol-observer.spec.ts
-popd
+popd > /dev/null

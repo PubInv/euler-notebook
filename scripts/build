@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
-pushd client/
+set -e
+pushd client/ > /dev/null
 npm run build
-popd
+popd > /dev/null

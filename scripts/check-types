@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
-pushd client
+set -e
+pushd client > /dev/null
 npm run check-types
-popd
-pushd server
+popd > /dev/null
+pushd server > /dev/null
 npm run check-types
-popd
+popd > /dev/null
