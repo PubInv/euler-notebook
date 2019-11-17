@@ -234,7 +234,7 @@ function generateScratchNotebookName(): string {
 }
 
 async function importFile(multerFile: Express.Multer.File, folderPath: FolderPath, messages: PageMessages): Promise<Uri|undefined> {
-  console.log(`Importing ${multerFile.originalname} into ${folderPath}.`);
+  // console.log(`Importing ${multerFile.originalname} into ${folderPath}.`);
 
   // Convert the file buffer to a JSON object
   const json = multerFile.buffer.toString();

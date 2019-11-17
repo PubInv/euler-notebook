@@ -182,7 +182,7 @@ export class ClientSocket {
   private onWsMessage(_ws: WebSocket, message: WebSocket.Data): void {
     try {
       const msg: ClientMessage = JSON.parse(message.toString());
-      console.log(`Message from client: ${msg.notebookName} ${msg.type}`);
+      // console.log(`Message from client: ${msg.notebookName} ${msg.type}`);
       // console.dir(msg);
       debug(`Client Socket: received socket message: ${msg.type} ${msg.notebookName}`);
       switch(msg.type) {

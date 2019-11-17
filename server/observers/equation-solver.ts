@@ -200,7 +200,7 @@ export class EquationSolverObserver implements ObserverInstance {
         debug("allsols",allsols);
         allsols.map(s => {
           const ss = s.split("->");
-          console.log("ss[0],ss[1]",ss[0],"=",ss[1]);
+          // console.log("ss[0],ss[1]",ss[0],"=",ss[1]);
           const nvp : NameValuePair =
             { name: ss[0],
               value: ss[1] };

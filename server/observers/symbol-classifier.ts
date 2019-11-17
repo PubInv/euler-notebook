@@ -150,8 +150,8 @@ export class SymbolClassifierObserver implements ObserverInstance {
           }
         }
         debug("RIDS = ",rids);
-        console.log("users of me",users);
-        console.log("duplicateof",duplicateof);
+        // console.log("users of me",users);
+        // console.log("duplicateof",duplicateof);
         if (!(duplicateof === undefined)) {
           rids.add(duplicateof.id);
           for(const u of users) {
@@ -339,7 +339,7 @@ export class SymbolClassifierObserver implements ObserverInstance {
 
   private async moveRule(change: StyleMoved, rval: NotebookChangeRequest[]) : Promise<NotebookChangeRequest[]>  {
     debug("AAAA in moveRule",change);
-    console.log("move (old) to (new)",change.oldPosition,change.newPosition);
+    // console.log("move (old) to (new)",change.oldPosition,change.newPosition);
 
     // Our basic algorithm here is:
     // Delete all realtionships that we use or that use the moved style.

@@ -473,11 +473,11 @@ export class ServerNotebook extends Notebook {
         const children = this.findChildStylesOfType(parentId,
                                                     style.type);
 
-      console.log("KIDS FOUND OF PARENT",children);
+      // console.log("KIDS FOUND OF PARENT",children);
       // now in the set to be removed, remove ourself, and anyting with a different meaning
       const toRemove = children.filter(c => ((c.id != parentId) && (c.id != style.id) && (c.meaning == style.meaning) && (c.type == style.type)));
       // now remove the remainder
-      console.log("TO REMOVE",toRemove);
+      // console.log("TO REMOVE",toRemove);
       for (const childToRemove of toRemove) {
 //        const request2: StyleDeleteRequest = { type: 'deleteStyle', childToRemove };
         changes = changes.concat(this.deleteStyleChanges(childToRemove.id));
