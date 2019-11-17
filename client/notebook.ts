@@ -352,7 +352,7 @@ export class Notebook {
     const uses : SymbolToMap = {};
     const defs : SymbolToMap = {};
     tlso.forEach( tls => {
-      console.error("operating on tls:",tls);
+      // console.error("operating on tls:",tls);
       const syms = this.findChildStylesOfType(tls,'SYMBOL');
       syms.forEach(sym => {
         const s = sym.data.name;
@@ -371,9 +371,9 @@ export class Notebook {
       });
     });
 
-    console.error("symbols:",symbols);
-    console.error("uses:",uses);
-    console.error("defs:",defs);
+    // console.error("symbols:",symbols);
+    // console.error("uses:",uses);
+    // console.error("defs:",defs);
     const rs : RelationshipObject[] = [];
 
     // TODO:
@@ -401,7 +401,7 @@ export class Notebook {
         for(var i = 0; i < us.length; i++) {
           const fromId : number | null = findLatestDefinitionEarlierThanThis(us[i].tls,ds);
           if (fromId) {
-            console.error("fromId for i",fromId,us[i]);
+            // console.error("fromId for i",fromId,us[i]);
             // Since we are not at present injecting into the notebook,
             // the id will remain -1.
             var r : RelationshipObject = {
@@ -413,6 +413,7 @@ export class Notebook {
             };
             rs.push(r);
           } else {
+            // REVIEW: Throw exception??
             console.error("fromId not found:",us[i],ds);
           }
         }
@@ -440,7 +441,7 @@ export class Notebook {
       }
     });
 
-    console.error("RS = ",rs);
+    // console.error("RS = ",rs);
     // Now I am not producing "EQIVALENCE" meanings...
     // However, those are a function of evaluation, and so are quite different.
     return rs;
@@ -461,8 +462,7 @@ export class Notebook {
     var symbolStyles: StyleObject[] = [];
     const mp = this.topLevelStyleOf(style.id);
     if (!mp) {
-      console.error("INTERNAL ERROR: did not produce ancenstor: ",style.id);
-      throw new Error("INTERNAL ERROR: did not produce ancenstor: ");
+      throw new Error(`INTERNAL ERROR: did not produce ancenstor: ${style.id}`);
     }
     rs.forEach(r => {
       try {  // TODO: I don't know why this can be an error....
@@ -472,20 +472,21 @@ export class Notebook {
         // operation makes this difficult.
         const rp = this.topLevelStyleOf(r.toId);
         if (!rp) {
-          console.error("INTERNAL ERROR: did not produce ancenstor: ",style.id);
-          throw new Error("INTERNAL ERROR: did not produce ancenstor: ");
+          throw new Error(`INTERNAL ERROR: did not produce ancenstor: ${style.id}`);
         }
         if (rp.id == mp.id) {
           // We are a user of this definition...
           try {
             symbolStyles.push(this.getStyleById(r.fromId));
           } catch (Error) {
+            // REVIEW: Proper error handling??
             console.error("from id missing",r.fromId);
             console.error(this);
           }
 
         }
       } catch (Error) {
+        // REVIEW: Proper error handling??
         console.error("from id missing",r.fromId);
         console.error(this);
       }
@@ -544,7 +545,7 @@ export class Notebook {
     if (change != null) {
       switch(change.type) {
         case 'relationshipDeleted':
-          console.log("calling deleteRelationship in notebook.ts");
+          // console.log("calling deleteRelationship in notebook.ts");
           this.deleteRelationship(change.relationship);
           break;
         case 'relationshipInserted':
