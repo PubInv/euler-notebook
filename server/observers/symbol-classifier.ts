@@ -219,11 +219,11 @@ export class SymbolClassifierObserver implements ObserverInstance {
       await this.addSymbolDefStyles(style, rval);
       debug("BBB rval",rval);
     }
-    this.recomputeRelationships(tlid,style,rval);
+    this.recomputeInsertRelationships(tlid,style,rval);
     return rval;
   }
 
-  private async recomputeRelationships(tlid: StyleId,
+  private async recomputeInsertRelationships(tlid: StyleId,
                                        style: StyleObject,
                                        rval: NotebookChangeRequest[])
   : Promise<NotebookChangeRequest[]>
@@ -279,8 +279,6 @@ export class SymbolClassifierObserver implements ObserverInstance {
           this.getLatestOfListOfStyleIds(uses);
         if (index >= 0) {
           const props : RelationshipProperties = { meaning: 'SYMBOL-DEPENDENCY' };
-
-
           const changeReq: RelationshipInsertRequest =
             { type: 'insertRelationship',
               fromId:
@@ -297,8 +295,6 @@ export class SymbolClassifierObserver implements ObserverInstance {
           );
         }
       }
-
-
 
       // Now we need to check for inconsistency;
       if (style.meaning == 'SYMBOL-DEFINITION') {
@@ -337,35 +333,66 @@ export class SymbolClassifierObserver implements ObserverInstance {
     return rval;
   }
 
-  private async moveRule(change: StyleMoved, rval: NotebookChangeRequest[]) : Promise<NotebookChangeRequest[]>  {
-    debug("AAAA in moveRule",change);
-    // console.log("move (old) to (new)",change.oldPosition,change.newPosition);
+    private async moveRule(change: StyleMoved, rval: NotebookChangeRequest[]) : Promise<NotebookChangeRequest[]>  {
+      debug("AAAA in moveRule",change);
 
-    // Our basic algorithm here is:
-    // Delete all realtionships that we use or that use the moved style.
-    // Invoke insert rule for the style style in the new position.
-    // If we are a definition, invoke the insert rule for any definition
-    // which we were a duplicate of.
+      // Now trying to implement this using our recomputation capability...
+      // we will remove all relationship references to this name,
+      // and then use our recomputation to reinsert new values.
+      const style = this.notebook.getStyleById(change.styleId);
+      const tlStyle = this.notebook.topLevelStyleOf(style.id);
+      // Now for each style is as use or defintion, collect the names...
+      const symbols : Set<string> = new Set<string>();
+      const syms = this.notebook.findChildStylesOfType(tlStyle.id,'SYMBOL');
+      syms.forEach(sym => {
+        const s = sym.data.name;
+        symbols.add(s);
+      });
+      // Now that we have the symbols, we want to remove all relationships
 
-    const style = this.notebook.getStyleById(change.styleId);
-    this.deleteRelationships(style, rval);
-    var tlStyle;
-    try {
-      tlStyle = this.notebook.topLevelStyleOf(style.id);
-    } catch (e) { // If we can't find a topLevelStyle, we have in
-      // inconsistency most likely caused by concurrency in some way
-    }
-    if (!tlStyle) return rval;
-    const tlid = tlStyle.id;
-    this.recomputeRelationships(tlid,style,rval);
+      // that mention them...
+      const rs = this.notebook.allRelationships();
+      symbols.forEach(name => {
+        rs.forEach(r => {
+        const fromS = this.notebook.getStyleById(r.fromId);
+        const toS = this.notebook.getStyleById(r.toId);
+        if (fromS.type == 'SYMBOL' &&
+            (fromS.meaning == 'SYMBOL-USE' ||
+             fromS.meaning == 'SYMBOL-DEFINITION'
+            ) &&
+            fromS.data.name == name) {
+          rval.push({ type: 'deleteRelationship',
+                      id: r.id });
+        }
+        if (toS.type == 'SYMBOL' &&
+            (toS.meaning == 'SYMBOL-USE' ||
+             toS.meaning == 'SYMBOL-DEFINITION'
+            ) &&
+            toS.data.name == name) {
+          rval.push({ type: 'deleteRelationship',
+                      id: r.id });
+        }
+        });
+      });
 
-
-
-    // Note, I am not removing any duplicates; I am not sure if that is needed yet.
-
+      const rels : RelationshipObject[] =
+        this.notebook.recomputeAllSymbolRelationshipsForSymbols(symbols);
+      rels.forEach(r => {
+          const prop : RelationshipProperties =
+            { meaning: r.meaning };
+            const changeReq: RelationshipInsertRequest =
+              { type: 'insertRelationship',
+                fromId: r.fromId,
+                toId: r.toId,
+                props: prop };
+            rval.push(
+              changeReq
+            );
+      });
 
     return rval;
   }
+
   private async onChange(change: NotebookChange, rval: NotebookChangeRequest[]): Promise<void> {
     if (change == null) return;
 
@@ -531,19 +558,6 @@ export class SymbolClassifierObserver implements ObserverInstance {
       },[-1,-1]
     );;
 
-    // for (const otherStyle of this.notebook.allStyles()) {
-    //   if (otherStyle.type == 'SYMBOL' &&
-    //       otherStyle.meaning == useOrDef &&
-    //       otherStyle.data.name == name) {
-    //     debug(`Inserting relationship`);
-    //     // This really needs to use top-level tought order!
-    //     const idx = this.notebook.getThoughtIndex(otherStyle.id);
-    //     if (idx > max) {
-    //       max = idx;
-    //       maxstyle = otherStyle.id;
-    //     }
-    //   }
-    // }
     if (max >=0) {
       relationsFrom[maxstyle] = { meaning: 'SYMBOL-DEPENDENCY' };
     }

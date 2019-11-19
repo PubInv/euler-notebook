@@ -207,6 +207,11 @@ export class RelationshipIdDoesNotExistError extends Error {
     }
 }
 
+interface StyleOrderMapping {
+  sid: StyleId;
+  tls: number;
+}
+
 export class Notebook {
 
   // Constructor
@@ -314,15 +319,30 @@ export class Notebook {
     });
     return symbolStyles;
   }
-
+    // TODO:
+  // Find the def whose top level symbol appears just before this one.
+    public findLatestDefinitionEarlierThanThis(thoughtIndex : number,defs : StyleOrderMapping[]) : StyleId | null {
+      var curi = -1;
+      var curtlspos = -1;
+      for(var i = 0; i < defs.length; i++) {
+        var pos = this.getThoughtIndex(defs[i].tls);
+        if ((pos < thoughtIndex) &&
+            (pos > curtlspos))
+        {
+          curtlspos = pos;
+          curi = i;
+        }
+      }
+      // Now we hope cur is the currect object...
+      return curi < 0 ? null : defs[curi].sid;
+    }
   // This is intended to be used by tests; it is slightly
   // inefficient. I think DJE wants us to incrementally recompute everything,
   // but especially in the presence of concurrency we need a standard to
   // test against.
   // The algorithm is straightforward:
-  // If we are use, we create a relationship based on the last (in thought order)
+  // If we are "use", we create a relationship based on the last (in thought order)
   // definition that matches our symbol.
-  // if we are a definition,
 
   // TODO: This is not handling equivalence relationships.
   // For the purpose of testing we possibly have to deal with that.
@@ -341,57 +361,51 @@ export class Notebook {
     // Establish DUPLICATE-DEFINITION relationships
     const tlso = this.topLevelStyleOrder();
     const symbols : Set<string> = new Set<string>();
-    interface StyleOrderMapping {
-      sid: StyleId;
-      tls: number;
-    }
 
-    interface SymbolToMap {
-      [key: string]: StyleOrderMapping[];
-    }
-    const uses : SymbolToMap = {};
-    const defs : SymbolToMap = {};
     tlso.forEach( tls => {
       // console.error("operating on tls:",tls);
       const syms = this.findChildStylesOfType(tls,'SYMBOL');
       syms.forEach(sym => {
         const s = sym.data.name;
         symbols.add(s);
+      }
+                  );
+    });
 
-        if (sym.meaning == 'SYMBOL-USE') {
-          if (!(s in uses))
-            uses[s] = [];
-          uses[s].push({ sid: sym.id, tls: tls});
-        }
-        if (sym.meaning == 'SYMBOL-DEFINITION') {
-          if (!(s in defs))
-            defs[s] = [];
-          defs[s].push({ sid: sym.id, tls: tls});
+    return this.recomputeAllSymbolRelationshipsForSymbols(symbols);
+  }
+
+    public recomputeAllSymbolRelationshipsForSymbols(symbols: Set<string> ) : RelationshipObject[] {
+    interface SymbolToMap {
+      [key: string]: StyleOrderMapping[];
+    }
+    const uses : SymbolToMap = {};
+    const defs : SymbolToMap = {};
+
+    const tlso = this.topLevelStyleOrder();
+    tlso.forEach( tls => {
+      // console.error("operating on tls:",tls);
+      const syms = this.findChildStylesOfType(tls,'SYMBOL');
+      syms.forEach(sym => {
+        const s = sym.data.name;
+        if (symbols.has(s)) {
+          if (sym.meaning == 'SYMBOL-USE') {
+            if (!(s in uses))
+              uses[s] = [];
+            uses[s].push({ sid: sym.id, tls: tls});
+          }
+          if (sym.meaning == 'SYMBOL-DEFINITION') {
+            if (!(s in defs))
+              defs[s] = [];
+            defs[s].push({ sid: sym.id, tls: tls});
+          }
         }
       });
     });
 
-    // console.error("symbols:",symbols);
-    // console.error("uses:",uses);
-    // console.error("defs:",defs);
     const rs : RelationshipObject[] = [];
 
-    // TODO:
-    // Find the def whose top level symbol appears just before this one.
-    function findLatestDefinitionEarlierThanThis(useOrdinal : number,defs : StyleOrderMapping[]) : StyleId | null {
-      var cur = -1;
-      var curi = -1;
-      for(var i = 0; i < defs.length; i++) {
-        if ((defs[i].tls < useOrdinal) &&
-            (defs[i].tls > cur))
-        {
-          cur = defs[i].tls;
-          curi = i;
-        }
-      }
-      // Now we hope cur is the currect object...
-      return curi < 0 ? null : defs[curi].sid;
-    }
+
     // Now hopefully defs and uses are maps of all symbols properly ordered...
     // Build the symbol use relationships...
     symbols.forEach( sym => {
@@ -399,7 +413,12 @@ export class Notebook {
       const ds = defs[sym];
       if (us) {
         for(var i = 0; i < us.length; i++) {
-          const fromId : number | null = findLatestDefinitionEarlierThanThis(us[i].tls,ds);
+          const fromId : number | null =
+            this.findLatestDefinitionEarlierThanThis(
+              this.getThoughtIndex(us[i].tls),
+              ds);
+
+
           if (fromId) {
             // console.error("fromId for i",fromId,us[i]);
             // Since we are not at present injecting into the notebook,
@@ -423,9 +442,14 @@ export class Notebook {
     // Now handle the duplicate definitions....
     symbols.forEach( sym => {
       const ds = defs[sym];
+
       // TODO: this needs to be a key iteration, not a number iteration!
-      for(var i = 1; i < ds.length; i++) {
-        const fromId  : number | null = findLatestDefinitionEarlierThanThis(ds[i].tls,ds);
+      for(var i = 0; i < ds.length; i++) {
+        const fromId  : number | null =
+          this.findLatestDefinitionEarlierThanThis(
+            this.getThoughtIndex(ds[i].tls),
+            ds);
+
         // Since we are not at present injecting into the notebook,
         // the id will remain -1.
         if (fromId) {

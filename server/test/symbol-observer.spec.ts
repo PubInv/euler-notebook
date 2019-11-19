@@ -80,6 +80,22 @@ const data:string[] = [
   "X = 6",
   "Y = X^2"];
 
+interface RelationshipStringObject {
+  from: string;
+  to: string;
+}
+
+function constructMapRelations(notebook: ServerNotebook,
+                               rs : RelationshipObject[]) :RelationshipStringObject[] {
+  return rs.map(r => {
+    const frS = notebook.getStyleById(r.fromId);
+    const frTS = notebook.topLevelStyleOf(frS.id);
+    const toS = notebook.getStyleById(r.toId);
+    const toTS = notebook.topLevelStyleOf(toS.id);
+    return { from: frTS.data, to: toTS.data};
+  });
+}
+
 function texformatOfLastThought(notebook : ServerNotebook) : string {
   // To try to make this robust, we will specifically construct
   // the value. We also need to be able to get the last thought.
@@ -341,24 +357,15 @@ describe("test symbol observer", function() {
       assert.equal(0,notebook.allRelationships().length);
     });
     it("Relationships can be completely recomputed",async function(){
-      // const data:string[] = [
-      //   "X = 4",
-      //   "X = 5",
-      //   "Y = 6",
-      //   "X^2 + Y"];
       const data:string[] = [
-        "X = 1",
-        "X = 2",
+        "X = 3",
+        "X = 4",
         "X^2"];
       const changeRequests = generateInsertRequests(data);
 
       await serializeChangeRequests(notebook,changeRequests);
-      // console.log("NOTEBOOK",notebook);
-
-      // We want to compute relationship computation...
       const rels = notebook.recomputeAllSymbolRelationships();
       assert.equal(notebook.allRelationships().length,rels.length);
-      // console.log("RELATIONSHIPS",rels);
     });
 
     // Note: I'm leaving this in because it is an example of
@@ -512,56 +519,66 @@ describe("test symbol observer", function() {
       // Now we must delete objects!!!
     });
 
-    it("reorderings are supported",async function(){
-  //    const NUM = 2;
+    it("reorderings are supported in simplest possible case",async function(){
       let data:string[] = [];
       notebook.deRegisterObserver('MATHEMATICA');
       notebook.deRegisterObserver('EQUATION-SOLVER');
       notebook.deRegisterObserver('TEX-FORMATTER');
 
-//      for(var i = 0; i < NUM; i++) {
-//        data[i] = "X = "+(i+3);
-      //      }
-      data.push("X = 1");
-      data.push("X = 2");
+      data.push("X = 3");
+      data.push("X = 4");
       data.push("Y = X^2");
       const insertRequests = generateInsertRequests(data);
       await serializeChangeRequests(notebook,insertRequests);
 
-      // Okay, now we have a bunch of assignments set up.
-      // The simplest thing is to take the last one and
-      // move it in relative order, then test that
-      // we have updated the orders correctly.
 
-      let penultimate = getThought(notebook,-2);
-      // let initialThought = getThought(notebook,0);
-      // console.log("penultimate id",penultimate);
-      // console.log("initial",initialThought);
+     let penultimate = getThought(notebook,-2);
       const moveRequest : StyleMoveRequest = { type: 'moveStyle',
                                                  styleId: penultimate,
                                                  afterId: 0
                                                };
-
-
-      // console.log("BEFORE MOVE REQUEST",notebook);
-
-      // TODO: it think these are wrong:
-      // console.error("PRE TLS",notebook.topLevelStyleOrder());
       await serializeChangeRequests(notebook,[moveRequest]);
-
-      // console.error("POST TLS",notebook.topLevelStyleOrder());
       const rel_r =  notebook.allRelationships();
       const rel_recomp = notebook.recomputeAllSymbolRelationships();
 
-      // console.error("notebook.allRelationships()", rel_r);
-      // console.error("notebook.recomputeAllSymbolRelationships()",rel_recomp );
-      // console.log("AFTER MOVE REQUEST",notebook);
-      // TODO: I believe at least one error here is that after this operation
-      // the top-level styles no long match; this should not happen!
-      // console.log("ICREMENTAL, RECOMPUT",rel_r.length,
-                  //  rel_recomp.length);
       assert.equal(rel_r.length,
                    rel_recomp.length);
+    });
+    it("reorderings are supported across symbols",async function(){
+      let data:string[] = [];
+      notebook.deRegisterObserver('MATHEMATICA');
+      notebook.deRegisterObserver('EQUATION-SOLVER');
+      notebook.deRegisterObserver('TEX-FORMATTER');
+
+      data.push("X = 3");
+      data.push("A = 4");
+      data.push("X = 4");
+      data.push("Y = X^2");
+      data.push("B = A^2");
+      const insertRequests = generateInsertRequests(data);
+
+      await serializeChangeRequests(notebook,insertRequests);
+
+
+      let penultimate = getThought(notebook,2);
+      const moveRequest : StyleMoveRequest = { type: 'moveStyle',
+                                                 styleId: penultimate,
+                                                 afterId: 0
+                                               };
+      await serializeChangeRequests(notebook,[moveRequest]);
+      const rel_r =  notebook.allRelationships();
+      const rel_recomp = notebook.recomputeAllSymbolRelationships();
+
+      assert.equal(rel_r.length,
+                   rel_recomp.length);
+      console.error(notebook);
+      const rsos = constructMapRelations(notebook, rel_r);
+      // @ts-ignore
+      assert.equal(rsos.find( r => r.from == "X = 3").to,"Y = X^2");
+      // @ts-ignore
+      assert.equal(rsos.find( r => r.from == "X = 4").to,"X = 3");
+      // @ts-ignore
+      assert.equal(rsos.find( r => r.from == "A = 4").to,"B = A^2");
     });
   });
 });
