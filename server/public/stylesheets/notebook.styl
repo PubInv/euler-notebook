@@ -20,19 +20,29 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 // Globals
 
 :root
-  --footer-height 192px
+  --cell-left-margin 60px
+  --page-aspect-ratio calc(8.5 / 11)
 
 // Specific elements
 
+#cellView
+  border-left 1px solid pink
+  display flex
+  flex-flow column nowrap
+  margin-left var(--cell-left-margin)
+  margin-top 60px
+  min-height 100%
+  width 100%
+
 #content
-  height calc(100% - var(--header-height) - var(--footer-height))
+  height calc(100% - var(--header-height))
   left var(--sidebar-width)
   overflow scroll
   position fixed
   top var(--header-height)
   width calc(100% - var(--sidebar-width))
 
-#debugWindow
+#debugPopup
   background-color #eeeeee
   border 1px solid black
   font-size smaller
@@ -46,70 +56,100 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
   width 80%
   z-index 10
 
-  .nested
-    padding-left 1em
+  .close
+    position absolute
+    top 0
+    right 0
+    background-color transparent
+    background-repeat no-repeat
+    border none
+    cursor pointer
+    overflow hidden
+    outline none
 
-  .collapsed::before
-    content "\0025b6 "
+  .content
+    padding 1em
 
-  .expanded::before
-    content "\0025bc "
+    .nested
+      padding-left 1em
 
-  .leaf::before
-    content "\0025cf "
+    .collapsed::before
+      content "\0025b6 "
 
-#footer
-  border-top 1px solid black
-  bottom 0
-  height var(--footer-height)
-  left var(--sidebar-width)
-  position fixed
-  right 0
+    .expanded::before
+      content "\0025bc "
 
-#inputArea
-  border-top 1px solid #cccccc
-  height 75%
+    .leaf::before
+      content "\0025cf "
 
-#inputAreaButtons
-  bottom 0
-  left 0
-  position absolute
+#notebookView
+  background-color #eeeeee
+  min-height 100%
 
-#inputMath
-#inputText
-  height 100%
-  pen-action none
-  touch-action none
+  .cell
+    align-items center
+    display flex
+    flex-direction row
+    padding 9px 0 9px 0
 
-#preview
-  margin auto 0 auto 24px
+    .formula
+      flex-grow 1
 
-#previewContainer
+    .handle
+      padding 4px 0 4px 0
+      text-align right
+      width 48px
+
+    .status
+      text-align left
+      width 36px
+
+    .tools
+      width 80px
+      visibility visible // visibility hidden --- there is a subtle bug here preventing event bubbling when visibility changes - rlr
+
+      .tool
+        color blue
+        background-color transparent
+        border none
+        padding-right 0
+        padding-left 2px
+        text-decoration underline
+
+  .cell.selected
+    outline 1px dotted blue
+
+    .tools { visibility: visible }
+
+#notebookView:focus
+  background-color white
+  outline none
+
+#pageView
+#thumbnailView
+  background-color lightgray
   display flex
-  height 25%
+  flex-flow row wrap
+  min-height 100%
+  outline none
+  width 100%
 
 // Element classes
-
-.cell
-  align-items center
-  display flex
-  flex-direction row
-  padding 9px 0 9px 0
 
 // .cell.selected
 //   background-color cyan
 
+.drawingCell
+  background-color #F8F8F8
+  display block
+  fill none
+  margin 6px 0 0 0
+  pen-action none
+  stroke black
+
 .error
   color red
   font-size x-small
-
-.formula
-  flex-grow 1
-
-.handle
-  padding 4px 0 4px 0
-  text-align right
-  width 48px
 
 .keyboardInputErrorMessage
   color red
@@ -130,36 +170,12 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
   min-height 60px
   padding 8px
 
-.notebookView
-  background-color #eeeeee
-  min-height 100%
-
-.notebookView:focus
+.page
   background-color white
-  outline none
+  outline 1px solid black
 
-  .cell.selected
-    outline 1px dotted blue
-    .tools { visibility: visible }
-
-.status
-  text-align left
-  width 36px
-
-  .tools
-    visibility visible
-
-.tool
-  color blue
-  background-color transparent
-  border none
-  padding-right 0
-  padding-left 2px
-  text-decoration underline
-
-.tools
-  width 80px
-  visibility visible // visibility hidden --- there is a subtle bug here preventing event bubbling when visibility changes - rlr
+.page.selected
+    outline 2px solid blue
 
 @media (hover: hover) {
   .thought:hover .tools { visibility: visible }

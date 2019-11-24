@@ -65,8 +65,11 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
   flex-direction row
   height var(--header-height)
   justify-content space-between
-  margin-left var(--sidebar-width)
+  left var(--sidebar-width)
   padding 0 6pt 0 6pt
+  position fixed
+  top 0
+  width calc(100% - var(--sidebar-width))
 
   button
     height 30px

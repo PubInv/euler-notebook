@@ -571,7 +571,6 @@ describe("test symbol observer", function() {
 
       assert.equal(rel_r.length,
                    rel_recomp.length);
-      console.error(notebook);
       const rsos = constructMapRelations(notebook, rel_r);
       // @ts-ignore
       assert.equal(rsos.find( r => r.from == "X = 3").to,"Y = X^2");

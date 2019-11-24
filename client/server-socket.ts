@@ -24,12 +24,12 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 import { addErrorMessageToHeader } from './global.js';
 import { ClientMessage, NotebookName, ServerMessage, NotebookOpened, NotebookClosed, NotebookChanged } from './math-tablet-api.js';
-import { NotebookView } from './notebook-view.js';
+import { OpenNotebook } from './open-notebook.js';
 
 // Types
 
 type ConnectPromise = PromiseResolver<ServerSocket>;
-type OpenPromise = PromiseResolver<NotebookView>;
+type OpenPromise = PromiseResolver<OpenNotebook>;
 
 // REVIEW: This is also defined in server/common.ts.
 interface PromiseResolver<T> {
@@ -53,7 +53,7 @@ export class ServerSocket {
 
   // Instance Methods
 
-  public async openNotebook(notebookName: NotebookName): Promise<NotebookView> {
+  public async openNotebook(notebookName: NotebookName): Promise<OpenNotebook> {
     this.sendMessage({ type: 'openNotebook', notebookName });
     return new Promise((resolve, reject)=>this.openPromises.set(notebookName, { resolve, reject }))
   }
@@ -91,6 +91,8 @@ export class ServerSocket {
   private connectPromise: ConnectPromise;
   private ws: WebSocket;
 
+  // Private Instance Methods
+
   // Private Event Handlers
 
   // See https://github.com/Luka967/websocket-close-codes.
@@ -115,8 +117,8 @@ export class ServerSocket {
   private onWsMessage(event: MessageEvent): void {
     try {
       const msg: ServerMessage = JSON.parse(event.data);
-      console.log(`Message from server: ${msg.type}`);
-      console.dir(msg);
+      // console.log(`Message from server: ${msg.type}`);
+      // console.dir(msg);
       switch(msg.type) {
       case 'notebookChanged': this.smNotebookChanged(msg); break;
       case 'notebookClosed':  this.smNotebookClosed(msg); break;
@@ -145,25 +147,23 @@ export class ServerSocket {
   private smNotebookOpened(msg: NotebookOpened): void {
     const openRequest = this.openPromises.get(msg.notebookName);
     if (!openRequest) { throw new Error(`Notebook opened message for unknown notebook: ${msg.notebookName}`); }
-    const notebookView = NotebookView.open(this, msg.notebookName, msg.obj);
-    openRequest.resolve(notebookView);
+    const openNotebook = OpenNotebook.open(this, msg.notebookName, msg.obj);
+    openRequest.resolve(openNotebook);
     this.openPromises.delete(msg.notebookName);
   }
 
   // TODO: notebook open failure
 
   private smNotebookClosed(msg: NotebookClosed): void {
-    const notebookView = NotebookView.get(msg.notebookName);
+    const notebookView = OpenNotebook.get(msg.notebookName);
     if (!notebookView) { throw new Error(`Unknown notebook closed: ${msg.notebookName}`); }
     notebookView.smClose();
   }
 
   private smNotebookChanged(msg: NotebookChanged): void {
-    const notebookView = NotebookView.get(msg.notebookName);
+    const notebookView = OpenNotebook.get(msg.notebookName);
     if (!notebookView) { throw new Error(`Notebook change from unknown notebook: ${msg.notebookName}`); }
     notebookView.smChange(msg);
   }
-
-  // Private Instance Methods
 
 }

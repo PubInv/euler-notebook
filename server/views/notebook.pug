@@ -21,6 +21,11 @@ extends layout
 //- Inline SVG icons from https://iconmonstr.com.
 include iconmonstr
 
+mixin debugPopup
+  #debugPopup(style='display:none')
+    button.close &#10005;
+    .content
+
 mixin header
   #header
     span
@@ -39,14 +44,6 @@ mixin header
       button#userButton(title="User settings")
         +svgIconUser1
 
-mixin footer
-  #footer
-    #previewContainer
-      #preview
-    #inputArea('data-applicationkey'=credentials.myscript.applicationKey, 'data-hmackey'=credentials.myscript.hmacKey)
-      #inputText(style='display:none')
-      #inputMath(style='display:none')
-
 mixin keyboardInputSelector
   select#keyboardInputType()
     option(value='LATEX') LaTeX
@@ -57,15 +54,17 @@ mixin keyboardInputSelector
 
 mixin sidebar
   #sidebar
-    button#thumbnailViewButton(disabled=true, title="Page thumbnail view")
+    button#thumbnailViewButton(title="Page thumbnail view")
       +svgIconFile12
-    button#pageViewButton(disabled=true, title="Reading view")
+    button#pageViewButton(title="Reading view")
       +svgIconFile5
-    button#cellViewButton(disabled=true, title="Editing view")
+    button#notebookViewButton(title="Editing view")
       +svgIconFile18
     .separator
-    button#inputKeyboardButton(title="Keyboard input")
+    button#inputKeyboardButton(title="Insert keyboard cell")
       +svgIconKeyboard2
+    button#insertDrawingButton(title="Insert drawing cell")
+      +svgIconPencil9
     .separator
     button#undoButton(disabled=true, title="Undo")
       +svgIconUndo4
@@ -74,17 +73,6 @@ mixin sidebar
     .separator
     button#trashButton(disabled=true, title="Trash")
       +svgIconTrashCan2
-    #inputAreaButtons
-      button#inputMathButton(title="Handwritten math")
-        +svgIconText8
-      button#inputTextButton(title="Handwritten text")
-        +svgIconText1
-      button#clearButton(disabled=true, title="Clear handwriting input")
-        +svgIconEraser2
-      button#convertButton(disabled=true, title="Convert handwriting")
-        +svgIconArrow13
-      button#insertButton(disabled=true, title="Insert input into notebook")
-        +svgIconArrow4
 
 block metatags
   //- These meta tags are copied from MyScript samples.
@@ -105,8 +93,10 @@ block scripts
   script(type='module', src='/javascripts/app.js')
 
 block content
-  #debugWindow(style='display:none')
+  +debugPopup
   +header
   +sidebar
-  +footer
   #content
+    #thumbnailView(style='display:none', tabindex=0)
+    #pageView(style='display:none', tabindex=0)
+    #notebookView(style='display:none', tabindex=0)

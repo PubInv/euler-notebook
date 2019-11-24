@@ -17,6 +17,10 @@ You should have received a copy of the GNU Affero General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
+// Requirements
+
+import { assert } from "./common.js";
+
 // Types
 
 type CssSelector = string;
@@ -57,15 +61,23 @@ const SVG_NS = 'http://www.w3.org/2000/svg';
 
 // Exported Functions
 
-export function $<T extends Element>(selector: CssSelector): T {
-  const $elt = document.querySelector(selector);
-  if (!$elt) { throw new Error(`Element '${selector}' not found in DOM.`); }
-  return <T>$elt;
+export function $<T extends Element>(root: Element|Document, selector: CssSelector): T {
+  const $elts = $all<T>(root, selector);
+  assert($elts.length == 1);
+  return $elts[0];
 }
 
-export function $all<T extends Element>(selector: CssSelector): NodeListOf<T> {
-  return document.querySelectorAll(selector);
+export function $all<T extends Element>(root: Element|Document, selector: CssSelector): NodeListOf<T> {
+  return root.querySelectorAll<T>(selector);
 }
+
+export function $attach<T extends Element>(root: Element|Document, selector: CssSelector, options: NewOptions): T {
+  const $elt = $<T>(root, selector);
+  configure<T>($elt, options);
+  return $elt;
+}
+
+// REVIEW: $attachAll
 
 export function $new<T extends HTMLElement>(tag: ElementTag, options?: NewOptions): T {
   const $elt = <T>document.createElement(tag);
@@ -81,17 +93,7 @@ export function $newSvg<T extends SVGElement>(tag: ElementTag, options?: NewOpti
   return $elt;
 }
 
-
-// From: http://shebang.brandonmintern.com/foolproof-html-escaping-in-javascript/
-export function escapeHtml(str: string): Html {
-  var $div = document.createElement('div');
-  $div.appendChild(document.createTextNode(str));
-  return $div.innerHTML;
-}
-
-// HELPER FUNCTIONS
-
-function configure($elt: Element, options: NewOptions): void {
+export function configure<T extends Element>($elt: T, options: NewOptions): void {
   if (options.id) { $elt.setAttribute('id', options.id); }
   if (options.class) { $elt.classList.add(options.class); }
   if (options.classes) {
@@ -105,15 +107,25 @@ function configure($elt: Element, options: NewOptions): void {
   }
   if (options.html) { $elt.innerHTML = options.html; }
   if (options.style) { $elt.setAttribute('style', options.style); }
-
   if (options.appendTo) { options.appendTo.appendChild($elt); }
+  if (options.listeners) { attachListeners($elt, options.listeners); }
+}
 
-  if (options.listeners) {
-    const eventNames = <EventName[]>Object.keys(options.listeners);
-    for (const eventName of eventNames) {
-      const listener = options.listeners[eventName]!;
-      $elt.addEventListener(eventName, listenerWrapper</* TYPESCRIPT: */any>($elt, eventName, listener))
-    }
+
+// From: http://shebang.brandonmintern.com/foolproof-html-escaping-in-javascript/
+export function escapeHtml(str: string): Html {
+  var $div = document.createElement('div');
+  $div.appendChild(document.createTextNode(str));
+  return $div.innerHTML;
+}
+
+// HELPER FUNCTIONS
+
+function attachListeners($elt: Element, listeners: Listeners) {
+  const eventNames = <EventName[]>Object.keys(listeners);
+  for (const eventName of eventNames) {
+    const listener = listeners[eventName]!;
+    $elt.addEventListener(eventName, listenerWrapper</* TYPESCRIPT: */any>($elt, eventName, listener))
   }
 }
 
@@ -124,6 +136,7 @@ function listenerError(err: Error, $elt: Element, eventName: EventName): void {
     specifier += `.${$elt.classList.item(i)}`
   }
   console.error(`Error in ${specifier} ${eventName} listener: ${err.message}`);
+  // TODO: Throw???
   // TODO: Report error to the server.
   // TODO: Display error to the user.
 }

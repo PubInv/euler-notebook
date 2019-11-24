@@ -49,9 +49,10 @@ export function showErrorMessage(html: Html, err?: Error): void {
 
 function onDomReady(_event: Event) {
   try {
-    $('#banner').addEventListener('click', onBannerClick);
-    $<HTMLButtonElement>('#homeButton').addEventListener<'click'>('click', _event=>{ window.location.href = '/' });
-    $<HTMLButtonElement>('#userButton').addEventListener<'click'>('click', _event=>{ alert("User menu not yet implemented."); });
+    $(document, '#banner').addEventListener('click', onBannerClick);
+    // TODO: The following belong in header.ts, but then folder-app.ts needs to use header.ts.
+    $<HTMLButtonElement>(document, '#homeButton').addEventListener<'click'>('click', _event=>{ window.location.href = '/' });
+    $<HTMLButtonElement>(document, '#userButton').addEventListener<'click'>('click', _event=>{ alert("User menu not yet implemented."); });
   } catch(err) {
     addErrorMessageToHeader(`Iinitialization error: ${err.message}`);
     throw err;
@@ -80,7 +81,7 @@ function addMessageToHeader(type: ElementClass, html: Html, autoDismiss?: boolea
   const $elt = $new<HTMLDivElement>('div', { class: type, html});
   const $button = $new<HTMLButtonElement>('button', { class: 'close', html: "&#x2715;" });
   $elt.appendChild($button);
-  const $banner = $('#banner');
+  const $banner = $(document, '#banner');
   $banner.appendChild($elt);
   if (autoDismiss) {
     setTimeout(function(){ try { $banner.removeChild($elt); } catch(err){} }, 3000);

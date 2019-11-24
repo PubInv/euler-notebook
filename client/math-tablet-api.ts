@@ -59,12 +59,11 @@ export interface StrokeGroups {
 export type ToolName = string;
 export interface ToolInfo {
   name: ToolName;
+  // REVIEW: This is a sum type, not a product type.
+  //         i.e. we use either the html field or the tex field but never both.
   html?: /* TYPESCRIPT: Html? */ string;
-  // This is needed because we don't want to try to do
-  // TeX rendering into HTML on the server side; so we must
-  // inform the tool processor what we want in some way.
-  tex?: string;
-  data?: any;
+  tex?: LatexData;
+  data?: any; // Black-box info that gets passed back to tool creator when tool is used.
 }
 
 export interface RelationshipPropertiesMap {

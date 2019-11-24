@@ -21,51 +21,54 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 // Requirements
 
-import { $newSvg } from './dom.js';
+import { $newSvg } from '../dom.js';
+import { DrawingData, StyleObject } from '../notebook.js';
+import { NotebookView } from '../notebook-view.js';
+
+import { CellView } from './index.js';
 import { Stroke } from './stroke.js';
 
 // Types
 
-export type Length = string; // CSS length, e.g. 8.5in
-
 type PointerId = number;
 type PointerMap = Map<PointerId, PointerInfo>;
-
-export interface CellData {
-  id: string;
-  size: Size;
-}
 
 interface PointerInfo {
   stroke?: Stroke;
 }
 
-export interface Size {
-  height: Length;
-  width: Length;
-}
+// Class
 
-// Cell class
-
-export class Cell {
+export class DrawingCellView extends CellView {
 
   // Public Class Methods
 
-  public static create($parent: Element, data: CellData): Cell {
-    return new this($parent, data);
+  public static create(notebookView: NotebookView, style: StyleObject): DrawingCellView {
+    const instance = new this(notebookView, style);
+    instance.render(style);
+    return instance;
   }
 
-  // Private Constructor
+  // Instance Methods
 
-  private constructor ($parent: Element, data: CellData) {
+  public render(_style: StyleObject): void {
+    // TODO: Iterate through strokes and draw them on SVG.
+  }
+
+  // -- PRIVATE --
+
+  // Constructor
+
+  private constructor (notebookView: NotebookView, style: StyleObject) {
+    super(notebookView, style);
+
+    const data: DrawingData = style.data;
+
     const $svg = $newSvg<SVGSVGElement>('svg', {
-      appendTo: $parent,
-      attrs: {
-        height: data.size.height,
-        width: data.size.width,
-      },
-      class: 'cell',
-      id: data.id,
+      appendTo: this.$elt,
+      attrs: </* TYPESCRIPT: */any>data.size,
+      class: 'drawingCell',
+      id: `svg${style.id}`,
     });
 
     this.$svg = $svg;

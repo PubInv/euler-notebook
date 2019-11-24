@@ -23,21 +23,22 @@ import { escapeHtml, Html } from './dom.js';
 import { getKatex } from './katex-types.js';
 import { LatexData, } from './math-tablet-api.js';
 import { StyleType } from './notebook.js';
+import { assert } from './common.js';
 
 // Types
 
 export type Renderer = (data: any)=>RenderResult;
 
 export interface RenderResult {
+  // REVIEW: This should be a sum type, not a product type.
   html?: Html;
   errorHtml?: Html;
 }
 
 // Constants
 
-//
-export const rendererMap = new Map<StyleType, Renderer>([
-  // [ 'HTML', ],
+const RENDERERS = new Map<StyleType, Renderer>([
+  [ 'HTML', htmlRenderer ],
   // [ 'IMAGE', ],
   // [ 'JIIX',  ],
   [ 'LATEX', latexRenderer ],
@@ -53,12 +54,20 @@ export const rendererMap = new Map<StyleType, Renderer>([
   [ 'WOLFRAM', /* TODO: */ textRenderer ],
 ]);
 
+// Exported Functions
+
+export function getRenderer(type: StyleType): Renderer {
+  const rval = RENDERERS.get(type);
+  assert(rval);
+  return rval!;
+}
+
 // Renderers
 
-// function htmlRenderer(html: Html): RenderResult {
-//   // LATER: Validate HTML?
-//   return { html };
-// }
+function htmlRenderer(html: Html): RenderResult {
+  // REVIEW: Validate?
+  return { html };
+}
 
 function latexRenderer(latexData: LatexData): RenderResult {
   try {

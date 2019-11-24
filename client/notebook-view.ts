@@ -19,25 +19,22 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 // Requirements
 
-import { CellView } from './cell-view.js';
+import { CellView } from './cell-view/index.js';
+import { createCellView } from './cell-view/instantiator.js';
 import { assert } from './common.js';
-import { $, $new, escapeHtml, Html, listenerWrapper } from './dom.js';
-import { StyleId, StyleObject, NotebookChange, RelationshipId, RelationshipObject, NotebookObject, StyleMoved, StyleType, StyleInserted, StyleInsertedFromNotebookChange, StyleRelativePosition, StylePosition } from './notebook.js';
+import { $, configure } from './dom.js';
 import {
-  ChangeNotebook,
-  NotebookChangeRequest,
-  NotebookName,
-  StyleChangeRequest,
-  StyleDeleteRequest,
-  StyleInsertRequest,
-  StylePropertiesWithSubprops,
-  UseTool,
-  StyleMoveRequest,
-  Tracker,
-  NotebookChanged,
+  DrawingData, StyleId, StyleObject, NotebookChange,
+  StyleType, /* StyleInserted, */ StyleInsertedFromNotebookChange, StyleRelativePosition,
+  StylePosition, DOCUMENT, PageId,
+} from './notebook.js';
+import {
+  StyleChangeRequest, StyleDeleteRequest,
+  StyleInsertRequest, StylePropertiesWithSubprops, StyleMoveRequest,
 } from './math-tablet-api.js';
+import { OpenNotebook } from './open-notebook.js';
+import { Sidebar } from './sidebar.js';
 // import { Jiix, StrokeGroups } from './myscript-types.js';
-import { ServerSocket } from './server-socket.js';
 
 // Types
 
@@ -57,12 +54,6 @@ type KeyMods = number;    // Bitwise or of KeyMod. // TYPESCRIPT:??
 
 type KeyName = string;
 type KeyCombo = string;   // KeyName followed by KeyMods, e.g. 'Enter8' for shift+enter.
-
-interface StyleIndex { [id:string]: StyleId[] }
-
-export interface SelectionChangedEventDetail {
-  empty: boolean;
-}
 
 // Constants
 
@@ -91,53 +82,50 @@ export class NotebookView {
 
   // Class Methods
 
-  public static get(notebookName: NotebookName): NotebookView|undefined {
-    return this.notebooks.get(notebookName);
-  }
-
-  public static create(
-    socket: ServerSocket,
-    notebookName: NotebookName,
-    tDoc: NotebookObject,
-  ): NotebookView {
-    assert(!this.notebooks.has(notebookName));
-    const instance = new this(socket, notebookName);
-    this.notebooks.set(notebookName, instance);
-    instance.populateFromTDoc(tDoc);
-    return instance;
-  }
-
-  public static open(
-    socket: ServerSocket,
-    notebookName: NotebookName,
-    tDoc: NotebookObject,
-  ): NotebookView {
-    return this.notebooks.get(notebookName) || this.create(socket, notebookName, tDoc);
+  public static attach($elt: HTMLDivElement): NotebookView {
+    return new this($elt);
   }
 
   // Instance Properties
 
-  public $elt: HTMLElement;
-  public notebookName: NotebookName;
+  public openNotebook!: OpenNotebook;
 
   // Instance Property Functions
 
-  public debugHtml(): Html {
-    return Array.from(this.cellViews.values())
-    .map(s=>this.debugStyleHtml(s.style)).join('');
-  }
-
-  // This is just to have public access..
-  public getStyleFromKey(key: StyleId): StyleObject | null {
-    const g = this.styles.get(key);
-    return g ? g : null;
-  }
-
   public topLevelCellOf(style: StyleObject): CellView {
-    for (; style.parentId; style = this.styles.get(style.parentId)!);
+    for (; style.parentId; style = this.openNotebook.getStyleById(style.parentId));
     const cell = this.cellViews.get(style.id);
     assert(cell);
     return cell!;
+  }
+
+  // Instance Methods
+
+  public connect(openNotebook: OpenNotebook, sidebar: Sidebar): void {
+    this.openNotebook = openNotebook;
+    this.sidebar = sidebar;
+
+    for (const styleId of this.openNotebook.topLevelStyleOrder()) {
+      const style = this.openNotebook.getStyleById(styleId);
+      this.createCell(style, -1);
+    }
+  }
+
+  public scrollPageIntoView(pageId: PageId): void {
+    // TODO: This will not work when cells can be added or removed.
+    const pageData = DOCUMENT.pages.find(p=>p.id == pageId);
+    if (!pageData) { throw new Error(`Page with ID not found: ${pageId}`); }
+    const cellData = pageData.cells[0];
+    // TODO: This doesn't work of the page doesn't have any cells.
+    const cellId = cellData.id;
+    const $cell = this.$elt.querySelector<SVGSVGElement>(`#${cellId}`);
+    $cell!.scrollIntoView({ block: 'start'});
+  }
+
+  // NOTE: When sidebar switches views it calls .focus() on the element directly,
+  //       It does not call this function.
+  public setFocus(): void {
+    this.$elt.focus();
   }
 
   // Commands
@@ -146,8 +134,8 @@ export class NotebookView {
   public deleteSelectedCells(): void {
     const cellViews = this.selectedCells();
     this.unselectAll();
-    const changeRequests = cellViews.map<StyleDeleteRequest>(c=>({ type: 'deleteStyle', styleId: c.style.id }));
-    this.sendChangeRequests(changeRequests);
+    const changeRequests = cellViews.map<StyleDeleteRequest>(c=>({ type: 'deleteStyle', styleId: c.styleId }));
+    this.openNotebook.sendChangeRequests(changeRequests);
   }
 
   public editSelectedCell(): void {
@@ -159,6 +147,20 @@ export class NotebookView {
     this.lastCellSelected.editMode();
   }
 
+  public insertDrawingCellBelow(): void {
+    // If cells are selected then in insert a keyboard input cell below the last cell selected.
+    // Otherwise, insert at the end of the notebook.
+    let afterId: StyleRelativePosition;
+    if (this.lastCellSelected) { afterId = this.lastCellSelected.styleId; }
+    else { afterId = StylePosition.Bottom; }
+
+    const data: DrawingData = {
+      size: { height: '1in', width: '6.5in' }
+    };
+    const styleProps: StylePropertiesWithSubprops = { type: 'DRAWING', meaning: 'INPUT', data };
+    this.insertStyle(styleProps, afterId);
+  }
+
   public insertKeyboardCellAbove(): void {
     // If cells are selected then in insert a keyboard input cell
     // above the last cell selected.
@@ -166,7 +168,7 @@ export class NotebookView {
     let afterId: StyleRelativePosition;
     if (this.lastCellSelected) {
       const previousCell = this.previousCell(this.lastCellSelected);
-      afterId = previousCell ? previousCell.style.id : StylePosition.Top;
+      afterId = previousCell ? previousCell.styleId : StylePosition.Top;
     } else { afterId = StylePosition.Top; }
     this.insertKeyboardCellAndEdit(afterId);
   }
@@ -175,7 +177,7 @@ export class NotebookView {
     // If cells are selected then in insert a keyboard input cell below the last cell selected.
     // Otherwise, insert at the end of the notebook.
     let afterId: StyleRelativePosition;
-    if (this.lastCellSelected) { afterId = this.lastCellSelected.style.id; }
+    if (this.lastCellSelected) { afterId = this.lastCellSelected.styleId; }
     else { afterId = StylePosition.Bottom; }
     this.insertKeyboardCellAndEdit(afterId);
   }
@@ -189,7 +191,7 @@ export class NotebookView {
       // REVIEW: Beep or something?
       return;
     }
-    const styleId = this.lastCellSelected.style.id;
+    const styleId = this.lastCellSelected.styleId;
 
     const nextCell = this.nextCell(this.lastCellSelected);
     if (!nextCell) {
@@ -197,10 +199,10 @@ export class NotebookView {
       return;
     }
     const nextNextCell = this.nextCell(nextCell);
-    const afterId = nextNextCell ? nextCell.style.id : StylePosition.Bottom;
+    const afterId = nextNextCell ? nextCell.styleId : StylePosition.Bottom;
 
     const request: StyleMoveRequest = { type: 'moveStyle', styleId, afterId };
-    this.sendChangeRequest(request);
+    this.openNotebook.sendChangeRequest(request);
   }
 
   public moveSelectionUp(): void {
@@ -212,7 +214,7 @@ export class NotebookView {
       // REVIEW: Beep or something?
       return;
     }
-    const styleId = this.lastCellSelected.style.id;
+    const styleId = this.lastCellSelected.styleId;
 
     const previousCell = this.previousCell(this.lastCellSelected);
     if (!previousCell) {
@@ -220,10 +222,10 @@ export class NotebookView {
       return;
     }
     const previousPreviousCell = this.previousCell(previousCell);
-    const afterId = previousPreviousCell ? previousPreviousCell.style.id : /* top */ 0;
+    const afterId = previousPreviousCell ? previousPreviousCell.styleId : /* top */ 0;
 
     const request: StyleMoveRequest = { type: 'moveStyle', styleId, afterId };
-    this.sendChangeRequest(request);
+    this.openNotebook.sendChangeRequest(request);
   }
 
   public selectDown(extend?: boolean): void {
@@ -258,32 +260,79 @@ export class NotebookView {
       if (cellView.isSelected()) { cellView.unselect(); }
     }
     delete this.lastCellSelected;
-    if (!noEmit) { this.emitSelectionChangedEvent({ empty: true }); }
+    if (!noEmit) {
+      this.sidebar.enableTrashButton(false);
+    }
   }
 
   // Instance Methods
 
-  public close() {
-    // TODO: remove event listeners?
-    // TODO: delete element?
-    // TODO: mark closed?
-    this.clear();
-    NotebookView.notebooks.delete(this.notebookName);
-  }
-
   public changeStyle(styleId: StyleId, data: any): void {
     const changeRequest: StyleChangeRequest = { type: 'changeStyle', styleId, data };
-    this.sendChangeRequest(changeRequest);
+    this.openNotebook.sendChangeRequest(changeRequest);
+  }
+
+  public createCell(style: StyleObject, afterId: StyleRelativePosition): CellView {
+    const cellView = createCellView(this, style);
+    this.cellViews.set(style.id, cellView);
+    this.insertCell(cellView, afterId);
+    return cellView;
+  }
+
+  public deleteCell(cellView: CellView): void {
+    if (cellView == this.lastCellSelected) {
+      delete this.lastCellSelected;
+    }
+    this.$elt.removeChild(cellView.$elt);
+    this.cellViews.delete(cellView.styleId);
+  }
+
+  public insertCell(cellView: CellView, afterId: StyleRelativePosition): void {
+    if (afterId == StylePosition.Top) {
+      this.$elt.prepend(cellView.$elt);
+    } else if (afterId == StylePosition.Bottom) {
+      this.$elt.append(cellView.$elt);
+    } else {
+      const afterCell = this.cellViews.get(afterId);
+      if (!afterCell) { throw new Error(`Cannot insert cell after unknown cell ${afterId}`); }
+      afterCell.$elt.insertAdjacentElement('afterend', cellView.$elt);
+    }
+  }
+
+  public insertKeyboardCellAndEdit(afterId: StyleRelativePosition): void {
+    // Shared implementation of 'insertKeyboardCellAbove' and 'insertKeyboardCellBelow'
+    // Inserts a cell into the notebook, and opens it for editing.
+
+    // REVIEW: We shouldn't be assuming a specific HTML control on the page.
+    const $typeSelector = $<HTMLSelectElement>(document, '#keyboardInputType');
+
+    const styleProps: StylePropertiesWithSubprops = {
+      type: <StyleType>$typeSelector.value,
+      meaning: 'INPUT',
+      data: "",
+    };
+
+    // Insert top-level style and wait for it to be inserted.
+    this.insertStyleTracked(styleProps, afterId)
+    .then(styleId=>{
+      const cellView = this.cellViewFromStyleId(styleId);
+      cellView.scrollIntoView();
+      this.selectCell(cellView);
+      cellView.editMode();
+    })
+    .catch(err=>{
+      console.error(`Error inserting keyboard style: ${err.message}\n${err.stack}`);
+    });
   }
 
   public insertStyle(styleProps: StylePropertiesWithSubprops, afterId: StyleRelativePosition = StylePosition.Bottom): void {
     const changeRequest: StyleInsertRequest = { type: 'insertStyle', afterId, styleProps };
-    this.sendChangeRequest(changeRequest);
+    this.openNotebook.sendChangeRequest(changeRequest);
   }
 
   public async insertStyleTracked(styleProps: StylePropertiesWithSubprops, afterId: StyleRelativePosition = StylePosition.Bottom): Promise<StyleId> {
     const changeRequest: StyleInsertRequest = { type: 'insertStyle', afterId, styleProps };
-    const changes = await this.sendTrackedChangeRequest(changeRequest);
+    const changes = await this.openNotebook.sendTrackedChangeRequest(changeRequest);
 
     // The style we inserted will be the first change that comes back.
     assert(changes.length>0);
@@ -292,98 +341,127 @@ export class NotebookView {
     return style.id;
   }
 
-  public useTool(id: StyleId): void {
-    const msg: UseTool = {
-      type: 'useTool',
-      notebookName: this.notebookName,
-      styleId: id,
-    };
-    this.socket.sendMessage(msg);
+  public selectCell(
+    cellView: CellView,
+    rangeExtending?: boolean, // Extending selection by a contiguous range.
+    indivExtending?: boolean, // Extending selection by an individual cell, possibly non-contiguous.
+  ): void {
+    if (!rangeExtending && !indivExtending) { this.unselectAll(true); }
+    cellView.select();
+    this.lastCellSelected = cellView;
+    this.sidebar.enableTrashButton(true);
   }
 
-  // Server Message Handlers
+  // Called by openNotebook when changes come in from the server.
+  // Called *after* the changes have been made to the notebook,
+  // and *before* any promises for tracked change requests are resolved.
+  public smChange(change: NotebookChange): void {
 
-  public smChange(msg: NotebookChanged): void {
-
-    const changes = msg.changes;
-    for (const change of changes) {
-      switch (change.type) {
-        case 'relationshipDeleted': this.chDeleteRelationship(change.relationship); break;
-        case 'relationshipInserted': this.chInsertRelationship(change.relationship); break;
-        case 'styleChanged': this.chChangeStyle(change.style.id, change.style.data, change.previousData); break;
-        case 'styleDeleted': this.chDeleteStyle(change.style.id); break;
-        case 'styleInserted': this.chInsertStyle(change); break;
-        case 'styleMoved': this.chMoveStyle(change); break;
-        default: throw new Error(`Unexpected change type ${(<any>change).type}`);
+    // If a change would (or might) modify the display of a cell,
+    // then mark add the cell to a list of cells to be redrawn.
+    // If a cell is deleted or moved, then make that change immediately.
+    switch (change.type) {
+      case 'relationshipDeleted': {
+        // REVIEW: Is there a way to tell what relationships affect display?
+        // REVIEW: This assumes both incoming and outgoing relationships can affect display.
+        //         Is that too conservative?
+        this.dirtyCells.add(this.openNotebook.topLevelStyleOf(change.relationship.fromId).id);
+        this.dirtyCells.add(this.openNotebook.topLevelStyleOf(change.relationship.toId).id);
+        break;
       }
-    }
-
-    // REVIEW: Are all of the above changes synchronous?
-    //         If not, then we will need to wait for them to complete
-    //         before resolving the tracking promise, below.
-    // If the changes were tracked then accumulate the changes
-    // and resolve the tracking promise if complete.
-    if (msg.tracker) {
-      const previousChanges = this.trackedChangeResponses.get(msg.tracker) || [];
-      assert(previousChanges);
-      const accumulatedChanges = previousChanges.concat(changes);
-      if (!msg.complete) {
-        this.trackedChangeResponses.set(msg.tracker, accumulatedChanges);
-      } else {
-        this.trackedChangeResponses.delete(msg.tracker);
-        const fns = this.trackedChangeRequests.get(msg.tracker);
-        this.trackedChangeRequests.delete(msg.tracker);
-        assert(fns);
-        const resolve = fns![0];
-        // REVIEW: Is there any way the promise could be rejected?
-        resolve(accumulatedChanges);
+      case 'relationshipInserted': {
+        // REVIEW: Is there a way to tell what relationships affect display?
+        // REVIEW: This assumes both incoming and outgoing relationships can affect display.
+        //         Is that too conservative?
+        this.dirtyCells.add(this.openNotebook.topLevelStyleOf(change.relationship.fromId).id);
+        this.dirtyCells.add(this.openNotebook.topLevelStyleOf(change.relationship.toId).id);
+        break;
       }
+      case 'styleChanged': {
+        // REVIEW: Is there a way to tell what styles affect display?
+        this.dirtyCells.add(this.openNotebook.topLevelStyleOf(change.style.id).id);
+        break;
+      }
+      case 'styleDeleted': {
+        // If a substyle is deleted then mark the cell as dirty.
+        // If a top-level style is deleted then remove the cell.
+        const style = this.openNotebook.getStyleById(change.style.id);
+        const topLevelStyle = this.openNotebook.topLevelStyleOf(style.id);
+        if (style.id != topLevelStyle.id) {
+          // REVIEW: Is there a way to tell what styles affect display?
+          this.dirtyCells.add(topLevelStyle.id);
+        } else {
+          const cellView = this.cellViews.get(style.id);
+          assert(cellView);
+          this.deleteCell(cellView!);
+          this.dirtyCells.delete(style.id);
+        }
+        break;
+      }
+      case 'styleInserted': {
+        if (!change.style.parentId) {
+          this.createCell(change.style, change.afterId!);
+        } else {
+          // REVIEW: Is there a way to tell what styles affect display?
+          this.dirtyCells.add(this.openNotebook.topLevelStyleOf(change.style.id).id);
+        }
+        break;
+      }
+      case 'styleMoved': {
+        const style = this.openNotebook.getStyleById(change.styleId);
+        if (style.parentId) {
+          console.warn(`Non top-level style moved: ${style.id}`);
+          break;
+        }
+        const movedCell = this.cellViews.get(style.id);
+        assert(movedCell);
+        // Note: DOM methods ensure the element will be removed from
+        //       its current parent.
+        this.insertCell(movedCell!, change.afterId);
+        break;
+      }
+      default: throw new Error(`Unexpected change type ${(<any>change).type}`);
     }
   }
 
-  public smClose(): void { return this.close(); }
+  public updateView(): void {
+    // Redraw all of the cells that (may) have changed.
+    for (const styleId of this.dirtyCells) {
+      const style = this.openNotebook.getStyleById(styleId);
+      const cell = this.cellViewFromStyleId(styleId);
+      if (!cell) { throw new Error(`Can't find dirty Change style message for style without top-level element`); }
+      cell.render(style);
+    }
+    this.dirtyCells.clear();
+  }
+
+  public useTool(id: StyleId): void { this.openNotebook.useTool(id); }
 
   // -- PRIVATE --
 
-  // Private Class Properties
+  // Constructor
 
-  private static notebooks: Map<NotebookName, NotebookView> = new Map();
+  private constructor($elt: HTMLDivElement) {
+    this.$elt = $elt;
+    configure($elt, { listeners: {
+      blur: e=>this.onBlur(e),
+      focus: e=>this.onFocus(e),
+      keyup: e=>this.onKeyUp(e),
+    }});
 
-  // Private Constructor
-
-  private constructor(socket: ServerSocket, notebookName: NotebookName) {
-    this.socket = socket;
-    this.notebookName = notebookName;
-
-    this.$elt = $new('div', {
-      id: notebookName,
-      class: 'notebookView',
-      attrs: {
-        tabindex: 0,
-      },
-      listeners: {
-        blur: e=>this.onBlur(e),
-        focus: e=>this.onFocus(e),
-        keyup: e=>this.onKeyUp(e),
-      }
-    });
-
-    this.relationships = new Map();
-    this.styles = new Map();
     this.cellViews = new Map();
-    this.trackedChangeRequests = new Map();
-    this.trackedChangeResponses = new Map();
+    this.dirtyCells = new Set();
   }
 
   // Private Instance Properties
 
+  private $elt: HTMLElement;
   private cellViews: Map<StyleId, CellView>;
+  private dirtyCells: Set<StyleId>;             // Style ids of top-level styles that need to be redrawn.
   private lastCellSelected?: CellView;
-  private relationships: Map<RelationshipId, RelationshipObject>;
-  private socket: ServerSocket;
-  private styles: Map<StyleId, StyleObject>;
-  private trackedChangeRequests: Map<Tracker, [ (changes: NotebookChange[])=>void, (reason: any)=>void ]>;
-  private trackedChangeResponses: Map<Tracker, NotebookChange[]>;
+  private sidebar!: Sidebar;
+
+  // Private Instance Property Functions
 
   private cellViewFromStyleId(styleId: StyleId): CellView {
     return this.cellViews.get(styleId)!;
@@ -396,8 +474,12 @@ export class NotebookView {
   }
 
   private firstCell(): CellView | undefined {
-    const $elt = <HTMLDivElement|null>this.$elt.firstElementChild;
-    return $elt ? this.cellViewFromElement($elt) : undefined;
+    const styleOrder = this.openNotebook.topLevelStyleOrder();
+    if (styleOrder.length==0) { return undefined; }
+    const styleId = styleOrder[0];
+    const cellView = this.cellViewFromStyleId(styleId);
+    assert(cellView);
+    return cellView;
   }
 
   private lastCell(): CellView | undefined {
@@ -415,10 +497,6 @@ export class NotebookView {
     return $elt ? this.cellViewFromElement($elt) : undefined;
   }
 
-  private relationshipsAttachedToStyle(s: StyleObject): RelationshipObject[] {
-    return Array.from(this.relationships.values()).filter(r=>r.fromId==s.id);
-  }
-
   private selectedCells(): CellView[] {
     const rval: CellView[] = [];
     for (const cellView of this.cellViews.values()) {
@@ -427,27 +505,15 @@ export class NotebookView {
     return rval;
   }
 
-  private stylesAttachedToStyle(s: StyleObject): StyleObject[] {
-    return Array.from(this.styles.values()).filter(s2=>s2.parentId==s.id);
-  }
+  // Private Instance Methods
+
+  // Private Notebook Change Handlers
 
   // Private Event Handlers
 
   private onBlur(_event: FocusEvent): void {
     // console.log("BLUR!!!");
     // console.dir(event);
-  }
-
-  private onCellClick(cellView: CellView, event: MouseEvent): void {
-    // Note: Shift-click or ctrl-click will extend the current selection.
-    this.selectCell(cellView, event.shiftKey, event.metaKey);
-  }
-
-  private onCellDoubleClick(cellView: CellView, _event: MouseEvent): void {
-    if (!cellView.editMode()) {
-      // REVIEW: Beep or something?
-      console.log(`Keyboard input panel not available for cell: ${cellView.style.meaning}/${cellView.style.type}`)
-    }
   }
 
   private onFocus(_event: FocusEvent): void {
@@ -480,244 +546,6 @@ export class NotebookView {
       // No command bound to that key.
       // REVIEW: Beep or something?
     }
-  }
-
-  // Private Change Event Handlers
-
-  private chChangeStyle(styleId: StyleId, data: any, previousData: any): void {
-    const style = this.styles.get(styleId);
-    if (!style) { throw new Error(`Change style message for unknown style: ${styleId}`); }
-    style.data = data;
-    const cell = this.topLevelCellOf(style!);
-    if (!cell) { throw new Error(`Change style message for style without top-level element`); }
-    cell.changeStyle(style, previousData);
-  }
-
-  private chDeleteRelationship(relationship: RelationshipObject): void {
-    const relationshipElt = this.relationships.get(relationship.id);
-    if (!relationshipElt) { throw new Error(`Delete relationship message for unknown relationship`); }
-    this.relationships.delete(relationship.id);
-
-    // if the relationship is an equivalence, it has been rendered
-    // as a preamble of a thought. It would probably be easiest
-    // to re-render the cell.
-    if (relationship.meaning == 'EQUIVALENCE') {
-      const srcStyle = this.styles.get(relationship.fromId);
-      const tarStyle = this.styles.get(relationship.toId);
-      if (srcStyle && tarStyle) {
-        const srcStyleElt = this.topLevelCellOf(srcStyle);
-        const tarStyleElt = this.topLevelCellOf(tarStyle);
-        srcStyleElt.deleteEquivalence(relationship);
-        tarStyleElt.deleteEquivalence(relationship);
-        console.log(srcStyleElt,tarStyleElt);
-      }
-    }
-  }
-
-  private chDeleteStyle(styleId: StyleId): void {
-    const style = this.styles.get(styleId);
-    if (!style) { throw new Error("Delete style message for unknown style"); }
-    this.styles.delete(styleId);
-    const cell = this.topLevelCellOf(style!);
-    if (!cell) { throw new Error(`Delete style message for style without top-level element`); }
-    cell.deleteStyle(style!);
-    if (!style!.parentId) {
-      // This is a top-level style so delete the associated cell.
-      const cellView = this.cellViews.get(styleId);
-      assert(cellView);
-      this.deleteCell(cellView!);
-    }
-  }
-
-  private chInsertRelationship(relationship: RelationshipObject): void {
-    this.relationships.set(relationship.id, relationship);
-    if (relationship.meaning == 'EQUIVALENCE') {
-      let style = this.styles.get(relationship.toId);
-      if (style) {
-        // Here I try to find the target to try to add the
-        // equivalence preamble...
-        let cellView = this.topLevelCellOf(style);
-        cellView.insertEquivalence(relationship);
-      }
-    }
-  }
-
-  private chInsertStyle(change: StyleInserted): void {
-    const { style, afterId } = change;
-
-    this.styles.set(style.id, style);
-    let cellView: CellView;
-    if (!style.parentId) {
-      cellView = this.createCell(style, afterId!);
-    } else {
-      cellView = this.topLevelCellOf(style);
-    }
-    cellView.insertStyle(style);
-  }
-
-  private chMoveStyle(change: StyleMoved): void {
-    const { styleId, afterId } = change;
-    const movedCell = this.cellViews.get(styleId);
-    if (!movedCell) { throw new Error(`Cannot move unknown cell ${styleId}`); }
-    // Note: DOM methods ensure the element will be removed from
-    //       its current parent.
-    this.insertCell(movedCell, afterId);
-  }
-
-  // Private Instance Methods
-
-  private clear(): void {
-    this.$elt.innerHTML = '';
-    this.cellViews.clear();
-    this.styles.clear();
-  }
-
-  private createCell(style: StyleObject, afterId: StyleRelativePosition): CellView {
-    const cellView = CellView.create(this, style);
-    cellView.$elt.addEventListener('click', listenerWrapper( cellView.$elt, 'click', event=>this.onCellClick(cellView, event)));
-    cellView.$elt.addEventListener('dblclick', listenerWrapper( cellView.$elt, 'dblclick', event=>this.onCellDoubleClick(cellView, event)));
-    this.cellViews.set(style.id, cellView);
-    this.insertCell(cellView, afterId);
-    return cellView;
-  }
-
-  private debugRelationshipHtml(relationship: RelationshipObject): Html {
-    return `<div><span class="leaf">R${relationship.id} ${relationship.fromId} &#x27a1; ${relationship.toId} Meaning: ${relationship.meaning}</span></div>`;
-  }
-
-  private debugStyleHtml(style: StyleObject): Html {
-    const styleElements = this.stylesAttachedToStyle(style);
-    const relationshipElements = this.relationshipsAttachedToStyle(style);
-    const json = escapeHtml(JSON.stringify(style.data));
-    if (styleElements.length == 0 && relationshipElements.length == 0 && json.length<30) {
-      return `<div><span class="leaf">S${style.id} ${style.type} ${style.meaning} ${style.source} <tt>${json}</tt></span></div>`;
-    } else {
-      const stylesHtml = styleElements.map(s=>this.debugStyleHtml(s)).join('');
-      const relationshipsHtml = relationshipElements.map(r=>this.debugRelationshipHtml(r)).join('');
-      const [ shortJsonTt, longJsonTt ] = json.length<30 ? [` <tt>${json}</tt>`, ''] : [ '', `<tt>${json}</tt>` ];
-      return `<div>
-  <span class="collapsed">S${style.id} ${style.type} ${style.meaning} ${style.source}${shortJsonTt}</span>
-  <div class="nested" style="display:none">${longJsonTt}
-    ${stylesHtml}
-    ${relationshipsHtml}
-  </div>
-</div>`;
-    }
-  }
-
-  private deleteCell(cellView: CellView): void {
-    if (cellView == this.lastCellSelected) {
-      delete this.lastCellSelected;
-    }
-    this.$elt.removeChild(cellView.$elt);
-    this.cellViews.delete(cellView.style.id);
-  }
-
-  private insertCell(cellView: CellView, afterId: StyleRelativePosition): void {
-    if (afterId == StylePosition.Top) {
-      this.$elt.prepend(cellView.$elt);
-    } else if (afterId == StylePosition.Bottom) {
-      this.$elt.append(cellView.$elt);
-    } else {
-      const afterCell = this.cellViews.get(afterId);
-      if (!afterCell) { throw new Error(`Cannot insert cell after unknown cell ${afterId}`); }
-      afterCell.$elt.insertAdjacentElement('afterend', cellView.$elt);
-    }
-  }
-
-  private insertKeyboardCellAndEdit(afterId: StyleRelativePosition): void {
-    // Shared implementation of 'insertKeyboardCellAbove' and 'insertKeyboardCellBelow'
-    // Inserts a cell into the notebook, and opens it for editing.
-
-    // REVIEW: We shouldn't be assuming a specific HTML control on the page.
-    const $typeSelector = $<HTMLSelectElement>('#keyboardInputType');
-
-    const styleProps: StylePropertiesWithSubprops = {
-      type: <StyleType>$typeSelector.value,
-      meaning: 'INPUT',
-      data: "",
-    };
-
-    // Insert top-level style and wait for it to be inserted.
-    this.insertStyleTracked(styleProps, afterId)
-    .then(styleId=>{
-      const cellView = this.cellViewFromStyleId(styleId);
-      this.scrollCellIntoView(cellView);
-      this.selectCell(cellView);
-      cellView.editMode();
-    })
-    .catch(err=>{
-      console.error(`Error inserting keyboard style: ${err.message}\n${err.stack}`);
-    });
-  }
-
-  private emitSelectionChangedEvent(detail: SelectionChangedEventDetail): void {
-    const event = new CustomEvent<SelectionChangedEventDetail>('selection-changed', { detail });
-    this.$elt.dispatchEvent(event);
-  }
-
-  private populateFromTDoc(tDoc: NotebookObject): void {
-    const index: StyleIndex = { '0':[] };
-    for (const styleId of Object.keys(tDoc.styleMap)) { index[styleId] = []; }
-    for (const style of Object.values(tDoc.styleMap)) { index[style.parentId].push(style.id); }
-    for (const styleId of tDoc.styleOrder) {
-      this.populateStyleRecursively(tDoc, index, styleId);
-    }
-    for (const relationship of Object.values(tDoc.relationshipMap)) {
-      this.chInsertRelationship(relationship);
-    }
-  }
-
-  private populateStyleRecursively(tDoc: NotebookObject, index: StyleIndex, styleId: StyleId) {
-    const style = tDoc.styleMap[styleId];
-    const change: StyleInserted = { type: 'styleInserted', style };
-    if (!style.parentId) { change.afterId = StylePosition.Bottom; }
-    this.chInsertStyle(change);
-    for (const subStyleId of index[styleId]) {
-      this.populateStyleRecursively(tDoc, index, subStyleId)
-    }
-  }
-
-  private selectCell(
-    cellView: CellView,
-    rangeExtending?: boolean, // Extending selection by a contiguous range.
-    indivExtending?: boolean, // Extending selection by an individual cell, possibly non-contiguous.
-  ): void {
-    if (!rangeExtending && !indivExtending) { this.unselectAll(true); }
-    cellView.select();
-    this.lastCellSelected = cellView;
-    this.emitSelectionChangedEvent({ empty: false });
-  }
-
-  private scrollCellIntoView(cellView: CellView): void {
-    cellView.$elt.scrollIntoView();
-  }
-
-  private sendChangeRequest(changeRequest: NotebookChangeRequest, tracker?: Tracker): void {
-    this.sendChangeRequests([ changeRequest ], tracker);
-  }
-
-  private sendChangeRequests(changeRequests: NotebookChangeRequest[], tracker?: Tracker): void {
-    if (changeRequests.length == 0) { return; }
-    const msg: ChangeNotebook = {
-      type: 'changeNotebook',
-      notebookName: this.notebookName,
-      changeRequests,
-      tracker,
-    }
-    this.socket.sendMessage(msg);
-  }
-
-  private sendTrackedChangeRequest(changeRequest: NotebookChangeRequest): Promise<NotebookChange[]> {
-    return this.sendTrackedChangeRequests([ changeRequest ]);
-  }
-
-  private sendTrackedChangeRequests(changeRequests: NotebookChangeRequest[]): Promise<NotebookChange[]> {
-    return new Promise((resolve, reject)=>{
-      const tracker: Tracker = Date.now().toString();
-      this.trackedChangeRequests.set(tracker, [ resolve, reject ]);
-      this.sendChangeRequests(changeRequests, tracker);
-    });
   }
 
 }

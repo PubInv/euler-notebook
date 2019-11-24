@@ -24,22 +24,52 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 // Types
 
+export type CssLength = string; // CSS length, e.g. "8.5in"
+
+export interface CssSize {
+  height: CssLength;
+  width: CssLength;
+}
+
+export interface DrawingData {
+  size: CssSize;
+}
+
+// NOTE: toId and fromId are mutually "or". The ids and all other fields are "and".
+export interface FindRelationshipOptions {
+  toId?: StyleId;
+  fromId?: StyleId;
+  meaning?: RelationshipMeaning;
+  source?: StyleSource;
+}
+
+export interface FindStyleOptions {
+  meaning?: StyleMeaning;
+  source?: StyleSource;
+  type?: StyleType;
+  recursive?: boolean;
+}
+
 export type NotebookChange = RelationshipDeleted|RelationshipInserted|StyleChanged|StyleDeleted|StyleInserted|StyleMoved;
 export interface RelationshipDeleted {
   type: 'relationshipDeleted';
+  // REVIEW: Only pass relationshipId?
   relationship: RelationshipObject;
 }
 export interface RelationshipInserted {
   type: 'relationshipInserted';
   relationship: RelationshipObject;
 }
+
 export interface StyleChanged {
   type: 'styleChanged';
+  // REVIEW: Only pass styleId and new data?
   style: StyleObject;
   previousData: any;
 }
 export interface StyleDeleted {
   type: 'styleDeleted';
+  // REVIEW: Only pass styleId?
   style: StyleObject;
 }
 export interface StyleInserted {
@@ -150,6 +180,7 @@ export enum StylePosition {
   Bottom = -1,
 }
 export const STYLE_TYPES = [
+  'DRAWING',         // Strokes of user sketch in our own format.
   'HTML',            // Html: HTML-formatted text
   'IMAGE',           // ImageData: URL of image relative to notebook folder.
   'JIIX',            // Jiix: MyScript JIIX export from 'MATH' editor.
@@ -245,8 +276,11 @@ export class Notebook {
 
   // REVIEW: Return an iterator?
   public allRelationships(): RelationshipObject[] {
+    // TODO: Does it matter whether we return relationships in sorted order or not?
+    //       This could be as simple as: return Object.values(this.relationshipMap);
     const sortedIds: RelationshipId[] = Object.keys(this.relationshipMap).map(k=>parseInt(k,10)).sort();
     return sortedIds.map(id=>this.relationshipMap[id]);
+
   }
 
   public relationshipsOf(id: StyleId): RelationshipObject[] {
@@ -542,6 +576,10 @@ export class Notebook {
     return <NotebookObject><unknown>obj;
   }
 
+  public topLevelStyles(): StyleObject[] {
+    return this.styleOrder.map(styleId=>this.styleMap[styleId]);
+  }
+
   public topLevelStyleOf(id: StyleId): StyleObject {
     const style = this.styleMap[id];
     if (!style) { throw new Error("Cannot find top-level style: "+id); }
@@ -566,6 +604,7 @@ export class Notebook {
 
   public applyChange(change: NotebookChange): void {
     // REVIEW: Can change be null?
+    // TODO: Don't let changes be null.
     if (change != null) {
       switch(change.type) {
         case 'relationshipDeleted':
@@ -576,7 +615,7 @@ export class Notebook {
           this.insertRelationship(change.relationship);
           break;
         case 'styleChanged':
-          // style.data was changed in convertChangeRequestToChanges.
+          this.changeStyle(change);
           break;
         case 'styleDeleted':
           this.deleteStyle(change.style);
@@ -597,6 +636,38 @@ export class Notebook {
     for (const change of changes) { this.applyChange(change); }
   }
 
+  public findRelationships(options: FindRelationshipOptions): RelationshipObject[] {
+    const rval: RelationshipObject[] = [];
+    // REVIEW: Ideally, relationships would be stored in a Map, not an object,
+    //         so we could obtain an iterator over the values, and not have to
+    //         construct an intermediate array.
+    for (const relationship of Object.values(this.relationshipMap)) {
+      if ((options.fromId || options.toId) && relationship.fromId != options.fromId && relationship.toId != options.toId) { continue; }
+      if (options.source && relationship.source != options.source) { continue; }
+      if (options.meaning && relationship.meaning != options.meaning) { continue; }
+      rval.push(relationship);
+    }
+    return rval;
+  }
+
+  public findStyles(
+    options: FindStyleOptions,
+    rootId?: StyleId,           // Search child styles of this style, otherwise top-level styles.
+    rval: StyleObject[] = []
+  ): StyleObject[] {
+    const styles = rootId ? this.childStylesOf(rootId) : this.topLevelStyles();
+    for (const style of styles) {
+      if (   (!options.meaning || style.meaning == options.meaning)
+          && (!options.type || style.type == options.type)
+          && (!options.source || style.source == options.source)
+         ) { rval.push(style); }
+      if (options.recursive) {
+        this.findStyles(options, style.id, rval);
+      }
+    }
+    return rval;
+  }
+
   // --- PRIVATE ---
 
   // Private Class Properties
@@ -614,6 +685,13 @@ export class Notebook {
   // Private Event Handlers
 
   // Private Instance Methods
+
+  private changeStyle(change: StyleChanged): void {
+    const styleId = change.style.id;
+    const style = this.styleMap[styleId];
+    if (!style) { throw new Error(`Changing unknown style ${styleId}`); }
+    style.data = change.style.data;
+  }
 
   private deleteRelationship(relationship: RelationshipObject): void {
     // TODO: relationship may have already been deleted by another observer.
@@ -665,9 +743,106 @@ export class Notebook {
   }
 }
 
-//
-
 export function StyleInsertedFromNotebookChange(change: NotebookChange): StyleInserted {
-  if (change.type != 'styleInserted') { throw new Error("Not StyleInserted chagne."); }
+  if (change.type != 'styleInserted') { throw new Error("Not StyleInserted change."); }
   return change;
 }
+
+// TEMPORARY
+
+export type CellId = string;
+export type PageId = string;
+
+export interface CellData {
+  id: CellId;
+  size: CssSize;
+}
+
+export interface CssSize {
+  height: CssLength;
+  width: CssLength;
+}
+
+interface Document {
+  pageConfig: PageConfig,
+  pages: PageData[];
+}
+
+interface PageConfig {
+  size: CssSize;
+  margins: PageMargins;
+}
+
+interface PageData {
+  id: PageId;
+  cells: CellData[];
+}
+
+interface PageMargins {
+  bottom: CssLength;
+  left: CssLength;
+  right: CssLength;
+  top: CssLength;
+}
+
+export const DOCUMENT: Document = {
+  pageConfig: {
+    size: { width: '8.5in', height: '11in' },
+    margins: { top: '1in', bottom: '1in', left: '1in', right: '1in' },
+  },
+  pages: [
+    {
+      id: 'p1',
+      cells: [
+        { id: 'p1c1', size: { width: '6.5in', height: '1in' } },
+        { id: 'p1c2', size: { width: '6.5in', height: '1in' } },
+        { id: 'p1c3', size: { width: '6.5in', height: '1in' } },
+        { id: 'p1c4', size: { width: '6.5in', height: '1in' } },
+        { id: 'p1c5', size: { width: '6.5in', height: '1in' } },
+        { id: 'p1c6', size: { width: '6.5in', height: '1in' } },
+        { id: 'p1c7', size: { width: '6.5in', height: '1in' } },
+        { id: 'p1c8', size: { width: '6.5in', height: '1in' } },
+        { id: 'p1c9', size: { width: '6.5in', height: '1in' } },
+      ],
+    },
+    {
+      id: 'p2',
+      cells: [
+        { id: 'p2c1', size: { width: '6.5in', height: '1in' } },
+        { id: 'p2c2', size: { width: '6.5in', height: '1in' } },
+        { id: 'p2c3', size: { width: '6.5in', height: '1in' } },
+        { id: 'p2c4', size: { width: '6.5in', height: '1in' } },
+        { id: 'p2c5', size: { width: '6.5in', height: '1in' } },
+        { id: 'p2c6', size: { width: '6.5in', height: '1in' } },
+        { id: 'p2c7', size: { width: '6.5in', height: '1in' } },
+        { id: 'p2c8', size: { width: '6.5in', height: '1in' } },
+        { id: 'p2c9', size: { width: '6.5in', height: '1in' } },
+      ],
+    },
+    {
+      id: 'p3',
+      cells: [
+        { id: 'p3c1', size: { width: '6.5in', height: '9in' } },
+      ],
+    },
+    { id: 'p4', cells: [
+      { id: 'p4c1', size: { width: '6.5in', height: '9in' } },
+    ]},
+    { id: 'p5', cells: [
+      { id: 'p5c1', size: { width: '6.5in', height: '9in' } },
+    ]},
+    { id: 'p6', cells: [
+      { id: 'p6c1', size: { width: '6.5in', height: '9in' } },
+    ]},
+    { id: 'p7', cells: [
+      { id: 'p7c1', size: { width: '6.5in', height: '9in' } },
+    ]},
+    { id: 'p8', cells: [
+      { id: 'p8c1', size: { width: '6.5in', height: '9in' } },
+    ]},
+    { id: 'p9', cells: [
+      { id: 'p9c1', size: { width: '6.5in', height: '9in' } },
+    ]},
+  ],
+};
+

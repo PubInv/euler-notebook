@@ -55,10 +55,10 @@ function onCreateFolderViewButtonClicked(_event: Event): void {
 
 function onDomReady(_event: Event): void {
   try {
-    $<HTMLButtonElement>('#filesAndFoldersViewButton').addEventListener<'click'>('click', onFilesAndFoldersViewButtonClicked);
-    $<HTMLButtonElement>('#createFolderViewButton').addEventListener<'click'>('click', onCreateFolderViewButtonClicked);
-    $<HTMLButtonElement>('#createFileViewButton').addEventListener<'click'>('click', onCreateFileViewButtonClicked);
-    $<HTMLButtonElement>('#importFileViewButton').addEventListener<'click'>('click', onImportFileViewButtonClicked);
+    $<HTMLButtonElement>(document, '#filesAndFoldersViewButton').addEventListener<'click'>('click', onFilesAndFoldersViewButtonClicked);
+    $<HTMLButtonElement>(document, '#createFolderViewButton').addEventListener<'click'>('click', onCreateFolderViewButtonClicked);
+    $<HTMLButtonElement>(document, '#createFileViewButton').addEventListener<'click'>('click', onCreateFileViewButtonClicked);
+    $<HTMLButtonElement>(document, '#importFileViewButton').addEventListener<'click'>('click', onImportFileViewButtonClicked);
 
     switchView('filesAndFolders');
 
@@ -90,20 +90,20 @@ function switchView(view: View): void {
   for (const otherView of VIEWS) {
     const disabled = (otherView == view);
     const show = (otherView==view || otherView=='filesAndFolders')
-    $<HTMLDivElement>(`#${otherView}View`).style.display = (show ? 'block' : 'none');
-    $<HTMLButtonElement>(`#${otherView}ViewButton`).disabled = disabled;
+    $<HTMLDivElement>(document, `#${otherView}View`).style.display = (show ? 'block' : 'none');
+    $<HTMLButtonElement>(document, `#${otherView}ViewButton`).disabled = disabled;
   }
 
   // Set focus
   switch(view) {
     case 'createFile':
-      $<HTMLInputElement>('input[name="notebookName"]').focus();
+      $<HTMLInputElement>(document, 'input[name="notebookName"]').focus();
       break;
     case 'createFolder':
-      $<HTMLInputElement>('input[name="folderName"]').focus();
+      $<HTMLInputElement>(document, 'input[name="folderName"]').focus();
       break;
     case 'importFile':
-      $<HTMLInputElement>('input[name="importFile"]').focus();
+      $<HTMLInputElement>(document, 'input[name="importFile"]').focus();
       break;
   }
 }
