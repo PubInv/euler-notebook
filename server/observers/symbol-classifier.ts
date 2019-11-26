@@ -217,6 +217,7 @@ export class SymbolClassifierObserver implements ObserverInstance {
       // at this point, we are doing a complete "recomputtion" based the use.
       await this.addSymbolUseStyles(style, rval);
       await this.addSymbolDefStyles(style, rval);
+//      await this.addEquationStyles(style,rval);
       debug("BBB rval",rval);
     }
     this.recomputeInsertRelationships(tlid,style,rval);
@@ -420,9 +421,12 @@ export class SymbolClassifierObserver implements ObserverInstance {
   }
 
   // refactor this to be style independent so that we can figure it out later
+  // private async addEquationStyles(style: StyleObject, rval: NotebookChangeRequest[]): Promise<void> {
 
+
+  // }
   private async addSymbolDefStyles(style: StyleObject, rval: NotebookChangeRequest[]): Promise<void> {
-    debug('addSymbolDefStyles');
+    debug('addSymbolDefStyles',style.data);
     const script = `FullForm[Hold[${style.data}]]`;
     const result = await execute(script);
     debug('CCC result',result);
@@ -486,6 +490,78 @@ export class SymbolClassifierObserver implements ObserverInstance {
 
         debug(`Inserting def style.`);
 
+      } else {
+        // Although we are not defining a symbol in this case,
+        debug('YESYESYESYESYES'+result);
+        // Basically we want to look for a simple equality here. In OUR input
+        // langue, a simple "=" defines a equality, not an assignment. So if we have one,
+        // we want to separate the lhs and rhs and create an equation. These values (rhs and lhs)
+        // ARE currently added in the wolfram language, not our own!!
+
+        var sides = style.data.split("=");
+        // In this case we are have two sides
+        if (sides.length == 2) {
+          const lhs = sides[0];
+          const rhs = sides[1];
+          debug('lhs,rhs',lhs,rhs);
+
+          // But we use the Wolfram interpretation for out other work...
+          const script_lhs = `FullForm[Hold[${lhs}]]`;
+          const result_lhs = await execute(script_lhs);
+          const script_rhs = `FullForm[Hold[${rhs}]]`;
+          const result_rhs = await execute(script_rhs);
+
+          if (result_lhs && result_rhs) {
+            const hold_matcher = /Hold\[(.*)\]/;
+            const lwolfram = hold_matcher.exec(result_lhs);
+            const rwolfram = hold_matcher.exec(result_rhs);
+
+            debug("rwolfram",rwolfram, result_rhs);
+            if (!(lwolfram && rwolfram)) {
+              debug("internal regular expression error"+lwolfram+":"+rwolfram);
+              console.error("internal regular expression error");
+              return;
+            }
+            const lw = lwolfram[1];
+            const rw = rwolfram[1];
+            if (!(lw && rw)) {
+              console.error("internal regular expression error");
+              return;
+            }
+            await this.addSymbolUseStylesFromString(lw, style, rval);
+            await this.addSymbolUseStylesFromString(rw, style, rval);
+            // The relations here are wrong; we need to get all variables in each expression, actually!
+            const relationsToLHS: RelationshipPropertiesMap =
+              this.getAllMatchingNameAndType(lw,'SYMBOL-USE');
+            const relationsToRHS: RelationshipPropertiesMap =
+              this.getAllMatchingNameAndType(rw,'SYMBOL-USE');
+            const relationsTo: RelationshipPropertiesMap  = {};
+            debug("realtionsToLHS,relationsToRHS",relationsToLHS, relationsToRHS);
+            for(const s in relationsToLHS) {
+              relationsTo[s] = relationsToLHS[s];
+            }
+            for(const s in relationsToRHS) {
+              relationsTo[s] = relationsToRHS[s];
+            }
+
+
+            const data = { lhs: lw, rhs: rw };
+            debug("slhs,srhs",lw, rw);
+
+            var styleProps: StylePropertiesWithSubprops;
+            styleProps = {
+              type: 'EQUATION',
+              data,
+              meaning: 'EQUATION-DEFINITION',
+              relationsTo,
+            }
+            const changeReq: StyleInsertRequest = { type: 'insertStyle', parentId: style.id, styleProps };
+            rval.push(changeReq);
+          }
+
+        } else {
+          debug('probably not an equation, not sure what to do:',result);
+        }
       }
     }
   }
