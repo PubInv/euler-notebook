@@ -30,7 +30,7 @@ const debug = debug1(`server:${MODULE}`);
 import { Notebook, NotebookObject, NotebookChange,
          StyleObject, StyleSource, StyleId, StyleIdDoesNotExistError,
          RelationshipObject, RelationshipId, RelationshipIdDoesNotExistError, RelationshipProperties,
-         StyleMoved, StylePosition } from '../client/notebook';
+         StyleMoved, StylePosition, VERSION } from '../client/notebook';
 import { NotebookChangeRequest, StyleMoveRequest, Tracker, StyleInsertRequest
        } from '../client/math-tablet-api';
 import { readNotebookFile, AbsDirectoryPath, absDirPathFromNotebookPath, writeNotebookFile, NotebookPath } from './files-and-folders';
@@ -106,8 +106,7 @@ export class ServerNotebook extends Notebook {
     const openNotebook = this.persistentNotebooks.get(notebookPath);
     if (openNotebook) { return openNotebook; }
     const json = await readNotebookFile(notebookPath);
-    const obj = JSON.parse(json);
-    const notebook = await this.fromJSON(obj, notebookPath);
+    const notebook = await this.fromJSON(json, notebookPath);
     this.persistentNotebooks.set(notebookPath, notebook);
     return notebook;
   }
@@ -158,16 +157,30 @@ export class ServerNotebook extends Notebook {
     return absDirPathFromNotebookPath(this._path);
   }
 
+  // Instance Property Functions
+
+  // Remove fields with an underscore prefix, because they are not supposed to be persisted.
+  public toJSON(): NotebookObject {
+    const rval: NotebookObject = {
+      nextId: this.nextId,
+      relationshipMap: this.relationshipMap,
+      styleMap: this.styleMap,
+      styleOrder: this.styleOrder,
+      version: VERSION,
+    }
+    return rval;
+  }
+
   // Instance Methods
 
   public async close(): Promise<void> {
     // TODO: Ensure notebook is not in the middle of processing change requests or saving.
-    if (this._closed) { throw new Error("Closing notebook that is already closed."); }
+    if (this.closed) { throw new Error("Closing notebook that is already closed."); }
     debug(`closing: ${this._path}`);
-    this._closed = true;
+    this.closed = true;
     if (this._path) { ServerNotebook.persistentNotebooks.delete(this._path); }
-    await Promise.all(Array.from(this._observers.values()).map(o=>o.onClose()));
-    for (const observer of this._clientObservers.values()) {
+    await Promise.all(Array.from(this.observers.values()).map(o=>o.onClose()));
+    for (const observer of this.clientObservers.values()) {
       observer.onClose();
     };
 
@@ -175,22 +188,22 @@ export class ServerNotebook extends Notebook {
   }
 
   public deregisterClientObserver(clientId: ClientId): void {
-    const deleted = this._clientObservers.delete(clientId);
+    const deleted = this.clientObservers.delete(clientId);
     if (!deleted) {
       console.error(`Cannot deregister non-registered client observer: ${clientId}`);
     }
   }
 
   public registerClientObserver(clientId: ClientId, instance: ClientObserver): void {
-    this._clientObservers.set(clientId, instance)
+    this.clientObservers.set(clientId, instance)
   }
 
   public registerObserver(source: StyleSource, instance: ObserverInstance): void {
-    this._observers.set(source, instance);
+    this.observers.set(source, instance);
   }
 
   public deRegisterObserver(source: StyleSource): void {
-    this._observers.delete(source);
+    this.observers.delete(source);
   }
 
   public async requestChanges(
@@ -226,7 +239,7 @@ export class ServerNotebook extends Notebook {
       // IMPORTANT: We don't actually make the changes to the notebook
       // until *after* all observers have submitted their change requests for this round.
       const observerChangeRequests: Map<StyleSource, NotebookChangeRequest[]> = new Map();
-      for (const [source, observer] of this._observers) {
+      for (const [source, observer] of this.observers) {
         const changeRequests = await observer.onChanges(changes);
         observerChangeRequests.set(source, changeRequests);
       };
@@ -249,7 +262,7 @@ export class ServerNotebook extends Notebook {
     if (this._path) { await this.save(); }
 
     // Send all changes to all clients
-    for (const [ clientId, observer ] of this._clientObservers) {
+    for (const [ clientId, observer ] of this.clientObservers) {
       let tracker = (options.tracker && clientId == options.clientId ? options.tracker : undefined);
       const complete = true;
       observer.onChanges(allChanges, complete, tracker);
@@ -264,7 +277,7 @@ export class ServerNotebook extends Notebook {
     const style = this.getStyleById(styleId);
     const source = style.source;
     if (!style) { throw new Error(`Notebook useTool style ID not found: ${styleId}`); }
-    const observer = this._observers.get(source);
+    const observer = this.observers.get(source);
     const changeRequests = await observer!.useTool(style);
     const changes = await this.requestChanges(source, changeRequests);
     return changes;
@@ -279,7 +292,8 @@ export class ServerNotebook extends Notebook {
 
   // Private Class Methods
 
-  private static async fromJSON(obj: NotebookObject, notebookPath: NotebookPath): Promise<ServerNotebook> {
+  private static async fromJSON(json: /* TYPESCRIPT: JSON string type? */ string, notebookPath: NotebookPath): Promise<ServerNotebook> {
+    const obj = JSON.parse(json);
     const notebook = new this(notebookPath, obj);
     await notebook.initialize(this.observerClasses);
     return notebook;
@@ -292,26 +306,23 @@ export class ServerNotebook extends Notebook {
     obj?: NotebookObject
   ) {
     super(obj);
-    // NOTE: underscore-prefixed fields are non-persistent.
-    // REVIEW: This is confusing given TypeScript's convention of underscore prefix for unused parameters.
 
-    this._clientObservers = new Map();
-    this._observers = new Map();
+    this.clientObservers = new Map();
+    this.observers = new Map();
     this._path = notebookPath;
   }
 
   // Private Instance Properties
 
-  // NOTE: Properties with an underscore prefix are not persisted.
-  private _clientObservers: Map<ClientId, ClientObserver>;
-  private _closed?: boolean;
-  private _observers: Map<StyleSource, ObserverInstance>;
-  private _saving?: boolean;
+  private clientObservers: Map<ClientId, ClientObserver>;
+  private closed?: boolean;
+  private observers: Map<StyleSource, ObserverInstance>;
+  private saving?: boolean;
 
   // Private Instance Property Functions
 
   private assertNotClosed(action: string): void {
-    if (this._closed) { throw new Error(`Attempting ${action} on closed notebook.`); }
+    if (this.closed) { throw new Error(`Attempting ${action} on closed notebook.`); }
   }
 
   // Private Instance Methods
@@ -542,11 +553,11 @@ export class ServerNotebook extends Notebook {
   private async save(): Promise<void> {
     if (!this._path) { throw new Error("Cannot save non-persistent notebook."); }
     // TODO: Handle this in a more robust way.
-    if (this._saving) { throw new Error(`Trying to save while save already in progress.`); }
+    if (this.saving) { throw new Error(`Trying to save while save already in progress.`); }
     debug(`saving ${this._path}`);
-    this._saving = true;
+    this.saving = true;
     const json = JSON.stringify(this);
     await writeNotebookFile(this._path, json);
-    this._saving = false;
+    this.saving = false;
   }
 }

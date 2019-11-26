@@ -19,9 +19,6 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 // Requirements
 
-// NO REQUIREMENTS. SELF-CONTAINED!
-// Try to keep it that way.
-
 // Types
 
 export type CssLength = string; // CSS length, e.g. "8.5in"
@@ -253,23 +250,21 @@ export class Notebook {
       this.relationshipMap = {};
       this.styleMap = {};
       this.styleOrder = [];
-      this.version = VERSION;
-      // IMPORTANT: If you add any non-persistent fields (underscore-prefixed)
-      // that need to be initialized, initialize them below, and also in fromJSON.
     } else {
+      // LATER: More thorough validation of the object.
       if (!obj.nextId) { throw new Error("Invalid notebook object JSON."); }
-      if (obj.version != VERSION) { throw new Error("Unexpected version for notebook."); }
+      if (obj.version != VERSION) {
+        throw new Error(`Invalid notebook version ${obj.version}. Expect version ${VERSION}`);
+      }
       this.nextId = obj.nextId;
       this.relationshipMap = obj.relationshipMap;
       this.styleMap = obj.styleMap;
       this.styleOrder = obj.styleOrder;
-      this.version = obj.version;
     }
   }
 
   // Instance Properties
 
-  public version: string;
   public nextId: StyleId;
 
   // Instance Property Functions
@@ -567,15 +562,6 @@ export class Notebook {
     return !!this.childStylesOf(id).find(s => s.type == tname && (!meaning || s.meaning == meaning));
   }
 
-  // Remove fields with an underscore prefix, because they are not supposed to be persisted.
-  public toJSON(): NotebookObject {
-    const obj = { ...this };
-    for (const key in obj) {
-      if (key.startsWith('_')) { delete obj[key]; }
-    }
-    return <NotebookObject><unknown>obj;
-  }
-
   public topLevelStyles(): StyleObject[] {
     return this.styleOrder.map(styleId=>this.styleMap[styleId]);
   }
@@ -676,11 +662,9 @@ export class Notebook {
 
   // Private Instance Properties
 
-  private relationshipMap: RelationshipMap;
-  private styleMap: StyleMap;     // Mapping from style ids to style objects.
+  protected relationshipMap: RelationshipMap;
+  protected styleMap: StyleMap;     // Mapping from style ids to style objects.
   protected styleOrder: StyleId[];  // List of style ids in the top-down order they appear in the notebook.
-
-  // NOTE: Properties with an underscore prefix are not persisted.
 
   // Private Event Handlers
 

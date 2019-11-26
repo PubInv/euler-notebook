@@ -215,7 +215,7 @@ export class EquationSolverObserver implements ObserverInstance {
   }
 
   private async solutionInsert(sol : NameValuePair, styleId: StyleId): Promise<StyleInsertRequest> {
-    debug("Adding promotsion of solution", sol);
+    debug("Adding promotion of solution", sol);
     // I'm adding data here to make it more obvious that is where
     // the official solution is....though it remains unparsed
     // Although it make some time, I want the "Tex" format for the tool tip here, and
