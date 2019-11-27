@@ -17,16 +17,16 @@ You should have received a copy of the GNU Affero General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-// TODO: Add try/catch around all event entry points.
+// TODO: Incremental changes so we don't redraw the entire SVG on every stroke.
 
 // Requirements
 
 import { $newSvg } from '../dom.js';
 import { DrawingData, StyleObject } from '../notebook.js';
 import { NotebookView } from '../notebook-view.js';
+import { SvgStroke } from '../svg-stroke.js';
 
 import { CellView } from './index.js';
-import { Stroke } from './stroke.js';
 
 // Types
 
@@ -34,7 +34,7 @@ type PointerId = number;
 type PointerMap = Map<PointerId, PointerInfo>;
 
 interface PointerInfo {
-  stroke?: Stroke;
+  stroke?: SvgStroke;
 }
 
 // Class
@@ -51,8 +51,12 @@ export class DrawingCellView extends CellView {
 
   // Instance Methods
 
-  public render(_style: StyleObject): void {
-    // TODO: Iterate through strokes and draw them on SVG.
+  public render(style: StyleObject): void {
+    const data: DrawingData = style.data;
+    this.$svg.innerHTML = '';
+    for (const strokeData of data.strokes) {
+      SvgStroke.create(this.$svg, strokeData);
+    }
   }
 
   // -- PRIVATE --
@@ -62,27 +66,24 @@ export class DrawingCellView extends CellView {
   private constructor (notebookView: NotebookView, style: StyleObject) {
     super(notebookView, style);
 
-    const data: DrawingData = style.data;
-
-    const $svg = $newSvg<SVGSVGElement>('svg', {
+    this.$svg = $newSvg<SVGSVGElement>('svg', {
       appendTo: this.$elt,
-      attrs: </* TYPESCRIPT: */any>data.size,
+      attrs: </* TYPESCRIPT: */any>style.data.size,
       class: 'drawingCell',
       id: `svg${style.id}`,
+      listeners: {
+        pointercancel:  e=>this.onPointerCancel(e),
+        pointerdown:    e=>this.onPointerDown(e),
+        pointerenter:   e=>this.onPointerEnter(e),
+        pointerleave:   e=>this.onPointerLeave(e),
+        pointermove:    e=>this.onPointerMove(e),
+        pointerout:     e=>this.onPointerOut(e),
+        pointerover:    e=>this.onPointerOver(e),
+        pointerup:      e=>this.onPointerUp(e),
+      }
     });
 
-    this.$svg = $svg;
     this.pointerMap = new Map();
-
-    // TODO: 'pointerover', 'pointerout', 'pointerenter', 'pointerleave'
-    $svg.addEventListener('pointercancel', e=>this.onPointerCancel(e));
-    $svg.addEventListener('pointerdown', e=>this.onPointerDown(e));
-    $svg.addEventListener('pointerenter', e=>this.onPointerEnter(e));
-    $svg.addEventListener('pointerleave', e=>this.onPointerLeave(e));
-    $svg.addEventListener('pointermove', e=>this.onPointerMove(e));
-    $svg.addEventListener('pointerout', e=>this.onPointerOut(e));
-    $svg.addEventListener('pointerover', e=>this.onPointerOver(e));
-    $svg.addEventListener('pointerup', e=>this.onPointerUp(e));
   }
 
   // Private Instance Properties
@@ -106,13 +107,13 @@ export class DrawingCellView extends CellView {
 
   // Private Event Handlers
 
-  private onPointerCancel(event: PointerEvent): void {
-    console.log(`${event.pointerType} ${event.pointerId} ${event.type}`);
+  private onPointerCancel(_event: PointerEvent): void {
+    // console.log(`${event.pointerType} ${event.pointerId} ${event.type}`);
     // console.dir(event);
   }
 
   private onPointerDown(event: PointerEvent): void {
-    console.log(`${event.pointerType} ${event.pointerId} ${event.type}`);
+    // console.log(`${event.pointerType} ${event.pointerId} ${event.type}`);
     // console.dir(event);
     this.$svg.setPointerCapture(event.pointerId);
     const pi = this.pointerInfo(event);
@@ -123,7 +124,8 @@ export class DrawingCellView extends CellView {
       delete pi.stroke;
     }
     const clientRect = this.$svg.getBoundingClientRect();
-    pi.stroke = Stroke.start(this.$svg, event, clientRect);
+    pi.stroke = SvgStroke.create(this.$svg);
+    pi.stroke.start(event, clientRect);
   }
 
   private onPointerEnter(_event: PointerEvent): void {
@@ -156,16 +158,22 @@ export class DrawingCellView extends CellView {
   }
 
   private onPointerUp(event: PointerEvent): void {
-    console.log(`${event.pointerType} ${event.pointerId} ${event.type}`);
+    // console.log(`${event.pointerType} ${event.pointerId} ${event.type}`);
     // console.dir(event);
     const pi = this.pointerInfo(event);
-    if (!pi.stroke) {
+    const stroke = pi.stroke;
+    if (!stroke) {
       console.warn(`Pointer ${event.pointerId} doesn't have a stroke. Ignoring.`);
       return;
     }
     const clientRect = this.$svg.getBoundingClientRect();
-    pi.stroke.end(event, clientRect);
+    stroke.end(event, clientRect);
     delete pi.stroke;
+
+    const data: DrawingData = this.notebookView.openNotebook.getStyleById(this.styleId).data;
+    data.strokes.push(stroke.data); // REVIEW: Modifying existing data in place???
+
+    this.notebookView.changeStyle(this.styleId, data);
   }
 
 }

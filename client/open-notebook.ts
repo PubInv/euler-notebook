@@ -34,6 +34,7 @@ import { ServerSocket } from './server-socket.js';
 
 // Class
 
+// TODO: Rename to "ClientNotebook" to parallel "ServerNotebook"
 export class OpenNotebook extends Notebook {
 
   // Class Methods

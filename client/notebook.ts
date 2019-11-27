@@ -21,7 +21,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 // Types
 
-export type CssLength = string; // CSS length, e.g. "8.5in"
+type CssLength = string; // TODO: Duplicated in stroke.ts
 
 export interface CssSize {
   height: CssLength;
@@ -30,7 +30,18 @@ export interface CssSize {
 
 export interface DrawingData {
   size: CssSize;
+  strokes: StrokeData[];
 }
+
+export interface StrokeData {
+  x: number[];
+  y: number[];
+  t: number[]; // TYPESCRIPT: Timestamp
+  p: number[];  // Pressure
+  tx: number[]; // Tilt
+  ty: number[];
+}
+
 
 // NOTE: toId and fromId are mutually "or". The ids and all other fields are "and".
 export interface FindRelationshipOptions {

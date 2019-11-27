@@ -42,6 +42,14 @@ interface Listeners {
   focus?: Listener<FocusEvent>;
   input?: Listener<Event>; // REVIEW: More specific event type?
   keyup?: Listener<KeyboardEvent>;
+  pointercancel?: Listener<PointerEvent>;
+  pointerdown?: Listener<PointerEvent>;
+  pointerenter?: Listener<PointerEvent>;
+  pointerleave?: Listener<PointerEvent>;
+  pointermove?: Listener<PointerEvent>;
+  pointerout?: Listener<PointerEvent>;
+  pointerover?: Listener<PointerEvent>;
+  pointerup?: Listener<PointerEvent>;
 }
 
 interface NewOptions {

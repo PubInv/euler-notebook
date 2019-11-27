@@ -133,11 +133,11 @@ export class PageView {
         },
         class: 'page',
         id: pageData.id,
+        listeners: {
+          click: e=>this.onPageClicked(e),
+          dblclick: e=>this.onPageDoubleClicked(e),
+        },
       });
-      // TODO: Add event listeners in $newSvg above.
-      // TODO: Catch exceptions in event handlers.
-      $page.addEventListener('click', e=>this.onPageClicked(e));
-      $page.addEventListener('dblclick', e=>this.onPageDoubleClicked(e));
 
       let y: number = parseInt(topMargin);
       for (const cellData of pageData.cells) {

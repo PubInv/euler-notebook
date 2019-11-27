@@ -155,7 +155,8 @@ export class NotebookView {
     else { afterId = StylePosition.Bottom; }
 
     const data: DrawingData = {
-      size: { height: '1in', width: '6.5in' }
+      size: { height: '1in', width: '6.5in' },
+      strokes: [],
     };
     const styleProps: StylePropertiesWithSubprops = { type: 'DRAWING', meaning: 'INPUT', data };
     this.insertStyle(styleProps, afterId);
