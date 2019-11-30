@@ -34,7 +34,6 @@ import {
 } from './math-tablet-api.js';
 import { OpenNotebook } from './open-notebook.js';
 import { Sidebar } from './sidebar.js';
-// import { Jiix, StrokeGroups } from './myscript-types.js';
 
 // Types
 

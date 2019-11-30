@@ -35,7 +35,7 @@ import { initialize as initializeObservers } from './observers';
 import { start as startWolframscript } from './observers/wolframscript';
 import { ClientSocket } from './client-socket';
 import { rootDir as notebookRootDir } from './files-and-folders';
-import { getConfig} from './config';
+import { getConfig, getCredentials} from './config';
 
 import { router as apiRouter } from './routes/api';
 import { router as indexRouter } from './routes/index';
@@ -54,11 +54,12 @@ function normalizePort(val: string): string|number|boolean {
 async function main() {
 
   const config = await getConfig();
+  const credentials = await getCredentials();
 
   // TODO: stopWolframscript before exiting.
   if (config.mathematica) { await startWolframscript(config); }
 
-  await initializeObservers(config);
+  await initializeObservers(config, credentials);
 
   const app: express.Express = express();
 

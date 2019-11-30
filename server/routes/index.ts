@@ -29,7 +29,6 @@ import { ServerNotebook } from '../server-notebook';
 import { isValidNotebookPath, getListOfNotebooksAndFoldersInFolder,
           isValidFolderName, createFolder, FolderPath, NotebookPath, FOLDER_PATH_RE, isValidNotebookName,
           notebookPathFromFolderPathAndName, NOTEBOOK_PATH_RE, isValidFolderPath, deleteFolder, deleteNotebook } from '../files-and-folders';
-import { Credentials, getCredentials } from '../config';
 
 import { NotebookName, NotebookChangeRequest } from '../../client/math-tablet-api';
 
@@ -70,8 +69,6 @@ interface PageMessages {
 // Globals
 
 export var router = Router();
-
-let gCredentials: Credentials|undefined;
 
 // Routes
 
@@ -162,10 +159,9 @@ async function onNotebookPage(req: Request, res: Response, next: NextFunction): 
   try {
     const pathSegments = notebookPath.slice(1, -1).split('/');
     const notebookName = pathSegments.pop()!.slice(0, -5);
-    if (!gCredentials) { gCredentials = await getCredentials(); }
     if (!isValidNotebookPath(notebookPath)) { return next(); }
     await ServerNotebook.open(notebookPath);
-    const locals = { credentials: gCredentials, /* messages, */ notebookName, pathSegments };
+    const locals = { /* messages, */ notebookName, pathSegments };
     res.render('notebook', locals);
   } catch(err) {
     res.status(404).send(`Can't open notebook '${notebookPath}': ${err.message}`);

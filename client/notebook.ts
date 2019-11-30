@@ -210,6 +210,7 @@ export const STYLE_SOURCES = [
   'MATHEMATICA',      // Mathematica style (evaluation)
   'MATHJS',           // The Mathjs Computer Algebra System system
   'MATHSTEPS',        // The Mathsteps CAS system
+  'MYSCRIPT',         // MyScript handwriting recognition`
   'SANDBOX',          // Sandbox for temporary experiments
   'SUBTRIV-CLASSIFIER',
   'EQUATION-SOLVER',  // Attempt to expose Wolfram solutions
@@ -647,6 +648,18 @@ export class Notebook {
     return rval;
   }
 
+  public findStyle(
+    options: FindStyleOptions,
+    rootId?: StyleId,           // Search child styles of this style, otherwise top-level styles.
+  ): StyleObject|undefined {
+    // Like findStyles but expects to find zero or one matching style.
+    // If it finds more than one matching style then it throws an exception.
+    const styles = this.findStyles(options, rootId);
+    if (styles.length == 0) { return undefined; }
+    else if (styles.length == 1) { return styles[0]; }
+    else { throw new Error(`findStyle found more than one matching style.`); }
+  }
+
   public findStyles(
     options: FindStyleOptions,
     rootId?: StyleId,           // Search child styles of this style, otherwise top-level styles.
@@ -664,6 +677,23 @@ export class Notebook {
     }
     return rval;
   }
+
+  // public hasRelationships(options: FindRelationshipOptions): boolean {
+  //   // Returns true iff findStyles with the same parameters would return a non-empty list.
+  //   // LATER: Make this more efficient. We can return true when we find the first matching relationship.
+  //   const relationships = this.findRelationships(options);
+  //   return relationships.length>0;
+  // }
+
+  // public hasStyles(
+  //   options: FindStyleOptions,
+  //   rootId?: StyleId,           // Search child styles of this style, otherwise top-level styles.
+  // ): boolean {
+  //   // Returns true iff findStyles with the same parameters would return a non-empty list.
+  //   // LATER: Make this more efficient. We can return true when we find the first matching style.
+  //   const styles = this.findStyles(options, rootId);
+  //   return styles.length>0;
+  // }
 
   // --- PRIVATE ---
 

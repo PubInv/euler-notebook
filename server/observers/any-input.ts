@@ -123,6 +123,3 @@ export class AnyInputObserver implements ObserverInstance {
     }
   }
 }
-
-
-// Helper Functions

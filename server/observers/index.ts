@@ -19,10 +19,11 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 // Requirements
 
-import { Config } from '../config';
+import { Config, Credentials } from '../config';
 
 import { MathematicaObserver } from './mathematica-cas';
 import { MathJsObserver } from './mathjs-cas';
+import { MyScriptObserver } from './myscript-observer';
 import { SandboxObserver } from './sandbox';
 import { SubtrivClassifierObserver } from './subtriv-classifier';
 import { EquationSolverObserver } from './equation-solver';
@@ -32,7 +33,7 @@ import { ServerNotebook } from '../server-notebook';
 
 // Exported functions
 
-export async function initialize(config: Config): Promise<void> {
+export async function initialize(config: Config, credentials: Credentials): Promise<void> {
 
   if (config.mathematica) {
     await MathematicaObserver.initialize(config);
@@ -45,6 +46,10 @@ export async function initialize(config: Config): Promise<void> {
   if (config.mathjs) {
     await MathJsObserver.initialize(config);
     ServerNotebook.registerObserver('MATHJS', MathJsObserver);
+  }
+  if (credentials.myscript) {
+    await MyScriptObserver.initialize(config, credentials.myscript);
+    ServerNotebook.registerObserver('MYSCRIPT', MyScriptObserver);
   }
   await SandboxObserver.initialize(config);
   ServerNotebook.registerObserver('SANDBOX', SandboxObserver);

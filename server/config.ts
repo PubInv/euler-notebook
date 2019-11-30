@@ -23,7 +23,7 @@ import { readFile } from 'fs';
 import { join } from 'path';
 import { promisify } from 'util';
 
-import { MyScriptServerKeys } from '../client/math-tablet-api';
+import { ServerKeys } from './myscript-batch-api';
 
 const readFile2 = promisify(readFile);
 
@@ -35,7 +35,7 @@ export interface Config {
 }
 
 export interface Credentials {
-  myscript: MyScriptServerKeys;
+  myscript: ServerKeys;
 }
 
 export interface MathematicaConfig {

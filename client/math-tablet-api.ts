@@ -43,19 +43,6 @@ export type NotebookName = string;
 
 // MyScript Types
 
-export interface Jiix {
-  // TYPESCRIPT: TODO
-}
-
-export interface MyScriptServerKeys {
-  applicationKey: string;
-  hmacKey: string;
-}
-
-export interface StrokeGroups {
-  // TYPESCRIPT: TODO
-}
-
 export type ToolName = string;
 export interface ToolInfo {
   name: ToolName;
