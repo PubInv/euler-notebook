@@ -109,7 +109,7 @@ export class DebugPopup {
       const relationshipsHtml = relationshipObjects.map(r=>this.renderRelationshipHtml(r)).join('');
       const [ shortJsonTt, longJsonTt ] = json.length<30 ? [` <tt>${json}</tt>`, ''] : [ '', `<tt>${json}</tt>` ];
       return `<div>
-  <span class="collapsed">S${style.id} ${style.type} ${style.meaning} ${style.source}${shortJsonTt}</span>
+  <span class="collapsed">S${style.id} ${style.meaning} ${style.type} ${style.source}${shortJsonTt}</span>
   <div class="nested" style="display:none">${longJsonTt}
     ${stylesHtml}
     ${relationshipsHtml}

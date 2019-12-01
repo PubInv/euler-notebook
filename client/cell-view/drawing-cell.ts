@@ -21,12 +21,14 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 // Requirements
 
-import { $newSvg } from '../dom.js';
+import { $new, $newSvg } from '../dom.js';
 import { DrawingData, StyleObject } from '../notebook.js';
 import { NotebookView } from '../notebook-view.js';
+import { getRenderer } from '../renderers.js';
 import { SvgStroke } from '../svg-stroke.js';
 
 import { CellView } from './index.js';
+import { assert } from '../common.js';
 
 // Types
 
@@ -57,6 +59,17 @@ export class DrawingCellView extends CellView {
     for (const strokeData of data.strokes) {
       SvgStroke.create(this.$svg, strokeData);
     }
+
+    const latexStyle = this.notebookView.openNotebook.findStyle({ meaning: 'INPUT-ALT', type: 'LATEX' }, style.id);
+    if (latexStyle) {
+      console.log("Rendering drawing cell with LaTeX substyle.");
+      const renderer = getRenderer('LATEX');
+      const { html, errorHtml } = renderer(latexStyle.data);
+      if (html) { this.$preview.innerHTML = html; }
+      assert(!errorHtml);
+    } else {
+      console.log("Rendering drawing cell without LaTeX substyle.");
+    }
   }
 
   // -- PRIVATE --
@@ -64,7 +77,12 @@ export class DrawingCellView extends CellView {
   // Constructor
 
   private constructor (notebookView: NotebookView, style: StyleObject) {
-    super(notebookView, style);
+    super(notebookView, style, 'drawingCell');
+
+    this.$preview = $new<HTMLDivElement>('div', {
+      appendTo: this.$elt,
+      class: 'preview',
+    });
 
     this.$svg = $newSvg<SVGSVGElement>('svg', {
       appendTo: this.$elt,
@@ -89,6 +107,7 @@ export class DrawingCellView extends CellView {
   // Private Instance Properties
 
   private $svg: SVGSVGElement;
+  private $preview: HTMLDivElement;
   private pointerMap: PointerMap;
 
   // Private Instance Property Methods

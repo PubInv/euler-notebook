@@ -95,12 +95,12 @@ export abstract class CellView {
 
   // Private Constructor
 
-  protected constructor(notebookView: NotebookView, style: StyleObject) {
+  protected constructor(notebookView: NotebookView, style: StyleObject, subclass: /* TYPESCRIPT: CssClass */string) {
     this.notebookView = notebookView;
     this.styleId = style.id;
 
     this.$elt = $new<HTMLDivElement>('div', {
-      class: 'cell',
+      classes: [ 'cell', subclass ],
       id: `C${style.id}`,
       listeners: {
         'click': e=>this.onClicked(e),
@@ -120,46 +120,6 @@ export abstract class CellView {
   private hide(): void {
     this.$elt.style.display = 'none';
   }
-
-  // private renderErrorMessage(style: StyleObject): void {
-  //   if (style.type != 'TEXT') {
-  //     console.error(`Don't know how to render ${style.type} error.`);
-  //     return;
-  //   }
-  //   const $formulaElt = this.$elt.querySelector('.formula');
-  //   const escapedText = escapeHtml(style.data);
-  //   const html = `<div class="error">${escapedText}</div>${$formulaElt!.innerHTML}`;
-  //   $formulaElt!.innerHTML = html;
-  // }
-
-  // private renderSolution(style: StyleObject): void {
-  //   const $formulaElt = this.$elt.querySelector('.formula');
-  //   const current = $formulaElt!.innerHTML;
-  //   console.log("current",current);
-  //   const wrapped = `<span id="style${style.id}">+ '<br>' + '<font size="1">'+ ${style.data} + "</font>"</span>`;
-  //   $formulaElt!.innerHTML = current + wrapped;
-  // }
-
-  // private renderText(id: number,text: string): void {
-  //   const $formulaElt = this.$elt.querySelector('.formula');
-  //   const wrapped = `<span id="style${id}">${text}</span>`;
-  //   $formulaElt!.innerHTML = escapeHtml(wrapped);
-  // }
-
-  // private renderDefinition(style: StyleObject): void {
-  //   const $formulaElt = this.$elt.querySelector('.formula');
-
-  //   const nvp : NameValuePair = style.data;
-
-  //   // This is a hack; but if we are alread an input, we don't
-  //   // want to overwrite therei.
-  //   if (!$formulaElt!.innerHTML) {
-  //     // NOT completely obvious this is best rendering.
-  //     const render = nvp.name + " = " + nvp.value;
-  //     const wrapped = `<span id="style${style.id}">${render}</span>`;
-  //     $formulaElt!.innerHTML = escapeHtml(wrapped);
-  //   }
-  // }
 
   private show(): void {
     this.$elt.style.display = 'flex';

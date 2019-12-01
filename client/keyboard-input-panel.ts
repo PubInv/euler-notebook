@@ -105,9 +105,9 @@ export class KeyboardInputPanel {
   // Private Instance Methods
 
   private previewRenderingResult(result: RenderResult): void {
-    const { html: previewHtml, errorHtml: errorMessageHtml } = result;
-    if (previewHtml) { this.$preview.innerHTML = previewHtml; }
-    this.$errorMessage.innerHTML = errorMessageHtml || '';
+    const { html, errorHtml } = result;
+    if (html) { this.$preview.innerHTML = html; }
+    this.$errorMessage.innerHTML = errorHtml || '';
   }
   // Private Event Handlers
 

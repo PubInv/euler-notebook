@@ -56,6 +56,6 @@ export class TextCellView extends CellView {
   // Constructor
 
   private constructor(notebookView: NotebookView, style: StyleObject) {
-    super(notebookView, style);
+    super(notebookView, style, 'textCell');
   }
 }

@@ -55,7 +55,7 @@ export class FormulaCellView extends CellView {
   // Constructor
 
   private constructor(notebookView: NotebookView, style: StyleObject) {
-    super(notebookView, style);
+    super(notebookView, style, 'formulaCell');
 
     // Create our child elements: handle, status, formula, tools, and delete button.
     // REVIEW: Use $new above to create children declaratively.
