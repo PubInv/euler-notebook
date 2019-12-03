@@ -478,6 +478,7 @@ export class SymbolClassifierObserver implements ObserverInstance {
             data,
             meaning: 'EQUATION-DEFINITION',
             relationsTo,
+            exclusiveChildTypeAndMeaning: true,
           }
           // In this case, we need to treat lval and rvals as expressions which may produce their own uses....
           await this.addSymbolUseStylesFromString(lhs, style, rval);
@@ -553,6 +554,7 @@ export class SymbolClassifierObserver implements ObserverInstance {
               type: 'EQUATION',
               data,
               meaning: 'EQUATION-DEFINITION',
+              exclusiveChildTypeAndMeaning: true,
               relationsTo,
             }
             const changeReq: StyleInsertRequest = { type: 'insertStyle', parentId: style.id, styleProps };
