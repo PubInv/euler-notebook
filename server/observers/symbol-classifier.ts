@@ -477,6 +477,7 @@ export class SymbolClassifierObserver implements ObserverInstance {
             type: 'EQUATION',
             data,
             meaning: 'EQUATION-DEFINITION',
+            exclusiveChildTypeAndMeaning: true,
             relationsTo,
           }
           // In this case, we need to treat lval and rvals as expressions which may produce their own uses....
