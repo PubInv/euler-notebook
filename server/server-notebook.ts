@@ -31,8 +31,7 @@ import { Notebook, NotebookObject, NotebookChange,
          StyleObject, StyleSource, StyleId, StyleIdDoesNotExistError,
          RelationshipObject, RelationshipId, RelationshipIdDoesNotExistError, RelationshipProperties,
          StyleMoved, StylePosition, VERSION } from '../client/notebook';
-import { NotebookChangeRequest, StyleMoveRequest, Tracker, StyleInsertRequest,
-         StyleChangeRequest
+import { NotebookChangeRequest, StyleMoveRequest, Tracker, StyleInsertRequest
        } from '../client/math-tablet-api';
 import { readNotebookFile, AbsDirectoryPath, absDirPathFromNotebookPath, writeNotebookFile, NotebookPath } from './files-and-folders';
 import { constructSubstitution } from './observers/wolframscript';
@@ -337,7 +336,7 @@ export class ServerNotebook extends Notebook {
         debug("deleteRelationship case ins erver-notebook.ts");
         return this.deleteRelationshipChange(changeRequest.id);
       case 'changeStyle':
-        return this.changeStyleChange(changeRequest);
+        return [ this.changeStyleChange(changeRequest.styleId, changeRequest.data) ];
       case 'deleteStyle':
         return this.deleteStyleChanges(changeRequest.styleId);
       case 'insertRelationship':
@@ -356,19 +355,12 @@ export class ServerNotebook extends Notebook {
     }
   }
 
-  // I'm now questioning this. If we change the data on a node,
-  // I don't see how we can do less than delete all children!
-  private changeStyleChange(request: StyleChangeRequest): NotebookChange[] {
-    const style = this.getStyleById(request.styleId);
+  private changeStyleChange(id: StyleId, data: any): NotebookChange {
+    const style = this.getStyleById(id);
     const previousData = style.data;
-    style.data = request.data;
-    let changes: NotebookChange[] = [];
-    const decs = this.allDescendentsOf(style.id);
-    for(const d of decs) {
-      changes.push({ type: 'styleDeleted', style: d } );
-    }
-    changes.push( { type: 'styleChanged', style, previousData });
-    return changes;
+    style.data = data;
+    const change: NotebookChange = { type: 'styleChanged', style, previousData };
+    return change;
   }
 
   private deleteRelationshipChange(id: RelationshipId): NotebookChange[] {

@@ -207,6 +207,7 @@ describe("test symbol observer", function() {
       const children = notebook.findChildStylesOfType(style.id,
                                                       'WOLFRAM');
       const properChildren = children.filter(c => (c.parentId == style.id));
+      // console.log("children:",properChildren);
       assert(properChildren.length == 1,"There should be one child, but there are:"+children.length);
 
     });
@@ -296,6 +297,7 @@ describe("test symbol observer", function() {
 
       const rd : RelationshipObject = notebook.allRelationships()[0];
       const fromId = rd.fromId;
+      // console.log("YYYYYYYYYYY to Id",rd.toId);
 
       const cr: StyleChangeRequest = {
         type: 'changeStyle',
@@ -320,6 +322,7 @@ describe("test symbol observer", function() {
 
       const rd : RelationshipObject = notebook.allRelationships()[0];
       const fromId = rd.fromId;
+      // console.log("YYYYYYYYYYY to Id",rd.toId);
 
       const cr: StyleChangeRequest = {
         type: 'changeStyle',
@@ -330,41 +333,6 @@ describe("test symbol observer", function() {
 
       assert.equal(1,notebook.allRelationships().length);
 
-    });
-    it("Computes allDescendentsOf correctly",async function() {
-      const data0:string[] = [
-        "3x - 10 = 11",
-        ];
-      const changeRequests = generateInsertRequests(data0);
-      await serializeChangeRequests(notebook,changeRequests);
-      const styles = notebook.allStyles();
-      const decs = notebook.allDescendentsOf(1);
-      assert.equal(styles.length-1,decs.length);
-    });
-
-    it("A change of an equation produces only one equation, not two",async function(){
-      const data0:string[] = [
-        "3x - 10 = 11",
-        ];
-      const data1:string[] = [
-        "3x - 10 = 14",
-        ];
-      const changeRequests = generateInsertRequests(data0);
-      await serializeChangeRequests(notebook,changeRequests);
-
-      // I really want a way to find this from the notebook....
-      const initialId = 1;
-
-      const cr: StyleChangeRequest = {
-        type: 'changeStyle',
-        styleId: initialId,
-        data: data1[0],
-      };
-      await serializeChangeRequests(notebook,[cr]);
-      // Now there should be only ONE EQUATION-DEFINITON attached to the single input!!!
-      const children = notebook.findChildStylesOfType(initialId,
-                                                      'EQUATION');
-      assert.equal(1,children.length);
     });
 
     it("Deleting a use correctly deletes relationships.",async function(){
@@ -520,6 +488,7 @@ describe("test symbol observer", function() {
       data.push("Y = X^2");
       const insertRequests = generateInsertRequests(data);
       await serializeChangeRequests(notebook,insertRequests);
+      // console.log("XXXXX",notebook);
 
 
       for(var i = NUM-1; i > 1; i--) {

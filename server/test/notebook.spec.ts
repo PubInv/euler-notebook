@@ -68,7 +68,6 @@ describe("notebook", function() {
       assert.equal(styleObject, styles[0]);
     });
 
-
   });
 
 });
@@ -86,3 +85,4 @@ async function createNotebookFromText(type: StyleType, text: string): Promise<Se
   await td.requestChanges('TEST', changeRequests);
   return td;
 }
+
