@@ -678,12 +678,20 @@ export class Notebook {
     return rval;
   }
 
+  public hasRelationshipId(relationshipId: RelationshipId): boolean {
+    return this.relationshipMap.hasOwnProperty(relationshipId);
+  }
+
   // public hasRelationships(options: FindRelationshipOptions): boolean {
   //   // Returns true iff findStyles with the same parameters would return a non-empty list.
   //   // LATER: Make this more efficient. We can return true when we find the first matching relationship.
   //   const relationships = this.findRelationships(options);
   //   return relationships.length>0;
   // }
+
+  public hasStyleId(styleId: StyleId): boolean {
+    return this.styleMap.hasOwnProperty(styleId);
+  }
 
   // public hasStyles(
   //   options: FindStyleOptions,

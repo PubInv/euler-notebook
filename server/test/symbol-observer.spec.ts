@@ -49,7 +49,8 @@ export class TestObserver implements ObserverInstance {
   static async initialize(_config: Config): Promise<void> { }
   static async onOpen(_notebook: ServerNotebook): Promise<TestObserver> { return new this(); }
   constructor() {}
-  async onChanges(_changes: NotebookChange[]): Promise<NotebookChangeRequest[]> { return []; }
+  async onChangesAsync(_changes: NotebookChange[]): Promise<NotebookChangeRequest[]> { return []; }
+  public onChangesSync(_changes: NotebookChange[]): NotebookChangeRequest[] { return []; }
   async onClose(): Promise<void> {}
   async useTool(_style: StyleObject): Promise<NotebookChangeRequest[]> { return []; }
 }

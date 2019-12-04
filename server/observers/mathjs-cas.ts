@@ -46,11 +46,15 @@ export class MathJsObserver implements ObserverInstance {
 
   // Instance Methods
 
-  public async onChanges(changes: NotebookChange[]): Promise<NotebookChangeRequest[]> {
+  public async onChangesAsync(_changes: NotebookChange[]): Promise<NotebookChangeRequest[]> {
+    return [];
+  }
+
+  public onChangesSync(changes: NotebookChange[]): NotebookChangeRequest[] {
     debug(`onChanges ${changes.length}`);
     const rval: NotebookChangeRequest[] = [];
     for (const change of changes) {
-      await this.onChange(change, rval);
+      this.onChange(change, rval);
     }
     debug(`onChanges returning ${rval.length} changes.`);
     return rval;
@@ -82,13 +86,13 @@ export class MathJsObserver implements ObserverInstance {
 
   // Private Instance Methods
 
-  private onChange(change: NotebookChange, rval: NotebookChangeRequest[]) {
-    if (change) {
-      debug(`onChange ${this.notebook._path} ${change.type}`);
-      switch (change.type) {
-        case 'styleInserted': this.chStyleInserted(change, rval); break;
-        default: break;
-      }
+  private onChange(change: NotebookChange, rval: NotebookChangeRequest[]): void {
+    // REVIEW; Don't allow null/undefined changes.
+    if (!change) { return; }
+    debug(`onChange ${this.notebook._path} ${change.type}`);
+    switch (change.type) {
+      case 'styleInserted': this.chStyleInserted(change, rval); break;
+      default: break;
     }
   }
 

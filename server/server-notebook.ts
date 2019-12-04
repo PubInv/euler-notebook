@@ -28,11 +28,12 @@ const MODULE = __filename.split(/[/\\]/).slice(-1)[0].slice(0,-3);
 const debug = debug1(`server:${MODULE}`);
 
 import { Notebook, NotebookObject, NotebookChange,
-         StyleObject, StyleSource, StyleId, StyleIdDoesNotExistError,
-         RelationshipObject, RelationshipId, RelationshipIdDoesNotExistError, RelationshipProperties,
-         StyleMoved, StylePosition, VERSION, StyleChanged } from '../client/notebook';
+         StyleObject, StyleSource, StyleId, RelationshipObject, StyleMoved, StylePosition, VERSION, StyleChanged, RelationshipDeleted, RelationshipInserted, StyleInserted, StyleDeleted } from '../client/notebook';
 import { NotebookChangeRequest, StyleMoveRequest, Tracker, StyleInsertRequest,
-         StyleChangeRequest
+         StyleChangeRequest,
+         RelationshipDeleteRequest,
+         StyleDeleteRequest,
+         RelationshipInsertRequest
        } from '../client/math-tablet-api';
 import { readNotebookFile, AbsDirectoryPath, absDirPathFromNotebookPath, writeNotebookFile, NotebookPath } from './files-and-folders';
 import { constructSubstitution } from './observers/wolframscript';
@@ -42,7 +43,8 @@ import { ClientObserver } from './observers/client-observer';
 // Types
 
 export interface ObserverInstance {
-  onChanges: (changes: NotebookChange[]) => Promise<NotebookChangeRequest[]>;
+  onChangesAsync: (changes: NotebookChange[]) => Promise<NotebookChangeRequest[]>;
+  onChangesSync: (changes: NotebookChange[]) => NotebookChangeRequest[];
   onClose: ()=>Promise<void>;
   useTool: (styleObject: StyleObject) => Promise<NotebookChangeRequest[]>;
 }
@@ -212,64 +214,27 @@ export class ServerNotebook extends Notebook {
     changeRequests: NotebookChangeRequest[],
     options?: RequestChangesOptions,
   ): Promise<NotebookChange[]> {
-    // TODO: separate synchronous observer stage that is deterministic?
-    // TODO: submit changes to asynchronous observers simultaneously.
-    // TODO: send changes to clients as soon as they come back
-    //       such that we can still return the 'complete' flag.
-    // TODO: timeout on observer processing of changes.
-    // TODO: Don't allow multiple asynchronous requestChanges to be operating at the same time.
-    options = options || {};
+    // Applies the change requests to the notebook,
+    // then runs the resulting changes through all of the
+    // observers synchronously, until there are no more changes,
+    // or we reach a limit.
 
-    debug(`requestChanges ${changeRequests.length}`);
     this.assertNotClosed('requestChanges');
+    options = options || {};
+    debug(`requestChanges ${changeRequests.length}`);
 
     // Make the requested changes to the notebook.
-    let allChanges: NotebookChange[] = [];
-    let changes: NotebookChange[] = this.makeRequestedChanges(source, changeRequests);
-
-    for (
-      let round = 0;
-      changes.length>0 && round<MAX_CHANGE_ROUNDS;
-      round++
-    ) {
-      debug("ROUND",round);
-
-      // Pass the changes to each observer to determine if it wants to make
-      // additional changes as the result of the previous changes.
-      // LATER: Submit to all observers in parallel.
-      // IMPORTANT: We don't actually make the changes to the notebook
-      // until *after* all observers have submitted their change requests for this round.
-      const observerChangeRequests: Map<StyleSource, NotebookChangeRequest[]> = new Map();
-      for (const [source, observer] of this.observers) {
-        const changeRequests = await observer.onChanges(changes);
-        observerChangeRequests.set(source, changeRequests);
-      };
-
-      // Make the changes requested by the observers.
-      let newChanges: NotebookChange[] = [];
-      for (const [source, changeRequests] of observerChangeRequests) {
-        newChanges = newChanges.concat(this.makeRequestedChanges(source, changeRequests));
-      }
-
-      allChanges = allChanges.concat(changes);
-      changes = newChanges;
-    }
-
-    if (changes.length>0) {
-      // TODO: What do we do? Just drop the changes on the floor?
-      console.error(`Dropping changes due to running out of rounds: ${changes.length}`);
-    }
+    const changes: NotebookChange[] = [];
+    this.applyRequestedChanges(source, changeRequests, changes);
+    const newSyncChanges = this.processChangesSync(changes);
+    const allSyncChanges = changes.concat(newSyncChanges);
+    this.notifyObserversOfChanges(allSyncChanges, options, false);
+    const asyncChanges = await this.processChangesAsync(allSyncChanges);
+    this.notifyObserversOfChanges(asyncChanges, options, true);
 
     if (this._path) { await this.save(); }
 
-    // Send all changes to all clients
-    for (const [ clientId, observer ] of this.clientObservers) {
-      let tracker = (options.tracker && clientId == options.clientId ? options.tracker : undefined);
-      const complete = true;
-      observer.onChanges(allChanges, complete, tracker);
-    };
-
-    return allChanges;
+    return allSyncChanges.concat(asyncChanges);
   }
 
   public async useTool(styleId: StyleId): Promise<NotebookChange[]> {
@@ -307,7 +272,6 @@ export class ServerNotebook extends Notebook {
     obj?: NotebookObject
   ) {
     super(obj);
-
     this.clientObservers = new Map();
     this.observers = new Map();
     this._path = notebookPath;
@@ -315,6 +279,7 @@ export class ServerNotebook extends Notebook {
 
   // Private Instance Properties
 
+  // TODO: purge changes in queue that have been processed asynchronously.
   private clientObservers: Map<ClientId, ClientObserver>;
   private closed?: boolean;
   private observers: Map<StyleSource, ObserverInstance>;
@@ -328,87 +293,185 @@ export class ServerNotebook extends Notebook {
 
   // Private Instance Methods
 
-  private convertChangeRequestToChanges(
+  private appendChange(
+    change: NotebookChange,
+    rval: NotebookChange[],
+  ): void {
+    this.applyChange(change);
+    rval.push(change);
+  }
+
+  private applyRequestedChanges(
     source: StyleSource,
-    changeRequest: NotebookChangeRequest,
-  ): NotebookChange[] {
-    switch(changeRequest.type) {
-      case 'deleteRelationship':
-        return this.deleteRelationshipChanges(changeRequest.id);
-      case 'changeStyle':
-        return [ this.changeStyleChange(changeRequest) ];
-      case 'deleteStyle':
-        return this.deleteStyleChanges(changeRequest.styleId);
-      case 'insertRelationship':
-        return [ this.insertRelationshipChange(source, changeRequest.fromId, changeRequest.toId, changeRequest.props) ];
-      case 'insertStyle':
-        return this.insertStyleChanges(source, changeRequest);
-      case 'moveStyle':
-        return this.moveStyleChanges(source, changeRequest);
-      default:
-        throw new Error("Unexpected.");
+    changeRequests: NotebookChangeRequest[],
+    rval: NotebookChange[],
+  ): void {
+    // Converts the change requests into changes,
+    // applies them to the notebook, and appends them to this.changes.
+    debug("changeREQUESTS", changeRequests);
+    for (const changeRequest of changeRequests) {
+      switch(changeRequest.type) {
+        case 'changeStyle':         this.applyChangeStyleRequest(changeRequest, rval); break;
+        case 'deleteRelationship':  this.applyDeleteRelationshipRequest(changeRequest, rval); break;
+        case 'deleteStyle':         this.applyDeleteStyleRequest(changeRequest, rval); break;
+        case 'insertRelationship':  this.applyInsertRelationshipRequest(source, changeRequest, rval); break;
+        case 'insertStyle':         this.applyInsertStyleRequest(source, changeRequest, rval); break;
+        case 'moveStyle':           this.applyMoveStyleRequest(changeRequest, rval); break;
+        default:
+          throw new Error(`Unexpected change request type ${(<any>changeRequest).type}`);
+      }
     }
   }
 
-  // I'm now questioning this. If we change the data on a node,
-  // I don't see how we can do less than delete all children!
-
-  private changeStyleChange(request: StyleChangeRequest): StyleChanged {
+  private applyChangeStyleRequest(
+    request: StyleChangeRequest,
+    rval: NotebookChange[],
+  ): void {
     const style = this.getStyleById(request.styleId);
     const previousData = style.data;
     style.data = request.data;
-    return { type: 'styleChanged', style, previousData };
+    const change: StyleChanged = { type: 'styleChanged', style, previousData };
+    this.appendChange(change, rval);
   }
 
-  private deleteRelationshipChanges(id: RelationshipId): NotebookChange[] {
-    try {
-      const relationship = this.getRelationshipById(id);
-      return [{ type: 'relationshipDeleted', relationship }];
-    }  catch (e) {
-      if (e instanceof RelationshipIdDoesNotExistError) {
-        // We do not consider this an error condition, as we
-        // support multiple concurrent users.
-        return [];
-      } else {
-        debug("uncaught error on attempted delete relationship",e);
-        throw new Error("Interal Errror on delete relationship"+e.name);
-      }
-    }
-    throw new Error("Interal Errror on delete relationship");
+  private applyDeleteRelationshipRequest(
+    request: RelationshipDeleteRequest,
+    rval: NotebookChange[],
+  ): void {
+    if (!this.hasRelationshipId(request.id)) { /* REVIEW */ return; }
+    const relationship = this.getRelationshipById(request.id);
+    const change: RelationshipDeleted = { type: 'relationshipDeleted', relationship, };
+    this.appendChange(change, rval);
   }
 
+  private applyDeleteStyleRequest(
+    request: StyleDeleteRequest,
+    rval: NotebookChange[],
+  ): void {
+    const styleId: StyleId = request.styleId;
 
-  private deleteStyleChanges(id: StyleId): NotebookChange[] {
-    let changes: NotebookChange[] = [];
     // Delete substyles recursively
-    const styles = this.childStylesOf(id);
-    for(const style of styles) {
-      changes = changes.concat(this.deleteStyleChanges(style.id));
+    const substyles = this.childStylesOf(styleId);
+    for(const substyle of substyles) {
+      const request2: StyleDeleteRequest = { type: 'deleteStyle', styleId: substyle.id };
+      this.applyDeleteStyleRequest(request2, rval);
     }
+
+    // // Delete any relationships attached to this style.
     // Note: We actually can't do this automatically.
     // Although deleting a "from" or "to" style in a relationship
     // certainly invalidates that relationship, we may need the
     // relationship to compute how to "repair" or "reroute" the dependency
-    // // Delete any relationships attached to this style.
     // const relationships = this.relationshipsOf(id);
     // for(const relationship of relationships) {
     //   changes.push(this.deleteRelationshipChange(relationship.id));
     // }
-    try {
-      const style = this.getStyleById(id);
-      if (style) {
-        changes.push({ type: 'styleDeleted', style });
-      }
-    } catch (e) {
-      if (e instanceof StyleIdDoesNotExistError) {
-        // We do not consider this an error condition, as we
-        // support multiple concurrent users.
-      } else {
-        debug("uncaught error on attempted delete",e);
-        throw new Error("spud"+e.name);
+
+    const style = this.getStyleById(styleId);
+    const change: StyleDeleted = { type: 'styleDeleted', style };
+    this.appendChange(change, rval);
+  }
+
+  private applyInsertRelationshipRequest(
+    source: StyleSource,
+    request: RelationshipInsertRequest,
+    rval: NotebookChange[],
+  ): void {
+    const relationship: RelationshipObject = {
+      id: this.nextId++,
+      source,
+      fromId: request.fromId,
+      toId: request.toId,
+      ...request.props,
+    };
+    const change: RelationshipInserted = { type: 'relationshipInserted', relationship };
+    this.appendChange(change, rval);
+  }
+
+  private applyInsertStyleRequest(
+    source: StyleSource,
+    request: StyleInsertRequest,
+    rval: NotebookChange[],
+  ): void {
+    const parentId = request.parentId||0;
+    const styleProps = request.styleProps;
+    const afterId = request.hasOwnProperty('afterId') ? request.afterId : -1;
+
+    const style: StyleObject = {
+      data: styleProps.data,
+      id: this.nextId++,
+      meaning: styleProps.meaning,
+      parentId: parentId || 0,
+      source,
+      type: styleProps.type,
+    };
+    const change: StyleInserted =  { type: 'styleInserted', style, afterId };
+    this.appendChange(change, rval);
+
+    if (styleProps.subprops) {
+      for (const substyleProps of styleProps.subprops) {
+        const request2: StyleInsertRequest = { type: 'insertStyle', parentId: style.id, styleProps: substyleProps };
+        this.applyInsertStyleRequest(source, request2, rval);
       }
     }
-    return changes;
+
+    if (styleProps.relationsFrom) {
+      for (const [idStr, props] of Object.entries(styleProps.relationsFrom)) {
+        const request2: RelationshipInsertRequest = { type: 'insertRelationship', fromId: parseInt(idStr, 10), toId: style.id, props };
+        this.applyInsertRelationshipRequest(source, request2, rval);
+      }
+    }
+
+    if (styleProps.relationsTo) {
+      for (const [idStr, props] of Object.entries(styleProps.relationsTo)) {
+        const request2: RelationshipInsertRequest = { type: 'insertRelationship', fromId: style.id, toId: parseInt(idStr, 10), props };
+        this.applyInsertRelationshipRequest(source, request2, rval);
+      }
+    }
+
+    if (styleProps.exclusiveChildTypeAndMeaning) {
+        const children = this.findChildStylesOfType(parentId, style.type);
+
+      // console.log("KIDS FOUND OF PARENT",children);
+      // now in the set to be removed, remove ourself, and anyting with a different meaning
+      const toRemove = children.filter(c => ((c.id != parentId) && (c.id != style.id) && (c.meaning == style.meaning) && (c.type == style.type)));
+      // now remove the remainder
+      // console.log("TO REMOVE",toRemove);
+      for (const childToRemove of toRemove) {
+        const request2: StyleDeleteRequest = { type: 'deleteStyle', styleId: childToRemove.id };
+        this.applyDeleteStyleRequest(request2, rval);
+      }
+    }
+  }
+
+  private applyMoveStyleRequest(
+    request: StyleMoveRequest,
+    rval: NotebookChange[],
+  ): void {
+    const { styleId, afterId } = request;
+    if (afterId == styleId) { throw new Error(`Style ${styleId} can't be moved after itself.`); }
+
+    const style = this.getStyleById(styleId);
+    if (style.parentId) {
+      // REVIEW: Why are we attempting to move substyles? Should be:
+      // throw new Error(`Attempting to move substyle ${styleId}`);
+      return;
+    }
+
+    const oldPosition: StylePosition = this.styleOrder.indexOf(style.id);
+    if (oldPosition < 0) { throw new Error(`Style ${styleId} can't be moved: not found in styleOrder array.`); }
+
+    let newPosition: StylePosition;
+    if (afterId == 0) { newPosition = 0; }
+    else if (afterId == -1) { newPosition = this.styleOrder.length  - 1; }
+    else {
+      newPosition = this.styleOrder.indexOf(afterId);
+      if (newPosition < 0) { throw new Error(`Style ${styleId} can't be moved: other style ${afterId} not found in styleOrder array.`); }
+      if (oldPosition > newPosition) { newPosition++; }
+    }
+
+    const change: StyleMoved = { type: 'styleMoved', styleId, afterId, oldPosition, newPosition };
+    this.appendChange(change, rval);
   }
 
   // This should be called on any newly created notebook immediately after the constructor.
@@ -426,113 +489,88 @@ export class ServerNotebook extends Notebook {
     }
   }
 
-  private insertRelationshipChange(
-    source: StyleSource,
-    fromId: StyleId,
-    toId: StyleId,
-    props: RelationshipProperties,
-  ): NotebookChange {
-    const relationship: RelationshipObject = {
-      id: this.nextId++,
-      source,
-      fromId,
-      toId,
-      ...props,
+  private notifyObserversOfChanges(
+    changes: NotebookChange[],
+    options: RequestChangesOptions,
+    complete: boolean,
+  ): void {
+    for (const [ clientId, observer ] of this.clientObservers) {
+      let tracker = (options.tracker && clientId == options.clientId ? options.tracker : undefined);
+      observer.onChanges(changes, complete, tracker);
     };
-    return { type: 'relationshipInserted', relationship };
   }
 
-  private insertStyleChanges(source: StyleSource, request: StyleInsertRequest): NotebookChange[] {
-    const parentId = request.parentId||0;
-    const styleProps = request.styleProps;
-    const afterId = request.hasOwnProperty('afterId') ? request.afterId : -1;
+  private async processChangesAsync(changes: NotebookChange[]): Promise<NotebookChange[]> {
+    // TODO: submit changes to asynchronous observers simultaneously.
+    // TODO: timeout on observer processing of changes.
+    // TODO: Don't allow multiple asynchronous requestChanges to be operating at the same time.
+    let allChanges: NotebookChange[] = [];
+    for (let round = 0; changes.length>0 && round<MAX_CHANGE_ROUNDS; round++) {
+      debug(`Async round ${round}.`);
 
-    let changes: NotebookChange[] = [];
-    const style: StyleObject = {
-      data: styleProps.data,
-      id: this.nextId++,
-      meaning: styleProps.meaning,
-      parentId: parentId || 0,
-      source,
-      type: styleProps.type,
-    };
-    changes.push({ type: 'styleInserted', style, afterId });
+      // Pass the changes to each observer to determine if it wants to make
+      // additional changes as the result of the previous changes.
+      // LATER: Submit to all observers in parallel.
+      // IMPORTANT: We don't actually make the changes to the notebook
+      // until *after* all observers have submitted their change requests for this round.
+      const observerChangeRequests: Map<StyleSource, NotebookChangeRequest[]> = new Map();
+      for (const [source, observer] of this.observers) {
+        const changeRequests = await observer.onChangesAsync(changes);
+        observerChangeRequests.set(source, changeRequests);
+      };
 
-    if (styleProps.subprops) {
-      for (const substyleProps of styleProps.subprops) {
-        const request2: StyleInsertRequest = { type: 'insertStyle', parentId: style.id, styleProps: substyleProps };
-        changes = changes.concat(this.insertStyleChanges(source, request2));
+      // Apply the changes requested by the observers.
+      const newChanges: NotebookChange[] = [];
+      for (const [source, changeRequests] of observerChangeRequests) {
+        this.applyRequestedChanges(source, changeRequests, newChanges);
       }
+
+      // Get the changes made in this round for the next round of processing.
+      changes = newChanges;
+      allChanges = allChanges.concat(newChanges);
     }
 
-    if (styleProps.relationsFrom) {
-      for (const [idStr, props] of Object.entries(styleProps.relationsFrom)) {
-        changes.push(this.insertRelationshipChange(source, parseInt(idStr, 10), style.id, props));
-      }
+    if (changes.length>0) {
+      // TODO: What do we do? Just drop the changes on the floor?
+      console.error(`Dropping async changes due to running out of rounds: ${changes.length}`);
     }
 
-    if (styleProps.relationsTo) {
-      for (const [idStr, props] of Object.entries(styleProps.relationsTo)) {
-        changes.push(this.insertRelationshipChange(source, style.id, parseInt(idStr, 10), props));
-      }
-    }
-
-    if (styleProps.exclusiveChildTypeAndMeaning) {
-        const children = this.findChildStylesOfType(parentId,
-                                                    style.type);
-
-      // console.log("KIDS FOUND OF PARENT",children);
-      // now in the set to be removed, remove ourself, and anyting with a different meaning
-      const toRemove = children.filter(c => ((c.id != parentId) && (c.id != style.id) && (c.meaning == style.meaning) && (c.type == style.type)));
-      // now remove the remainder
-      // console.log("TO REMOVE",toRemove);
-      for (const childToRemove of toRemove) {
-//        const request2: StyleDeleteRequest = { type: 'deleteStyle', childToRemove };
-        changes = changes.concat(this.deleteStyleChanges(childToRemove.id));
-      }
-    }
-
-    return changes;
+    return allChanges;
   }
 
-  private moveStyleChanges(_source: StyleSource, request: StyleMoveRequest): StyleMoved[] {
-    const { styleId, afterId } = request;
-    if (afterId == styleId) { throw new Error(`Style ${styleId} can't be moved after itself.`); }
+  private processChangesSync(changes: NotebookChange[]): NotebookChange[] {
+    let allChanges: NotebookChange[] = [];
+    for (let round = 0; changes.length>0 && round<MAX_CHANGE_ROUNDS; round++) {
+      debug(`Sync round ${round}.`);
 
-    const style = this.getStyleById(styleId);
-    if (style.parentId) {
-      return [];
-      // REVIEW: Why are we attempting to move substyles? Should be:
-      // throw new Error(`Attempting to move substyle ${styleId}`);
+      // Pass the changes to each observer synchronously to determine if
+      // the observer wants to make additional changes as the result of
+      // the previous changes.
+      // IMPORTANT: We don't actually make the changes to the notebook
+      // until *after* all observers have submitted their change requests for this round.
+      const observerChangeRequests: Map<StyleSource, NotebookChangeRequest[]> = new Map();
+      for (const [source, observer] of this.observers) {
+        const changeRequests = observer.onChangesSync(changes);
+        observerChangeRequests.set(source, changeRequests);
+      };
+
+      // Apply the changes requested by the observers.
+      const newChanges: NotebookChange[] = [];
+      for (const [source, changeRequests] of observerChangeRequests) {
+        this.applyRequestedChanges(source, changeRequests, newChanges);
+      }
+
+      // Get the changes made in this round for the next round of processing.
+      changes = newChanges;
+      allChanges = allChanges.concat(newChanges);
     }
 
-    const oldPosition: StylePosition = this.styleOrder.indexOf(style.id);
-    if (oldPosition < 0) { throw new Error(`Style ${styleId} can't be moved: not found in styleOrder array.`); }
-
-    let newPosition: StylePosition;
-    if (afterId == 0) { newPosition = 0; }
-    else if (afterId == -1) { newPosition = this.styleOrder.length  - 1; }
-    else {
-      newPosition = this.styleOrder.indexOf(afterId);
-      if (newPosition < 0) { throw new Error(`Style ${styleId} can't be moved: other style ${afterId} not found in styleOrder array.`); }
-      if (oldPosition > newPosition) { newPosition++; }
+    if (changes.length>0) {
+      // TODO: What do we do? Just drop the changes on the floor?
+      console.error(`Dropping sync changes due to running out of rounds: ${changes.length}`);
     }
 
-    return [{ type: 'styleMoved', styleId, afterId, oldPosition, newPosition }];
-  }
-
-  private makeRequestedChanges(
-    source: StyleSource,
-    changeRequests: NotebookChangeRequest[]
-  ): NotebookChange[] {
-    let rval: NotebookChange[] = [];
-    debug("changeREQUESTS", changeRequests);
-    for (const changeRequest of changeRequests) {
-      const changes = this.convertChangeRequestToChanges(source, changeRequest);
-      this.applyChanges(changes);
-      rval = rval.concat(changes);
-    }
-    return rval;
+    return allChanges;
   }
 
   // Do not call this directly.

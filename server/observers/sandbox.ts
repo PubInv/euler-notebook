@@ -47,14 +47,18 @@ export class SandboxObserver implements ObserverInstance {
 
   // Instance Methods
 
-  public async onChanges(changes: NotebookChange[]): Promise<NotebookChangeRequest[]> {
-    debug(`onChanges ${changes.length}`);
-    const rval: NotebookChangeRequest[] = [];
+  public async onChangesAsync(changes: NotebookChange[]): Promise<NotebookChangeRequest[]> {
     for (const change of changes) {
-      await this.onChange(change, rval);
+      debug(`async change:  ${this.notebook._path} ${change.type}`)
     }
-    debug(`onChanges returning ${rval.length} changes.`);
-    return rval;
+    return [];
+  }
+
+  public onChangesSync(changes: NotebookChange[]): NotebookChangeRequest[] {
+    for (const change of changes) {
+      debug(`sync change:  ${this.notebook._path} ${change.type}`)
+    }
+    return [];
   }
 
   public async onClose(): Promise<void> {
@@ -80,9 +84,5 @@ export class SandboxObserver implements ObserverInstance {
   private notebook: ServerNotebook;
 
   // Private Instance Methods
-
-  private async onChange(change: NotebookChange, _rval: NotebookChangeRequest[]): Promise<void> {
-    debug(`onChange ${this.notebook._path} ${change.type}`);
-  }
 
 }

@@ -56,20 +56,15 @@ export interface ToolInfo {
 export interface RelationshipPropertiesMap {
   [id: /* StyleId */number]: RelationshipProperties;
 }
-// RLR -- I'm not sure what the preferred TypeScript style here
-// is. I'm trying ot allow "options" which are not required. Later
-// these options might be elevated to properties of the MEANING
-// themselves. At present, I just want a boolean
-// "exclusiveChildTypeAndMeaning",
-// which means this that only one style of that type and meaning
-// should exist for the parent. If this is added at the time
-// the insertion request is made, the code to do the insertion
-// should automatically remove all other such instances
+
 export interface StylePropertiesWithSubprops extends StyleProperties {
   subprops?: StylePropertiesWithSubprops[];
   relationsTo?: RelationshipPropertiesMap;
   relationsFrom?: RelationshipPropertiesMap;
-  exclusiveChildTypeAndMeaning?: boolean;
+  exclusiveChildTypeAndMeaning?: boolean;     // only one style of
+    // that type and meaning should exist for the parent. If this is added
+    // at the time the insertion request is made, the code to do the insertion
+    // should automatically remove all other such instances
 }
 
 // Notebook Change Requests

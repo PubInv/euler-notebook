@@ -45,15 +45,20 @@ export class AnyInputObserver implements ObserverInstance {
 
   // Instance Methods
 
-  public async onChanges(changes: NotebookChange[]): Promise<NotebookChangeRequest[]> {
+  public async onChangesAsync(_changes: NotebookChange[]): Promise<NotebookChangeRequest[]> {
+    return [];
+  }
+
+  public onChangesSync(changes: NotebookChange[]): NotebookChangeRequest[] {
     debug(`onChanges ${changes.length}`);
     const rval: NotebookChangeRequest[] = [];
     for (const change of changes) {
-      await this.onChange(change, rval);
+      this.onChange(change, rval);
     }
     debug(`onChanges returning ${rval.length} changes.`);
     return rval;
   }
+
   // TODO: can't these be inherited?
   public async onClose(): Promise<void> {
     debug(`onClose ${this.notebook._path}`);
@@ -79,13 +84,13 @@ export class AnyInputObserver implements ObserverInstance {
 
   // Private Instance Methods
 
-  private onChange(change: NotebookChange, rval: NotebookChangeRequest[]) {
-    if (change) {
-      debug(`onChange ${this.notebook._path} ${change.type}`);
-      switch (change.type) {
-        case 'styleMoved': this.chStyleMoved(change, rval); break;
-        default: break;
-      }
+  private onChange(change: NotebookChange|undefined, rval: NotebookChangeRequest[]): void {
+    // REVIEW; Don't allow null/undefined changes.
+    if (!change) { return; }
+    debug(`onChange ${this.notebook._path} ${change.type}`);
+    switch (change.type) {
+      case 'styleMoved': this.chStyleMoved(change, rval); break;
+      default: break;
     }
   }
 

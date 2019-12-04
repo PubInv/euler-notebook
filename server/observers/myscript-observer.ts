@@ -50,12 +50,13 @@ export class MyScriptObserver implements ObserverInstance {
 
   // Instance Methods
 
-  public async onChanges(changes: NotebookChange[]): Promise<NotebookChangeRequest[]> {
-    const rval: NotebookChangeRequest[] = [];
-    for (const change of changes) {
-      await this.onChange(change, rval);
-    }
-    return rval;
+  public async onChangesAsync(changes: NotebookChange[]): Promise<NotebookChangeRequest[]> {
+    for (const change of changes) { this.onChange(change); }
+    return [];
+  }
+
+  public onChangesSync(_changes: NotebookChange[]): NotebookChangeRequest[] {
+    return [];
   }
 
   public async onClose(): Promise<void> {
@@ -148,22 +149,22 @@ export class MyScriptObserver implements ObserverInstance {
 
   // Private Event Handlers
 
-  private async chStyleChanged(change: StyleChanged, _rval: NotebookChangeRequest[]): Promise<void> {
+  private chStyleChanged(change: StyleChanged): void {
     const style = change.style;
     if (style.meaning != 'INPUT' || style.type != 'DRAWING') { return; }
     debug(`INPUT/DRAWING style ${style.id} changed. Adding to queue.`);
     this.addStyleToQueue(style.id, style.data);
   }
 
-  private async onChange(change: NotebookChange, rval: NotebookChangeRequest[]): Promise<void> {
+  private onChange(change: NotebookChange): void {
     // REVIEW: We shouldn't have null changes.
     if (!change) { return; }
 
     // debug(`onChange ${this.notebook._path} ${change.type}`);
     switch (change.type) {
-      case 'styleChanged':  await this.chStyleChanged(change, rval); break;
-      //case 'styleDeleted':  await this.chStyleDeleted(change, rval); break;
-      //case 'styleInserted': await this.chStyleInserted(change, rval); break;
+      case 'styleChanged':  this.chStyleChanged(change); break;
+      //case 'styleDeleted':  this.chStyleDeleted(change); break;
+      //case 'styleInserted': this.chStyleInserted(change); break;
       default: break;
     }
   }

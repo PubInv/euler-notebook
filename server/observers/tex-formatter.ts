@@ -35,8 +35,7 @@ import { findTeXForm, constructSubstitution
        } from './wolframscript';
 import { Config } from '../config';
 
-
-
+// Exported Class
 
 export class TeXFormatterObserver implements ObserverInstance {
 
@@ -53,7 +52,7 @@ export class TeXFormatterObserver implements ObserverInstance {
 
   // Instance Methods
 
-  public async onChanges(changes: NotebookChange[]): Promise<NotebookChangeRequest[]> {
+  public async onChangesAsync(changes: NotebookChange[]): Promise<NotebookChangeRequest[]> {
     debug(`onChanges ${changes.length}`);
     const rval: NotebookChangeRequest[] = [];
     for (const change of changes) {
@@ -61,6 +60,10 @@ export class TeXFormatterObserver implements ObserverInstance {
     }
     debug(`onChanges returning ${rval.length} changes.`);
     return rval;
+  }
+
+  public onChangesSync(_changes: NotebookChange[]): NotebookChangeRequest[] {
+    return [];
   }
 
   public async onClose(): Promise<void> {
@@ -115,7 +118,7 @@ export class TeXFormatterObserver implements ObserverInstance {
   // Note: This is a good candidate for integrating into the metra-framework,
   // as it is probably useful outside this observer. However, I have
   // no reason to do so yet, and wish to be conservative. -rlr
-  private deDupChanges(rval : NotebookChangeRequest[]) {
+  private deDupChanges(rval: NotebookChangeRequest[]): NotebookChangeRequest[] {
     rval = rval.filter((thing,index) => {
       return index === rval.findIndex(obj => {
         return JSON.stringify(obj) === JSON.stringify(thing);
@@ -123,6 +126,7 @@ export class TeXFormatterObserver implements ObserverInstance {
     });
     return rval;
   }
+
   private async onChange(change: NotebookChange, rval: NotebookChangeRequest[]): Promise<void> {
     if (change == null) return;
     debug(`onChange ${this.notebook._path} ${change.type}`);

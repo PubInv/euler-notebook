@@ -54,7 +54,7 @@ export class SymbolClassifierObserver implements ObserverInstance {
 
   // Instance Methods
 
-  public async onChanges(changes: NotebookChange[]): Promise<NotebookChangeRequest[]> {
+  public async onChangesAsync(changes: NotebookChange[]): Promise<NotebookChangeRequest[]> {
     debug(`onChanges ${changes.length}`);
     const rval: NotebookChangeRequest[] = [];
     for (const change of changes) {
@@ -62,6 +62,10 @@ export class SymbolClassifierObserver implements ObserverInstance {
     }
     debug(`onChanges returning ${rval.length} changes.`);
     return rval;
+  }
+
+  public onChangesSync(_changes: NotebookChange[]): NotebookChangeRequest[] {
+    return [];
   }
 
   public async onClose(): Promise<void> {

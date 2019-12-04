@@ -37,7 +37,8 @@ export class TestObserver implements ObserverInstance {
   static async initialize(_config: Config): Promise<void> { }
   static async onOpen(_notebook: ServerNotebook): Promise<TestObserver> { return new this(); }
   constructor() {}
-  async onChanges(_changes: NotebookChange[]): Promise<NotebookChangeRequest[]> { return []; }
+  async onChangesAsync(_changes: NotebookChange[]): Promise<NotebookChangeRequest[]> { return []; }
+  public onChangesSync(_changes: NotebookChange[]): NotebookChangeRequest[] { return []; }
   async onClose(): Promise<void> {}
   async useTool(_style: StyleObject): Promise<NotebookChangeRequest[]> { return []; }
 }
@@ -52,7 +53,8 @@ describe("server notebook", function() {
     let observer: TestObserver;
 
     const onOpenSpy: sinon.SinonSpy<[ServerNotebook], Promise<ObserverInstance>> = sinon.spy(TestObserver, 'onOpen');
-    let onChangesSpy: sinon.SinonSpy<[NotebookChange[]], Promise<NotebookChangeRequest[]>>;
+    let onChangesAsyncSpy: sinon.SinonSpy<[NotebookChange[]], Promise<NotebookChangeRequest[]>>;
+    let onChangesSyncSpy: sinon.SinonSpy<[NotebookChange[]], NotebookChangeRequest[]>;
     let onCloseSpy: sinon.SinonSpy<[], Promise<void>>;
     let useToolSpy: sinon.SinonSpy<[StyleObject], Promise<NotebookChangeRequest[]>>;
 
@@ -69,7 +71,8 @@ describe("server notebook", function() {
       assert(onOpenSpy.calledOnce);
      assert.equal(onOpenSpy.lastCall.args[0], notebook);
       observer = <TestObserver>(await onOpenSpy.lastCall.returnValue);
-      onChangesSpy = sinon.spy(observer, 'onChanges');
+      onChangesAsyncSpy = sinon.spy(observer, 'onChangesAsync');
+      onChangesSyncSpy = sinon.spy(observer, 'onChangesSync');
       onCloseSpy = sinon.spy(observer, 'onClose');
       useToolSpy = sinon.spy(observer, 'useTool');
     });
@@ -90,12 +93,14 @@ describe("server notebook", function() {
     });
 
     it("onChanges is called when style is inserted", async function(){
-      const callCount = onChangesSpy.callCount;
+      const callCountAsync = onChangesAsyncSpy.callCount;
+      const callCountSync = onChangesSyncSpy.callCount;
       const styleProps: StylePropertiesWithSubprops = { type: 'TEXT', meaning: 'INPUT', data: 'foo' };
       const insertRequest: StyleInsertRequest = { type: 'insertStyle', styleProps };
       const changeRequests = [insertRequest];
       await notebook.requestChanges('TEST', changeRequests);
-      assert.equal(onChangesSpy.callCount, callCount + 1);
+      assert.equal(onChangesAsyncSpy.callCount, callCountAsync + 1);
+      assert.equal(onChangesSyncSpy.callCount, callCountSync + 1);
       const expectedNotebookChange: StyleInserted = {
         type: 'styleInserted',
         style: {
@@ -106,7 +111,8 @@ describe("server notebook", function() {
         },
         afterId: -1,
       }
-      assert.deepEqual(onChangesSpy.lastCall.args[0], [ expectedNotebookChange ]);
+      assert.deepEqual(onChangesAsyncSpy.lastCall.args[0], [ expectedNotebookChange ]);
+      assert.deepEqual(onChangesSyncSpy.lastCall.args[0], [ expectedNotebookChange ]);
     });
 
     it("useTool is called when tool is used", async function(){
@@ -124,11 +130,15 @@ describe("server notebook", function() {
 
       // Observer's onChange should be called with two new styles.
       // Pick out the tool style.
-      const changes: NotebookChange[] = onChangesSpy.lastCall.args[0];
-      assert.equal(changes.length, 2);
-      const toolChange = changes.find(c=> c && c.type=='styleInserted' && c.style.type=='TOOL');
-      assert.exists(toolChange);
-      const toolStyle = (<StyleInserted>toolChange).style;
+      const changesAsync: NotebookChange[] = onChangesAsyncSpy.lastCall.args[0];
+      const changesSync: NotebookChange[] = onChangesSyncSpy.lastCall.args[0];
+      assert.equal(changesAsync.length, 2);
+      assert.equal(changesSync.length, 2);
+      const toolChangeAsync = changesAsync.find(c=> c && c.type=='styleInserted' && c.style.type=='TOOL');
+      const toolChangeSync = changesSync.find(c=> c && c.type=='styleInserted' && c.style.type=='TOOL');
+      assert.exists(toolChangeAsync);
+      assert.exists(toolChangeSync);
+      const toolStyle = (<StyleInserted>toolChangeAsync).style;
 
       // Invoke the tool.
       const callCount = useToolSpy.callCount;
