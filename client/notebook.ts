@@ -625,7 +625,7 @@ export class Notebook {
           this.moveStyle(change);
           break;
         default:
-          throw new Error("Unexpected");
+          throw new Error(`Applying unexpected change type: ${(<any>change).type}`);
       }
     }
   }

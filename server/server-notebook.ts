@@ -225,7 +225,7 @@ export class ServerNotebook extends Notebook {
 
     // Make the requested changes to the notebook.
     let allChanges: NotebookChange[] = [];
-    let changes: NotebookChange[] = await this.makeRequestedChanges(source, changeRequests);
+    let changes: NotebookChange[] = this.makeRequestedChanges(source, changeRequests);
 
     for (
       let round = 0;
@@ -248,7 +248,7 @@ export class ServerNotebook extends Notebook {
       // Make the changes requested by the observers.
       let newChanges: NotebookChange[] = [];
       for (const [source, changeRequests] of observerChangeRequests) {
-        newChanges = newChanges.concat(await this.makeRequestedChanges(source, changeRequests));
+        newChanges = newChanges.concat(this.makeRequestedChanges(source, changeRequests));
       }
 
       allChanges = allChanges.concat(changes);
@@ -334,8 +334,7 @@ export class ServerNotebook extends Notebook {
   ): NotebookChange[] {
     switch(changeRequest.type) {
       case 'deleteRelationship':
-        debug("deleteRelationship case ins erver-notebook.ts");
-        return this.deleteRelationshipChange(changeRequest.id);
+        return this.deleteRelationshipChanges(changeRequest.id);
       case 'changeStyle':
         return [ this.changeStyleChange(changeRequest) ];
       case 'deleteStyle':
@@ -343,14 +342,9 @@ export class ServerNotebook extends Notebook {
       case 'insertRelationship':
         return [ this.insertRelationshipChange(source, changeRequest.fromId, changeRequest.toId, changeRequest.props) ];
       case 'insertStyle':
-        debug('insertStyle in convert Change',source,changeRequest);
         return this.insertStyleChanges(source, changeRequest);
       case 'moveStyle':
-        const msc = this.moveStyleChange(source, changeRequest);
-        if (msc)
-          return [ msc ];
-        else
-          return [];
+        return this.moveStyleChanges(source, changeRequest);
       default:
         throw new Error("Unexpected.");
     }
@@ -366,7 +360,7 @@ export class ServerNotebook extends Notebook {
     return { type: 'styleChanged', style, previousData };
   }
 
-  private deleteRelationshipChange(id: RelationshipId): NotebookChange[] {
+  private deleteRelationshipChanges(id: RelationshipId): NotebookChange[] {
     try {
       const relationship = this.getRelationshipById(id);
       return [{ type: 'relationshipDeleted', relationship }];
@@ -501,20 +495,18 @@ export class ServerNotebook extends Notebook {
     return changes;
   }
 
-  private moveStyleChange(_source: StyleSource, request: StyleMoveRequest): NotebookChange | null {
-
+  private moveStyleChanges(_source: StyleSource, request: StyleMoveRequest): StyleMoved[] {
     const { styleId, afterId } = request;
     if (afterId == styleId) { throw new Error(`Style ${styleId} can't be moved after itself.`); }
 
-    const tl = this.topLevelStyleOf(styleId);
-//    if (tl.id != styleId) {  // In this case we are trying to a move a non-thought;
-//          // This situation occurs because we have to move children in a general way,
-//      // but there is nothing to to here.
-//      return null;
-//    }
+    const style = this.getStyleById(styleId);
+    if (style.parentId) {
+      return [];
+      // REVIEW: Why are we attempting to move substyles? Should be:
+      // throw new Error(`Attempting to move substyle ${styleId}`);
+    }
 
-    //    const oldPosition: StylePosition = this.styleOrder.indexOf(styleId);
-    const oldPosition: StylePosition = this.styleOrder.indexOf(tl.id);
+    const oldPosition: StylePosition = this.styleOrder.indexOf(style.id);
     if (oldPosition < 0) { throw new Error(`Style ${styleId} can't be moved: not found in styleOrder array.`); }
 
     let newPosition: StylePosition;
@@ -526,25 +518,18 @@ export class ServerNotebook extends Notebook {
       if (oldPosition > newPosition) { newPosition++; }
     }
 
-    const rval: StyleMoved = {
-      type: 'styleMoved',
-      styleId: request.styleId,
-      afterId: request.afterId,
-      oldPosition,
-      newPosition,
-    };
-    return rval;
+    return [{ type: 'styleMoved', styleId, afterId, oldPosition, newPosition }];
   }
 
-  private async makeRequestedChanges(
+  private makeRequestedChanges(
     source: StyleSource,
     changeRequests: NotebookChangeRequest[]
-  ): Promise<NotebookChange[]> {
+  ): NotebookChange[] {
     let rval: NotebookChange[] = [];
     debug("changeREQUESTS", changeRequests);
     for (const changeRequest of changeRequests) {
       const changes = this.convertChangeRequestToChanges(source, changeRequest);
-      await this.applyChanges(changes);
+      this.applyChanges(changes);
       rval = rval.concat(changes);
     }
     return rval;
