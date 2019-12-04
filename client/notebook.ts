@@ -308,17 +308,6 @@ export class Notebook {
     return this.allStyles().filter(s=>(s.parentId==id));
   }
 
-  public allDescendentsOf(id: StyleId): StyleObject[] {
-    const kids = this.childStylesOf(id);
-    var acc : StyleObject[] = [];
-    acc = acc.concat(kids);
-    for(const k of kids) {
-      const decs = this.allDescendentsOf(k.id);
-      acc = acc.concat(decs);
-    }
-    return acc;
-  }
-
   // find all children of given type and meaning
   public findChildStylesOfType(id: StyleId, type: StyleType, meaning?: StyleMeaning): StyleObject[] {
 

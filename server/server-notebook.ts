@@ -30,7 +30,7 @@ const debug = debug1(`server:${MODULE}`);
 import { Notebook, NotebookObject, NotebookChange,
          StyleObject, StyleSource, StyleId, StyleIdDoesNotExistError,
          RelationshipObject, RelationshipId, RelationshipIdDoesNotExistError, RelationshipProperties,
-         StyleMoved, StylePosition, VERSION } from '../client/notebook';
+         StyleMoved, StylePosition, VERSION, StyleChanged } from '../client/notebook';
 import { NotebookChangeRequest, StyleMoveRequest, Tracker, StyleInsertRequest,
          StyleChangeRequest
        } from '../client/math-tablet-api';
@@ -337,7 +337,7 @@ export class ServerNotebook extends Notebook {
         debug("deleteRelationship case ins erver-notebook.ts");
         return this.deleteRelationshipChange(changeRequest.id);
       case 'changeStyle':
-        return this.changeStyleChange(changeRequest);
+        return [ this.changeStyleChange(changeRequest) ];
       case 'deleteStyle':
         return this.deleteStyleChanges(changeRequest.styleId);
       case 'insertRelationship':
@@ -359,22 +359,11 @@ export class ServerNotebook extends Notebook {
   // I'm now questioning this. If we change the data on a node,
   // I don't see how we can do less than delete all children!
 
-  private changeStyleChange(request: StyleChangeRequest): NotebookChange[] {
+  private changeStyleChange(request: StyleChangeRequest): StyleChanged {
     const style = this.getStyleById(request.styleId);
     const previousData = style.data;
     style.data = request.data;
-
-    let changes: NotebookChange[] = [];
-    changes.push({ type: 'styleChanged', style, previousData });
-    return changes;
-
-    // let changes: NotebookChange[] = [];
-    // const decs = this.allDescendentsOf(style.id);
-    // for(const d of decs) {
-    //   changes.push({ type: 'styleDeleted', style: d } );
-    // }
-    // changes.push( { type: 'styleChanged', style, previousData });
-    // return changes;
+    return { type: 'styleChanged', style, previousData };
   }
 
   private deleteRelationshipChange(id: RelationshipId): NotebookChange[] {

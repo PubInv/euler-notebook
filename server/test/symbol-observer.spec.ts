@@ -331,16 +331,6 @@ describe("test symbol observer", function() {
       assert.equal(1,notebook.allRelationships().length);
 
     });
-    it("Computes allDescendentsOf correctly",async function() {
-      const data0:string[] = [
-        "3x - 10 = 11",
-        ];
-      const changeRequests = generateInsertRequests(data0);
-      await serializeChangeRequests(notebook,changeRequests);
-      const styles = notebook.allStyles();
-      const decs = notebook.allDescendentsOf(1);
-      assert.equal(styles.length-1,decs.length);
-    });
 
     it("A change of an equation produces only one equation, not two",async function(){
       const data0:string[] = [
