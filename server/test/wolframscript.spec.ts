@@ -37,6 +37,7 @@ import { execute, start, stop, checkEquiv } from '../observers/wolframscript';
 // import { expect } from 'chai';
 import { assert } from 'chai';
 import 'mocha';
+import { getConfig } from '../config';
 
 const TEST_CASES = [
   ['FullForm[Hold[y = 13]]',
@@ -84,7 +85,8 @@ describe("wolframscript", function(){
     this.timeout(10*1000);
 
     before("starting", async function(){
-      await start({});
+      const config = await getConfig();
+      await start(config.wolframscript);
       gWolframStarted = true;
     });
 

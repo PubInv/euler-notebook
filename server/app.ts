@@ -57,7 +57,7 @@ async function main() {
   const credentials = await getCredentials();
 
   // TODO: stopWolframscript before exiting.
-  if (config.mathematica) { await startWolframscript(config); }
+  if (config.mathematica) { await startWolframscript(config.wolframscript); }
 
   await initializeObservers(config, credentials);
 

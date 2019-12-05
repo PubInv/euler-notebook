@@ -26,7 +26,7 @@ const debug = debug1(`server:${MODULE}`);
 
 import { spawn, ChildProcess } from 'child_process';
 import { WolframData } from '../../client/math-tablet-api';
-import { Config } from '../config';
+import { WolframScriptConfig } from '../config';
 
 // Types
 
@@ -36,9 +36,11 @@ export interface NVPair { name: string; value: string }
 
 const WOLFRAM_LICENSE_EXPIRING_MSG = "\n\tWolfram Language 12.0.0 Engine license you are using is expiring.\n\tPlease contact Wolfram Research or an authorized\n\tWolfram product distributor to extend your license and\n\tobtain a new password.\n"
 
-// TODO: What if it is installed in another location?
-// TODO: This will not work on Windows or Linux.
-const WOLFRAMSCRIPT_PATH = '/usr/local/bin/wolframscript';
+const DEFAULT_WOLFRAMSCRIPT_PATH: Map<NodeJS.Platform, string> = new Map([
+  [ 'darwin', '/usr/local/bin/wolframscript' ],
+  [ 'linux', '/usr/local/bin/wolframscript' ],
+  [ 'win32', 'C:/Program Files (x86)/Wolfram Research/WolframScript/wolframscript' ],
+]);
 
 const INPUT_PROMPT_RE = /\s*In\[(\d+)\]:=\s*$/;
 const OUTPUT_PROMPT_RE = /^\s*Out\[(\d+)\](\/\/\w+)?=\s*/;
@@ -79,9 +81,9 @@ export async function execute(command: WolframData): Promise<WolframData> {
   return gExecutingPromise;
 }
 
-export async function start(_config: Config): Promise<void> {
+export async function start(config?: WolframScriptConfig): Promise<void> {
   debug(`starting`);
-  await startProcess();
+  await startProcess(config);
   await defineRunPrivate();
 }
 
@@ -187,7 +189,7 @@ function showInvisible(s: string): string {
   return s.replace(/\n/g, '\\n').replace(/\r/g, '\\r').replace(/\t/g, '\\t');
 }
 
-async function startProcess(): Promise<void> {
+async function startProcess(config?: WolframScriptConfig): Promise<void> {
 
   if (gServerStartingPromise) {
     // REVIEW: Should this throw an error or be ignored?
@@ -197,7 +199,10 @@ async function startProcess(): Promise<void> {
   }
 
   gServerStartingPromise = new Promise((resolve, reject)=>{
-    const child = gChildProcess = spawn(WOLFRAMSCRIPT_PATH);
+    const platform = process.platform;
+    const path = (config && config.path) || DEFAULT_WOLFRAMSCRIPT_PATH.get(platform);
+    if (!path) { throw new Error(`Default path not set for wolframscript executable on platform '${platform}'.`); }
+    const child = gChildProcess = spawn(path);
 
     const errorListener = (err: Error)=>{
       reject(new Error(`WolframScript error on start: ${err.message}`));

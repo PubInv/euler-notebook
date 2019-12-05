@@ -32,6 +32,7 @@ const readFile2 = promisify(readFile);
 export interface Config {
   mathematica?: MathematicaConfig;
   mathjs?: {};
+  wolframscript?: WolframScriptConfig;
 }
 
 export interface Credentials {
@@ -39,6 +40,10 @@ export interface Credentials {
 }
 
 export interface MathematicaConfig {
+}
+
+export interface WolframScriptConfig {
+  path?: string; // Path to executable.
 }
 
 // Constants

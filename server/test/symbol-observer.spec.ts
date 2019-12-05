@@ -127,7 +127,7 @@ describe("test symbol observer", function() {
     const config = await getConfig();
 
     // TODO: stopWolframscript before exiting.
-    if (config.mathematica) { await startWolframscript(config); }
+    if (config.mathematica) { await startWolframscript(config.wolframscript); }
 
     if (config.mathematica) {
       await MathematicaObserver.initialize(config);
