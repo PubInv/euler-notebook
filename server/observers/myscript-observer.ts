@@ -103,7 +103,7 @@ export class MyScriptObserver implements ObserverInstance {
 
   private async processEntry(styleId: StyleId, data: DrawingData): Promise<void> {
     const latexData = await this.recognizeStrokes(data);
-    console.dir(latexData);
+    // console.dir(latexData);
 
     // If the style already has a LaTeX style attached, then
     // update it. Otherwise add one.

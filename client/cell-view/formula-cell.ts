@@ -85,17 +85,34 @@ export class FormulaCellView extends CellView {
       html = `<div class="error">${errorHtml}</div><tt>${escapeHtml(style.data.toString())}</tt>`;
     }
 
+    // Render Wolfram evaluation if it exists.
+    // REVIEW: Rendering evaluation annotations should probably be
+    //         done separately from rendering the formula,
+    //         but for now, for lack of a better place to put them,
+    //         we are just appending the evaluation
+    //         to the end of the formula.
+    {
+      const findOptions: FindStyleOptions = { meaning: 'EVALUATION' };
+      const evaluationStyle = this.notebookView.openNotebook.findStyle(findOptions, style.id);
+      if (evaluationStyle) {
+        html += ` [=${evaluationStyle.data.toString()}]`;
+      }
+    }
+
     // Render list of equivalent styles, if there are any.
     // REVIEW: Rendering equivalency annotations should probably be
     //         done separately from rendering the formula,
     //         but for now, for lack of a better place to put them,
     //         we are just appending the list of equivalent formulas
     //         to the end of the formula.
-    const findOptions: FindRelationshipOptions = { fromId: style.id, toId: style.id, meaning: 'EQUIVALENCE' };
-    const relationships = this.notebookView.openNotebook.findRelationships(findOptions);
-    const equivalentStyleIds = relationships.map(r=>(r.toId!=style.id ? r.toId : r.fromId)).sort();
-    if (equivalentStyleIds.length)
-    html += ` [=${equivalentStyleIds.join(', ')}]`;
+    {
+      const findOptions: FindRelationshipOptions = { fromId: style.id, toId: style.id, meaning: 'EQUIVALENCE' };
+      const relationships = this.notebookView.openNotebook.findRelationships(findOptions);
+      const equivalentStyleIds = relationships.map(r=>(r.toId!=style.id ? r.toId : r.fromId)).sort();
+      if (equivalentStyleIds.length>0) {
+        html += ` {${equivalentStyleIds.join(', ')}}`;
+      }
+    }
 
     this.$formula.innerHTML = html!;
   }
