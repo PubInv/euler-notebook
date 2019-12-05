@@ -192,7 +192,7 @@ export const STYLE_TYPES = [
   'HTML',            // Html: HTML-formatted text
   'IMAGE',           // ImageData: URL of image relative to notebook folder.
   'JIIX',            // Jiix: MyScript JIIX export from 'MATH' editor.
-  'LATEX',           // LatexData: LaTeX string
+  'LATEX',           // LatexData: LaTeX string // TODO: rename 'TEX'
   'CLASSIFICATION',  // DEPRECATED: A classifcication of the style.
   'MATHJS',          // MathJsData: MathJS plain text expression
   'MATHML',          // MathMlData: MathML Presentation XML

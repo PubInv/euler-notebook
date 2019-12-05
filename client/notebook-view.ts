@@ -25,7 +25,7 @@ import { assert } from './common.js';
 import { $, configure } from './dom.js';
 import {
   DrawingData, StyleId, StyleObject, NotebookChange,
-  StyleType, /* StyleInserted, */ StyleInsertedFromNotebookChange, StyleRelativePosition,
+  StyleType, StyleRelativePosition,
   StylePosition, DOCUMENT, PageId,
 } from './notebook.js';
 import {
@@ -348,7 +348,9 @@ export class NotebookView {
     };
 
     // Insert top-level style and wait for it to be inserted.
-    const styleId = await this.insertStyleTracked(styleProps, afterId);
+    const changeRequest: StyleInsertRequest = { type: 'insertStyle', afterId, styleProps };
+    const undoChangeRequest = await this.sendUndoableChangeRequest(changeRequest);
+    const styleId = (<StyleDeleteRequest>undoChangeRequest).styleId
 
     const cellView = this.cellViewFromStyleId(styleId);
     cellView.scrollIntoView();
@@ -359,17 +361,6 @@ export class NotebookView {
   public async insertStyle(styleProps: StylePropertiesWithSubprops, afterId: StyleRelativePosition = StylePosition.Bottom): Promise<void> {
     const changeRequest: StyleInsertRequest = { type: 'insertStyle', afterId, styleProps };
     await this.sendUndoableChangeRequests([ changeRequest ]);
-  }
-
-  public async insertStyleTracked(styleProps: StylePropertiesWithSubprops, afterId: StyleRelativePosition = StylePosition.Bottom): Promise<StyleId> {
-    const changeRequest: StyleInsertRequest = { type: 'insertStyle', afterId, styleProps };
-    const { changes } = await this.openNotebook.sendTrackedChangeRequest(changeRequest);
-
-    // The style we inserted will be the first change that comes back.
-    assert(changes.length>0);
-    const change = StyleInsertedFromNotebookChange(changes[0]);
-    const style = change.style;
-    return style.id;
   }
 
   public selectCell(
@@ -550,7 +541,13 @@ export class NotebookView {
     return await this.openNotebook.sendTrackedChangeRequests(changeRequests, options);
   }
 
-  private async sendUndoableChangeRequests(changeRequests: NotebookChangeRequest[]): Promise<void> {
+  private async sendUndoableChangeRequest(changeRequest: NotebookChangeRequest): Promise<NotebookChangeRequest> {
+    const undoChangeRequests = await this.sendUndoableChangeRequests([changeRequest]);
+    assert(undoChangeRequests.length==1);
+    return undoChangeRequests[0];
+  }
+
+  private async sendUndoableChangeRequests(changeRequests: NotebookChangeRequest[]): Promise<NotebookChangeRequest[]> {
     // Disable the undo and redo buttons
     this.sidebar.enableRedoButton(false);
     this.sidebar.enableUndoButton(false);
@@ -565,6 +562,8 @@ export class NotebookView {
     // Enable the undo button and disable the redo button.
     this.sidebar.enableRedoButton(false);
     this.sidebar.enableUndoButton(true);
+
+    return undoChangeRequests;
   }
 
   // Private Event Handlers

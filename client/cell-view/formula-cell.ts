@@ -73,14 +73,25 @@ export class FormulaCellView extends CellView {
   // Private Instance Methods
 
   private renderFormula(style: StyleObject): void {
-    // TODO: Render LaTeX if top-level style is not LaTeX,
-    //       but has LaTeX style attached.
 
-    if (style.meaning!='INPUT') {
+    if (style.meaning != 'INPUT') {
       throw new Error(`Cannot render unknown formula meaning ${style.meaning}`);
     }
-    const renderer = getRenderer(style.type);
-    let { html, errorHtml } = renderer(style.data);
+
+    // If the style is not 'LATEX' then look for an INPUT-ALT/LATEX substyle to render instead.
+    let type = style.type;
+    let data = style.data;
+    if (type != 'LATEX') {
+      const substyle = this.notebookView.openNotebook.findStyle({ meaning: 'INPUT-ALT', type: 'LATEX' }, style.id);
+      if (substyle) {
+        type = substyle.type;
+        data = substyle.data;
+      }
+    }
+
+    // Render the formula data.
+    const renderer = getRenderer(type);
+    let { html, errorHtml } = renderer(data);
     if (errorHtml) {
       html = `<div class="error">${errorHtml}</div><tt>${escapeHtml(style.data.toString())}</tt>`;
     }

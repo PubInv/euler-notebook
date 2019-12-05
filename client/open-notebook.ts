@@ -143,7 +143,9 @@ export class OpenNotebook extends Notebook {
       const previousResults = this.trackedChangeResponses.get(msg.tracker);
       if (!previousResults) { throw new Error("No previous results for tracker."); }
       previousResults.changes = previousResults.changes.concat(msg.changes);
-      previousResults.undoChangeRequests = previousResults.undoChangeRequests.concat(msg.undoChangeRequests!);
+      if (msg.undoChangeRequests) {
+        previousResults.undoChangeRequests = previousResults.undoChangeRequests.concat(msg.undoChangeRequests);
+      }
       if (msg.complete) {
         this.trackedChangeResponses.delete(msg.tracker);
         const fns = this.trackedChangeRequests.get(msg.tracker);

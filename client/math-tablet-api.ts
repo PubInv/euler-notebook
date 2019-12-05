@@ -58,7 +58,7 @@ export interface RelationshipPropertiesMap {
 }
 
 export interface StylePropertiesWithSubprops extends StyleProperties {
-  subprops?: StylePropertiesWithSubprops[];
+  subprops?: StylePropertiesWithSubprops[]; // TODO: rename subprops=>substyles.
   relationsTo?: RelationshipPropertiesMap;
   relationsFrom?: RelationshipPropertiesMap;
   exclusiveChildTypeAndMeaning?: boolean;     // only one style of

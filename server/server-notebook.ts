@@ -242,7 +242,6 @@ export class ServerNotebook extends Notebook {
     // Make the requested changes to the notebook.
     const changes: NotebookChange[] = [];
     const undoChangeRequests = this.applyRequestedChanges(source, changeRequests, changes);
-    debug("Undo change requests: ", undoChangeRequests);
     const newSyncChanges = this.processChangesSync(changes);
     const allSyncChanges = changes.concat(newSyncChanges);
     this.notifyClientsOfChanges(allSyncChanges, undoChangeRequests, options, false);
@@ -323,9 +322,6 @@ export class ServerNotebook extends Notebook {
     changeRequests: NotebookChangeRequest[],
     rval: NotebookChange[],
   ): NotebookChangeRequest[] {
-    // Converts the change requests into changes,
-    // applies them to the notebook, and appends them to this.changes.
-    debug("changeREQUESTS", changeRequests);
     const undoChangeRequests: NotebookChangeRequest[] = [];
     for (const changeRequest of changeRequests) {
 
@@ -335,33 +331,38 @@ export class ServerNotebook extends Notebook {
         continue;
       }
 
+      debug(`Change Request from ${source}: `, changeRequest);
+
+      let undoChangeRequest: NotebookChangeRequest|undefined;
       switch(changeRequest.type) {
         case 'changeStyle':
-          undoChangeRequests.unshift(this.applyStyleChangeRequest(changeRequest, rval));
+          undoChangeRequest = this.applyStyleChangeRequest(changeRequest, rval);
           break;
-        case 'deleteRelationship': {
-          const undoChangeRequest = this.applyRelationshipDeleteRequest(changeRequest, rval);
-          if (undoChangeRequest) { undoChangeRequests.unshift(undoChangeRequest); }
+        case 'deleteRelationship':
+          undoChangeRequest = this.applyRelationshipDeleteRequest(changeRequest, rval);
           break;
-        }
         case 'deleteStyle':
-          undoChangeRequests.unshift(this.applyStyleDeleteRequest(changeRequest, rval));
+          undoChangeRequest = this.applyStyleDeleteRequest(changeRequest, rval);
           break;
         case 'insertRelationship':
-          undoChangeRequests.unshift(this.applyRelationshipInsertRequest(source, changeRequest, rval));
+          undoChangeRequest = this.applyRelationshipInsertRequest(source, changeRequest, rval);
           break;
         case 'insertStyle':
-          undoChangeRequests.unshift(this.applyStyleInsertRequest(source, changeRequest, rval));
+          undoChangeRequest = this.applyStyleInsertRequest(source, changeRequest, rval);
           break;
-        case 'moveStyle': {
-          const undoChangeRequest = this.applyStyleMoveRequest(changeRequest, rval);
-          if (undoChangeRequest) { undoChangeRequests.unshift(undoChangeRequest); }
+        case 'moveStyle':
+          undoChangeRequest = this.applyStyleMoveRequest(changeRequest, rval);
           break;
-        }
         default:
           throw new Error(`Unexpected change request type ${(<any>changeRequest).type}`);
       }
+      if (undoChangeRequest) {
+        debug(`Undo change request is: `, undoChangeRequest);
+        undoChangeRequests.unshift(undoChangeRequest);
+      }
+
     }
+    debug("All undo change requests: ", undoChangeRequests);
     return undoChangeRequests;
   }
 

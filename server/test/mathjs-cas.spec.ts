@@ -61,7 +61,7 @@ describe("mathjs-cas", function(){
     const styleProps: StylePropertiesWithSubprops = { type: 'MATHJS', meaning: 'INPUT', data: EXPR1 };
     const changeRequest: StyleInsertRequest = { type: 'insertStyle', styleProps };
     const changes: NotebookChange[] = await notebook.requestChanges('USER', [changeRequest]);
-    console.dir(changes);
+    // console.dir(changes);
 
     assert.equal(5,changes.length);
 

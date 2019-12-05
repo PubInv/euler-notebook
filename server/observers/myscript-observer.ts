@@ -143,7 +143,7 @@ export class MyScriptObserver implements ObserverInstance {
     // const jiix = await postJiixRequest(MyScriptObserver.keys, batchRequest);
     //console.log(JSON.stringify(jiix));
     const latex = await postLatexRequest(MyScriptObserver.keys, strokes);
-    console.dir(latex);
+    // console.dir(latex);
     return latex;
   }
 
