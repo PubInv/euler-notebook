@@ -24,21 +24,28 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 // Requirements
 
 import * as debug1 from 'debug';
+
+import {
+  Notebook, NotebookObject, NotebookChange, StyleObject, StyleSource, StyleId,
+  RelationshipObject, StyleMoved, StylePosition, VERSION, StyleChanged, RelationshipDeleted,
+  RelationshipInserted, StyleInserted, StyleDeleted
+} from '../client/notebook';
+import {
+  NotebookChangeRequest, StyleMoveRequest, StyleInsertRequest, StyleChangeRequest,
+  RelationshipDeleteRequest, StyleDeleteRequest, RelationshipInsertRequest,
+  StylePropertiesWithSubprops, ChangeNotebookOptions
+} from '../client/math-tablet-api';
+
+import {
+  readNotebookFile, AbsDirectoryPath, absDirPathFromNotebookPath, writeNotebookFile,
+  NotebookPath
+} from './files-and-folders';
+import { constructSubstitution } from './observers/wolframscript';
+import { ClientObserver } from './observers/client-observer';
+import { ClientId } from './client-socket';
+
 const MODULE = __filename.split(/[/\\]/).slice(-1)[0].slice(0,-3);
 const debug = debug1(`server:${MODULE}`);
-
-import { Notebook, NotebookObject, NotebookChange,
-         StyleObject, StyleSource, StyleId, RelationshipObject, StyleMoved, StylePosition, VERSION, StyleChanged, RelationshipDeleted, RelationshipInserted, StyleInserted, StyleDeleted } from '../client/notebook';
-import { NotebookChangeRequest, StyleMoveRequest, Tracker, StyleInsertRequest,
-         StyleChangeRequest,
-         RelationshipDeleteRequest,
-         StyleDeleteRequest,
-         RelationshipInsertRequest
-       } from '../client/math-tablet-api';
-import { readNotebookFile, AbsDirectoryPath, absDirPathFromNotebookPath, writeNotebookFile, NotebookPath } from './files-and-folders';
-import { constructSubstitution } from './observers/wolframscript';
-import { ClientId } from './client-socket';
-import { ClientObserver } from './observers/client-observer';
 
 // Types
 
@@ -53,9 +60,8 @@ export interface ObserverClass {
   onOpen: (notebook: ServerNotebook)=>Promise<ObserverInstance>;
 }
 
-export interface RequestChangesOptions {
+export interface RequestChangesOptions extends ChangeNotebookOptions {
   clientId?: ClientId;
-  tracker?: Tracker;
 }
 
 // Constants
@@ -225,12 +231,13 @@ export class ServerNotebook extends Notebook {
 
     // Make the requested changes to the notebook.
     const changes: NotebookChange[] = [];
-    this.applyRequestedChanges(source, changeRequests, changes);
+    const undoChangeRequests = this.applyRequestedChanges(source, changeRequests, changes);
+    debug("Undo change requests: ", undoChangeRequests);
     const newSyncChanges = this.processChangesSync(changes);
     const allSyncChanges = changes.concat(newSyncChanges);
-    this.notifyObserversOfChanges(allSyncChanges, options, false);
+    this.notifyClientsOfChanges(allSyncChanges, undoChangeRequests, options, false);
     const asyncChanges = await this.processChangesAsync(allSyncChanges);
-    this.notifyObserversOfChanges(asyncChanges, options, true);
+    this.notifyClientsOfChanges(asyncChanges, undefined, options, true);
 
     if (this._path) { await this.save(); }
 
@@ -305,56 +312,130 @@ export class ServerNotebook extends Notebook {
     source: StyleSource,
     changeRequests: NotebookChangeRequest[],
     rval: NotebookChange[],
-  ): void {
+  ): NotebookChangeRequest[] {
     // Converts the change requests into changes,
     // applies them to the notebook, and appends them to this.changes.
     debug("changeREQUESTS", changeRequests);
+    const undoChangeRequests: NotebookChangeRequest[] = [];
     for (const changeRequest of changeRequests) {
+
+      if (!changeRequest) {
+        // REVIEW: Should not get null change requests.
+        console.error("WARNING: falsy notebook change request.");
+        continue;
+      }
+
       switch(changeRequest.type) {
-        case 'changeStyle':         this.applyChangeStyleRequest(changeRequest, rval); break;
-        case 'deleteRelationship':  this.applyDeleteRelationshipRequest(changeRequest, rval); break;
-        case 'deleteStyle':         this.applyDeleteStyleRequest(changeRequest, rval); break;
-        case 'insertRelationship':  this.applyInsertRelationshipRequest(source, changeRequest, rval); break;
-        case 'insertStyle':         this.applyInsertStyleRequest(source, changeRequest, rval); break;
-        case 'moveStyle':           this.applyMoveStyleRequest(changeRequest, rval); break;
+        case 'changeStyle':
+          undoChangeRequests.unshift(this.applyStyleChangeRequest(changeRequest, rval));
+          break;
+        case 'deleteRelationship': {
+          const undoChangeRequest = this.applyRelationshipDeleteRequest(changeRequest, rval);
+          if (undoChangeRequest) { undoChangeRequests.unshift(undoChangeRequest); }
+          break;
+        }
+        case 'deleteStyle':
+          undoChangeRequests.unshift(this.applyStyleDeleteRequest(changeRequest, rval));
+          break;
+        case 'insertRelationship':
+          undoChangeRequests.unshift(this.applyRelationshipInsertRequest(source, changeRequest, rval));
+          break;
+        case 'insertStyle':
+          undoChangeRequests.unshift(this.applyStyleInsertRequest(source, changeRequest, rval));
+          break;
+        case 'moveStyle': {
+          const undoChangeRequest = this.applyStyleMoveRequest(changeRequest, rval);
+          if (undoChangeRequest) { undoChangeRequests.unshift(undoChangeRequest); }
+          break;
+        }
         default:
           throw new Error(`Unexpected change request type ${(<any>changeRequest).type}`);
       }
     }
+    return undoChangeRequests;
   }
 
-  private applyChangeStyleRequest(
+  private applyRelationshipDeleteRequest(
+    request: RelationshipDeleteRequest,
+    rval: NotebookChange[],
+  ): RelationshipInsertRequest|undefined {
+    if (!this.hasRelationshipId(request.id)) { /* REVIEW/TODO emit warning */ return undefined; }
+    const relationship = this.getRelationshipById(request.id);
+    const change: RelationshipDeleted = { type: 'relationshipDeleted', relationship, };
+    this.appendChange(change, rval);
+    const undoChangeRequest: RelationshipInsertRequest = {
+      type: 'insertRelationship',
+      fromId: relationship.fromId,
+      toId: relationship.toId,
+      props: { meaning: relationship.meaning },
+    }
+    return undoChangeRequest;
+  }
+
+  private applyRelationshipInsertRequest(
+    source: StyleSource,
+    request: RelationshipInsertRequest,
+    rval: NotebookChange[],
+  ): RelationshipDeleteRequest {
+    const relationship: RelationshipObject = {
+      id: this.nextId++,
+      source,
+      fromId: request.fromId,
+      toId: request.toId,
+      ...request.props,
+    };
+    const change: RelationshipInserted = { type: 'relationshipInserted', relationship };
+    this.appendChange(change, rval);
+    const undoChangeRequest: RelationshipDeleteRequest = {
+      type: 'deleteRelationship',
+      id: relationship.id,
+    };
+    return undoChangeRequest;
+  }
+
+  private applyStyleChangeRequest(
     request: StyleChangeRequest,
     rval: NotebookChange[],
-  ): void {
+  ): StyleChangeRequest {
     const style = this.getStyleById(request.styleId);
     const previousData = style.data;
     style.data = request.data;
     const change: StyleChanged = { type: 'styleChanged', style, previousData };
     this.appendChange(change, rval);
+    const undoChangeRequest: StyleChangeRequest = {
+      type: 'changeStyle',
+      styleId: style.id,
+      data: previousData,
+    }
+    return undoChangeRequest;
   }
 
-  private applyDeleteRelationshipRequest(
-    request: RelationshipDeleteRequest,
-    rval: NotebookChange[],
-  ): void {
-    if (!this.hasRelationshipId(request.id)) { /* REVIEW */ return; }
-    const relationship = this.getRelationshipById(request.id);
-    const change: RelationshipDeleted = { type: 'relationshipDeleted', relationship, };
-    this.appendChange(change, rval);
-  }
-
-  private applyDeleteStyleRequest(
+  private applyStyleDeleteRequest(
     request: StyleDeleteRequest,
     rval: NotebookChange[],
-  ): void {
-    const styleId: StyleId = request.styleId;
+  ): StyleInsertRequest {
+    const style = this.getStyleById(request.styleId);
+
+    // Assemble the undo change request before we delete anything
+    // from the notebook.
+    // TODO: gather substyles and relationships from the same source, etc.
+    const styleProps: StylePropertiesWithSubprops = {
+      type: style.type,
+      meaning: style.meaning,
+      data: style.data,
+    };
+    const undoChangeRequest: StyleInsertRequest = {
+      type: 'insertStyle',
+      // TODO: afterId
+      // TODO: parentId
+      styleProps,
+    };
 
     // Delete substyles recursively
-    const substyles = this.childStylesOf(styleId);
+    const substyles = this.childStylesOf(style.id);
     for(const substyle of substyles) {
       const request2: StyleDeleteRequest = { type: 'deleteStyle', styleId: substyle.id };
-      this.applyDeleteStyleRequest(request2, rval);
+      this.applyStyleDeleteRequest(request2, rval);
     }
 
     // // Delete any relationships attached to this style.
@@ -367,32 +448,17 @@ export class ServerNotebook extends Notebook {
     //   changes.push(this.deleteRelationshipChange(relationship.id));
     // }
 
-    const style = this.getStyleById(styleId);
     const change: StyleDeleted = { type: 'styleDeleted', style };
     this.appendChange(change, rval);
+
+    return undoChangeRequest;
   }
 
-  private applyInsertRelationshipRequest(
-    source: StyleSource,
-    request: RelationshipInsertRequest,
-    rval: NotebookChange[],
-  ): void {
-    const relationship: RelationshipObject = {
-      id: this.nextId++,
-      source,
-      fromId: request.fromId,
-      toId: request.toId,
-      ...request.props,
-    };
-    const change: RelationshipInserted = { type: 'relationshipInserted', relationship };
-    this.appendChange(change, rval);
-  }
-
-  private applyInsertStyleRequest(
+  private applyStyleInsertRequest(
     source: StyleSource,
     request: StyleInsertRequest,
     rval: NotebookChange[],
-  ): void {
+  ): StyleDeleteRequest {
     const parentId = request.parentId||0;
     const styleProps = request.styleProps;
     const afterId = request.hasOwnProperty('afterId') ? request.afterId : -1;
@@ -411,21 +477,21 @@ export class ServerNotebook extends Notebook {
     if (styleProps.subprops) {
       for (const substyleProps of styleProps.subprops) {
         const request2: StyleInsertRequest = { type: 'insertStyle', parentId: style.id, styleProps: substyleProps };
-        this.applyInsertStyleRequest(source, request2, rval);
+        this.applyStyleInsertRequest(source, request2, rval);
       }
     }
 
     if (styleProps.relationsFrom) {
       for (const [idStr, props] of Object.entries(styleProps.relationsFrom)) {
         const request2: RelationshipInsertRequest = { type: 'insertRelationship', fromId: parseInt(idStr, 10), toId: style.id, props };
-        this.applyInsertRelationshipRequest(source, request2, rval);
+        this.applyRelationshipInsertRequest(source, request2, rval);
       }
     }
 
     if (styleProps.relationsTo) {
       for (const [idStr, props] of Object.entries(styleProps.relationsTo)) {
         const request2: RelationshipInsertRequest = { type: 'insertRelationship', fromId: style.id, toId: parseInt(idStr, 10), props };
-        this.applyInsertRelationshipRequest(source, request2, rval);
+        this.applyRelationshipInsertRequest(source, request2, rval);
       }
     }
 
@@ -439,15 +505,21 @@ export class ServerNotebook extends Notebook {
       // console.log("TO REMOVE",toRemove);
       for (const childToRemove of toRemove) {
         const request2: StyleDeleteRequest = { type: 'deleteStyle', styleId: childToRemove.id };
-        this.applyDeleteStyleRequest(request2, rval);
+        this.applyStyleDeleteRequest(request2, rval);
       }
     }
+
+    const undoChangeRequest: StyleDeleteRequest = {
+      type: 'deleteStyle',
+      styleId: style.id,
+    }
+    return undoChangeRequest;
   }
 
-  private applyMoveStyleRequest(
+  private applyStyleMoveRequest(
     request: StyleMoveRequest,
     rval: NotebookChange[],
-  ): void {
+  ): StyleMoveRequest|undefined {
     const { styleId, afterId } = request;
     if (afterId == styleId) { throw new Error(`Style ${styleId} can't be moved after itself.`); }
 
@@ -455,11 +527,16 @@ export class ServerNotebook extends Notebook {
     if (style.parentId) {
       // REVIEW: Why are we attempting to move substyles? Should be:
       // throw new Error(`Attempting to move substyle ${styleId}`);
-      return;
+      return undefined;
     }
 
     const oldPosition: StylePosition = this.styleOrder.indexOf(style.id);
     if (oldPosition < 0) { throw new Error(`Style ${styleId} can't be moved: not found in styleOrder array.`); }
+
+    let oldAfterId: number;
+    if (oldPosition == 0) { oldAfterId = 0; }
+    else if (oldPosition == this.styleOrder.length-1) { oldAfterId = -1; }
+    else { oldAfterId = this.styleOrder[oldPosition-1]; }
 
     let newPosition: StylePosition;
     if (afterId == 0) { newPosition = 0; }
@@ -472,6 +549,13 @@ export class ServerNotebook extends Notebook {
 
     const change: StyleMoved = { type: 'styleMoved', styleId, afterId, oldPosition, newPosition };
     this.appendChange(change, rval);
+
+    const undoChangeRequest: StyleMoveRequest = {
+      type: 'moveStyle',
+      styleId: style.id,
+      afterId: oldAfterId
+    };
+    return undoChangeRequest;
   }
 
   // This should be called on any newly created notebook immediately after the constructor.
@@ -489,18 +573,21 @@ export class ServerNotebook extends Notebook {
     }
   }
 
-  private notifyObserversOfChanges(
+  private notifyClientsOfChanges(
     changes: NotebookChange[],
+    undoChangeRequests: NotebookChangeRequest[]|undefined,
     options: RequestChangesOptions,
     complete: boolean,
   ): void {
     for (const [ clientId, observer ] of this.clientObservers) {
-      let tracker = (options.tracker && clientId == options.clientId ? options.tracker : undefined);
-      observer.onChanges(changes, complete, tracker);
+      const isTrackingClient = (clientId == options.clientId);
+      let tracker = (options.tracker && isTrackingClient ? options.tracker : undefined);
+      observer.onChanges(changes, undoChangeRequests, complete, tracker);
     };
   }
 
   private async processChangesAsync(changes: NotebookChange[]): Promise<NotebookChange[]> {
+    // TODO: run resulting async changes through sync observers.
     // TODO: submit changes to asynchronous observers simultaneously.
     // TODO: timeout on observer processing of changes.
     // TODO: Don't allow multiple asynchronous requestChanges to be operating at the same time.

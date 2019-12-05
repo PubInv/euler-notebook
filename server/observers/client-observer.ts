@@ -26,7 +26,7 @@ const MODULE = __filename.split(/[/\\]/).slice(-1)[0].slice(0,-3);
 const debug = debug1(`server:${MODULE}`);
 
 import { NotebookChange } from '../../client/notebook';
-import { Tracker } from '../../client/math-tablet-api';
+import { Tracker, NotebookChangeRequest } from '../../client/math-tablet-api';
 import { ServerNotebook } from '../server-notebook';
 import { ClientSocket } from '../client-socket';
 
@@ -58,9 +58,9 @@ export class ClientObserver {
 
   // Event Handlers
 
-  public onChanges(changes: NotebookChange[], complete: boolean, tracker?: Tracker): void {
+  public onChanges(changes: NotebookChange[], undoChangeRequests: NotebookChangeRequest[]|undefined, complete: boolean, tracker?: Tracker): void {
     debug(`onChanges ${changes.length}`);
-    this.clientSocket.notebookChanged(this.notebook, changes, complete, tracker);
+    this.clientSocket.notebookChanged(this.notebook, changes, undoChangeRequests, complete, tracker);
   }
 
   public onClose(): void {

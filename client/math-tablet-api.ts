@@ -78,6 +78,7 @@ export type NotebookChangeRequest =
   StyleMoveRequest;
 export interface RelationshipDeleteRequest {
   type: 'deleteRelationship';
+  // TODO: rename id => relationshipId
   id: number;
 }
 export interface RelationshipInsertRequest {
@@ -99,6 +100,7 @@ export interface StyleInsertRequest {
   type: 'insertStyle';
   afterId?: StyleRelativePosition;
   parentId?: StyleId; // undefined or 0 means top-level.
+  // TODO: rename styleProps => props
   styleProps: StylePropertiesWithSubprops;
 }
 export interface StyleMoveRequest {
@@ -113,11 +115,13 @@ export type ServerMessage = NotebookChanged|NotebookClosed|NotebookOpened;
 export interface NotebookChanged {
   type: 'notebookChanged';
   notebookName: NotebookName;
+
   changes: NotebookChange[];
-  tracker?: Tracker;            // An optional, client-supplied, tracking
-                                // identifier from the original change request.
   complete?: boolean;            // True iff this is the last set of changes
                                 // resulting from the original request.
+  tracker?: Tracker;            // An optional, client-supplied, tracking
+                                // identifier from the original change request.
+  undoChangeRequests?: NotebookChangeRequest[];
 }
 export interface NotebookClosed {
   type: 'notebookClosed';
@@ -136,7 +140,11 @@ export interface ChangeNotebook {
   type: 'changeNotebook';
   notebookName: NotebookName;
   changeRequests: NotebookChangeRequest[];
-  tracker?: Tracker;
+  options?: ChangeNotebookOptions;
+}
+export interface ChangeNotebookOptions {
+  tracker?: Tracker;  // value passed back in NotebookChanged messages.
+  wantUndo?: boolean; // true iff want undo change requests in return.
 }
 export interface CloseNotebook {
   type: 'closeNotebook';

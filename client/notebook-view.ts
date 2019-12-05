@@ -30,16 +30,16 @@ import {
 } from './notebook.js';
 import {
   StyleChangeRequest, StyleDeleteRequest,
-  StyleInsertRequest, StylePropertiesWithSubprops, StyleMoveRequest,
+  StyleInsertRequest, StylePropertiesWithSubprops, StyleMoveRequest, NotebookChangeRequest, ChangeNotebookOptions,
 } from './math-tablet-api.js';
-import { OpenNotebook } from './open-notebook.js';
+import { OpenNotebook, TrackedChangesResults } from './open-notebook.js';
 import { Sidebar } from './sidebar.js';
 
 // Types
 
 type CommandName = string;
 
-type CommandFunction = (this: NotebookView)=>void;
+type CommandFunction = (this: NotebookView)=>Promise<void>;
 
 enum KeyMod {
   None = 0,
@@ -53,6 +53,11 @@ type KeyMods = number;    // Bitwise or of KeyMod. // TYPESCRIPT:??
 
 type KeyName = string;
 type KeyCombo = string;   // KeyName followed by KeyMods, e.g. 'Enter8' for shift+enter.
+
+interface UndoEntry {
+  changeRequests: NotebookChangeRequest[];
+  undoChangeRequests: NotebookChangeRequest[];
+}
 
 // Constants
 
@@ -130,14 +135,14 @@ export class NotebookView {
   // Commands
   // (Public instance methods bound to keystrokes)
 
-  public deleteSelectedCells(): void {
+  public async deleteSelectedCells(): Promise<void> {
     const cellViews = this.selectedCells();
     this.unselectAll();
     const changeRequests = cellViews.map<StyleDeleteRequest>(c=>({ type: 'deleteStyle', styleId: c.styleId }));
-    this.openNotebook.sendChangeRequests(changeRequests);
+    await this.sendUndoableChangeRequests(changeRequests);
   }
 
-  public editSelectedCell(): void {
+  public async editSelectedCell(): Promise<void> {
     if (!this.lastCellSelected) {
       // Nothing selected to move.
       // REVIEW: Beep or something?
@@ -146,7 +151,7 @@ export class NotebookView {
     this.lastCellSelected.editMode();
   }
 
-  public insertDrawingCellBelow(): void {
+  public async insertDrawingCellBelow(): Promise<void> {
     // If cells are selected then in insert a keyboard input cell below the last cell selected.
     // Otherwise, insert at the end of the notebook.
     let afterId: StyleRelativePosition;
@@ -158,10 +163,10 @@ export class NotebookView {
       strokes: [],
     };
     const styleProps: StylePropertiesWithSubprops = { type: 'DRAWING', meaning: 'INPUT', data };
-    this.insertStyle(styleProps, afterId);
+    await this.insertStyle(styleProps, afterId);
   }
 
-  public insertKeyboardCellAbove(): void {
+  public async insertKeyboardCellAbove(): Promise<void> {
     // If cells are selected then in insert a keyboard input cell
     // above the last cell selected.
     // Otherwise, insert at the beginning of the notebook.
@@ -170,19 +175,19 @@ export class NotebookView {
       const previousCell = this.previousCell(this.lastCellSelected);
       afterId = previousCell ? previousCell.styleId : StylePosition.Top;
     } else { afterId = StylePosition.Top; }
-    this.insertKeyboardCellAndEdit(afterId);
+    await this.insertKeyboardCellAndEdit(afterId);
   }
 
-  public insertKeyboardCellBelow(): void {
+  public async insertKeyboardCellBelow(): Promise<void> {
     // If cells are selected then in insert a keyboard input cell below the last cell selected.
     // Otherwise, insert at the end of the notebook.
     let afterId: StyleRelativePosition;
     if (this.lastCellSelected) { afterId = this.lastCellSelected.styleId; }
     else { afterId = StylePosition.Bottom; }
-    this.insertKeyboardCellAndEdit(afterId);
+    await this.insertKeyboardCellAndEdit(afterId);
   }
 
-  public moveSelectionDown(): void {
+  public async moveSelectionDown(): Promise<void> {
     // TODO: contiguous multiple selection
     // TODO: discontiguous multiple selection
     // TODO: scroll into view if necessary.
@@ -202,10 +207,10 @@ export class NotebookView {
     const afterId = nextNextCell ? nextCell.styleId : StylePosition.Bottom;
 
     const request: StyleMoveRequest = { type: 'moveStyle', styleId, afterId };
-    this.openNotebook.sendChangeRequest(request);
+    await this.sendUndoableChangeRequests([ request ]);
   }
 
-  public moveSelectionUp(): void {
+  public async moveSelectionUp(): Promise<void> {
     // TODO: contiguous multiple selection
     // TODO: discontiguous multiple selection
     // TODO: scroll into view if necessary.
@@ -225,21 +230,36 @@ export class NotebookView {
     const afterId = previousPreviousCell ? previousPreviousCell.styleId : /* top */ 0;
 
     const request: StyleMoveRequest = { type: 'moveStyle', styleId, afterId };
-    this.openNotebook.sendChangeRequest(request);
+    await this.sendUndoableChangeRequests([ request ]);
   }
 
-  public selectDown(extend?: boolean): void {
+  public async redo(): Promise<void> {
+    // Disable undo and redo buttons during the operation.
+    this.sidebar.enableRedoButton(false);
+    this.sidebar.enableUndoButton(false);
+
+    // Resubmit the change requests.
+    assert(this.topOfUndoStack < this.undoStack.length);
+    const entry = this.undoStack[this.topOfUndoStack++];
+    await this.sendTrackedChangeRequests(entry.changeRequests);
+
+    // Enable undo and redo buttons as appropriate.
+    this.sidebar.enableRedoButton(this.topOfUndoStack < this.undoStack.length);
+    this.sidebar.enableUndoButton(true);
+  }
+
+  public async selectDown(extend?: boolean): Promise<void> {
     const cellView = this.lastCellSelected ? this.nextCell(this.lastCellSelected): this.firstCell();
     if (cellView) {
       this.selectCell(cellView, false, !!extend);
     }
   }
 
-  public selectDownExtended(): void {
+  public async selectDownExtended(): Promise<void> {
     this.selectDown(true);
   }
 
-  public selectUp(extend?: boolean): void {
+  public async selectUp(extend?: boolean): Promise<void> {
     // TODO: scroll into view if necessary.
     // Select the cell immediately before the last one previously.
     // If no cell was previously selected, then select the last cell.
@@ -251,8 +271,23 @@ export class NotebookView {
     }
   }
 
-  public selectUpExtended(): void {
+  public async selectUpExtended(): Promise<void> {
     this.selectUp(true);
+  }
+
+  public async undo(): Promise<void> {
+    // Disable undo and redo during the operation
+    this.sidebar.enableRedoButton(false);
+    this.sidebar.enableUndoButton(false);
+
+    // Undo the changes by making a set of counteracting changes.
+    assert(this.topOfUndoStack > 0);
+    const entry = this.undoStack[--this.topOfUndoStack];
+    await this.sendTrackedChangeRequests(entry.undoChangeRequests);
+
+    // Enable undo and redo as appropriate
+    this.sidebar.enableRedoButton(true);
+    this.sidebar.enableUndoButton(this.topOfUndoStack > 0);
   }
 
   public unselectAll(noEmit?: boolean): void {
@@ -267,9 +302,9 @@ export class NotebookView {
 
   // Instance Methods
 
-  public changeStyle(styleId: StyleId, data: any): void {
+  public async changeStyle(styleId: StyleId, data: any): Promise<void> {
     const changeRequest: StyleChangeRequest = { type: 'changeStyle', styleId, data };
-    this.openNotebook.sendChangeRequest(changeRequest);
+    await this.sendUndoableChangeRequests([ changeRequest ]);
   }
 
   public createCell(style: StyleObject, afterId: StyleRelativePosition): CellView {
@@ -299,7 +334,7 @@ export class NotebookView {
     }
   }
 
-  public insertKeyboardCellAndEdit(afterId: StyleRelativePosition): void {
+  public async insertKeyboardCellAndEdit(afterId: StyleRelativePosition): Promise<void> {
     // Shared implementation of 'insertKeyboardCellAbove' and 'insertKeyboardCellBelow'
     // Inserts a cell into the notebook, and opens it for editing.
 
@@ -313,26 +348,22 @@ export class NotebookView {
     };
 
     // Insert top-level style and wait for it to be inserted.
-    this.insertStyleTracked(styleProps, afterId)
-    .then(styleId=>{
-      const cellView = this.cellViewFromStyleId(styleId);
-      cellView.scrollIntoView();
-      this.selectCell(cellView);
-      cellView.editMode();
-    })
-    .catch(err=>{
-      console.error(`Error inserting keyboard style: ${err.message}\n${err.stack}`);
-    });
+    const styleId = await this.insertStyleTracked(styleProps, afterId);
+
+    const cellView = this.cellViewFromStyleId(styleId);
+    cellView.scrollIntoView();
+    this.selectCell(cellView);
+    cellView.editMode();
   }
 
-  public insertStyle(styleProps: StylePropertiesWithSubprops, afterId: StyleRelativePosition = StylePosition.Bottom): void {
+  public async insertStyle(styleProps: StylePropertiesWithSubprops, afterId: StyleRelativePosition = StylePosition.Bottom): Promise<void> {
     const changeRequest: StyleInsertRequest = { type: 'insertStyle', afterId, styleProps };
-    this.openNotebook.sendChangeRequest(changeRequest);
+    await this.sendUndoableChangeRequests([ changeRequest ]);
   }
 
   public async insertStyleTracked(styleProps: StylePropertiesWithSubprops, afterId: StyleRelativePosition = StylePosition.Bottom): Promise<StyleId> {
     const changeRequest: StyleInsertRequest = { type: 'insertStyle', afterId, styleProps };
-    const changes = await this.openNotebook.sendTrackedChangeRequest(changeRequest);
+    const { changes } = await this.openNotebook.sendTrackedChangeRequest(changeRequest);
 
     // The style we inserted will be the first change that comes back.
     assert(changes.length>0);
@@ -451,6 +482,8 @@ export class NotebookView {
 
     this.cellViews = new Map();
     this.dirtyCells = new Set();
+    this.topOfUndoStack = 0;
+    this.undoStack = [];
   }
 
   // Private Instance Properties
@@ -460,6 +493,8 @@ export class NotebookView {
   private dirtyCells: Set<StyleId>;             // Style ids of top-level styles that need to be redrawn.
   private lastCellSelected?: CellView;
   private sidebar!: Sidebar;
+  private topOfUndoStack: number; // Index of the top of the stack. May not be the length of the undoStack array if there have been some undos.
+  private undoStack: UndoEntry[];
 
   // Private Instance Property Functions
 
@@ -511,6 +546,29 @@ export class NotebookView {
 
   // Private Event Handlers
 
+  private async sendTrackedChangeRequests(changeRequests: NotebookChangeRequest[], options?: ChangeNotebookOptions): Promise<TrackedChangesResults> {
+    return await this.openNotebook.sendTrackedChangeRequests(changeRequests, options);
+  }
+
+  private async sendUndoableChangeRequests(changeRequests: NotebookChangeRequest[]): Promise<void> {
+    // Disable the undo and redo buttons
+    this.sidebar.enableRedoButton(false);
+    this.sidebar.enableUndoButton(false);
+
+    const { undoChangeRequests } = await this.sendTrackedChangeRequests(changeRequests, { wantUndo: true });
+    if (!undoChangeRequests) { throw new Error("Did not get undo change requests when wantUndo is true."); }
+    const entry: UndoEntry = { changeRequests, undoChangeRequests };
+    while(this.undoStack.length > this.topOfUndoStack) { this.undoStack.pop(); }
+    this.undoStack.push(entry);
+    this.topOfUndoStack = this.undoStack.length;
+
+    // Enable the undo button and disable the redo button.
+    this.sidebar.enableRedoButton(false);
+    this.sidebar.enableUndoButton(true);
+  }
+
+  // Private Event Handlers
+
   private onBlur(_event: FocusEvent): void {
     // console.log("BLUR!!!");
     // console.dir(event);
@@ -538,7 +596,13 @@ export class NotebookView {
       const commandFn = <CommandFunction|undefined>((</* TYPESCRIPT: */any>this)[commandName]);
       if (!commandFn) { throw new Error(`Unknown command ${commandName} for key ${keyCombo}`); }
       console.log(`Command: ${commandName}`);
-      commandFn.call(this);
+      commandFn.call(this)
+      .catch(err=>{
+        // REVIEW: Duplicated code in sidebar.ts/asyncCommand.
+        // TODO: Display error message to user.
+        console.error(`Error executing async ${commandName} command: ${err.message}`);
+        // TODO: Dump stack trace
+      });
     } else {
       if (IGNORED_KEYUPS.indexOf(keyName)<0) {
         console.log(`NotebookView unrecognized keyup : ${keyCombo}`);
@@ -547,5 +611,7 @@ export class NotebookView {
       // REVIEW: Beep or something?
     }
   }
-
 }
+
+// Helper Functions
+

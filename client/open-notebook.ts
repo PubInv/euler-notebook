@@ -21,12 +21,17 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 // import { $ } from './dom.js';
 import { assert } from './common.js';
-import { NotebookChanged, NotebookName, Tracker, NotebookChangeRequest, ChangeNotebook, UseTool, } from './math-tablet-api.js';
+import { NotebookChanged, NotebookName, Tracker, NotebookChangeRequest, ChangeNotebook, UseTool, ChangeNotebookOptions, } from './math-tablet-api.js';
 import { Notebook, NotebookObject, NotebookChange, StyleId } from './notebook.js';
 import { NotebookView } from './notebook-view.js';
 import { ServerSocket } from './server-socket.js';
 
 // Types
+
+export interface TrackedChangesResults {
+  changes: NotebookChange[];
+  undoChangeRequests: NotebookChangeRequest[];
+}
 
 // Constants
 
@@ -72,30 +77,34 @@ export class OpenNotebook extends Notebook {
     this.notebookView = notebookView;
   }
 
-  public sendChangeRequest(changeRequest: NotebookChangeRequest, tracker?: Tracker): void {
-    this.sendChangeRequests([ changeRequest ], tracker);
+  public sendChangeRequest(changeRequest: NotebookChangeRequest, options: ChangeNotebookOptions): void {
+    this.sendChangeRequests([ changeRequest ], options);
   }
 
-  public sendChangeRequests(changeRequests: NotebookChangeRequest[], tracker?: Tracker): void {
+  public sendChangeRequests(changeRequests: NotebookChangeRequest[], options: ChangeNotebookOptions): void {
     if (changeRequests.length == 0) { return; }
     const msg: ChangeNotebook = {
       type: 'changeNotebook',
       notebookName: this.notebookName,
       changeRequests,
-      tracker,
+      options,
     }
     this.socket.sendMessage(msg);
   }
 
-  public sendTrackedChangeRequest(changeRequest: NotebookChangeRequest): Promise<NotebookChange[]> {
-    return this.sendTrackedChangeRequests([ changeRequest ]);
+  public sendTrackedChangeRequest(changeRequest: NotebookChangeRequest, options?: ChangeNotebookOptions): Promise<TrackedChangesResults> {
+    return this.sendTrackedChangeRequests([ changeRequest ], options);
   }
 
-  public sendTrackedChangeRequests(changeRequests: NotebookChangeRequest[]): Promise<NotebookChange[]> {
+  public sendTrackedChangeRequests(changeRequests: NotebookChangeRequest[], options?: ChangeNotebookOptions): Promise<TrackedChangesResults> {
+    options = options || {};
     return new Promise((resolve, reject)=>{
+      // REVIEW: Could multiple requests occur in the same millisecond?
       const tracker: Tracker = Date.now().toString();
-      this.trackedChangeRequests.set(tracker, [ resolve, reject ]);
-      this.sendChangeRequests(changeRequests, tracker);
+      this.trackedChangeRequests.set(tracker, { resolve, reject });
+      this.trackedChangeResponses.set(tracker, { changes: [], undoChangeRequests: [] });
+      options = { tracker, ...options };
+      this.sendChangeRequests(changeRequests, options);
     });
   }
 
@@ -131,19 +140,17 @@ export class OpenNotebook extends Notebook {
     // If the changes were tracked then accumulate the changes
     // and resolve the tracking promise if complete.
     if (msg.tracker) {
-      const previousChanges = this.trackedChangeResponses.get(msg.tracker) || [];
-      assert(previousChanges);
-      const accumulatedChanges = previousChanges.concat(msg.changes);
-      if (!msg.complete) {
-        this.trackedChangeResponses.set(msg.tracker, accumulatedChanges);
-      } else {
+      const previousResults = this.trackedChangeResponses.get(msg.tracker);
+      if (!previousResults) { throw new Error("No previous results for tracker."); }
+      previousResults.changes = previousResults.changes.concat(msg.changes);
+      previousResults.undoChangeRequests = previousResults.undoChangeRequests.concat(msg.undoChangeRequests!);
+      if (msg.complete) {
         this.trackedChangeResponses.delete(msg.tracker);
         const fns = this.trackedChangeRequests.get(msg.tracker);
         this.trackedChangeRequests.delete(msg.tracker);
-        assert(fns);
-        const resolve = fns![0];
+        if (!fns) { throw new Error(`Missing tracker promise functions for ${msg.tracker}`); }
         // REVIEW: Is there any way the promise could be rejected?
-        resolve(accumulatedChanges);
+        fns.resolve(previousResults);
       }
     }
   }
@@ -171,12 +178,11 @@ export class OpenNotebook extends Notebook {
   // REVIEW: Could there be more than one notebookView attached to this openNotebook?
   private notebookView!: NotebookView;
   private socket: ServerSocket;
-  private trackedChangeRequests: Map<Tracker, [ (changes: NotebookChange[])=>void, (reason: any)=>void ]>;
-  private trackedChangeResponses: Map<Tracker, NotebookChange[]>;
+  private trackedChangeRequests: Map<Tracker, { resolve: (results: TrackedChangesResults)=>void, reject: (reason: any)=>void }>;
+  private trackedChangeResponses: Map<Tracker, TrackedChangesResults>;
 
   // Private Instance Methods
 
   // Private Change Event Handlers
-
 
 }

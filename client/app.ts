@@ -106,8 +106,6 @@ class App {
   private socket!: ServerSocket;
   private thumbnailView: PageView;
 
-  // private undoStack: UndoStack;
-
   // Private Property Functions
 
   // Private Instance Methods

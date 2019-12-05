@@ -192,7 +192,11 @@ export class DrawingCellView extends CellView {
     const data: DrawingData = this.notebookView.openNotebook.getStyleById(this.styleId).data;
     data.strokes.push(stroke.data); // REVIEW: Modifying existing data in place???
 
-    this.notebookView.changeStyle(this.styleId, data);
+    this.notebookView.changeStyle(this.styleId, data)
+    .catch(err=>{
+      // TODO: Display error to user?
+      console.error(`Error submitting stroke: ${err.message}`);
+    });
   }
 
 }

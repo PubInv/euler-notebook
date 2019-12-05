@@ -46,7 +46,9 @@ export class Sidebar {
 
   public connect(notebookView: NotebookView): void { this.notebookView = notebookView; }
 
+  public enableRedoButton(enable: boolean): void { this.$redoButton.disabled = !enable; }
   public enableTrashButton(enable: boolean): void { this.$trashButton.disabled = !enable; }
+  public enableUndoButton(enable: boolean): void { this.$undoButton.disabled = !enable; }
 
   public switchView(newView: View): void {
 
@@ -88,20 +90,30 @@ export class Sidebar {
     $attach($elt, '#notebookViewButton', { listeners: { click: (_e: MouseEvent)=>this.switchView('notebook') }});
     $attach($elt, '#inputKeyboardButton', { listeners: { click: (e: MouseEvent)=>this.onKeyboardButtonClicked(e) }});
     $attach($elt, '#insertDrawingButton', { listeners: { click: (e: MouseEvent)=>this.onInsertDrawingButtonClicked(e) }});
-    // attach('#undoButton', { listeners: { click: (e: MouseEvent)=>this.TODO(e) }});
-    // attach('#redoButton', { listeners: { click: (e: MouseEvent)=>this.TODO(e) }});
+    this.$redoButton = $attach<HTMLButtonElement>($elt, '#redoButton', { listeners: { click: (e: MouseEvent)=>this.onRedoButtonClicked(e) }});
     this.$trashButton = $attach<HTMLButtonElement>($elt, '#trashButton', { listeners: { click: (e: MouseEvent)=>this.onTrashButtonClicked(e) }});
+    this.$undoButton = $attach<HTMLButtonElement>($elt, '#undoButton', { listeners: { click: (e: MouseEvent)=>this.onUndoButtonClicked(e) }});
     this.currentView = '';
   }
 
   // Private Instance Properties
 
+  private $redoButton: HTMLButtonElement;
   private $trashButton: HTMLButtonElement;
+  private $undoButton: HTMLButtonElement;
   private $viewMap: Map<View, HTMLDivElement>;
   private currentView: View;
   private notebookView!: NotebookView;  // Set in 'connect'
 
   // Private Instance Methods
+
+  private asyncCommand(command: string, promise: Promise<void>): void {
+    promise.catch(err=>{
+      // TODO: Display error message to user.
+      console.error(`Error executing async ${command} command: ${err.message}`);
+      // TODO: Dump stack trace
+    });
+  }
 
   private focusOnCurrentView(): void { this.$currentView.focus(); }
 
@@ -115,8 +127,18 @@ export class Sidebar {
     this.notebookView.insertKeyboardCellBelow();
   }
 
+  private onRedoButtonClicked(_e: MouseEvent): void {
+    this.asyncCommand("Redo", this.notebookView.redo());
+    this.focusOnCurrentView();
+  }
+
   private onTrashButtonClicked(_e: MouseEvent): void {
-    this.notebookView.deleteSelectedCells();
+    this.asyncCommand("Trash", this.notebookView.deleteSelectedCells());
+    this.focusOnCurrentView();
+  }
+
+  private onUndoButtonClicked(_e: MouseEvent): void {
+    this.asyncCommand("Undo", this.notebookView.undo());
     this.focusOnCurrentView();
   }
 

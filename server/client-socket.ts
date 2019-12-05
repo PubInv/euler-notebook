@@ -27,7 +27,7 @@ import * as WebSocket from 'ws';
 
 // TODO: Handle websocket lifecycle: closing, unexpected disconnects, errors, etc.
 import { NotebookChange } from '../client/notebook';
-import { ClientMessage, NotebookName, NotebookChanged, ServerMessage, CloseNotebook, OpenNotebook, UseTool, NotebookOpened, ChangeNotebook, Tracker } from '../client/math-tablet-api';
+import { ClientMessage, NotebookName, NotebookChanged, ServerMessage, CloseNotebook, OpenNotebook, UseTool, NotebookOpened, ChangeNotebook, Tracker, NotebookChangeRequest } from '../client/math-tablet-api';
 
 import { PromiseResolver, runAsync } from './common';
 import { NotebookPath } from './files-and-folders';
@@ -106,13 +106,14 @@ export class ClientSocket {
   public notebookChanged(
     notebook: ServerNotebook,
     changes: NotebookChange[],
+    undoChangeRequests: NotebookChangeRequest[]|undefined,
     complete: boolean,
     tracker?: Tracker,
   ): void {
     // REVIEW: verify that notebook is one of our opened ones?
     if (!notebook._path) { throw new Error("Unexpected."); }
     const notebookName = notebook._path;
-    const msg: NotebookChanged = { type: 'notebookChanged', notebookName, changes, complete, tracker };
+    const msg: NotebookChanged = { type: 'notebookChanged', notebookName, changes, complete, tracker, undoChangeRequests };
     this.sendMessage(msg);
   }
 
@@ -215,7 +216,7 @@ export class ClientSocket {
     if (!clientObserver) { throw new Error(`Unknown notebook ${msg.notebookName} for client message delete-style.`); }
     // REVIEW: source client id?
 
-    const options: RequestChangesOptions = { tracker: msg.tracker, clientId: this.id };
+    const options: RequestChangesOptions = { clientId: this.id, ...msg.options };
     await clientObserver.notebook.requestChanges('USER', msg.changeRequests, options);
   }
 
