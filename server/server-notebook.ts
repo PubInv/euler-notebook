@@ -25,8 +25,9 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 import * as debug1 from 'debug';
 
+import { assert } from 'chai';
 import {
-  Notebook, NotebookObject, NotebookChange, StyleObject, StyleSource, StyleId,
+  Notebook, NotebookObject, NotebookChange, StyleObject, StyleMeaning, StyleType, StyleSource, StyleId,
   RelationshipObject, StyleMoved, StylePosition, VERSION, StyleChanged, RelationshipDeleted,
   RelationshipInserted, StyleInserted, StyleDeleted
 } from '../client/notebook';
@@ -67,6 +68,15 @@ export interface RequestChangesOptions extends ChangeNotebookOptions {
 // Constants
 
 const MAX_CHANGE_ROUNDS = 10;
+
+// Helper Functions
+// TODO: Rewrite this to using findStyles
+export function assertHasStyle(styles: StyleObject[], type: StyleType, meaning: StyleMeaning, data: any): StyleObject {
+  const style = styles.find(s=>s.type==type && s.meaning==meaning && s.data==data);
+  assert.exists(style);
+  return style!;
+}
+
 
 // Exported Class
 

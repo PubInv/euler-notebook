@@ -43,6 +43,7 @@ import { TeXFormatterObserver } from '../observers/tex-formatter';
 import { AnyInputObserver } from '../observers/any-input';
 import { start as startWolframscript } from '../observers/wolframscript';
 import { Config, getConfig } from '../config';
+
 // Test Observer
 
 export class TestObserver implements ObserverInstance {
@@ -134,16 +135,6 @@ describe("test symbol observer", function() {
     } else {
     }
 
-    // Register the observer
-    // TODO: It would be nice to be able to de-register
-    // somthing to make things easier when we are testing.
-    ServerNotebook.registerObserver('TEST', TestObserver);
-    // We are specifically testing this one...
-    ServerNotebook.registerObserver('SYMBOL-CLASSIFIER', SymbolClassifierObserver);
-    ServerNotebook.registerObserver('MATHEMATICA', MathematicaObserver);
-    ServerNotebook.registerObserver('EQUATION-SOLVER', EquationSolverObserver);
-    ServerNotebook.registerObserver('TEX-FORMATTER', TeXFormatterObserver);
-    ServerNotebook.registerObserver('ANY-INPUT', AnyInputObserver);
 
 
   });
@@ -151,6 +142,22 @@ describe("test symbol observer", function() {
   beforeEach("Reinitialize notebook",async function(){
     // Create a notebook
     notebook = await ServerNotebook.createAnonymous();
+
+    // Register the observer
+    const testObserver = await TestObserver.onOpen(notebook);
+    const symbolClassifierObserver = await SymbolClassifierObserver.onOpen(notebook);
+    const mathematicaObserver = await MathematicaObserver.onOpen(notebook);
+    const equationSolverObserver = await EquationSolverObserver.onOpen(notebook);
+    const teXFormatterObserver = await TeXFormatterObserver.onOpen(notebook);
+    const anyInputObserver = await AnyInputObserver.onOpen(notebook);
+
+    notebook.registerObserver('TEST', testObserver);
+    notebook.registerObserver('SYMBOL-CLASSIFIER', symbolClassifierObserver);
+    notebook.registerObserver('MATHEMATICA', mathematicaObserver);
+    notebook.registerObserver('EQUATION-SOLVER', equationSolverObserver);
+    notebook.registerObserver('TEX-FORMATTER', teXFormatterObserver);
+    notebook.registerObserver('ANY-INPUT', anyInputObserver);
+
   });
   afterEach("Close notebook",async function(){
     // Close the notebook.

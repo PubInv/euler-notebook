@@ -26,11 +26,11 @@ import { assert } from 'chai';
 import 'mocha';
 // import * as sinon from 'sinon';
 
-import { NotebookChange, StyleInserted, StyleMeaning, StyleObject, StyleType } from '../../client/notebook';
+import { NotebookChange, StyleInserted } from '../../client/notebook';
 import { StylePropertiesWithSubprops, StyleInsertRequest } from '../../client/math-tablet-api';
 
 
-import { ServerNotebook } from '../server-notebook';
+import { ServerNotebook,assertHasStyle } from '../server-notebook';
 import { MathJsObserver } from '../observers/mathjs-cas';
 
 // Constants
@@ -40,14 +40,18 @@ const EXPR1 = "2+2";
 
 // Tests
 
+// TODO: FIX MASSIVE DUPLICATION IN THE CODE BELOW
+
 describe("mathjs-cas", function(){
 
   let notebook: ServerNotebook;
 
   before(async function(): Promise<void>{
     await MathJsObserver.initialize({});
-    await ServerNotebook.registerObserver('MATHJS', MathJsObserver);
     notebook = await ServerNotebook.createAnonymous();
+    const mathJsObserver = await MathJsObserver.onOpen(notebook);
+    notebook.registerObserver('MATHJS',mathJsObserver);
+
   });
 
 
@@ -57,7 +61,9 @@ describe("mathjs-cas", function(){
     const styleProps: StylePropertiesWithSubprops = { type: 'MATHJS', meaning: 'INPUT', data: EXPR1 };
     const changeRequest: StyleInsertRequest = { type: 'insertStyle', styleProps };
     const changes: NotebookChange[] = await notebook.requestChanges('USER', [changeRequest]);
-    assert.equal(changes.length, 5);
+    console.dir(changes);
+
+    assert.equal(5,changes.length);
 
     // The notebook has the INPUT style
     const insertedStyles = changes.filter(c=> c && c.type=='styleInserted').map(c=>(<StyleInserted>c).style);
@@ -78,7 +84,7 @@ describe("mathjs-cas", function(){
     const styleProps: StylePropertiesWithSubprops = { type: 'MATHJS', meaning: 'INPUT', data: EQUA1 };
     const changeRequest: StyleInsertRequest = { type: 'insertStyle', styleProps };
     const changes: NotebookChange[] = await notebook.requestChanges('USER', [changeRequest]);
-    assert.equal(changes.length, 8);
+    assert.equal(8,changes.length);
 
     // The notebook has the INPUT style
     const insertedStyles = changes.filter(c=>c && c.type=='styleInserted').map(c=>(<StyleInserted>c).style);
@@ -95,11 +101,3 @@ describe("mathjs-cas", function(){
     assertHasStyle(childStyles, 'MATHJS', 'SYMBOL', "r");
   });
 });
-
-// Helper Functions
-
-function assertHasStyle(styles: StyleObject[], type: StyleType, meaning: StyleMeaning, data: any): StyleObject {
-  const style = styles.find(s=>s.type==type && s.meaning==meaning && s.data==data);
-  assert.exists(style);
-  return style!;
-}

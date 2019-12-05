@@ -61,20 +61,20 @@ describe("server notebook", function() {
 
     before("onOpen is called when notebook is created", async function(){
       // Register the observer
-      ServerNotebook.registerObserver('TEST', TestObserver);
-
-      // Create a notebook
       notebook = await ServerNotebook.createAnonymous();
+      const testObserver = await TestObserver.onOpen(notebook);
+      notebook.registerObserver('TEST', testObserver);
 
       // Observer's onOpen should be called with notebook as an argument
       // and return an observer instance. Spy on the observer.
       assert(onOpenSpy.calledOnce);
-     assert.equal(onOpenSpy.lastCall.args[0], notebook);
+      assert.equal(onOpenSpy.lastCall.args[0], notebook);
       observer = <TestObserver>(await onOpenSpy.lastCall.returnValue);
       onChangesAsyncSpy = sinon.spy(observer, 'onChangesAsync');
       onChangesSyncSpy = sinon.spy(observer, 'onChangesSync');
       onCloseSpy = sinon.spy(observer, 'onClose');
       useToolSpy = sinon.spy(observer, 'useTool');
+
     });
 
     after("onClose is called when notebook is closed", async function(){

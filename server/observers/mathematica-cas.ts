@@ -27,7 +27,7 @@ const debug = debug1(`server:${MODULE}`);
 import { StyleObject, NotebookChange, StyleId, RelationshipProperties } from '../../client/notebook';
 import { NotebookChangeRequest, StyleInsertRequest, StyleDeleteRequest, StylePropertiesWithSubprops, RelationshipInsertRequest, isEmptyOrSpaces } from '../../client/math-tablet-api';
 import { ServerNotebook, ObserverInstance } from '../server-notebook';
-import { execute, constructSubstitution, checkEquiv, NVPair } from './wolframscript';
+import { execute, convertTeXtoWolfram, constructSubstitution, checkEquiv, NVPair } from './wolframscript';
 import * as fs from 'fs';
 import { Config } from '../config';
 
@@ -229,6 +229,7 @@ export class MathematicaObserver implements ObserverInstance {
           rval = rval.concat(
             await this.mathMathematicaRule(change.style),
             await this.convertMathMlToWolframRule(change.style),
+            await this.convertTexToWolframRule(change.style),
             await this.checkEquivalenceRule(change.style),
           );
           break;
@@ -371,6 +372,7 @@ export class MathematicaObserver implements ObserverInstance {
       if (results[1] == null) throw new Error("could not match pattern:"+data);
       const wolframexpr = results[1];
 
+      // TODO: Try to replace this witht he "ExcludeChild" rule
       // I believe that we should delete a type of of the same if it exists.
       // In fact this is a meta-rule --- for some styles, there is only one style
       // of a type allowed. It will be best to add that into the metaframework.
@@ -395,6 +397,61 @@ export class MathematicaObserver implements ObserverInstance {
       };
       rval.push(cr);
 
+    } catch(err) {
+      const styleProps: StylePropertiesWithSubprops = {
+        type: 'TEXT',
+        meaning: 'EVALUATION-ERROR',
+        data: `Cannot convert to Wolfram expression: ${err.message}`,
+        exclusiveChildTypeAndMeaning: true,
+      };
+      const cr: StyleInsertRequest = {
+        type: 'insertStyle',
+        parentId: style.id,
+        styleProps,
+      };
+      rval.push(cr);
+    }
+
+    return rval;
+  }
+
+
+  // We have to be careful here not to create a loop,
+  // since we also convert Wolfram to TeX for rendering.
+  // One approach to this is to apply this rule ONLY
+  // if the INPUT-ALT whose parent is in fact a top-level-thought.
+  private async convertTexToWolframRule(style: StyleObject): Promise<NotebookChangeRequest[]> {
+
+    const rval: NotebookChangeRequest[] = [];
+
+    if (style.type != 'LATEX') { return []; }
+    if (style.meaning!='INPUT' && style.meaning!='INPUT-ALT') { return []; }
+
+    // Now test that this is a top-level style...
+    const parent = this.notebook.getStyleById(style.parentId);
+    if (this.notebook.topLevelStyleOf(style.id).id != parent.id) { return [];}
+
+    const latex = style.data;
+    debug("latex",latex);
+    try {
+      const wolframexpr = await convertTeXtoWolfram(latex);
+      const styleProps: StylePropertiesWithSubprops = {
+        type: 'WOLFRAM',
+        meaning: 'INPUT-ALT',
+        data: wolframexpr,
+        exclusiveChildTypeAndMeaning: true,
+      };
+      debug("parentId",style.parentId);
+      const cr: StyleInsertRequest = {
+        type: 'insertStyle',
+        // WARNING! This is an example of a rule
+        // adding a sibling rather than a descendent.
+        // This violates a possible best practice;
+        // however, we have not determined a policy on this yet. -rlr
+        parentId: style.parentId,
+        styleProps,
+      };
+      rval.push(cr);
     } catch(err) {
       const styleProps: StylePropertiesWithSubprops = {
         type: 'TEXT',

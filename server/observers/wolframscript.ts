@@ -81,6 +81,12 @@ export async function execute(command: WolframData): Promise<WolframData> {
   return gExecutingPromise;
 }
 
+export async function convertTeXtoWolfram(tex: string) : Promise<WolframData> {
+  const wrapped = `InputForm[ToExpression["${tex}", TeXForm]]`;
+  const escaped = wrapped.replace(/\\/g,"\\\\");
+  return execute(escaped);
+}
+
 export async function start(config?: WolframScriptConfig): Promise<void> {
   debug(`starting`);
   await startProcess(config);

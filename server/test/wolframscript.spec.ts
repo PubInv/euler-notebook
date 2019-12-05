@@ -32,7 +32,7 @@ TODO: Additional Test cases
 
 // Requirements
 
-import { execute, start, stop, checkEquiv } from '../observers/wolframscript';
+import { execute, start, stop, checkEquiv, convertTeXtoWolfram } from '../observers/wolframscript';
 
 // import { expect } from 'chai';
 import { assert } from 'chai';
@@ -218,6 +218,48 @@ describe("wolframscriptequivalence", function(){
         assert.equal(results, expected == 'true');
       });
     }
+
+    after("stopping", async function(){
+      if (gWolframStarted) {
+        await stop();
+      }
+    });
+});
+
+
+const TEX_TEST_CASES = [
+  ['x',
+   'x'],
+  ['\\frac{(x+y)^2}{\\sqrt{x y}}',
+   '(x + y)^2/Sqrt[xy]'
+  ],
+];
+
+describe("wolframTeXConversion", function(){
+
+  let gWolframStarted: boolean = false;
+    this.timeout(10*1000);
+
+    before("starting", async function(){
+      await start({});
+      gWolframStarted = true;
+    });
+
+  it("simple TeX works (x)", async function(){
+    const expr = TEX_TEST_CASES[0][0];
+    const r = TEX_TEST_CASES[0][1];
+    const result = await convertTeXtoWolfram(expr);
+    console.log("result",result);
+    assert.equal(result, r);
+  });
+
+  it("more complex TeX works (x)", async function(){
+    const expr = TEX_TEST_CASES[1][0];
+    const r = TEX_TEST_CASES[1][1];
+    const result = await convertTeXtoWolfram(expr);
+    console.log("result",result);
+    assert.equal(result, r);
+  });
 
     after("stopping", async function(){
       if (gWolframStarted) {
