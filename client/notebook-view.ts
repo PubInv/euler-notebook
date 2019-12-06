@@ -465,7 +465,10 @@ export class NotebookView {
     this.dirtyCells.clear();
   }
 
-  public useTool(id: StyleId): void { this.openNotebook.useTool(id); }
+  public useTool(id: StyleId): void {
+    this.openNotebook.useTool(id);
+    this.setFocus();
+  }
 
   // -- PRIVATE --
 
