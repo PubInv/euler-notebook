@@ -170,6 +170,7 @@ export class NotebookView {
     const cellView = this.cellViewFromStyleId(styleId);
     cellView.scrollIntoView();
     this.selectCell(cellView);
+    this.setFocus();
   }
 
   public async insertKeyboardCellAbove(): Promise<void> {
