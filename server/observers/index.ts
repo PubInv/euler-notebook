@@ -26,6 +26,7 @@ import { MathJsObserver } from './mathjs-cas';
 import { MyScriptObserver } from './myscript-observer';
 import { SandboxObserver } from './sandbox';
 import { SubtrivClassifierObserver } from './subtriv-classifier';
+import { AlgebraicToolsObserver } from './algebraic-tools';
 import { EquationSolverObserver } from './equation-solver';
 import { TeXFormatterObserver } from './tex-formatter';
 import { SymbolClassifierObserver } from './symbol-classifier';
@@ -42,6 +43,7 @@ export async function initialize(config: Config, credentials: Credentials): Prom
     ServerNotebook.registerObserver('SYMBOL-CLASSIFIER', SymbolClassifierObserver);
     ServerNotebook.registerObserver('EQUATION-SOLVER', EquationSolverObserver);
     ServerNotebook.registerObserver('TEX-FORMATTER', TeXFormatterObserver);
+    ServerNotebook.registerObserver('ALGEBRAIC-TOOLS', AlgebraicToolsObserver);
   }
   if (config.mathjs) {
     await MathJsObserver.initialize(config);

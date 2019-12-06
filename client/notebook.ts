@@ -213,6 +213,7 @@ export const STYLE_SOURCES = [
   'MYSCRIPT',         // MyScript handwriting recognition`
   'SANDBOX',          // Sandbox for temporary experiments
   'SUBTRIV-CLASSIFIER',
+  'ALGEBRAIC-TOOLS',  // Algebraic tools provided by Wolfram
   'EQUATION-SOLVER',  // Attempt to expose Wolfram solutions
   'SYMBOL-CLASSIFIER',
   'TEX-FORMATTER',

@@ -126,7 +126,6 @@ export class MathematicaObserver implements ObserverInstance {
   private async checkEquivalenceRule(style: StyleObject): Promise<NotebookChangeRequest[]> {
     if (style.type != 'WOLFRAM') { return []; }
 
-    // We must be able to
     if (isEmptyOrSpaces(style.data)) { return []; }
 
     const rval: NotebookChangeRequest[] = [];
