@@ -143,7 +143,11 @@ export class DrawingCellView extends CellView {
       const findOptions: FindStyleOptions = { meaning: 'EVALUATION', recursive: true };
       const evaluationStyles = this.notebookView.openNotebook.findStyles(findOptions, style.id);
       for (const evaluationStyle of evaluationStyles) {
-        html += ` [=${evaluationStyle.data.toString()}]`;
+        // HACK ALERT: We only take evaluations that are numbers:
+        const evalStr = evaluationStyle.data.toString();
+        if (/^\d+$/.test(evalStr)) {
+          html += ` [=${evalStr}]`;
+        }
       }
     }
 
