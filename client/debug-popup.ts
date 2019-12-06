@@ -103,7 +103,7 @@ export class DebugPopup {
     const relationshipObjects = this.openNotebook.relationshipsOf(style.id);
     const json = escapeHtml(JSON.stringify(style.data));
     if (childStyleObjects.length == 0 && relationshipObjects.length == 0 && json.length<30) {
-      return `<div><span class="leaf">S${style.id} ${style.type} ${style.meaning} ${style.source} <tt>${json}</tt></span></div>`;
+      return `<div><span class="leaf">S${style.id} ${style.meaning} ${style.type} ${style.source} <tt>${json}</tt></span></div>`;
     } else {
       const stylesHtml = childStyleObjects.map(s=>this.renderStyleHtml(s)).join('');
       const relationshipsHtml = relationshipObjects.map(r=>this.renderRelationshipHtml(r)).join('');

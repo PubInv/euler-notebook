@@ -21,14 +21,13 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 // Requirements
 
-import { $new, $newSvg, Html } from '../dom.js';
-import { DrawingData, StyleObject, FindStyleOptions } from '../notebook.js';
+import { $new, $newSvg, Html, escapeHtml } from '../dom.js';
+import { DrawingData, StyleObject, FindStyleOptions, FindRelationshipOptions } from '../notebook.js';
 import { NotebookView } from '../notebook-view.js';
 import { getRenderer } from '../renderers.js';
 import { SvgStroke } from '../svg-stroke.js';
 
 import { CellView } from './index.js';
-import { assert } from '../common.js';
 import { ToolInfo } from '../math-tablet-api.js';
 
 // Types
@@ -125,16 +124,45 @@ export class DrawingCellView extends CellView {
   }
 
   private renderFormula(style: StyleObject): void {
+    // TODO: Much of this is duplicated from formula-cell/renderFormula
     const latexStyle = this.notebookView.openNotebook.findStyle({ meaning: 'INPUT-ALT', type: 'LATEX' }, style.id);
-    if (latexStyle) {
-      console.log("Rendering drawing cell with LaTeX substyle.");
-      const renderer = getRenderer('LATEX');
-      const { html, errorHtml } = renderer(latexStyle.data);
-      if (html) { this.$formula.innerHTML = html; }
-      assert(!errorHtml);
-    } else {
-      console.log("Rendering drawing cell without LaTeX substyle.");
+    if (!latexStyle) { return; }
+    const renderer = getRenderer('LATEX');
+    let { html, errorHtml } = renderer(latexStyle.data);
+    if (errorHtml) {
+      html = `<div class="error">${errorHtml}</div><tt>${escapeHtml(style.data.toString())}</tt>`;
     }
+
+    // Render Wolfram evaluation if it exists.
+    // REVIEW: Rendering evaluation annotations should probably be
+    //         done separately from rendering the formula,
+    //         but for now, for lack of a better place to put them,
+    //         we are just appending the evaluation
+    //         to the end of the formula.
+    {
+      const findOptions: FindStyleOptions = { meaning: 'EVALUATION', recursive: true };
+      const evaluationStyles = this.notebookView.openNotebook.findStyles(findOptions, style.id);
+      for (const evaluationStyle of evaluationStyles) {
+        html += ` [=${evaluationStyle.data.toString()}]`;
+      }
+    }
+
+    // Render list of equivalent styles, if there are any.
+    // REVIEW: Rendering equivalency annotations should probably be
+    //         done separately from rendering the formula,
+    //         but for now, for lack of a better place to put them,
+    //         we are just appending the list of equivalent formulas
+    //         to the end of the formula.
+    {
+      const findOptions: FindRelationshipOptions = { fromId: style.id, toId: style.id, meaning: 'EQUIVALENCE' };
+      const relationships = this.notebookView.openNotebook.findRelationships(findOptions);
+      const equivalentStyleIds = relationships.map(r=>(r.toId!=style.id ? r.toId : r.fromId)).sort();
+      if (equivalentStyleIds.length>0) {
+        html += ` {${equivalentStyleIds.join(', ')}}`;
+      }
+    }
+
+    this.$formula.innerHTML = html!;
   }
 
   // TODO: Duplicated from formula-cell

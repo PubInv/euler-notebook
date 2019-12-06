@@ -130,7 +130,7 @@ export class AlgebraicToolsObserver implements ObserverInstance {
     debug("factor", f);
 
     // (Actually we want to put the LaTeX in here, but that is a separate step!
-    const toolInfo: ToolInfo = { name: 'factor', html: `${f}`, data: f };
+    const toolInfo: ToolInfo = { name: 'factor', html: `Factor: ${f}`, data: f };
     const styleProps2: StylePropertiesWithSubprops = {
       type: 'TOOL',
       meaning: 'ATTRIBUTE',

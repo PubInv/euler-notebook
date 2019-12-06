@@ -103,9 +103,9 @@ export class FormulaCellView extends CellView {
     //         we are just appending the evaluation
     //         to the end of the formula.
     {
-      const findOptions: FindStyleOptions = { meaning: 'EVALUATION' };
-      const evaluationStyle = this.notebookView.openNotebook.findStyle(findOptions, style.id);
-      if (evaluationStyle) {
+      const findOptions: FindStyleOptions = { meaning: 'EVALUATION', recursive: true };
+      const evaluationStyles = this.notebookView.openNotebook.findStyles(findOptions, style.id);
+      for (const evaluationStyle of evaluationStyles) {
         html += ` [=${evaluationStyle.data.toString()}]`;
       }
     }

@@ -137,7 +137,7 @@ export class NotebookView {
 
   public async deleteSelectedCells(): Promise<void> {
     const cellViews = this.selectedCells();
-    this.unselectAll();
+    await this.unselectAll();
     const changeRequests = cellViews.map<StyleDeleteRequest>(c=>({ type: 'deleteStyle', styleId: c.styleId }));
     await this.sendUndoableChangeRequests(changeRequests);
   }
@@ -163,7 +163,13 @@ export class NotebookView {
       strokes: [],
     };
     const styleProps: StylePropertiesWithSubprops = { type: 'DRAWING', meaning: 'INPUT', data };
-    await this.insertStyle(styleProps, afterId);
+    const changeRequest: StyleInsertRequest = { type: 'insertStyle', afterId, styleProps };
+    const undoChangeRequest = await this.sendUndoableChangeRequest(changeRequest);
+    const styleId = (<StyleDeleteRequest>undoChangeRequest).styleId
+
+    const cellView = this.cellViewFromStyleId(styleId);
+    cellView.scrollIntoView();
+    this.selectCell(cellView);
   }
 
   public async insertKeyboardCellAbove(): Promise<void> {
@@ -290,7 +296,8 @@ export class NotebookView {
     this.sidebar.enableUndoButton(this.topOfUndoStack > 0);
   }
 
-  public unselectAll(noEmit?: boolean): void {
+  // REVIEW: Not actually asynchronous. Have synchronous alternative for internal use?
+  public async unselectAll(noEmit?: boolean): Promise<void> {
     for (const cellView of this.cellViews.values()) {
       if (cellView.isSelected()) { cellView.unselect(); }
     }
