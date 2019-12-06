@@ -86,18 +86,9 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
   background-color #eeeeee
   min-height 100%
 
-  .drawingCell
-    .preview
-      background-color mintcream
-      min-height 0.5in
-      padding 6px
+  .cell
 
-  .formulaCell
-    align-items center
-    display flex
-    flex-direction row
-    padding 9px 0 9px 0
-
+    // Used by
     .formula
       flex-grow 1
 
@@ -112,7 +103,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
     .tools
       width 80px
-      visibility visible // visibility hidden --- there is a subtle bug here preventing event bubbling when visibility changes - rlr
+      // visibility visible // visibility hidden --- there is a subtle bug here preventing event bubbling when visibility changes - rlr
 
       .tool
         color blue
@@ -125,7 +116,27 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
   .cell.selected
     outline 1px dotted blue
 
-    .tools { visibility: visible }
+  .drawingCell
+
+    .formulaRow
+      align-items center
+      display flex
+      flex-direction row
+      padding 9px 0 9px 0
+
+    .canvas
+      background-color #F8F8F8
+      display block
+      fill none
+      margin 6px 0 0 0
+      pen-action none
+      stroke black
+
+  .formulaCell
+    align-items center
+    display flex
+    flex-direction row
+    padding 9px 0 9px 0
 
 #notebookView:focus
   background-color white
@@ -141,17 +152,6 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
   width 100%
 
 // Element classes
-
-// .cell.selected
-//   background-color cyan
-
-.drawingCell
-  background-color #F8F8F8
-  display block
-  fill none
-  margin 6px 0 0 0
-  pen-action none
-  stroke black
 
 .error
   color red

@@ -21,14 +21,15 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 // Requirements
 
-import { $new, $newSvg } from '../dom.js';
-import { DrawingData, StyleObject } from '../notebook.js';
+import { $new, $newSvg, Html } from '../dom.js';
+import { DrawingData, StyleObject, FindStyleOptions } from '../notebook.js';
 import { NotebookView } from '../notebook-view.js';
 import { getRenderer } from '../renderers.js';
 import { SvgStroke } from '../svg-stroke.js';
 
 import { CellView } from './index.js';
 import { assert } from '../common.js';
+import { ToolInfo } from '../math-tablet-api.js';
 
 // Types
 
@@ -54,22 +55,9 @@ export class DrawingCellView extends CellView {
   // Instance Methods
 
   public render(style: StyleObject): void {
-    const data: DrawingData = style.data;
-    this.$svg.innerHTML = '';
-    for (const strokeData of data.strokes) {
-      SvgStroke.create(this.$svg, strokeData);
-    }
-
-    const latexStyle = this.notebookView.openNotebook.findStyle({ meaning: 'INPUT-ALT', type: 'LATEX' }, style.id);
-    if (latexStyle) {
-      console.log("Rendering drawing cell with LaTeX substyle.");
-      const renderer = getRenderer('LATEX');
-      const { html, errorHtml } = renderer(latexStyle.data);
-      if (html) { this.$preview.innerHTML = html; }
-      assert(!errorHtml);
-    } else {
-      console.log("Rendering drawing cell without LaTeX substyle.");
-    }
+    this.renderStrokes(style);
+    this.renderFormula(style);
+    this.renderTools(style);
   }
 
   // -- PRIVATE --
@@ -79,15 +67,19 @@ export class DrawingCellView extends CellView {
   private constructor (notebookView: NotebookView, style: StyleObject) {
     super(notebookView, style, 'drawingCell');
 
-    this.$preview = $new<HTMLDivElement>('div', {
+    const $formulaRow = $new<HTMLDivElement>('div', {
       appendTo: this.$elt,
-      class: 'preview',
+      class: 'formulaRow',
     });
+    $new<HTMLDivElement>('div', { class: 'handle', html: `(${style.id})`, appendTo: $formulaRow });
+    $new<HTMLDivElement>('div', { class: 'status', html: "&nbsp;", appendTo: $formulaRow });
+    this.$formula = $new<HTMLDivElement>('div', { class: 'formula', appendTo: $formulaRow });
+    this.$tools = $new<HTMLDivElement>('div', { class: 'tools', appendTo: $formulaRow });
 
-    this.$svg = $newSvg<SVGSVGElement>('svg', {
+    this.$canvas = $newSvg<SVGSVGElement>('svg', {
       appendTo: this.$elt,
       attrs: </* TYPESCRIPT: */any>style.data.size,
-      class: 'drawingCell',
+      class: 'canvas',
       id: `svg${style.id}`,
       listeners: {
         pointercancel:  e=>this.onPointerCancel(e),
@@ -106,8 +98,9 @@ export class DrawingCellView extends CellView {
 
   // Private Instance Properties
 
-  private $svg: SVGSVGElement;
-  private $preview: HTMLDivElement;
+  private $canvas: SVGSVGElement;
+  private $formula: HTMLDivElement;
+  private $tools: HTMLDivElement;
   private pointerMap: PointerMap;
 
   // Private Instance Property Methods
@@ -123,6 +116,53 @@ export class DrawingCellView extends CellView {
 
   // Private Instance Methods
 
+  private renderStrokes(style: StyleObject): void {
+    this.$canvas.innerHTML = '';
+    const data: DrawingData = style.data;
+    for (const strokeData of data.strokes) {
+      SvgStroke.create(this.$canvas, strokeData);
+    }
+  }
+
+  private renderFormula(style: StyleObject): void {
+    const latexStyle = this.notebookView.openNotebook.findStyle({ meaning: 'INPUT-ALT', type: 'LATEX' }, style.id);
+    if (latexStyle) {
+      console.log("Rendering drawing cell with LaTeX substyle.");
+      const renderer = getRenderer('LATEX');
+      const { html, errorHtml } = renderer(latexStyle.data);
+      if (html) { this.$formula.innerHTML = html; }
+      assert(!errorHtml);
+    } else {
+      console.log("Rendering drawing cell without LaTeX substyle.");
+    }
+  }
+
+  // TODO: Duplicated from formula-cell
+  private renderTools(style:StyleObject): void {
+    this.$tools.innerHTML = '';
+    // REVIEW: If we attached tool styles to the top-level style,
+    //         then we would not need to do a recursive search.
+    const findOptions2: FindStyleOptions = { type: 'TOOL', recursive: true };
+    const toolStyles = this.notebookView.openNotebook.findStyles(findOptions2, style.id);
+    for (const toolStyle of toolStyles) {
+      const toolInfo: ToolInfo = toolStyle.data;
+      let html: Html;
+      if (toolInfo.tex) {
+        const latexRenderer = getRenderer('LATEX');
+        const results = latexRenderer!(toolInfo.tex);
+        if (results.html) { html = results.html; }
+        else { html = results.errorHtml!; }
+      } else {
+        html = toolInfo.html!;
+      }
+      const $button = $new('button', {
+        class: 'tool',
+        html,
+        listeners: { 'click': _e=>this.notebookView.useTool(toolStyle.id) }
+      });
+      this.$tools.appendChild($button);
+    }
+  }
 
   // Private Event Handlers
 
@@ -134,7 +174,7 @@ export class DrawingCellView extends CellView {
   private onPointerDown(event: PointerEvent): void {
     // console.log(`${event.pointerType} ${event.pointerId} ${event.type}`);
     // console.dir(event);
-    this.$svg.setPointerCapture(event.pointerId);
+    this.$canvas.setPointerCapture(event.pointerId);
     const pi = this.pointerInfo(event);
 
     if (pi.stroke) {
@@ -142,8 +182,8 @@ export class DrawingCellView extends CellView {
       pi.stroke.abort();
       delete pi.stroke;
     }
-    const clientRect = this.$svg.getBoundingClientRect();
-    pi.stroke = SvgStroke.create(this.$svg);
+    const clientRect = this.$canvas.getBoundingClientRect();
+    pi.stroke = SvgStroke.create(this.$canvas);
     pi.stroke.start(event, clientRect);
   }
 
@@ -161,7 +201,7 @@ export class DrawingCellView extends CellView {
     // console.dir(event);
     const pi = this.pointerInfo(event);
     if (pi.stroke) {
-      const clientRect = this.$svg.getBoundingClientRect();
+      const clientRect = this.$canvas.getBoundingClientRect();
       pi.stroke.extend(event, clientRect);
     }
   }
@@ -185,7 +225,7 @@ export class DrawingCellView extends CellView {
       console.warn(`Pointer ${event.pointerId} doesn't have a stroke. Ignoring.`);
       return;
     }
-    const clientRect = this.$svg.getBoundingClientRect();
+    const clientRect = this.$canvas.getBoundingClientRect();
     stroke.end(event, clientRect);
     delete pi.stroke;
 

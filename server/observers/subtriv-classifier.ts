@@ -191,7 +191,7 @@ export class SubtrivClassifierObserver implements ObserverInstance {
       rval.push(changeReq);
 
       debug("STYLE ADDED XXX", style.id);
-      const toolInfo: ToolInfo = { name: 'plot', html: "Plot Subtrivariate (draft)" };
+      const toolInfo: ToolInfo = { name: 'plot', html: "Plot" };
       const styleProps2: StylePropertiesWithSubprops = {
         type: 'TOOL',
         meaning: 'ATTRIBUTE',
