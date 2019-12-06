@@ -257,6 +257,7 @@ export async function checkEquiv(a:string, b:string) : Promise<boolean> {
 // Note: As often happens, this does not handle the input
 // being an assignment properly...it is best to texify
 // both sides of an assignment and handle that way.
+// REVIEW: Should be called convertWolframToTeX to parallel convertTeXtoWolfram above.
 export async function findTeXForm(text: string): Promise<string> {
     const getTex = `TeXForm[${text}]`;
     try {

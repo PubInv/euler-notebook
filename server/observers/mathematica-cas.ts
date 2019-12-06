@@ -425,10 +425,11 @@ export class MathematicaObserver implements ObserverInstance {
 
     if (style.type != 'LATEX') { return []; }
     if (style.meaning!='INPUT' && style.meaning!='INPUT-ALT') { return []; }
-
-    // Now test that this is a top-level style...
-    const parent = this.notebook.getStyleById(style.parentId);
-    if (this.notebook.topLevelStyleOf(style.id).id != parent.id) { return [];}
+    if (style.parentId) {
+      const parentStyle = this.notebook.getStyleById(style.parentId);
+      if (parentStyle.parentId) { return []; }
+      if (parentStyle.type == 'WOLFRAM') { return []; }
+    }
 
     const latex = style.data;
     debug("latex",latex);
