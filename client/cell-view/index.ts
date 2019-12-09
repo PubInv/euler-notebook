@@ -140,7 +140,7 @@ export abstract class CellView {
   }
 
   private onKeyboardInputPanelDismissed(text: string|undefined): void {
-    if (text) {
+    if (text !== undefined) {
       this.notebookView.changeStyle(this.styleId, text);
     }
     this.$elt.parentElement!.removeChild(this.keyboardInputPanel!.$elt);

@@ -20,6 +20,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 // Requirements
 
 import { Config, Credentials } from '../config';
+import { ServerNotebook } from '../server-notebook';
 
 import { MathematicaObserver } from './mathematica-cas';
 import { MathJsObserver } from './mathjs-cas';
@@ -30,7 +31,7 @@ import { AlgebraicToolsObserver } from './algebraic-tools';
 import { EquationSolverObserver } from './equation-solver';
 import { TeXFormatterObserver } from './tex-formatter';
 import { SymbolClassifierObserver } from './symbol-classifier';
-import { ServerNotebook } from '../server-notebook';
+import { WolframObserver } from './wolfram-cas';
 
 // Exported functions
 
@@ -43,6 +44,7 @@ export async function initialize(config: Config, credentials: Credentials): Prom
     ServerNotebook.registerObserver('SYMBOL-CLASSIFIER', SymbolClassifierObserver);
     ServerNotebook.registerObserver('EQUATION-SOLVER', EquationSolverObserver);
     ServerNotebook.registerObserver('TEX-FORMATTER', TeXFormatterObserver);
+    ServerNotebook.registerObserver('WOLFRAM', WolframObserver);
     ServerNotebook.registerObserver('ALGEBRAIC-TOOLS', AlgebraicToolsObserver);
   }
   if (config.mathjs) {

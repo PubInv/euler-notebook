@@ -23,11 +23,7 @@ import * as debug1 from 'debug';
 const MODULE = __filename.split(/[/\\]/).slice(-1)[0].slice(0,-3);
 const debug = debug1(`server:${MODULE}`);
 
-import { NotebookChange, StyleObject,
-         RelationshipObject,
-         StyleId,
-         StyleProperties
-       } from '../../client/notebook';
+import { NotebookChange, StyleObject, RelationshipObject, StyleId } from '../../client/notebook';
 import {  NotebookChangeRequest, StyleInsertRequest,
           StyleDeleteRequest, StylePropertiesWithSubprops,
        } from '../../client/math-tablet-api';
@@ -132,13 +128,8 @@ export class TeXFormatterObserver implements ObserverInstance {
     if (change == null) return;
     debug(`onChange ${this.notebook._path} ${change.type}`);
     switch (change.type) {
-      case 'styleChanged':
-        await this.convertWolframInputToTeXRule(change.style, true, rval);
-        // REVIEW: reapply latexFormatterRule?
-        break;
-
+      // TODO: 'styleChanged'
       case 'styleInserted':
-        await this.convertWolframInputToTeXRule(change.style, false, rval);
         await this.latexFormatterRule(change.style, rval);
         break;
 
@@ -186,50 +177,6 @@ export class TeXFormatterObserver implements ObserverInstance {
       };
       rval.push(changeReq);
     });
-  }
-
-  private async convertWolframInputToTeXRule(style: StyleObject, changed: boolean, rval: NotebookChangeRequest[]): Promise<void> {
-    if (style.meaning != 'INPUT' || style.type != 'WOLFRAM' || style.data == '') { return; }
-    const data: string = await findTeXForm(style.data);
-
-    let insertChild: boolean = false;
-    let deleteChild: boolean = false;
-    let changeChild: boolean= false;
-    let childId: number = 0;
-    if (changed) {
-      // Style is being changed
-      const childStyle = this.notebook.findStyle({ meaning: 'INPUT-ALT', type: 'LATEX' }, style.id);
-      if (childStyle) {
-        childId = childStyle.id;
-        // Change the child if the data is not empty.
-        // Otherwise, delete the child.
-        if (data != '') { changeChild = true; }
-        else { deleteChild = true; }
-      } else {
-        // No existing child style.
-        // Insert a child if the data is not empty.
-        insertChild = (data != '');
-      }
-    } else {
-      // Style is being inserted.
-      // Insert a child if the data is not empty.
-      insertChild = (data != '');
-    }
-
-    let changeReq: NotebookChangeRequest|undefined;
-    if (insertChild) {
-      const styleProps: StyleProperties = { meaning: 'INPUT-ALT', type: 'LATEX', data }
-      changeReq = { type: 'insertStyle', parentId: style.id, styleProps };
-    } else if (deleteChild) {
-      changeReq
-    } else if (changeChild) {
-      changeReq = { type: 'changeStyle', styleId: childId, data };
-    } else {
-      // Do nothing. This happens when inserting a style with empty data.
-    }
-    if (changeReq) { rval.push(changeReq); }
-
-    return;
   }
 
   // This routine is responsible for inserting any tex formats we can deduce from a given style.

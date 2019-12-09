@@ -285,11 +285,21 @@ describe("test symbol observer", function() {
 
       assert.equal(2,notebook.allRelationships().length);
       // We want to check that the relaionship is "duplicate def".
-      const rd : RelationshipObject = notebook.allRelationships()[0];
+      const rds : RelationshipObject[] = notebook.findRelationships({ meaning: 'DUPLICATE-DEFINITION' });
+      assert.equal(1,rds.length);
+      const rd = rds[0];
+      assert.equal(rd.meaning,'DUPLICATE-DEFINITION');
 
-      const ru : RelationshipObject = notebook.allRelationships()[1];
-      assert.equal(ru.meaning,'DUPLICATE-DEFINITION');
-      assert.equal(rd.meaning,'SYMBOL-DEPENDENCY');
+      const rus : RelationshipObject[] = notebook.findRelationships({ meaning: 'SYMBOL-DEPENDENCY' });
+      assert.equal(1,rus.length);
+      const ru = rus[0];
+      assert.equal(ru.meaning,'SYMBOL-DEPENDENCY');
+
+
+      // const ru : RelationshipObject = notebook.allRelationships()[1];
+      // console.log(notebook);
+      // assert.equal(ru.meaning,'SYMBOL-DEPENDENCY');
+
     });
     it("An input and change does produces only one relationhsip",async function(){
       const data:string[] = [

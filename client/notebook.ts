@@ -51,8 +51,9 @@ export interface FindRelationshipOptions {
   source?: StyleSource;
 }
 
+// REVIEW: Rename to FindStylePattern
 export interface FindStyleOptions {
-  meaning?: StyleMeaning;
+  meaning?: StyleMeaning|RegExp;
   source?: StyleSource;
   type?: StyleType;
   recursive?: boolean;
@@ -207,9 +208,9 @@ export const STYLE_TYPES = [
 export type StyleType = typeof STYLE_TYPES[number];
 
 export const STYLE_SOURCES = [
-  'MATHEMATICA',      // Mathematica style (evaluation)
-  'MATHJS',           // The Mathjs Computer Algebra System system
-  'MATHSTEPS',        // The Mathsteps CAS system
+  'MATHEMATICA',      // Mathematica C.A.S.
+  'MATHJS',           // The Mathjs C.A.S.
+  'MATHSTEPS',        // The Mathsteps C.A.S.
   'MYSCRIPT',         // MyScript handwriting recognition`
   'SANDBOX',          // Sandbox for temporary experiments
   'SUBTRIV-CLASSIFIER',
@@ -220,7 +221,8 @@ export const STYLE_SOURCES = [
   'ANY-INPUT',        // This represents ANY input, no matter the type enterred.
   'SYSTEM',           // The Math-Tablet app itself, not the user or an observer.
   'TEST',             // An example source used only by our test system
-  'USER'              // Directly entered by user
+  'USER',             // Directly entered by user
+  'WOLFRAM',          // Wolfram C.A.S.
 ] as const;
 export type StyleSource = typeof STYLE_SOURCES[number];
 
@@ -668,10 +670,7 @@ export class Notebook {
   ): StyleObject[] {
     const styles = rootId ? this.childStylesOf(rootId) : this.topLevelStyles();
     for (const style of styles) {
-      if (   (!options.meaning || style.meaning == options.meaning)
-          && (!options.type || style.type == options.type)
-          && (!options.source || style.source == options.source)
-         ) { rval.push(style); }
+      if (styleMatchesPattern(style, options)) { rval.push(style); }
       if (options.recursive) {
         this.findStyles(options, style.id, rval);
       }
@@ -777,9 +776,16 @@ export class Notebook {
   }
 }
 
+// REVIEW: Function should not start with a capital letter.
 export function StyleInsertedFromNotebookChange(change: NotebookChange): StyleInserted {
   if (change.type != 'styleInserted') { throw new Error("Not StyleInserted change."); }
   return change;
+}
+
+export function styleMatchesPattern(style: StyleObject, options: FindStyleOptions): boolean {
+  return    (!options.meaning || (typeof options.meaning == 'object' && </* TYPESCRIPT: */any>options.meaning instanceof RegExp ? (<RegExp>options.meaning).test(style.meaning) : style.meaning == options.meaning))
+         && (!options.type || style.type == options.type)
+         && (!options.source || style.source == options.source);
 }
 
 // TEMPORARY

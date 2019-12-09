@@ -25,7 +25,7 @@ const MODULE = __filename.split(/[/\\]/).slice(-1)[0].slice(0,-3);
 const debug = debug1(`server:${MODULE}`);
 
 import { spawn, ChildProcess } from 'child_process';
-import { WolframData } from '../../client/math-tablet-api';
+import { WolframData, LatexData } from '../../client/math-tablet-api';
 import { WolframScriptConfig } from '../config';
 
 // Types
@@ -61,7 +61,6 @@ let gServerStoppingPromise: Promise<void>|undefined = undefined;
 // Exported functions
 
 export async function execute(command: WolframData): Promise<WolframData> {
-
   // Wait for the server to start.
   if (!gServerStartingPromise) { throw new Error("Can't execute -- WolframScript not started."); }
   if (gServerStoppingPromise) { throw new Error("Can't execute -- WolframScript is stopping."); }
@@ -144,7 +143,7 @@ export function constructSubstitution(expr: string,usedVariables: NVPair[]) {
 }
 
 function executeNow(command: WolframData, resolve: (data: string)=>void, reject: (reason: any)=>void): void {
-
+  debug(`Executing: "${command}".`)
   let results = '';
   const stdoutListener = (data: Buffer)=>{
     let dataString: string = data.toString();
@@ -165,7 +164,7 @@ function executeNow(command: WolframData, resolve: (data: string)=>void, reject:
         // ... then fulfill with whatever came between the prompts.
         results = results.substring(outputPromptMatch![0].length, inputPromptMatch.index);
         results = draftChangeContextName(results);
-        debug(`Resolving: '${results}'`);
+        debug(`Execution results: "${results}".`);
         resolve(results);
       } else {
         let message: string = "WolframScript Error: ";
@@ -258,8 +257,8 @@ export async function checkEquiv(a:string, b:string) : Promise<boolean> {
 // being an assignment properly...it is best to texify
 // both sides of an assignment and handle that way.
 // REVIEW: Should be called convertWolframToTeX to parallel convertTeXtoWolfram above.
-export async function findTeXForm(text: string): Promise<string> {
-    const getTex = `TeXForm[${text}]`;
+export async function findTeXForm(text: WolframData): Promise<LatexData> {
+    const getTex = `TeXForm[HoldForm[${text}]]`;
     try {
       const tex = await execute(getTex);
       return tex;

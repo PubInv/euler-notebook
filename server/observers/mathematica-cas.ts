@@ -20,16 +20,16 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 // Requirements
 
 import * as debug1 from 'debug';
-const MODULE = __filename.split(/[/\\]/).slice(-1)[0].slice(0,-3);
-const debug = debug1(`server:${MODULE}`);
-
 // import { MthMtcaText } from '../client/math-tablet-api';
 import { StyleObject, NotebookChange, StyleId, RelationshipProperties } from '../../client/notebook';
 import { NotebookChangeRequest, StyleInsertRequest, StyleDeleteRequest, StylePropertiesWithSubprops, RelationshipInsertRequest, isEmptyOrSpaces } from '../../client/math-tablet-api';
 import { ServerNotebook, ObserverInstance } from '../server-notebook';
 import { execute, convertTeXtoWolfram, constructSubstitution, checkEquiv, NVPair } from './wolframscript';
-import * as fs from 'fs';
+// import * as fs from 'fs';
 import { Config } from '../config';
+
+const MODULE = __filename.split(/[/\\]/).slice(-1)[0].slice(0,-3);
+const debug = debug1(`server:${MODULE}`);
 
 // Types
 
@@ -226,7 +226,6 @@ export class MathematicaObserver implements ObserverInstance {
         case 'styleChanged':
           debug("styleInserted : style",change.style);
           rval = rval.concat(
-            await this.mathMathematicaRule(change.style),
             await this.convertMathMlToWolframRule(change.style),
             await this.convertTexToWolframRule(change.style),
             await this.checkEquivalenceRule(change.style),
@@ -234,117 +233,6 @@ export class MathematicaObserver implements ObserverInstance {
           break;
         default: break;
       }
-    }
-    return rval;
-  }
-
-
-  private async evaluateExpressionPromiseWS(expr: string) : Promise<string> {
-    debug("INSIDE EVALUATE WS",expr);
-    // WARNING! This works to make definitions private
-    // from wolframscript, but not when executed here!?!
-    let result : string;
-    if (isEmptyOrSpaces(expr)) {
-      result = "";
-    } else {
-      result = await execute("InputForm[runPrivate["+expr+"]]");
-    }
-    debug("RESULT FROM WS",result);
-    return result;
-  }
-
-  // REVIEW: Caller doesn't do anything with the return value. Does not need to return a value.
-  // REVIEW: This does not need to be exported, as it does not occur anywhere else in the source.
-  private async mathMathematicaRule(style: StyleObject): Promise<NotebookChangeRequest[]> {
-
-
-    // TODO: Woflram evaluation is an "only child rule"
-    debug("INSIDE RULE :",style);
-    // We only extract symbols from Wolfram expressions that are user input.
-    if (style.type != 'WOLFRAM') { return []; }
-    if (style.meaning!='INPUT' && style.meaning!='INPUT-ALT') { return []; }
-
-    var rval: NotebookChangeRequest[] = [];
-
-    var assoc;
-    try {
-      //    assoc = await evaluateExpressionPromiseWS(style.data);
-
-      debug("mathMathematicaRule, style.data",style.data);
-      assoc = await this.evaluateExpressionPromiseWS(style.data);
-
-      debug("ASSOC RETURNED",assoc,assoc.toString());
-      debug("After context switch",assoc,assoc.toString());
-      if (!assoc) assoc = null;
-    } catch (e) {
-      debug("MATHEMATICA EVALUATION FAILED :",e);
-      assoc = null;
-    }
-
-    // Mathematica returns an "association" with a lot of
-    // information. We will eventually wish to place all of
-    // this in a style. For the time being, we will extract
-    // only the most concise result.
-
-
-    // now we will attempt to discern if a .gif file was created,
-    // and if so, move it into the notebook directory and create
-    // a style.  This is a bit of a hacky means that allows
-    // us to avoid having to understand too much about the expression.
-    var path = ".";
-//      = this.notebook.absoluteDirectoryPath();
-    debug("path",path);
-    // we do not yet have the code to use the notebook path quite ready, so instead we are going to use
-    // public/tmp as a place for images until we are ready.
-    const targetPath = "./public/tmp";
-    const urlPath = "/tmp";
-    path = ".";
-
-    try {
-      fs.readdir(path, (_err, items)=>{
-        for (var i=0; i <items.length; i++) {
-          const ext = items[i].split('.').pop();
-          if (ext == "gif") {
-            const fn = items[i]
-            var dest = targetPath+"/"+fn;
-            fs.rename(fn, dest, err => {
-              if (err) return console.error(err);
-              debug('success!');
-              const styleProps: StylePropertiesWithSubprops = {
-                type: 'IMAGE',
-                data: urlPath+"/"+fn,
-                meaning: 'PLOT',
-              };
-              const cr: StyleInsertRequest = {
-                type: 'insertStyle',
-                parentId: style.id,
-                styleProps,
-              };
-              rval.push(cr);
-            });
-          }
-        }
-      });
-    } catch(e) {
-      debug("ERROR Trying to read: ",e);
-    }
-
-    //  let result = assoc[1][2]; // "magic" for Mathematica
-    if (assoc) {
-      let result = assoc.toString();
-      debug(" RESULT STRING :",result);
-      const styleProps2: StylePropertiesWithSubprops = {
-        type: 'WOLFRAM',
-        data: <string>result,
-        meaning: 'EVALUATION',
-        exclusiveChildTypeAndMeaning: true,
-      }
-      const cr2: StyleInsertRequest = {
-        type: 'insertStyle',
-        parentId: style.id,
-        styleProps: styleProps2,
-      };
-      rval.push(cr2);
     }
     return rval;
   }
