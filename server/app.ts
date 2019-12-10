@@ -39,6 +39,7 @@ import { getConfig, getCredentials} from './config';
 
 import { router as apiRouter } from './routes/api';
 import { router as indexRouter } from './routes/index';
+import { router as exportRouter } from './routes/export';
 
 // Helper Functions
 
@@ -80,8 +81,9 @@ async function main() {
   app.use(express.urlencoded({ extended: true }));
   app.use(cookieParser());
 
-  app.use('/', indexRouter);
   app.use('/api', apiRouter);
+  app.use('/export', exportRouter);
+  app.use('/', indexRouter);
 
   // catch 404 and forward to error handler
   app.use(function(_req: express.Request, _res: express.Response, next) {

@@ -21,7 +21,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 // import { $ } from './dom.js';
 import { assert } from './common.js';
-import { NotebookChanged, NotebookName, Tracker, NotebookChangeRequest, ChangeNotebook, UseTool, ChangeNotebookOptions, } from './math-tablet-api.js';
+import { NotebookChanged, NotebookPath, Tracker, NotebookChangeRequest, ChangeNotebook, UseTool, ChangeNotebookOptions, NotebookName } from './math-tablet-api.js';
 import { Notebook, NotebookObject, NotebookChange, StyleId } from './notebook.js';
 import { NotebookView } from './notebook-view.js';
 import { ServerSocket } from './server-socket.js';
@@ -44,37 +44,47 @@ export class OpenNotebook extends Notebook {
 
   // Class Methods
 
-  public static create(socket: ServerSocket, notebookName: NotebookName, obj: NotebookObject): OpenNotebook {
-    assert(!this.notebooks.has(notebookName));
-    const instance = new this(socket, notebookName, obj);
-    this.notebooks.set(notebookName, instance);
+  public static create(socket: ServerSocket, notebookPath: NotebookPath, obj: NotebookObject): OpenNotebook {
+    assert(!this.notebooks.has(notebookPath));
+    const instance = new this(socket, notebookPath, obj);
+    this.notebooks.set(notebookPath, instance);
     return instance;
   }
 
-  public static open(socket: ServerSocket, notebookName: NotebookName, tDoc: NotebookObject): OpenNotebook {
-    return this.notebooks.get(notebookName) || this.create(socket, notebookName, tDoc);
+  public static open(socket: ServerSocket, notebookPath: NotebookPath, tDoc: NotebookObject): OpenNotebook {
+    return this.notebooks.get(notebookPath) || this.create(socket, notebookPath, tDoc);
   }
 
-  public static get(notebookName: NotebookName): OpenNotebook|undefined {
+  public static get(notebookName: NotebookPath): OpenNotebook|undefined {
     return this.notebooks.get(notebookName);
   }
 
   // Instance Properties
 
-  public notebookName: NotebookName;
+  // Instance Property Functions
 
-  // Instance Property Methods
+  public get notebookName(): NotebookName {
+    const i = this.notebookPath.lastIndexOf('/');
+    return <NotebookName>this.notebookPath.slice(i, -5); // -5 == '.mtnb'.length
+  }
 
   // Instance Methods
 
   // REVIEW: When is this called?
   public close() {
     // TODO: mark closed?
-    OpenNotebook.notebooks.delete(this.notebookName);
+    OpenNotebook.notebooks.delete(this.notebookPath);
   }
 
   public connect(notebookView: NotebookView): void {
     this.notebookView = notebookView;
+  }
+
+  public export(): void {
+    // NOTE: Notebook path starts with a slash.
+    const url = `/export${this.notebookPath}`;
+    // window.location.href = url;
+    window.open(url, "_blank")
   }
 
   public sendChangeRequest(changeRequest: NotebookChangeRequest, options: ChangeNotebookOptions): void {
@@ -85,7 +95,7 @@ export class OpenNotebook extends Notebook {
     if (changeRequests.length == 0) { return; }
     const msg: ChangeNotebook = {
       type: 'changeNotebook',
-      notebookName: this.notebookName,
+      notebookPath: this.notebookPath,
       changeRequests,
       options,
     }
@@ -109,7 +119,7 @@ export class OpenNotebook extends Notebook {
   }
 
   public useTool(id: StyleId): void {
-    const msg: UseTool = { type: 'useTool', notebookName: this.notebookName, styleId: id };
+    const msg: UseTool = { type: 'useTool', notebookPath: this.notebookPath, styleId: id };
     this.socket.sendMessage(msg);
   }
 
@@ -163,20 +173,21 @@ export class OpenNotebook extends Notebook {
 
   // Private Class Properties
 
-  private static notebooks: Map<NotebookName, OpenNotebook> = new Map();
+  private static notebooks: Map<NotebookPath, OpenNotebook> = new Map();
 
   // Private Constructor
 
-  private constructor(socket: ServerSocket, notebookName: NotebookName, obj: NotebookObject) {
+  private constructor(socket: ServerSocket, notebookPath: NotebookPath, obj: NotebookObject) {
     super(obj);
     this.socket = socket;
-    this.notebookName = notebookName;
+    this.notebookPath = notebookPath;
     this.trackedChangeRequests = new Map();
     this.trackedChangeResponses = new Map();
   }
 
   // Private Instance Properties
 
+  private notebookPath: NotebookPath;
   // REVIEW: Could there be more than one notebookView attached to this openNotebook?
   private notebookView!: NotebookView;
   private socket: ServerSocket;

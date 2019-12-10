@@ -33,6 +33,10 @@ const NOT_EXISTS_MESSAGE = "Unexpected error. Object doesn't exist.";
 
 // Exported Functions
 
+export function assert(value: any, message?: string): void {
+  if (!value) { throw new Error(message); }
+}
+
 export function ensureExists<T>(val: T|undefined, message?: string): T {
   if (!val) { throw new Error(message || NOT_EXISTS_MESSAGE); }
   return val;

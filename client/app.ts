@@ -28,6 +28,7 @@ import { OpenNotebook } from './open-notebook.js';
 import { PageView, PageViewType } from './page-view.js';
 import { ServerSocket } from './server-socket.js';
 import { Sidebar, View } from './sidebar.js';
+import { NotebookPath } from './math-tablet-api.js';
 
 // Types
 
@@ -66,18 +67,18 @@ class App {
 
   // Instance Methods
 
-  public async connect(wsUrl: string, notebookName: string): Promise<void> {
+  public async connect(wsUrl: string, notebookPath: NotebookPath): Promise<void> {
 
     // Make websocket connection to the notebook.
     this.socket = await ServerSocket.connect(wsUrl);
 
     // Open the notebook specified in our URL.
-    const openNotebook = this.openNotebook = await this.socket.openNotebook(notebookName);
+    const openNotebook = this.openNotebook = await this.socket.openNotebook(notebookPath);
     if (false) { console.dir(this.openNotebook); }
 
     openNotebook.connect(this.notebookView);
     this.debugPopup.connect(this.header, openNotebook);
-    this.header.connect(this.debugPopup);
+    this.header.connect(this.debugPopup, openNotebook);
     this.notebookView.connect(openNotebook, this.sidebar);
     this.pageView.connect(this.notebookView, this.sidebar);
     this.sidebar.connect(this.notebookView);
@@ -131,9 +132,9 @@ async function onDomReady(_event: Event){
   try {
     console.log('onDomReady');
     const wsUrl = `ws://${window.location.host}/`;
-    const notebookName = window.location.pathname;
+    const notebookPath: NotebookPath = <NotebookPath>window.location.pathname;
     gApp = App.attach(<HTMLBodyElement>document.body);
-    gApp.connect(wsUrl, notebookName)
+    gApp.connect(wsUrl, notebookPath)
     .then(
       function() {
         console.log('App ready');

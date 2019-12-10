@@ -419,7 +419,7 @@ export class Notebook {
     return this.recomputeAllSymbolRelationshipsForSymbols(symbols);
   }
 
-    public recomputeAllSymbolRelationshipsForSymbols(symbols: Set<string> ) : RelationshipObject[] {
+  public recomputeAllSymbolRelationshipsForSymbols(symbols: Set<string> ) : RelationshipObject[] {
     interface SymbolToMap {
       [key: string]: StyleOrderMapping[];
     }

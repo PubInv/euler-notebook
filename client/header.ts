@@ -19,8 +19,9 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 // Requirements
 
-import { configure } from './dom.js';
+import { $attach } from './dom.js';
 import { DebugPopup } from './debug-popup.js';
+import { OpenNotebook } from './open-notebook.js';
 
 // Types
 
@@ -40,8 +41,9 @@ export class Header {
 
   // Instance Methods
 
-  public connect(debugPopup: DebugPopup): void {
+  public connect(debugPopup: DebugPopup, openNotebook: OpenNotebook): void {
     this.debugPopup = debugPopup;
+    this.openNotebook = openNotebook;
   }
 
   public enableDebugButton(enable: boolean): void {
@@ -53,14 +55,18 @@ export class Header {
   // Constructor
 
   private constructor($elt: HTMLDivElement) {
-    this.$debugButton = $elt.querySelector<HTMLButtonElement>('#debugButton')!;
-    configure(this.$debugButton, { listeners: { click: e=>this.onDebugButtonClicked(e) } });
+    $attach($elt, '#exportButton', { listeners: { click: e=>this.onExportButtonClicked(e) }});
+    $attach($elt, '#homeButton', { listeners: { click: _e=>{ window.location.href = '/'; }}});
+    $attach($elt, '#userButton', { listeners: { click: _e=>{ alert("User menu not yet implemented."); }}});
+    this.$debugButton = $attach($elt, '#debugButton', { listeners: { click: e=>this.onDebugButtonClicked(e) }});
   }
 
   // Private Instance Properties
 
   private $debugButton: HTMLButtonElement;
   private debugPopup!: DebugPopup
+
+  private openNotebook!: OpenNotebook
 
   // Private Instance Methods
 
@@ -69,6 +75,10 @@ export class Header {
   private onDebugButtonClicked(_event: MouseEvent): void {
     this.enableDebugButton(false);
     this.debugPopup.show();
+  }
+
+  private onExportButtonClicked(_event: MouseEvent): void {
+    this.openNotebook.export();
   }
 
 }

@@ -27,10 +27,9 @@ import * as WebSocket from 'ws';
 
 // TODO: Handle websocket lifecycle: closing, unexpected disconnects, errors, etc.
 import { NotebookChange } from '../client/notebook';
-import { ClientMessage, NotebookName, NotebookChanged, ServerMessage, CloseNotebook, OpenNotebook, UseTool, NotebookOpened, ChangeNotebook, Tracker, NotebookChangeRequest } from '../client/math-tablet-api';
+import { ClientMessage, NotebookPath, NotebookChanged, ServerMessage, CloseNotebook, OpenNotebook, UseTool, NotebookOpened, ChangeNotebook, Tracker, NotebookChangeRequest } from '../client/math-tablet-api';
 
 import { PromiseResolver, runAsync } from './common';
-import { NotebookPath } from './files-and-folders';
 // REVIEW: This file should not be dependent on any specific observers.
 import { ServerNotebook, RequestChangesOptions } from './server-notebook';
 import { ClientObserver } from './observers/client-observer';
@@ -112,8 +111,7 @@ export class ClientSocket {
   ): void {
     // REVIEW: verify that notebook is one of our opened ones?
     if (!notebook._path) { throw new Error("Unexpected."); }
-    const notebookName = notebook._path;
-    const msg: NotebookChanged = { type: 'notebookChanged', notebookName, changes, complete, tracker, undoChangeRequests };
+    const msg: NotebookChanged = { type: 'notebookChanged', notebookPath: notebook._path, changes, complete, tracker, undoChangeRequests };
     this.sendMessage(msg);
   }
 
@@ -185,7 +183,7 @@ export class ClientSocket {
       const msg: ClientMessage = JSON.parse(message.toString());
       // console.log(`Message from client: ${msg.notebookName} ${msg.type}`);
       // console.dir(msg);
-      debug(`Client Socket: received socket message: ${msg.type} ${msg.notebookName}`);
+      debug(`Client Socket: received socket message: ${msg.type} ${msg.notebookPath}`);
       switch(msg.type) {
         case 'changeNotebook':
           runAsync(this.cmChangeNotebook(msg), MODULE, 'cmCloseNotebook');
@@ -212,8 +210,8 @@ export class ClientSocket {
   // Private Client Message Handlers
 
   private async cmChangeNotebook(msg: ChangeNotebook): Promise<void> {
-    const clientObserver = this.clientObservers.get(msg.notebookName);
-    if (!clientObserver) { throw new Error(`Unknown notebook ${msg.notebookName} for client message delete-style.`); }
+    const clientObserver = this.clientObservers.get(msg.notebookPath);
+    if (!clientObserver) { throw new Error(`Unknown notebook ${msg.notebookPath} for client message delete-style.`); }
     // REVIEW: source client id?
 
     const options: RequestChangesOptions = { clientId: this.id, ...msg.options };
@@ -221,23 +219,23 @@ export class ClientSocket {
   }
 
   private async cmCloseNotebook(msg: CloseNotebook): Promise<void> {
-    await this.closeNotebook(msg.notebookName, true);
+    await this.closeNotebook(msg.notebookPath, true);
   }
 
   private async cmOpenNotebook(msg: OpenNotebook): Promise<void> {
-    const clientObserver = this.clientObservers.get(msg.notebookName);
+    const clientObserver = this.clientObservers.get(msg.notebookPath);
     if (clientObserver) {
       // TODO: handle error
       // TODO: Send notebookOpened message?
-      console.error(`ERROR: Client Socket: client duplicate open notebook message: ${this.id} ${msg.notebookName}`);
+      console.error(`ERROR: Client Socket: client duplicate open notebook message: ${this.id} ${msg.notebookPath}`);
       return;
     }
-    await this.openNotebook(msg.notebookName);
+    await this.openNotebook(msg.notebookPath);
   }
 
   private async cmUseTool(msg: UseTool): Promise<void> {
-    const clientObserver = this.clientObservers.get(msg.notebookName);
-    if (!clientObserver) { throw new Error(`Unknown notebook ${msg.notebookName} for client message use-tool.`); }
+    const clientObserver = this.clientObservers.get(msg.notebookPath);
+    if (!clientObserver) { throw new Error(`Unknown notebook ${msg.notebookPath} for client message use-tool.`); }
     await clientObserver.notebook.useTool(msg.styleId);
   }
 
@@ -245,31 +243,31 @@ export class ClientSocket {
 
   private async closeAllNotebooks(notify: boolean): Promise<void> {
     // REVIEW: close in parallel?
-    for (const notebookName of this.clientObservers.keys()) {
-      await this.closeNotebook(notebookName, notify);
+    for (const notebookPath of this.clientObservers.keys()) {
+      await this.closeNotebook(notebookPath, notify);
     }
   }
 
-  private async closeNotebook(notebookName: NotebookName, notify: boolean): Promise<void> {
-    const clientObserver = this.clientObservers.get(notebookName);
+  private async closeNotebook(notebookPath: NotebookPath, notify: boolean): Promise<void> {
+    const clientObserver = this.clientObservers.get(notebookPath);
     if (!clientObserver) {
-      console.warn(`Client Socket ${this.id}: closing notebook that is already closed: ${notebookName}`);
+      console.warn(`Client Socket ${this.id}: closing notebook that is already closed: ${notebookPath}`);
       return;
     }
-    this.clientObservers.delete(notebookName);
+    this.clientObservers.delete(notebookPath);
     clientObserver.close();
     if (notify) {
-      this.sendMessage({ type: 'notebookClosed', notebookName });
+      this.sendMessage({ type: 'notebookClosed', notebookPath });
     }
   }
 
-  private async openNotebook(notebookName: NotebookName): Promise<void> {
-    const notebook = await ServerNotebook.open(notebookName);
+  private async openNotebook(notebookPath: NotebookPath): Promise<void> {
+    const notebook = await ServerNotebook.open(notebookPath);
     const clientObserver = ClientObserver.open(notebook, this);
     this.clientObservers.set(notebook._path!, clientObserver);
     const msg: NotebookOpened = {
       type: 'notebookOpened',
-      notebookName,
+      notebookPath,
       obj: notebook.toJSON(),
     }
     this.sendMessage(msg);

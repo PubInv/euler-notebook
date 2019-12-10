@@ -28,7 +28,7 @@ const MODULE = __filename.split(/[/\\]/).slice(-1)[0].slice(0,-3);
 const debug = debug1(`server:${MODULE}`);
 import * as rimraf from 'rimraf';
 
-import { NotebookName } from '../client/math-tablet-api';
+import { NotebookName, NotebookPath } from '../client/math-tablet-api';
 
 const mkdir2 = promisify(mkdir);
 const readdir2 = promisify(readdir);
@@ -44,19 +44,13 @@ const rimraf2 = promisify(rimraf);
 export type AbsDirectoryPath = string; // Absolute path to a directory in the file system.
 export type AbsFilePath = string; // Absolute path to a file in the file system.
 
-export type FolderName = string;
+export type FolderName = string; // Name of a folder without any slashes.
 
 // Folder paths start with a slash, and are followed by zero or more
 // folder names, follewed by another slash. e.g. '/', '/foo/', or '/foo/bar/'
 // Note that we always use forward slash, even on Windows where the filesystem
 // separator is a backslash.
 export type FolderPath = string;
-
-// Notebook paths are a FolderPath (see files-and-folders.ts) followed by a NotebookName,
-// then a '.mtnb' extension, and a slash.
-// Note that we always use forward slash, even on Windows where the filesystem
-// separator is a backslash.
-export type NotebookPath = string;
 
 interface FolderEntry {
   name: FolderName;
@@ -90,7 +84,7 @@ const ROOT_DIR_PATH = join(process.env.HOME!, ROOT_DIR_NAME);
 const FOLDER_NAME_RE = /^(\w+)$/;
 export const FOLDER_PATH_RE = /^\/(\w+\/)*$/;
 const NOTEBOOK_NAME_RE = /^(\w+)$/;
-export const NOTEBOOK_PATH_RE = /^\/(\w+\/)*\w+\.mtnb\/$/;
+export const NOTEBOOK_PATH_RE = /^\/((\w+\/)*)(\w+)\.mtnb\/$/;
 
 // Exported functions
 
@@ -100,7 +94,7 @@ export function absDirPathFromNotebookPath(notebookPath: FolderPath|NotebookPath
   return join(ROOT_DIR_PATH, ...pathSegments);
 }
 
-export async function createFolder(folderPath: FolderPath): Promise<void> {
+export async function createFolder(folderPath: FolderPath|NotebookPath): Promise<void> {
   const absPath = absDirPathFromNotebookPath(folderPath);
   await mkdir2(absPath);
 }
@@ -141,10 +135,10 @@ export async function getListOfNotebooksAndFoldersInFolder(folderPath: FolderPat
     // Folders are all other directories.
     const path = `${folderPath}${name}/`;
     if (name.endsWith(NOTEBOOK_DIR_SUFFIX)) {
-      const nameWithoutSuffix = name.slice(0, -NOTEBOOK_DIR_SUFFIX_LEN);
-      notebooks.push({ name: nameWithoutSuffix, path })
+      const nameWithoutSuffix: NotebookName = <NotebookName>name.slice(0, -NOTEBOOK_DIR_SUFFIX_LEN);
+      notebooks.push({ name: nameWithoutSuffix, path: <NotebookPath>path })
     } else {
-      folders.push({ name, path })
+      folders.push({ name: <FolderName>name, path: <FolderPath>path })
     }
   }
   return { notebooks, folders };
@@ -166,8 +160,14 @@ export function isValidNotebookPath(notebookPath: NotebookPath): boolean {
   return NOTEBOOK_PATH_RE.test(notebookPath);
 }
 
+export function notebookNameFromNotebookPath(notebookPath: NotebookPath): NotebookName {
+  const match = NOTEBOOK_PATH_RE.exec(notebookPath);
+  if (!match) { throw new Error(`Invalid notebook path: ${notebookPath}`); }
+  return <NotebookName>match[3];
+}
+
 export function notebookPathFromFolderPathAndName(folderPath: FolderPath, notebookName: NotebookName): NotebookPath {
-  return `${folderPath}${notebookName}${NOTEBOOK_DIR_SUFFIX}/`;
+  return <NotebookPath>`${folderPath}${notebookName}${NOTEBOOK_DIR_SUFFIX}/`;
 }
 
 export async function readNotebookFile(notebookPath: NotebookPath): Promise<string> {
@@ -199,4 +199,3 @@ function absFilePathFromNotebookPath(notebookPath: NotebookPath): AbsFilePath {
   const absPath = absDirPathFromNotebookPath(notebookPath);
   return join(absPath, NOTEBOOK_FILE_NAME);
 }
-

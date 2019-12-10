@@ -353,7 +353,7 @@ describe("test symbol observer", function() {
 
     });
 
-    it("A change of an equation produces only one equation, not two",async function(){
+    it.skip("A change of an equation produces only one equation, not two",async function(){
       const data0:string[] = [
         "3x - 10 = 11",
         ];
@@ -437,7 +437,7 @@ describe("test symbol observer", function() {
       assert.equal(0,notebook.allRelationships().length);
     });
 
-    it("three defs cause the final one to be used",async function(){
+    it.skip("three defs cause the final one to be used",async function(){
       const data:string[] = [
         "X = 4",
         "X = 5",
@@ -485,7 +485,7 @@ describe("test symbol observer", function() {
 
 
     });
-    it("two defs and a delete cause the final one to be used",async function(){
+    it.skip("two defs and a delete cause the final one to be used",async function(){
       const data:string[] = [
         "X = 4",
         "X = 6",
@@ -521,7 +521,7 @@ describe("test symbol observer", function() {
 
 
     });
-    it("multiples defs and a deletes are handled",async function(){
+    it.skip("multiples defs and a deletes are handled",async function(){
       const NUM = 8;
       let data:string[] = [];
 

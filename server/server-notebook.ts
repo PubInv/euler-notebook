@@ -34,12 +34,11 @@ import {
 import {
   NotebookChangeRequest, StyleMoveRequest, StyleInsertRequest, StyleChangeRequest,
   RelationshipDeleteRequest, StyleDeleteRequest, RelationshipInsertRequest,
-  StylePropertiesWithSubprops, ChangeNotebookOptions
+  StylePropertiesWithSubprops, ChangeNotebookOptions, LatexData, NotebookPath
 } from '../client/math-tablet-api';
 
 import {
   readNotebookFile, AbsDirectoryPath, absDirPathFromNotebookPath, writeNotebookFile,
-  NotebookPath
 } from './files-and-folders';
 import { constructSubstitution } from './observers/wolframscript';
 import { ClientObserver } from './observers/client-observer';
@@ -176,7 +175,16 @@ export class ServerNotebook extends Notebook {
     return absDirPathFromNotebookPath(this._path);
   }
 
-  // Instance Property Functions
+  public exportLatex(): LatexData {
+    return `\\documentclass[12pt]{article}
+\\usepackage{lingmacros}
+\\usepackage{tree-dvips}
+\\begin{document}
+\\section*{Magic Math Tablet: ${this._path} }
+\\subsection*{How to handle topicalization}
+\\end{document}
+`;
+  }
 
   // Remove fields with an underscore prefix, because they are not supposed to be persisted.
   public toJSON(): NotebookObject {

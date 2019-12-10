@@ -39,6 +39,8 @@ mixin header
         | /
       = notebookName
     span
+      button#exportButton(title="Export notebook")
+        +svgIconLogOut18
       button#debugButton(title="Debug window")
         +svgIconBug12
       button#userButton(title="User settings")

@@ -41,6 +41,13 @@ export interface SymbolData {
 // Just the name of the notebook, no .mtnb extension.
 export type NotebookName = string;
 
+// Notebook paths are a FolderPath (see server/files-and-folders.ts) followed by a NotebookName,
+// then a '.mtnb' extension, and a slash.
+// Note that we always use forward slash, even on Windows where the filesystem
+// separator is a backslash.
+export type NotebookPath = string;
+
+
 // MyScript Types
 
 export type ToolName = string;
@@ -114,7 +121,7 @@ export interface StyleMoveRequest {
 export type ServerMessage = NotebookChanged|NotebookClosed|NotebookOpened;
 export interface NotebookChanged {
   type: 'notebookChanged';
-  notebookName: NotebookName;
+  notebookPath: NotebookPath;
 
   changes: NotebookChange[];
   complete?: boolean;            // True iff this is the last set of changes
@@ -125,11 +132,11 @@ export interface NotebookChanged {
 }
 export interface NotebookClosed {
   type: 'notebookClosed';
-  notebookName: NotebookName;
+  notebookPath: NotebookPath;
 }
 export interface NotebookOpened {
   type: 'notebookOpened';
-  notebookName: NotebookName;
+  notebookPath: NotebookPath;
   obj: NotebookObject;
 }
 
@@ -138,7 +145,7 @@ export interface NotebookOpened {
 export type ClientMessage = ChangeNotebook|CloseNotebook|OpenNotebook|UseTool;
 export interface ChangeNotebook {
   type: 'changeNotebook';
-  notebookName: NotebookName;
+  notebookPath: NotebookPath;
   changeRequests: NotebookChangeRequest[];
   options?: ChangeNotebookOptions;
 }
@@ -148,15 +155,15 @@ export interface ChangeNotebookOptions {
 }
 export interface CloseNotebook {
   type: 'closeNotebook';
-  notebookName: NotebookName;
+  notebookPath: NotebookPath;
 }
 export interface OpenNotebook {
   type: 'openNotebook';
-  notebookName: NotebookName;
+  notebookPath: NotebookPath;
 }
 export interface UseTool {
   type: 'useTool';
-  notebookName: NotebookName;
+  notebookPath: NotebookPath;
   styleId: StyleId;
 }
 

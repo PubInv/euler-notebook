@@ -50,9 +50,6 @@ export function showErrorMessage(html: Html, err?: Error): void {
 function onDomReady(_event: Event) {
   try {
     $(document, '#banner').addEventListener('click', onBannerClick);
-    // TODO: The following belong in header.ts, but then folder-app.ts needs to use header.ts.
-    $<HTMLButtonElement>(document, '#homeButton').addEventListener<'click'>('click', _event=>{ window.location.href = '/' });
-    $<HTMLButtonElement>(document, '#userButton').addEventListener<'click'>('click', _event=>{ alert("User menu not yet implemented."); });
   } catch(err) {
     addErrorMessageToHeader(`Iinitialization error: ${err.message}`);
     throw err;

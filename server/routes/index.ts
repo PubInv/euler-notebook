@@ -25,12 +25,12 @@ import * as multer from 'multer'
 import { NextFunction, Request, Response, Router } from 'express';
 
 import { ClientSocket } from '../client-socket';
+import { NotebookName, NotebookPath, NotebookChangeRequest } from '../../client/math-tablet-api';
+
 import { ServerNotebook } from '../server-notebook';
 import { isValidNotebookPath, getListOfNotebooksAndFoldersInFolder,
-          isValidFolderName, createFolder, FolderPath, NotebookPath, FOLDER_PATH_RE, isValidNotebookName,
-          notebookPathFromFolderPathAndName, NOTEBOOK_PATH_RE, isValidFolderPath, deleteFolder, deleteNotebook } from '../files-and-folders';
-
-import { NotebookName, NotebookChangeRequest } from '../../client/math-tablet-api';
+          isValidFolderName, createFolder, FolderPath, FOLDER_PATH_RE, isValidNotebookName,
+          notebookPathFromFolderPathAndName, NOTEBOOK_PATH_RE, isValidFolderPath, deleteFolder, deleteNotebook, FolderName } from '../files-and-folders';
 
 const MODULE = __filename.split(/[/\\]/).slice(-1)[0].slice(0,-3);
 const debug = debug1(`server:${MODULE}`);
@@ -79,6 +79,7 @@ router.get(NOTEBOOK_PATH_RE, onNotebookPage);
 router.post(NOTEBOOK_PATH_RE, onNotebookPage);
 
 router.get(FOLDER_PATH_RE, onFolderPage);
+// TODO: Move importing to import-export router.
 router.post(FOLDER_PATH_RE, upload.single('importFile'), onFolderPage);
 
 // Route Handler Functions
@@ -97,9 +98,9 @@ async function onDashboard(req: Request, res: Response) {
         break;
       }
       case 'closeNotebook': {
-        for (const notebookName of Object.keys(req.body.notebooks)) {
-          debug(`Closing client ${notebookName}`);
-          await ServerNotebook.close(notebookName);
+        for (const notebookPath of <NotebookPath[]>Object.keys(req.body.notebooks)) {
+          debug(`Closing client ${notebookPath}`);
+          await ServerNotebook.close(notebookPath);
         }
         break;
       }
@@ -123,7 +124,7 @@ async function onDashboard(req: Request, res: Response) {
 }
 
 async function onFolderPage(req: Request, res: Response, _next: NextFunction): Promise<void> {
-  const path = req.path;
+  const path = <FolderPath>req.path;
   const body: FolderPageBody = req.body;
   try {
     const pathSegments = path == '/' ? [] : path.slice(1, -1).split('/');
@@ -155,7 +156,7 @@ async function onFolderPage(req: Request, res: Response, _next: NextFunction): P
 }
 
 async function onNotebookPage(req: Request, res: Response, next: NextFunction): Promise<void> {
-  const notebookPath = req.path;
+  const notebookPath = <NotebookPath>req.path;
   try {
     const pathSegments = notebookPath.slice(1, -1).split('/');
     const notebookName = pathSegments.pop()!.slice(0, -5);
@@ -215,11 +216,11 @@ async function deleteSelected(body: FolderPageBody, _folderPath: FolderPath, mes
   return undefined;
 }
 
-function generateScratchNotebookName(): string {
+function generateScratchNotebookName(): NotebookName {
   var d = new Date();
   const ymd = `${d.getFullYear()}${zeroPad(d.getMonth()+1)}${zeroPad(d.getDate())}`;
   const hms = `${zeroPad(d.getHours())}${zeroPad(d.getMinutes())}${zeroPad(d.getSeconds())}`;
-  const rval: NotebookName = `scratch_${ymd}_${hms}`;
+  const rval = <NotebookName>`scratch_${ymd}_${hms}`;
   return rval;
 }
 
@@ -243,7 +244,7 @@ async function importFile(multerFile: Express.Multer.File, folderPath: FolderPat
   }
 
   // Notebook name is original filename minus the .json extension.
-  const notebookName = multerFile.originalname.slice(0, -5);
+  const notebookName = <NotebookName>multerFile.originalname.slice(0, -5);
   if (!isValidNotebookName(notebookName)) {
     // TODO: Let user specify notebook name, or generate a valid one instead of failing.
     messages.error.push(`Import failed: Invalid notebook name: '${notebookName}'`);
@@ -276,12 +277,12 @@ async function importFile(multerFile: Express.Multer.File, folderPath: FolderPat
 // Returns URI for the new folder to redirect to if creation succeeds.
 // Otherwise, returns undefined, and messages contains an error message to be displayed.
 async function newFolder(body: FolderPageBody, folderPath: FolderPath, messages: PageMessages): Promise<Uri|undefined> {
-  const folderName = body.folderName!.trim();
+  const folderName = <FolderName>body.folderName!.trim();
   if (!isValidFolderName(folderName)) {
     messages.error.push(`Invalid folder name: '${folderName}'`);
     return undefined;
   }
-  const newFolderPath = `${folderPath}${folderName}/`;
+  const newFolderPath = <FolderPath>`${folderPath}${folderName}/`;
   // REVIEW: Additional safety checks on folder path?
   await createFolder(newFolderPath);
   messages.success.push(`Folder '${folderName}' created successfully.`);
@@ -292,7 +293,7 @@ async function newFolder(body: FolderPageBody, folderPath: FolderPath, messages:
 // Otherwise, returns undefined, and messages contains an error message to be displayed.
 async function newNotebook(body: FolderPageBody, folderPath: FolderPath, messages: PageMessages): Promise<Uri|undefined> {
 
-  const notebookName = body.notebookName!.trim() || generateScratchNotebookName();
+  const notebookName = <NotebookName>body.notebookName!.trim() || generateScratchNotebookName();
 
   if (!isValidNotebookName(notebookName)) {
     messages.error.push(`Invalid notebook name: '${notebookName}'`);

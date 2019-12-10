@@ -102,7 +102,7 @@ export class DrawingCellView extends CellView {
   private $tools: HTMLDivElement;
   private pointerMap: PointerMap;
 
-  // Private Instance Property Methods
+  // Private Instance Property Functions
 
   private pointerInfo(event: PointerEvent): PointerInfo {
     let rval = this.pointerMap.get(event.pointerId);
