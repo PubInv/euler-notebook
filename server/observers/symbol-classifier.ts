@@ -217,7 +217,7 @@ export class SymbolClassifierObserver implements ObserverInstance {
     // I believe listening only for the WOLFRAM/INPUT forces
     // a serialization that we don't want to support. We also must
     // listen for definition and use and handle them separately...
-    if (style.type == 'WOLFRAM' && style.meaning == 'INPUT' ||style.meaning == 'INPUT-ALT') {
+    if (style.type == 'WOLFRAM' && (style.meaning == 'INPUT' ||style.meaning == 'INPUT-ALT')) {
       // at this point, we are doing a complete "recomputtion" based the use.
       await this.addSymbolUseStyles(style, rval);
       await this.addSymbolDefStyles(style, rval);

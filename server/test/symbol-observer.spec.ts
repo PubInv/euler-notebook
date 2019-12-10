@@ -41,6 +41,7 @@ import { EquationSolverObserver } from '../observers/equation-solver';
 import { MathematicaObserver } from '../observers/mathematica-cas';
 import { TeXFormatterObserver } from '../observers/tex-formatter';
 import { AnyInputObserver } from '../observers/any-input';
+import { WolframObserver } from '../observers/wolfram-cas';
 import { start as startWolframscript } from '../observers/wolframscript';
 import { Config, getConfig } from '../config';
 
@@ -150,6 +151,7 @@ describe("test symbol observer", function() {
     const equationSolverObserver = await EquationSolverObserver.onOpen(notebook);
     const teXFormatterObserver = await TeXFormatterObserver.onOpen(notebook);
     const anyInputObserver = await AnyInputObserver.onOpen(notebook);
+    const wolframObserver = await WolframObserver.onOpen(notebook);
 
     notebook.registerObserver('TEST', testObserver);
     notebook.registerObserver('SYMBOL-CLASSIFIER', symbolClassifierObserver);
@@ -157,6 +159,7 @@ describe("test symbol observer", function() {
     notebook.registerObserver('EQUATION-SOLVER', equationSolverObserver);
     notebook.registerObserver('TEX-FORMATTER', teXFormatterObserver);
     notebook.registerObserver('ANY-INPUT', anyInputObserver);
+    notebook.registerObserver('WOLFRAM', wolframObserver);
 
   });
   afterEach("Close notebook",async function(){
