@@ -32,6 +32,7 @@ const readFile2 = promisify(readFile);
 export interface Config {
   mathematica?: MathematicaConfig;
   mathjs?: {};
+  nodeLatex: NoteLatexConfig;
   wolframscript?: WolframScriptConfig;
 }
 
@@ -40,6 +41,12 @@ export interface Credentials {
 }
 
 export interface MathematicaConfig {
+}
+
+export interface NoteLatexConfig {
+  // See https://www.npmjs.com/package/node-latex.
+  // Currently we don't need these definitions.
+  // We just pass the object to node-latex.
 }
 
 export interface WolframScriptConfig {
@@ -52,14 +59,29 @@ const CONFIG_DIR = '.math-tablet';
 const CONFIG_FILENAME = 'config.json';
 const CREDENTIALS_FILENAME = 'credentials.json';
 
+// Exported Globals
+
+export var globalConfig: Config;
+export var globalCredentials: Credentials;
+
 // Exported functions
 
-export async function getConfig(): Promise<Config> {
-  return getJsonFileFromConfigDir<Config>(CONFIG_FILENAME);
+export async function loadConfig(): Promise<Config> {
+  if (!globalConfig) {
+    globalConfig = await getJsonFileFromConfigDir<Config>(CONFIG_FILENAME);
+  } else {
+    console.warn("Loading config file multiple times.");
+  }
+  return globalConfig;
 }
 
-export function getCredentials(): Promise<Credentials> {
-  return getJsonFileFromConfigDir<Credentials>(CREDENTIALS_FILENAME);
+export async function loadCredentials(): Promise<Credentials> {
+  if (!globalCredentials) {
+    globalCredentials = await getJsonFileFromConfigDir<Credentials>(CREDENTIALS_FILENAME);
+  } else {
+    console.warn("Loading credentials file multiple times.");
+  }
+  return globalCredentials;
 }
 
 // Helper Functions

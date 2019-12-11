@@ -27,6 +27,7 @@ import { NextFunction, Request, Response, Router } from 'express';
 
 import { NotebookPath } from '../../client/math-tablet-api';
 
+import { globalConfig } from '../config';
 import { ServerNotebook } from '../server-notebook';
 import { isValidNotebookPath, NOTEBOOK_PATH_RE, notebookNameFromNotebookPath } from '../files-and-folders';
 
@@ -94,28 +95,38 @@ async function onExportPage(req: Request, res: Response, next: NextFunction): Pr
         throw err;
       }
     }
+
     const latex = notebook.exportLatex();
 
     switch(exportFormat) {
       case 'latex':
+        // LaTeX source requested.
         // REVIEW: Shouldn't we have notebook.name property?
         const downloadFilename = `${notebookNameFromNotebookPath(notebookPath)}.${fileExtension}`;
-        console.dir(downloadFilename);
         res.set('Content-Type', LATEX_MIME_TYPE);
         res.set('Content-Disposition', `attachment; filename="${downloadFilename}"`);
         res.send(latex);
         break;
       case 'pdf': {
         // PDF requested
-        // TODO: Get pdflatex path from configuration file.
+        // TODO: If pdflatex is not found this will crash the server.
         // TODO: Update readme for LaTeX installation.
-        const options = {
-          cmd: '/Library/TeX/texbin/pdflatex',
-        };
-        const pdf = (<any>nodeLatex)(latex, options);
+        const options = globalConfig.nodeLatex;
+        const pdf = (</* TYPESCRIPT: */any>nodeLatex)(latex, options);
         res.set('Content-Type', PDF_MIME_TYPE);
-        // res.set('Content-Disposition', `attachment; filename="${downloadFilename}"`);
         pdf.pipe(res);
+        pdf.on('error', (err: Error)=>{
+          console.error(`ERROR: Error generating LaTeX for export: ${err}`);
+          res.set('Content-Type', 'text/html');
+          res.status(500);
+          const locals = {
+            title: "Error Generating LaTeX",
+            messageHtml: `An error occurred generating LaTeX for <tt>${notebookPath}</tt>:`,
+            messageDetails: err.toString(),
+          }
+          res.render('expected-error', locals);
+        });
+        pdf.on('finish', ()=> console.log('PDF generated!'));
         break;
       }
       default:

@@ -42,7 +42,7 @@ import { TeXFormatterObserver } from '../observers/tex-formatter';
 import { AnyInputObserver } from '../observers/any-input';
 import { WolframObserver } from '../observers/wolfram-cas';
 import { start as startWolframscript } from '../observers/wolframscript';
-import { Config, getConfig } from '../config';
+import { Config, loadConfig } from '../config';
 import * as fs from 'fs';
 //import latex from 'node-latex';
 const latex = require('node-latex')
@@ -118,7 +118,7 @@ describe("test symbol observer", function() {
 
   before("correctly configure stuff", async function(){
     // We can't do this test if we don't have mathematica
-    const config = await getConfig();
+    const config = await loadConfig();
 
     // TODO: stopWolframscript before exiting.
     if (config.mathematica) { await startWolframscript(config.wolframscript); }

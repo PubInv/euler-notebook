@@ -1,5 +1,9 @@
 {
   "@comment": "To comment out an observer, just prepend a '@' to the appropriate key.",
+  "@nodeLatex": {
+    "@comment": "node-latex options. See https://www.npmjs.com/package/node-latex",
+    "cmd": "/Library/TeX/texbin/pdflatex"
+  },
   "mathematica": {},
   "mathjs": {},
   "@wolframscript": {
