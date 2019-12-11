@@ -44,3 +44,5 @@ flycheck_*.el
 
 # directory configuration
 .dir-locals.el
+server/basictest.pdf
+server/basictest.tex

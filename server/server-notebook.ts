@@ -176,14 +176,58 @@ export class ServerNotebook extends Notebook {
   }
 
   public exportLatex(): LatexData {
-    return `\\documentclass[12pt]{article}
-\\usepackage{lingmacros}
-\\usepackage{tree-dvips}
+    const ourPreamble = `\\documentclass[12pt]{article}
+\\usepackage{amsmath}
+\\usepackage{graphicx}
+\\usepackage{epstopdf}
+\\epstopdfDeclareGraphicsRule{.gif}{png}{.png}{convert gif:#1 png:\\OutputFile}
+\\AppendGraphicsExtensions{.gif}
 \\begin{document}
-\\section*{Magic Math Tablet: ${this._path} }
-\\subsection*{How to handle topicalization}
-\\end{document}
+\\title{Magic Math Table}
+\\author{me}
+\\maketitle
 `;
+    const close = `\\end{document}`;
+
+    // Our basic approach is to apply a function to each
+    // top level style in order. This function will preferentially
+    // take the LaTeX if there is any.
+    function displayFormula(f : string) : string {
+      return `\\begin{align}\n ${f} \\end{align}\n`;
+    }
+
+    const tlso = this.topLevelStyleOrder();
+    const cells = tlso.map( tls => {
+      var retLaTeX = "";
+      const latex = this.findChildStylesOfType(tls,'LATEX');
+      if (latex.length > 1) { // here we have to have some disambiguation
+        retLaTeX += "ambiguous: " +displayFormula(latex[0].data);
+      } else if (latex.length == 1) {  // here it is obvious, maybe...
+        retLaTeX += displayFormula(latex[0].data);
+      } else { // here we examine the type more carefully...
+        retLaTeX += "unknown type";
+      }
+      const image = this.findChildStylesOfType(tls,'IMAGE','PLOT');
+      if (image.length > 0) {
+        const plot = image[0];
+        debug("plot data",plot.data);
+        const apath = this.absoluteDirectoryPath();
+        // The notebook name is both a part of the plot.data,
+        // AND is a part of the absolute path. So we take only
+        // the final file name of local.data here.
+        const final = plot.data.split("/");
+        const graphics = `\\includegraphics{${apath}/${final[2]}}`;
+        retLaTeX += graphics;
+        debug("graphics",graphics);
+        if (image.length > 1) {
+          retLaTeX += " more than one plot, not sure how to handle that";
+        }
+      }
+      return retLaTeX;
+    });
+    return ourPreamble +
+      cells.join('\n') +
+      close;
   }
 
   // Remove fields with an underscore prefix, because they are not supposed to be persisted.

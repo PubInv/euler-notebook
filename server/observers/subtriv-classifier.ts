@@ -25,6 +25,8 @@ const debug = debug1(`server:${MODULE}`);
 
 import { NotebookChange, StyleObject, RelationshipObject } from '../../client/notebook';
 import { ToolInfo, NotebookChangeRequest, StyleInsertRequest, StylePropertiesWithSubprops, StyleDeleteRequest } from '../../client/math-tablet-api';
+
+import { absDirPathFromNotebookPath } from '../files-and-folders';
 import { ServerNotebook, ObserverInstance } from '../server-notebook';
 import { execute, constructSubstitution} from './wolframscript';
 import { Config } from '../config';
@@ -76,12 +78,11 @@ export class SubtrivClassifierObserver implements ObserverInstance {
   const classificationStyle = this.notebook.findChildStylesOfType(evaluationStyle.id, 'CLASSIFICATION', 'SUBTRIVARIATE')[0];
     if (!classificationStyle) { throw new Error(`Classification style not found.`); }
 
-    const targetPath = "./public/tmp";
-    const urlPath = "/tmp";
+    const targetPath = absDirPathFromNotebookPath(this.notebook._path!);
     var uuid4 = uuid();
-    debug(uuid4);
-    const plotName = "quadplot" + evaluationStyle.id + '-' + uuid4 + ".gif";
-    const fullFilename = targetPath + "/" + plotName;
+    const plotName = "quadplot" + evaluationStyle.id + '-' + uuid4 + ".png";
+    const urlPath = `${this.notebook._path}${plotName}`;
+    const fullFilename = `${targetPath}/${plotName}`;
 
     // We are only plottable if we make the normal substitutions...
     const rs = this.notebook.getSymbolStylesIDependOn(evaluationStyle);
@@ -113,7 +114,7 @@ export class SubtrivClassifierObserver implements ObserverInstance {
       // between the systems.
       const styleProps: StylePropertiesWithSubprops = {
         type: 'IMAGE',
-        data: urlPath+"/"+plotName,
+        data: urlPath,
         meaning: 'PLOT',
       };
       const changeReq: StyleInsertRequest = {
