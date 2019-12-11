@@ -17,7 +17,6 @@ You should have received a copy of the GNU Affero General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-// REVIEW: Doesn't belong in observers folder as it is not an observer.
 // Requirements
 
 import * as debug1 from 'debug';

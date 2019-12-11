@@ -177,7 +177,7 @@ describe("test symbol observer", function() {
       // console.log(latexInput);
       assert(latexInput.length > 10,"The latex file should be at least 10 characters long:"+latexInput);
 
-      const path = "basictest";
+      const path = "test/tmp/basictest";
 
       writeLaTeX(latexInput,path);
       const input = fs.createReadStream(path+".tex")
