@@ -22,8 +22,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 import * as debug1 from 'debug';
 import {
   NotebookChange, StyleObject, StyleMeaning, FindStyleOptions, StyleType,
-  styleMatchesPattern,
-  StyleProperties
+  styleMatchesPattern, StyleProperties
 } from '../../client/notebook';
 import { NotebookChangeRequest } from '../../client/math-tablet-api';
 import { ObserverInstance, ServerNotebook }  from '../server-notebook';
@@ -34,11 +33,15 @@ const debug = debug1(`server:${MODULE}`);
 
 // Types
 
+type StyleTestFunction = (notebook: ServerNotebook, style: StyleObject)=>boolean;
+
+type StyleTest  = FindStyleOptions|StyleTestFunction;
+
 export type Rules = Rule[];
 
 interface Rule {
   name: string;   // Rule name for debugging.
-  parentStylePattern: FindStyleOptions;
+  parentStyleTest: StyleTest;
   meaning: StyleMeaning;
   type: StyleType;
   computeSync?: (parentData: /* TYPESCRIPT: */any)=>/* TYPESCRIPT: */any|undefined;
@@ -85,7 +88,7 @@ export abstract class BaseObserver implements ObserverInstance {
         if (change.type != 'styleChanged' && change.type != 'styleInserted') { continue; }
         debug(`Processing change: `, change);
         const style = change.style;
-        if (!styleMatchesPattern(style, rule.parentStylePattern)) { break; }
+        if (!styleMatchesTest(this.notebook, style, rule.parentStyleTest)) { break; }
         const data = await rule.computeAsync(style.data);
         const substyle = (change.type == 'styleChanged' && this.notebook.findStyle({ meaning: rule.meaning, type: rule.type}, style.id));
         let changeRequest: NotebookChangeRequest|undefined;
@@ -135,7 +138,7 @@ export abstract class BaseObserver implements ObserverInstance {
         if (change.type != 'styleChanged' && change.type != 'styleInserted') { continue; }
         debug(`onChangeSync ${this.notebook._path} ${change.type}`);
         const style = change.style;
-        if (!styleMatchesPattern(style, rule.parentStylePattern)) { break; }
+        if (!styleMatchesTest(this.notebook, style, rule.parentStyleTest)) { break; }
         const data = rule.computeSync(style.data);
         const substyle = (change.type == 'styleChanged' && this.notebook.findStyle({ meaning: rule.meaning, type: rule.type}, style.id));
         let changeRequest: NotebookChangeRequest|undefined;
@@ -180,7 +183,6 @@ export abstract class BaseObserver implements ObserverInstance {
 
   // --- PRIVATE ---
 
-
   // Private Constructor
 
   protected constructor(notebook: ServerNotebook) {
@@ -189,8 +191,14 @@ export abstract class BaseObserver implements ObserverInstance {
 
   // Private Instance Properties
 
-  private notebook: ServerNotebook;
+  protected notebook: ServerNotebook;
 
   // Private Instance Methods
 
+}
+
+// Helper Functions
+
+function styleMatchesTest(notebook: ServerNotebook, style: StyleObject, test: StyleTest): boolean {
+  return (typeof test == 'function' ? test(notebook, style) : styleMatchesPattern(style, test));
 }

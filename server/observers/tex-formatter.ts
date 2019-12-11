@@ -28,7 +28,7 @@ import {  NotebookChangeRequest, StyleInsertRequest,
           StyleDeleteRequest, StylePropertiesWithSubprops,
        } from '../../client/math-tablet-api';
 import { ServerNotebook, ObserverInstance } from '../server-notebook';
-import { findTeXForm, constructSubstitution
+import { convertWolframToTeX, constructSubstitution
        } from './wolframscript';
 import { Config } from '../config';
 
@@ -235,13 +235,13 @@ export class TeXFormatterObserver implements ObserverInstance {
                             usedSymbols.map(
                               s => ({ name: s.data.name,
                                       value: s.data.value})));
-    const texrhs : string = await findTeXForm(sub_expr_rhs);
+    const texrhs : string = await convertWolframToTeX(sub_expr_rhs);
 
     var tex_def = null;
     if (style.type == 'SYMBOL' && style.meaning == 'SYMBOL-DEFINITION') {
       tex_def = style.data.name + " = " + texrhs;
     } else if (style.type == 'EQUATION' && style.meaning == 'EQUATION-DEFINITION') {
-      const texlhs : string = await findTeXForm(sub_expr_lhs);
+      const texlhs : string = await convertWolframToTeX(sub_expr_lhs);
       if (texrhs && texlhs) {
         tex_def = texlhs + " = " + texrhs
       } // otherwise tex_def remains null and will not be pushed...

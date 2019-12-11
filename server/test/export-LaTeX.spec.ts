@@ -77,10 +77,11 @@ function writeLaTeX(latex : LatexData,path: string) {
   // @ts-ignore
   fs.writeFile(path+".tex", latex, (err) => {
     // throws an error, you could also catch it here
+    // REVIEW: Where is this exception being caught?
     if (err) throw err;
 
     // success case, the file was saved
-    console.log('LaTeX Saved!');
+    // console.log('LaTeX Saved!');
   });
 }
 
@@ -95,9 +96,10 @@ function writePDFfromStream(input,path: string) {
   pdf.pipe(output);
   // @ts-ignore
   pdf.on('error', err => { console.error(err);
+                           // REVIEW: Where is this exception being caught?
                            throw err;
                          })
-  pdf.on('finish', () => console.log('PDF generated!'))
+  // pdf.on('finish', () => console.log('PDF generated!'))
 }
 
 
@@ -172,7 +174,7 @@ describe("test symbol observer", function() {
       const changeRequests = generateInsertRequests(data);
       await notebook.requestChanges('TEST', [changeRequests[0]]);
       const latexInput = notebook.exportLatex();
-      console.log(latexInput);
+      // console.log(latexInput);
       assert(latexInput.length > 10,"The latex file should be at least 10 characters long:"+latexInput);
 
       const path = "basictest";

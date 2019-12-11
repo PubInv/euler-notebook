@@ -24,7 +24,7 @@ import * as debug1 from 'debug';
 import { StyleObject, NotebookChange, StyleId, RelationshipProperties } from '../../client/notebook';
 import { NotebookChangeRequest, StyleInsertRequest, StyleDeleteRequest, StylePropertiesWithSubprops, RelationshipInsertRequest, isEmptyOrSpaces } from '../../client/math-tablet-api';
 import { ServerNotebook, ObserverInstance } from '../server-notebook';
-import { execute, convertTeXtoWolfram, constructSubstitution, checkEquiv, NVPair } from './wolframscript';
+import { execute, constructSubstitution, checkEquiv, NVPair } from './wolframscript';
 // import * as fs from 'fs';
 import { Config } from '../config';
 
@@ -227,7 +227,6 @@ export class MathematicaObserver implements ObserverInstance {
           debug("styleInserted : style",change.style);
           rval = rval.concat(
             await this.convertMathMlToWolframRule(change.style),
-            await this.convertTexToWolframRule(change.style),
             await this.checkEquivalenceRule(change.style),
           );
           break;
@@ -284,62 +283,6 @@ export class MathematicaObserver implements ObserverInstance {
       };
       rval.push(cr);
 
-    } catch(err) {
-      const styleProps: StylePropertiesWithSubprops = {
-        type: 'TEXT',
-        meaning: 'EVALUATION-ERROR',
-        data: `Cannot convert to Wolfram expression: ${err.message}`,
-        exclusiveChildTypeAndMeaning: true,
-      };
-      const cr: StyleInsertRequest = {
-        type: 'insertStyle',
-        parentId: style.id,
-        styleProps,
-      };
-      rval.push(cr);
-    }
-
-    return rval;
-  }
-
-
-  // We have to be careful here not to create a loop,
-  // since we also convert Wolfram to TeX for rendering.
-  // One approach to this is to apply this rule ONLY
-  // if the INPUT-ALT whose parent is in fact a top-level-thought.
-  private async convertTexToWolframRule(style: StyleObject): Promise<NotebookChangeRequest[]> {
-
-    const rval: NotebookChangeRequest[] = [];
-
-    if (style.type != 'LATEX') { return []; }
-    if (style.meaning!='INPUT' && style.meaning!='INPUT-ALT') { return []; }
-    if (style.parentId) {
-      const parentStyle = this.notebook.getStyleById(style.parentId);
-      if (parentStyle.parentId) { return []; }
-      if (parentStyle.type == 'WOLFRAM') { return []; }
-    }
-
-    const latex = style.data;
-    debug("latex",latex);
-    try {
-      const wolframexpr = await convertTeXtoWolfram(latex);
-      const styleProps: StylePropertiesWithSubprops = {
-        type: 'WOLFRAM',
-        meaning: 'INPUT-ALT',
-        data: wolframexpr,
-        exclusiveChildTypeAndMeaning: true,
-      };
-      debug("parentId",style.parentId);
-      const cr: StyleInsertRequest = {
-        type: 'insertStyle',
-        // WARNING! This is an example of a rule
-        // adding a sibling rather than a descendent.
-        // This violates a possible best practice;
-        // however, we have not determined a policy on this yet. -rlr
-        parentId: style.parentId,
-        styleProps,
-      };
-      rval.push(cr);
     } catch(err) {
       const styleProps: StylePropertiesWithSubprops = {
         type: 'TEXT',

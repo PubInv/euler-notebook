@@ -22,9 +22,10 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 import debug1 from 'debug';
 
 import { BaseObserver, Rules } from './base-observer';
-import { execute, findTeXForm } from './wolframscript';
+import { convertTeXtoWolfram, execute, convertWolframToTeX } from './wolframscript';
 import { ServerNotebook } from '../server-notebook';
 import { WolframData, LatexData, isEmptyOrSpaces } from '../../client/math-tablet-api';
+import { StyleObject } from '../../client/notebook';
 
 const MODULE = __filename.split(/[/\\]/).slice(-1)[0].slice(0,-3);
 const debug = debug1(`server:${MODULE}`);
@@ -52,15 +53,23 @@ export class WolframObserver extends BaseObserver {
 
   private static RULES: Rules = [
     {
+      // TODO: Add style as peer, not child
+      name: "tex-to-wolfram",
+      parentStyleTest: WolframObserver.isConvertibleLatexStyle,
+      meaning: 'INPUT-ALT',
+      type: 'WOLFRAM',
+      computeAsync: WolframObserver.ruleConvertTexToWolfram,
+    },
+    {
       name: "wolfram-to-tex",
-      parentStylePattern: { meaning: 'INPUT', type: 'WOLFRAM' },
+      parentStyleTest: { meaning: 'INPUT', type: 'WOLFRAM' },
       meaning: 'INPUT-ALT',
       type: 'LATEX',
       computeAsync: WolframObserver.ruleConvertWolframToTex,
     },
     {
       name: "evaluate-wolfram",
-      parentStylePattern: { meaning: /^(INPUT|INPUT-ALT)$/, type: 'WOLFRAM' },
+      parentStyleTest: { meaning: /^(INPUT|INPUT-ALT)$/, type: 'WOLFRAM' },
       // parentStylePattern: { meaning: 'INPUT', type: 'WOLFRAM' },
       meaning: 'EVALUATION',
       type: 'WOLFRAM',
@@ -70,11 +79,29 @@ export class WolframObserver extends BaseObserver {
 
   // Private Class Methods
 
+  private static isConvertibleLatexStyle(notebook: ServerNotebook, style: StyleObject): boolean {
+    if (style.type != 'LATEX') { return false; }
+    if (style.meaning!='INPUT' && style.meaning!='INPUT-ALT') { return false; }
+    if (style.parentId) {
+      const parentStyle = notebook.getStyleById(style.parentId);
+      if (parentStyle.parentId) { return false; }
+      if (parentStyle.type == 'WOLFRAM') { return false; }
+    }
+    return true;
+  }
+
+  private static async ruleConvertTexToWolfram(data: LatexData): Promise<WolframData|undefined> {
+    // REVIEW: If conversion fails?
+    return data ? await convertTeXtoWolfram(data) : undefined;
+  }
+
   private static async ruleConvertWolframToTex(data: WolframData): Promise<LatexData|undefined> {
-    return data ? await findTeXForm(data) : undefined;
+    // REVIEW: If conversion fails?
+    return data ? await convertWolframToTeX(data) : undefined;
   }
 
   private static async ruleEvaluateWolframExpr(expr: WolframData) : Promise<WolframData|undefined> {
+    // REVIEW: If evaluation fails?
     debug(`Evaluating: "${expr}".`);
     let rval: WolframData|undefined;
     if (isEmptyOrSpaces(expr)) {

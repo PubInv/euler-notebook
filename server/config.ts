@@ -32,7 +32,7 @@ const readFile2 = promisify(readFile);
 export interface Config {
   mathematica?: MathematicaConfig;
   mathjs?: {};
-  nodeLatex: NoteLatexConfig;
+  nodeLatex?: NoteLatexConfig;
   wolframscript?: WolframScriptConfig;
 }
 
@@ -70,7 +70,7 @@ export async function loadConfig(): Promise<Config> {
   if (!globalConfig) {
     globalConfig = await getJsonFileFromConfigDir<Config>(CONFIG_FILENAME);
   } else {
-    console.warn("Loading config file multiple times.");
+    console.warn("WARNING: Loading config file multiple times.");
   }
   return globalConfig;
 }
@@ -79,7 +79,7 @@ export async function loadCredentials(): Promise<Credentials> {
   if (!globalCredentials) {
     globalCredentials = await getJsonFileFromConfigDir<Credentials>(CREDENTIALS_FILENAME);
   } else {
-    console.warn("Loading credentials file multiple times.");
+    console.warn("WARNING: Loading credentials file multiple times.");
   }
   return globalCredentials;
 }

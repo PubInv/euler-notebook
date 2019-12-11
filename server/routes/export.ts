@@ -126,7 +126,7 @@ async function onExportPage(req: Request, res: Response, next: NextFunction): Pr
           }
           res.render('expected-error', locals);
         });
-        pdf.on('finish', ()=> console.log('PDF generated!'));
+        // pdf.on('finish', ()=> console.log('PDF generated!'));
         break;
       }
       default:

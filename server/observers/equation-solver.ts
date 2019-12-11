@@ -34,7 +34,7 @@ import { ToolInfo, NotebookChangeRequest, StyleInsertRequest, StylePropertiesWit
        } from '../../client/math-tablet-api';
 import { ServerNotebook, ObserverInstance } from '../server-notebook';
 import { execute,
-         findTeXForm
+         convertWolframToTeX
        } from './wolframscript';
 import { Config } from '../config';
 
@@ -224,8 +224,8 @@ export class EquationSolverObserver implements ObserverInstance {
     // the official solution is....though it remains unparsed
     // Although it make some time, I want the "Tex" format for the tool tip here, and
     // I have no recourse but to go get it...
-    const lhs : string = await findTeXForm(sol.name);
-    const rhs : string = await findTeXForm(sol.value);
+    const lhs : string = await convertWolframToTeX(sol.name);
+    const rhs : string = await convertWolframToTeX(sol.value);
     debug("Equation Solver Tex", lhs,rhs);
     const tex_def = lhs + " = " + rhs;
 
