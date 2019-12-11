@@ -70,10 +70,10 @@ export class DrawingCellView extends CellView {
       appendTo: this.$elt,
       class: 'formulaRow',
     });
-    $new<HTMLDivElement>('div', { class: 'handle', html: `(${style.id})`, appendTo: $formulaRow });
-    $new<HTMLDivElement>('div', { class: 'status', html: "&nbsp;", appendTo: $formulaRow });
     this.$formula = $new<HTMLDivElement>('div', { class: 'formula', appendTo: $formulaRow });
     this.$tools = $new<HTMLDivElement>('div', { class: 'tools', appendTo: $formulaRow });
+    $new<HTMLDivElement>('div', { class: 'handle', html: `(${style.id})`, appendTo: $formulaRow });
+    $new<HTMLDivElement>('div', { class: 'status', html: "&nbsp;", appendTo: $formulaRow });
 
     this.$canvas = $newSvg<SVGSVGElement>('svg', {
       appendTo: this.$elt,
