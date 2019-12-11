@@ -24,7 +24,7 @@ import * as debug1 from 'debug';
 import { StyleObject, NotebookChange, StyleId, RelationshipProperties } from '../../client/notebook';
 import { NotebookChangeRequest, StyleInsertRequest, StyleDeleteRequest, StylePropertiesWithSubprops, RelationshipInsertRequest, isEmptyOrSpaces } from '../../client/math-tablet-api';
 import { ServerNotebook, ObserverInstance } from '../server-notebook';
-import { execute, constructSubstitution, checkEquiv, NVPair } from './wolframscript';
+import { execute, constructSubstitution, checkEquiv, NVPair } from '../wolframscript';
 // import * as fs from 'fs';
 import { Config } from '../config';
 

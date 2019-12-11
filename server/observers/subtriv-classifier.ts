@@ -28,7 +28,7 @@ import { ToolInfo, NotebookChangeRequest, StyleInsertRequest, StylePropertiesWit
 
 import { absDirPathFromNotebookPath } from '../files-and-folders';
 import { ServerNotebook, ObserverInstance } from '../server-notebook';
-import { execute, constructSubstitution} from './wolframscript';
+import { execute, constructSubstitution} from '../wolframscript';
 import { Config } from '../config';
 // import * as uuid from 'uuid-js';
 // import uuid = require('uuid');

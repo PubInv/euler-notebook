@@ -35,7 +35,7 @@ import { ToolInfo, NotebookChangeRequest, StyleInsertRequest, StylePropertiesWit
 import { ServerNotebook, ObserverInstance } from '../server-notebook';
 import { execute,
          convertWolframToTeX
-       } from './wolframscript';
+       } from '../wolframscript';
 import { Config } from '../config';
 
 
@@ -163,10 +163,10 @@ export class EquationSolverObserver implements ObserverInstance {
       let rhsvarstr = await execute(rhsScript);
 
       let lhsvs = (lhsvarstr) ? lhsvarstr.replace(/\{|\}/g,"").split(",") : [];
-      lhsvs = lhsvs.map(s => s.trim());
+      lhsvs = lhsvs.map((s:string) => s.trim());
 
       let rhsvs = (rhsvarstr) ? rhsvarstr.replace(/\{|\}/g,"").split(",") : [];
-      rhsvs = rhsvs.map(s => s.trim());
+      rhsvs = rhsvs.map((s:string) => s.trim());
       variables = [...lhsvs,...rhsvs];
       variables = variables.filter( ele => (ele.length > 0));
 
@@ -200,9 +200,9 @@ export class EquationSolverObserver implements ObserverInstance {
         debug("res",res);
         const solutions = res.split(",");
         debug("solutions",solutions);
-        const allsols = solutions.map(x => x.trim().slice(1,-1));
+        const allsols = solutions.map((x:string) => x.trim().slice(1,-1));
         debug("allsols",allsols);
-        allsols.map(s => {
+        allsols.map((s:string) => {
           const ss = s.split("->");
           // console.log("ss[0],ss[1]",ss[0],"=",ss[1]);
           const nvp : NameValuePair =

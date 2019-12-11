@@ -40,7 +40,7 @@ import {
 import {
   readNotebookFile, AbsDirectoryPath, absDirPathFromNotebookPath, writeNotebookFile,
 } from './files-and-folders';
-import { constructSubstitution } from './observers/wolframscript';
+import { constructSubstitution } from './wolframscript';
 import { ClientObserver } from './observers/client-observer';
 import { ClientId } from './client-socket';
 

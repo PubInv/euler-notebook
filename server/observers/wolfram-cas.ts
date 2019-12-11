@@ -22,7 +22,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 import debug1 from 'debug';
 
 import { BaseObserver, Rules } from './base-observer';
-import { convertTeXtoWolfram, execute, convertWolframToTeX } from './wolframscript';
+import { convertTeXtoWolfram, execute, convertWolframToTeX } from '../wolframscript';
 import { ServerNotebook } from '../server-notebook';
 import { WolframData, LatexData, isEmptyOrSpaces } from '../../client/math-tablet-api';
 import { StyleObject } from '../../client/notebook';

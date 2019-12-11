@@ -32,7 +32,7 @@ TODO: Additional Test cases
 
 // Requirements
 
-import { execute, start, stop, checkEquiv, convertTeXtoWolfram } from '../observers/wolframscript';
+import { execute, start, stop, checkEquiv, convertTeXtoWolfram } from '../wolframscript';
 
 // import { expect } from 'chai';
 import { assert } from 'chai';

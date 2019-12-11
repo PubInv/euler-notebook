@@ -32,7 +32,7 @@ import * as morgan from 'morgan';
 import { middleware as stylusMiddleware } from 'stylus';
 
 import { initialize as initializeObservers } from './observers';
-import { start as startWolframscript } from './observers/wolframscript';
+import { start as startWolframscript } from './wolframscript';
 import { ClientSocket } from './client-socket';
 import { rootDir as notebookRootDir } from './files-and-folders';
 import { loadConfig, loadCredentials} from './config';

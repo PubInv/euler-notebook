@@ -29,7 +29,7 @@ import {  NotebookChangeRequest, StyleInsertRequest,
        } from '../../client/math-tablet-api';
 import { ServerNotebook, ObserverInstance } from '../server-notebook';
 import { convertWolframToTeX, constructSubstitution
-       } from './wolframscript';
+       } from '../wolframscript';
 import { Config } from '../config';
 
 // Exported Class

@@ -36,7 +36,7 @@ import { SymbolData, WolframData, NotebookChangeRequest, StyleInsertRequest,
 //         RelationshipDeleteRequest
        } from '../../client/math-tablet-api';
 import { ServerNotebook, ObserverInstance } from '../server-notebook';
-import { execute as executeWolframscript, draftChangeContextName } from './wolframscript';
+import { execute as executeWolframscript, draftChangeContextName } from '../wolframscript';
 import { Config } from '../config';
 
 export class SymbolClassifierObserver implements ObserverInstance {

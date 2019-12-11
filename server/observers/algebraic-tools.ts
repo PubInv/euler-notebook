@@ -26,7 +26,7 @@ const debug = debug1(`server:${MODULE}`);
 import { NotebookChange, StyleObject } from '../../client/notebook';
 import { ToolInfo, NotebookChangeRequest, StyleInsertRequest, StylePropertiesWithSubprops } from '../../client/math-tablet-api';
 import { ServerNotebook, ObserverInstance } from '../server-notebook';
-import { execute} from './wolframscript';
+import { execute} from '../wolframscript';
 import { Config } from '../config';
 
 export class AlgebraicToolsObserver implements ObserverInstance {

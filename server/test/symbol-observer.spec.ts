@@ -42,7 +42,7 @@ import { MathematicaObserver } from '../observers/mathematica-cas';
 import { TeXFormatterObserver } from '../observers/tex-formatter';
 import { AnyInputObserver } from '../observers/any-input';
 import { WolframObserver } from '../observers/wolfram-cas';
-import { start as startWolframscript } from '../observers/wolframscript';
+import { start as startWolframscript } from '../wolframscript';
 import { Config, loadConfig } from '../config';
 
 // Test Observer
