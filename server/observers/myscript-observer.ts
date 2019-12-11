@@ -25,7 +25,7 @@ import { NotebookChange, StyleObject, StyleChanged, DrawingData, StyleId } from 
 import { NotebookChangeRequest, LatexData } from '../../client/math-tablet-api';
 
 import { Config } from '../config';
-import { ServerKeys, Stroke, postLatexRequest } from '../myscript-batch-api';
+import { ServerKeys, postLatexRequest } from '../myscript-batch-api';
 import { ObserverInstance, ServerNotebook }  from '../server-notebook';
 
 const MODULE = __filename.split(/[/\\]/).slice(-1)[0].slice(0,-3);
@@ -51,12 +51,20 @@ export class MyScriptObserver implements ObserverInstance {
   // Instance Methods
 
   public async onChangesAsync(changes: NotebookChange[]): Promise<NotebookChangeRequest[]> {
-    for (const change of changes) { this.onChange(change); }
+    for (const change of changes) {
+      if (!change) { continue; } // REVIEW: We shouldn't have null changes.
+      this.onChangeAsync(change);
+    }
     return [];
   }
 
-  public onChangesSync(_changes: NotebookChange[]): NotebookChangeRequest[] {
-    return [];
+  public onChangesSync(changes: NotebookChange[]): NotebookChangeRequest[] {
+    const rval = <NotebookChangeRequest[]>[];
+    for (const change of changes) {
+      if (!change) { continue; } // REVIEW: We shouldn't have null changes.
+      // this.onChangeSync(change, rval);
+    }
+    return rval;
   }
 
   public async onClose(): Promise<void> {
@@ -138,11 +146,8 @@ export class MyScriptObserver implements ObserverInstance {
 
   private async recognizeStrokes(data: DrawingData): Promise<LatexData> {
     // REVIEW: Are there fractional x and y values? Should we store strokes rounded already?
-    // TODO: Store strokes in MyScript format so we don't need to map.
-    const strokes: Stroke[] = data.strokes.map(s=>({ x: s.x.map(Math.round), y: s.y.map(Math.round) }));
     // const jiix = await postJiixRequest(MyScriptObserver.keys, batchRequest);
-    //console.log(JSON.stringify(jiix));
-    const latex = await postLatexRequest(MyScriptObserver.keys, strokes);
+    const latex = await postLatexRequest(MyScriptObserver.keys, data.strokeGroups);
     // console.dir(latex);
     return latex;
   }
@@ -156,11 +161,8 @@ export class MyScriptObserver implements ObserverInstance {
     this.addStyleToQueue(style.id, style.data);
   }
 
-  private onChange(change: NotebookChange): void {
-    // REVIEW: We shouldn't have null changes.
-    if (!change) { return; }
-
-    // debug(`onChange ${this.notebook._path} ${change.type}`);
+  private onChangeAsync(change: NotebookChange): void {
+    // debug(`onChangeAsync ${this.notebook._path} ${change.type}`);
     switch (change.type) {
       case 'styleChanged':  this.chStyleChanged(change); break;
       //case 'styleDeleted':  this.chStyleDeleted(change); break;
@@ -168,6 +170,16 @@ export class MyScriptObserver implements ObserverInstance {
       default: break;
     }
   }
+
+  // private onChangeSync(change: NotebookChange, rval: NotebookChangeRequest[]): void {
+  //   // debug(`onChangeSync ${this.notebook._path} ${change.type}`);
+  //   switch (change.type) {
+  //     case 'styleChanged':  this.chStyleChanged(change); break;
+  //     //case 'styleDeleted':  this.chStyleDeleted(change); break;
+  //     //case 'styleInserted': this.chStyleInserted(change); break;
+  //     default: break;
+  //   }
+  // }
 
 }
 

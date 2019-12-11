@@ -160,7 +160,9 @@ export class NotebookView {
 
     const data: DrawingData = {
       size: { height: '1in', width: '6.5in' },
-      strokes: [],
+      strokeGroups: [
+        { strokes: [] }
+      ],
     };
     const styleProps: StylePropertiesWithSubprops = { type: 'DRAWING', meaning: 'INPUT', data };
     const changeRequest: StyleInsertRequest = { type: 'insertStyle', afterId, styleProps };

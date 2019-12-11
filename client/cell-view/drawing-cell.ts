@@ -118,8 +118,10 @@ export class DrawingCellView extends CellView {
   private renderStrokes(style: StyleObject): void {
     this.$canvas.innerHTML = '';
     const data: DrawingData = style.data;
-    for (const strokeData of data.strokes) {
-      SvgStroke.create(this.$canvas, strokeData);
+    for (const strokeGroup of data.strokeGroups) {
+      for (const stroke of strokeGroup.strokes) {
+        SvgStroke.create(this.$canvas, stroke);
+      }
     }
   }
 
@@ -262,7 +264,7 @@ export class DrawingCellView extends CellView {
     delete pi.stroke;
 
     const data: DrawingData = this.notebookView.openNotebook.getStyleById(this.styleId).data;
-    data.strokes.push(stroke.data); // REVIEW: Modifying existing data in place???
+    data.strokeGroups[0].strokes.push(stroke.data); // REVIEW: Modifying existing data in place???
 
     this.notebookView.changeStyle(this.styleId, data)
     .catch(err=>{

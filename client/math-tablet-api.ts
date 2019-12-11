@@ -17,6 +17,9 @@ You should have received a copy of the GNU Affero General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
+// TODO: Version the client/server API so if they get out of sync the user gets an error
+//       message instead of a server or client crash.
+
 // Requirements
 
 import { RelationshipProperties, StyleProperties, StyleId, NotebookChange, NotebookObject, StyleRelativePosition } from './notebook.js';
@@ -28,6 +31,7 @@ export type LatexData = string;
 export type MathJsData = string;
 export type MathMlData = string;
 export type MthMtcaData = string;
+export type SvgData = string;
 export type Symbol = string;
 export type TextData = string;
 export type Tracker = string; // Tracking identifier supplied by the client.

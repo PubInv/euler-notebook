@@ -38,20 +38,12 @@ export interface RenderResult {
 // Constants
 
 const RENDERERS = new Map<StyleType, Renderer>([
-  [ 'HTML', htmlRenderer ],
-  // [ 'IMAGE', ],
-  // [ 'JIIX',  ],
-  [ 'LATEX', latexRenderer ],
-  // [ 'CLASSIFICATION',    // DEPRECATED: A classifcication of the style.
-  [ 'MATHJS', /* TODO: */ textRenderer  ],
-  [ 'MATHML', /* TODO: */ textRenderer ],
-  // [ 'STROKE', ],
-  // [ 'SYMBOL', ],
-  // [ 'SOLUTION', ],
-  // [ 'EQUATION',  ],
-  [ 'TEXT', textRenderer ],
-  // [ 'TOOL',  ],
-  [ 'WOLFRAM', /* TODO: */ textRenderer ],
+  [ 'HTML',     htmlRenderer ],
+  [ 'LATEX',    latexRenderer ],
+  [ 'MATHJS',   /* TODO: */ textRenderer  ],
+  [ 'MATHML',   /* TODO: */ textRenderer ],
+  [ 'TEXT',     textRenderer ],
+  [ 'WOLFRAM',  /* TODO: */ textRenderer ],
 ]);
 
 // Exported Functions

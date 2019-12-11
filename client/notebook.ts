@@ -30,16 +30,23 @@ export interface CssSize {
 
 export interface DrawingData {
   size: CssSize;
-  strokes: StrokeData[];
+  strokeGroups: StrokeGroup[];
 }
 
-export interface StrokeData {
+export interface Stroke {
+  // id?: string;
+  // p?: number[];
+  // pointerId?: number;
+  // pointerType?: 'PEN'|'TOUCH'|'ERASER';
+  // t?: number[];
   x: number[];
   y: number[];
-  t: number[]; // TYPESCRIPT: Timestamp
-  p: number[];  // Pressure
-  tx: number[]; // Tilt
-  ty: number[];
+}
+
+export interface StrokeGroup {
+  // penStyle?: string;
+  // penStyleClasses?: string;
+  strokes: Stroke[];
 }
 
 
@@ -197,9 +204,9 @@ export const STYLE_TYPES = [
   'CLASSIFICATION',  // DEPRECATED: A classifcication of the style.
   'MATHJS',          // MathJsData: MathJS plain text expression
   'MATHML',          // MathMlData: MathML Presentation XML
-  'STROKE',          // StrokeGroups: MyScript strokeGroups export from 'TEXT' editor.
   'SYMBOL',          // SymbolData: symbol in a definition or expression.
   'SOLUTION',        // The result of a "solve" operation
+  'SVG',             // SvgData: SVG markup
   'EQUATION',        // An equation (ambiguously assertion or relation)
   'TEXT',            // TextData: Plain text
   'TOOL',            // ToolInfo: Tool that can be applied to the parent style.
@@ -216,6 +223,7 @@ export const STYLE_SOURCES = [
   'SUBTRIV-CLASSIFIER',
   'ALGEBRAIC-TOOLS',  // Algebraic tools provided by Wolfram
   'EQUATION-SOLVER',  // Attempt to expose Wolfram solutions
+  'SVG',              // SVG observer
   'SYMBOL-CLASSIFIER',
   'TEX-FORMATTER',
   'ANY-INPUT',        // This represents ANY input, no matter the type enterred.
@@ -228,7 +236,7 @@ export type StyleSource = typeof STYLE_SOURCES[number];
 
 // Constants
 
-export const VERSION = "0.0.8";
+export const VERSION = "0.0.9";
 
 // Exported Class
 

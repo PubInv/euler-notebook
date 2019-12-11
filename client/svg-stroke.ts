@@ -20,7 +20,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 // Requirements
 
 import { $newSvg } from './dom.js';
-import { StrokeData } from './notebook.js';
+import { Stroke } from './notebook.js';
 
 // Types
 
@@ -30,13 +30,13 @@ export class SvgStroke {
 
   // Class Methods
 
-  public static create($svg: SVGSVGElement, data?: StrokeData): SvgStroke {
+  public static create($svg: SVGSVGElement, data?: Stroke): SvgStroke {
     return new this($svg, data);
   }
 
   // Instance Properties
 
-  public data: StrokeData;
+  public data: Stroke;
 
   // Instance Methods
 
@@ -67,7 +67,7 @@ export class SvgStroke {
 
   // Private Constructor
 
-  private constructor($svg: SVGSVGElement, data?: StrokeData) {
+  private constructor($svg: SVGSVGElement, data?: Stroke) {
     this.$path = $newSvg<SVGPathElement>('path', {
       // attrs: { d: this.pathData },
       appendTo: $svg,
@@ -83,7 +83,7 @@ export class SvgStroke {
         this.updatePathAttribute();
       }
     } else {
-      this.data = { x: [], y: [], t: [], p: [], tx: [], ty: [] };
+      this.data = { x: [], y: [], /* TODO: t: [], p: [], tx: [], ty: [] */};
     }
   }
 
@@ -101,10 +101,10 @@ export class SvgStroke {
   private pushEventCoordinates(event: PointerEvent, clientRect: ClientRect): void {
     this.data.x.push(event.clientX - clientRect.left);
     this.data.y.push(event.clientY - clientRect.top);
-    this.data.t.push(Date.now());
-    this.data.p.push(event.pressure);
-    this.data.tx.push(event.tiltX);
-    this.data.ty.push(event.tiltY);
+    // this.data.t.push(Date.now());
+    // this.data.p.push(event.pressure);
+    // this.data.tx.push(event.tiltX);
+    // this.data.ty.push(event.tiltY);
   }
 
   private startPath(x: number, y: number): void {

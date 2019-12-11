@@ -37,9 +37,7 @@ export class WolframObserver extends BaseObserver {
 
   // --- OVERRIDES ---
 
-  protected get rules(): Rules {
-    return WolframObserver.RULES;
-  }
+  protected get rules(): Rules { return WolframObserver.RULES; }
 
   // --- PUBLIC ---
 

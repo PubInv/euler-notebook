@@ -30,7 +30,8 @@ const HmacSHA512 = require('crypto-js/hmac-sha512');
 import * as debug1 from 'debug';
 import fetch, { Response } from 'node-fetch';
 
-import { LatexData } from '..//client/math-tablet-api';
+import { StrokeGroup } from '../client/notebook';
+import { LatexData } from '../client/math-tablet-api';
 
 const MODULE = __filename.split(/[/\\]/).slice(-1)[0].slice(0,-3);
 const debug = debug1(`server:${MODULE}`);
@@ -123,22 +124,6 @@ export interface ServerKeys {
   hmacKey: string;
 }
 
-export interface Stroke {
-  // id?: string;
-  // p?: number[];
-  // pointerId?: number;
-  // pointerType?: 'PEN'|'TOUCH'|'ERASER';
-  // t?: number[];
-  x: number[];
-  y: number[];
-}
-
-interface StrokeGroup {
-  // penStyle?: string;
-  // penStyleClasses?: string;
-  strokes: Stroke[];
-}
-
 interface SolverConfiguration {
   enable: boolean;
   'fractional-part-digits': number;
@@ -155,9 +140,9 @@ const MYSCRIPT_BATCH_API_URL = 'https://webdemoapi.myscript.com/api/v4.0/iink/ba
 
 // Exported Functions
 
-export async function postJiixRequest(keys: ServerKeys, strokes: Stroke[]): Promise<Jiix> {
+export async function postJiixRequest(keys: ServerKeys, strokeGroups: StrokeGroup[]): Promise<Jiix> {
   debug(`Calling MyScript batch API for JIIX.`);
-  const batchRequest = batchRequestFromStrokes(strokes);
+  const batchRequest = batchRequestFromStrokes(strokeGroups);
   const bodyText = await postRequest(keys, JIIX_MIME_TYPE, batchRequest);
   const jiix: Jiix|ErrorResponse = JSON.parse(bodyText);
   if (isErrorResponse(jiix)) { throwRequestError(jiix); }
@@ -166,9 +151,9 @@ export async function postJiixRequest(keys: ServerKeys, strokes: Stroke[]): Prom
   return <Jiix>jiix;
 }
 
-export async function postLatexRequest(keys: ServerKeys, strokes: Stroke[]): Promise</* TYPESCRIPT: LatexString */string> {
+export async function postLatexRequest(keys: ServerKeys, strokeGroups: StrokeGroup[]): Promise</* TYPESCRIPT: LatexString */string> {
   debug(`Calling MyScript batch API for LaTeX.`);
-  const batchRequest = batchRequestFromStrokes(strokes);
+  const batchRequest = batchRequestFromStrokes(strokeGroups);
   const bodyText = await postRequest(keys, LATEX_MIME_TYPE, batchRequest);
   if (bodyText[0]=='{') {
     try {
@@ -186,7 +171,7 @@ export async function postLatexRequest(keys: ServerKeys, strokes: Stroke[]): Pro
 
 // Helper Functions
 
-function batchRequestFromStrokes(strokes: Stroke[]): BatchRequest {
+function batchRequestFromStrokes(strokeGroups: StrokeGroup[]): BatchRequest {
   const rval: BatchRequest = {
     configuration: {
       math: {
@@ -220,7 +205,7 @@ function batchRequestFromStrokes(strokes: Stroke[]): BatchRequest {
       }
     },
     contentType: 'Math',
-    strokeGroups: [ { strokes } ],
+    strokeGroups,
     xDPI: 96,
     yDPI: 96,
   };
