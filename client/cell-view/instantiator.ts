@@ -38,7 +38,6 @@ export function createCellView(notebookView: NotebookView, style: StyleObject): 
         case 'DRAWING':
             rval = DrawingCellView.create(notebookView, style); break;
         case 'LATEX':
-        case 'MATHJS':
         case 'MATHML':
         case 'WOLFRAM':
           rval = FormulaCellView.create(notebookView, style); break;

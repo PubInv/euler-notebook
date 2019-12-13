@@ -40,7 +40,6 @@ export interface RenderResult {
 const RENDERERS = new Map<StyleType, Renderer>([
   [ 'HTML',     htmlRenderer ],
   [ 'LATEX',    latexRenderer ],
-  [ 'MATHJS',   /* TODO: */ textRenderer  ],
   [ 'MATHML',   /* TODO: */ textRenderer ],
   [ 'TEXT',     textRenderer ],
   [ 'WOLFRAM',  /* TODO: */ textRenderer ],

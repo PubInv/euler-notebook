@@ -202,7 +202,6 @@ export const STYLE_TYPES = [
   'JIIX',            // Jiix: MyScript JIIX export from 'MATH' editor.
   'LATEX',           // LatexData: LaTeX string // TODO: rename 'TEX'
   'CLASSIFICATION',  // DEPRECATED: A classifcication of the style.
-  'MATHJS',          // MathJsData: MathJS plain text expression
   'MATHML',          // MathMlData: MathML Presentation XML
   'SYMBOL',          // SymbolData: symbol in a definition or expression.
   'SOLUTION',        // The result of a "solve" operation
@@ -216,8 +215,6 @@ export type StyleType = typeof STYLE_TYPES[number];
 
 export const STYLE_SOURCES = [
   'MATHEMATICA',      // Mathematica C.A.S.
-  'MATHJS',           // The Mathjs C.A.S.
-  'MATHSTEPS',        // The Mathsteps C.A.S.
   'MYSCRIPT',         // MyScript handwriting recognition`
   'SANDBOX',          // Sandbox for temporary experiments
   'SUBTRIV-CLASSIFIER',

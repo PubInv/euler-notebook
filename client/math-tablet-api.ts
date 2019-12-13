@@ -28,7 +28,6 @@ import { RelationshipProperties, StyleProperties, StyleId, NotebookChange, Noteb
 
 export type ImageData = string;
 export type LatexData = string;
-export type MathJsData = string;
 export type MathMlData = string;
 export type MthMtcaData = string;
 export type SvgData = string;
