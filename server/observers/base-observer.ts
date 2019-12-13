@@ -21,7 +21,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 import * as debug1 from 'debug';
 import {
-  NotebookChange, StyleObject, StyleMeaning, FindStyleOptions, StyleType,
+  NotebookChange, StyleObject, StyleRole, FindStyleOptions, StyleType,
   styleMatchesPattern, StyleProperties
 } from '../../client/notebook';
 import { NotebookChangeRequest } from '../../client/math-tablet-api';
@@ -42,7 +42,7 @@ export type Rules = Rule[];
 interface Rule {
   name: string;   // Rule name for debugging.
   parentStyleTest: StyleTest;
-  meaning: StyleMeaning;
+  role: StyleRole;
   type: StyleType;
   computeSync?: (parentData: /* TYPESCRIPT: */any)=>/* TYPESCRIPT: */any|undefined;
   computeAsync?: (parentData: /* TYPESCRIPT: */any)=>Promise</* TYPESCRIPT: */any|undefined>;
@@ -90,13 +90,13 @@ export abstract class BaseObserver implements ObserverInstance {
         const style = change.style;
         if (!styleMatchesTest(this.notebook, style, rule.parentStyleTest)) { break; }
         const data = await rule.computeAsync(style.data);
-        const substyle = (change.type == 'styleChanged' && this.notebook.findStyle({ meaning: rule.meaning, type: rule.type}, style.id));
+        const substyle = (change.type == 'styleChanged' && this.notebook.findStyle({ role: rule.role, type: rule.type}, style.id));
         let changeRequest: NotebookChangeRequest|undefined;
         if (data) {
           // Child data was produced.
           if (change.type == 'styleInserted' || (change.type == 'styleChanged' && !substyle)) {
             // The substyle doesn't exist, so add it.
-            const styleProps: StyleProperties = { meaning: rule.meaning, type: rule.type, data }
+            const styleProps: StyleProperties = { role: rule.role, type: rule.type, data }
             changeRequest = { type: 'insertStyle', parentId: style.id, styleProps };
           } else {
             // The substyle exists, so change it.
@@ -140,13 +140,13 @@ export abstract class BaseObserver implements ObserverInstance {
         const style = change.style;
         if (!styleMatchesTest(this.notebook, style, rule.parentStyleTest)) { break; }
         const data = rule.computeSync(style.data);
-        const substyle = (change.type == 'styleChanged' && this.notebook.findStyle({ meaning: rule.meaning, type: rule.type}, style.id));
+        const substyle = (change.type == 'styleChanged' && this.notebook.findStyle({ role: rule.role, type: rule.type}, style.id));
         let changeRequest: NotebookChangeRequest|undefined;
         if (data) {
           // Child data was produced.
           if (change.type == 'styleInserted' || (change.type == 'styleChanged' && !substyle)) {
             // The substyle doesn't exist, so add it.
-            const styleProps: StyleProperties = { meaning: rule.meaning, type: rule.type, data }
+            const styleProps: StyleProperties = { role: rule.role, type: rule.type, data }
             changeRequest = { type: 'insertStyle', parentId: style.id, styleProps };
           } else {
             // The substyle exists, so change it.

@@ -72,7 +72,7 @@ export interface StylePropertiesWithSubprops extends StyleProperties {
   subprops?: StylePropertiesWithSubprops[]; // TODO: rename subprops=>substyles.
   relationsTo?: RelationshipPropertiesMap;
   relationsFrom?: RelationshipPropertiesMap;
-  exclusiveChildTypeAndMeaning?: boolean;     // only one style of
+  exclusiveChildTypeAndRole?: boolean;     // only one style of
     // that type and meaning should exist for the parent. If this is added
     // at the time the insertion request is made, the code to do the insertion
     // should automatically remove all other such instances

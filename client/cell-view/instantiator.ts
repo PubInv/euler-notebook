@@ -32,7 +32,7 @@ import { TextCellView } from './text-cell.js';
 
 export function createCellView(notebookView: NotebookView, style: StyleObject): CellView {
   let rval: CellView|undefined = undefined;
-  switch(style.meaning) {
+  switch(style.role) {
     case 'INPUT':
       switch(style.type) {
         case 'DRAWING':
@@ -67,6 +67,6 @@ export function createCellView(notebookView: NotebookView, style: StyleObject): 
     //   // This is currently a "promotion" which is a form of input,
     //   // so make it a high-level thought is slightly inconsistent.
   }
-  if (!rval) { throw new Error(`Don't have a CellView type for ${style.meaning}/${style.type}.`); }
+  if (!rval) { throw new Error(`Don't have a CellView type for ${style.role}/${style.type}.`); }
   return rval;
 }

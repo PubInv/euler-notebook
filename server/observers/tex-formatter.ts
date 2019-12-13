@@ -189,8 +189,8 @@ export class TeXFormatterObserver implements ObserverInstance {
   // recomputation.
   private async latexFormatterRule(style: StyleObject, rval: NotebookChangeRequest[]): Promise<void> {
 
-    if (!((style.type == 'SYMBOL' && style.meaning == 'SYMBOL-DEFINITION')
-          || (style.type == 'EQUATION' && style.meaning == 'EQUATION-DEFINITION')
+    if (!((style.type == 'SYMBOL' && style.role == 'SYMBOL-DEFINITION')
+          || (style.type == 'EQUATION' && style.role == 'EQUATION-DEFINITION')
          )) {
       return;
     }
@@ -216,10 +216,10 @@ export class TeXFormatterObserver implements ObserverInstance {
 
     // These types have slightly different data morphologies, but are
     // similar enough we can process almost the same way
-    if (style.type == 'SYMBOL' && style.meaning == 'SYMBOL-DEFINITION') {
+    if (style.type == 'SYMBOL' && style.role == 'SYMBOL-DEFINITION') {
       lhs = style.data.name;
       rhs = style.data.value;
-    } else if (style.type == 'EQUATION' && style.meaning == 'EQUATION-DEFINITION') {
+    } else if (style.type == 'EQUATION' && style.role == 'EQUATION-DEFINITION') {
       lhs = style.data.lhs;
       rhs = style.data.rhs;
     } else {
@@ -238,9 +238,9 @@ export class TeXFormatterObserver implements ObserverInstance {
     const texrhs : string = await convertWolframToTeX(sub_expr_rhs);
 
     var tex_def = null;
-    if (style.type == 'SYMBOL' && style.meaning == 'SYMBOL-DEFINITION') {
+    if (style.type == 'SYMBOL' && style.role == 'SYMBOL-DEFINITION') {
       tex_def = style.data.name + " = " + texrhs;
-    } else if (style.type == 'EQUATION' && style.meaning == 'EQUATION-DEFINITION') {
+    } else if (style.type == 'EQUATION' && style.role == 'EQUATION-DEFINITION') {
       const texlhs : string = await convertWolframToTeX(sub_expr_lhs);
       if (texrhs && texlhs) {
         tex_def = texlhs + " = " + texrhs
@@ -251,7 +251,7 @@ export class TeXFormatterObserver implements ObserverInstance {
       // Create the latex
       const styleProps: StylePropertiesWithSubprops = {
         type: 'LATEX',
-        meaning: 'DECORATION',
+        role: 'DECORATION',
         data: tex_def,
       }
       const changeReq: StyleInsertRequest = {

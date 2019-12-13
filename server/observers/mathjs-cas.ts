@@ -102,14 +102,14 @@ export class MathJsObserver implements ObserverInstance {
     // If the user input MATHJS text, then parse it, and attach a LaTeX alternate representation
     // to the thought.
     // If there is a parsing error, then attach an error message to the style.
-    if (style.type == 'MATHJS' && style.meaning == 'INPUT') {
+    if (style.type == 'MATHJS' && style.role == 'INPUT') {
       let node: math.MathNode;
       try {
         node = math.parse(style.data);
       } catch(err) {
         const styleProps: StylePropertiesWithSubprops = {
           type: 'TEXT',
-          meaning: 'ERROR',
+          role: 'ERROR',
           data: err.message,
         };
         const changeReq: StyleInsertRequest = {
@@ -123,7 +123,7 @@ export class MathJsObserver implements ObserverInstance {
       const changeReq: StyleInsertRequest = {
         type: 'insertStyle',
         parentId: style.id,
-        styleProps: { type: 'LATEX', data: node.toTex(), meaning: 'INPUT-ALT' },
+        styleProps: { type: 'LATEX', data: node.toTex(), role: 'INPUT-ALT' },
       };
       rval.push(changeReq);
     }
@@ -138,7 +138,7 @@ export class MathJsObserver implements ObserverInstance {
 
     // We only evaluate MathJS expressions that are user input.
     if (style.type != 'MATHJS') { return; }
-    if (style.meaning!='INPUT' && style.meaning!='INPUT-ALT') { return; }
+    if (style.role!='INPUT' && style.role!='INPUT-ALT') { return; }
 
     // Do not evaluate more than once.
     if ((this.notebook.styleHasChildOfType(style, 'MATHJS', 'EVALUATION')) ||
@@ -155,7 +155,7 @@ export class MathJsObserver implements ObserverInstance {
       const changeReq: StyleInsertRequest = {
         type: 'insertStyle',
         parentId: style.id,
-        styleProps: { type: 'TEXT', data: firstLine, meaning: 'EVALUATION-ERROR' },
+        styleProps: { type: 'TEXT', data: firstLine, role: 'EVALUATION-ERROR' },
       };
       rval.push(changeReq);
       return;
@@ -168,7 +168,7 @@ export class MathJsObserver implements ObserverInstance {
     const changeReq: StyleInsertRequest = {
       type: 'insertStyle',
       parentId: style.id,
-      styleProps: { type: 'MATHJS', data: eString, meaning: 'EVALUATION' },
+      styleProps: { type: 'MATHJS', data: eString, role: 'EVALUATION' },
     };
     rval.push(changeReq);
   }
@@ -176,7 +176,7 @@ export class MathJsObserver implements ObserverInstance {
   private mathExtractVariablesRule(style: StyleObject, rval: NotebookChangeRequest[]): void {
     // We only extract symbols from MathJS expressions that are user input.
     if (style.type != 'MATHJS') { return; }
-    if (style.meaning!='INPUT' && style.meaning!='INPUT-ALT') { return; }
+    if (style.role!='INPUT' && style.role!='INPUT-ALT') { return; }
 
     // Do not extract symbols more than once.
     if (this.notebook.styleHasChildOfType(style, 'MATHJS', 'SYMBOL')) { return; }
@@ -189,7 +189,7 @@ export class MathJsObserver implements ObserverInstance {
       const changeReq: StyleInsertRequest = {
         type: 'insertStyle',
         parentId: style.id,
-        styleProps: { type: 'MATHJS', data: s, meaning: 'SYMBOL' },
+        styleProps: { type: 'MATHJS', data: s, role: 'SYMBOL' },
       };
       rval.push(changeReq);
     });
@@ -199,7 +199,7 @@ export class MathJsObserver implements ObserverInstance {
   private mathSimplifyRule(style: StyleObject, rval: NotebookChangeRequest[]): void {
     // We only apply MathJS simplifications so MathJS styles that are user input.
     if (style.type != 'MATHJS') { return; }
-    if (style.meaning!='INPUT' && style.meaning!='INPUT-ALT') { return; }
+    if (style.role!='INPUT' && style.role!='INPUT-ALT') { return; }
 
     // Do not apply simplification more than once.
     if (this.notebook.styleHasChildOfType(style, 'MATHJS', 'SIMPLIFICATION')) { return; }
@@ -224,9 +224,9 @@ export class MathJsObserver implements ObserverInstance {
       styleProps: {
         type: 'MATHJS',
         data: simplerText,
-        meaning: 'SIMPLIFICATION',
+        role: 'SIMPLIFICATION',
         subprops: [
-          { type: 'LATEX', data: simpler.toTex(), meaning: 'FORMULA-ALT' },
+          { type: 'LATEX', data: simpler.toTex(), role: 'FORMULA-ALT' },
         ]
       },
     };

@@ -108,7 +108,7 @@ export class AnyInputObserver implements ObserverInstance {
   private chStyleMoved(change: StyleMoved, rval: NotebookChangeRequest[]): void {
     const style = this.notebook.getStyleById(change.styleId);
 
-    if (style.meaning == 'INPUT') {
+    if (style.role == 'INPUT') {
 
       // We may have at most one SYMOBL-DEFINTION style, and a set of
       // SYMBOL-USES styles. These need to be sent a "move" change Request.

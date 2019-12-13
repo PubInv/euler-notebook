@@ -147,8 +147,8 @@ export class MathematicaObserver implements ObserverInstance {
           if (anc == parentThought) return false;
           else {
             debug(s);
-            debug(((s.type == 'WOLFRAM') && (s.meaning == 'INPUT' || s.meaning == 'INPUT-ALT')));
-            return ((s.type == 'WOLFRAM') && (s.meaning == 'INPUT' || s.meaning == 'INPUT-ALT'));
+            debug(((s.type == 'WOLFRAM') && (s.role == 'INPUT' || s.role == 'INPUT-ALT')));
+            return ((s.type == 'WOLFRAM') && (s.role == 'INPUT' || s.role == 'INPUT-ALT'));
           }
         });
       debug("expressions",expressions);
@@ -193,8 +193,8 @@ export class MathematicaObserver implements ObserverInstance {
           // deal with this. I'm guessing that we ONLY want to attach
           // to a wolfram input style. This is arguable; but this the advantage of
           // producing a "thought" to "thought" approach.
-          if (!((src.meaning == 'EVALUATION') || (tar.meaning == 'EVALUATION'))) {
-            const props: RelationshipProperties = { meaning: 'EQUIVALENCE' };
+          if (!((src.role == 'EVALUATION') || (tar.role == 'EVALUATION'))) {
+            const props: RelationshipProperties = { role: 'EQUIVALENCE' };
             const cr: RelationshipInsertRequest = {
               type: 'insertRelationship',
               fromId: src.id,
@@ -241,7 +241,7 @@ export class MathematicaObserver implements ObserverInstance {
     const rval: NotebookChangeRequest[] = [];
 
     if (style.type != 'MATHML') { return []; }
-    if (style.meaning!='INPUT' && style.meaning!='INPUT-ALT') { return []; }
+    if (style.role!='INPUT' && style.role!='INPUT-ALT') { return []; }
 
     const mathMl = style.data.split('\n').join('').replace(/"/g, '\\"');
     debug("mathML",mathMl);
@@ -273,7 +273,7 @@ export class MathematicaObserver implements ObserverInstance {
 
       const styleProps: StylePropertiesWithSubprops = {
         type: 'WOLFRAM',
-        meaning: 'INPUT-ALT',
+        role: 'INPUT-ALT',
         data: wolframexpr,
       };
       const cr: StyleInsertRequest = {
@@ -286,9 +286,9 @@ export class MathematicaObserver implements ObserverInstance {
     } catch(err) {
       const styleProps: StylePropertiesWithSubprops = {
         type: 'TEXT',
-        meaning: 'EVALUATION-ERROR',
+        role: 'EVALUATION-ERROR',
         data: `Cannot convert to Wolfram expression: ${err.message}`,
-        exclusiveChildTypeAndMeaning: true,
+        exclusiveChildTypeAndRole: true,
       };
       const cr: StyleInsertRequest = {
         type: 'insertStyle',

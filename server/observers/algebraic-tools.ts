@@ -72,7 +72,7 @@ export class AlgebraicToolsObserver implements ObserverInstance {
         // WARNING! : Possibly this should be 'FACTORIZATION'
         // or some other meaning. 'INPUT' is a stop-gap
         // to work with the current GUI.
-        meaning: 'INPUT',
+        role: 'INPUT',
       };
       const changeReq: StyleInsertRequest = {
         type: 'insertStyle',
@@ -121,7 +121,7 @@ export class AlgebraicToolsObserver implements ObserverInstance {
     debug("XXXXXXXXXXXX", style);
 
 
-    if (style.type != 'WOLFRAM' || style.meaning != 'EVALUATION') { return; }
+    if (style.type != 'WOLFRAM' || style.role != 'EVALUATION') { return; }
     const f = await this.factor(style.data);
     debug("FFFFFFFFFF", f);
     if (f == style.data) { // nothing interesting to do!
@@ -133,7 +133,7 @@ export class AlgebraicToolsObserver implements ObserverInstance {
     const toolInfo: ToolInfo = { name: 'factor', html: `Factor: ${f}`, data: f };
     const styleProps2: StylePropertiesWithSubprops = {
       type: 'TOOL',
-      meaning: 'ATTRIBUTE',
+      role: 'ATTRIBUTE',
       data: toolInfo,
     }
     const changeReq2: StyleInsertRequest = {
@@ -146,7 +146,7 @@ export class AlgebraicToolsObserver implements ObserverInstance {
 
   // private async algebraicToolsChangedRule(relationship: RelationshipObject, rval: NotebookChangeRequest[]): Promise<void> {
 
-  //   if (relationship.meaning != 'SYMBOL-DEPENDENCY') return;
+  //   if (relationship.role != 'SYMBOL-DEPENDENCY') return;
 
   //   debug("RELATIONSHIP",relationship);
 
@@ -204,7 +204,7 @@ export class AlgebraicToolsObserver implements ObserverInstance {
   //       const styleProps: StylePropertiesWithSubprops = {
   //         type: 'CLASSIFICATION',
   //         data: isSubTrivariate,
-  //         meaning: 'SUBTRIVARIATE',
+  //         role: 'SUBTRIVARIATE',
   //         //          exclusiveChildTypeAndMeaning: true,
   //       }
   //       const changeReq: StyleInsertRequest = {

@@ -54,13 +54,13 @@ export interface StrokeGroup {
 export interface FindRelationshipOptions {
   toId?: StyleId;
   fromId?: StyleId;
-  meaning?: RelationshipMeaning;
+  role?: RelationshipRole;
   source?: StyleSource;
 }
 
 // REVIEW: Rename to FindStylePattern
 export interface FindStyleOptions {
-  meaning?: StyleMeaning|RegExp;
+  role?: StyleRole|RegExp;
   source?: StyleSource;
   type?: StyleType;
   recursive?: boolean;
@@ -116,9 +116,9 @@ export type RelationshipId = number;
 // The first definition of a symbol does not create a relationship.
 // The second mentions of a symbol creates a relationship attached
 // (via source) to either the use or definition.
-// Props may give this the meaning of DUPLICATE DEFINITION if that is true.
+// Props may give this the role of DUPLICATE DEFINITION if that is true.
 // It is critically that all of these respect the "top level thought order",
-// not the style order, so that reordering thoughts has a meaning.
+// not the style order, so that reordering thoughts has a role.
 // Each symbol name creates a separate independent "channel" of that name.
 export interface RelationshipObject extends RelationshipProperties {
   id: RelationshipId;
@@ -127,7 +127,7 @@ export interface RelationshipObject extends RelationshipProperties {
   toId: StyleId;
 }
 
-export type RelationshipMeaning =
+export type RelationshipRole =
   'SYMBOL-DEPENDENCY' |
   'DUPLICATE-DEFINITION' |
   'EQUIVALENCE';
@@ -137,7 +137,7 @@ export interface RelationshipMap {
 }
 
 export interface RelationshipProperties {
-  meaning: RelationshipMeaning;
+  role: RelationshipRole;
 }
 
 export type StyleId = number;
@@ -146,7 +146,7 @@ export interface StyleMap {
   [id: /* StyleId */number]: StyleObject;
 }
 
-export const STYLE_MEANINGS = [
+export const STYLE_ROLES = [
   'ATTRIBUTE',            // Generic attribute. Meaning implied by type.
   'ERROR',                // An error message. Type should be text.
   'EVALUATION',           // CAS evaluation of an expression.
@@ -170,7 +170,7 @@ export const STYLE_MEANINGS = [
   'UNIVARIATE-QUADRATIC', // A quadratic expression, presumably worth plotting.
   'SUBTRIVARIATE',        // An expression in one or two variables presumable plottable.
 ] as const;
-export type StyleMeaning = typeof STYLE_MEANINGS[number];
+export type StyleRole = typeof STYLE_ROLES[number];
 
 export interface StyleObject extends StyleProperties {
   id: StyleId;
@@ -185,7 +185,7 @@ export type StyleOrdinalPosition = number;
 
 export interface StyleProperties {
   data: any;
-  meaning: StyleMeaning;
+  role: StyleRole;
   type: StyleType;
 }
 
@@ -319,14 +319,14 @@ export class Notebook {
     return this.allStyles().filter(s=>(s.parentId==id));
   }
 
-  // find all children of given type and meaning
-  public findChildStylesOfType(id: StyleId, type: StyleType, meaning?: StyleMeaning): StyleObject[] {
+  // find all children of given type and role
+  public findChildStylesOfType(id: StyleId, type: StyleType, role?: StyleRole): StyleObject[] {
 
     // we will count ourselves as a child here....
     const rval: StyleObject[] = [];
 
     const style = this.styleMap[id];
-    if (style && style.type == type && (!meaning || style.meaning == meaning)) {
+    if (style && style.type == type && (!role || style.role == role)) {
       // we match, so we add ourselves...
       rval.push(<StyleObject>style);
     } // else { assert(this.thoughtMap[id] }
@@ -335,7 +335,7 @@ export class Notebook {
     // DANGER! this makes this function asymptotic quadratic or worse...
     const kids = this.childStylesOf(id);
     for(const k of kids) {
-      const kmatch = this.findChildStylesOfType(k.id, type, meaning);
+      const kmatch = this.findChildStylesOfType(k.id, type, role);
       for(let km of kmatch) { rval.push(km); }
     }
 
@@ -441,12 +441,12 @@ export class Notebook {
       syms.forEach(sym => {
         const s = sym.data.name;
         if (symbols.has(s)) {
-          if (sym.meaning == 'SYMBOL-USE') {
+          if (sym.role == 'SYMBOL-USE') {
             if (!(s in uses))
               uses[s] = [];
             uses[s].push({ sid: sym.id, tls: tls});
           }
-          if (sym.meaning == 'SYMBOL-DEFINITION') {
+          if (sym.role == 'SYMBOL-DEFINITION') {
             if (!(s in defs))
               defs[s] = [];
             defs[s].push({ sid: sym.id, tls: tls});
@@ -480,7 +480,7 @@ export class Notebook {
               id: -1,
               fromId: fromId,
               toId: us[i].sid,
-              meaning: 'SYMBOL-DEPENDENCY',
+              role: 'SYMBOL-DEPENDENCY',
             };
             rs.push(r);
           } else {
@@ -510,7 +510,7 @@ export class Notebook {
             id: -1,
             fromId: fromId,
             toId: ds[i].sid,
-            meaning: 'DUPLICATE-DEFINITION',
+            role: 'DUPLICATE-DEFINITION',
           };
           rs.push(r);
         }
@@ -533,7 +533,7 @@ export class Notebook {
     // simplest way to do this is to iterate over all relationships,
     // computing the source and target thoughts. If the target thought
     // is the same as our ancestor thought, then we return the
-    // source style, which should be of type Symbol and meaning Definition.
+    // source style, which should be of type Symbol and role Definition.
     const rs = this.allRelationships();
     var symbolStyles: StyleObject[] = [];
     const mp = this.topLevelStyleOf(style.id);
@@ -570,19 +570,19 @@ export class Notebook {
     return symbolStyles;
   }
 
-  public numStyles(tname: StyleType, meaning?: StyleMeaning) : number {
+  public numStyles(tname: StyleType, role?: StyleRole) : number {
     return this.allStyles().reduce(
       function(total,x){
-        return (x.type == tname && (!meaning || x.meaning == meaning))
+        return (x.type == tname && (!role || x.role == role))
           ?
           total+1 : total},
       0);
   }
 
   // This can be asymptotically improved later.
-  public styleHasChildOfType(style: StyleObject, tname: StyleType, meaning?: StyleMeaning): boolean {
+  public styleHasChildOfType(style: StyleObject, tname: StyleType, role?: StyleRole): boolean {
     const id = style.id;
-    return !!this.childStylesOf(id).find(s => s.type == tname && (!meaning || s.meaning == meaning));
+    return !!this.childStylesOf(id).find(s => s.type == tname && (!role || s.role == role));
   }
 
   public topLevelStyles(): StyleObject[] {
@@ -650,10 +650,10 @@ export class Notebook {
     // REVIEW: Ideally, relationships would be stored in a Map, not an object,
     //         so we could obtain an iterator over the values, and not have to
     //         construct an intermediate array.
-    for (const relationship of Object.values(this.relationshipMap)) {
+    for (const relationship of <RelationshipObject[]>Object.values(this.relationshipMap)) {
       if ((options.fromId || options.toId) && relationship.fromId != options.fromId && relationship.toId != options.toId) { continue; }
       if (options.source && relationship.source != options.source) { continue; }
-      if (options.meaning && relationship.meaning != options.meaning) { continue; }
+      if (options.role && relationship.role != options.role) { continue; }
       rval.push(relationship);
     }
     return rval;
@@ -791,7 +791,7 @@ export function StyleInsertedFromNotebookChange(change: NotebookChange): StyleIn
 }
 
 export function styleMatchesPattern(style: StyleObject, options: FindStyleOptions): boolean {
-  return    (!options.meaning || (typeof options.meaning == 'object' && </* TYPESCRIPT: */any>options.meaning instanceof RegExp ? (<RegExp>options.meaning).test(style.meaning) : style.meaning == options.meaning))
+  return    (!options.role || (typeof options.role == 'object' && </* TYPESCRIPT: */any>options.role instanceof RegExp ? (<RegExp>options.role).test(style.role) : style.role == options.role))
          && (!options.type || style.type == options.type)
          && (!options.source || style.source == options.source);
 }

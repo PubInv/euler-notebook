@@ -70,7 +70,7 @@ function generateInsertRequests(inputs :string[]) : StyleInsertRequest[] {
   var reqs : StyleInsertRequest[] = [];
   for(const i of inputs) {
     reqs.push( { type: 'insertStyle',
-            styleProps: { type: 'WOLFRAM', meaning: 'INPUT', data: i } }
+            styleProps: { type: 'WOLFRAM', role: 'INPUT', data: i } }
         );
   }
   return reqs;
@@ -191,8 +191,8 @@ describe("test symbol observer", function() {
       const styleProps1: StylePropertiesWithSubprops = {
         type: 'WOLFRAM',
         data: <string>fake_result,
-        meaning: 'EVALUATION',
-        exclusiveChildTypeAndMeaning: true,
+        role: 'EVALUATION',
+        exclusiveChildTypeAndRole: true,
       }
       const cr1: StyleInsertRequest = {
         type: 'insertStyle',
@@ -203,8 +203,8 @@ describe("test symbol observer", function() {
       const styleProps2: StylePropertiesWithSubprops = {
         type: 'WOLFRAM',
         data: <string>fake_result,
-        meaning: 'EVALUATION',
-        exclusiveChildTypeAndMeaning: true,
+        role: 'EVALUATION',
+        exclusiveChildTypeAndRole: true,
       }
       const cr2: StyleInsertRequest = {
         type: 'insertStyle',
@@ -279,7 +279,7 @@ describe("test symbol observer", function() {
       assert.equal(notebook.allRelationships().length,2);
       // We want to check that the relaionship is "duplicate def".
       const r : RelationshipObject = notebook.allRelationships()[0];
-      assert.equal(r.meaning,'DUPLICATE-DEFINITION');
+      assert.equal(r.role,'DUPLICATE-DEFINITION');
     });
     it("two defs and a use create an inconsistency and a use",async function(){
       const changeRequests = [insertRequest[0],insertRequest[2],insertRequest[4]];
@@ -288,20 +288,20 @@ describe("test symbol observer", function() {
 
       assert.equal(2,notebook.allRelationships().length);
       // We want to check that the relaionship is "duplicate def".
-      const rds : RelationshipObject[] = notebook.findRelationships({ meaning: 'DUPLICATE-DEFINITION' });
+      const rds : RelationshipObject[] = notebook.findRelationships({ role: 'DUPLICATE-DEFINITION' });
       assert.equal(1,rds.length);
       const rd = rds[0];
-      assert.equal(rd.meaning,'DUPLICATE-DEFINITION');
+      assert.equal(rd.role,'DUPLICATE-DEFINITION');
 
-      const rus : RelationshipObject[] = notebook.findRelationships({ meaning: 'SYMBOL-DEPENDENCY' });
+      const rus : RelationshipObject[] = notebook.findRelationships({ role: 'SYMBOL-DEPENDENCY' });
       assert.equal(1,rus.length);
       const ru = rus[0];
-      assert.equal(ru.meaning,'SYMBOL-DEPENDENCY');
+      assert.equal(ru.role,'SYMBOL-DEPENDENCY');
 
 
       // const ru : RelationshipObject = notebook.allRelationships()[1];
       // console.log(notebook);
-      // assert.equal(ru.meaning,'SYMBOL-DEPENDENCY');
+      // assert.equal(ru.role,'SYMBOL-DEPENDENCY');
 
     });
     it("An input and change does produces only one relationhsip",async function(){

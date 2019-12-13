@@ -27,7 +27,7 @@ import * as debug1 from 'debug';
 
 import { assert } from 'chai';
 import {
-  Notebook, NotebookObject, NotebookChange, StyleObject, StyleMeaning, StyleType, StyleSource, StyleId,
+  Notebook, NotebookObject, NotebookChange, StyleObject, StyleRole, StyleType, StyleSource, StyleId,
   RelationshipObject, StyleMoved, StylePosition, VERSION, StyleChanged, RelationshipDeleted,
   RelationshipInserted, StyleInserted, StyleDeleted
 } from '../client/notebook';
@@ -70,8 +70,8 @@ const MAX_CHANGE_ROUNDS = 10;
 
 // Helper Functions
 // TODO: Rewrite this to using findStyles
-export function assertHasStyle(styles: StyleObject[], type: StyleType, meaning: StyleMeaning, data: any): StyleObject {
-  const style = styles.find(s=>s.type==type && s.meaning==meaning && s.data==data);
+export function assertHasStyle(styles: StyleObject[], type: StyleType, role: StyleRole, data: any): StyleObject {
+  const style = styles.find(s=>s.type==type && s.role==role && s.data==data);
   assert.exists(style);
   return style!;
 }
@@ -430,7 +430,7 @@ export class ServerNotebook extends Notebook {
       type: 'insertRelationship',
       fromId: relationship.fromId,
       toId: relationship.toId,
-      props: { meaning: relationship.meaning },
+      props: { role: relationship.role },
     }
     return undoChangeRequest;
   }
@@ -484,7 +484,7 @@ export class ServerNotebook extends Notebook {
     // TODO: gather substyles and relationships from the same source, etc.
     const styleProps: StylePropertiesWithSubprops = {
       type: style.type,
-      meaning: style.meaning,
+      role: style.role,
       data: style.data,
     };
     const undoChangeRequest: StyleInsertRequest = {
@@ -529,7 +529,7 @@ export class ServerNotebook extends Notebook {
     const style: StyleObject = {
       data: styleProps.data,
       id: this.nextId++,
-      meaning: styleProps.meaning,
+      role: styleProps.role,
       parentId: parentId || 0,
       source,
       type: styleProps.type,
@@ -558,12 +558,12 @@ export class ServerNotebook extends Notebook {
       }
     }
 
-    if (styleProps.exclusiveChildTypeAndMeaning) {
+    if (styleProps.exclusiveChildTypeAndRole) {
         const children = this.findChildStylesOfType(parentId, style.type);
 
       // console.log("KIDS FOUND OF PARENT",children);
       // now in the set to be removed, remove ourself, and anyting with a different meaning
-      const toRemove = children.filter(c => ((c.id != parentId) && (c.id != style.id) && (c.meaning == style.meaning) && (c.type == style.type)));
+      const toRemove = children.filter(c => ((c.id != parentId) && (c.id != style.id) && (c.role == style.role) && (c.type == style.type)));
       // now remove the remainder
       // console.log("TO REMOVE",toRemove);
       for (const childToRemove of toRemove) {

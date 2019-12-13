@@ -56,22 +56,22 @@ export class WolframObserver extends BaseObserver {
       // TODO: Add style as peer, not child
       name: "tex-to-wolfram",
       parentStyleTest: WolframObserver.isConvertibleLatexStyle,
-      meaning: 'INPUT-ALT',
+      role: 'INPUT-ALT',
       type: 'WOLFRAM',
       computeAsync: WolframObserver.ruleConvertTexToWolfram,
     },
     {
       name: "wolfram-to-tex",
-      parentStyleTest: { meaning: 'INPUT', type: 'WOLFRAM' },
-      meaning: 'INPUT-ALT',
+      parentStyleTest: { role: 'INPUT', type: 'WOLFRAM' },
+      role: 'INPUT-ALT',
       type: 'LATEX',
       computeAsync: WolframObserver.ruleConvertWolframToTex,
     },
     {
       name: "evaluate-wolfram",
-      parentStyleTest: { meaning: /^(INPUT|INPUT-ALT)$/, type: 'WOLFRAM' },
-      // parentStylePattern: { meaning: 'INPUT', type: 'WOLFRAM' },
-      meaning: 'EVALUATION',
+      parentStyleTest: { role: /^(INPUT|INPUT-ALT)$/, type: 'WOLFRAM' },
+      // parentStylePattern: { role: 'INPUT', type: 'WOLFRAM' },
+      role: 'EVALUATION',
       type: 'WOLFRAM',
       computeAsync: WolframObserver.ruleEvaluateWolframExpr,
     },
@@ -81,7 +81,7 @@ export class WolframObserver extends BaseObserver {
 
   private static isConvertibleLatexStyle(notebook: ServerNotebook, style: StyleObject): boolean {
     if (style.type != 'LATEX') { return false; }
-    if (style.meaning!='INPUT' && style.meaning!='INPUT-ALT') { return false; }
+    if (style.role!='INPUT' && style.role!='INPUT-ALT') { return false; }
     if (style.parentId) {
       const parentStyle = notebook.getStyleById(style.parentId);
       if (parentStyle.parentId) { return false; }

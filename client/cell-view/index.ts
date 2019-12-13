@@ -59,7 +59,7 @@ export abstract class CellView {
     // that is string-based, with a renderer.
     const style = this.notebookView.openNotebook.getStyleById(this.styleId);
     const renderer = getRenderer(style.type);
-    if (style.meaning!='INPUT' || typeof style.data!='string') { return false; }
+    if (style.role!='INPUT' || typeof style.data!='string') { return false; }
 
     this.keyboardInputPanel = KeyboardInputPanel.create(
       style.data,

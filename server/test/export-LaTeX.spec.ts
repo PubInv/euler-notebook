@@ -66,7 +66,7 @@ function generateInsertRequests(inputs :string[]) : StyleInsertRequest[] {
   var reqs : StyleInsertRequest[] = [];
   for(const i of inputs) {
     reqs.push( { type: 'insertStyle',
-                 styleProps: { type: 'WOLFRAM', meaning: 'INPUT', data: i } }
+                 styleProps: { type: 'WOLFRAM', role: 'INPUT', data: i } }
              );
   }
   return reqs;
@@ -177,6 +177,8 @@ describe("test symbol observer", function() {
       // console.log(latexInput);
       assert(latexInput.length > 10,"The latex file should be at least 10 characters long:"+latexInput);
 
+      // TODO: Use TMPDIR environment variable instead of having a directory in the repository.
+      // TODO: Delete the file after verifying that it was created.
       const path = "test/tmp/basictest";
 
       writeLaTeX(latexInput,path);

@@ -164,7 +164,7 @@ export class NotebookView {
         { strokes: [] }
       ],
     };
-    const styleProps: StylePropertiesWithSubprops = { type: 'DRAWING', meaning: 'INPUT', data };
+    const styleProps: StylePropertiesWithSubprops = { type: 'DRAWING', role: 'INPUT', data };
     const changeRequest: StyleInsertRequest = { type: 'insertStyle', afterId, styleProps };
     const undoChangeRequest = await this.sendUndoableChangeRequest(changeRequest);
     const styleId = (<StyleDeleteRequest>undoChangeRequest).styleId
@@ -353,7 +353,7 @@ export class NotebookView {
 
     const styleProps: StylePropertiesWithSubprops = {
       type: <StyleType>$typeSelector.value,
-      meaning: 'INPUT',
+      role: 'INPUT',
       data: "",
     };
 

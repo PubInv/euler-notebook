@@ -86,14 +86,14 @@ export class EquationSolverObserver implements ObserverInstance {
     // const styleProps: StylePropertiesWithSubprops = {
     //   type: 'SYMBOL',
     //   data: nvp,
-    //   meaning: 'SYMBOL-DEFINITION',
+    //   role: 'SYMBOL-DEFINITION',
     //   relationsTo,
     // };
     debug("npv.value",nvp.value);
     const styleProps: StylePropertiesWithSubprops = {
       type: 'WOLFRAM',
       data: nvp.name + ' = ' + nvp.value,
-      meaning: 'INPUT',
+      role: 'INPUT',
       relationsTo,
     };
       const changeReq: StyleInsertRequest = {
@@ -234,7 +234,7 @@ export class EquationSolverObserver implements ObserverInstance {
                                  data: JSON.stringify(sol) };
     const styleProps2: StylePropertiesWithSubprops = {
       type: 'TOOL',
-      meaning: 'ATTRIBUTE',
+      role: 'ATTRIBUTE',
       data: toolInfo,
     }
     const changeReq2: StyleInsertRequest = {
@@ -246,7 +246,7 @@ export class EquationSolverObserver implements ObserverInstance {
   }
 
   private async equationSolverRule(style: StyleObject, rval: NotebookChangeRequest[]): Promise<void> {
-    if (style.type != 'EQUATION' || style.meaning != 'EQUATION-DEFINITION') { return; }
+    if (style.type != 'EQUATION' || style.role != 'EQUATION-DEFINITION') { return; }
     debug("INSIDE SOLVER RULE :",style);
 
     const solutions : NameValuePair[] = await this.computeSolutionsOfThought(style);
@@ -267,7 +267,7 @@ export class EquationSolverObserver implements ObserverInstance {
 
   private async equationSolverChangedRule(relationship: RelationshipObject, rval: NotebookChangeRequest[]): Promise<void> {
 
-    if (relationship.meaning != 'SYMBOL-DEPENDENCY') return;
+    if (relationship.role != 'SYMBOL-DEPENDENCY') return;
 
     debug("RELATIONSHIP",relationship);
 
@@ -282,7 +282,7 @@ export class EquationSolverObserver implements ObserverInstance {
       return;
     }
 
-      if (target_ancestor.type != 'EQUATION' || target_ancestor.meaning != 'EQUATION-DEFINITION') { return; }
+      if (target_ancestor.type != 'EQUATION' || target_ancestor.role != 'EQUATION-DEFINITION') { return; }
 
     // I'm just going to try to handle this as a straight recomputation...
     // The alternative would be to see if a definion has been inserted

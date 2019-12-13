@@ -116,7 +116,7 @@ export class MyScriptObserver implements ObserverInstance {
     // If the style already has a LaTeX style attached, then
     // update it. Otherwise add one.
     let change: NotebookChangeRequest;
-    const substyle = this.notebook.findStyle({ meaning: 'INPUT-ALT', type: 'LATEX' }, styleId);
+    const substyle = this.notebook.findStyle({ role: 'INPUT-ALT', type: 'LATEX' }, styleId);
     if (substyle) {
       debug(`Changing INPUT-ALT/LATEX style on ${styleId}/${substyle.id}`)
       change = { type: 'changeStyle', styleId: substyle.id, data: latexData }
@@ -125,7 +125,7 @@ export class MyScriptObserver implements ObserverInstance {
       change = {
         type: 'insertStyle',
         parentId: styleId,
-        styleProps: { type: 'LATEX', meaning: 'INPUT-ALT', data: latexData, }
+        styleProps: { type: 'LATEX', role: 'INPUT-ALT', data: latexData, }
       }
     }
     await this.notebook.requestChanges('MYSCRIPT', [ change ]);
@@ -156,7 +156,7 @@ export class MyScriptObserver implements ObserverInstance {
 
   private chStyleChanged(change: StyleChanged): void {
     const style = change.style;
-    if (style.meaning != 'INPUT' || style.type != 'DRAWING') { return; }
+    if (style.role != 'INPUT' || style.type != 'DRAWING') { return; }
     debug(`INPUT/DRAWING style ${style.id} changed. Adding to queue.`);
     this.addStyleToQueue(style.id, style.data);
   }

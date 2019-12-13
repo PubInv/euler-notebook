@@ -115,7 +115,7 @@ export class SubtrivClassifierObserver implements ObserverInstance {
       const styleProps: StylePropertiesWithSubprops = {
         type: 'IMAGE',
         data: urlPath,
-        meaning: 'PLOT',
+        role: 'PLOT',
       };
       const changeReq: StyleInsertRequest = {
         type: 'insertStyle',
@@ -160,7 +160,7 @@ export class SubtrivClassifierObserver implements ObserverInstance {
   }
 
   private async subtrivariateClassifierRule(style: StyleObject, rval: NotebookChangeRequest[]): Promise<void> {
-    if (style.type != 'WOLFRAM' || style.meaning != 'EVALUATION') { return; }
+    if (style.type != 'WOLFRAM' || style.role != 'EVALUATION') { return; }
     // debug("INSIDE QUAD CLASSIFIER :",style);
 
     var isSubTrivariate;
@@ -181,8 +181,8 @@ export class SubtrivClassifierObserver implements ObserverInstance {
       const styleProps: StylePropertiesWithSubprops = {
         type: 'CLASSIFICATION',
         data: isSubTrivariate,
-        meaning: 'SUBTRIVARIATE',
-        exclusiveChildTypeAndMeaning: true,
+        role: 'SUBTRIVARIATE',
+        exclusiveChildTypeAndRole: true,
       };
       const changeReq: StyleInsertRequest = {
         type: 'insertStyle',
@@ -195,7 +195,7 @@ export class SubtrivClassifierObserver implements ObserverInstance {
       const toolInfo: ToolInfo = { name: 'plot', html: "Plot" };
       const styleProps2: StylePropertiesWithSubprops = {
         type: 'TOOL',
-        meaning: 'ATTRIBUTE',
+        role: 'ATTRIBUTE',
         data: toolInfo,
       }
       const changeReq2: StyleInsertRequest = {
@@ -209,7 +209,7 @@ export class SubtrivClassifierObserver implements ObserverInstance {
 
   private async subTrivariateClassifierChangedRule(relationship: RelationshipObject, rval: NotebookChangeRequest[]): Promise<void> {
 
-    if (relationship.meaning != 'SYMBOL-DEPENDENCY') return;
+    if (relationship.role != 'SYMBOL-DEPENDENCY') return;
 
     debug("RELATIONSHIP",relationship);
 
@@ -267,7 +267,7 @@ export class SubtrivClassifierObserver implements ObserverInstance {
         const styleProps: StylePropertiesWithSubprops = {
           type: 'CLASSIFICATION',
           data: isSubTrivariate,
-          meaning: 'SUBTRIVARIATE',
+          role: 'SUBTRIVARIATE',
 //          exclusiveChildTypeAndMeaning: true,
         }
         const changeReq: StyleInsertRequest = {

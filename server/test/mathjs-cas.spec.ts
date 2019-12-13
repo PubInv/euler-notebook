@@ -58,7 +58,7 @@ describe("mathjs-cas", function(){
   it(`Adds appropriate substyles to MATHJS INPUT for ${EXPR1}`, async function(){
 
     // Insert a MATHJS INPUT style "2+2"
-    const styleProps: StylePropertiesWithSubprops = { type: 'MATHJS', meaning: 'INPUT', data: EXPR1 };
+    const styleProps: StylePropertiesWithSubprops = { type: 'MATHJS', role: 'INPUT', data: EXPR1 };
     const changeRequest: StyleInsertRequest = { type: 'insertStyle', styleProps };
     const changes: NotebookChange[] = await notebook.requestChanges('USER', [changeRequest]);
     // console.dir(changes);
@@ -81,7 +81,7 @@ describe("mathjs-cas", function(){
 
   it(`Adds appropriate substyles to MATHJS INPUT for ${EQUA1}`, async function(){
 
-    const styleProps: StylePropertiesWithSubprops = { type: 'MATHJS', meaning: 'INPUT', data: EQUA1 };
+    const styleProps: StylePropertiesWithSubprops = { type: 'MATHJS', role: 'INPUT', data: EQUA1 };
     const changeRequest: StyleInsertRequest = { type: 'insertStyle', styleProps };
     const changes: NotebookChange[] = await notebook.requestChanges('USER', [changeRequest]);
     assert.equal(8,changes.length);

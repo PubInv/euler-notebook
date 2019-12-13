@@ -74,15 +74,15 @@ export class FormulaCellView extends CellView {
 
   private renderFormula(style: StyleObject): void {
 
-    if (style.meaning != 'INPUT') {
-      throw new Error(`Cannot render unknown formula meaning ${style.meaning}`);
+    if (style.role != 'INPUT') {
+      throw new Error(`Cannot render unknown formula meaning ${style.role}`);
     }
 
     // If the style is not 'LATEX' then look for an INPUT-ALT/LATEX substyle to render instead.
     let type = style.type;
     let data = style.data;
     if (type != 'LATEX') {
-      const substyle = this.notebookView.openNotebook.findStyle({ meaning: 'INPUT-ALT', type: 'LATEX' }, style.id);
+      const substyle = this.notebookView.openNotebook.findStyle({ role: 'INPUT-ALT', type: 'LATEX' }, style.id);
       if (substyle) {
         type = substyle.type;
         data = substyle.data;
@@ -103,7 +103,7 @@ export class FormulaCellView extends CellView {
     //         we are just appending the evaluation
     //         to the end of the formula.
     {
-      const findOptions: FindStyleOptions = { meaning: 'EVALUATION', recursive: true };
+      const findOptions: FindStyleOptions = { role: 'EVALUATION', recursive: true };
       const evaluationStyles = this.notebookView.openNotebook.findStyles(findOptions, style.id);
       for (const evaluationStyle of evaluationStyles) {
         // HACK ALERT: We only take evaluations that are numbers:
@@ -121,7 +121,7 @@ export class FormulaCellView extends CellView {
     //         we are just appending the list of equivalent formulas
     //         to the end of the formula.
     {
-      const findOptions: FindRelationshipOptions = { fromId: style.id, toId: style.id, meaning: 'EQUIVALENCE' };
+      const findOptions: FindRelationshipOptions = { fromId: style.id, toId: style.id, role: 'EQUIVALENCE' };
       const relationships = this.notebookView.openNotebook.findRelationships(findOptions);
       const equivalentStyleIds = relationships.map(r=>(r.toId!=style.id ? r.toId : r.fromId)).sort();
       if (equivalentStyleIds.length>0) {
