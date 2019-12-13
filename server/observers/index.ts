@@ -23,7 +23,6 @@ import { Config, Credentials } from '../config';
 import { ServerNotebook } from '../server-notebook';
 
 import { MathematicaObserver } from './mathematica-cas';
-import { MathJsObserver } from './mathjs-cas';
 import { MyScriptObserver } from './myscript-observer';
 import { SandboxObserver } from './sandbox';
 import { SubtrivClassifierObserver } from './subtriv-classifier';
@@ -47,10 +46,6 @@ export async function initialize(config: Config, credentials: Credentials): Prom
     ServerNotebook.registerObserver('TEX-FORMATTER', TeXFormatterObserver);
     ServerNotebook.registerObserver('WOLFRAM', WolframObserver);
     ServerNotebook.registerObserver('ALGEBRAIC-TOOLS', AlgebraicToolsObserver);
-  }
-  if (config.mathjs) {
-    await MathJsObserver.initialize(config);
-    ServerNotebook.registerObserver('MATHJS', MathJsObserver);
   }
   if (credentials.myscript) {
     await MyScriptObserver.initialize(config, credentials.myscript);

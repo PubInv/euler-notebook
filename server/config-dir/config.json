@@ -5,7 +5,6 @@
     "cmd": "/Library/TeX/texbin/pdflatex"
   },
   "mathematica": {},
-  "mathjs": {},
   "@wolframscript": {
     "@path": "/usr/local/bin/wolframscript"
   }

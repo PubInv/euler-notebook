@@ -31,7 +31,6 @@ const readFile2 = promisify(readFile);
 
 export interface Config {
   mathematica?: MathematicaConfig;
-  mathjs?: {};
   nodeLatex?: NoteLatexConfig;
   wolframscript?: WolframScriptConfig;
 }
