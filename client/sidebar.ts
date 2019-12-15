@@ -120,7 +120,7 @@ export class Sidebar {
   // Private Event Handlers
 
   private onInsertDrawingButtonClicked(_e: MouseEvent): void {
-    this.notebookView.insertFigureCellBelow();
+    this.notebookView.insertStylusCellBelow();
   }
 
   private onKeyboardButtonClicked(_e: MouseEvent): void {

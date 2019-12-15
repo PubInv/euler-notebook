@@ -109,7 +109,20 @@ export class MyScriptObserver implements ObserverInstance {
     }
   }
 
-  private async processEntry(styleId: StyleId, data: DrawingData): Promise<void> {
+  private async processQueue(): Promise<void> {
+    debug(`Processing the queue.`);
+    while  (this.styleOrder.length>0) {
+      const styleId = this.styleOrder.shift()!;
+      const data = this.styleData.get(styleId)!;
+      /* assert(data) */ if (!data) { throw new Error(`Data not found for style ${styleId}`); }
+      this.styleData.delete(styleId);
+      debug(`Recognizing strokes for style ${styleId}.`);
+      await this.processQueueEntry(styleId, data);
+    }
+    debug(`Finished processing the queue.`);
+  }
+
+  private async processQueueEntry(styleId: StyleId, data: DrawingData): Promise<void> {
     const latexData = await this.recognizeStrokes(data);
     // console.dir(latexData);
 
@@ -131,19 +144,6 @@ export class MyScriptObserver implements ObserverInstance {
     await this.notebook.requestChanges('MYSCRIPT', [ change ]);
   }
 
-  private async processQueue(): Promise<void> {
-    debug(`Processing the queue.`);
-    while  (this.styleOrder.length>0) {
-      const styleId = this.styleOrder.shift()!;
-      const data = this.styleData.get(styleId)!;
-      /* assert(data) */ if (!data) { throw new Error(`Data not found for style ${styleId}`); }
-      this.styleData.delete(styleId);
-      debug(`Recognizing strokes for style ${styleId}.`);
-      await this.processEntry(styleId, data);
-    }
-    debug(`Finished processing the queue.`);
-  }
-
   private async recognizeStrokes(data: DrawingData): Promise<LatexData> {
     // REVIEW: Are there fractional x and y values? Should we store strokes rounded already?
     // const jiix = await postJiixRequest(MyScriptObserver.keys, batchRequest);
@@ -157,6 +157,9 @@ export class MyScriptObserver implements ObserverInstance {
   private chStyleChanged(change: StyleChanged): void {
     const style = change.style;
     if (style.role != 'REPRESENTATION' || style.subrole != 'INPUT' || style.type != 'STROKES') { return };
+    if (!style.parentId) { return; }
+    const parentStyle = this.notebook.getStyleById(style.parentId);
+    if (parentStyle.role != 'FORMULA') { return; }
     debug(`REPRESENTATION|INPUT/STROKES style ${style.id} changed. Adding to queue.`);
     this.addStyleToQueue(style.id, style.data);
   }

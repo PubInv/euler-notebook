@@ -149,13 +149,12 @@ export interface StyleMap {
 }
 
 export const STYLE_ROLES = [
-  // Top level roles
+  // Top level (cell) roles
   'TEXT',
   'FIGURE',
   'FORMULA',
-  'PLOT',                 // Plot of a formula
-
-  'REPRESENTATION',
+  'PLOT',
+  'UNKNOWN',              // Type of the cell hasn't been determined.
 
   'ATTRIBUTE',            // Generic attribute. Meaning implied by type.
   'ERROR',                // An error message. Type should be text.
@@ -168,6 +167,7 @@ export const STYLE_ROLES = [
   'EQUATION',             // An equation
   'EQUATION-SOLUTION',    // An equation
   'EQUATION-DEFINITION',  // A simple equality relation defined
+  'REPRESENTATION',       // A representation of the parent style.
   'SYMBOL',               // Symbols extracted from an expression.
   'SYMBOL-DEFINITION',    // Definition of a symbol.
   'SYMBOL-USE',           // Use of a symbol.
@@ -225,6 +225,7 @@ export const STYLE_TYPES = [
   'EQUATION',        // An equation (ambiguously assertion or relation)
   'TEXT',            // TextData: Plain text
   'TOOL',            // ToolInfo: Tool that can be applied to the parent style.
+  'UNKNOWN',         // Type is as-yet unknown. Data field should be 'null'.
   'WOLFRAM',         // WolframData: Wolfram language expression
 ] as const;
 export type StyleType = typeof STYLE_TYPES[number];
@@ -676,6 +677,8 @@ export class Notebook {
     options: FindStyleOptions,
     rootId?: StyleId,           // Search child styles of this style, otherwise top-level styles.
   ): StyleObject|undefined {
+    // REVIEW: If we don't need to throw on multiple matches, then we can terminate the search
+    //         after we find the first match.
     // Like findStyles but expects to find zero or one matching style.
     // If it finds more than one matching style then it throws an exception.
     const styles = this.findStyles(options, rootId);
@@ -714,15 +717,16 @@ export class Notebook {
     return this.styleMap.hasOwnProperty(styleId);
   }
 
-  // public hasStyles(
-  //   options: FindStyleOptions,
-  //   rootId?: StyleId,           // Search child styles of this style, otherwise top-level styles.
-  // ): boolean {
-  //   // Returns true iff findStyles with the same parameters would return a non-empty list.
-  //   // LATER: Make this more efficient. We can return true when we find the first matching style.
-  //   const styles = this.findStyles(options, rootId);
-  //   return styles.length>0;
-  // }
+  public hasStyle(
+    options: FindStyleOptions,
+    rootId?: StyleId,           // Search child styles of this style, otherwise top-level styles.
+  ): boolean {
+    // Returns true iff findStyles with the same parameters would return a non-empty list.
+    // OPTIMIZATION: Return true when we find the first matching style.
+    // NOTE: We don't use 'findStyle' because that throws on multiple matches.
+    const styles = this.findStyles(options, rootId);
+    return styles.length>0;
+  }
 
   // --- PRIVATE ---
 

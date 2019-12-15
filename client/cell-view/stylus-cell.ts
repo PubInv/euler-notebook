@@ -52,7 +52,10 @@ export class StylusCell extends CellView {
   // Instance Methods
 
   public render(style: StyleObject): void {
-    this.renderStrokes(style);
+    const strokesStyle = this.notebookView.openNotebook.findStyle({ role: 'REPRESENTATION', subrole: 'INPUT', type: 'STROKES' }, style.id);
+    if (strokesStyle) {
+      this.renderStrokes(strokesStyle);
+    } // REVIEW: else render what?
   }
 
   // -- PRIVATE --
@@ -60,11 +63,11 @@ export class StylusCell extends CellView {
   // Constructor
 
   private constructor (notebookView: NotebookView, style: StyleObject) {
-    super(notebookView, style, 'figureCell');
+    super(notebookView, style, 'stylusCell');
 
     this.$canvas = $newSvg<SVGSVGElement>('svg', {
       appendTo: this.$elt,
-      attrs: </* TYPESCRIPT: */any>style.data.size,
+      attrs: { width: '6.5in', height: '1in' }, // TODO: strokesStyle.data.size,
       class: 'canvas',
       id: `svg${style.id}`,
       listeners: {
@@ -100,9 +103,9 @@ export class StylusCell extends CellView {
 
   // Private Instance Methods
 
-  private renderStrokes(style: StyleObject): void {
+  private renderStrokes(strokesStyle: StyleObject): void {
     this.$canvas.innerHTML = '';
-    const data: DrawingData = style.data;
+    const data: DrawingData = strokesStyle.data;
     for (const strokeGroup of data.strokeGroups) {
       for (const stroke of strokeGroup.strokes) {
         SvgStroke.create(this.$canvas, stroke);
@@ -176,10 +179,12 @@ export class StylusCell extends CellView {
     stroke.end(event, clientRect);
     delete pi.stroke;
 
-    const data: DrawingData = this.notebookView.openNotebook.getStyleById(this.styleId).data;
+    const strokesStyle = this.notebookView.openNotebook.findStyle({ role: 'REPRESENTATION', subrole: 'INPUT', type: 'STROKES' }, this.styleId);
+    if (!strokesStyle) { throw new Error("Stroke cell doesn't have REPRESENTATION|INPUT/STROKES substyle."); }
+    const data: DrawingData = strokesStyle.data;
     data.strokeGroups[0].strokes.push(stroke.data); // REVIEW: Modifying existing data in place???
 
-    this.notebookView.changeStyle(this.styleId, data)
+    this.notebookView.changeStyle(strokesStyle.id, data)
     .catch(err=>{
       // TODO: Display error to user?
       console.error(`Error submitting stroke: ${err.message}`);

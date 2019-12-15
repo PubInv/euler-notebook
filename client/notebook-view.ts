@@ -151,7 +151,7 @@ export class NotebookView {
     this.lastCellSelected.editMode();
   }
 
-  public async insertFigureCellBelow(): Promise<void> {
+  public async insertStylusCellBelow(): Promise<void> {
     // If cells are selected then in insert a keyboard input cell below the last cell selected.
     // Otherwise, insert at the end of the notebook.
     let afterId: StyleRelativePosition;
@@ -164,7 +164,12 @@ export class NotebookView {
         { strokes: [] }
       ],
     };
-    const styleProps: StylePropertiesWithSubprops = { role: 'FIGURE', type: 'STROKES', data };
+    const styleProps: StylePropertiesWithSubprops = {
+      role: 'UNKNOWN', type: 'UNKNOWN', data: null,
+      subprops: [
+        { role: 'REPRESENTATION', subrole: 'INPUT', type: 'STROKES', data }
+      ]
+    };
     const changeRequest: StyleInsertRequest = { type: 'insertStyle', afterId, styleProps };
     const undoChangeRequest = await this.sendUndoableChangeRequest(changeRequest);
     const styleId = (<StyleDeleteRequest>undoChangeRequest).styleId
@@ -389,7 +394,8 @@ export class NotebookView {
   }
 
   // Called by openNotebook when changes come in from the server.
-  // Called *after* the changes have been made to the notebook,
+  // Called *before* any delete changes have been made to the notebook,
+  // and *after* any other changes have been made to the notebook,
   // and *before* any promises for tracked change requests are resolved.
   public smChange(change: NotebookChange): void {
 
@@ -439,7 +445,8 @@ export class NotebookView {
           this.createCell(change.style, change.afterId!);
         } else {
           // REVIEW: Is there a way to tell what styles affect display?
-          this.dirtyCells.add(this.openNotebook.topLevelStyleOf(change.style.id).id);
+          const topLevelStyle = this.openNotebook.topLevelStyleOf(change.style.id);
+          this.dirtyCells.add(topLevelStyle.id);
         }
         break;
       }
