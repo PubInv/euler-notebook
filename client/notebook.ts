@@ -211,7 +211,6 @@ export const STYLE_SUBROLES = [
 export type StyleSubrole = typeof STYLE_SUBROLES[number];
 
 export const STYLE_TYPES = [
-  'DRAWING',         // Strokes of user sketch in our own format.
   'FORMULA',         // Type for top-level cells of role 'FORMULA' (no data yet.)
   'HTML',            // Html: HTML-formatted text
   'IMAGE',           // ImageData: URL of image relative to notebook folder.
@@ -219,6 +218,7 @@ export const STYLE_TYPES = [
   'LATEX',           // LatexData: LaTeX string // TODO: rename 'TEX'
   'CLASSIFICATION',  // DEPRECATED: A classifcication of the style.
   'MATHML',          // MathMlData: MathML Presentation XML
+  'STROKES',         // Strokes of user sketch in our own format.
   'SYMBOL',          // SymbolData: symbol in a definition or expression.
   'SOLUTION',        // The result of a "solve" operation
   'SVG',             // SvgData: SVG markup
@@ -249,7 +249,7 @@ export type StyleSource = typeof STYLE_SOURCES[number];
 
 // Constants
 
-export const VERSION = "0.0.10";
+export const VERSION = "0.0.11";
 
 // Exported Class
 

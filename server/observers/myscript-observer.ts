@@ -156,8 +156,8 @@ export class MyScriptObserver implements ObserverInstance {
 
   private chStyleChanged(change: StyleChanged): void {
     const style = change.style;
-    if (style.role != 'REPRESENTATION' || style.subrole != 'INPUT' || style.type != 'DRAWING') { return };
-    debug(`REPRESENTATION|INPUT/DRAWING style ${style.id} changed. Adding to queue.`);
+    if (style.role != 'REPRESENTATION' || style.subrole != 'INPUT' || style.type != 'STROKES') { return };
+    debug(`REPRESENTATION|INPUT/STROKES style ${style.id} changed. Adding to queue.`);
     this.addStyleToQueue(style.id, style.data);
   }
 
