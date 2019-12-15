@@ -67,12 +67,17 @@ export class AlgebraicToolsObserver implements ObserverInstance {
     debug(`useTool ${this.notebook._path} ${toolStyle.id}`);
 
       const styleProps: StylePropertiesWithSubprops = {
-        type: 'WOLFRAM',
-        data: toolStyle.data.data,
-        // WARNING! : Possibly this should be 'FACTORIZATION'
-        // or some other meaning. 'INPUT' is a stop-gap
-        // to work with the current GUI.
-        role: 'INPUT',
+        role: 'FORMULA',
+        type: 'FORMULA',
+        data: undefined,
+        subprops: [{
+          role: 'REPRESENTATION',
+          type: 'WOLFRAM',
+          data: toolStyle.data.data,
+          // WARNING! : Possibly this should be 'FACTORIZATION'
+          // or some other meaning. 'INPUT' is a stop-gap
+          // to work with the current GUI.
+        }],
       };
       const changeReq: StyleInsertRequest = {
         type: 'insertStyle',

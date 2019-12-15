@@ -21,9 +21,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 import * as debug1 from 'debug';
 import {
-  NotebookChange, StyleObject, StyleRole, FindStyleOptions, StyleType,
-  styleMatchesPattern, StyleProperties
-} from '../../client/notebook';
+  NotebookChange, StyleObject, FindStyleOptions, styleMatchesPattern, StyleProperties} from '../../client/notebook';
 import { NotebookChangeRequest } from '../../client/math-tablet-api';
 import { ObserverInstance, ServerNotebook }  from '../server-notebook';
 import { Config } from '../config';
@@ -39,11 +37,13 @@ type StyleTest  = FindStyleOptions|StyleTestFunction;
 
 export type Rules = Rule[];
 
+// TYPESCRIPT: AsyncRule vs. SyncRule?
+// TYPESCRIPT: ParentRule vs. PeerRule?
 interface Rule {
   name: string;   // Rule name for debugging.
-  parentStyleTest: StyleTest;
-  role: StyleRole;
-  type: StyleType;
+  parentStyleTest?: StyleTest;
+  peerStyleTest?: StyleTest;
+  props: Omit<StyleProperties, "data">;
   computeSync?: (parentData: /* TYPESCRIPT: */any)=>/* TYPESCRIPT: */any|undefined;
   computeAsync?: (parentData: /* TYPESCRIPT: */any)=>Promise</* TYPESCRIPT: */any|undefined>;
 }
@@ -73,6 +73,7 @@ export abstract class BaseObserver implements ObserverInstance {
 
   // Instance Methods
 
+
   public async onChangesAsync(changes: NotebookChange[]): Promise<NotebookChangeRequest[]> {
     // IMPORTANT: This code parallels code in onChangesSync, with the major difference that
     //            we do not have an await on the synchronous compute function.
@@ -82,41 +83,14 @@ export abstract class BaseObserver implements ObserverInstance {
     for (const rule of this.rules) {
       // If the rule is asynchronous, then don't bother.
       if (!rule.computeAsync) { continue; }
-      debug(`Evaluating async rule ${rule.name}.`);
+      // REVIEW: Can we just check rules once, instead of on every set of changes?
+      if (rule.parentStyleTest && rule.peerStyleTest) { throw new Error(`Rule has both parent and peer style tests.`); }
+      if (!rule.parentStyleTest && !rule.peerStyleTest) { throw new Error(`Rule doesn't have parent or peer style test.`); }
+
       for (const change of changes) {
         if (!change) { /* REVIEW: Don't allow falsy changes */ continue; }
-        if (change.type != 'styleChanged' && change.type != 'styleInserted') { continue; }
-        debug(`Processing change: `, change);
-        const style = change.style;
-        if (!styleMatchesTest(this.notebook, style, rule.parentStyleTest)) { break; }
-        const data = await rule.computeAsync(style.data);
-        const substyle = (change.type == 'styleChanged' && this.notebook.findStyle({ role: rule.role, type: rule.type}, style.id));
-        let changeRequest: NotebookChangeRequest|undefined;
-        if (data) {
-          // Child data was produced.
-          if (change.type == 'styleInserted' || (change.type == 'styleChanged' && !substyle)) {
-            // The substyle doesn't exist, so add it.
-            const styleProps: StyleProperties = { role: rule.role, type: rule.type, data }
-            changeRequest = { type: 'insertStyle', parentId: style.id, styleProps };
-          } else {
-            // The substyle exists, so change it.
-            changeRequest = { type: 'changeStyle', styleId: (<StyleObject>substyle).id, data };
-          }
-        } else {
-          // No child data was produced. Based on the input, the observer has determined that a substyle should
-          // not exist.
-          if (substyle) {
-            // Delete the existing substyle..
-            changeRequest = { type: 'deleteStyle', styleId: substyle.id };
-          } else {
-            // No substyle, no problem! Nothing to do.
-            changeRequest = undefined;
-          }
-        }
-        if (changeRequest) {
-          debug(`Generated change request: `, changeRequest);
-          rval.push(changeRequest);
-        }
+        const changeRequest = await this.onChangeAsync(rule, change);
+        if (changeRequest) { rval.push(changeRequest); }
       }
     }
     debug(`onChangesAsync returning ${rval.length} changes.`);
@@ -132,37 +106,13 @@ export abstract class BaseObserver implements ObserverInstance {
     for (const rule of this.rules) {
       // If the rule is asynchronous, then don't bother.
       if (!rule.computeSync) { continue; }
-      debug(`Evaluating sync rule ${rule.name}.`);
+      // REVIEW: Can we just check rules once, instead of on every set of changes?
+      if (rule.parentStyleTest && rule.peerStyleTest) { throw new Error(`Rule has both parent and peer style tests.`); }
+      if (!rule.parentStyleTest && !rule.peerStyleTest) { throw new Error(`Rule doesn't have parent or peer style test.`); }
+
       for (const change of changes) {
         if (!change) { /* REVIEW: Don't allow falsy changes */ continue; }
-        if (change.type != 'styleChanged' && change.type != 'styleInserted') { continue; }
-        debug(`onChangeSync ${this.notebook._path} ${change.type}`);
-        const style = change.style;
-        if (!styleMatchesTest(this.notebook, style, rule.parentStyleTest)) { break; }
-        const data = rule.computeSync(style.data);
-        const substyle = (change.type == 'styleChanged' && this.notebook.findStyle({ role: rule.role, type: rule.type}, style.id));
-        let changeRequest: NotebookChangeRequest|undefined;
-        if (data) {
-          // Child data was produced.
-          if (change.type == 'styleInserted' || (change.type == 'styleChanged' && !substyle)) {
-            // The substyle doesn't exist, so add it.
-            const styleProps: StyleProperties = { role: rule.role, type: rule.type, data }
-            changeRequest = { type: 'insertStyle', parentId: style.id, styleProps };
-          } else {
-            // The substyle exists, so change it.
-            changeRequest = { type: 'changeStyle', styleId: (<StyleObject>substyle).id, data };
-          }
-        } else {
-          // No child data was produced. Based on the input, the observer has determined that a substyle should
-          // not exist.
-          if (substyle) {
-            // Delete the existing substyle..
-            changeRequest = { type: 'deleteStyle', styleId: substyle.id };
-          } else {
-            // No substyle, no problem! Nothing to do.
-            changeRequest = undefined;
-          }
-        }
+        const changeRequest = this.onChangeSync(rule, change);
         if (changeRequest) { rval.push(changeRequest);}
       }
     }
@@ -194,6 +144,66 @@ export abstract class BaseObserver implements ObserverInstance {
   protected notebook: ServerNotebook;
 
   // Private Instance Methods
+
+  private async onChangeAsync(rule: Rule, change: NotebookChange): Promise<NotebookChangeRequest|undefined> {
+    if (change.type != 'styleChanged' && change.type != 'styleInserted') { return undefined; }
+    const sourceStyle = change.style;
+    const styleTest = (rule.parentStyleTest || rule.peerStyleTest)!;
+    if (!styleMatchesTest(this.notebook, sourceStyle, styleTest)) { return undefined; }
+    const data = await rule.computeAsync!(sourceStyle.data);
+    const parentId = (rule.parentStyleTest ? sourceStyle.id: sourceStyle.parentId);
+    const targetStyle = (change.type == 'styleChanged' && this.notebook.findStyle({ role: rule.props.role, type: rule.props.type}, parentId));
+    let changeRequest: NotebookChangeRequest|undefined = undefined;
+    if (data) {
+      // Data was produced by the rule.
+      // Insert the target style if it doesn't exist, or change the target style's data if it exists.
+      if (change.type == 'styleInserted' || (change.type == 'styleChanged' && !targetStyle)) {
+        changeRequest = { type: 'insertStyle', parentId, styleProps: { ...rule.props, data } };
+      } else {
+        changeRequest = { type: 'changeStyle', styleId: (<StyleObject>targetStyle).id, data };
+      }
+    } else {
+      // No data was produced by the rule.
+      // Delete the target style if it exists.
+      if (targetStyle) { changeRequest = { type: 'deleteStyle', styleId: targetStyle.id }; }
+    }
+    if (changeRequest) {
+      debug(`Rule: ${JSON.stringify(rule)}`);
+      debug(`Change: ${JSON.stringify(change)}`);
+      debug(`Yields: ${JSON.stringify(changeRequest)}`);
+    }
+    return changeRequest;
+  }
+
+  private onChangeSync(rule: Rule, change: NotebookChange): NotebookChangeRequest|undefined {
+    if (change.type != 'styleChanged' && change.type != 'styleInserted') { return undefined; }
+    const sourceStyle = change.style;
+    const styleTest = (rule.parentStyleTest || rule.peerStyleTest)!;
+    if (!styleMatchesTest(this.notebook, sourceStyle, styleTest)) { return undefined; }
+    const data = rule.computeSync!(sourceStyle.data);
+    const parentId = (rule.parentStyleTest ? sourceStyle.id: sourceStyle.parentId);
+    const targetStyle = (change.type == 'styleChanged' && this.notebook.findStyle({ role: rule.props.role, type: rule.props.type}, parentId));
+    let changeRequest: NotebookChangeRequest|undefined = undefined;
+    if (data) {
+      // Data was produced by the rule.
+      // Insert the target style if it doesn't exist, or change the target style's data if it exists.
+      if (change.type == 'styleInserted' || (change.type == 'styleChanged' && !targetStyle)) {
+        changeRequest = { type: 'insertStyle', parentId, styleProps: { ...rule.props, data } };
+      } else {
+        changeRequest = { type: 'changeStyle', styleId: (<StyleObject>targetStyle).id, data };
+      }
+    } else {
+      // No data was produced by the rule.
+      // Delete the target style if it exists.
+      if (targetStyle) { changeRequest = { type: 'deleteStyle', styleId: targetStyle.id }; }
+    }
+    if (changeRequest) {
+      debug(`Rule: ${JSON.stringify(rule)}`);
+      debug(`Change: ${JSON.stringify(change)}`);
+      debug(`Yields: ${JSON.stringify(changeRequest)}`);
+    }
+    return changeRequest;
+  }
 
 }
 

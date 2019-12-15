@@ -49,9 +49,9 @@ describe("notebook", function() {
         "nextId": 4,
         "relationshipMap": {},
         "styleMap": {
-          "1": { "data": "a", "id": 1, "role": "INPUT", "parentId": 0, "source": "TEST", "type": "TEXT", },
-          "2": { "data": "b", "id": 2, "role": "INPUT", "parentId": 0, "source": "TEST", "type": "TEXT", },
-          "3": { "data": "c", "id": 3, "role": "INPUT", "parentId": 0, "source": "TEST", "type": "TEXT", }
+          "1": { "data": "a", "id": 1, "role": "TEXT", "parentId": 0, "source": "TEST", "type": "TEXT", },
+          "2": { "data": "b", "id": 2, "role": "TEXT", "parentId": 0, "source": "TEST", "type": "TEXT", },
+          "3": { "data": "c", "id": 3, "role": "TEXT", "parentId": 0, "source": "TEST", "type": "TEXT", }
         },
         "styleOrder": [ 1, 2, 3 ],
         "version": VERSION,
@@ -78,7 +78,7 @@ async function createNotebookFromText(type: StyleType, text: string): Promise<Se
   const td = await ServerNotebook.createAnonymous();
   const changeRequests: NotebookChangeRequest[] = text.split(";").map(s=>{
     const data = s.trim();
-    const styleProps: StylePropertiesWithSubprops = { type, role: 'INPUT', data };
+    const styleProps: StylePropertiesWithSubprops = { role: 'TEXT', type, data };
     const rval: StyleInsertRequest = { type: 'insertStyle', styleProps }
     return rval;
   });

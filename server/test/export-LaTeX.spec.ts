@@ -65,9 +65,20 @@ export class TestObserver implements ObserverInstance {
 function generateInsertRequests(inputs :string[]) : StyleInsertRequest[] {
   var reqs : StyleInsertRequest[] = [];
   for(const i of inputs) {
-    reqs.push( { type: 'insertStyle',
-                 styleProps: { type: 'WOLFRAM', role: 'INPUT', data: i } }
-             );
+    reqs.push({
+      type: 'insertStyle',
+      styleProps: {
+        role: 'FORMULA',
+        type: 'FORMULA',
+        data: undefined,
+        subprops: [{
+          role: 'REPRESENTATION',
+          subrole: 'INPUT',
+          type: 'WOLFRAM',
+          data: i,
+        }],
+      }
+    });
   }
   return reqs;
 }

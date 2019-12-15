@@ -25,7 +25,6 @@ import { BaseObserver, Rules } from './base-observer';
 import { convertTeXtoWolfram, execute, convertWolframToTeX } from '../wolframscript';
 import { ServerNotebook } from '../server-notebook';
 import { WolframData, LatexData, isEmptyOrSpaces } from '../../client/math-tablet-api';
-import { StyleObject } from '../../client/notebook';
 
 const MODULE = __filename.split(/[/\\]/).slice(-1)[0].slice(0,-3);
 const debug = debug1(`server:${MODULE}`);
@@ -53,42 +52,27 @@ export class WolframObserver extends BaseObserver {
 
   private static RULES: Rules = [
     {
-      // TODO: Add style as peer, not child
       name: "tex-to-wolfram",
-      parentStyleTest: WolframObserver.isConvertibleLatexStyle,
-      role: 'INPUT-ALT',
-      type: 'WOLFRAM',
+      peerStyleTest: { role: 'REPRESENTATION', type: 'LATEX', notSource: 'WOLFRAM' },
+      props: { role: 'REPRESENTATION', subrole: 'ALTERNATE', type: 'WOLFRAM' },
       computeAsync: WolframObserver.ruleConvertTexToWolfram,
     },
     {
       name: "wolfram-to-tex",
-      parentStyleTest: { role: 'INPUT', type: 'WOLFRAM' },
-      role: 'INPUT-ALT',
-      type: 'LATEX',
+      peerStyleTest: { role: 'REPRESENTATION', subrole: 'INPUT', type: 'WOLFRAM' },
+      props: { role: 'REPRESENTATION', subrole: 'ALTERNATE', type: 'LATEX' },
       computeAsync: WolframObserver.ruleConvertWolframToTex,
     },
     {
       name: "evaluate-wolfram",
-      parentStyleTest: { role: /^(INPUT|INPUT-ALT)$/, type: 'WOLFRAM' },
-      // parentStylePattern: { role: 'INPUT', type: 'WOLFRAM' },
-      role: 'EVALUATION',
-      type: 'WOLFRAM',
+      // REVIEW: Should evaluation be attached to FORMULA, rather than REPRESENTATION?
+      parentStyleTest: { role: 'REPRESENTATION', type: 'WOLFRAM' },
+      props: { role: 'EVALUATION', type: 'WOLFRAM' },
       computeAsync: WolframObserver.ruleEvaluateWolframExpr,
     },
   ];
 
   // Private Class Methods
-
-  private static isConvertibleLatexStyle(notebook: ServerNotebook, style: StyleObject): boolean {
-    if (style.type != 'LATEX') { return false; }
-    if (style.role!='INPUT' && style.role!='INPUT-ALT') { return false; }
-    if (style.parentId) {
-      const parentStyle = notebook.getStyleById(style.parentId);
-      if (parentStyle.parentId) { return false; }
-      if (parentStyle.type == 'WOLFRAM') { return false; }
-    }
-    return true;
-  }
 
   private static async ruleConvertTexToWolfram(data: LatexData): Promise<WolframData|undefined> {
     // REVIEW: If conversion fails?

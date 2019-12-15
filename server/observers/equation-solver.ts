@@ -91,12 +91,18 @@ export class EquationSolverObserver implements ObserverInstance {
     // };
     debug("npv.value",nvp.value);
     const styleProps: StylePropertiesWithSubprops = {
-      type: 'WOLFRAM',
-      data: nvp.name + ' = ' + nvp.value,
-      role: 'INPUT',
+      role: 'FORMULA',
+      type: 'FORMULA',
+      data: undefined,
       relationsTo,
+      subprops: [{
+        role: 'REPRESENTATION',
+        subrole: 'ALTERNATE',
+        type: 'WOLFRAM',
+        data: nvp.name + ' = ' + nvp.value,
+      }],
     };
-      const changeReq: StyleInsertRequest = {
+    const changeReq: StyleInsertRequest = {
         type: 'insertStyle',
         styleProps,
       };

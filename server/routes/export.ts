@@ -77,7 +77,7 @@ async function onExportPage(req: Request, res: Response, next: NextFunction): Pr
         title: "Invalid Export Format",
         messageHtml: `Notebook <tt>${exportFormat}</tt> not found for export.`,
       }
-      return res.render('expected-error', locals)
+      return res.status(400).render('expected-error', locals)
     }
 
     let notebook: ServerNotebook;
@@ -90,7 +90,7 @@ async function onExportPage(req: Request, res: Response, next: NextFunction): Pr
           title: "Notebook Not Found",
           messageHtml: `Notebook <tt>${notebookPath}</tt> not found for export.`,
         }
-        return res.render('expected-error', locals);
+        return res.status(404).render('expected-error', locals);
       } else {
         throw err;
       }

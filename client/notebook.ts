@@ -61,7 +61,9 @@ export interface FindRelationshipOptions {
 // REVIEW: Rename to FindStylePattern
 export interface FindStyleOptions {
   role?: StyleRole|RegExp;
+  subrole?: StyleSubrole;
   source?: StyleSource;
+  notSource?: StyleSource;
   type?: StyleType;
   recursive?: boolean;
 }
@@ -147,18 +149,22 @@ export interface StyleMap {
 }
 
 export const STYLE_ROLES = [
+  // Top level roles
+  'TEXT',
+  'FIGURE',
+  'FORMULA',
+  'PLOT',                 // Plot of a formula
+
+  'REPRESENTATION',
+
   'ATTRIBUTE',            // Generic attribute. Meaning implied by type.
   'ERROR',                // An error message. Type should be text.
   'EVALUATION',           // CAS evaluation of an expression.
   'EVALUATION-ERROR',     // Error in CAS evaluation of an expression.
   'EXPOSITION',           // A longer discussion or description.
-  'FORMULA-ALT',          // Alternative representation of a formula.
   'HANDWRITING',          // REVIEW: Used? Deprecate? Stroke information for the user's handwriting.
-  'INPUT',                // Primary representation of something that the user has input.
-  'INPUT-ALT',            // An alternative representation, e.g. LaTeX version of handwritten math.
   'QUADRATIC',            // DEPRECATED: A quadratic expression, presumably worth plotting.
   'SIMPLIFICATION',       // CAS simplification of expression or equation.
-  'PLOT',                 // Plot of a formula
   'EQUATION',             // An equation
   'EQUATION-SOLUTION',    // An equation
   'EQUATION-DEFINITION',  // A simple equality relation defined
@@ -186,6 +192,7 @@ export type StyleOrdinalPosition = number;
 export interface StyleProperties {
   data: any;
   role: StyleRole;
+  subrole?: StyleSubrole;
   type: StyleType;
 }
 
@@ -195,8 +202,17 @@ export enum StylePosition {
   Top = 0,
   Bottom = -1,
 }
+
+export const STYLE_SUBROLES = [
+   // REPRESENTATION subroles
+   'INPUT',
+   'ALTERNATE',
+];
+export type StyleSubrole = typeof STYLE_SUBROLES[number];
+
 export const STYLE_TYPES = [
   'DRAWING',         // Strokes of user sketch in our own format.
+  'FORMULA',         // Type for top-level cells of role 'FORMULA' (no data yet.)
   'HTML',            // Html: HTML-formatted text
   'IMAGE',           // ImageData: URL of image relative to notebook folder.
   'JIIX',            // Jiix: MyScript JIIX export from 'MATH' editor.
@@ -233,7 +249,7 @@ export type StyleSource = typeof STYLE_SOURCES[number];
 
 // Constants
 
-export const VERSION = "0.0.9";
+export const VERSION = "0.0.10";
 
 // Exported Class
 
@@ -789,8 +805,10 @@ export function StyleInsertedFromNotebookChange(change: NotebookChange): StyleIn
 
 export function styleMatchesPattern(style: StyleObject, options: FindStyleOptions): boolean {
   return    (!options.role || (typeof options.role == 'object' && </* TYPESCRIPT: */any>options.role instanceof RegExp ? (<RegExp>options.role).test(style.role) : style.role == options.role))
+         && (!options.subrole || style.subrole == options.subrole)
          && (!options.type || style.type == options.type)
-         && (!options.source || style.source == options.source);
+         && (!options.source || style.source == options.source)
+         && (!options.notSource || style.source != options.notSource);
 }
 
 // TEMPORARY

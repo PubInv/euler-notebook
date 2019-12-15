@@ -74,26 +74,23 @@ export class FormulaCellView extends CellView {
 
   private renderFormula(style: StyleObject): void {
 
-    if (style.role != 'INPUT') {
-      throw new Error(`Cannot render unknown formula meaning ${style.role}`);
+    // Look for a LATEX REPRESENTATION.
+    let repStyle = this.notebookView.openNotebook.findStyle({ role: 'REPRESENTATION', type: 'LATEX' }, style.id);
+    if (!repStyle) {
+      repStyle = this.notebookView.openNotebook.findStyle({ role: 'REPRESENTATION', subrole: 'INPUT' }, style.id);
     }
 
-    // If the style is not 'LATEX' then look for an INPUT-ALT/LATEX substyle to render instead.
-    let type = style.type;
-    let data = style.data;
-    if (type != 'LATEX') {
-      const substyle = this.notebookView.openNotebook.findStyle({ role: 'INPUT-ALT', type: 'LATEX' }, style.id);
-      if (substyle) {
-        type = substyle.type;
-        data = substyle.data;
+    let html: Html|undefined
+    if (repStyle) {
+      let errorHtml: Html|undefined;
+      // Render the formula data.
+      const renderer = getRenderer(repStyle.type);
+      ({ html, errorHtml } = renderer(repStyle.data));
+      if (errorHtml) {
+        html = `<div class="error">${errorHtml}</div><tt>${escapeHtml(style.data.toString())}</tt>`;
       }
-    }
-
-    // Render the formula data.
-    const renderer = getRenderer(type);
-    let { html, errorHtml } = renderer(data);
-    if (errorHtml) {
-      html = `<div class="error">${errorHtml}</div><tt>${escapeHtml(style.data.toString())}</tt>`;
+    } else {
+      html = "<i>No renderable representations</i>";
     }
 
     // Render Wolfram evaluation if it exists.

@@ -53,9 +53,8 @@ export class SvgObserver extends BaseObserver {
   private static RULES: Rules = [
     {
       name: "strokes-to-svg",
-      parentStyleTest: { role: 'INPUT', type: 'DRAWING' },
-      role: 'INPUT-ALT',
-      type: 'SVG',
+      peerStyleTest: { role: 'REPRESENTATION', type: 'DRAWING' },
+      props: { role: 'REPRESENTATION', subrole: 'ALTERNATE', type: 'SVG' },
       computeSync: SvgObserver.ruleConvertDrawingToSvg,
     },
   ];

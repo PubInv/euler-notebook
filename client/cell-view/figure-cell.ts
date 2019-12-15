@@ -21,14 +21,12 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 // Requirements
 
-import { $new, $newSvg, Html, escapeHtml } from '../dom.js';
-import { DrawingData, StyleObject, FindStyleOptions, FindRelationshipOptions } from '../notebook.js';
+import { $newSvg } from '../dom.js';
+import { DrawingData, StyleObject } from '../notebook.js';
 import { NotebookView } from '../notebook-view.js';
-import { getRenderer } from '../renderers.js';
 import { SvgStroke } from '../svg-stroke.js';
 
 import { CellView } from './index.js';
-import { ToolInfo } from '../math-tablet-api.js';
 
 // Types
 
@@ -41,11 +39,11 @@ interface PointerInfo {
 
 // Class
 
-export class DrawingCellView extends CellView {
+export class FigureCellView extends CellView {
 
   // Public Class Methods
 
-  public static create(notebookView: NotebookView, style: StyleObject): DrawingCellView {
+  public static create(notebookView: NotebookView, style: StyleObject): FigureCellView {
     const instance = new this(notebookView, style);
     instance.render(style);
     return instance;
@@ -55,8 +53,6 @@ export class DrawingCellView extends CellView {
 
   public render(style: StyleObject): void {
     this.renderStrokes(style);
-    this.renderFormula(style);
-    this.renderTools(style);
   }
 
   // -- PRIVATE --
@@ -64,16 +60,7 @@ export class DrawingCellView extends CellView {
   // Constructor
 
   private constructor (notebookView: NotebookView, style: StyleObject) {
-    super(notebookView, style, 'drawingCell');
-
-    const $formulaRow = $new<HTMLDivElement>('div', {
-      appendTo: this.$elt,
-      class: 'formulaRow',
-    });
-    this.$formula = $new<HTMLDivElement>('div', { class: 'formula', appendTo: $formulaRow });
-    this.$tools = $new<HTMLDivElement>('div', { class: 'tools', appendTo: $formulaRow });
-    $new<HTMLDivElement>('div', { class: 'handle', html: `(${style.id})`, appendTo: $formulaRow });
-    $new<HTMLDivElement>('div', { class: 'status', html: "&nbsp;", appendTo: $formulaRow });
+    super(notebookView, style, 'figureCell');
 
     this.$canvas = $newSvg<SVGSVGElement>('svg', {
       appendTo: this.$elt,
@@ -98,8 +85,6 @@ export class DrawingCellView extends CellView {
   // Private Instance Properties
 
   private $canvas: SVGSVGElement;
-  private $formula: HTMLDivElement;
-  private $tools: HTMLDivElement;
   private pointerMap: PointerMap;
 
   // Private Instance Property Functions
@@ -125,78 +110,6 @@ export class DrawingCellView extends CellView {
     }
   }
 
-  private renderFormula(style: StyleObject): void {
-    // TODO: Much of this is duplicated from formula-cell/renderFormula
-    const latexStyle = this.notebookView.openNotebook.findStyle({ role: 'INPUT-ALT', type: 'LATEX' }, style.id);
-    if (!latexStyle) { return; }
-    const renderer = getRenderer('LATEX');
-    let { html, errorHtml } = renderer(latexStyle.data);
-    if (errorHtml) {
-      html = `<div class="error">${errorHtml}</div><tt>${escapeHtml(style.data.toString())}</tt>`;
-    }
-
-    // Render Wolfram evaluation if it exists.
-    // REVIEW: Rendering evaluation annotations should probably be
-    //         done separately from rendering the formula,
-    //         but for now, for lack of a better place to put them,
-    //         we are just appending the evaluation
-    //         to the end of the formula.
-    {
-      const findOptions: FindStyleOptions = { role: 'EVALUATION', recursive: true };
-      const evaluationStyles = this.notebookView.openNotebook.findStyles(findOptions, style.id);
-      for (const evaluationStyle of evaluationStyles) {
-        // HACK ALERT: We only take evaluations that are numbers:
-        const evalStr = evaluationStyle.data.toString();
-        if (/^\d+$/.test(evalStr)) {
-          html += ` [=${evalStr}]`;
-        }
-      }
-    }
-
-    // Render list of equivalent styles, if there are any.
-    // REVIEW: Rendering equivalency annotations should probably be
-    //         done separately from rendering the formula,
-    //         but for now, for lack of a better place to put them,
-    //         we are just appending the list of equivalent formulas
-    //         to the end of the formula.
-    {
-      const findOptions: FindRelationshipOptions = { fromId: style.id, toId: style.id, role: 'EQUIVALENCE' };
-      const relationships = this.notebookView.openNotebook.findRelationships(findOptions);
-      const equivalentStyleIds = relationships.map(r=>(r.toId!=style.id ? r.toId : r.fromId)).sort();
-      if (equivalentStyleIds.length>0) {
-        html += ` {${equivalentStyleIds.join(', ')}}`;
-      }
-    }
-
-    this.$formula.innerHTML = html!;
-  }
-
-  // TODO: Duplicated from formula-cell
-  private renderTools(style:StyleObject): void {
-    this.$tools.innerHTML = '';
-    // REVIEW: If we attached tool styles to the top-level style,
-    //         then we would not need to do a recursive search.
-    const findOptions2: FindStyleOptions = { type: 'TOOL', recursive: true };
-    const toolStyles = this.notebookView.openNotebook.findStyles(findOptions2, style.id);
-    for (const toolStyle of toolStyles) {
-      const toolInfo: ToolInfo = toolStyle.data;
-      let html: Html;
-      if (toolInfo.tex) {
-        const latexRenderer = getRenderer('LATEX');
-        const results = latexRenderer!(toolInfo.tex);
-        if (results.html) { html = results.html; }
-        else { html = results.errorHtml!; }
-      } else {
-        html = toolInfo.html!;
-      }
-      const $button = $new('button', {
-        class: 'tool',
-        html,
-        listeners: { 'click': _e=>this.notebookView.useTool(toolStyle.id) }
-      });
-      this.$tools.appendChild($button);
-    }
-  }
 
   // Private Event Handlers
 

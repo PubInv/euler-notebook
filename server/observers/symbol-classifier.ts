@@ -196,8 +196,6 @@ export class SymbolClassifierObserver implements ObserverInstance {
     debug("RVAL deletion ====XXXX",rval);
   }
 
-
-
   // Since a relationship may already exist and this code is trying to handle
   // both inserts and changes, we have to decide how we make sure there are not duplicates.
   // This is a little tricky, as we may be part of a chain. Possibly I should make a unit test
@@ -217,7 +215,7 @@ export class SymbolClassifierObserver implements ObserverInstance {
     // I believe listening only for the WOLFRAM/INPUT forces
     // a serialization that we don't want to support. We also must
     // listen for definition and use and handle them separately...
-    if (style.type == 'WOLFRAM' && (style.role == 'INPUT' ||style.role == 'INPUT-ALT')) {
+    if (style.role == 'REPRESENTATION' && style.type == 'WOLFRAM') {
       // at this point, we are doing a complete "recomputtion" based the use.
       await this.addSymbolUseStyles(style, rval);
       await this.addSymbolDefStyles(style, rval);

@@ -151,7 +151,7 @@ export class NotebookView {
     this.lastCellSelected.editMode();
   }
 
-  public async insertDrawingCellBelow(): Promise<void> {
+  public async insertFigureCellBelow(): Promise<void> {
     // If cells are selected then in insert a keyboard input cell below the last cell selected.
     // Otherwise, insert at the end of the notebook.
     let afterId: StyleRelativePosition;
@@ -164,7 +164,7 @@ export class NotebookView {
         { strokes: [] }
       ],
     };
-    const styleProps: StylePropertiesWithSubprops = { type: 'DRAWING', role: 'INPUT', data };
+    const styleProps: StylePropertiesWithSubprops = { role: 'FIGURE', type: 'DRAWING', data };
     const changeRequest: StyleInsertRequest = { type: 'insertStyle', afterId, styleProps };
     const undoChangeRequest = await this.sendUndoableChangeRequest(changeRequest);
     const styleId = (<StyleDeleteRequest>undoChangeRequest).styleId
@@ -352,9 +352,13 @@ export class NotebookView {
     const $typeSelector = $<HTMLSelectElement>(document, '#keyboardInputType');
 
     const styleProps: StylePropertiesWithSubprops = {
-      type: <StyleType>$typeSelector.value,
-      role: 'INPUT',
-      data: "",
+      // TODO: later text.
+      role: 'FORMULA',
+      type: 'FORMULA',
+      data: undefined,
+      subprops: [
+        { role: 'REPRESENTATION', subrole: 'INPUT', type: <StyleType>$typeSelector.value, data: '' },
+      ]
     };
 
     // Insert top-level style and wait for it to be inserted.

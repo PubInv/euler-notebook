@@ -102,14 +102,16 @@ export class DebugPopup {
     // TODO: This is very inefficient as notebook.relationshipOf goes through *all* relationships.
     const relationshipObjects = this.openNotebook.relationshipsOf(style.id);
     const json = escapeHtml(JSON.stringify(style.data));
+    const roleSubrole = (style.subrole ? `${style.role}|${style.subrole}` : style.role);
+    const styleInfo = `S${style.id} ${roleSubrole} ${style.type} ${style.source}`
     if (childStyleObjects.length == 0 && relationshipObjects.length == 0 && json.length<30) {
-      return `<div><span class="leaf">S${style.id} ${style.role} ${style.type} ${style.source} <tt>${json}</tt></span></div>`;
+      return `<div><span class="leaf">${styleInfo} <tt>${json}</tt></span></div>`;
     } else {
       const stylesHtml = childStyleObjects.map(s=>this.renderStyleHtml(s)).join('');
       const relationshipsHtml = relationshipObjects.map(r=>this.renderRelationshipHtml(r)).join('');
       const [ shortJsonTt, longJsonTt ] = json.length<30 ? [` <tt>${json}</tt>`, ''] : [ '', `<tt>${json}</tt>` ];
       return `<div>
-  <span class="collapsed">S${style.id} ${style.role} ${style.type} ${style.source}${shortJsonTt}</span>
+  <span class="collapsed">${styleInfo}${shortJsonTt}</span>
   <div class="nested" style="display:none">${longJsonTt}
     ${stylesHtml}
     ${relationshipsHtml}

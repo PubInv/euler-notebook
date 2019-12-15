@@ -95,7 +95,7 @@ describe("server notebook", function() {
     it("onChanges is called when style is inserted", async function(){
       const callCountAsync = onChangesAsyncSpy.callCount;
       const callCountSync = onChangesSyncSpy.callCount;
-      const styleProps: StylePropertiesWithSubprops = { type: 'TEXT', role: 'INPUT', data: 'foo' };
+      const styleProps: StylePropertiesWithSubprops = { role: 'FORMULA', type: 'FORMULA', data: undefined };
       const insertRequest: StyleInsertRequest = { type: 'insertStyle', styleProps };
       const changeRequests = [insertRequest];
       await notebook.requestChanges('TEST', changeRequests);
@@ -120,7 +120,9 @@ describe("server notebook", function() {
       // Insert a top-level style with a tool style attached.
       const toolInfo: ToolInfo = { name: 'test-tool', html: "Check Equivalences", data: "tool-data" };
       const styleProps: StylePropertiesWithSubprops = {
-        type: 'TEXT', role: 'INPUT', data: 'tool-parent',
+        role: 'FORMULA',
+        type: 'FORMULA',
+        data: undefined,
         subprops: [
           { type: 'TOOL', role: 'ATTRIBUTE', data: toolInfo },
         ]

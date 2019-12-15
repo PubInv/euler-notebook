@@ -230,7 +230,6 @@ export class ServerNotebook extends Notebook {
       close;
   }
 
-  // Remove fields with an underscore prefix, because they are not supposed to be persisted.
   public toJSON(): NotebookObject {
     const rval: NotebookObject = {
       nextId: this.nextId,
@@ -534,6 +533,7 @@ export class ServerNotebook extends Notebook {
       source,
       type: styleProps.type,
     };
+    if (styleProps.subrole) { style.subrole = styleProps.subrole; }
     const change: StyleInserted =  { type: 'styleInserted', style, afterId };
     this.appendChange(change, rval);
 

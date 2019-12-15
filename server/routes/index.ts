@@ -165,6 +165,13 @@ async function onNotebookPage(req: Request, res: Response, next: NextFunction): 
     const locals = { /* messages, */ notebookName, pathSegments };
     res.render('notebook', locals);
   } catch(err) {
+    const locals = {
+      title: "Can't Open Notebook",
+      messageHtml: `Cannot open notebook <tt>${notebookPath}</tt>:`,
+      messageDetails: err.message
+    }
+    return res.status(400).render('expected-error', locals)
+
     res.status(404).send(`Can't open notebook '${notebookPath}': ${err.message}`);
   }
 }

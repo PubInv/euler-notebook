@@ -147,8 +147,8 @@ export class MathematicaObserver implements ObserverInstance {
           if (anc == parentThought) return false;
           else {
             debug(s);
-            debug(((s.type == 'WOLFRAM') && (s.role == 'INPUT' || s.role == 'INPUT-ALT')));
-            return ((s.type == 'WOLFRAM') && (s.role == 'INPUT' || s.role == 'INPUT-ALT'));
+            debug(s.role == 'REPRESENTATION' && s.type == 'WOLFRAM');
+            return (s.role == 'REPRESENTATION' && s.type == 'WOLFRAM');
           }
         });
       debug("expressions",expressions);
@@ -241,7 +241,7 @@ export class MathematicaObserver implements ObserverInstance {
     const rval: NotebookChangeRequest[] = [];
 
     if (style.type != 'MATHML') { return []; }
-    if (style.role!='INPUT' && style.role!='INPUT-ALT') { return []; }
+    if (style.role != 'REPRESENTATION') { return []; }
 
     const mathMl = style.data.split('\n').join('').replace(/"/g, '\\"');
     debug("mathML",mathMl);
@@ -273,7 +273,7 @@ export class MathematicaObserver implements ObserverInstance {
 
       const styleProps: StylePropertiesWithSubprops = {
         type: 'WOLFRAM',
-        role: 'INPUT-ALT',
+        role: 'REPRESENTATION',
         data: wolframexpr,
       };
       const cr: StyleInsertRequest = {

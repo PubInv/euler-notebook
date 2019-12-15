@@ -57,12 +57,14 @@ export abstract class CellView {
 
     // Only allow editing of user input cells, which have a data type
     // that is string-based, with a renderer.
-    const style = this.notebookView.openNotebook.getStyleById(this.styleId);
-    const renderer = getRenderer(style.type);
-    if (style.role!='INPUT' || typeof style.data!='string') { return false; }
+    // const style = this.notebookView.openNotebook.getStyleById(this.styleId);
+    const repStyle = this.notebookView.openNotebook.findStyle({ role: 'REPRESENTATION', subrole: 'INPUT' }, this.styleId);
+    if (!repStyle) { return false; }
+    const renderer = getRenderer(repStyle.type);
+    if (typeof repStyle.data!='string') { return false; }
 
     this.keyboardInputPanel = KeyboardInputPanel.create(
-      style.data,
+      repStyle.data,
       renderer!,
       (text)=>this.onKeyboardInputPanelDismissed(text)
     );
@@ -141,7 +143,8 @@ export abstract class CellView {
 
   private onKeyboardInputPanelDismissed(text: string|undefined): void {
     if (text !== undefined) {
-      this.notebookView.changeStyle(this.styleId, text);
+      const repStyle = this.notebookView.openNotebook.findStyle({ role: 'REPRESENTATION', subrole: 'INPUT' }, this.styleId);
+      this.notebookView.changeStyle(repStyle!.id, text);
     }
     this.$elt.parentElement!.removeChild(this.keyboardInputPanel!.$elt);
     delete this.keyboardInputPanel;

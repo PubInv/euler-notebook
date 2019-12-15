@@ -23,48 +23,23 @@ import { StyleObject } from '../notebook.js';
 import { NotebookView } from '../notebook-view.js';
 
 import { CellView } from './index';
-import { DrawingCellView } from './drawing-cell.js';
+import { FigureCellView } from './figure-cell.js';
 import { FormulaCellView } from './formula-cell.js';
 import { PlotCellView } from './plot-cell.js';
 import { TextCellView } from './text-cell.js';
+
+// Constants
 
 // Exports
 
 export function createCellView(notebookView: NotebookView, style: StyleObject): CellView {
   let rval: CellView|undefined = undefined;
   switch(style.role) {
-    case 'INPUT':
-      switch(style.type) {
-        case 'DRAWING':
-            rval = DrawingCellView.create(notebookView, style); break;
-        case 'LATEX':
-        case 'MATHML':
-        case 'WOLFRAM':
-          rval = FormulaCellView.create(notebookView, style); break;
-        case 'TEXT':
-        case 'HTML':
-          rval = TextCellView.create(notebookView, style); break;
-      }
-      break;
-    case 'PLOT':
-        rval = PlotCellView.create(notebookView, style); break;
-    // case 'EXPOSITION':
-    //   if (style.type == 'HTML') { this.renderHtml(style.data); }
-    //   else if (style.type == 'TEXT') { this.renderText(style.id,style.data); }
-    //   else { assert(false, `Unexpected data type for exposition: ${style.type}.`); }
-    //   break;
-    // case 'INPUT-ALT':
-    //   if (style.type == 'LATEX') { this.renderLatexFormula(style.id,style.data); }
-    //   else if (style.type == 'TEXT') { this.renderText(style.id,style.data); }
-    //   break;
-    // case 'DECORATION':
-    //   if (style.type == 'LATEX') { this.renderLatexFormula(style.id,style.data); }
-    //   else if (style.type == 'TEXT') { this.renderText(style.id,style.data); }
-    //   break;
-    // case 'EQUATION-SOLUTION': this.renderSolution(style);
-    //   break;
-    //   // This is currently a "promotion" which is a form of input,
-    //   // so make it a high-level thought is slightly inconsistent.
+    case 'FIGURE':  rval = FigureCellView.create(notebookView, style); break;
+    case 'FORMULA': rval = FormulaCellView.create(notebookView, style); break;
+    case 'TEXT':    rval = TextCellView.create(notebookView, style); break;
+    case 'PLOT':    rval = PlotCellView.create(notebookView, style); break;
+    default: throw new Error(`Unknown top-level cell role: ${style.role}`);
   }
   if (!rval) { throw new Error(`Don't have a CellView type for ${style.role}/${style.type}.`); }
   return rval;

@@ -70,7 +70,7 @@ function generateInsertRequests(inputs :string[]) : StyleInsertRequest[] {
   var reqs : StyleInsertRequest[] = [];
   for(const i of inputs) {
     reqs.push( { type: 'insertStyle',
-            styleProps: { type: 'WOLFRAM', role: 'INPUT', data: i } }
+            styleProps: { role: 'REPRESENTATION', type: 'WOLFRAM', data: i } }
         );
   }
   return reqs;
