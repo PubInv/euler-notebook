@@ -164,7 +164,7 @@ export class NotebookView {
         { strokes: [] }
       ],
     };
-    const styleProps: StylePropertiesWithSubprops = { role: 'FIGURE', type: 'DRAWING', data };
+    const styleProps: StylePropertiesWithSubprops = { role: 'FIGURE', type: 'STROKES', data };
     const changeRequest: StyleInsertRequest = { type: 'insertStyle', afterId, styleProps };
     const undoChangeRequest = await this.sendUndoableChangeRequest(changeRequest);
     const styleId = (<StyleDeleteRequest>undoChangeRequest).styleId

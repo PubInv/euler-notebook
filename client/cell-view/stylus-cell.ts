@@ -39,11 +39,11 @@ interface PointerInfo {
 
 // Class
 
-export class FigureCellView extends CellView {
+export class StylusCell extends CellView {
 
   // Public Class Methods
 
-  public static create(notebookView: NotebookView, style: StyleObject): FigureCellView {
+  public static create(notebookView: NotebookView, style: StyleObject): StylusCell {
     const instance = new this(notebookView, style);
     instance.render(style);
     return instance;

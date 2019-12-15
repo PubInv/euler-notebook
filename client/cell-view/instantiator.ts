@@ -23,7 +23,7 @@ import { StyleObject } from '../notebook.js';
 import { NotebookView } from '../notebook-view.js';
 
 import { CellView } from './index';
-import { FigureCellView } from './figure-cell.js';
+import { StylusCell } from './stylus-cell.js';
 import { FormulaCellView } from './formula-cell.js';
 import { PlotCellView } from './plot-cell.js';
 import { TextCellView } from './text-cell.js';
@@ -35,7 +35,7 @@ import { TextCellView } from './text-cell.js';
 export function createCellView(notebookView: NotebookView, style: StyleObject): CellView {
   let rval: CellView|undefined = undefined;
   switch(style.role) {
-    case 'FIGURE':  rval = FigureCellView.create(notebookView, style); break;
+    case 'FIGURE':  rval = StylusCell.create(notebookView, style); break;
     case 'FORMULA': rval = FormulaCellView.create(notebookView, style); break;
     case 'TEXT':    rval = TextCellView.create(notebookView, style); break;
     case 'PLOT':    rval = PlotCellView.create(notebookView, style); break;
