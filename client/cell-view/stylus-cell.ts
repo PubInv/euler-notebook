@@ -21,9 +21,10 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 // Requirements
 
-import { $newSvg } from '../dom.js';
-import { DrawingData, StyleObject } from '../notebook.js';
+import { $new, $newSvg, escapeHtml, Html } from '../dom.js';
+import { DrawingData, StyleObject, StyleRole, StyleSubrole } from '../notebook.js';
 import { NotebookView } from '../notebook-view.js';
+import { getRenderer } from '../renderers.js';
 import { SvgStroke } from '../svg-stroke.js';
 
 import { CellView } from './index.js';
@@ -36,6 +37,39 @@ type PointerMap = Map<PointerId, PointerInfo>;
 interface PointerInfo {
   stroke?: SvgStroke;
 }
+
+// Constants
+
+const SELECTOR_OPTIONS = new Map<StyleRole,Html>([
+  [ 'UNKNOWN', "Choose..." ],
+  [ 'FORMULA', "Formula" ],
+  [ 'TEXT', "Text" ],
+  [ 'FIGURE', "Figure" ],
+]);
+
+const SUB_SELECTOR_OPTIONS = new Map<StyleRole,Map<StyleSubrole,string>>([
+  [ 'UNKNOWN', new Map([
+    [ 'UNKNOWN', "Choose..." ],
+  ])],
+  [ 'FORMULA', new Map([
+    [ 'UNKNOWN', "Choose..." ],
+    [ 'ASSUME', "Assume" ],
+    [ 'PROVE', "Prove" ],
+    [ 'OTHER', "Other" ],
+  ])],
+  [ 'TEXT', new Map([
+    [ 'UNKNOWN', "Choose..." ],
+    [ 'HEADING1', "Heading 1" ],
+    [ 'HEADING2', "Heading 2" ],
+    [ 'NORMAL', "Normal" ],
+  ])],
+  [ 'FIGURE', new Map([
+    [ 'UNKNOWN', "Choose..." ],
+    [ 'SKETCH', "Sketch" ],
+    [ 'DRAWING', "Drawing" ],
+  ])],
+
+]);
 
 // Class
 
@@ -52,6 +86,7 @@ export class StylusCell extends CellView {
   // Instance Methods
 
   public render(style: StyleObject): void {
+    this.renderPreview();
     const strokesStyle = this.notebookView.openNotebook.findStyle({ role: 'REPRESENTATION', subrole: 'INPUT', type: 'STROKES' }, style.id);
     if (strokesStyle) {
       this.renderStrokes(strokesStyle);
@@ -65,8 +100,39 @@ export class StylusCell extends CellView {
   private constructor (notebookView: NotebookView, style: StyleObject) {
     super(notebookView, style, 'stylusCell');
 
+    this.$preview = $new<HTMLDivElement>('div', { appendTo: this.$elt, class: 'preview' });
+
+    const $inputRow = $new<HTMLDivElement>('div', { appendTo: this.$elt, class: 'inputRow' });
+
+    const $selectors = $new<HTMLDivElement>('div', { appendTo: $inputRow });
+
+    const $selector = /* this.$selector = */ $new<HTMLSelectElement>('select', {
+      appendTo: $selectors,
+      listeners: {
+        input: e=>this.onSelectorChange(e),
+      }
+    });
+    for (const [ role, html ] of SELECTOR_OPTIONS) {
+      $new<HTMLOptionElement>('option', {
+        appendTo: $selector,
+        attrs: {
+          selected: (role == style.role),
+          value: role,
+        },
+        html
+      });
+    }
+
+    this.$subselector = $new<HTMLSelectElement>('select', {
+      appendTo: $selectors,
+      listeners: {
+        input: e=>this.onSubselectorChange(e),
+      }
+    });
+    this.populateSubselector(style.role, style.subrole);
+
     this.$canvas = $newSvg<SVGSVGElement>('svg', {
-      appendTo: this.$elt,
+      appendTo: $inputRow,
       attrs: { width: '6.5in', height: '1in' }, // TODO: strokesStyle.data.size,
       class: 'canvas',
       id: `svg${style.id}`,
@@ -88,6 +154,9 @@ export class StylusCell extends CellView {
   // Private Instance Properties
 
   private $canvas: SVGSVGElement;
+  private $preview: HTMLDivElement;
+  // private $selector: HTMLSelectElement;
+  private $subselector: HTMLSelectElement;
   private pointerMap: PointerMap;
 
   // Private Instance Property Functions
@@ -103,6 +172,34 @@ export class StylusCell extends CellView {
 
   // Private Instance Methods
 
+  private populateSubselector(role: StyleRole, subrole?: StyleSubrole|undefined): void {
+    this.$subselector.innerHTML = '';
+    for (const [ subrole2, html ] of SUB_SELECTOR_OPTIONS.get(role)!) {
+      $new<HTMLOptionElement>('option', {
+        appendTo: this.$subselector,
+        attrs: {
+          selected: (subrole2 == subrole),
+          value: subrole2 || '',
+        },
+        html
+      });
+    }
+  }
+
+  private renderPreview(): void {
+    this.$preview.innerHTML = '';
+
+    const latexStyle = this.notebookView.openNotebook.findStyle({ role: 'REPRESENTATION', type: 'LATEX' }, this.styleId);
+    if (latexStyle) {
+      const renderer = getRenderer(latexStyle.type);
+      let { html, errorHtml } = renderer(latexStyle.data);
+      if (errorHtml) {
+        html = `<div class="error">${errorHtml}</div><tt>${escapeHtml(latexStyle.data.toString())}</tt>`;
+      }
+      this.$preview.innerHTML = html!;
+    }
+  }
+
   private renderStrokes(strokesStyle: StyleObject): void {
     this.$canvas.innerHTML = '';
     const data: DrawingData = strokesStyle.data;
@@ -112,7 +209,6 @@ export class StylusCell extends CellView {
       }
     }
   }
-
 
   // Private Event Handlers
 
@@ -191,5 +287,20 @@ export class StylusCell extends CellView {
     });
   }
 
+  private onSelectorChange(event: Event /* REVIEW: More specific event? */): void {
+    console.log("SELECTOR CHANGED:");
+    console.dir(event);
+
+    const role = <StyleRole>(<HTMLSelectElement>event.target).value;
+    console.dir(role);
+    this.populateSubselector(role);
+  }
+
+  private onSubselectorChange(event: Event /* REVIEW: More specific event? */): void {
+    console.log("SUBSELECTOR CHANGED:");
+    console.dir(event);
+    const subrole = <StyleSubrole>(<HTMLSelectElement>event.target).value;
+    console.dir(subrole);
+  }
 }
 

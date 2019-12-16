@@ -120,14 +120,27 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
   .stylusCell
 
-    .canvas
-      background-color #F8F8F8
-      display block
-      fill none
-      margin 6px 0 0 0
-      pen-action none
-      touch-action none
-      stroke black
+    .inputRow
+      align-items center
+      // background-color green
+      display flex
+      padding-left 12px
+
+      .canvas
+        background-color #F8F8F8
+        display block
+        fill none
+        margin 6px 0 0 0
+        pen-action none
+        touch-action none
+        stroke black
+
+      select
+        display block
+        width 92px
+
+    .preview
+      background-color yellow
 
   .formulaCell
     align-items center

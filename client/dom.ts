@@ -32,7 +32,7 @@ export type Html = string;
 type Listener<E extends Event> = (event: E)=>void;
 
 interface Attributes {
-  [name: string]: string|number,
+  [name: string]: boolean|number|string,
 }
 
 interface Listeners {
@@ -110,7 +110,12 @@ export function configure<T extends Element>($elt: T, options: NewOptions): void
   if (options.attrs) {
     for (const key of Object.keys(options.attrs)) {
       const value = options.attrs[key];
-      $elt.setAttribute(key, value.toString());
+      if (typeof value != 'boolean') {
+        $elt.setAttribute(key, value.toString());
+      } else {
+        // Boolean types are present if set to any value, and MDN documentation recommends the empty string.
+        if (value) { $elt.setAttribute(key, ''); }
+      }
     }
   }
   if (options.html) { $elt.innerHTML = options.html; }
