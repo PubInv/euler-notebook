@@ -31,6 +31,7 @@ export type LatexData = string;
 export type MathMlData = string;
 export type MthMtcaData = string;
 export type SvgData = string;
+export type PngData = Buffer;
 export type Symbol = string;
 export type TextData = string;
 export type Tracker = string; // Tracking identifier supplied by the client.

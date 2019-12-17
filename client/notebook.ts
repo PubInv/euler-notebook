@@ -222,6 +222,7 @@ export const STYLE_TYPES = [
   'SYMBOL',          // SymbolData: symbol in a definition or expression.
   'SOLUTION',        // The result of a "solve" operation
   'SVG',             // SvgData: SVG markup
+  'PNG-BUFFER',      // PNG in a buffer. Currently volatile.
   'EQUATION',        // An equation (ambiguously assertion or relation)
   'TEXT',            // TextData: Plain text
   'TOOL',            // ToolInfo: Tool that can be applied to the parent style.
@@ -238,6 +239,7 @@ export const STYLE_SOURCES = [
   'ALGEBRAIC-TOOLS',  // Algebraic tools provided by Wolfram
   'EQUATION-SOLVER',  // Attempt to expose Wolfram solutions
   'SVG',              // SVG observer
+  'SVG-TO-PNG',       // SVG to PNG observer
   'SYMBOL-CLASSIFIER',
   'TEX-FORMATTER',
   'ANY-INPUT',        // This represents ANY input, no matter the type enterred.

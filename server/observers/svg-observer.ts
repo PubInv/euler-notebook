@@ -69,7 +69,7 @@ export class SvgObserver extends BaseObserver {
         paths.push(path);
       }
     }
-    return `<svg height="${data.size.height} width="${data.size.width}">${paths.join('')}</svg>`;
+    return `<svg height="${data.size.height}" width="${data.size.width}"  fill="none" stroke="black">${paths.join('')}</svg>`;
   }
 
   // Private Constructor
@@ -85,9 +85,9 @@ function convertStrokeToPath(stroke: Stroke): string {
     console.warn(`Have a stroke with too few data points: ${stroke.x.length}`)
     return "";
   }
-  let dAttribute = `M${stroke.x[0]},${stroke.y[0]}`;
+  let dAttribute = `M${stroke.x[0]} ${stroke.y[0]}`;
   for (let i=1; i<stroke.x.length; i++) {
-    dAttribute += `l${stroke.x[i]},${stroke.y[i]}`
+    dAttribute += ` L${stroke.x[i]} ${stroke.y[i]}`
   }
-  return `<path d=${dAttribute}></path`;
+  return `<path d="${dAttribute}"></path>`;
 }

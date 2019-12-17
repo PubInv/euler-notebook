@@ -44,6 +44,10 @@ import { constructSubstitution } from './wolframscript';
 import { ClientObserver } from './observers/client-observer';
 import { ClientId } from './client-socket';
 
+import { v4 as uuid } from 'uuid';
+
+const fs = require('fs')
+
 const MODULE = __filename.split(/[/\\]/).slice(-1)[0].slice(0,-3);
 const debug = debug1(`server:${MODULE}`);
 
@@ -204,8 +208,6 @@ export class ServerNotebook extends Notebook {
         retLaTeX += "ambiguous: " +displayFormula(latex[0].data);
       } else if (latex.length == 1) {  // here it is obvious, maybe...
         retLaTeX += displayFormula(latex[0].data);
-      } else { // here we examine the type more carefully...
-        retLaTeX += "unknown type";
       }
       const image = this.findChildStylesOfType(tls,'IMAGE','PLOT');
       if (image.length > 0) {
@@ -218,16 +220,46 @@ export class ServerNotebook extends Notebook {
         const final = plot.data.split("/");
         const graphics = `\\includegraphics{${apath}/${final[2]}}`;
         retLaTeX += graphics;
+        retLaTeX += `\n`;
         debug("graphics",graphics);
         if (image.length > 1) {
           retLaTeX += " more than one plot, not sure how to handle that";
         }
       }
+      // Now we search for .PNGs --- most likely generated from
+      // .svgs, but not necessarily, which allows the possibility
+      // of photographs being included in output later.
+      const pngs = this.findChildStylesOfType(tls,'PNG-BUFFER');
+      debug("pngs",pngs);
+      pngs.forEach( p => {
+        // NOTE: At present, this is using a BUFFER, which is volatile.
+        // It does not correctly survive resets of the notebook.
+        // In fact when we output the file to a file, we need to change
+        // the notebook do have a durable 'PNG-FILE' type generated from
+        // the buffer. This may seem awkward, but it keeps the
+        // function "ruleConvertSvgToPng" completely pure and static,
+        // which is a paradigm worth preserving. However, this means
+        // we have to handle the data being null until we have consistent
+        // file handling.
+        if (p.data) {
+          debug("PNG-BUFFER", p);
+          var uuid4 = uuid();
+          const filename = `image-${p.id}-${uuid4}.png`;
+          const apath = this.absoluteDirectoryPath();
+          const abs_filename = `${apath}/${filename}`;
+          fs.writeFileSync(abs_filename, p.data);
+          const graphics = `\\includegraphics{${abs_filename}}`;
+          retLaTeX += graphics;
+          debug("graphics",graphics);
+        }
+      });
       return retLaTeX;
     });
-    return ourPreamble +
+    const finalTeX = ourPreamble +
       cells.join('\n') +
       close;
+    debug("finalTeX", finalTeX);
+    return finalTeX;
   }
 
   public toJSON(): NotebookObject {
