@@ -298,11 +298,6 @@ describe("test symbol observer", function() {
       const ru = rus[0];
       assert.equal(ru.role,'SYMBOL-DEPENDENCY');
 
-
-      // const ru : RelationshipObject = notebook.allRelationships()[1];
-      // console.log(notebook);
-      // assert.equal(ru.role,'SYMBOL-DEPENDENCY');
-
     });
     it("An input and change does produces only one relationhsip",async function(){
       const data:string[] = [
@@ -353,7 +348,22 @@ describe("test symbol observer", function() {
 
     });
 
-    it.skip("A change of an equation produces only one equation, not two",async function(){
+    it("Can hanlde 3x - 10 = 11",async function(){
+      const data0:string[] = [
+        "3x - 10 = 11",
+        ];
+      const changeRequests = generateInsertRequests(data0);
+      await serializeChangeRequests(notebook,changeRequests);
+
+      // I really want a way to find this from the notebook....
+      const initialId = 1;
+
+      const children = notebook.findChildStylesOfType(initialId,
+                                                      'EQUATION');
+      assert.equal(1,children.length);
+    });
+
+    it("A change of an equation produces only one equation, not two",async function(){
       const data0:string[] = [
         "3x - 10 = 11",
         ];
@@ -362,7 +372,6 @@ describe("test symbol observer", function() {
         ];
       const changeRequests = generateInsertRequests(data0);
       await serializeChangeRequests(notebook,changeRequests);
-
       // I really want a way to find this from the notebook....
       const initialId = 1;
 
@@ -411,33 +420,7 @@ describe("test symbol observer", function() {
       assert.equal(notebook.allRelationships().length,rels.length);
     });
 
-    // Note: I'm leaving this in because it is an example of
-    // where the serialization works, but the performing all
-    // requests doesn't. However, nobody ever really deletes
-    // a use in the same instant it is inserted, so this
-    // should be considered a strange case!
-    it.skip("Deleting a use without serialization correctly deletes relationships.",async function(){
-      const data:string[] = [
-        "X = 4",
-        "X^2 + Y"];
-      const changeRequests = generateInsertRequests(data);
-
-      // This was experimentally deteremined!!
-      const toId = 6;
-      const cr: StyleDeleteRequest = {
-        type: 'deleteStyle',
-        styleId: toId,
-      };
-
-      // This will fail
-      await notebook.requestChanges('TEST',[...changeRequests,cr]);
-      // This will work
-//      await serializeChangeRequests(notebook,[...changeRequests,cr]);
-
-      assert.equal(0,notebook.allRelationships().length);
-    });
-
-    it.skip("three defs cause the final one to be used",async function(){
+    it("three defs cause the final one to be used",async function(){
       const data:string[] = [
         "X = 4",
         "X = 5",
@@ -485,7 +468,7 @@ describe("test symbol observer", function() {
 
 
     });
-    it.skip("two defs and a delete cause the final one to be used",async function(){
+    it("two defs and a delete cause the final one to be used",async function(){
       const data:string[] = [
         "X = 4",
         "X = 6",
@@ -521,7 +504,7 @@ describe("test symbol observer", function() {
 
 
     });
-    it.skip("multiples defs and a deletes are handled",async function(){
+    it("multiples defs and a deletes are handled",async function(){
       const NUM = 8;
       let data:string[] = [];
 

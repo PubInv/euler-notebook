@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 set -e
 pushd server > /dev/null
-mocha -r ./node_modules/ts-node/register test/export-LaTeX.spec.ts
-# mocha -r ./node_modules/ts-node/register test/symbol-observer.spec.ts
+# mocha -r ./node_modules/ts-node/register test/export-LaTeX.spec.ts
+mocha -r ./node_modules/ts-node/register test/symbol-observer.spec.ts
 popd > /dev/null

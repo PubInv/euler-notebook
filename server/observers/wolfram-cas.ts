@@ -21,8 +21,9 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 import debug1 from 'debug';
 
+
 import { BaseObserver, Rules } from './base-observer';
-import { convertTeXtoWolfram, execute, convertWolframToTeX } from '../wolframscript';
+import { convertTeXtoWolfram, convertMathTabletLanguageToWolfram, execute, convertWolframToTeX } from '../wolframscript';
 import { ServerNotebook } from '../server-notebook';
 import { WolframData, LatexData, isEmptyOrSpaces } from '../../client/math-tablet-api';
 
@@ -84,6 +85,8 @@ export class WolframObserver extends BaseObserver {
     return data ? await convertWolframToTeX(data) : undefined;
   }
 
+  // One problem here is that we are not rewriting the single equal, which is the "math-tablet input" language,
+  // to the double equal, which is essentially the wolfram language (thought not a one-to-one correspondence.)
   private static async ruleEvaluateWolframExpr(expr: WolframData) : Promise<WolframData|undefined> {
     // REVIEW: If evaluation fails?
     debug(`Evaluating: "${expr}".`);
@@ -91,7 +94,8 @@ export class WolframObserver extends BaseObserver {
     if (isEmptyOrSpaces(expr)) {
       rval = undefined;
     } else {
-      rval = await execute(`InputForm[runPrivate[${expr}]]`);
+      const converted = convertMathTabletLanguageToWolfram(expr);
+      rval = await execute(`InputForm[runPrivate[${converted}]]`);
     }
     debug("Evaluated to: ", rval);
     return rval;

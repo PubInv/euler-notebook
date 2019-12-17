@@ -28,7 +28,7 @@ import {  NotebookChangeRequest, StyleInsertRequest,
           StyleDeleteRequest, StylePropertiesWithSubprops,
        } from '../../client/math-tablet-api';
 import { ServerNotebook, ObserverInstance } from '../server-notebook';
-import { convertWolframToTeX, constructSubstitution
+import { convertWolframToTeX, convertEvaluatedWolframToTeX, constructSubstitution
        } from '../wolframscript';
 import { Config } from '../config';
 
@@ -216,6 +216,7 @@ export class TeXFormatterObserver implements ObserverInstance {
 
     // These types have slightly different data morphologies, but are
     // similar enough we can process almost the same way
+    debug("style",style);
     if (style.type == 'SYMBOL' && style.role == 'SYMBOL-DEFINITION') {
       lhs = style.data.name;
       rhs = style.data.value;
@@ -235,9 +236,13 @@ export class TeXFormatterObserver implements ObserverInstance {
                             usedSymbols.map(
                               s => ({ name: s.data.name,
                                       value: s.data.value})));
-    const texrhs : string = await convertWolframToTeX(sub_expr_rhs);
+    // I need to create a definite criteria for when this
+    // should be called, as opposed to straight conversion!
+    const texrhs : string = await convertEvaluatedWolframToTeX(sub_expr_rhs);
 
     var tex_def = null;
+    debug("type, role", style.type, style.role);
+    debug("texlhs, texrhs",texrhs);
     if (style.type == 'SYMBOL' && style.role == 'SYMBOL-DEFINITION') {
       tex_def = style.data.name + " = " + texrhs;
     } else if (style.type == 'EQUATION' && style.role == 'EQUATION-DEFINITION') {
@@ -262,7 +267,7 @@ export class TeXFormatterObserver implements ObserverInstance {
       rval.push(changeReq);
     }
 
-    debug("pushed rval",rval);
+    debug("pushed rval AAAA",rval);
     return;
 
   }

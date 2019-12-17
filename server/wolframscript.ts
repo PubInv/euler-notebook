@@ -141,6 +141,10 @@ export function constructSubstitution(expr: string,usedVariables: NVPair[]) {
   return sub_expr;
 }
 
+export function convertMathTabletLanguageToWolfram(expr: string) : string {
+  return expr.replace("=","==");
+}
+
 function executeNow(command: WolframData, resolve: (data: string)=>void, reject: (reason: any)=>void): void {
   debug(`Executing: "${command}".`)
   let results = '';
@@ -257,6 +261,16 @@ export async function checkEquiv(a:string, b:string) : Promise<boolean> {
 // both sides of an assignment and handle that way.
 export async function convertWolframToTeX(text: WolframData): Promise<LatexData> {
     const getTex = `TeXForm[HoldForm[${text}]]`;
+    try {
+      const tex = await execute(getTex);
+      return tex;
+    }  catch (e) {
+      return "";
+    }
+}
+
+export async function convertEvaluatedWolframToTeX(text: WolframData): Promise<LatexData> {
+    const getTex = `TeXForm[HoldForm[Evaluate[${text}]]]`;
     try {
       const tex = await execute(getTex);
       return tex;
