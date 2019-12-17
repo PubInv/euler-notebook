@@ -96,7 +96,7 @@ async function onExportPage(req: Request, res: Response, next: NextFunction): Pr
       }
     }
 
-    const latex = notebook.exportLatex();
+    const latex = await notebook.exportLatex();
 
     switch(exportFormat) {
       case 'latex':
@@ -139,4 +139,3 @@ async function onExportPage(req: Request, res: Response, next: NextFunction): Pr
 }
 
 // Helper Functions
-

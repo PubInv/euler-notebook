@@ -47,6 +47,7 @@ import { ClientId } from './client-socket';
 import { v4 as uuid } from 'uuid';
 
 const fs = require('fs')
+const svg2img = require('svg2img');
 
 const MODULE = __filename.split(/[/\\]/).slice(-1)[0].slice(0,-3);
 const debug = debug1(`server:${MODULE}`);
@@ -179,7 +180,7 @@ export class ServerNotebook extends Notebook {
     return absDirPathFromNotebookPath(this._path);
   }
 
-  public exportLatex(): LatexData {
+  public async exportLatex(): Promise<LatexData> {
     const ourPreamble = `\\documentclass[12pt]{article}
 \\usepackage{amsmath}
 \\usepackage{graphicx}
@@ -201,7 +202,8 @@ export class ServerNotebook extends Notebook {
     }
 
     const tlso = this.topLevelStyleOrder();
-    const cells = tlso.map( tls => {
+    const cells = [];
+    for(const tls of tlso) {
       var retLaTeX = "";
       const latex = this.findChildStylesOfType(tls,'LATEX');
       if (latex.length > 1) { // here we have to have some disambiguation
@@ -229,9 +231,9 @@ export class ServerNotebook extends Notebook {
       // Now we search for .PNGs --- most likely generated from
       // .svgs, but not necessarily, which allows the possibility
       // of photographs being included in output later.
-      const pngs = this.findChildStylesOfType(tls,'PNG-BUFFER');
-      debug("pngs",pngs);
-      pngs.forEach( p => {
+      const svgs = this.findChildStylesOfType(tls,'SVG');
+      debug("svgs",svgs);
+      for(const s of svgs) {
         // NOTE: At present, this is using a BUFFER, which is volatile.
         // It does not correctly survive resets of the notebook.
         // In fact when we output the file to a file, we need to change
@@ -241,20 +243,36 @@ export class ServerNotebook extends Notebook {
         // which is a paradigm worth preserving. However, this means
         // we have to handle the data being null until we have consistent
         // file handling.
-        if (p.data) {
-          debug("PNG-BUFFER", p);
+        if (s.data) {
+          debug("SVG", s);
+
+          // from : https://stackoverflow.com/questions/5010288/how-to-make-a-function-wait-until-a-callback-has-been-called-using-node-js
+          // myFunction wraps the above API call into a Promise
+          // and handles the callbacks with resolve and reject
+          function apiFunctionWrapper(data: string) : Promise<Buffer> {
+            // @ts-ignore
+            return new Promise((resolve, reject) => {
+              // @ts-ignore
+              svg2img(data,function(error, buffer) {
+                resolve(buffer);
+              });
+            });
+          };
+
+          const b: Buffer = await apiFunctionWrapper(s.data);
           var uuid4 = uuid();
-          const filename = `image-${p.id}-${uuid4}.png`;
+          const filename = `image-${s.id}-${uuid4}.png`;
           const apath = this.absoluteDirectoryPath();
           const abs_filename = `${apath}/${filename}`;
-          fs.writeFileSync(abs_filename, p.data);
+          fs.writeFileSync(abs_filename, b);
           const graphics = `\\includegraphics{${abs_filename}}`;
           retLaTeX += graphics;
           debug("graphics",graphics);
         }
-      });
-      return retLaTeX;
-    });
+      }
+      cells.push(retLaTeX);
+    }
+
     const finalTeX = ourPreamble +
       cells.join('\n') +
       close;

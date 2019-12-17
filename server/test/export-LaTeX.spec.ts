@@ -184,7 +184,7 @@ describe("test symbol observer", function() {
         "Y = X^2"];
       const changeRequests = generateInsertRequests(data);
       await notebook.requestChanges('TEST', [changeRequests[0]]);
-      const latexInput = notebook.exportLatex();
+      const latexInput = await notebook.exportLatex();
       // console.log(latexInput);
       assert(latexInput.length > 10,"The latex file should be at least 10 characters long:"+latexInput);
 

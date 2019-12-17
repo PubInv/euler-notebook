@@ -31,7 +31,6 @@ import { EquationSolverObserver } from './equation-solver';
 import { TeXFormatterObserver } from './tex-formatter';
 import { SymbolClassifierObserver } from './symbol-classifier';
 import { SvgObserver } from './svg-observer';
-import { SvgToPngObserver } from './svg-to-png-observer';
 import { WolframObserver } from './wolfram-cas';
 
 // Exported functions
@@ -55,5 +54,4 @@ export async function initialize(config: Config, credentials: Credentials): Prom
   await SandboxObserver.initialize(config);
   ServerNotebook.registerObserver('SANDBOX', SandboxObserver);
   ServerNotebook.registerObserver('SVG', SvgObserver);
-  ServerNotebook.registerObserver('SVG-TO-PNG', SvgToPngObserver);
 }
