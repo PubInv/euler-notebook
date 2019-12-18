@@ -193,6 +193,7 @@ export interface StyleProperties {
   data: any;
   role: StyleRole;
   subrole?: StyleSubrole;
+  timestamp?: string;
   type: StyleType;
 }
 
@@ -749,6 +750,12 @@ export class Notebook {
     const style = this.styleMap[styleId];
     if (!style) { throw new Error(`Changing unknown style ${styleId}`); }
     style.data = change.style.data;
+    // This is experimental; for SVG, we need a timestamp for
+    // cleaning up the .PNG files
+    if (style.type == 'SVG') {
+      // @ts-ignore
+      style.timestamp = Date.now();
+    }
   }
 
   private deleteRelationship(relationship: RelationshipObject): void {

@@ -44,9 +44,11 @@ import { constructSubstitution } from './wolframscript';
 import { ClientObserver } from './observers/client-observer';
 import { ClientId } from './client-socket';
 
-import { v4 as uuid } from 'uuid';
+// import { v4 as uuid } from 'uuid';
 
-const fs = require('fs')
+const fs = require('fs');
+const path = require('path');
+
 const svg2img = require('svg2img');
 
 const MODULE = __filename.split(/[/\\]/).slice(-1)[0].slice(0,-3);
@@ -214,7 +216,6 @@ export class ServerNotebook extends Notebook {
       const image = this.findChildStylesOfType(tls,'IMAGE','PLOT');
       if (image.length > 0) {
         const plot = image[0];
-        debug("plot data",plot.data);
         const apath = this.absoluteDirectoryPath();
         // The notebook name is both a part of the plot.data,
         // AND is a part of the absolute path. So we take only
@@ -223,7 +224,6 @@ export class ServerNotebook extends Notebook {
         const graphics = `\\includegraphics{${apath}/${final[2]}}`;
         retLaTeX += graphics;
         retLaTeX += `\n`;
-        debug("graphics",graphics);
         if (image.length > 1) {
           retLaTeX += " more than one plot, not sure how to handle that";
         }
@@ -232,7 +232,6 @@ export class ServerNotebook extends Notebook {
       // .svgs, but not necessarily, which allows the possibility
       // of photographs being included in output later.
       const svgs = this.findChildStylesOfType(tls,'SVG');
-      debug("svgs",svgs);
       for(const s of svgs) {
         // NOTE: At present, this is using a BUFFER, which is volatile.
         // It does not correctly survive resets of the notebook.
@@ -244,8 +243,6 @@ export class ServerNotebook extends Notebook {
         // we have to handle the data being null until we have consistent
         // file handling.
         if (s.data) {
-          debug("SVG", s);
-
           // from : https://stackoverflow.com/questions/5010288/how-to-make-a-function-wait-until-a-callback-has-been-called-using-node-js
           // myFunction wraps the above API call into a Promise
           // and handles the callbacks with resolve and reject
@@ -259,15 +256,77 @@ export class ServerNotebook extends Notebook {
             });
           };
 
+          function getTimeStampOfCompatibleFileName(id:number, name: string) : number|undefined{
+            const parts = name.split('-');
+            if (parts.length < 3) return;
+            if (parseInt(parts[1]) != id) return;
+            const third = parts[2];
+            const nametsAndExtension = third.split('.');
+            if (nametsAndExtension.length < 2) return;
+            return parseInt(nametsAndExtension[0]);
+          }
+
+
+          function fileIsEarlierVersionThan(id:number, ts : string|undefined,name: string) : boolean {
+            if (!ts) return false;
+            const filets = getTimeStampOfCompatibleFileName(id, name);
+            if (filets) {
+              return parseInt(ts) > filets;
+            } else {
+              return false;
+            }
+          }
+
+          function fileIsLaterVersionThan(id:number, ts : string|undefined,name: string) : boolean {
+            if (!ts) return false;
+            const filets = getTimeStampOfCompatibleFileName(id, name);
+            if (filets) {
+              return parseInt(ts) < filets;
+            } else {
+              return false;
+            }
+          }
+
           const b: Buffer = await apiFunctionWrapper(s.data);
-          var uuid4 = uuid();
-          const filename = `image-${s.id}-${uuid4}.png`;
+          const ts = Date.now();
+          console.log(ts);
+          const filename = `image-${s.id}-${ts}.png`;
           const apath = this.absoluteDirectoryPath();
-          const abs_filename = `${apath}/${filename}`;
-          fs.writeFileSync(abs_filename, b);
+          var abs_filename = `${apath}/${filename}`;
+          const directory = apath;
+
+          var foundfile = "";
+          debug("BEGIN",directory);
+          // @ts-ignore
+          var files = fs.readdirSync(directory);
+          debug("files",files);
+          for (const file of files) {
+            // I don't know why this is needed!
+            if (fileIsLaterVersionThan(s.id,s.timestamp,file)) {
+              foundfile = file;
+            }
+          }
+          debug("END");
+          if (foundfile) {
+            abs_filename = `${apath}/${foundfile}`;
+          } else {
+            fs.writeFileSync(abs_filename, b);
+            debug("directory",directory);
+            var files = fs.readdirSync(directory);
+
+            for (const file of files) {
+              debug("file",file);
+              // I don't know why this is needed!
+              if (fileIsEarlierVersionThan(s.id,""+ts,file)) {
+                // @ts-ignore
+                fs.unlink(path.join(directory, file), err  => {
+                  if (err) throw err;
+                });
+              }
+            }
+          }
           const graphics = `\\includegraphics{${abs_filename}}`;
           retLaTeX += graphics;
-          debug("graphics",graphics);
         }
       }
       cells.push(retLaTeX);
@@ -463,7 +522,7 @@ export class ServerNotebook extends Notebook {
       }
 
     }
-    debug("All undo change requests: ", undoChangeRequests);
+//    debug("All undo change requests: ", undoChangeRequests);
     return undoChangeRequests;
   }
 
