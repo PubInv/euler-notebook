@@ -68,7 +68,9 @@ export interface FindStyleOptions {
   recursive?: boolean;
 }
 
-export type NotebookChange = RelationshipDeleted|RelationshipInserted|StyleChanged|StyleDeleted|StyleInserted|StyleMoved;
+export type NotebookChange =
+  RelationshipDeleted|RelationshipInserted|
+  StyleChanged|StyleConverted|StyleDeleted|StyleInserted|StyleMoved;
 export interface RelationshipDeleted {
   type: 'relationshipDeleted';
   // REVIEW: Only pass relationshipId?
@@ -78,12 +80,17 @@ export interface RelationshipInserted {
   type: 'relationshipInserted';
   relationship: RelationshipObject;
 }
-
 export interface StyleChanged {
   type: 'styleChanged';
   // REVIEW: Only pass styleId and new data?
   style: StyleObject;
   previousData: any;
+}
+export interface StyleConverted {
+  type: 'styleConverted';
+  styleId: StyleId;
+  role: StyleRole;
+  subrole?: StyleSubrole;
 }
 export interface StyleDeleted {
   type: 'styleDeleted';
@@ -386,25 +393,26 @@ export class Notebook {
     });
     return symbolStyles;
   }
-    // TODO:
+
   // Find the def whose top level symbol appears just before this one.
-    public findLatestDefinitionEarlierThanThis(thoughtIndex : number,defs : StyleOrderMapping[]) : StyleId | null {
-      var curi = -1;
-      var curtlspos = -1;
-      for(var i = 0; i < defs.length; i++) {
-        var pos = this.getThoughtIndex(defs[i].tls);
-        if ((pos < thoughtIndex) &&
-            (pos > curtlspos))
-        {
-          curtlspos = pos;
-          curi = i;
-        }
+  public findLatestDefinitionEarlierThanThis(thoughtIndex : number,defs : StyleOrderMapping[]) : StyleId | null {
+    var curi = -1;
+    var curtlspos = -1;
+    for(var i = 0; i < defs.length; i++) {
+      var pos = this.getThoughtIndex(defs[i].tls);
+      if ((pos < thoughtIndex) &&
+          (pos > curtlspos))
+      {
+        curtlspos = pos;
+        curi = i;
       }
-      // Now we hope cur is the currect object...
-      return curi < 0 ? null : defs[curi].sid;
     }
+    // Now we hope cur is the currect object...
+    return curi < 0 ? null : defs[curi].sid;
+  }
+
   // This is intended to be used by tests; it is slightly
-  // inefficient. I think DJE wants us to incrementally recompute everything,
+  // inefficient. I think DEJ wants us to incrementally recompute everything,
   // but especially in the presence of concurrency we need a standard to
   // test against.
   // The algorithm is straightforward:
@@ -627,32 +635,19 @@ export class Notebook {
   // Instance Methods
 
   public applyChange(change: NotebookChange): void {
-    // REVIEW: Can change be null?
     // TODO: Don't let changes be null.
-    if (change != null) {
-      switch(change.type) {
-        case 'relationshipDeleted':
-          // console.log("calling deleteRelationship in notebook.ts");
-          this.deleteRelationship(change.relationship);
-          break;
-        case 'relationshipInserted':
-          this.insertRelationship(change.relationship);
-          break;
-        case 'styleChanged':
-          this.changeStyle(change);
-          break;
-        case 'styleDeleted':
-          this.deleteStyle(change.style);
-          break;
-        case 'styleInserted':
-          this.insertStyle(change.style, change.afterId);
-          break;
-        case 'styleMoved':
-          this.moveStyle(change);
-          break;
-        default:
-          throw new Error(`Applying unexpected change type: ${(<any>change).type}`);
-      }
+    if (change == null) { return; }
+
+    switch(change.type) {
+      case 'relationshipDeleted':   this.deleteRelationship(change.relationship); break;
+      case 'relationshipInserted':  this.insertRelationship(change.relationship); break;
+      case 'styleChanged':          this.changeStyle(change); break;
+      case 'styleConverted':        this.convertStyle(change); break;
+      case 'styleDeleted':          this.deleteStyle(change.style); break;
+      case 'styleInserted':         this.insertStyle(change.style, change.afterId); break;
+      case 'styleMoved':            this.moveStyle(change); break;
+      default:
+        throw new Error(`Applying unexpected change type: ${(<any>change).type}`);
     }
   }
 
@@ -756,6 +751,13 @@ export class Notebook {
       // @ts-ignore
       style.timestamp = Date.now();
     }
+  }
+
+  private convertStyle(change: StyleConverted): void {
+    const style = this.styleMap[change.styleId];
+    if (!style) { throw new Error(`Converting unknown style ${change.styleId}`); }
+    style.role = change.role;
+    style.subrole = change.subrole;
   }
 
   private deleteRelationship(relationship: RelationshipObject): void {

@@ -28,6 +28,7 @@ import { getRenderer } from '../renderers.js';
 import { SvgStroke } from '../svg-stroke.js';
 
 import { CellView } from './index.js';
+import { NotebookChangeRequest } from '../math-tablet-api.js';
 
 // Types
 
@@ -104,7 +105,7 @@ export class StylusCell extends CellView {
 
     const $inputRow = $new<HTMLDivElement>('div', { appendTo: this.$elt, class: 'inputRow' });
 
-    const $selectors = $new<HTMLDivElement>('div', { appendTo: $inputRow });
+    const $selectors = $new<HTMLDivElement>('div', { appendTo: $inputRow, class: 'selectors' });
 
     const $selector = /* this.$selector = */ $new<HTMLSelectElement>('select', {
       appendTo: $selectors,
@@ -179,7 +180,7 @@ export class StylusCell extends CellView {
         appendTo: this.$subselector,
         attrs: {
           selected: (subrole2 == subrole),
-          value: subrole2 || '',
+          value: `${role}|${subrole2}`,
         },
         html
       });
@@ -288,19 +289,17 @@ export class StylusCell extends CellView {
   }
 
   private onSelectorChange(event: Event /* REVIEW: More specific event? */): void {
-    console.log("SELECTOR CHANGED:");
-    console.dir(event);
-
     const role = <StyleRole>(<HTMLSelectElement>event.target).value;
-    console.dir(role);
+    const subrole = 'UNKNOWN';
+    const changeRequest: NotebookChangeRequest = { type: 'convertStyle', styleId: this.styleId, role, subrole };
+    this.notebookView.openNotebook.sendChangeRequest(changeRequest, { wantUndo: true });
     this.populateSubselector(role);
   }
 
   private onSubselectorChange(event: Event /* REVIEW: More specific event? */): void {
-    console.log("SUBSELECTOR CHANGED:");
-    console.dir(event);
-    const subrole = <StyleSubrole>(<HTMLSelectElement>event.target).value;
-    console.dir(subrole);
+    const [ role, subrole ] = <[StyleRole,StyleSubrole]>((<HTMLSelectElement>event.target).value.split('|'));
+    const changeRequest: NotebookChangeRequest = { type: 'convertStyle', styleId: this.styleId, role, subrole };
+    this.notebookView.openNotebook.sendChangeRequest(changeRequest, { wantUndo: true });
   }
 }
 

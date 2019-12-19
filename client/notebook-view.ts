@@ -424,6 +424,10 @@ export class NotebookView {
         this.dirtyCells.add(this.openNotebook.topLevelStyleOf(change.style.id).id);
         break;
       }
+      case 'styleConverted': {
+        this.dirtyCells.add(this.openNotebook.topLevelStyleOf(change.styleId).id);
+        break;
+      }
       case 'styleDeleted': {
         // If a substyle is deleted then mark the cell as dirty.
         // If a top-level style is deleted then remove the cell.

@@ -29,12 +29,12 @@ import { assert } from 'chai';
 import {
   Notebook, NotebookObject, NotebookChange, StyleObject, StyleRole, StyleType, StyleSource, StyleId,
   RelationshipObject, StyleMoved, StylePosition, VERSION, StyleChanged, RelationshipDeleted,
-  RelationshipInserted, StyleInserted, StyleDeleted
+  RelationshipInserted, StyleInserted, StyleDeleted, StyleConverted
 } from '../client/notebook';
 import {
   NotebookChangeRequest, StyleMoveRequest, StyleInsertRequest, StyleChangeRequest,
   RelationshipDeleteRequest, StyleDeleteRequest, RelationshipInsertRequest,
-  StylePropertiesWithSubprops, ChangeNotebookOptions, LatexData, NotebookPath
+  StylePropertiesWithSubprops, ChangeNotebookOptions, LatexData, NotebookPath, StyleConvertRequest
 } from '../client/math-tablet-api';
 
 import {
@@ -495,24 +495,13 @@ export class ServerNotebook extends Notebook {
 
       let undoChangeRequest: NotebookChangeRequest|undefined;
       switch(changeRequest.type) {
-        case 'changeStyle':
-          undoChangeRequest = this.applyStyleChangeRequest(changeRequest, rval);
-          break;
-        case 'deleteRelationship':
-          undoChangeRequest = this.applyRelationshipDeleteRequest(changeRequest, rval);
-          break;
-        case 'deleteStyle':
-          undoChangeRequest = this.applyStyleDeleteRequest(changeRequest, rval);
-          break;
-        case 'insertRelationship':
-          undoChangeRequest = this.applyRelationshipInsertRequest(source, changeRequest, rval);
-          break;
-        case 'insertStyle':
-          undoChangeRequest = this.applyStyleInsertRequest(source, changeRequest, rval);
-          break;
-        case 'moveStyle':
-          undoChangeRequest = this.applyStyleMoveRequest(changeRequest, rval);
-          break;
+        case 'changeStyle':         undoChangeRequest = this.applyStyleChangeRequest(changeRequest, rval); break;
+        case 'convertStyle':        undoChangeRequest = this.applyStyleConvertRequest(changeRequest, rval); break;
+        case 'deleteRelationship':  undoChangeRequest = this.applyRelationshipDeleteRequest(changeRequest, rval); break;
+        case 'deleteStyle':         undoChangeRequest = this.applyStyleDeleteRequest(changeRequest, rval); break;
+        case 'insertRelationship':  undoChangeRequest = this.applyRelationshipInsertRequest(source, changeRequest, rval); break;
+        case 'insertStyle':         undoChangeRequest = this.applyStyleInsertRequest(source, changeRequest, rval); break;
+        case 'moveStyle':           undoChangeRequest = this.applyStyleMoveRequest(changeRequest, rval); break;
         default:
           throw new Error(`Unexpected change request type ${(<any>changeRequest).type}`);
       }
@@ -577,6 +566,26 @@ export class ServerNotebook extends Notebook {
       type: 'changeStyle',
       styleId: style.id,
       data: previousData,
+    }
+    return undoChangeRequest;
+  }
+
+  private applyStyleConvertRequest(
+    request: StyleConvertRequest,
+    rval: NotebookChange[],
+  ): StyleConvertRequest {
+    const style = this.getStyleById(request.styleId);
+    const previousRole = style.role;
+    const previousSubrole = style.subrole;
+    style.role = request.role;
+    style.subrole = request.subrole;
+    const change: StyleConverted = { type: 'styleConverted', styleId: style.id, role: request.role, subrole: request.subrole };
+    this.appendChange(change, rval);
+    const undoChangeRequest: StyleConvertRequest = {
+      type: 'convertStyle',
+      styleId: style.id,
+      role: previousRole,
+      subrole: previousSubrole,
     }
     return undoChangeRequest;
   }
