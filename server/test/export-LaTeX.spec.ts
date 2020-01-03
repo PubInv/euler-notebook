@@ -26,13 +26,8 @@ import { assert } from 'chai';
 import 'mocha';
 // import * as sinon from 'sinon';
 
-import { NotebookChange,  StyleObject,
-         //         StyleId
-       } from '../../client/notebook';
-import { NotebookChangeRequest, StyleInsertRequest,
-         LatexData
-         //         StylePropertiesWithSubprops
-       } from '../../client/math-tablet-api';
+import { NotebookChange,  StyleObject, } from '../../client/notebook';
+import { NotebookChangeRequest, StyleInsertRequest, LatexData } from '../../client/math-tablet-api';
 import { ServerNotebook, ObserverInstance }  from '../server-notebook';
 
 import { SymbolClassifierObserver } from '../observers/symbol-classifier';
@@ -44,8 +39,7 @@ import { WolframObserver } from '../observers/wolfram-cas';
 import { start as startWolframscript } from '../wolframscript';
 import { Config, loadConfig } from '../config';
 import * as fs from 'fs';
-//import latex from 'node-latex';
-const latex = require('node-latex')
+const latex = require('node-latex'); // REVIEW: why not import?
 
 
 // Test Observer
@@ -60,7 +54,7 @@ export class TestObserver implements ObserverInstance {
   async useTool(_style: StyleObject): Promise<NotebookChangeRequest[]> { return []; }
 }
 
-// Unit Tests
+// Helper Functions
 
 function generateInsertRequests(inputs :string[]) : StyleInsertRequest[] {
   var reqs : StyleInsertRequest[] = [];
@@ -82,6 +76,7 @@ function generateInsertRequests(inputs :string[]) : StyleInsertRequest[] {
   }
   return reqs;
 }
+
 // Supply path with no extension; we will use .tex
 // for the LaTeX and .pdf for pdf by convention!
 function writeLaTeX(latex : LatexData,path: string) {
@@ -123,8 +118,7 @@ function writePDFfromString(latex : LatexData,path: string) {
   writePDFfromStream(input,path);
 }
 
-
-// const insertRequest:StyleInsertRequest[] = generateInsertRequests(data);
+// Unit Tests
 
 describe("test symbol observer", function() {
   let notebook: ServerNotebook;
@@ -164,6 +158,7 @@ describe("test symbol observer", function() {
     notebook.registerObserver('WOLFRAM', wolframObserver);
 
   });
+
   afterEach("Close notebook",async function(){
     // Close the notebook.
     await notebook.close();
@@ -172,7 +167,6 @@ describe("test symbol observer", function() {
   after("onClose is called when notebook is closed", async function(){
 
   });
-
 
   describe("observer", function(){
     it("export LaTeX is actually generated", async function(){

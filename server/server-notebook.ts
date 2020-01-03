@@ -71,6 +71,11 @@ export interface RequestChangesOptions extends ChangeNotebookOptions {
   clientId?: ClientId;
 }
 
+interface StyleOrderMapping {
+  sid: StyleId;
+  tls: number;
+}
+
 // Constants
 
 const MAX_CHANGE_ROUNDS = 10;
@@ -339,6 +344,69 @@ export class ServerNotebook extends Notebook {
     return finalTeX;
   }
 
+  // Find the def whose top level symbol appears just before this one.
+  public findLatestDefinitionEarlierThanThis(thoughtIndex : number,defs : StyleOrderMapping[]) : StyleId | null {
+    var curi = -1;
+    var curtlspos = -1;
+    for(var i = 0; i < defs.length; i++) {
+      var pos = this.getThoughtIndex(defs[i].tls);
+      if ((pos < thoughtIndex) &&
+          (pos > curtlspos))
+      {
+        curtlspos = pos;
+        curi = i;
+      }
+    }
+    // Now we hope cur is the currect object...
+    return curi < 0 ? null : defs[curi].sid;
+  }
+
+  // Return all StyleObjects which are Symbols for which
+  // there is a Symbol Dependency relationship with this
+  // object as the the target
+  // Note: The defintion is the "source" of the relationship
+  // and the "use" is "target" of the relationship.
+  public getSymbolStylesIDependOn(style:StyleObject): StyleObject[] {
+    // simplest way to do this is to iterate over all relationships,
+    // computing the source and target thoughts. If the target thought
+    // is the same as our ancestor thought, then we return the
+    // source style, which should be of type Symbol and role Definition.
+    const rs = this.allRelationships();
+    var symbolStyles: StyleObject[] = [];
+    const mp = this.topLevelStyleOf(style.id);
+    if (!mp) {
+      throw new Error(`INTERNAL ERROR: did not produce ancenstor: ${style.id}`);
+    }
+    rs.forEach(r => {
+      try {  // TODO: I don't know why this can be an error....
+        // doing a catch here seems to make it work but this is a concurrency
+        // problem, one way or another...we should not have relationship
+        // that is not pointing to something, though of course concurrent
+        // operation makes this difficult.
+        const rp = this.topLevelStyleOf(r.toId);
+        if (!rp) {
+          throw new Error(`INTERNAL ERROR: did not produce ancenstor: ${style.id}`);
+        }
+        if (rp.id == mp.id) {
+          // We are a user of this definition...
+          try {
+            symbolStyles.push(this.getStyleById(r.fromId));
+          } catch (Error) {
+            // REVIEW: Proper error handling??
+            console.error("from id missing",r.fromId);
+            console.error(this);
+          }
+
+        }
+      } catch (Error) {
+        // REVIEW: Proper error handling??
+        console.error("from id missing",r.fromId);
+        console.error(this);
+      }
+    });
+    return symbolStyles;
+  }
+
   public toJSON(): NotebookObject {
     const rval: NotebookObject = {
       nextId: this.nextId,
@@ -383,6 +451,142 @@ export class ServerNotebook extends Notebook {
 
   public deRegisterObserver(source: StyleSource): void {
     this.observers.delete(source);
+  }
+
+  // This is intended to be used by tests; it is slightly
+  // inefficient. I think DEJ wants us to incrementally recompute everything,
+  // but especially in the presence of concurrency we need a standard to
+  // test against.
+  // The algorithm is straightforward:
+  // If we are "use", we create a relationship based on the last (in thought order)
+  // definition that matches our symbol.
+
+  // TODO: This is not handling equivalence relationships.
+  // For the purpose of testing we possibly have to deal with that.
+  public recomputeAllSymbolRelationships() : RelationshipObject[] {
+    // I am attempting here to code the most straight-forward and simplest
+    // algorithm I can think of without regard to performance.
+    // 1) Compute the set of all symbols in the notebook.
+    // 2) For each symbol s:
+    //    A) produce an array of all uses and defintions of that
+    // symbol (these will be style ids). Sort by top level thought order.
+    //    B) produce an array of all definitions of that symbol.
+    //  Sort by top level thought order.
+    //    C) Run a loop over uses, establishing a relation on the use
+    // to the most recent (thought order) definition
+    //    D) Run a a loop over definitions, starting from the second.
+    // Establish DUPLICATE-DEFINITION relationships
+    const tlso = this.topLevelStyleOrder();
+    const symbols : Set<string> = new Set<string>();
+
+    tlso.forEach( tls => {
+      // console.error("operating on tls:",tls);
+      const syms = this.findChildStylesOfType(tls,'SYMBOL');
+      syms.forEach(sym => {
+        const s = sym.data.name;
+        symbols.add(s);
+      }
+                  );
+    });
+
+    return this.recomputeAllSymbolRelationshipsForSymbols(symbols);
+  }
+
+  public recomputeAllSymbolRelationshipsForSymbols(symbols: Set<string> ) : RelationshipObject[] {
+    interface SymbolToMap {
+      [key: string]: StyleOrderMapping[];
+    }
+    const uses : SymbolToMap = {};
+    const defs : SymbolToMap = {};
+
+    const tlso = this.topLevelStyleOrder();
+    tlso.forEach( tls => {
+      // console.error("operating on tls:",tls);
+      const syms = this.findChildStylesOfType(tls,'SYMBOL');
+      syms.forEach(sym => {
+        const s = sym.data.name;
+        if (symbols.has(s)) {
+          if (sym.role == 'SYMBOL-USE') {
+            if (!(s in uses))
+              uses[s] = [];
+            uses[s].push({ sid: sym.id, tls: tls});
+          }
+          if (sym.role == 'SYMBOL-DEFINITION') {
+            if (!(s in defs))
+              defs[s] = [];
+            defs[s].push({ sid: sym.id, tls: tls});
+          }
+        }
+      });
+    });
+
+    const rs : RelationshipObject[] = [];
+
+
+    // Now hopefully defs and uses are maps of all symbols properly ordered...
+    // Build the symbol use relationships...
+    symbols.forEach( sym => {
+      const us = uses[sym];
+      const ds = defs[sym];
+      if (us) {
+        for(var i = 0; i < us.length; i++) {
+          const fromId : number | null =
+            this.findLatestDefinitionEarlierThanThis(
+              this.getThoughtIndex(us[i].tls),
+              ds);
+
+
+          if (fromId) {
+            // console.error("fromId for i",fromId,us[i]);
+            // Since we are not at present injecting into the notebook,
+            // the id will remain -1.
+            var r : RelationshipObject = {
+              source: 'TEST',
+              id: -1,
+              fromId: fromId,
+              toId: us[i].sid,
+              role: 'SYMBOL-DEPENDENCY',
+            };
+            rs.push(r);
+          } else {
+            // REVIEW: Throw exception??
+            console.error("fromId not found:",us[i],ds);
+          }
+        }
+      }
+    });
+
+    // Now handle the duplicate definitions....
+    symbols.forEach( sym => {
+      const ds = defs[sym];
+
+      // TODO: this needs to be a key iteration, not a number iteration!
+      for(var i = 0; i < ds.length; i++) {
+        const fromId  : number | null =
+          this.findLatestDefinitionEarlierThanThis(
+            this.getThoughtIndex(ds[i].tls),
+            ds);
+
+        // Since we are not at present injecting into the notebook,
+        // the id will remain -1.
+        if (fromId) {
+          var r : RelationshipObject = {
+            source: 'TEST',
+            id: -1,
+            fromId: fromId,
+            toId: ds[i].sid,
+            role: 'DUPLICATE-DEFINITION',
+          };
+          rs.push(r);
+        }
+      }
+    });
+
+    // console.error("RS = ",rs);
+    // Now I am not producing "EQIVALENCE" meanings...
+    // However, those are a function of evaluation, and so are quite different.
+    return rs;
+
   }
 
   public async requestChanges(

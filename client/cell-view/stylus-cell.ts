@@ -293,7 +293,6 @@ export class StylusCell extends CellView {
     const subrole = 'UNKNOWN';
     const changeRequest: NotebookChangeRequest = { type: 'convertStyle', styleId: this.styleId, role, subrole };
     this.notebookView.openNotebook.sendChangeRequest(changeRequest, { wantUndo: true });
-    this.populateSubselector(role);
   }
 
   private onSubselectorChange(event: Event /* REVIEW: More specific event? */): void {

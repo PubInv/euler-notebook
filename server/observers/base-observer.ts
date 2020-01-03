@@ -75,9 +75,7 @@ export abstract class BaseObserver implements ObserverInstance {
 
 
   public async onChangesAsync(changes: NotebookChange[]): Promise<NotebookChangeRequest[]> {
-    // IMPORTANT: This code parallels code in onChangesSync, with the major difference that
-    //            we do not have an await on the synchronous compute function.
-    //            If you change this code, then you probably need to change onChangesSync.
+    // IMPORTANT: This code is identical to onChangesSync, except this code has awaits and that code doesn't.
     debug(`onChangesAsync ${this.notebook._path} ${changes.length}`);
     const rval: NotebookChangeRequest[] = [];
     for (const rule of this.rules) {
@@ -98,9 +96,7 @@ export abstract class BaseObserver implements ObserverInstance {
   }
 
   public onChangesSync(changes: NotebookChange[]): NotebookChangeRequest[] {
-    // IMPORTANT: This code parallels code in onChangesAsync, with the major difference that
-    //            we have an await on the asynchronous compute function.
-    //            If you change this code, then you probably need to change onChangesAsync.
+    // IMPORTANT: This code is identical to onChangesAsync, except that code has awaits and this code doesn't.
     debug(`onChangesSync ${changes.length}`);
     const rval: NotebookChangeRequest[] = [];
     for (const rule of this.rules) {
@@ -113,7 +109,7 @@ export abstract class BaseObserver implements ObserverInstance {
       for (const change of changes) {
         if (!change) { /* REVIEW: Don't allow falsy changes */ continue; }
         const changeRequest = this.onChangeSync(rule, change);
-        if (changeRequest) { rval.push(changeRequest);}
+        if (changeRequest) { rval.push(changeRequest); }
       }
     }
     debug(`onChangesSync returning ${rval.length} changes.`);
@@ -146,6 +142,9 @@ export abstract class BaseObserver implements ObserverInstance {
   // Private Instance Methods
 
   private async onChangeAsync(rule: Rule, change: NotebookChange): Promise<NotebookChangeRequest|undefined> {
+    // TODO: 'styleDeleted': if styleInserted resulted in creating a peer style, then styleDeleted should delete that style.
+    // TODO: 'styleConverted': should be treated like a style deleted followed by a style inserted.
+    // IMPORTANT: This code is identical to onChangeSync, except this code has awaits and that code doesn't.
     if (change.type != 'styleChanged' && change.type != 'styleInserted') { return undefined; }
     const sourceStyle = change.style;
     const styleTest = (rule.parentStyleTest || rule.peerStyleTest)!;
@@ -176,6 +175,7 @@ export abstract class BaseObserver implements ObserverInstance {
   }
 
   private onChangeSync(rule: Rule, change: NotebookChange): NotebookChangeRequest|undefined {
+    // IMPORTANT: This code is identical to onChangeAsync, except that code has awaits and this code doesn't.
     if (change.type != 'styleChanged' && change.type != 'styleInserted') { return undefined; }
     const sourceStyle = change.style;
     const styleTest = (rule.parentStyleTest || rule.peerStyleTest)!;
