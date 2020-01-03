@@ -24,12 +24,12 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 import { addErrorMessageToHeader } from './global.js';
 import { ClientMessage, ServerMessage, NotebookOpened, NotebookClosed, NotebookChanged, NotebookPath } from './math-tablet-api.js';
-import { OpenNotebook } from './open-notebook.js';
+import { ClientNotebook } from './client-notebook.js';
 
 // Types
 
 type ConnectPromise = PromiseResolver<ServerSocket>;
-type OpenPromise = PromiseResolver<OpenNotebook>;
+type OpenPromise = PromiseResolver<ClientNotebook>;
 
 // REVIEW: This is also defined in server/common.ts.
 interface PromiseResolver<T> {
@@ -53,7 +53,7 @@ export class ServerSocket {
 
   // Instance Methods
 
-  public async openNotebook(notebookPath: NotebookPath): Promise<OpenNotebook> {
+  public async openNotebook(notebookPath: NotebookPath): Promise<ClientNotebook> {
     this.sendMessage({ type: 'openNotebook', notebookPath: notebookPath });
     return new Promise((resolve, reject)=>this.openPromises.set(notebookPath, { resolve, reject }))
   }
@@ -147,7 +147,7 @@ export class ServerSocket {
   private smNotebookOpened(msg: NotebookOpened): void {
     const openRequest = this.openPromises.get(msg.notebookPath);
     if (!openRequest) { throw new Error(`Notebook opened message for unknown notebook: ${msg.notebookPath}`); }
-    const openNotebook = OpenNotebook.open(this, msg.notebookPath, msg.obj);
+    const openNotebook = ClientNotebook.open(this, msg.notebookPath, msg.obj);
     openRequest.resolve(openNotebook);
     this.openPromises.delete(msg.notebookPath);
   }
@@ -155,13 +155,13 @@ export class ServerSocket {
   // TODO: notebook open failure
 
   private smNotebookClosed(msg: NotebookClosed): void {
-    const notebookView = OpenNotebook.get(msg.notebookPath);
+    const notebookView = ClientNotebook.get(msg.notebookPath);
     if (!notebookView) { throw new Error(`Unknown notebook closed: ${msg.notebookPath}`); }
     notebookView.smClose();
   }
 
   private smNotebookChanged(msg: NotebookChanged): void {
-    const notebookView = OpenNotebook.get(msg.notebookPath);
+    const notebookView = ClientNotebook.get(msg.notebookPath);
     if (!notebookView) { throw new Error(`Notebook change from unknown notebook: ${msg.notebookPath}`); }
     notebookView.smChange(msg);
   }

@@ -24,7 +24,7 @@ import { DebugPopup } from './debug-popup.js';
 import { showErrorMessage } from './global.js';
 import { Header } from './header.js';
 import { NotebookView } from './notebook-view.js';
-import { OpenNotebook } from './open-notebook.js';
+import { ClientNotebook } from './client-notebook.js';
 import { PageView, PageViewType } from './page-view.js';
 import { ServerSocket } from './server-socket.js';
 import { Sidebar, View } from './sidebar.js';
@@ -101,7 +101,7 @@ class App {
   private debugPopup: DebugPopup;
   private header: Header;
   private notebookView: NotebookView;
-  private openNotebook!: OpenNotebook;
+  private openNotebook!: ClientNotebook;
   private pageView: PageView;
   private sidebar: Sidebar;
   private socket!: ServerSocket;

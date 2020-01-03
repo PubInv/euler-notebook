@@ -32,7 +32,7 @@ import {
   StyleChangeRequest, StyleDeleteRequest,
   StyleInsertRequest, StylePropertiesWithSubprops, StyleMoveRequest, NotebookChangeRequest, ChangeNotebookOptions,
 } from './math-tablet-api.js';
-import { OpenNotebook, TrackedChangesResults } from './open-notebook.js';
+import { ClientNotebook, TrackedChangesResults } from './client-notebook.js';
 import { Sidebar } from './sidebar.js';
 
 // Types
@@ -92,7 +92,7 @@ export class NotebookView {
 
   // Instance Properties
 
-  public openNotebook!: OpenNotebook;
+  public openNotebook!: ClientNotebook;
 
   // Instance Property Functions
 
@@ -105,7 +105,7 @@ export class NotebookView {
 
   // Instance Methods
 
-  public connect(openNotebook: OpenNotebook, sidebar: Sidebar): void {
+  public connect(openNotebook: ClientNotebook, sidebar: Sidebar): void {
     this.openNotebook = openNotebook;
     this.sidebar = sidebar;
 

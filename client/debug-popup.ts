@@ -20,7 +20,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 // Requirements
 
 import { configure, escapeHtml, Html } from './dom.js';
-import { OpenNotebook } from './open-notebook.js';
+import { ClientNotebook } from './client-notebook.js';
 import { RelationshipObject, StyleObject } from './notebook.js';
 import { Header } from './header.js';
 
@@ -42,7 +42,7 @@ export class DebugPopup {
 
   // Instance Methods
 
-  public connect(header: Header, openNotebook: OpenNotebook): void {
+  public connect(header: Header, openNotebook: ClientNotebook): void {
     this.header = header;
     this.openNotebook = openNotebook;
   }
@@ -77,7 +77,7 @@ export class DebugPopup {
   private $closeButton: HTMLButtonElement;
 
   private header!: Header;
-  private openNotebook!: OpenNotebook
+  private openNotebook!: ClientNotebook
 
   // Private Instance Property Functions
 

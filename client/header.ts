@@ -21,7 +21,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 import { $attach } from './dom.js';
 import { DebugPopup } from './debug-popup.js';
-import { OpenNotebook } from './open-notebook.js';
+import { ClientNotebook } from './client-notebook.js';
 
 // Types
 
@@ -41,7 +41,7 @@ export class Header {
 
   // Instance Methods
 
-  public connect(debugPopup: DebugPopup, openNotebook: OpenNotebook): void {
+  public connect(debugPopup: DebugPopup, openNotebook: ClientNotebook): void {
     this.debugPopup = debugPopup;
     this.openNotebook = openNotebook;
   }
@@ -66,7 +66,7 @@ export class Header {
   private $debugButton: HTMLButtonElement;
   private debugPopup!: DebugPopup
 
-  private openNotebook!: OpenNotebook
+  private openNotebook!: ClientNotebook
 
   // Private Instance Methods
 

@@ -39,23 +39,22 @@ export interface TrackedChangesResults {
 
 // Class
 
-// TODO: Rename to "ClientNotebook" to parallel "ServerNotebook"
-export class OpenNotebook extends Notebook {
+export class ClientNotebook extends Notebook {
 
   // Class Methods
 
-  public static create(socket: ServerSocket, notebookPath: NotebookPath, obj: NotebookObject): OpenNotebook {
+  public static create(socket: ServerSocket, notebookPath: NotebookPath, obj: NotebookObject): ClientNotebook {
     assert(!this.notebooks.has(notebookPath));
     const instance = new this(socket, notebookPath, obj);
     this.notebooks.set(notebookPath, instance);
     return instance;
   }
 
-  public static open(socket: ServerSocket, notebookPath: NotebookPath, tDoc: NotebookObject): OpenNotebook {
+  public static open(socket: ServerSocket, notebookPath: NotebookPath, tDoc: NotebookObject): ClientNotebook {
     return this.notebooks.get(notebookPath) || this.create(socket, notebookPath, tDoc);
   }
 
-  public static get(notebookName: NotebookPath): OpenNotebook|undefined {
+  public static get(notebookName: NotebookPath): ClientNotebook|undefined {
     return this.notebooks.get(notebookName);
   }
 
@@ -73,7 +72,7 @@ export class OpenNotebook extends Notebook {
   // REVIEW: When is this called?
   public close() {
     // TODO: mark closed?
-    OpenNotebook.notebooks.delete(this.notebookPath);
+    ClientNotebook.notebooks.delete(this.notebookPath);
   }
 
   public connect(notebookView: NotebookView): void {
@@ -173,7 +172,7 @@ export class OpenNotebook extends Notebook {
 
   // Private Class Properties
 
-  private static notebooks: Map<NotebookPath, OpenNotebook> = new Map();
+  private static notebooks: Map<NotebookPath, ClientNotebook> = new Map();
 
   // Private Constructor
 
