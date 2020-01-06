@@ -212,13 +212,15 @@ export class ServerNotebook extends Notebook {
     const cells = [];
     for(const tls of tlso) {
       var retLaTeX = "";
-      const latex = this.findChildStylesOfType(tls,'LATEX');
+      // REVIEW: Does this search need to be recursive?
+      const latex = this.findStyles({ type: 'LATEX', recursive: true }, tls);
       if (latex.length > 1) { // here we have to have some disambiguation
         retLaTeX += "ambiguous: " +displayFormula(latex[0].data);
       } else if (latex.length == 1) {  // here it is obvious, maybe...
         retLaTeX += displayFormula(latex[0].data);
       }
-      const image = this.findChildStylesOfType(tls,'IMAGE','PLOT');
+      // REVIEW: Does this search need to be recursive?
+      const image = this.findStyles({ type: 'IMAGE', role: 'PLOT', recursive: true }, tls);
       if (image.length > 0) {
         const plot = image[0];
         const apath = this.absoluteDirectoryPath();
@@ -236,7 +238,8 @@ export class ServerNotebook extends Notebook {
       // Now we search for .PNGs --- most likely generated from
       // .svgs, but not necessarily, which allows the possibility
       // of photographs being included in output later.
-      const svgs = this.findChildStylesOfType(tls,'SVG');
+      // REVIEW: Does this search need to be recursive?
+      const svgs = this.findStyles({ type: 'SVG', recursive: true }, tls);
       for(const s of svgs) {
         // NOTE: At present, this is using a BUFFER, which is volatile.
         // It does not correctly survive resets of the notebook.
@@ -481,7 +484,8 @@ export class ServerNotebook extends Notebook {
 
     tlso.forEach( tls => {
       // console.error("operating on tls:",tls);
-      const syms = this.findChildStylesOfType(tls,'SYMBOL');
+      // REVIEW: Does this search need to be recursive?
+      const syms = this.findStyles({ type: 'SYMBOL', recursive: true }, tls);
       syms.forEach(sym => {
         const s = sym.data.name;
         symbols.add(s);
@@ -502,7 +506,8 @@ export class ServerNotebook extends Notebook {
     const tlso = this.topLevelStyleOrder();
     tlso.forEach( tls => {
       // console.error("operating on tls:",tls);
-      const syms = this.findChildStylesOfType(tls,'SYMBOL');
+      // REVIEW: Does this search need to be recursive?
+      const syms = this.findStyles({ type: 'SYMBOL', recursive: true }, tls);
       syms.forEach(sym => {
         const s = sym.data.name;
         if (symbols.has(s)) {
@@ -881,7 +886,8 @@ export class ServerNotebook extends Notebook {
     }
 
     if (styleProps.exclusiveChildTypeAndRole) {
-        const children = this.findChildStylesOfType(parentId, style.type);
+      // REVIEW: Does this search need to be recursive?
+      const children = this.findStyles({ type: style.type, recursive: true }, parentId);
 
       // console.log("KIDS FOUND OF PARENT",children);
       // now in the set to be removed, remove ourself, and anyting with a different meaning

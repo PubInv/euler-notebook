@@ -170,7 +170,7 @@ export class AlgebraicToolsObserver implements ObserverInstance {
   //   // this ancestor thought...
 
   //   const candidate_styles =
-  //     this.notebook.findChildStylesOfType(target_ancestor.id, 'WOLFRAM','EVALUATION');
+  //     this.notebook.findStyles({ type: 'WOLFRAM', role: 'EVALUATION', recursive: true }, target_ancestor.id);
   //   debug("candidate styles",candidate_styles);
   //   // Not really sure what to do here if there is more than one!!!
   //   // TODO: This can also be empty!!! The code below needs
@@ -222,7 +222,7 @@ export class AlgebraicToolsObserver implements ObserverInstance {
   //     if (!isSubTrivariate && beforeChangeClassifiedAsSubTrivariate) {
   //       debug("CHOOSING DELETION");
   //       const classifications =
-  //         this.notebook.findChildStylesOfType(target_ancestor.id,'CLASSIFICATION','SUBTRIVARIATE');
+  //         this.notebook.findStyles({ type: 'CLASSIFICATION', role: 'SUBTRIVARIATE', recursive: true }, target_ancestor.id);
   //       const changeReq: StyleDeleteRequest = {
   //         type: 'deleteStyle',
   //         styleId: classifications[0].id

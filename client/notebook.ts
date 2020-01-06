@@ -336,29 +336,6 @@ export class Notebook {
     return this.allStyles().filter(s=>(s.parentId==id));
   }
 
-  // find all children of given type and role
-  public findChildStylesOfType(id: StyleId, type: StyleType, role?: StyleRole): StyleObject[] {
-
-    // we will count ourselves as a child here....
-    const rval: StyleObject[] = [];
-
-    const style = this.styleMap[id];
-    if (style && style.type == type && (!role || style.role == role)) {
-      // we match, so we add ourselves...
-      rval.push(<StyleObject>style);
-    } // else { assert(this.thoughtMap[id] }
-
-    // now for each kid, recurse...
-    // DANGER! this makes this function asymptotic quadratic or worse...
-    const kids = this.childStylesOf(id);
-    for(const k of kids) {
-      const kmatch = this.findChildStylesOfType(k.id, type, role);
-      for(let km of kmatch) { rval.push(km); }
-    }
-
-    return rval;
-  }
-
   public getRelationshipById(id: RelationshipId): RelationshipObject {
     const rval = this.relationshipMap[id];
     if (!rval) { throw new RelationshipIdDoesNotExistError(`Relationship ${id} doesn't exist.`); }
@@ -469,6 +446,7 @@ export class Notebook {
     options: FindStyleOptions,
     rootId?: StyleId,           // Search child styles of this style, otherwise top-level styles.
   ): StyleObject|undefined {
+    // Option to throw if style not found.
     // REVIEW: If we don't need to throw on multiple matches, then we can terminate the search
     //         after we find the first match.
     // Like findStyles but expects to find zero or one matching style.
@@ -484,6 +462,7 @@ export class Notebook {
     rootId?: StyleId,           // Search child styles of this style, otherwise top-level styles.
     rval: StyleObject[] = []
   ): StyleObject[] {
+    // Option to throw if style not found.
     const styles = rootId ? this.childStylesOf(rootId) : this.topLevelStyles();
     for (const style of styles) {
       if (styleMatchesPattern(style, options)) { rval.push(style); }

@@ -107,10 +107,9 @@ function texformatOfLastThought(notebook : ServerNotebook) : string {
   // now that we have the lastThought, we want to get the
   // LATEX type...
   const lastThought = notebook.getStyleById(lastThoughtId);
-  const children = notebook.findChildStylesOfType(lastThought.id,
-                                                  'LATEX');
-  const texformatter = children[0];
-  return texformatter.data;
+  // REVIEW: Does this search need to be recursive?
+  const texformatter = notebook.findStyle({ type: 'LATEX', recursive: true }, lastThought.id);
+  return texformatter!.data;
 }
 function getThought(notebook : ServerNotebook,n : number) : StyleId {
   const tls = notebook.topLevelStyleOrder();
@@ -215,8 +214,8 @@ describe("test symbol observer", function() {
 
       // Now we want to assert that "style" has only one WOLFRAM EVALUATION
       // child.
-      const children = notebook.findChildStylesOfType(style.id,
-                                                      'WOLFRAM');
+      // REVIEW: Does this search need to be recursive?
+      const children = notebook.findStyles({ type: 'WOLFRAM', recursive: true }, style.id);
       const properChildren = children.filter(c => (c.parentId == style.id));
       assert(properChildren.length == 1,"There should be one child, but there are:"+children.length);
 
@@ -357,9 +356,8 @@ describe("test symbol observer", function() {
 
       // I really want a way to find this from the notebook....
       const initialId = 1;
-
-      const children = notebook.findChildStylesOfType(initialId,
-                                                      'EQUATION');
+      // REVIEW: Does this search need to be recursive?
+      const children = notebook.findStyles({ type: 'EQUATION', recursive: true }, initialId);
       assert.equal(1,children.length);
     });
 
@@ -382,8 +380,8 @@ describe("test symbol observer", function() {
       };
       await serializeChangeRequests(notebook,[cr]);
       // Now there should be only ONE EQUATION-DEFINITON attached to the single input!!!
-      const children = notebook.findChildStylesOfType(initialId,
-                                                      'EQUATION');
+      // REVIEW: Does this search need to be recursive?
+      const children = notebook.findStyles({ type: 'EQUATION', recursive: true }, initialId);
       assert.equal(1,children.length);
     });
 
@@ -445,8 +443,8 @@ describe("test symbol observer", function() {
       // LATEX type...
       const lastThought = notebook.getStyleById(lastThoughtId);
 
-      const children = notebook.findChildStylesOfType(lastThought.id,
-                                                      'LATEX');
+      // REVIEW: Does this search need to be recursive?
+      const children = notebook.findStyles({ type: 'LATEX', recursive: true }, lastThought.id);
       const texformatter = children[0];
       assert.equal('Y = 36',texformatter.data);
       const rels = notebook.recomputeAllSymbolRelationships();
@@ -497,10 +495,9 @@ describe("test symbol observer", function() {
       // LATEX type...
       const lastThought = notebook.getStyleById(lastThoughtId);
 
-      const children = notebook.findChildStylesOfType(lastThought.id,
-                                                      'LATEX');
-      const texformatter = children[0];
-      assert.equal('Y = 16',texformatter.data);
+      // REVIEW: Does this search need to be recursive?
+      const texformatter = notebook.findStyle({ type: 'LATEX', recursive: true}, lastThought.id);
+      assert.equal('Y = 16',texformatter!.data);
 
 
     });

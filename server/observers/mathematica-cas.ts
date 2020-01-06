@@ -262,7 +262,8 @@ export class MathematicaObserver implements ObserverInstance {
       // I believe that we should delete a type of of the same if it exists.
       // In fact this is a meta-rule --- for some styles, there is only one style
       // of a type allowed. It will be best to add that into the metaframework.
-      let kids = this.notebook.findChildStylesOfType(style.id, 'WOLFRAM');
+      // REVIEW: Does this search need to be recursive?
+      let kids = this.notebook.findStyles({ type: 'WOLFRAM', recursive: true }, style.id);
       for(const k of kids) {
         const changeReq: StyleDeleteRequest = {
           type: 'deleteStyle',

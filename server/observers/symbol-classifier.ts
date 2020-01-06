@@ -346,7 +346,8 @@ export class SymbolClassifierObserver implements ObserverInstance {
       const tlStyle = this.notebook.topLevelStyleOf(style.id);
       // Now for each style is as use or defintion, collect the names...
       const symbols : Set<string> = new Set<string>();
-      const syms = this.notebook.findChildStylesOfType(tlStyle.id,'SYMBOL');
+      // REVIEW: Does this search need to be recursive?
+      const syms = this.notebook.findStyles({ type: 'SYMBOL', recursive: true }, tlStyle.id);
       syms.forEach(sym => {
         const s = sym.data.name;
         symbols.add(s);
@@ -647,8 +648,8 @@ export class SymbolClassifierObserver implements ObserverInstance {
   // of the uses, there may be more than one use. We therefore have little choice but to delete all
   // SYMBOL-USE / SYMBOL children before add these in.
   private async removeAllCurrentUses(style: StyleObject, rval: NotebookChangeRequest[]): Promise<void> {
-    const children = this.notebook.findChildStylesOfType(style.id,
-                                                         'SYMBOL');
+    // REVIEW: Does this search need to be recursive?
+    const children = this.notebook.findStyles({ type: 'SYMBOL', recursive: true }, style.id);
 
     children.forEach( kid => {
       if ((kid.parentId == style.id) &&

@@ -160,8 +160,9 @@ export class TeXFormatterObserver implements ObserverInstance {
 
     // Now, we will simply delete everyting and recalculate as an
     // initial strategy.
-        const texs : StyleObject[] =
-      this.notebook.findChildStylesOfType(top.id,'LATEX','DECORATION');
+    // REVIEW: Does this search need to be recursive?
+    const texs : StyleObject[] =
+      this.notebook.findStyles({ type: 'LATEX', role: 'DECORATION', recursive: true }, top.id);
     const rids = new Set<number>();
     for(const itex of texs) {
       const sid : StyleId = itex.id;

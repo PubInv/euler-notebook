@@ -146,7 +146,8 @@ export class EquationSolverObserver implements ObserverInstance {
     debug(`parent ${parent}`);
 
     // We're looking for the EQUATION style...
-    const equationStyle = this.notebook.findChildStylesOfType(parent.id, 'EQUATION', 'EQUATION-DEFINITION')[0];
+    // REVIEW: Does this search need to be recursive?
+    const equationStyle = this.notebook.findStyle({ type: 'EQUATION', role: 'EQUATION-DEFINITION', recursive: true}, parent.id);
     const newsolutions : NameValuePair[] = [];
     if (!equationStyle) {
   // In some cases, this is not really an error, I guess.
@@ -188,7 +189,8 @@ export class EquationSolverObserver implements ObserverInstance {
       debug(`usedSymbls ${usedSymbols}`);
       debug(`sub_expr ${sub_expr}, ${variables}`);
 
-      const symbolUses = this.notebook.findChildStylesOfType(parent.id,'SYMBOL','SYMBOL-USE');
+      // REVIEW: Does this search need to be recursive?
+      const symbolUses = this.notebook.findStyles({ type: 'SYMBOL', role: 'SYMBOL-USE', recursive: true }, parent.id);
 
       debug(`symbolUses ${symbolUses}`);
 
@@ -296,8 +298,8 @@ export class EquationSolverObserver implements ObserverInstance {
     // We want to delete and recstruct the tools...
     // So we find the TOOL style...might need to distinguish by source
     // but for now we will just find it.
-        const tools =
-      this.notebook.findChildStylesOfType(target_ancestor.id,'TOOL','ATTRIBUTE');
+    // REVIEW: Does this search need to be recursive?
+    const tools = this.notebook.findStyles({ type: 'TOOL', role: 'ATTRIBUTE', recursive: true }, target_ancestor.id);
     debug("tools in changed",tools);
     for(const tool of tools) {
       const changeReq: StyleDeleteRequest = {

@@ -75,7 +75,8 @@ export class SubtrivClassifierObserver implements ObserverInstance {
     const evaluationStyle = this.notebook.getStyleById(toolStyle.parentId);
 
     // The WOLFRAM/EVALUATION style will have a CLASSIFICATION/SUBTRIVARIATE child.
-  const classificationStyle = this.notebook.findChildStylesOfType(evaluationStyle.id, 'CLASSIFICATION', 'SUBTRIVARIATE')[0];
+    // REVIEW: Does this search need to be recursive?
+    const classificationStyle = this.notebook.findStyle({ type: 'CLASSIFICATION', role: 'SUBTRIVARIATE', recursive: true }, evaluationStyle.id);
     if (!classificationStyle) { throw new Error(`Classification style not found.`); }
 
     const targetPath = absDirPathFromNotebookPath(this.notebook._path!);
@@ -226,9 +227,9 @@ export class SubtrivClassifierObserver implements ObserverInstance {
 
     // now we want to find any potentially (re)classifiable style on
     // this ancestor thought...
-
+    // REVIEW: Does this search need to be recursive?
     const candidate_styles =
-      this.notebook.findChildStylesOfType(target_ancestor.id, 'WOLFRAM','EVALUATION');
+      this.notebook.findStyles({ type: 'WOLFRAM', role: 'EVALUATION', recursive: true }, target_ancestor.id);
     debug("candidate styles",candidate_styles);
     // Not really sure what to do here if there is more than one!!!
     // TODO: This can also be empty!!! The code below needs
@@ -279,11 +280,12 @@ export class SubtrivClassifierObserver implements ObserverInstance {
       }
       if (!isSubTrivariate && beforeChangeClassifiedAsSubTrivariate) {
         debug("CHOOSING DELETION");
-        const classifications =
-          this.notebook.findChildStylesOfType(target_ancestor.id,'CLASSIFICATION','SUBTRIVARIATE');
+        // REVIEW: Does this search need to be recursive?
+        const classification =
+          this.notebook.findStyle({ type: 'CLASSIFICATION', role:'SUBTRIVARIATE', recursive: true }, target_ancestor.id);
         const changeReq: StyleDeleteRequest = {
           type: 'deleteStyle',
-          styleId: classifications[0].id
+          styleId: classification!.id
         };
         rval.push(changeReq);
       }

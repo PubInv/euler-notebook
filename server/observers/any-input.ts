@@ -112,8 +112,8 @@ export class AnyInputObserver implements ObserverInstance {
 
       // We may have at most one SYMOBL-DEFINTION style, and a set of
       // SYMBOL-USES styles. These need to be sent a "move" change Request.
-      const children = this.notebook.findChildStylesOfType(style.id,
-                                                           'SYMBOL');
+      // REVIEW: Does this search need to be recursive?
+      const children = this.notebook.findStyles({ type: 'SYMBOL', recursive: true }, style.id );
       children.forEach(
         k => {
             const changeReq: StyleMoveRequest = {
