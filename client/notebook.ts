@@ -311,11 +311,11 @@ export class Notebook {
 
   // REVIEW: Return an iterator?
   public allRelationships(): RelationshipObject[] {
-    // TODO: Does it matter whether we return relationships in sorted order or not?
+    // REVIEW: Does it matter whether we return relationships in sorted order or not?
     //       This could be as simple as: return Object.values(this.relationshipMap);
+    //       Caller can sort if necessary.
     const sortedIds: RelationshipId[] = Object.keys(this.relationshipMap).map(k=>parseInt(k,10)).sort();
     return sortedIds.map(id=>this.relationshipMap[id]);
-
   }
 
   public relationshipsOf(id: StyleId): RelationshipObject[] {
@@ -324,8 +324,11 @@ export class Notebook {
 
   // REVIEW: Return an iterator?
   public allStyles(): StyleObject[] {
+    // REVIEW: Does it matter whether we return relationships in sorted order or not?
+    //       This could be as simple as: return Object.values(this.relationshipMap);
+    //       Caller can sort if necessary.
     const sortedIds: StyleId[] = Object.keys(this.styleMap).map(k=>parseInt(k,10)).sort();
-    return sortedIds.map(id=>this.styleMap[id]);
+    return sortedIds.map(id=>this.getStyleById(id));
   }
 
   // Returns all thoughts in notebook order
@@ -348,45 +351,21 @@ export class Notebook {
     return rval;
   }
 
-  public getSymbolStylesThatDependOnMe(style:StyleObject): StyleObject[] {
-    const rs = this.allRelationships();
-    var symbolStyles: StyleObject[] = [];
-    rs.forEach(r => {
-      if (r.fromId == style.id) {
-        try {
-          symbolStyles.push(this.getStyleById(r.toId));
-        } catch (e) {
-          if (e instanceof StyleIdDoesNotExistError) {
-          } else {
-            throw new Error("Internal Error"+e.name);
-          }
-        }
-      }
-    });
-    return symbolStyles;
-  }
-
-  public numStyles(tname: StyleType, role?: StyleRole) : number {
-    return this.allStyles().reduce(
-      function(total,x){
-        return (x.type == tname && (!role || x.role == role))
-          ?
-          total+1 : total},
-      0);
-  }
-
+  // REVIEW: Return an iterator?
   public topLevelStyles(): StyleObject[] {
-    return this.styleOrder.map(styleId=>this.styleMap[styleId]);
+    return this.styleOrder.map(styleId=>this.getStyleById(styleId));
   }
 
   public topLevelStyleOf(id: StyleId): StyleObject {
-    const style = this.styleMap[id];
-    if (!style) { throw new Error("Cannot find top-level style: "+id); }
-    if (!style.parentId) { return style; }
-    return this.topLevelStyleOf(style.parentId);
+    let style = this.getStyleById(id);
+    if (!style) { throw new Error(`Cannot find top-level style of style ${id}`); }
+    while (style.parentId) {
+      style = this.getStyleById(style.parentId);
+    }
+    return style;
   }
 
-  public isTopLevelThought(id: StyleId): boolean {
+  public isTopLevelStyle(id: StyleId): boolean {
     return (this.getStyleById(id).parentId == 0);
   }
 
@@ -511,8 +490,7 @@ export class Notebook {
 
   private changeStyle(change: StyleChanged): void {
     const styleId = change.style.id;
-    const style = this.styleMap[styleId];
-    if (!style) { throw new Error(`Changing unknown style ${styleId}`); }
+    const style = this.getStyleById(styleId);
     style.data = change.style.data;
     // This is experimental; for SVG, we need a timestamp for
     // cleaning up the .PNG files
@@ -523,7 +501,7 @@ export class Notebook {
   }
 
   private convertStyle(change: StyleConverted): void {
-    const style = this.styleMap[change.styleId];
+    const style = this.getStyleById(change.styleId);
     if (!style) { throw new Error(`Converting unknown style ${change.styleId}`); }
     style.role = change.role;
     style.subrole = change.subrole;
@@ -537,14 +515,14 @@ export class Notebook {
   }
 
   private deleteStyle(style: StyleObject): void {
-    const id = style.id;
-    if (!this.styleMap[id]) { throw new Error(`Deleting unknown style ${id}`); }
-    // If this is a top-level style then remove it from the top-level style order.
+    // If this is a top-level style then remove it from the top-level style order first.
     if (!style.parentId) {
-      const i = this.styleOrder.indexOf(id);
+      const i = this.styleOrder.indexOf(style.id);
+      if (i<0) { throw new Error(`Deleting unknown top-level style ${style.id}`); }
       this.styleOrder.splice(i,1);
     }
-    delete this.styleMap[id];
+    if (!this.styleMap[style.id]) { throw new Error(`Deleting unknown style ${style.id}`); }
+    delete this.styleMap[style.id];
   }
 
   private insertRelationship(relationship: RelationshipObject): void {
@@ -572,7 +550,7 @@ export class Notebook {
   // of a top level style. However, only a move a top-level thought
   // actually should be affected here.
   private moveStyle(change: StyleMoved): void {
-    if (this.isTopLevelThought(change.styleId)) {
+    if (this.isTopLevelStyle(change.styleId)) {
       this.styleOrder.splice(change.oldPosition, 1);
       this.styleOrder.splice(change.newPosition, 0, change.styleId);
     }

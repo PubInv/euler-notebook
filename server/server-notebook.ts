@@ -29,7 +29,7 @@ import { assert } from 'chai';
 import {
   Notebook, NotebookObject, NotebookChange, StyleObject, StyleRole, StyleType, StyleSource, StyleId,
   RelationshipObject, StyleMoved, StylePosition, VERSION, StyleChanged, RelationshipDeleted,
-  RelationshipInserted, StyleInserted, StyleDeleted, StyleConverted
+  RelationshipInserted, StyleIdDoesNotExistError, StyleInserted, StyleDeleted, StyleConverted
 } from '../client/notebook';
 import {
   NotebookChangeRequest, StyleMoveRequest, StyleInsertRequest, StyleChangeRequest,
@@ -405,6 +405,24 @@ export class ServerNotebook extends Notebook {
         // REVIEW: Proper error handling??
         console.error("from id missing",r.fromId);
         console.error(this);
+      }
+    });
+    return symbolStyles;
+  }
+
+  public getSymbolStylesThatDependOnMe(style:StyleObject): StyleObject[] {
+    const rs = this.allRelationships();
+    var symbolStyles: StyleObject[] = [];
+    rs.forEach(r => {
+      if (r.fromId == style.id) {
+        try {
+          symbolStyles.push(this.getStyleById(r.toId));
+        } catch (e) {
+          if (e instanceof StyleIdDoesNotExistError) {
+          } else {
+            throw new Error("Internal Error"+e.name);
+          }
+        }
       }
     });
     return symbolStyles;
