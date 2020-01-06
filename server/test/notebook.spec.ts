@@ -59,12 +59,12 @@ describe("notebook", function() {
       // TODO: create td from obj.
     });
 
-    it("Retrieves styles with allStyles and getStyleById", async function() {
+    it("Retrieves styles with allStyles and getStyle", async function() {
       const styles = td.allStyles();
       assert.equal(styles.length, 3);
       assert.equal(styles[0].data, styleData[0]);
 
-      const styleObject = td.getStyleById(styles[0].id);
+      const styleObject = td.getStyle(styles[0].id);
       assert.equal(styleObject, styles[0]);
     });
 

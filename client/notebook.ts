@@ -328,7 +328,7 @@ export class Notebook {
     //       This could be as simple as: return Object.values(this.relationshipMap);
     //       Caller can sort if necessary.
     const sortedIds: StyleId[] = Object.keys(this.styleMap).map(k=>parseInt(k,10)).sort();
-    return sortedIds.map(id=>this.getStyleById(id));
+    return sortedIds.map(id=>this.getStyle(id));
   }
 
   // Returns all thoughts in notebook order
@@ -339,13 +339,13 @@ export class Notebook {
     return this.allStyles().filter(s=>(s.parentId==id));
   }
 
-  public getRelationshipById(id: RelationshipId): RelationshipObject {
+  public getRelationship(id: RelationshipId): RelationshipObject {
     const rval = this.relationshipMap[id];
     if (!rval) { throw new RelationshipIdDoesNotExistError(`Relationship ${id} doesn't exist.`); }
     return rval;
   }
 
-  public getStyleById(id: StyleId): StyleObject {
+  public getStyle(id: StyleId): StyleObject {
     const rval = this.styleMap[id];
     if (!rval) { throw new StyleIdDoesNotExistError(`Style ${id} doesn't exist.`); }
     return rval;
@@ -353,20 +353,20 @@ export class Notebook {
 
   // REVIEW: Return an iterator?
   public topLevelStyles(): StyleObject[] {
-    return this.styleOrder.map(styleId=>this.getStyleById(styleId));
+    return this.styleOrder.map(styleId=>this.getStyle(styleId));
   }
 
   public topLevelStyleOf(id: StyleId): StyleObject {
-    let style = this.getStyleById(id);
+    let style = this.getStyle(id);
     if (!style) { throw new Error(`Cannot find top-level style of style ${id}`); }
     while (style.parentId) {
-      style = this.getStyleById(style.parentId);
+      style = this.getStyle(style.parentId);
     }
     return style;
   }
 
   public isTopLevelStyle(id: StyleId): boolean {
-    return (this.getStyleById(id).parentId == 0);
+    return (this.getStyle(id).parentId == 0);
   }
 
   // Return the order-dependent position of the top level thought
@@ -490,7 +490,7 @@ export class Notebook {
 
   private changeStyle(change: StyleChanged): void {
     const styleId = change.style.id;
-    const style = this.getStyleById(styleId);
+    const style = this.getStyle(styleId);
     style.data = change.style.data;
     // This is experimental; for SVG, we need a timestamp for
     // cleaning up the .PNG files
@@ -501,7 +501,7 @@ export class Notebook {
   }
 
   private convertStyle(change: StyleConverted): void {
-    const style = this.getStyleById(change.styleId);
+    const style = this.getStyle(change.styleId);
     if (!style) { throw new Error(`Converting unknown style ${change.styleId}`); }
     style.role = change.role;
     style.subrole = change.subrole;

@@ -167,8 +167,8 @@ export class TeXFormatterObserver implements ObserverInstance {
     for(const itex of texs) {
       const sid : StyleId = itex.id;
       rids.add(sid);
-      const styleRemoved = this.notebook.getStyleById(sid);
-      const styleToReconsider = this.notebook.getStyleById(styleRemoved.parentId);
+      const styleRemoved = this.notebook.getStyle(sid);
+      const styleToReconsider = this.notebook.getStyle(styleRemoved.parentId);
       await this.latexFormatterRule(styleToReconsider,rval);
     }
     rids.forEach(id => {

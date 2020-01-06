@@ -106,7 +106,7 @@ export class AnyInputObserver implements ObserverInstance {
   // we go through all children, if pass "styleMoved" to SYMBOL-DEFINITION
   // and SYMBOL-USE styles.
   private chStyleMoved(change: StyleMoved, rval: NotebookChangeRequest[]): void {
-    const style = this.notebook.getStyleById(change.styleId);
+    const style = this.notebook.getStyle(change.styleId);
 
     if (style.role == 'FORMULA') {
 

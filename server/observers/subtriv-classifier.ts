@@ -72,7 +72,7 @@ export class SubtrivClassifierObserver implements ObserverInstance {
     debug(`useTool ${this.notebook._path} ${toolStyle.id}`);
 
     // The parent of the TOOL/ATTRIBUTE style will be a WOLFRAM/EVALUATION style
-    const evaluationStyle = this.notebook.getStyleById(toolStyle.parentId);
+    const evaluationStyle = this.notebook.getStyle(toolStyle.parentId);
 
     // The WOLFRAM/EVALUATION style will have a CLASSIFICATION/SUBTRIVARIATE child.
     // REVIEW: Does this search need to be recursive?

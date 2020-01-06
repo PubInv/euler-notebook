@@ -97,7 +97,7 @@ export class NotebookView {
   // Instance Property Functions
 
   public topLevelCellOf(style: StyleObject): CellView {
-    for (; style.parentId; style = this.openNotebook.getStyleById(style.parentId));
+    for (; style.parentId; style = this.openNotebook.getStyle(style.parentId));
     const cell = this.cellViews.get(style.id);
     assert(cell);
     return cell!;
@@ -110,7 +110,7 @@ export class NotebookView {
     this.sidebar = sidebar;
 
     for (const styleId of this.openNotebook.topLevelStyleOrder()) {
-      const style = this.openNotebook.getStyleById(styleId);
+      const style = this.openNotebook.getStyle(styleId);
       this.createCell(style, -1);
     }
   }
@@ -431,7 +431,7 @@ export class NotebookView {
       case 'styleDeleted': {
         // If a substyle is deleted then mark the cell as dirty.
         // If a top-level style is deleted then remove the cell.
-        const style = this.openNotebook.getStyleById(change.style.id);
+        const style = this.openNotebook.getStyle(change.style.id);
         const topLevelStyle = this.openNotebook.topLevelStyleOf(style.id);
         if (style.id != topLevelStyle.id) {
           // REVIEW: Is there a way to tell what styles affect display?
@@ -455,7 +455,7 @@ export class NotebookView {
         break;
       }
       case 'styleMoved': {
-        const style = this.openNotebook.getStyleById(change.styleId);
+        const style = this.openNotebook.getStyle(change.styleId);
         if (style.parentId) {
           console.warn(`Non top-level style moved: ${style.id}`);
           break;
@@ -474,7 +474,7 @@ export class NotebookView {
   public updateView(): void {
     // Redraw all of the cells that (may) have changed.
     for (const styleId of this.dirtyCells) {
-      const style = this.openNotebook.getStyleById(styleId);
+      const style = this.openNotebook.getStyle(styleId);
       const cell = this.cellViewFromStyleId(styleId);
       if (!cell) { throw new Error(`Can't find dirty Change style message for style without top-level element`); }
       cell.render(style);

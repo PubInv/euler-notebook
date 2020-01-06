@@ -86,7 +86,7 @@ export class DebugPopup {
   private renderHtml(): Html {
     return this.openNotebook.topLevelStyleOrder()
     .map(styleId=>{
-      const style = this.openNotebook.getStyleById(styleId);
+      const style = this.openNotebook.getStyle(styleId);
       return this.renderStyleHtml(style);
     })
     .join('');

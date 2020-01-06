@@ -178,7 +178,7 @@ export class MathematicaObserver implements ObserverInstance {
         debug("key,value",key,expressionEquivalence[keynum]);
         if (expressionEquivalence[keynum]) {
           styleIds.push(keynum);
-          const eqstyle = this.notebook.getStyleById(<StyleId><unknown>keynum);
+          const eqstyle = this.notebook.getStyle(<StyleId><unknown>keynum);
           let src : StyleObject;
           let tar : StyleObject;
           if (style.id < keynum) {

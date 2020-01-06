@@ -91,9 +91,9 @@ interface RelationshipStringObject {
 function constructMapRelations(notebook: ServerNotebook,
                                rs : RelationshipObject[]) :RelationshipStringObject[] {
   return rs.map(r => {
-    const frS = notebook.getStyleById(r.fromId);
+    const frS = notebook.getStyle(r.fromId);
     const frTS = notebook.topLevelStyleOf(frS.id);
-    const toS = notebook.getStyleById(r.toId);
+    const toS = notebook.getStyle(r.toId);
     const toTS = notebook.topLevelStyleOf(toS.id);
     return { from: frTS.data, to: toTS.data};
   });
@@ -106,7 +106,7 @@ function texformatOfLastThought(notebook : ServerNotebook) : string {
 
   // now that we have the lastThought, we want to get the
   // LATEX type...
-  const lastThought = notebook.getStyleById(lastThoughtId);
+  const lastThought = notebook.getStyle(lastThoughtId);
   // REVIEW: Does this search need to be recursive?
   const texformatter = notebook.findStyle({ type: 'LATEX', recursive: true }, lastThought.id);
   return texformatter!.data;
@@ -441,7 +441,7 @@ describe("test symbol observer", function() {
 
       // now that we have the lastThought, we want to get the
       // LATEX type...
-      const lastThought = notebook.getStyleById(lastThoughtId);
+      const lastThought = notebook.getStyle(lastThoughtId);
 
       // REVIEW: Does this search need to be recursive?
       const children = notebook.findStyles({ type: 'LATEX', recursive: true }, lastThought.id);
@@ -460,7 +460,7 @@ describe("test symbol observer", function() {
 
       const rs = notebook.allRelationships();
       assert.equal(1,rs.length);
-      const defStyle = notebook.getStyleById(rs[0].fromId);
+      const defStyle = notebook.getStyle(rs[0].fromId);
       const U = notebook.getSymbolStylesThatDependOnMe(defStyle);
       assert.equal(1,U.length);
 
@@ -493,7 +493,7 @@ describe("test symbol observer", function() {
 
       // now that we have the lastThought, we want to get the
       // LATEX type...
-      const lastThought = notebook.getStyleById(lastThoughtId);
+      const lastThought = notebook.getStyle(lastThoughtId);
 
       // REVIEW: Does this search need to be recursive?
       const texformatter = notebook.findStyle({ type: 'LATEX', recursive: true}, lastThought.id);

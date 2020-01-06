@@ -342,7 +342,7 @@ export class SymbolClassifierObserver implements ObserverInstance {
       // Now trying to implement this using our recomputation capability...
       // we will remove all relationship references to this name,
       // and then use our recomputation to reinsert new values.
-      const style = this.notebook.getStyleById(change.styleId);
+      const style = this.notebook.getStyle(change.styleId);
       const tlStyle = this.notebook.topLevelStyleOf(style.id);
       // Now for each style is as use or defintion, collect the names...
       const symbols : Set<string> = new Set<string>();
@@ -358,8 +358,8 @@ export class SymbolClassifierObserver implements ObserverInstance {
       const rs = this.notebook.allRelationships();
       symbols.forEach(name => {
         rs.forEach(r => {
-        const fromS = this.notebook.getStyleById(r.fromId);
-        const toS = this.notebook.getStyleById(r.toId);
+        const fromS = this.notebook.getStyle(r.fromId);
+        const toS = this.notebook.getStyle(r.toId);
         if (fromS.type == 'SYMBOL' &&
             (fromS.role == 'SYMBOL-USE' ||
              fromS.role == 'SYMBOL-DEFINITION'

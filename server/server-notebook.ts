@@ -153,7 +153,7 @@ export class ServerNotebook extends Notebook {
   public substitutionExpression(text: string,variables : string[],style: StyleObject) : [string[],string] {
 
       // The parent of the TOOL/ATTRIBUTE style will be a WOLFRAM/EVALUATION style
-    const evaluationStyle = this.getStyleById(style.parentId);
+    const evaluationStyle = this.getStyle(style.parentId);
 
     // We are only plottable if we make the normal substitutions...
     const rs = this.getSymbolStylesIDependOn(evaluationStyle);
@@ -393,7 +393,7 @@ export class ServerNotebook extends Notebook {
         if (rp.id == mp.id) {
           // We are a user of this definition...
           try {
-            symbolStyles.push(this.getStyleById(r.fromId));
+            symbolStyles.push(this.getStyle(r.fromId));
           } catch (Error) {
             // REVIEW: Proper error handling??
             console.error("from id missing",r.fromId);
@@ -416,7 +416,7 @@ export class ServerNotebook extends Notebook {
     rs.forEach(r => {
       if (r.fromId == style.id) {
         try {
-          symbolStyles.push(this.getStyleById(r.toId));
+          symbolStyles.push(this.getStyle(r.toId));
         } catch (e) {
           if (e instanceof StyleIdDoesNotExistError) {
           } else {
@@ -643,7 +643,7 @@ export class ServerNotebook extends Notebook {
   public async useTool(styleId: StyleId): Promise<NotebookChange[]> {
     debug(`useTool ${styleId}`);
     this.assertNotClosed('useTool');
-    const style = this.getStyleById(styleId);
+    const style = this.getStyle(styleId);
     const source = style.source;
     if (!style) { throw new Error(`Notebook useTool style ID not found: ${styleId}`); }
     const observer = this.observers.get(source);
@@ -747,7 +747,7 @@ export class ServerNotebook extends Notebook {
     rval: NotebookChange[],
   ): RelationshipInsertRequest|undefined {
     if (!this.hasRelationshipId(request.id)) { /* REVIEW/TODO emit warning */ return undefined; }
-    const relationship = this.getRelationshipById(request.id);
+    const relationship = this.getRelationship(request.id);
     const change: RelationshipDeleted = { type: 'relationshipDeleted', relationship, };
     this.appendChange(change, rval);
     const undoChangeRequest: RelationshipInsertRequest = {
@@ -784,7 +784,7 @@ export class ServerNotebook extends Notebook {
     request: StyleChangeRequest,
     rval: NotebookChange[],
   ): StyleChangeRequest {
-    const style = this.getStyleById(request.styleId);
+    const style = this.getStyle(request.styleId);
     const previousData = style.data;
     style.data = request.data;
     const change: StyleChanged = { type: 'styleChanged', style, previousData };
@@ -801,7 +801,7 @@ export class ServerNotebook extends Notebook {
     request: StyleConvertRequest,
     rval: NotebookChange[],
   ): StyleConvertRequest {
-    const style = this.getStyleById(request.styleId);
+    const style = this.getStyle(request.styleId);
     const previousRole = style.role;
     const previousSubrole = style.subrole;
     style.role = request.role;
@@ -821,7 +821,7 @@ export class ServerNotebook extends Notebook {
     request: StyleDeleteRequest,
     rval: NotebookChange[],
   ): StyleInsertRequest {
-    const style = this.getStyleById(request.styleId);
+    const style = this.getStyle(request.styleId);
 
     // Assemble the undo change request before we delete anything
     // from the notebook.
@@ -932,7 +932,7 @@ export class ServerNotebook extends Notebook {
     const { styleId, afterId } = request;
     if (afterId == styleId) { throw new Error(`Style ${styleId} can't be moved after itself.`); }
 
-    const style = this.getStyleById(styleId);
+    const style = this.getStyle(styleId);
     if (style.parentId) {
       // REVIEW: Why are we attempting to move substyles? Should be:
       // throw new Error(`Attempting to move substyle ${styleId}`);

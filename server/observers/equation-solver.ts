@@ -313,7 +313,7 @@ export class EquationSolverObserver implements ObserverInstance {
     // so duplication should at least be removed via a refactoring.
 
     // now we basically just recompute...
-    const style : StyleObject = this.notebook.getStyleById(relationship.toId);
+    const style : StyleObject = this.notebook.getStyle(relationship.toId);
     debug("style in changed",style);
     const solutions : NameValuePair[] =
       await this.computeSolutionsOfThought(style);
