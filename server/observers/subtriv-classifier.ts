@@ -235,8 +235,8 @@ export class SubtrivClassifierObserver implements ObserverInstance {
     // TODO: This can also be empty!!! The code below needs
     // to respect this.
     if (candidate_styles.length >= 1) {
-
-      const beforeChangeClassifiedAsSubTrivariate = this.notebook.styleHasChildOfType(candidate_styles[0],'CLASSIFICATION','SUBTRIVARIATE');
+      // REVIEW: Does this need to be recursive?
+      const beforeChangeClassifiedAsSubTrivariate = this.notebook.hasStyle({ type: 'CLASSIFICATION', role: 'SUBTRIVARIATE', recursive: true }, candidate_styles[0].id);
       debug(beforeChangeClassifiedAsSubTrivariate);
 
       // Now it is possible that any classifications need to be removed;

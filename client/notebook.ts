@@ -375,12 +375,6 @@ export class Notebook {
       0);
   }
 
-  // This can be asymptotically improved later.
-  public styleHasChildOfType(style: StyleObject, tname: StyleType, role?: StyleRole): boolean {
-    const id = style.id;
-    return !!this.childStylesOf(id).find(s => s.type == tname && (!role || s.role == role));
-  }
-
   public topLevelStyles(): StyleObject[] {
     return this.styleOrder.map(styleId=>this.styleMap[styleId]);
   }
