@@ -98,7 +98,7 @@ export class SymbolClassifierObserver implements ObserverInstance {
     debug("INPUT STYLES",styles);
     const [max,maxstyle] = styles.reduce(
       (acc,val) => {
-          const idx = this.notebook.getThoughtIndex(val);
+          const idx = this.notebook.topLevelStylePosition(val);
           const max = acc[0];
           if (idx > max) {
             return [idx,val]
@@ -626,7 +626,7 @@ export class SymbolClassifierObserver implements ObserverInstance {
         if (val.type == 'SYMBOL' &&
           val.role == useOrDef &&
             val.data.name == name) {
-          const idx = this.notebook.getThoughtIndex(val.id);
+          const idx = this.notebook.topLevelStylePosition(val.id);
           const max = acc[0];
           if (idx > max) {
             return [idx,val.id]

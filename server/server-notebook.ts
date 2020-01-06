@@ -352,7 +352,7 @@ export class ServerNotebook extends Notebook {
     var curi = -1;
     var curtlspos = -1;
     for(var i = 0; i < defs.length; i++) {
-      var pos = this.getThoughtIndex(defs[i].tls);
+      var pos = this.topLevelStylePosition(defs[i].tls);
       if ((pos < thoughtIndex) &&
           (pos > curtlspos))
       {
@@ -555,7 +555,7 @@ export class ServerNotebook extends Notebook {
         for(var i = 0; i < us.length; i++) {
           const fromId : number | null =
             this.findLatestDefinitionEarlierThanThis(
-              this.getThoughtIndex(us[i].tls),
+              this.topLevelStylePosition(us[i].tls),
               ds);
 
 
@@ -587,7 +587,7 @@ export class ServerNotebook extends Notebook {
       for(var i = 0; i < ds.length; i++) {
         const fromId  : number | null =
           this.findLatestDefinitionEarlierThanThis(
-            this.getThoughtIndex(ds[i].tls),
+            this.topLevelStylePosition(ds[i].tls),
             ds);
 
         // Since we are not at present injecting into the notebook,

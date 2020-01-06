@@ -373,7 +373,7 @@ export class Notebook {
   // this is attached to; this is used in "causal ordering".
   // getThoughtIndex(A) < getThoughtIndex(B) implies A may not
   // in anyway depend on B.
-  public getThoughtIndex(id: StyleId): number {
+  public topLevelStylePosition(id: StyleId): StyleOrdinalPosition {
     const top = this.topLevelStyleOf(id);
     return this.styleOrder.indexOf(top.id);
   }
