@@ -23,6 +23,8 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 type CssLength = string; // TODO: Duplicated in stroke.ts
 
+type Html = string; // REVIEW: Duplicated in dom.ts but that is only client-side.
+
 export interface CssSize {
   height: CssLength;
   width: CssLength;
@@ -351,6 +353,15 @@ export class Notebook {
     return rval;
   }
 
+  public toHtml(): Html {
+    return this.topLevelStyleOrder()
+    .map(styleId=>{
+      const style = this.getStyle(styleId);
+      return this.styleToHtml(style);
+    })
+    .join('');
+  }
+
   // REVIEW: Return an iterator?
   public topLevelStyles(): StyleObject[] {
     return this.styleOrder.map(styleId=>this.getStyle(styleId));
@@ -484,6 +495,36 @@ export class Notebook {
   protected styleMap: StyleMap;     // Mapping from style ids to style objects.
   protected styleOrder: StyleId[];  // List of style ids in the top-down order they appear in the notebook.
 
+  // Private Instance Property Functions
+
+  private relationshipToHtml(relationship: RelationshipObject): Html {
+    return `<div><span class="leaf">R${relationship.id} ${relationship.fromId} &#x27a1; ${relationship.toId} ${relationship.role}</span></div>`;
+  }
+
+  private styleToHtml(style: StyleObject): Html {
+    // TODO: This is very inefficient as notebook.childStylesOf goes through *all* styles.
+    const childStyleObjects = Array.from(this.childStylesOf(style.id));
+    // TODO: This is very inefficient as notebook.relationshipOf goes through *all* relationships.
+    const relationshipObjects = Array.from(this.relationshipsOf(style.id));
+    const json = escapeHtml(JSON.stringify(style.data));
+    const roleSubrole = (style.subrole ? `${style.role}|${style.subrole}` : style.role);
+    const styleInfo = `S${style.id} ${roleSubrole} ${style.type} ${style.source}`
+    if (childStyleObjects.length == 0 && relationshipObjects.length == 0 && json.length<30) {
+      return `<div><span class="leaf">${styleInfo} <tt>${json}</tt></span></div>`;
+    } else {
+      const stylesHtml = childStyleObjects.map(s=>this.styleToHtml(s)).join('');
+      const relationshipsHtml = relationshipObjects.map(r=>this.relationshipToHtml(r)).join('');
+      const [ shortJsonTt, longJsonTt ] = json.length<30 ? [` <tt>${json}</tt>`, ''] : [ '', `<tt>${json}</tt>` ];
+      return `<div>
+  <span class="collapsed">${styleInfo}${shortJsonTt}</span>
+  <div class="nested" style="display:none">${longJsonTt}
+    ${stylesHtml}
+    ${relationshipsHtml}
+  </div>
+</div>`;
+    }
+  }
+
   // Private Event Handlers
 
   // Private Instance Methods
@@ -569,6 +610,19 @@ export function styleMatchesPattern(style: StyleObject, options: FindStyleOption
          && (!options.type || style.type == options.type)
          && (!options.source || style.source == options.source)
          && (!options.notSource || style.source != options.notSource);
+}
+
+// Helper Functions
+
+// REVIEW: This function also exists in dom.ts, but that only works in the browser.
+export function escapeHtml(str: string): Html {
+  // From http://jehiah.cz/a/guide-to-escape-sequences.
+  // REVIEW: Is this sufficient?
+  return str.replace('&', "&amp;")
+            .replace('"', "&quot;")
+            .replace("'", "&#39;")
+            .replace('>', "&gt;")
+            .replace('<', "&lt;");
 }
 
 // TEMPORARY

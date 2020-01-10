@@ -19,9 +19,8 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 // Requirements
 
-import { configure, escapeHtml, Html } from './dom.js';
+import { configure } from './dom.js';
 import { ClientNotebook } from './client-notebook.js';
-import { RelationshipObject, StyleObject } from './notebook.js';
 import { Header } from './header.js';
 
 // Types
@@ -53,7 +52,7 @@ export class DebugPopup {
   }
 
   public show(): void {
-    this.$content.innerHTML = this.renderHtml();
+    this.$content.innerHTML = this.openNotebook.toHtml();
     this.$elt.style.display = 'block';
   }
 
@@ -82,43 +81,6 @@ export class DebugPopup {
   // Private Instance Property Functions
 
   // Private Instance Methods
-
-  private renderHtml(): Html {
-    return this.openNotebook.topLevelStyleOrder()
-    .map(styleId=>{
-      const style = this.openNotebook.getStyle(styleId);
-      return this.renderStyleHtml(style);
-    })
-    .join('');
-  }
-
-  private renderRelationshipHtml(relationship: RelationshipObject): Html {
-    return `<div><span class="leaf">R${relationship.id} ${relationship.fromId} &#x27a1; ${relationship.toId} ${relationship.role}</span></div>`;
-  }
-
-  private renderStyleHtml(style: StyleObject): Html {
-    // TODO: This is very inefficient as notebook.childStylesOf goes through *all* styles.
-    const childStyleObjects = this.openNotebook.childStylesOf(style.id);
-    // TODO: This is very inefficient as notebook.relationshipOf goes through *all* relationships.
-    const relationshipObjects = this.openNotebook.relationshipsOf(style.id);
-    const json = escapeHtml(JSON.stringify(style.data));
-    const roleSubrole = (style.subrole ? `${style.role}|${style.subrole}` : style.role);
-    const styleInfo = `S${style.id} ${roleSubrole} ${style.type} ${style.source}`
-    if (childStyleObjects.length == 0 && relationshipObjects.length == 0 && json.length<30) {
-      return `<div><span class="leaf">${styleInfo} <tt>${json}</tt></span></div>`;
-    } else {
-      const stylesHtml = childStyleObjects.map(s=>this.renderStyleHtml(s)).join('');
-      const relationshipsHtml = relationshipObjects.map(r=>this.renderRelationshipHtml(r)).join('');
-      const [ shortJsonTt, longJsonTt ] = json.length<30 ? [` <tt>${json}</tt>`, ''] : [ '', `<tt>${json}</tt>` ];
-      return `<div>
-  <span class="collapsed">${styleInfo}${shortJsonTt}</span>
-  <div class="nested" style="display:none">${longJsonTt}
-    ${stylesHtml}
-    ${relationshipsHtml}
-  </div>
-</div>`;
-    }
-  }
 
   // Private Event Handlers
 
