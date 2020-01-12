@@ -38,8 +38,9 @@ import { rootDir as notebookRootDir } from './files-and-folders';
 import { loadConfig, loadCredentials} from './config';
 
 import { router as apiRouter } from './routes/api';
-import { router as indexRouter } from './routes/index';
+import { router as xrayRouter } from './routes/xray';
 import { router as exportRouter } from './routes/export';
+import { router as indexRouter } from './routes/index';
 
 // Helper Functions
 
@@ -82,6 +83,7 @@ async function main() {
   app.use(cookieParser());
 
   app.use('/api', apiRouter);
+  app.use('/xray', xrayRouter);
   app.use('/export', exportRouter);
   app.use('/', indexRouter);
 
