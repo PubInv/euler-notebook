@@ -48,29 +48,36 @@ const SELECTOR_OPTIONS = new Map<StyleRole,Html>([
   [ 'FIGURE', "Figure" ],
 ]);
 
-const SUB_SELECTOR_OPTIONS = new Map<StyleRole,Map<StyleSubrole,string>>([
-  [ 'UNKNOWN', new Map([
-    [ 'UNKNOWN', "Choose..." ],
-  ])],
-  [ 'FORMULA', new Map([
-    [ 'UNKNOWN', "Choose..." ],
-    [ 'ASSUME', "Assume" ],
-    [ 'DEFINITION', "Definition" ],
-    [ 'PROVE', "Prove" ],
-    [ 'OTHER', "Other" ],
-  ])],
-  [ 'TEXT', new Map([
-    [ 'UNKNOWN', "Choose..." ],
-    [ 'HEADING1', "Heading 1" ],
-    [ 'HEADING2', "Heading 2" ],
-    [ 'NORMAL', "Normal" ],
-  ])],
-  [ 'FIGURE', new Map([
-    [ 'UNKNOWN', "Choose..." ],
-    [ 'SKETCH', "Sketch" ],
-    [ 'DRAWING', "Drawing" ],
-  ])],
+const FIGURE_SUBROLE_OPTIONS = new Map([
+  [ 'UNKNOWN', "Choose..." ],
+  [ 'SKETCH', "Sketch" ],
+  [ 'DRAWING', "Drawing" ],
+]);
 
+const FORMULA_SUBROLE_OPTIONS = new Map<StyleSubrole,string>([
+  [ 'UNKNOWN', "Choose..." ],
+  [ 'ASSUME', "Assume" ],
+  [ 'DEFINITION', "Definition" ],
+  [ 'PROVE', "Prove" ],
+  [ 'OTHER', "Other" ],
+]);
+
+const TEXT_SUBROLE_OPTIONS = new Map([
+  [ 'UNKNOWN', "Choose..." ],
+  [ 'HEADING1', "Heading 1" ],
+  [ 'HEADING2', "Heading 2" ],
+  [ 'NORMAL', "Normal" ],
+]);
+
+const UNKNOWN_SUBROLE_OPTIONS = new Map([
+  [ 'UNKNOWN', "Choose..." ],
+]);
+
+const SUBROLE_OPTIONS = new Map<StyleRole,Map<StyleSubrole,string>>([
+  [ 'UNKNOWN', UNKNOWN_SUBROLE_OPTIONS ],
+  [ 'FORMULA', FORMULA_SUBROLE_OPTIONS ],
+  [ 'TEXT', TEXT_SUBROLE_OPTIONS ],
+  [ 'FIGURE', FIGURE_SUBROLE_OPTIONS ],
 ]);
 
 // Class
@@ -176,7 +183,7 @@ export class StylusCell extends CellView {
 
   private populateSubselector(role: StyleRole, subrole?: StyleSubrole|undefined): void {
     this.$subselector.innerHTML = '';
-    for (const [ subrole2, html ] of SUB_SELECTOR_OPTIONS.get(role)!) {
+    for (const [ subrole2, html ] of SUBROLE_OPTIONS.get(role)!) {
       $new<HTMLOptionElement>('option', {
         appendTo: this.$subselector,
         attrs: {

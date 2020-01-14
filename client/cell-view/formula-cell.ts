@@ -20,7 +20,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 // Requirements
 
 import { $new, escapeHtml, Html } from '../dom.js';
-import { StyleObject, FindRelationshipOptions, FindStyleOptions } from '../notebook.js';
+import { StyleObject, FindRelationshipOptions, FindStyleOptions, StyleSubrole } from '../notebook.js';
 import { NotebookView } from '../notebook-view.js';
 import { getRenderer } from '../renderers.js';
 
@@ -30,6 +30,14 @@ import { ToolInfo } from '../math-tablet-api.js';
 // Types
 
 // Constants
+
+const SUBROLE_PREFIX = new Map<StyleSubrole,string>([
+  [ 'UNKNOWN', "<b><i>Unknown</i></b>" ],
+  [ 'ASSUME', "<b><i>Assume</i></b>" ],
+  [ 'DEFINITION', "<b><i>Definition</i></b>" ],
+  [ 'PROVE', "<b><i>Prove</i></b>" ],
+  [ 'OTHER', "<b><i>Other</i></b>" ],
+]);
 
 // Class
 
@@ -59,6 +67,8 @@ export class FormulaCellView extends CellView {
 
     // Create our child elements: handle, status, formula, tools, and delete button.
     // REVIEW: Use $new above to create children declaratively.
+    const $prefix = $new<HTMLDivElement>('div', { class: 'prefix', appendTo: this.$elt });
+    $prefix.innerHTML = SUBROLE_PREFIX.get(style.subrole!)!;
     this.$formula = $new<HTMLDivElement>('div', { class: 'formula', appendTo: this.$elt });
     this.$tools = $new<HTMLDivElement>('div', { class: 'tools', appendTo: this.$elt });
     $new<HTMLDivElement>('div', { class: 'handle', html: `(${style.id})`, appendTo: this.$elt });
@@ -71,6 +81,7 @@ export class FormulaCellView extends CellView {
   private $tools: HTMLDivElement;
 
   // Private Instance Methods
+
 
   private renderFormula(style: StyleObject): void {
 
@@ -155,4 +166,7 @@ export class FormulaCellView extends CellView {
     }
 
   }
+
+  // PRIVATE EVENT HANDLERS
+
 }
