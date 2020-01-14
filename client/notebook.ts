@@ -527,7 +527,7 @@ export class Notebook {
     const childStyleObjects = Array.from(this.childStylesOf(style.id));
     // TODO: This is very inefficient as notebook.relationshipOf goes through *all* relationships.
     const relationshipObjects = Array.from(this.relationshipsOf(style.id));
-    const json = escapeHtml(JSON.stringify(style.data));
+    const json = (typeof style.data != 'undefined' ? escapeHtml(JSON.stringify(style.data)) : 'undefined' );
     const roleSubrole = (style.subrole ? `${style.role}|${style.subrole}` : style.role);
     const styleInfo = `S${style.id} ${roleSubrole} ${style.type} ${style.source}`
     if (childStyleObjects.length == 0 && relationshipObjects.length == 0 && json.length<30) {
