@@ -55,6 +55,7 @@ const SUB_SELECTOR_OPTIONS = new Map<StyleRole,Map<StyleSubrole,string>>([
   [ 'FORMULA', new Map([
     [ 'UNKNOWN', "Choose..." ],
     [ 'ASSUME', "Assume" ],
+    [ 'DEFINITION', "Definition" ],
     [ 'PROVE', "Prove" ],
     [ 'OTHER', "Other" ],
   ])],

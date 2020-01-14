@@ -159,10 +159,10 @@ export interface StyleMap {
 
 export const STYLE_ROLES = [
   // Top level (cell) roles
-  'TEXT',
   'FIGURE',
   'FORMULA',
   'PLOT',
+  'TEXT',
   'UNKNOWN',              // Type of the cell hasn't been determined.
 
   'ATTRIBUTE',            // Generic attribute. Meaning implied by type.
@@ -214,9 +214,30 @@ export enum StylePosition {
 }
 
 export const STYLE_SUBROLES = [
-   // REPRESENTATION subroles
-   'INPUT',
-   'ALTERNATE',
+
+  // 'FIGURE' subroles
+  'SKETCH',
+  'DRAWING',
+
+  // 'FORMULA' subroles
+  'ASSUME',
+  'DEFINITION',
+  'PROVE',
+  'OTHER',
+
+  // 'PLOT' subroles
+
+  // 'TEXT' subroles
+  'HEADING1',
+  'HEADING2',
+  'NORMAL',
+
+  // 'UNKNOWN' subroles
+  'UNKNOWN',
+
+  // REPRESENTATION subroles
+  'INPUT',
+  'ALTERNATE',
 ];
 export type StyleSubrole = typeof STYLE_SUBROLES[number];
 
