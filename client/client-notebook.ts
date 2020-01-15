@@ -133,13 +133,14 @@ export class ClientNotebook extends Notebook {
     //  determine what cell to update. If the style has been deleted from the notebook already
     //  then it cannot do that.)
     for (const change of msg.changes) {
-      if (change.type != 'relationshipDeleted' && change.type != 'styleDeleted') {
-        this.applyChange(change);
+      const isDelete = (change.type == 'relationshipDeleted' || change.type == 'styleDeleted');
+      if (!isDelete) { this.applyChange(change); }
+      try {
         this.notebookView.smChange(change);
-      } else {
-        this.notebookView.smChange(change);
-        this.applyChange(change);
+      } catch(err) {
+        console.error(`Error applying change to notebookView: "${err.message}", ${JSON.stringify(change)}`);
       }
+      if (isDelete) { this.applyChange(change); }
     }
 
     // Update the notebooks view
