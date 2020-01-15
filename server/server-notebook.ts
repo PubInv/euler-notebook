@@ -377,6 +377,7 @@ export class ServerNotebook extends Notebook {
     const rs = this.allRelationships();
     var symbolStyles: StyleObject[] = [];
     const mp = this.topLevelStyleOf(style.id);
+    // TODO: Remove this check. topLevelStyleOf will throw error if style not found.
     if (!mp) {
       throw new Error(`INTERNAL ERROR: did not produce ancenstor: ${style.id}`);
     }
@@ -387,6 +388,7 @@ export class ServerNotebook extends Notebook {
         // that is not pointing to something, though of course concurrent
         // operation makes this difficult.
         const rp = this.topLevelStyleOf(r.toId);
+        // TODO: Remove this check. topLevelStyleOf will throw error if style not found.
         if (!rp) {
           throw new Error(`INTERNAL ERROR: did not produce ancenstor: ${style.id}`);
         }
@@ -396,15 +398,15 @@ export class ServerNotebook extends Notebook {
             symbolStyles.push(this.getStyle(r.fromId));
           } catch (Error) {
             // REVIEW: Proper error handling??
-            console.error("from id missing",r.fromId);
-            console.error(this);
+            console.error(`GSSIDO Error: fromId ${r.fromId} missing (inner)`);
+            // console.error(this);
           }
 
         }
       } catch (Error) {
         // REVIEW: Proper error handling??
-        console.error("from id missing",r.fromId);
-        console.error(this);
+        console.error(`GSSIDO Errior: fromId ${r.fromId} missing (outer)`);
+        // console.error(this);
       }
     });
     return symbolStyles;
@@ -697,9 +699,11 @@ export class ServerNotebook extends Notebook {
   // Private Instance Methods
 
   private appendChange(
+    source: StyleSource,
     change: NotebookChange,
     rval: NotebookChange[],
   ): void {
+    debug(`Applying change from ${source}: ${JSON.stringify(change)}`);
     this.applyChange(change);
     rval.push(change);
   }
@@ -718,38 +722,38 @@ export class ServerNotebook extends Notebook {
         continue;
       }
 
-      debug(`Change Request from ${source}: `, changeRequest);
+      // debug(`Change request from ${source}: ${JSON.stringify(changeRequest)}`);
 
       let undoChangeRequest: NotebookChangeRequest|undefined;
       switch(changeRequest.type) {
-        case 'changeStyle':         undoChangeRequest = this.applyStyleChangeRequest(changeRequest, rval); break;
-        case 'convertStyle':        undoChangeRequest = this.applyStyleConvertRequest(changeRequest, rval); break;
-        case 'deleteRelationship':  undoChangeRequest = this.applyRelationshipDeleteRequest(changeRequest, rval); break;
-        case 'deleteStyle':         undoChangeRequest = this.applyStyleDeleteRequest(changeRequest, rval); break;
+        case 'changeStyle':         undoChangeRequest = this.applyStyleChangeRequest(source, changeRequest, rval); break;
+        case 'convertStyle':        undoChangeRequest = this.applyStyleConvertRequest(source, changeRequest, rval); break;
+        case 'deleteRelationship':  undoChangeRequest = this.applyRelationshipDeleteRequest(source, changeRequest, rval); break;
+        case 'deleteStyle':         undoChangeRequest = this.applyStyleDeleteRequest(source, changeRequest, rval); break;
         case 'insertRelationship':  undoChangeRequest = this.applyRelationshipInsertRequest(source, changeRequest, rval); break;
         case 'insertStyle':         undoChangeRequest = this.applyStyleInsertRequest(source, changeRequest, rval); break;
-        case 'moveStyle':           undoChangeRequest = this.applyStyleMoveRequest(changeRequest, rval); break;
+        case 'moveStyle':           undoChangeRequest = this.applyStyleMoveRequest(source, changeRequest, rval); break;
         default:
           throw new Error(`Unexpected change request type ${(<any>changeRequest).type}`);
       }
       if (undoChangeRequest) {
-        debug(`Undo change request is: `, undoChangeRequest);
+        // debug(`Undo change request is: ${JSON.stringify(undoChangeRequest)}`);
         undoChangeRequests.unshift(undoChangeRequest);
       }
 
     }
-//    debug("All undo change requests: ", undoChangeRequests);
     return undoChangeRequests;
   }
 
   private applyRelationshipDeleteRequest(
+    source: StyleSource,
     request: RelationshipDeleteRequest,
     rval: NotebookChange[],
   ): RelationshipInsertRequest|undefined {
     if (!this.hasRelationshipId(request.id)) { /* REVIEW/TODO emit warning */ return undefined; }
     const relationship = this.getRelationship(request.id);
     const change: RelationshipDeleted = { type: 'relationshipDeleted', relationship, };
-    this.appendChange(change, rval);
+    this.appendChange(source, change, rval);
     const undoChangeRequest: RelationshipInsertRequest = {
       type: 'insertRelationship',
       fromId: relationship.fromId,
@@ -772,7 +776,7 @@ export class ServerNotebook extends Notebook {
       ...request.props,
     };
     const change: RelationshipInserted = { type: 'relationshipInserted', relationship };
-    this.appendChange(change, rval);
+    this.appendChange(source, change, rval);
     const undoChangeRequest: RelationshipDeleteRequest = {
       type: 'deleteRelationship',
       id: relationship.id,
@@ -781,6 +785,7 @@ export class ServerNotebook extends Notebook {
   }
 
   private applyStyleChangeRequest(
+    source: StyleSource,
     request: StyleChangeRequest,
     rval: NotebookChange[],
   ): StyleChangeRequest {
@@ -788,7 +793,7 @@ export class ServerNotebook extends Notebook {
     const previousData = style.data;
     style.data = request.data;
     const change: StyleChanged = { type: 'styleChanged', style, previousData };
-    this.appendChange(change, rval);
+    this.appendChange(source, change, rval);
     const undoChangeRequest: StyleChangeRequest = {
       type: 'changeStyle',
       styleId: style.id,
@@ -798,6 +803,7 @@ export class ServerNotebook extends Notebook {
   }
 
   private applyStyleConvertRequest(
+    source: StyleSource,
     request: StyleConvertRequest,
     rval: NotebookChange[],
   ): StyleConvertRequest {
@@ -807,7 +813,7 @@ export class ServerNotebook extends Notebook {
     style.role = request.role;
     style.subrole = request.subrole;
     const change: StyleConverted = { type: 'styleConverted', styleId: style.id, role: request.role, subrole: request.subrole };
-    this.appendChange(change, rval);
+    this.appendChange(source, change, rval);
     const undoChangeRequest: StyleConvertRequest = {
       type: 'convertStyle',
       styleId: style.id,
@@ -818,6 +824,7 @@ export class ServerNotebook extends Notebook {
   }
 
   private applyStyleDeleteRequest(
+    source: StyleSource,
     request: StyleDeleteRequest,
     rval: NotebookChange[],
   ): StyleInsertRequest|undefined {
@@ -860,7 +867,7 @@ export class ServerNotebook extends Notebook {
     const substyles = this.childStylesOf(style.id);
     for(const substyle of substyles) {
       const request2: StyleDeleteRequest = { type: 'deleteStyle', styleId: substyle.id };
-      this.applyStyleDeleteRequest(request2, rval);
+      this.applyStyleDeleteRequest(source, request2, rval);
     }
 
     // // Delete any relationships attached to this style.
@@ -874,7 +881,7 @@ export class ServerNotebook extends Notebook {
     // }
 
     const change: StyleDeleted = { type: 'styleDeleted', style };
-    this.appendChange(change, rval);
+    this.appendChange(source, change, rval);
 
     return undoChangeRequest;
   }
@@ -898,7 +905,7 @@ export class ServerNotebook extends Notebook {
     };
     if (styleProps.subrole) { style.subrole = styleProps.subrole; }
     const change: StyleInserted =  { type: 'styleInserted', style, afterId };
-    this.appendChange(change, rval);
+    this.appendChange(source, change, rval);
 
     if (styleProps.subprops) {
       for (const substyleProps of styleProps.subprops) {
@@ -932,7 +939,7 @@ export class ServerNotebook extends Notebook {
       // console.log("TO REMOVE",toRemove);
       for (const childToRemove of toRemove) {
         const request2: StyleDeleteRequest = { type: 'deleteStyle', styleId: childToRemove.id };
-        this.applyStyleDeleteRequest(request2, rval);
+        this.applyStyleDeleteRequest(source, request2, rval);
       }
     }
 
@@ -944,6 +951,7 @@ export class ServerNotebook extends Notebook {
   }
 
   private applyStyleMoveRequest(
+    source: StyleSource,
     request: StyleMoveRequest,
     rval: NotebookChange[],
   ): StyleMoveRequest|undefined {
@@ -975,7 +983,7 @@ export class ServerNotebook extends Notebook {
     }
 
     const change: StyleMoved = { type: 'styleMoved', styleId, afterId, oldPosition, newPosition };
-    this.appendChange(change, rval);
+    this.appendChange(source, change, rval);
 
     const undoChangeRequest: StyleMoveRequest = {
       type: 'moveStyle',
