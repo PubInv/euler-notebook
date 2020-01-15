@@ -820,8 +820,26 @@ export class ServerNotebook extends Notebook {
   private applyStyleDeleteRequest(
     request: StyleDeleteRequest,
     rval: NotebookChange[],
-  ): StyleInsertRequest {
-    const style = this.getStyle(request.styleId);
+  ): StyleInsertRequest|undefined {
+
+    var style: StyleObject;
+    try {
+      style = this.getStyle(request.styleId);
+    } catch(e) {
+      if(e instanceof StyleIdDoesNotExistError) {
+        // This may be sloppy thought, but it is the best I can do.
+        // I don't know if concurrency makes this an inevitable happenstance,
+        // or if a coding error has produced this. The way this arose
+        // makes me think the latter---our code is probably creating a
+        // "double delete" somewhere. This is the best I can do for now,
+        // and I have created a test that covers the bug that led me
+        // here. - rlr
+        debug("requested to delete unknown style",request.styleId);
+        return undefined;
+      } else {
+        throw e;
+      }
+    }
 
     // Assemble the undo change request before we delete anything
     // from the notebook.
