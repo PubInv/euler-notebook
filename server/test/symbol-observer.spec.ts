@@ -361,29 +361,6 @@ describe("test symbol observer", function() {
       assert.equal(1,children.length);
     });
 
-    it("A change of an equation produces only one equation, not two",async function(){
-      const data0:string[] = [
-        "3x - 10 = 11",
-        ];
-      const data1:string[] = [
-        "3x - 10 = 14",
-        ];
-      const changeRequests = generateInsertRequests(data0);
-      await serializeChangeRequests(notebook,changeRequests);
-      // I really want a way to find this from the notebook....
-      const initialId = 1;
-
-      const cr: StyleChangeRequest = {
-        type: 'changeStyle',
-        styleId: initialId,
-        data: data1[0],
-      };
-      await serializeChangeRequests(notebook,[cr]);
-      // Now there should be only ONE EQUATION-DEFINITON attached to the single input!!!
-      // REVIEW: Does this search need to be recursive?
-      const children = notebook.findStyles({ type: 'EQUATION', recursive: true }, initialId);
-      assert.equal(1,children.length);
-    });
 
     it("Deleting a use correctly deletes relationships.",async function(){
       const data:string[] = [
@@ -601,5 +578,88 @@ describe("test symbol observer", function() {
       // @ts-ignore
       assert.equal(rsos.find( r => r.from == "A = 4").to,"B = A^2");
     });
+    it("A change correctly updates all relationships",async function(){
+      const data0:string[] = [
+        "x = 2",
+        "x^2",
+        ];
+      const data1:string[] = [
+        "x = 3",
+        ];
+      const changeRequests = generateInsertRequests(data0);
+      await serializeChangeRequests(notebook,changeRequests);
+      // I really want a way to find this from the notebook....
+      const initialId = 1;
+
+      const cr: StyleChangeRequest = {
+        type: 'changeStyle',
+        styleId: initialId,
+        data: data1[0],
+      };
+
+      await serializeChangeRequests(notebook,[cr]);
+      const rel_r = notebook.allRelationships();
+
+      assert.equal(rel_r.length,1);
+    });
+
+    it("A change of an equation produces only one equation, not two",async function(){
+      const data0:string[] = [
+        "3x - 10 = 11",
+        ];
+      const data1:string[] = [
+        "3x - 10 = 14",
+        ];
+      const changeRequests = generateInsertRequests(data0);
+      await serializeChangeRequests(notebook,changeRequests);
+      // I really want a way to find this from the notebook....
+      const initialId = 1;
+
+      const cr: StyleChangeRequest = {
+        type: 'changeStyle',
+        styleId: initialId,
+        data: data1[0],
+      };
+      await serializeChangeRequests(notebook,[cr]);
+      // Now there should be only ONE EQUATION-DEFINITON attached to the single input!!!
+      // REVIEW: Does this search need to be recursive?
+      const children = notebook.findStyles({ type: 'EQUATION', recursive: true }, initialId);
+      assert.equal(1,children.length);
+    });
+
+    // TODO: Move this to a wolfram-cas.spec.ts file later...
+    it.skip("Changing correctly recomputes representation",async function(){
+      const data:string[] = [
+        "x = 2",
+        "x^2",
+        "x = 3",
+        "x = 4"
+        ];
+
+      const changeRequests = generateInsertRequests([data[0],data[1]]);
+      await serializeChangeRequests(notebook,changeRequests);
+      // I really want a way to find this from the notebook....
+      const initialId = 1;
+
+      const cr0: StyleChangeRequest = {
+        type: 'changeStyle',
+        styleId: initialId,
+        data: data[2],
+      };
+      await serializeChangeRequests(notebook,[cr0]);
+
+      const cr1: StyleChangeRequest = {
+        type: 'changeStyle',
+        styleId: initialId,
+        data: data[3],
+      };
+      await serializeChangeRequests(notebook,[cr1]);
+      const texformatter = notebook.findStyle({ type: 'LATEX', recursive: true},
+                                              initialId);
+      console.log("DEBUG",notebook);
+      assert.equal('x = 4',texformatter!.data);
+    });
+
+
   });
 });
