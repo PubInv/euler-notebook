@@ -27,6 +27,7 @@ import { NotebookChange, StyleObject, StyleId,
          RelationshipObject, RelationshipProperties,
          StyleDeleted,
          StyleMoved,
+         FindRelationshipOptions,
          StyleInserted, StyleChanged
        } from '../../client/notebook';
 import { SymbolData, WolframData, NotebookChangeRequest, StyleInsertRequest,
@@ -124,7 +125,7 @@ export class SymbolClassifierObserver implements ObserverInstance {
   }
 
   private async deleteRelationships(style: StyleObject, rval: NotebookChangeRequest[]) : Promise<void>  {
-
+    debug("RVAL begin deletion ====XXXX",rval);
     debug("style.meaing",style.role);
       if (style.role == 'SYMBOL-DEFINITION') {
         const did = style.id;
@@ -209,6 +210,7 @@ export class SymbolClassifierObserver implements ObserverInstance {
       tlStyle = this.notebook.topLevelStyleOf(style.id);
     } catch (e) { // If we can't find a topLevelStyle, we have in
       // inconsistency most likely caused by concurrency in some way
+      console.log("error",e);
     }
     if (!tlStyle) return rval;
     const tlid = tlStyle.id;
@@ -216,7 +218,8 @@ export class SymbolClassifierObserver implements ObserverInstance {
     // a serialization that we don't want to support. We also must
     // listen for definition and use and handle them separately...
     if (style.role == 'REPRESENTATION' && style.type == 'WOLFRAM') {
-      // at this point, we are doing a complete "recomputtion" based the use.
+      // at this point, we are doing a complete "recomputation" based the use.
+      await this.removeAllCurrentSymbols(style,rval);
       await this.addSymbolUseStyles(style, rval);
       await this.addSymbolDefStyles(style, rval);
 //      await this.addEquationStyles(style,rval);
@@ -293,9 +296,24 @@ export class SymbolClassifierObserver implements ObserverInstance {
               style.id :
               index,
               props: props };
+          debug('ZZZZZ');
+          debug(changeReq);
+          debug('DOES THE same exist?');
+          debug(this.notebook);
+          const relOp : FindRelationshipOptions = { toId: changeReq.toId,
+                                                    fromId: changeReq.fromId,
+                                                    role: 'SYMBOL-DEPENDENCY',
+                                                    source: 'SYMBOL-CLASSIFIER' };
+          const relsInPlace : RelationshipObject[] = this.notebook.findRelationships(relOp);
+
+          if (relsInPlace.length == 0) {
+          // Check that the notebook already had this relationship,
+            // which may be cause by a change change rather than an insertion...
+
           rval.push(
             changeReq
           );
+          }
         }
       }
 
@@ -325,6 +343,7 @@ export class SymbolClassifierObserver implements ObserverInstance {
                 fromId: last_def,
                 toId: style.id,
                 props: dup_prop };
+            debug('QQQQQQ');
             rval.push(
               changeReq
             );
@@ -412,7 +431,7 @@ export class SymbolClassifierObserver implements ObserverInstance {
       }
       case 'styleChanged': {
         await this.insertRule(change,rval);
-        debug("insert (from Change) RVAL =========",rval);
+        debug("change RVAL =========",rval);
         break;
       }
       case 'styleInserted': {
@@ -655,6 +674,22 @@ export class SymbolClassifierObserver implements ObserverInstance {
       if ((kid.parentId == style.id) &&
           (kid.type == 'SYMBOL') &&
           (kid.role == 'SYMBOL-USE')) {
+        const deleteReq : StyleDeleteRequest = { type: 'deleteStyle',
+                                                 styleId: kid.id };
+        rval.push(deleteReq);
+      };
+    });
+
+  }
+  private async removeAllCurrentSymbols(style: StyleObject, rval: NotebookChangeRequest[]): Promise<void> {
+    // REVIEW: Does this search need to be recursive?
+    const children = this.notebook.findStyles({ type: 'SYMBOL',
+                                                source: 'SYMBOL-CLASSIFIER',
+                                                recursive: true }, style.id);
+
+    children.forEach( kid => {
+      if ((kid.parentId == style.id) &&
+          (kid.type == 'SYMBOL')) {
         const deleteReq : StyleDeleteRequest = { type: 'deleteStyle',
                                                  styleId: kid.id };
         rval.push(deleteReq);
