@@ -45,9 +45,7 @@ export class PlotCellView extends CellView {
   // Instance Methods
 
   public render(style: StyleObject): void {
-    assert(style.type == 'IMAGE');
-    const url: string = style.data;
-    this.$elt.innerHTML = `<image src="${url}"/>`
+    assert(style.type == 'PLOT-DATA');
   }
 
   // -- PRIVATE --

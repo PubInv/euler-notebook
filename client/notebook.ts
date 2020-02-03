@@ -253,6 +253,7 @@ export const STYLE_TYPES = [
   'SYMBOL',          // SymbolData: symbol in a definition or expression.
   'SOLUTION',        // The result of a "solve" operation
   'SVG',             // SvgData: SVG markup
+  'PLOT-DATA',       // Generic type to handle unspecified plot data
   'EQUATION',        // An equation (ambiguously assertion or relation)
   'TEXT',            // TextData: Plain text
   'TOOL',            // ToolInfo: Tool that can be applied to the parent style.

@@ -33,6 +33,8 @@ import { Config } from '../config';
 // import * as uuid from 'uuid-js';
 // import uuid = require('uuid');
 import { v4 as uuid } from 'uuid';
+// import fs from 'fs';
+import * as fs from 'fs';
 
 export class SubtrivClassifierObserver implements ObserverInstance {
 
@@ -81,14 +83,15 @@ export class SubtrivClassifierObserver implements ObserverInstance {
 
     const targetPath = absDirPathFromNotebookPath(this.notebook._path!);
     var uuid4 = uuid();
-    const plotName = "quadplot" + evaluationStyle.id + '-' + uuid4 + ".png";
-    const urlPath = `${this.notebook._path}${plotName}`;
+    //    const plotName = "quadplot" + evaluationStyle.id + '-' + uuid4 + ".png";
+    const plotName = "quadplot" + evaluationStyle.id + '-' + uuid4 + ".svg";
+//    const urlPath = `${this.notebook._path}${plotName}`;
     const fullFilename = `${targetPath}/${plotName}`;
 
     // We are only plottable if we make the normal substitutions...
     const rs = this.notebook.getSymbolStylesIDependOn(evaluationStyle);
     debug("RS",rs);
-    let createdPlotSuccessfully: boolean = false;
+    let createdPlotSuccessfully: StyleInsertRequest;
 
     try {
       let variables: string[] = [];
@@ -113,17 +116,17 @@ export class SubtrivClassifierObserver implements ObserverInstance {
       // does not elegantly render styles.  Making this independent
       // will look nice in the short term, but loses an important connection
       // between the systems.
-      const styleProps: StylePropertiesWithSubprops = {
-        type: 'IMAGE',
-        data: urlPath,
-        role: 'PLOT',
-      };
-      const changeReq: StyleInsertRequest = {
-        type: 'insertStyle',
-        // TODO: afterId should be ID of subtrivariate.
-        styleProps,
-      };
-      return [ changeReq ];
+      // const styleProps: StylePropertiesWithSubprops = {
+      //   type: 'IMAGE',
+      //   data: urlPath,
+      //   role: 'PLOT',
+      // };
+      // const changeReq: StyleInsertRequest = {
+      //   type: 'insertStyle',
+      //   // TODO: afterId should be ID of subtrivariate.
+      //   styleProps,
+      // };
+      return [ createdPlotSuccessfully ];
     } else {
       return [];
     }
@@ -317,15 +320,40 @@ async function isExpressionSubTrivariate(expr: string, usedSymbols: StyleObject[
     return trimmed;
   }
 }
-
-async function plotSubtrivariate(expr : string, variables: string[], filename : string) : Promise<boolean> {
+// Possibly this function should be moved out to make
+// the "source" more meaningful
+async function plotSubtrivariate(expr : string, variables: string[], filename : string) : Promise<StyleInsertRequest> {
   debug("VARIABLES",variables);
   let plot_script =
-   (variables.length == 1) ?
-    `Export["${filename}",Plot[${expr},{${variables[0]},0,6 Pi}]]`
+    (variables.length == 1) ?
+    `Export["${filename}",Plot[${expr},{${variables[0]},0,6 Pi}],"SVG"]`
     :
-    `Export["${filename}",Plot3D[${expr},{${variables[0]},0,6 Pi},{${variables[1]},0,6 Pi}]]`;
+    `Export["${filename}",Plot3D[${expr},{${variables[0]},0,6 Pi},{${variables[1]},0,6 Pi}],"SVG"]`;
   debug("PLOT COMMAND SENT TO WOLFRAM",plot_script);
+  var changeRequest: StyleInsertRequest;
   await execute(plot_script);
-  return true;
+  // Having produced the .svg, we may wish to add an SVG object
+  // in order to make it renderable in a systematic way
+  var contents = fs.readFileSync(filename,'utf8');
+  var svg_data = contents.toString();
+  console.log("Asynchronous read: " + svg_data);
+
+  const styleProps: StylePropertiesWithSubprops = {
+    // If the type if IMAGE, this is renderred in the UI.
+    // If I change it to SVG, it is not rendered.
+    type: 'PLOT-DATA',
+    data: svg_data,
+    role: 'PLOT',
+    subprops: [{
+      role: 'REPRESENTATION',
+      subrole: 'PRIMARY',
+      type: 'SVG',
+      data: svg_data,
+    }],
+  };
+  changeRequest = {
+    type: 'insertStyle',
+    styleProps,
+  };
+  return changeRequest;
 }

@@ -210,6 +210,7 @@ export class ServerNotebook extends Notebook {
 
     const tlso = this.topLevelStyleOrder();
     const cells = [];
+    debug("TOP LEVEL",tlso);
     for(const tls of tlso) {
       var retLaTeX = "";
       // REVIEW: Does this search need to be recursive?
@@ -240,6 +241,11 @@ export class ServerNotebook extends Notebook {
       // of photographs being included in output later.
       // REVIEW: Does this search need to be recursive?
       const svgs = this.findStyles({ type: 'SVG', recursive: true }, tls);
+      const styleObject = this.getStyle(tls);
+      debug("SVGS:",svgs);
+      debug("tlso:",styleObject);
+      if (styleObject.type == 'SVG') debug('YES');
+      svgs.push(styleObject);
       for(const s of svgs) {
         // NOTE: At present, this is using a BUFFER, which is volatile.
         // It does not correctly survive resets of the notebook.
