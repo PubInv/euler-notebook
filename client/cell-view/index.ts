@@ -20,7 +20,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 // Requirements
 
 import { assert } from '../common.js';
-import { /* escapeHtml, */ $new, /* Html */} from '../dom.js';
+import { /* escapeHtml, */ $new, $newSvg, /* Html */} from '../dom.js';
 // import { getKatex } from '../katex-types.js';
 import { NotebookView } from '../notebook-view.js';
 import { KeyboardInputPanel } from '../keyboard-input-panel.js';
@@ -74,7 +74,46 @@ export abstract class CellView {
     return true;
   }
 
-  public abstract render(style: StyleObject): void;
+  public render(style: StyleObject): void {
+    // get the primary representation
+    let repStyle = this.notebookView.openNotebook.findStyle({ role: 'REPRESENTATION', subrole: 'PRIMARY' }, style.id);
+    if (!repStyle) {
+      // TODO: Look for renderable alternate representations
+      this.$elt.innerHTML = "<i>No renderable representations</i>";
+      return;
+    }
+
+    switch(repStyle.type) {
+      case 'IMAGE': {
+        const url: string = style.data;
+        this.$elt.innerHTML = `<image src="${url}"/>`
+        break;
+      }
+      case 'SVG': {
+        /* const $svg =*/ $newSvg<SVGSVGElement>('svg', {
+          appendTo: this.$elt,
+          html: repStyle.data,
+          // attrs: { width: '6.5in', height: '1in' }, // TODO: strokesStyle.data.size,
+          // class: 'canvas',
+          // id: `svg${style.id}`,
+          // listeners: {
+          //   pointercancel:  e=>this.onPointerCancel(e),
+          //   pointerdown:    e=>this.onPointerDown(e),
+          //   pointerenter:   e=>this.onPointerEnter(e),
+          //   pointerleave:   e=>this.onPointerLeave(e),
+          //   pointermove:    e=>this.onPointerMove(e),
+          //   pointerout:     e=>this.onPointerOut(e),
+          //   pointerover:    e=>this.onPointerOver(e),
+          //   pointerup:      e=>this.onPointerUp(e),
+          // }
+        });
+        break;
+      }
+      default:
+        assert(false, "TODO: Unrecognized representation type.");
+        break;
+    }
+  };
 
   public scrollIntoView(): void {
     this.$elt.scrollIntoView();

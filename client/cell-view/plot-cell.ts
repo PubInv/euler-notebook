@@ -24,7 +24,7 @@ import { StyleObject } from '../notebook.js';
 import { NotebookView } from '../notebook-view.js';
 
 import { CellView } from './index.js';
-import { assert } from '../common.js';
+// import { assert } from '../common.js';
 
 // Types
 
@@ -43,10 +43,6 @@ export class PlotCellView extends CellView {
   }
 
   // Instance Methods
-
-  public render(style: StyleObject): void {
-    assert(style.type == 'PLOT-DATA');
-  }
 
   // -- PRIVATE --
 
