@@ -142,6 +142,24 @@ export class NotebookView {
     await this.sendUndoableChangeRequests(changeRequests);
   }
 
+  public async developmentButtonClicked(): Promise<void> {
+    // FOR DEVELOPMENT TESTING ONLY
+    // This code is executed when the user presses the underwear button in the sidebar.
+    let afterId: StyleRelativePosition;
+    if (this.lastCellSelected) { afterId = this.lastCellSelected.styleId; }
+    else { afterId = StylePosition.Bottom; }
+    const data = "This is a hint.";
+    const styleProps: StylePropertiesWithSubprops = {
+      role: 'HINT', type: 'HINT-DATA', data: null,
+      subprops: [
+        { role: 'REPRESENTATION', subrole: 'INPUT', type: 'TEXT', data }
+      ]
+    };
+    const changeRequest: StyleInsertRequest = { type: 'insertStyle', afterId, styleProps };
+    /* const undoChangeRequest = */ await this.sendUndoableChangeRequest(changeRequest);
+    // const styleId = (<StyleDeleteRequest>undoChangeRequest).styleId
+  }
+
   public async editSelectedCell(): Promise<void> {
     if (!this.lastCellSelected) {
       // Nothing selected to move.

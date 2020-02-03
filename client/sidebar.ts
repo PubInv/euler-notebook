@@ -90,6 +90,7 @@ export class Sidebar {
     $attach($elt, '#notebookViewButton', { listeners: { click: (_e: MouseEvent)=>this.switchView('notebook') }});
     $attach($elt, '#inputKeyboardButton', { listeners: { click: (e: MouseEvent)=>this.onKeyboardButtonClicked(e) }});
     $attach($elt, '#insertDrawingButton', { listeners: { click: (e: MouseEvent)=>this.onInsertDrawingButtonClicked(e) }});
+    $attach($elt, '#developmentButton', { listeners: { click: (e: MouseEvent)=>this.onDevelopmentButtonClicked(e) }});
     this.$redoButton = $attach<HTMLButtonElement>($elt, '#redoButton', { listeners: { click: (e: MouseEvent)=>this.onRedoButtonClicked(e) }});
     this.$trashButton = $attach<HTMLButtonElement>($elt, '#trashButton', { listeners: { click: (e: MouseEvent)=>this.onTrashButtonClicked(e) }});
     this.$undoButton = $attach<HTMLButtonElement>($elt, '#undoButton', { listeners: { click: (e: MouseEvent)=>this.onUndoButtonClicked(e) }});
@@ -119,12 +120,17 @@ export class Sidebar {
 
   // Private Event Handlers
 
+  private onDevelopmentButtonClicked(_e: MouseEvent): void {
+    this.asyncCommand("Development-Button", this.notebookView.developmentButtonClicked());
+    this.focusOnCurrentView();
+  }
+
   private onInsertDrawingButtonClicked(_e: MouseEvent): void {
-    this.notebookView.insertStylusCellBelow();
+    this.asyncCommand("Insert-Drawing", this.notebookView.insertStylusCellBelow());
   }
 
   private onKeyboardButtonClicked(_e: MouseEvent): void {
-    this.notebookView.insertKeyboardCellBelow();
+    this.asyncCommand("Insert-Keyboard", this.notebookView.insertKeyboardCellBelow());
   }
 
   private onRedoButtonClicked(_e: MouseEvent): void {

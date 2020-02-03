@@ -161,6 +161,7 @@ export const STYLE_ROLES = [
   // Top level (cell) roles
   'FIGURE',
   'FORMULA',
+  'HINT',                 // Explanation of why two formula are related
   'PLOT',
   'TEXT',
   'UNKNOWN',              // Type of the cell hasn't been determined.
@@ -225,6 +226,8 @@ export const STYLE_SUBROLES = [
   'PROVE',
   'OTHER',
 
+  // 'HINT' subroles
+
   // 'PLOT' subroles
 
   // 'TEXT' subroles
@@ -242,7 +245,8 @@ export const STYLE_SUBROLES = [
 export type StyleSubrole = typeof STYLE_SUBROLES[number];
 
 export const STYLE_TYPES = [
-  'FORMULA-DATA',    // Type for top-level cells of role 'FORMULA' (no data yet.)
+  'FORMULA-DATA',    // Type of data for top-level 'FORMULA' styles
+  'HINT-DATA',       // Type of data for top-level 'HINT' styles
   'HTML',            // Html: HTML-formatted text
   'IMAGE',           // ImageData: URL of image relative to notebook folder.
   'JIIX',            // Jiix: MyScript JIIX export from 'MATH' editor.
