@@ -61,6 +61,7 @@ export interface ToolInfo {
   html?: /* TYPESCRIPT: Html? */ string;
   tex?: LatexData;
   data?: any; // Black-box info that gets passed back to tool creator when tool is used.
+  origin_id?: number;
 }
 
 export interface RelationshipPropertiesMap {

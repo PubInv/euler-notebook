@@ -66,6 +66,26 @@ export class AlgebraicToolsObserver implements ObserverInstance {
   public async useTool(toolStyle: StyleObject): Promise<NotebookChangeRequest[]> {
     debug(`useTool ${this.notebook._path} ${toolStyle.id}`);
 
+
+      const hintProps: StylePropertiesWithSubprops = {
+        role: 'HINT',
+        type: 'HINT-DATA',
+//        source: 'ALGEBRAIC-TOOLS',
+        data: undefined,
+        subprops: [{
+          role: 'REPRESENTATION',
+          subrole: 'INPUT',
+          type: 'TEXT',
+          data: "This came from an algebraic operation: "+toolStyle.data.name
+          + " of (" + toolStyle.data.origin_id + ")",
+        }],
+      };
+      const hintReq: StyleInsertRequest = {
+        type: 'insertStyle',
+        // TODO: afterId should be ID of subtrivariate.
+        styleProps: hintProps,
+      };
+
       const styleProps: StylePropertiesWithSubprops = {
         role: 'FORMULA',
         type: 'FORMULA-DATA',
@@ -85,7 +105,8 @@ export class AlgebraicToolsObserver implements ObserverInstance {
         // TODO: afterId should be ID of subtrivariate.
         styleProps,
       };
-      return [ changeReq ];
+
+    return [ hintReq,changeReq ];
   }
 
   // --- PRIVATE ---
@@ -119,7 +140,7 @@ export class AlgebraicToolsObserver implements ObserverInstance {
     }
   }
 
-  private async addFactorTool(style : StyleObject,
+  private async addTool(style : StyleObject,
                               rval: NotebookChangeRequest[],
                               wolfram_fun : (s: string) =>  Promise<string> ,
                               name: string,
@@ -134,7 +155,10 @@ export class AlgebraicToolsObserver implements ObserverInstance {
     debug("factor", f);
 
     // (Actually we want to put the LaTeX in here, but that is a separate step!
-    const toolInfo: ToolInfo = { name: name, html: html_fun(f), data: f };
+    const toolInfo: ToolInfo = { name: name,
+                                 html: html_fun(f),
+                                 data: f,
+                                 origin_id: style.id};
     const styleProps2: StylePropertiesWithSubprops = {
       type: 'TOOL',
       role: 'ATTRIBUTE',
@@ -153,15 +177,15 @@ export class AlgebraicToolsObserver implements ObserverInstance {
     debug("XXXXXXXXXXXX", style);
     if (style.type != 'WOLFRAM' || style.role != 'EVALUATION') { return; }
 
-    await this.addFactorTool(style,rval,
+    await this.addTool(style,rval,
                              ((expr : string) => execute(`InputForm[Factor[${expr}]]`)),
                              "factor",
                              (s : string) => `Factor: ${s}`);
-    await this.addFactorTool(style,rval,
+    await this.addTool(style,rval,
                              ((expr : string) => execute(`InputForm[Expand[${expr}]]`)),
                              "expand",
                              (s : string) => `Expand: ${s}`);
-    await this.addFactorTool(style,rval,
+    await this.addTool(style,rval,
                              ((expr : string) => execute(`InputForm[Simplify[${expr}]]`)),
                              "simplify",
                              (s : string) => `Simplify: ${s}`);
