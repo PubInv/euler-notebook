@@ -74,12 +74,13 @@ export abstract class CellView {
     return true;
   }
 
+  MISSING_ERROR : string = "<i>No renderable representations of type PRIMARY</i>";
   public render(style: StyleObject): void {
     // get the primary representation
     let repStyle = this.notebookView.openNotebook.findStyle({ role: 'REPRESENTATION', subrole: 'PRIMARY' }, style.id);
     if (!repStyle) {
       // TODO: Look for renderable alternate representations
-      this.$elt.innerHTML = "<i>No renderable representations</i>";
+      this.$elt.innerHTML = this.MISSING_ERROR;
       return;
     }
 
@@ -90,6 +91,8 @@ export abstract class CellView {
         break;
       }
       case 'SVG': {
+        var missing_excised = this.$elt.innerHTML.replace(this.MISSING_ERROR,"");
+        this.$elt.innerHTML = missing_excised;
         /* const $svg =*/ $newSvg<SVGSVGElement>('svg', {
           appendTo: this.$elt,
           html: repStyle.data,

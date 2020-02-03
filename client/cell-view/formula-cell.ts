@@ -101,7 +101,7 @@ export class FormulaCellView extends CellView {
         html = `<div class="error">${errorHtml}</div><tt>${escapeHtml(style.data.toString())}</tt>`;
       }
     } else {
-      html = "<i>No renderable representations</i>";
+      html = "<i>No renderable representations for formula</i>";
     }
 
     // Render Wolfram evaluation if it exists.
