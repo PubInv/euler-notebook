@@ -95,7 +95,7 @@ describe("server notebook", function() {
     it("onChanges is called when style is inserted", async function(){
       const callCountAsync = onChangesAsyncSpy.callCount;
       const callCountSync = onChangesSyncSpy.callCount;
-      const styleProps: StylePropertiesWithSubprops = { role: 'FORMULA', type: 'FORMULA', data: undefined };
+      const styleProps: StylePropertiesWithSubprops = { role: 'FORMULA', type: 'FORMULA-DATA', data: undefined };
       const insertRequest: StyleInsertRequest = { type: 'insertStyle', styleProps };
       const changeRequests = [insertRequest];
       await notebook.requestChanges('TEST', changeRequests);
@@ -121,7 +121,7 @@ describe("server notebook", function() {
       const toolInfo: ToolInfo = { name: 'test-tool', html: "Check Equivalences", data: "tool-data" };
       const styleProps: StylePropertiesWithSubprops = {
         role: 'FORMULA',
-        type: 'FORMULA',
+        type: 'FORMULA-DATA',
         data: undefined,
         subprops: [
           { type: 'TOOL', role: 'ATTRIBUTE', data: toolInfo },

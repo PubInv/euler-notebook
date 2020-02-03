@@ -68,7 +68,7 @@ export class AlgebraicToolsObserver implements ObserverInstance {
 
       const styleProps: StylePropertiesWithSubprops = {
         role: 'FORMULA',
-        type: 'FORMULA',
+        type: 'FORMULA-DATA',
         data: undefined,
         subprops: [{
           role: 'REPRESENTATION',

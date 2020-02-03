@@ -92,7 +92,7 @@ export class EquationSolverObserver implements ObserverInstance {
     debug("npv.value",nvp.value);
     const styleProps: StylePropertiesWithSubprops = {
       role: 'FORMULA',
-      type: 'FORMULA',
+      type: 'FORMULA-DATA',
       data: undefined,
       relationsTo,
       subprops: [{

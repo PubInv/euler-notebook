@@ -63,7 +63,7 @@ function generateInsertRequests(inputs :string[]) : StyleInsertRequest[] {
       type: 'insertStyle',
       styleProps: {
         role: 'FORMULA',
-        type: 'FORMULA',
+        type: 'FORMULA-DATA',
         data: undefined,
         subprops: [{
           role: 'REPRESENTATION',

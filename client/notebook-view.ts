@@ -359,7 +359,7 @@ export class NotebookView {
     const styleProps: StylePropertiesWithSubprops = {
       // TODO: later text.
       role: 'FORMULA',
-      type: 'FORMULA',
+      type: 'FORMULA-DATA',
       data: undefined,
       subprops: [
         { role: 'REPRESENTATION', subrole: 'INPUT', type: <StyleType>$typeSelector.value, data: '' },

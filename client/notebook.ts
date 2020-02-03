@@ -242,7 +242,7 @@ export const STYLE_SUBROLES = [
 export type StyleSubrole = typeof STYLE_SUBROLES[number];
 
 export const STYLE_TYPES = [
-  'FORMULA',         // Type for top-level cells of role 'FORMULA' (no data yet.)
+  'FORMULA-DATA',    // Type for top-level cells of role 'FORMULA' (no data yet.)
   'HTML',            // Html: HTML-formatted text
   'IMAGE',           // ImageData: URL of image relative to notebook folder.
   'JIIX',            // Jiix: MyScript JIIX export from 'MATH' editor.
