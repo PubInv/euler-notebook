@@ -72,6 +72,7 @@ export class AlgebraicToolsObserver implements ObserverInstance {
         data: undefined,
         subprops: [{
           role: 'REPRESENTATION',
+          subrole: 'INPUT',
           type: 'WOLFRAM',
           data: toolStyle.data.data,
           // WARNING! : Possibly this should be 'FACTORIZATION'
@@ -117,17 +118,15 @@ export class AlgebraicToolsObserver implements ObserverInstance {
       default: break;
     }
   }
-  private async factor(expr : string) : Promise<string> {
-    return await execute(`InputForm[Factor[${expr}]]`);
-  }
 
-  private async algebraicToolsRule(style: StyleObject, rval: NotebookChangeRequest[]): Promise<void> {
-
-    debug("XXXXXXXXXXXX", style);
-
-
-    if (style.type != 'WOLFRAM' || style.role != 'EVALUATION') { return; }
-    const f = await this.factor(style.data);
+  private async addFactorTool(style : StyleObject,
+                              rval: NotebookChangeRequest[],
+                              wolfram_fun : (s: string) =>  Promise<string> ,
+                              name: string,
+                              html_fun: (s: string) => string) :
+  Promise<void> {
+    //    const f = await this.factor(style.data);
+    const f = await wolfram_fun(style.data);
     debug("FFFFFFFFFF", f);
     if (f == style.data) { // nothing interesting to do!
       return;
@@ -135,7 +134,7 @@ export class AlgebraicToolsObserver implements ObserverInstance {
     debug("factor", f);
 
     // (Actually we want to put the LaTeX in here, but that is a separate step!
-    const toolInfo: ToolInfo = { name: 'factor', html: `Factor: ${f}`, data: f };
+    const toolInfo: ToolInfo = { name: name, html: html_fun(f), data: f };
     const styleProps2: StylePropertiesWithSubprops = {
       type: 'TOOL',
       role: 'ATTRIBUTE',
@@ -147,6 +146,25 @@ export class AlgebraicToolsObserver implements ObserverInstance {
       styleProps: styleProps2
     };
     rval.push(changeReq2);
+  }
+
+  private async algebraicToolsRule(style: StyleObject, rval: NotebookChangeRequest[]): Promise<void> {
+
+    debug("XXXXXXXXXXXX", style);
+    if (style.type != 'WOLFRAM' || style.role != 'EVALUATION') { return; }
+
+    await this.addFactorTool(style,rval,
+                             ((expr : string) => execute(`InputForm[Factor[${expr}]]`)),
+                             "factor",
+                             (s : string) => `Factor: ${s}`);
+    await this.addFactorTool(style,rval,
+                             ((expr : string) => execute(`InputForm[Expand[${expr}]]`)),
+                             "expand",
+                             (s : string) => `Expand: ${s}`);
+    await this.addFactorTool(style,rval,
+                             ((expr : string) => execute(`InputForm[Simplify[${expr}]]`)),
+                             "simplify",
+                             (s : string) => `Simplify: ${s}`);
   }
 
   // private async algebraicToolsChangedRule(relationship: RelationshipObject, rval: NotebookChangeRequest[]): Promise<void> {
