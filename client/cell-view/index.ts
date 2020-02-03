@@ -20,7 +20,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 // Requirements
 
 import { assert } from '../common.js';
-import { /* escapeHtml, */ $new, $newSvg, /* Html */} from '../dom.js';
+import { /* escapeHtml, */ $new, /* Html */} from '../dom.js';
 // import { getKatex } from '../katex-types.js';
 import { NotebookView } from '../notebook-view.js';
 import { KeyboardInputPanel } from '../keyboard-input-panel.js';
@@ -31,6 +31,11 @@ import { getRenderer } from '../renderers.js';
 // Exported Class
 
 export abstract class CellView {
+
+  // Class Constants
+
+  static MISSING_ERROR = "<i>No primary representation.</i>";
+
 
   // Class Methods
 
@@ -74,13 +79,12 @@ export abstract class CellView {
     return true;
   }
 
-  MISSING_ERROR : string = "<i>No renderable representations of type PRIMARY</i>";
   public render(style: StyleObject): void {
     // get the primary representation
     let repStyle = this.notebookView.openNotebook.findStyle({ role: 'REPRESENTATION', subrole: 'PRIMARY' }, style.id);
     if (!repStyle) {
       // TODO: Look for renderable alternate representations
-      this.$elt.innerHTML = this.MISSING_ERROR;
+      this.$elt.innerHTML = CellView.MISSING_ERROR;
       return;
     }
 
@@ -91,25 +95,7 @@ export abstract class CellView {
         break;
       }
       case 'SVG': {
-        var missing_excised = this.$elt.innerHTML.replace(this.MISSING_ERROR,"");
-        this.$elt.innerHTML = missing_excised;
-        /* const $svg =*/ $newSvg<SVGSVGElement>('svg', {
-          appendTo: this.$elt,
-          html: repStyle.data,
-          // attrs: { width: '6.5in', height: '1in' }, // TODO: strokesStyle.data.size,
-          // class: 'canvas',
-          // id: `svg${style.id}`,
-          // listeners: {
-          //   pointercancel:  e=>this.onPointerCancel(e),
-          //   pointerdown:    e=>this.onPointerDown(e),
-          //   pointerenter:   e=>this.onPointerEnter(e),
-          //   pointerleave:   e=>this.onPointerLeave(e),
-          //   pointermove:    e=>this.onPointerMove(e),
-          //   pointerout:     e=>this.onPointerOut(e),
-          //   pointerover:    e=>this.onPointerOver(e),
-          //   pointerup:      e=>this.onPointerUp(e),
-          // }
-        });
+        this.$elt.innerHTML = repStyle.data;
         break;
       }
       default:
