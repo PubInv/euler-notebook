@@ -66,11 +66,9 @@ export class AlgebraicToolsObserver implements ObserverInstance {
   public async useTool(toolStyle: StyleObject): Promise<NotebookChangeRequest[]> {
     debug(`useTool ${this.notebook._path} ${toolStyle.id}`);
 
-
       const hintProps: StylePropertiesWithSubprops = {
         role: 'HINT',
         type: 'HINT-DATA',
-//        source: 'ALGEBRAIC-TOOLS',
         data: undefined,
         subprops: [{
           role: 'REPRESENTATION',
@@ -140,6 +138,11 @@ export class AlgebraicToolsObserver implements ObserverInstance {
     }
   }
 
+  private effectiveEqual(a : string,b :string) : boolean {
+    const ae = a.replace( / \r?\n|\r/g,"");
+    const be = b.replace( / \r?\n|\r/g,"");
+    return ae === be;
+  }
   private async addTool(style : StyleObject,
                               rval: NotebookChangeRequest[],
                               wolfram_fun : (s: string) =>  Promise<string> ,
@@ -149,10 +152,12 @@ export class AlgebraicToolsObserver implements ObserverInstance {
     //    const f = await this.factor(style.data);
     const f = await wolfram_fun(style.data);
     debug("FFFFFFFFFF", f);
-    if (f == style.data) { // nothing interesting to do!
+    if (this.effectiveEqual(f,style.data)) { // nothing interesting to do!
       return;
     }
-    debug("factor", f);
+    debug("look for match");
+    debug("style  :",style.data);
+    debug("wolfram:",f);
 
     // (Actually we want to put the LaTeX in here, but that is a separate step!
     const toolInfo: ToolInfo = { name: name,
@@ -174,7 +179,6 @@ export class AlgebraicToolsObserver implements ObserverInstance {
 
   private async algebraicToolsRule(style: StyleObject, rval: NotebookChangeRequest[]): Promise<void> {
 
-    debug("XXXXXXXXXXXX", style);
     if (style.type != 'WOLFRAM' || style.role != 'EVALUATION') { return; }
 
     await this.addTool(style,rval,
@@ -186,9 +190,25 @@ export class AlgebraicToolsObserver implements ObserverInstance {
                              "expand",
                              (s : string) => `Expand: ${s}`);
     await this.addTool(style,rval,
+                             ((expr : string) => execute(`InputForm[ExpandAll[${expr}]]`)),
+                             "expand all",
+                             (s : string) => `ExpandAll: ${s}`);
+    await this.addTool(style,rval,
                              ((expr : string) => execute(`InputForm[Simplify[${expr}]]`)),
                              "simplify",
-                             (s : string) => `Simplify: ${s}`);
+                       (s : string) => `Simplify: ${s}`);
+     await this.addTool(style,rval,
+                             ((expr : string) => execute(`InputForm[Cancel[${expr}]]`)),
+                             "cancel",
+                             (s : string) => `Cancel: ${s}`);
+     await this.addTool(style,rval,
+                             ((expr : string) => execute(`InputForm[Together[${expr}]]`)),
+                             "together",
+                        (s : string) => `Together: ${s}`);
+      await this.addTool(style,rval,
+                             ((expr : string) => execute(`InputForm[Apart[${expr}]]`)),
+                             "apart",
+                             (s : string) => `Apart: ${s}`);
   }
 
   // private async algebraicToolsChangedRule(relationship: RelationshipObject, rval: NotebookChangeRequest[]): Promise<void> {
