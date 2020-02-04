@@ -431,8 +431,11 @@ export class NotebookView {
     $<HTMLDivElement>(document, '#tools').innerHTML = '';
 
     const solo = !rangeExtending && !indivExtending;
-    if (solo) { this.unselectAll(true); }
-    cellView.select(solo);
+    if (solo) {
+      this.unselectAll(true);
+    }
+    cellView.select();
+    cellView.renderTools($<HTMLDivElement>(document, '#tools'));
     this.lastCellSelected = cellView;
     this.sidebar.enableTrashButton(true);
   }
@@ -519,9 +522,13 @@ export class NotebookView {
     // Redraw all of the cells that (may) have changed.
     for (const styleId of this.dirtyCells) {
       const style = this.openNotebook.getStyle(styleId);
-      const cell = this.cellViewFromStyleId(styleId);
-      if (!cell) { throw new Error(`Can't find dirty Change style message for style without top-level element`); }
-      cell.render(style);
+      const cellView = this.cellViewFromStyleId(styleId);
+      if (!cellView) { throw new Error(`Can't find dirty Change style message for style without top-level element`); }
+      cellView.render(style);
+    }
+    if (this.lastCellSelected) {
+      const $tools = $<HTMLDivElement>(document, '#tools');
+      this.lastCellSelected.renderTools($tools);
     }
     this.dirtyCells.clear();
   }

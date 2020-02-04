@@ -104,11 +104,15 @@ export abstract class CellView {
     }
   };
 
+  public renderTools($tools: HTMLDivElement): void {
+    $tools.innerHTML = '';
+  }
+
   public scrollIntoView(): void {
     this.$elt.scrollIntoView();
   }
 
-  public select(_solo: boolean): void {
+  public select(): void {
     this.$elt.classList.add('selected');
   }
 
