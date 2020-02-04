@@ -63,6 +63,8 @@ export class AlgebraicToolsObserver implements ObserverInstance {
     delete this.notebook;
   }
 
+  // TODO: This is a direct duplicate code in symbol-classifier.ts
+  // that duplication must be removed.
   public async useTool(toolStyle: StyleObject): Promise<NotebookChangeRequest[]> {
     debug(`useTool ${this.notebook._path} ${toolStyle.id}`);
 
@@ -210,7 +212,9 @@ export class AlgebraicToolsObserver implements ObserverInstance {
     if (style.type != 'WOLFRAM' || style.role != 'EVALUATION') { return; }
 
     this.removeAllOffspringOfType(style,rval,'TOOL');
-
+    // TODO: collect these strings in some way so that
+    // if they are duplicates (which happens often), we add only
+    // one tool for them.
     await this.addTool(style,rval,
                              ((expr : string) => execute(`InputForm[Factor[${expr}]]`)),
                              "factor",
@@ -235,7 +239,7 @@ export class AlgebraicToolsObserver implements ObserverInstance {
                              ((expr : string) => execute(`InputForm[Cancel[${expr}]]`)),
                              "cancel",
                              (s : string) => `Cancel: ${s}`,
-                       (s : string) => `\\text{Candel: } ${s}`);
+                       (s : string) => `\\text{Cancel: } ${s}`);
      await this.addTool(style,rval,
                              ((expr : string) => execute(`InputForm[Together[${expr}]]`)),
                              "together",

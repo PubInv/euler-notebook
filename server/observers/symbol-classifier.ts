@@ -28,16 +28,18 @@ import { NotebookChange, StyleObject, StyleId,
          StyleDeleted,
          StyleMoved,
          FindRelationshipOptions,
-         StyleInserted, StyleChanged
+         StyleInserted, StyleChanged,
+         HintData, HintRelationship, HintStatus
        } from '../../client/notebook';
 import { SymbolData, WolframData, NotebookChangeRequest, StyleInsertRequest,
+         ToolInfo,
          StyleDeleteRequest,
          StylePropertiesWithSubprops, RelationshipPropertiesMap,
          RelationshipInsertRequest,  isEmptyOrSpaces,
 //         RelationshipDeleteRequest
        } from '../../client/math-tablet-api';
 import { ServerNotebook, ObserverInstance } from '../server-notebook';
-import { execute as executeWolframscript, draftChangeContextName } from '../wolframscript';
+import { execute as executeWolframscript, constructSubstitution, draftChangeContextName } from '../wolframscript';
 import { Config } from '../config';
 
 export class SymbolClassifierObserver implements ObserverInstance {
@@ -76,9 +78,60 @@ export class SymbolClassifierObserver implements ObserverInstance {
 
 
   // Note: This can be separated into an attempt to compute new solutions..
+  // public async useTool(toolStyle: StyleObject): Promise<NotebookChangeRequest[]> {
+  //   debug(`useTool ${this.notebook._path} ${toolStyle.id}`);
+  //   return [];
+  // }
+
+
+  // TODO: This is a direct duplicate code in algebraic-tools.ts
+  // that duplication must be removed.
   public async useTool(toolStyle: StyleObject): Promise<NotebookChangeRequest[]> {
     debug(`useTool ${this.notebook._path} ${toolStyle.id}`);
-    return [];
+
+    const fromId = this.notebook.topLevelStyleOf(toolStyle.data.origin_id).id;
+    const toId = this.notebook.reserveId();
+
+    const data: HintData = {
+      fromId, toId,
+      relationship: HintRelationship.Equivalent,
+      status: HintStatus.Correct,
+    };
+
+    const hintProps: StylePropertiesWithSubprops = {
+      role: 'HINT', type: 'HINT-DATA', data,
+      subprops: [
+        { role: 'REPRESENTATION', subrole: 'INPUT', type: 'TEXT', data: `From ${toolStyle.data.name}` },
+      ]
+    };
+    const hintReq: StyleInsertRequest = {
+      type: 'insertStyle',
+      // TODO: afterId should be ID of subtrivariate.
+      styleProps: hintProps,
+    };
+
+    const styleProps: StylePropertiesWithSubprops = {
+      id: toId,
+      role: 'FORMULA',
+      type: 'FORMULA-DATA',
+      data: undefined,
+      subprops: [{
+        role: 'REPRESENTATION',
+        type: 'WOLFRAM',
+        data: toolStyle.data.data,
+        subrole: 'INPUT',
+        // REVIEW: Possibly this should be 'FACTORIZATION'
+        // or some other meaning. 'INPUT' is a stop-gap
+        // to work with the current GUI.
+      }],
+    };
+    const changeReq: StyleInsertRequest = {
+      type: 'insertStyle',
+      // TODO: afterId should be ID of subtrivariate.
+      styleProps,
+    };
+
+    return [ hintReq, changeReq ];
   }
 
   // --- PRIVATE ---
@@ -96,7 +149,6 @@ export class SymbolClassifierObserver implements ObserverInstance {
   // Private Instance Methods
 
   private getLatestOfListOfStyleIds(styles: number[]) : number {
-    debug("INPUT STYLES",styles);
     const [max,maxstyle] = styles.reduce(
       (acc,val) => {
           const idx = this.notebook.topLevelStylePosition(val);
@@ -109,7 +161,6 @@ export class SymbolClassifierObserver implements ObserverInstance {
       },[-1,-1]
     );
 
-    debug("GREATEST",maxstyle);
     if (max >= 0)
       return maxstyle;
     else
@@ -125,8 +176,6 @@ export class SymbolClassifierObserver implements ObserverInstance {
   }
 
   private async deleteRelationships(style: StyleObject, rval: NotebookChangeRequest[]) : Promise<void>  {
-    debug("RVAL begin deletion ====XXXX",rval);
-    debug("style.meaing",style.role);
       if (style.role == 'SYMBOL-DEFINITION') {
         const did = style.id;
 
@@ -154,7 +203,6 @@ export class SymbolClassifierObserver implements ObserverInstance {
             rids.add(r.id);
           }
         }
-        debug("RIDS = ",rids);
         // console.log("users of me",users);
         // console.log("duplicateof",duplicateof);
         if (!(duplicateof === undefined)) {
@@ -219,6 +267,7 @@ export class SymbolClassifierObserver implements ObserverInstance {
     // listen for definition and use and handle them separately...
     if (style.role == 'REPRESENTATION' && style.type == 'WOLFRAM') {
       // at this point, we are doing a complete "recomputation" based the use.
+      // TODO: We should remove all Substitution tools here
       await this.removeAllCurrentSymbols(style,rval);
       await this.addSymbolUseStyles(style, rval);
       await this.addSymbolDefStyles(style, rval);
@@ -298,12 +347,71 @@ export class SymbolClassifierObserver implements ObserverInstance {
               props: props };
           debug('ZZZZZ');
           debug(changeReq);
-          debug('DOES THE same exist?');
-          debug(this.notebook);
+          debug(style.role);
           const relOp : FindRelationshipOptions = { toId: changeReq.toId,
                                                     fromId: changeReq.fromId,
                                                     role: 'SYMBOL-DEPENDENCY',
                                                     source: 'SYMBOL-CLASSIFIER' };
+          // Now I think we need to do something tricky...
+          // this is place to add a TOOL of substitution type.
+          // How we remove this when the relationship is broken
+          // may be a little tricky.
+          // 1) Add a tool here.
+          // 2) make it dependent on this relationship so
+          // that if we delete the relationship we can remove it.
+          // The tool should follow the relationship; that means
+          // that if the symbol changes the tool chould change.
+          // making that happen may be a little difficult.
+          // This tool should be added to the "EVALUTION WOLFRAM WOLFRAM" of the
+          // "to" object.
+
+          // (Actually we want to put the LaTeX in here, but that is a separate step!
+          {
+              debug("BEGINNING TOOL ADD");
+              const fromId = changeReq.fromId;
+              const toId = changeReq.toId;
+              const fromS = this.notebook.getStyle(fromId);
+              const toTopS = this.notebook.topLevelStyleOf(toId);
+            // Ideally this would be the latex of the formula
+            // with the substitution in place....that's
+            // a little tricky.
+            debug("To Top",toTopS.id);
+            const toEval = this.notebook.findStyle({role: 'EVALUATION', type: 'WOLFRAM',recursive: true },
+                                                     toTopS.id);
+              debug("fromId",fromId);
+              if (!toEval) {
+                console.error("Could not find an EVALUATION WOLFRAM style");
+              } else {
+                debug("toEval",toEval.id);
+                const expr = toEval.data;
+                const sub_expr =
+                  constructSubstitution(expr,
+                                        [{ name: fromS.data.name,
+                                           value: fromS.data.value}]);
+                const isolated = `InputForm[runPrivate[FullSimplify[${sub_expr}]]]`;
+                const substituted = await execute(isolated);
+                debug("substituted",substituted);
+                const toolInfo: ToolInfo = { name: "substitute",
+                                             html: sub_expr,
+                                             tex: substituted,
+                                             //                                        html: html_fun(f),
+                                             //                                        tex: tex_fun(tex_f),
+                                             data: substituted,
+                                             origin_id: fromId};
+                const styleProps2: StylePropertiesWithSubprops = {
+                  type: 'TOOL',
+                  role: 'ATTRIBUTE',
+                  data: toolInfo,
+                }
+                const changeReq2: StyleInsertRequest = {
+                  type: 'insertStyle',
+                  parentId: toEval.id,
+                  styleProps: styleProps2
+                };
+                rval.push(changeReq2);
+              }
+          }
+
           const relsInPlace : RelationshipObject[] = this.notebook.findRelationships(relOp);
 
           if (relsInPlace.length == 0) {
@@ -398,6 +506,7 @@ export class SymbolClassifierObserver implements ObserverInstance {
         });
       });
 
+      // TODO: Not posibbly this is returning a tool insertion as well!!!
       const rels : RelationshipObject[] =
         this.notebook.recomputeAllSymbolRelationshipsForSymbols(symbols);
       rels.forEach(r => {
