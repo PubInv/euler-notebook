@@ -229,11 +229,8 @@ export class ServerNotebook extends Notebook {
           // TODO: This will be off in terms of equation numbering. We need to decide
           // If we should number by notebook numbers of equational order! It is currently inconsistent.
           const from_id = this.topLevelStyleOf(styleObject.data.fromId).id;
-          console.log("from",from_id);
           const to_id = this.topLevelStyleOf(styleObject.data.toId).id;
-          console.log("to",to_id);
           const status = styleObject.data.status;
-          console.log("from",from_id);
           const relationship = styleObject.data.relationship;
 
           const reps = this.findStyles({ type: 'TEXT', recursive: true }, tls);

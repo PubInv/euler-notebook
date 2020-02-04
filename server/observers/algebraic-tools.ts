@@ -23,8 +23,8 @@ import * as debug1 from 'debug';
 const MODULE = __filename.split(/[/\\]/).slice(-1)[0].slice(0,-3);
 const debug = debug1(`server:${MODULE}`);
 
-import { NotebookChange, StyleObject, HintData, HintRelationship, HintStatus } from '../../client/notebook';
-import { ToolInfo, NotebookChangeRequest, StyleInsertRequest, StylePropertiesWithSubprops } from '../../client/math-tablet-api';
+import { StyleType,NotebookChange, StyleObject, HintData, HintRelationship, HintStatus } from '../../client/notebook';
+import { ToolInfo, NotebookChangeRequest, StyleInsertRequest, StyleDeleteRequest, StylePropertiesWithSubprops } from '../../client/math-tablet-api';
 import { ServerNotebook, ObserverInstance } from '../server-notebook';
 import { execute,  convertWolframToTeX} from '../wolframscript';
 import { Config } from '../config';
@@ -191,9 +191,25 @@ export class AlgebraicToolsObserver implements ObserverInstance {
     rval.push(changeReq2);
   }
 
+  private removeAllOffspringOfType(obj: StyleObject,
+                                   rval: NotebookChangeRequest[], typeToRemove: StyleType) {
+    const kids : StyleObject[] =
+      this.notebook.findStyles({ type: typeToRemove, recursive: true }, obj.id);
+    kids.forEach(k => {
+      const changeReq: StyleDeleteRequest = {
+         type: 'deleteStyle',
+         styleId: k.id
+      };
+      rval.push(changeReq);
+    });
+
+  }
+
   private async algebraicToolsRule(style: StyleObject, rval: NotebookChangeRequest[]): Promise<void> {
 
     if (style.type != 'WOLFRAM' || style.role != 'EVALUATION') { return; }
+
+    this.removeAllOffspringOfType(style,rval,'TOOL');
 
     await this.addTool(style,rval,
                              ((expr : string) => execute(`InputForm[Factor[${expr}]]`)),
