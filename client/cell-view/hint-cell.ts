@@ -56,8 +56,17 @@ export class HintCellView extends CellView {
       case HintStatus.Unknown: mark = BLUE_QUESTION_MARK; break;
       default: throw new Error('Unexpected.');
     }
-    let text = data.text.replace('(1)', `(${data.fromId})`).replace('(2)', `(${data.toId})`);
-    this.$elt.innerHTML = `HINT: ${data.fromId} &#x290F; ${data.toId}: <i>${text}</i> ${mark}`;
+    let innerHtml = `<i>${data.text}</i> ${mark}`;
+    const precedingStyleId = this.notebookView.openNotebook.precedingStyleId(style.id);
+    const afterFrom = (precedingStyleId == data.fromId);
+    const followingStyleId = this.notebookView.openNotebook.followingStyleId(style.id);
+    const beforeTo = (followingStyleId == data.toId);
+    const inBetween =  afterFrom && beforeTo;
+    // TODO: If hint cell is moved then it needs to be re-rendered.
+    if (!inBetween) {
+      innerHtml =  `${data.fromId} &#x290F; ${data.toId}: ${innerHtml}`;
+    }
+    this.$elt.innerHTML = innerHtml;
   }
 
   // -- PRIVATE --
@@ -65,6 +74,6 @@ export class HintCellView extends CellView {
   // Constructor
 
   private constructor(notebookView: NotebookView, style: StyleObject) {
-    super(notebookView, style, 'textCell');
+    super(notebookView, style, 'hintCell');
   }
 }

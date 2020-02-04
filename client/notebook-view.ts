@@ -150,7 +150,9 @@ export class NotebookView {
     }
     const fromId = this.lastCellSelected.styleId;
     const toId = this.openNotebook.followingStyleId(fromId);
-
+    if (!toId) {
+      throw new Error("Can't insert a hint after last formula.");
+    }
     const data: HintData = {
       fromId,
       toId,

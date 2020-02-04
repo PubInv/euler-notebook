@@ -68,7 +68,7 @@ export class FormulaCellView extends CellView {
     // Create our child elements: handle, status, formula, tools, and delete button.
     // REVIEW: Use $new above to create children declaratively.
     const $prefix = $new<HTMLDivElement>('div', { class: 'prefix', appendTo: this.$elt });
-    $prefix.innerHTML = SUBROLE_PREFIX.get(style.subrole!)!;
+    $prefix.innerHTML = style.subrole ? SUBROLE_PREFIX.get(style.subrole!)! : '';
     this.$formula = $new<HTMLDivElement>('div', { class: 'formula', appendTo: this.$elt });
     this.$tools = $new<HTMLDivElement>('div', { class: 'tools', appendTo: this.$elt });
     $new<HTMLDivElement>('div', { class: 'handle', html: `(${style.id})`, appendTo: this.$elt });

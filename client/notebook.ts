@@ -391,7 +391,7 @@ export class Notebook {
     // Returns the id of the style immediately after the top-level style specified.
     const i = this.styleOrder.indexOf(id);
     if (i<0) { throw new Error(`Style ${id} not found for followingStyleId.`); }
-    if (i+1>=this.styleOrder.length) { throw new Error(`Style ${id} for followingStyleId is last style.`); }
+    if (i+1>=this.styleOrder.length) { return 0; }
     return this.styleOrder[i+1];
   }
 
@@ -399,6 +399,14 @@ export class Notebook {
     const rval = this.styleMap[id];
     if (!rval) { throw new StyleIdDoesNotExistError(`Style ${id} doesn't exist.`); }
     return rval;
+  }
+
+  public precedingStyleId(id: StyleId): StyleId {
+    // Returns the id of the style immediately before the top-level style specified.
+    const i = this.styleOrder.indexOf(id);
+    if (i<0) { throw new Error(`Style ${id} not found for precedingStyleId.`); }
+    if (i<1) { return 0; }
+    return this.styleOrder[i-1];
   }
 
   public toHtml(): Html {
