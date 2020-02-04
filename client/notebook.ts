@@ -73,7 +73,6 @@ export interface FindStyleOptions {
 export interface HintData {
   fromId: StyleId,
   status: HintStatus,
-  text: string,
   toId: StyleId,
 }
 

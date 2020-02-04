@@ -19,6 +19,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 // Requirements
 
+import { escapeHtml } from '../dom.js';
 import { StyleObject, HintData, HintStatus } from '../notebook.js';
 import { NotebookView } from '../notebook-view.js';
 // import { getRenderer } from '../renderers.js';
@@ -48,6 +49,14 @@ export class HintCellView extends CellView {
   // Instance Methods
 
   public render(style: StyleObject): void {
+    // TODO: If hint cell is moved then it needs to be re-rendered.
+    const repStyle = this.notebookView.openNotebook.findStyle({ role: 'REPRESENTATION', subrole: 'INPUT' }, style.id);
+    if (!repStyle) {
+      console.log("NO HINT REPSTYLE");
+      this.$elt.innerHTML = "";
+      return;
+    }
+
     const data = <HintData>style.data;
     let mark: string;
     switch(data.status) {
@@ -56,13 +65,12 @@ export class HintCellView extends CellView {
       case HintStatus.Unknown: mark = BLUE_QUESTION_MARK; break;
       default: throw new Error('Unexpected.');
     }
-    let innerHtml = `<i>${data.text}</i> ${mark}`;
+    let innerHtml = `<i>${escapeHtml(repStyle.data)}</i> ${mark}`;
     const precedingStyleId = this.notebookView.openNotebook.precedingStyleId(style.id);
     const afterFrom = (precedingStyleId == data.fromId);
     const followingStyleId = this.notebookView.openNotebook.followingStyleId(style.id);
     const beforeTo = (followingStyleId == data.toId);
     const inBetween =  afterFrom && beforeTo;
-    // TODO: If hint cell is moved then it needs to be re-rendered.
     if (!inBetween) {
       innerHtml =  `${data.fromId} &#x290F; ${data.toId}: ${innerHtml}`;
     }
