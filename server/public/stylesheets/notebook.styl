@@ -22,6 +22,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 :root
   --cell-left-margin 60px
   --page-aspect-ratio calc(8.5 / 11)
+  --tools-width 40%
 
 // Specific elements
 
@@ -91,7 +92,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
     // Used by
     .formula
       flex-grow 1
-      padding-left 24px
+      padding-left 40px
 
     .handle
       padding 4px 0 4px 0
@@ -101,19 +102,6 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
     .status
       text-align left
       width 36px
-
-    .tools
-      width 80px
-      // visibility visible // visibility hidden --- there is a subtle bug here preventing event bubbling when visibility changes - rlr
-
-      .tool
-        color blue
-        background-color transparent
-        border none
-        display block
-        padding-right 0
-        padding-left 2px
-        text-decoration underline
 
   .cell.selected
     outline 1px dotted blue
@@ -151,7 +139,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
     padding 9px 0 9px 0
 
   .hintCell
-    padding-left 60px
+    padding-left 20px
 
 #notebookView:focus
   background-color white
@@ -165,6 +153,24 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
   min-height 100%
   outline none
   width 100%
+
+#tools
+  background-color transparent
+  bottom 0
+  position fixed
+  padding 20px
+  right 0
+  top var(--header-height)
+  width var(--tools-width)
+
+  .tool
+    color blue
+    background-color transparent
+    border none
+    display block
+    padding-right 0
+    padding-left 2px
+    text-decoration underline
 
 // Element classes
 
@@ -197,10 +203,5 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 .page.selected
     outline 2px solid blue
-
-@media (hover: hover) {
-  .thought:hover .tools { visibility: visible }
-  //- .thought:hover { background-color:#fcfcfc }
-}
 
 // Element types

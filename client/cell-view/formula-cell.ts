@@ -19,13 +19,13 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 // Requirements
 
-import { $new, escapeHtml, Html } from '../dom.js';
+import { $, $new, escapeHtml, Html } from '../dom.js';
+import { ToolInfo } from '../math-tablet-api.js';
 import { StyleObject, FindRelationshipOptions, FindStyleOptions, StyleSubrole } from '../notebook.js';
 import { NotebookView } from '../notebook-view.js';
 import { getRenderer } from '../renderers.js';
 
 import { CellView } from './index.js';
-import { ToolInfo } from '../math-tablet-api.js';
 
 // Types
 
@@ -55,7 +55,11 @@ export class FormulaCellView extends CellView {
 
   public render(style: StyleObject): void {
     this.renderFormula(style);
-    this.renderTools(style);
+  }
+
+  public select(solo: boolean): void {
+    super.select(solo);
+    this.renderTools();
   }
 
   // -- PRIVATE --
@@ -70,7 +74,6 @@ export class FormulaCellView extends CellView {
     const $prefix = $new<HTMLDivElement>('div', { class: 'prefix', appendTo: this.$elt });
     $prefix.innerHTML = style.subrole ? SUBROLE_PREFIX.get(style.subrole!)! : '';
     this.$formula = $new<HTMLDivElement>('div', { class: 'formula', appendTo: this.$elt });
-    this.$tools = $new<HTMLDivElement>('div', { class: 'tools', appendTo: this.$elt });
     $new<HTMLDivElement>('div', { class: 'handle', html: `(${style.id})`, appendTo: this.$elt });
     $new<HTMLDivElement>('div', { class: 'status', html: "&nbsp;", appendTo: this.$elt });
   }
@@ -78,7 +81,6 @@ export class FormulaCellView extends CellView {
   // Private Instance Properties
 
   private $formula: HTMLDivElement;
-  private $tools: HTMLDivElement;
 
   // Private Instance Methods
 
@@ -140,8 +142,11 @@ export class FormulaCellView extends CellView {
     this.$formula.innerHTML = html!;
   }
 
-  private renderTools(style:StyleObject): void {
-    this.$tools.innerHTML = '';
+  private renderTools(): void {
+    const style = this.notebookView.openNotebook.getStyle(this.styleId);
+
+    const $tools = $<HTMLDivElement>(document, '#tools');
+
     // REVIEW: If we attached tool styles to the top-level style,
     //         then we would not need to do a recursive search.
     const findOptions2: FindStyleOptions = { type: 'TOOL', recursive: true };
@@ -162,7 +167,7 @@ export class FormulaCellView extends CellView {
         html,
         listeners: { 'click': _e=>this.notebookView.useTool(toolStyle.id) }
       });
-      this.$tools.appendChild($button);
+      $tools.appendChild($button);
     }
 
   }
