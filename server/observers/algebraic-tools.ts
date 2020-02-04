@@ -72,10 +72,14 @@ export class AlgebraicToolsObserver implements ObserverInstance {
     const data: HintData = {
       fromId, toId,
       status: HintStatus.Correct,
-      text: `From ${toolStyle.data.name}`,
     };
 
-    const hintProps: StylePropertiesWithSubprops = { role: 'HINT', type: 'HINT-DATA', data };
+    const hintProps: StylePropertiesWithSubprops = {
+      role: 'HINT', type: 'HINT-DATA', data,
+      subprops: [
+        { role: 'REPRESENTATION', subrole: 'INPUT', type: 'TEXT', data: `From ${toolStyle.data.name}` },
+      ]
+    };
     const hintReq: StyleInsertRequest = {
       type: 'insertStyle',
       // TODO: afterId should be ID of subtrivariate.

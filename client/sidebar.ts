@@ -90,6 +90,7 @@ export class Sidebar {
     $attach($elt, '#notebookViewButton', { listeners: { click: (_e: MouseEvent)=>this.switchView('notebook') }});
     $attach($elt, '#inputKeyboardButton', { listeners: { click: (e: MouseEvent)=>this.onKeyboardButtonClicked(e) }});
     $attach($elt, '#insertDrawingButton', { listeners: { click: (e: MouseEvent)=>this.onInsertDrawingButtonClicked(e) }});
+    $attach($elt, '#insertHintButton', { listeners: { click: (e: MouseEvent)=>this.onInsertHintButtonClicked(e) }});
     $attach($elt, '#developmentButton', { listeners: { click: (e: MouseEvent)=>this.onDevelopmentButtonClicked(e) }});
     this.$redoButton = $attach<HTMLButtonElement>($elt, '#redoButton', { listeners: { click: (e: MouseEvent)=>this.onRedoButtonClicked(e) }});
     this.$trashButton = $attach<HTMLButtonElement>($elt, '#trashButton', { listeners: { click: (e: MouseEvent)=>this.onTrashButtonClicked(e) }});
@@ -127,6 +128,10 @@ export class Sidebar {
 
   private onInsertDrawingButtonClicked(_e: MouseEvent): void {
     this.asyncCommand("Insert-Drawing", this.notebookView.insertStylusCellBelow());
+  }
+
+  private onInsertHintButtonClicked(_e: MouseEvent): void {
+    this.asyncCommand("Insert-Hint", this.notebookView.insertHintCellBelow());
   }
 
   private onKeyboardButtonClicked(_e: MouseEvent): void {

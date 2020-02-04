@@ -143,26 +143,9 @@ export class NotebookView {
   }
 
   public async developmentButtonClicked(): Promise<void> {
-    // FOR DEVELOPMENT TESTING ONLY
     // This code is executed when the user presses the underwear button in the sidebar.
-    if (!this.lastCellSelected) {
-      throw new Error("Must select a cell to insert a hint.");
-    }
-    const fromId = this.lastCellSelected.styleId;
-    const toId = this.openNotebook.followingStyleId(fromId);
-    if (!toId) {
-      throw new Error("Can't insert a hint after last formula.");
-    }
-    const data: HintData = {
-      fromId,
-      toId,
-      status: HintStatus.Unknown,
-      text: "Expand LHS",
-    };
-    const styleProps: StylePropertiesWithSubprops = { role: 'HINT', type: 'HINT-DATA', data };
-    const changeRequest: StyleInsertRequest = { type: 'insertStyle', afterId: fromId, styleProps };
-    /* const undoChangeRequest = */ await this.sendUndoableChangeRequest(changeRequest);
-    // const styleId = (<StyleDeleteRequest>undoChangeRequest).styleId
+    // For when a developer needs a button to initiate a test action.
+    console.log('Development Button Clicked!')
   }
 
   public async editSelectedCell(): Promise<void> {
@@ -174,6 +157,43 @@ export class NotebookView {
     this.lastCellSelected.editMode();
   }
 
+  public async insertHintCellBelow(): Promise<void> {
+    // TODO: InsertHintButton should only be enabled when first of two consecutive formula cells is selected.
+    if (!this.lastCellSelected) {
+      throw new Error("Must select a FORMULA cell to insert a hint.");
+    }
+    const fromId = this.lastCellSelected.styleId;
+    const fromStyle = this.openNotebook.getStyle(fromId);
+    if (fromStyle.role != 'FORMULA') {
+      throw new Error("Must select a FORMULA cell to insert a hint.");
+    }
+    const toId = this.openNotebook.followingStyleId(fromId);
+    if (!toId) {
+      throw new Error("Can't insert a hint after last formula.");
+    }
+    const toStyle = this.openNotebook.getStyle(toId);
+    if (toStyle.role != 'FORMULA') {
+      throw new Error("Can only insert a hint between two FORMULA cells.");
+    }
+
+    const data: HintData = {
+      fromId,
+      toId,
+      status: HintStatus.Unknown,
+    };
+    const styleProps: StylePropertiesWithSubprops = {
+      role: 'HINT', type: 'HINT-DATA', data,
+      subprops: [
+        { role: 'REPRESENTATION', subrole: 'INPUT', type: 'TEXT', data: "Hint Hint" },
+      ]
+    };
+    const changeRequest: StyleInsertRequest = { type: 'insertStyle', afterId: fromId, styleProps };
+    const undoChangeRequest = await this.sendUndoableChangeRequest(changeRequest);
+    const styleId = (<StyleDeleteRequest>undoChangeRequest).styleId;
+    this.startEditingCell(styleId);
+  }
+
+  // NFC: Out of alphabetical order.
   public async insertStylusCellBelow(): Promise<void> {
     // If cells are selected then in insert a keyboard input cell below the last cell selected.
     // Otherwise, insert at the end of the notebook.
@@ -392,12 +412,8 @@ export class NotebookView {
     // Insert top-level style and wait for it to be inserted.
     const changeRequest: StyleInsertRequest = { type: 'insertStyle', afterId, styleProps };
     const undoChangeRequest = await this.sendUndoableChangeRequest(changeRequest);
-    const styleId = (<StyleDeleteRequest>undoChangeRequest).styleId
-
-    const cellView = this.cellViewFromStyleId(styleId);
-    cellView.scrollIntoView();
-    this.selectCell(cellView);
-    cellView.editMode();
+    const styleId = (<StyleDeleteRequest>undoChangeRequest).styleId;
+    this.startEditingCell(styleId);
   }
 
   public async insertStyle(styleProps: StylePropertiesWithSubprops, afterId: StyleRelativePosition = StylePosition.Bottom): Promise<void> {
@@ -583,6 +599,13 @@ export class NotebookView {
   }
 
   // Private Instance Methods
+
+  private startEditingCell(styleId: StyleId): void {
+    const cellView = this.cellViewFromStyleId(styleId);
+    cellView.scrollIntoView();
+    this.selectCell(cellView);
+    cellView.editMode();
+  }
 
   // Private Notebook Change Handlers
 
