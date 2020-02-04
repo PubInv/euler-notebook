@@ -257,8 +257,6 @@ export class ServerNotebook extends Notebook {
 
         debug("SVGS:",svgs);
         debug("tlso:",styleObject);
-        if (styleObject.type == 'SVG') debug('YES');
-        svgs.push(styleObject);
         for(const s of svgs) {
           // NOTE: At present, this is using a BUFFER, which is volatile.
           // It does not correctly survive resets of the notebook.
@@ -313,11 +311,12 @@ export class ServerNotebook extends Notebook {
                 return false;
               }
             }
-
             const b: Buffer = await apiFunctionWrapper(s.data);
             const ts = Date.now();
+            console.log(tls);
             console.log(ts);
             const filename = `image-${s.id}-${ts}.png`;
+            console.log("filename",filename);
             const apath = this.absoluteDirectoryPath();
             var abs_filename = `${apath}/${filename}`;
             const directory = apath;

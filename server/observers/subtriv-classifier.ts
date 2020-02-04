@@ -326,7 +326,7 @@ async function plotSubtrivariate(expr : string, variables: string[], filename : 
   debug("VARIABLES",variables);
   let plot_script =
     (variables.length == 1) ?
-    `Export["${filename}",Plot[${expr},{${variables[0]},0,6 Pi}],"SVG"]`
+    `Export["${filename}",Plot[${expr},{${variables[0]},0,6 Pi},PlotTheme->"Monochrome"],"SVG"]`
     :
     `Export["${filename}",Plot3D[${expr},{${variables[0]},0,6 Pi},{${variables[1]},0,6 Pi}],"SVG"]`;
   debug("PLOT COMMAND SENT TO WOLFRAM",plot_script);
@@ -336,11 +336,8 @@ async function plotSubtrivariate(expr : string, variables: string[], filename : 
   // in order to make it renderable in a systematic way
   var contents = fs.readFileSync(filename,'utf8');
   var svg_data = contents.toString();
-  console.log("Asynchronous read: " + svg_data);
 
   const styleProps: StylePropertiesWithSubprops = {
-    // If the type if IMAGE, this is renderred in the UI.
-    // If I change it to SVG, it is not rendered.
     type: 'PLOT-DATA',
     data: svg_data,
     role: 'PLOT',
