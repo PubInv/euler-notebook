@@ -207,140 +207,154 @@ export class ServerNotebook extends Notebook {
     function displayFormula(f : string) : string {
       return `\\begin{align}\n ${f} \\end{align}\n`;
     }
-
+    function renderHintAsIndependent(s: StyleObject) {
+      return '= \\{ '+ s.data.text + ' \\}';
+    }
     const tlso = this.topLevelStyleOrder();
     const cells = [];
     debug("TOP LEVEL",tlso);
     for(const tls of tlso) {
       var retLaTeX = "";
-      // REVIEW: Does this search need to be recursive?
-      const latex = this.findStyles({ type: 'LATEX', recursive: true }, tls);
-      if (latex.length > 1) { // here we have to have some disambiguation
-        retLaTeX += "ambiguous: " +displayFormula(latex[0].data);
-      } else if (latex.length == 1) {  // here it is obvious, maybe...
-        retLaTeX += displayFormula(latex[0].data);
-      }
-      // REVIEW: Does this search need to be recursive?
-      const image = this.findStyles({ type: 'IMAGE', role: 'PLOT', recursive: true }, tls);
-      if (image.length > 0) {
-        const plot = image[0];
-        const apath = this.absoluteDirectoryPath();
-        // The notebook name is both a part of the plot.data,
-        // AND is a part of the absolute path. So we take only
-        // the final file name of local.data here.
-        const final = plot.data.split("/");
-        const graphics = `\\includegraphics{${apath}/${final[2]}}`;
-        retLaTeX += graphics;
-        retLaTeX += `\n`;
-        if (image.length > 1) {
-          retLaTeX += " more than one plot, not sure how to handle that";
-        }
-      }
-      // Now we search for .PNGs --- most likely generated from
-      // .svgs, but not necessarily, which allows the possibility
-      // of photographs being included in output later.
-      // REVIEW: Does this search need to be recursive?
-      const svgs = this.findStyles({ type: 'SVG', recursive: true }, tls);
       const styleObject = this.getStyle(tls);
-      debug("SVGS:",svgs);
-      debug("tlso:",styleObject);
-      if (styleObject.type == 'SVG') debug('YES');
-      svgs.push(styleObject);
-      for(const s of svgs) {
-        // NOTE: At present, this is using a BUFFER, which is volatile.
-        // It does not correctly survive resets of the notebook.
-        // In fact when we output the file to a file, we need to change
-        // the notebook do have a durable 'PNG-FILE' type generated from
-        // the buffer. This may seem awkward, but it keeps the
-        // function "ruleConvertSvgToPng" completely pure and static,
-        // which is a paradigm worth preserving. However, this means
-        // we have to handle the data being null until we have consistent
-        // file handling.
-        if (s.data) {
-          // from : https://stackoverflow.com/questions/5010288/how-to-make-a-function-wait-until-a-callback-has-been-called-using-node-js
-          // myFunction wraps the above API call into a Promise
-          // and handles the callbacks with resolve and reject
-          function apiFunctionWrapper(data: string) : Promise<Buffer> {
-            // @ts-ignore
-            return new Promise((resolve, reject) => {
-              // @ts-ignore
-              svg2img(data,function(error, buffer) {
-                resolve(buffer);
-              });
-            });
-          };
-
-          function getTimeStampOfCompatibleFileName(id:number, name: string) : number|undefined{
-            const parts = name.split('-');
-            if (parts.length < 3) return;
-            if (parseInt(parts[1]) != id) return;
-            const third = parts[2];
-            const nametsAndExtension = third.split('.');
-            if (nametsAndExtension.length < 2) return;
-            return parseInt(nametsAndExtension[0]);
-          }
+      if (styleObject.role == 'HINT') {
+        if (styleObject.type == 'HINT-DATA')
+          retLaTeX += renderHintAsIndependent(styleObject);
+        else {
+          console.error("HINT role of type other than HINT-DATA not implemented");
+        }
+      } else {
 
 
-          function fileIsEarlierVersionThan(id:number, ts : string|undefined,name: string) : boolean {
-            if (!ts) return false;
-            const filets = getTimeStampOfCompatibleFileName(id, name);
-            if (filets) {
-              return parseInt(ts) > filets;
-            } else {
-              return false;
-            }
-          }
 
-          function fileIsLaterVersionThan(id:number, ts : string|undefined,name: string) : boolean {
-            if (!ts) return false;
-            const filets = getTimeStampOfCompatibleFileName(id, name);
-            if (filets) {
-              return parseInt(ts) < filets;
-            } else {
-              return false;
-            }
-          }
-
-          const b: Buffer = await apiFunctionWrapper(s.data);
-          const ts = Date.now();
-          console.log(ts);
-          const filename = `image-${s.id}-${ts}.png`;
+        // REVIEW: Does this search need to be recursive?
+        const latex = this.findStyles({ type: 'LATEX', recursive: true }, tls);
+        if (latex.length > 1) { // here we have to have some disambiguation
+          retLaTeX += "ambiguous: " +displayFormula(latex[0].data);
+        } else if (latex.length == 1) {  // here it is obvious, maybe...
+          retLaTeX += displayFormula(latex[0].data);
+        }
+        // REVIEW: Does this search need to be recursive?
+        const image = this.findStyles({ type: 'IMAGE', role: 'PLOT', recursive: true }, tls);
+        if (image.length > 0) {
+          const plot = image[0];
           const apath = this.absoluteDirectoryPath();
-          var abs_filename = `${apath}/${filename}`;
-          const directory = apath;
-
-          var foundfile = "";
-          debug("BEGIN",directory);
-          // @ts-ignore
-          var files = fs.readdirSync(directory);
-          debug("files",files);
-          for (const file of files) {
-            // I don't know why this is needed!
-            if (fileIsLaterVersionThan(s.id,s.timestamp,file)) {
-              foundfile = file;
-            }
+          // The notebook name is both a part of the plot.data,
+          // AND is a part of the absolute path. So we take only
+          // the final file name of local.data here.
+          const final = plot.data.split("/");
+          const graphics = `\\includegraphics{${apath}/${final[2]}}`;
+          retLaTeX += graphics;
+          retLaTeX += `\n`;
+          if (image.length > 1) {
+            retLaTeX += " more than one plot, not sure how to handle that";
           }
-          debug("END");
-          if (foundfile) {
-            abs_filename = `${apath}/${foundfile}`;
-          } else {
-            fs.writeFileSync(abs_filename, b);
-            debug("directory",directory);
-            var files = fs.readdirSync(directory);
+        }
+        // Now we search for .PNGs --- most likely generated from
+        // .svgs, but not necessarily, which allows the possibility
+        // of photographs being included in output later.
+        // REVIEW: Does this search need to be recursive?
+        const svgs = this.findStyles({ type: 'SVG', recursive: true }, tls);
 
-            for (const file of files) {
-              debug("file",file);
-              // I don't know why this is needed!
-              if (fileIsEarlierVersionThan(s.id,""+ts,file)) {
+        debug("SVGS:",svgs);
+        debug("tlso:",styleObject);
+        if (styleObject.type == 'SVG') debug('YES');
+        svgs.push(styleObject);
+        for(const s of svgs) {
+          // NOTE: At present, this is using a BUFFER, which is volatile.
+          // It does not correctly survive resets of the notebook.
+          // In fact when we output the file to a file, we need to change
+          // the notebook do have a durable 'PNG-FILE' type generated from
+          // the buffer. This may seem awkward, but it keeps the
+          // function "ruleConvertSvgToPng" completely pure and static,
+          // which is a paradigm worth preserving. However, this means
+          // we have to handle the data being null until we have consistent
+          // file handling.
+          if (s.data) {
+            // from : https://stackoverflow.com/questions/5010288/how-to-make-a-function-wait-until-a-callback-has-been-called-using-node-js
+            // myFunction wraps the above API call into a Promise
+            // and handles the callbacks with resolve and reject
+            function apiFunctionWrapper(data: string) : Promise<Buffer> {
+              // @ts-ignore
+              return new Promise((resolve, reject) => {
                 // @ts-ignore
-                fs.unlink(path.join(directory, file), err  => {
-                  if (err) throw err;
+                svg2img(data,function(error, buffer) {
+                  resolve(buffer);
                 });
+              });
+            };
+
+            function getTimeStampOfCompatibleFileName(id:number, name: string) : number|undefined{
+              const parts = name.split('-');
+              if (parts.length < 3) return;
+              if (parseInt(parts[1]) != id) return;
+              const third = parts[2];
+              const nametsAndExtension = third.split('.');
+              if (nametsAndExtension.length < 2) return;
+              return parseInt(nametsAndExtension[0]);
+            }
+
+
+            function fileIsEarlierVersionThan(id:number, ts : string|undefined,name: string) : boolean {
+              if (!ts) return false;
+              const filets = getTimeStampOfCompatibleFileName(id, name);
+              if (filets) {
+                return parseInt(ts) > filets;
+              } else {
+                return false;
               }
             }
+
+            function fileIsLaterVersionThan(id:number, ts : string|undefined,name: string) : boolean {
+              if (!ts) return false;
+              const filets = getTimeStampOfCompatibleFileName(id, name);
+              if (filets) {
+                return parseInt(ts) < filets;
+              } else {
+                return false;
+              }
+            }
+
+            const b: Buffer = await apiFunctionWrapper(s.data);
+            const ts = Date.now();
+            console.log(ts);
+            const filename = `image-${s.id}-${ts}.png`;
+            const apath = this.absoluteDirectoryPath();
+            var abs_filename = `${apath}/${filename}`;
+            const directory = apath;
+
+            var foundfile = "";
+            debug("BEGIN",directory);
+            // @ts-ignore
+            var files = fs.readdirSync(directory);
+            debug("files",files);
+            for (const file of files) {
+              // I don't know why this is needed!
+              if (fileIsLaterVersionThan(s.id,s.timestamp,file)) {
+                foundfile = file;
+              }
+            }
+            debug("END");
+            if (foundfile) {
+              abs_filename = `${apath}/${foundfile}`;
+            } else {
+              fs.writeFileSync(abs_filename, b);
+              debug("directory",directory);
+              var files = fs.readdirSync(directory);
+
+              for (const file of files) {
+                debug("file",file);
+                // I don't know why this is needed!
+                if (fileIsEarlierVersionThan(s.id,""+ts,file)) {
+                  // @ts-ignore
+                  fs.unlink(path.join(directory, file), err  => {
+                    if (err) throw err;
+                  });
+                }
+              }
+            }
+            const graphics = `\\includegraphics{${abs_filename}}`;
+            retLaTeX += graphics;
           }
-          const graphics = `\\includegraphics{${abs_filename}}`;
-          retLaTeX += graphics;
         }
       }
       cells.push(retLaTeX);
