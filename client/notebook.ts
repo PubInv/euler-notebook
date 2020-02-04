@@ -72,8 +72,17 @@ export interface FindStyleOptions {
 
 export interface HintData {
   fromId: StyleId,
+  relationship: HintRelationship,
   status: HintStatus,
   toId: StyleId,
+}
+
+export enum HintRelationship {
+  Unknown = 0,
+  Equivalent = 1,
+  NotEquivalent = 2,
+  Implies = 3,
+  ImpliedBy = 4,
 }
 
 export enum HintStatus {
@@ -299,7 +308,7 @@ export type StyleSource = typeof STYLE_SOURCES[number];
 
 // Constants
 
-export const VERSION = "0.0.11";
+export const VERSION = "0.0.12";
 
 // Exported Class
 

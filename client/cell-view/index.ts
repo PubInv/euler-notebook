@@ -108,7 +108,7 @@ export abstract class CellView {
     this.$elt.scrollIntoView();
   }
 
-  public select(): void {
+  public select(_solo: boolean): void {
     this.$elt.classList.add('selected');
   }
 

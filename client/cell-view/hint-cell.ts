@@ -20,7 +20,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 // Requirements
 
 import { escapeHtml } from '../dom.js';
-import { StyleObject, HintData, HintStatus } from '../notebook.js';
+import { StyleObject, HintData, HintStatus, HintRelationship } from '../notebook.js';
 import { NotebookView } from '../notebook-view.js';
 // import { getRenderer } from '../renderers.js';
 
@@ -29,10 +29,6 @@ import { CellView } from './index.js';
 // Types
 
 // Constants
-
-const GREEN_CHECKMARK = '<span style="color:green">&#x2714;</span>';
-const RED_X = '<span style="color:red">&#x2718;</span>';
-const BLUE_QUESTION_MARK = '<b style="color:blue"><i>?</i></b>';
 
 // Class
 
@@ -52,27 +48,41 @@ export class HintCellView extends CellView {
     // TODO: If hint cell is moved then it needs to be re-rendered.
     const repStyle = this.notebookView.openNotebook.findStyle({ role: 'REPRESENTATION', subrole: 'INPUT' }, style.id);
     if (!repStyle) {
-      console.log("NO HINT REPSTYLE");
       this.$elt.innerHTML = "";
       return;
     }
 
-    const data = <HintData>style.data;
-    let mark: string;
-    switch(data.status) {
-      case HintStatus.Correct: mark = GREEN_CHECKMARK; break;
-      case HintStatus.Incorrect: mark = RED_X; break;
-      case HintStatus.Unknown: mark = BLUE_QUESTION_MARK; break;
+    const hintData = <HintData>style.data;
+
+    let relationshipMark: string;
+    switch(hintData.relationship) {
+      case HintRelationship.Unknown: relationshipMark = ""; break;
+      case HintRelationship.Equivalent: relationshipMark = "&#x2261 "; break;
+      case HintRelationship.NotEquivalent: relationshipMark = "&#x2262 "; break;
+      case HintRelationship.Implies: relationshipMark = "&#x221D2 "; break;
+      case HintRelationship.ImpliedBy: relationshipMark = "&#x21D0 "; break;
       default: throw new Error('Unexpected.');
     }
-    let innerHtml = `<i>${escapeHtml(repStyle.data)}</i> ${mark}`;
+
+    let statusMark: string;
+    if (hintData.relationship == HintRelationship.Unknown) {
+      statusMark = '';
+    } else {
+      switch(hintData.status) {
+        case HintStatus.Unknown: statusMark = '<b style="color:blue"><i>?</i></b> '; break;
+        case HintStatus.Correct: statusMark = '<span style="color:green">&#x2714;</span> '; break;
+        case HintStatus.Incorrect: statusMark = '<span style="color:red">&#x2718;</span> '; break;
+        default: throw new Error('Unexpected.');
+      }
+    }
+    let innerHtml = `${relationshipMark}${statusMark}<i>${escapeHtml(repStyle.data)}</i> `;
     const precedingStyleId = this.notebookView.openNotebook.precedingStyleId(style.id);
-    const afterFrom = (precedingStyleId == data.fromId);
+    const afterFrom = (precedingStyleId == hintData.fromId);
     const followingStyleId = this.notebookView.openNotebook.followingStyleId(style.id);
-    const beforeTo = (followingStyleId == data.toId);
+    const beforeTo = (followingStyleId == hintData.toId);
     const inBetween =  afterFrom && beforeTo;
     if (!inBetween) {
-      innerHtml =  `${data.fromId} &#x290F; ${data.toId}: ${innerHtml}`;
+      innerHtml =  `${innerHtml}: ${hintData.fromId} &#x290F; ${hintData.toId}`;
     }
     this.$elt.innerHTML = innerHtml;
   }

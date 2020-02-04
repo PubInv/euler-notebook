@@ -23,7 +23,7 @@ import * as debug1 from 'debug';
 const MODULE = __filename.split(/[/\\]/).slice(-1)[0].slice(0,-3);
 const debug = debug1(`server:${MODULE}`);
 
-import { NotebookChange, StyleObject, HintData, HintStatus } from '../../client/notebook';
+import { NotebookChange, StyleObject, HintData, HintRelationship, HintStatus } from '../../client/notebook';
 import { ToolInfo, NotebookChangeRequest, StyleInsertRequest, StylePropertiesWithSubprops } from '../../client/math-tablet-api';
 import { ServerNotebook, ObserverInstance } from '../server-notebook';
 import { execute,  convertWolframToTeX} from '../wolframscript';
@@ -71,6 +71,7 @@ export class AlgebraicToolsObserver implements ObserverInstance {
 
     const data: HintData = {
       fromId, toId,
+      relationship: HintRelationship.Equivalent,
       status: HintStatus.Correct,
     };
 

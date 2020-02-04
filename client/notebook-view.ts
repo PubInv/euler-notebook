@@ -26,7 +26,7 @@ import { $, configure } from './dom.js';
 import {
   DrawingData, StyleId, StyleObject, NotebookChange,
   StyleType, StyleRelativePosition,
-  StylePosition, DOCUMENT, PageId, HintData, HintStatus,
+  StylePosition, DOCUMENT, PageId, HintData, HintStatus, HintRelationship,
 } from './notebook.js';
 import {
   StyleChangeRequest, StyleDeleteRequest,
@@ -179,12 +179,13 @@ export class NotebookView {
     const data: HintData = {
       fromId,
       toId,
+      relationship: HintRelationship.Unknown,
       status: HintStatus.Unknown,
     };
     const styleProps: StylePropertiesWithSubprops = {
       role: 'HINT', type: 'HINT-DATA', data,
       subprops: [
-        { role: 'REPRESENTATION', subrole: 'INPUT', type: 'TEXT', data: "Hint Hint" },
+        { role: 'REPRESENTATION', subrole: 'INPUT', type: 'TEXT', data: "" },
       ]
     };
     const changeRequest: StyleInsertRequest = { type: 'insertStyle', afterId: fromId, styleProps };
@@ -426,8 +427,12 @@ export class NotebookView {
     rangeExtending?: boolean, // Extending selection by a contiguous range.
     indivExtending?: boolean, // Extending selection by an individual cell, possibly non-contiguous.
   ): void {
-    if (!rangeExtending && !indivExtending) { this.unselectAll(true); }
-    cellView.select();
+    // Erase tools panel. Newly selected cell will populate, if it is the only cell selected.
+    $<HTMLDivElement>(document, '#tools').innerHTML = '';
+
+    const solo = !rangeExtending && !indivExtending;
+    if (solo) { this.unselectAll(true); }
+    cellView.select(solo);
     this.lastCellSelected = cellView;
     this.sidebar.enableTrashButton(true);
   }

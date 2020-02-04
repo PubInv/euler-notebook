@@ -79,6 +79,9 @@ mixin sidebar
     button#trashButton(disabled=true, title="Trash")
       +svgIconTrashCan2
 
+mixin tools
+  #tools
+
 block metatags
   //- These meta tags are copied from MyScript samples.
   meta(name="viewport", content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no")
@@ -103,3 +106,4 @@ block content
     #thumbnailView(style='display:none', tabindex=0)
     #pageView(style='display:none', tabindex=0)
     #notebookView(style='display:none', tabindex=0)
+  +tools
