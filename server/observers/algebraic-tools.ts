@@ -28,7 +28,6 @@ import { ToolInfo, NotebookChangeRequest, StyleInsertRequest, StyleDeleteRequest
 import { ServerNotebook, ObserverInstance } from '../server-notebook';
 import { execute,  convertWolframToTeX} from '../wolframscript';
 import { Config } from '../config';
-import { BaseObserver, Rules } from './base-observer';
 
 // Types
 
