@@ -19,7 +19,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 // Requirements
 
-import { $, $new, escapeHtml, Html } from '../dom.js';
+import { $new, escapeHtml, Html } from '../dom.js';
 import { ToolInfo } from '../math-tablet-api.js';
 import { StyleObject, FindRelationshipOptions, FindStyleOptions, StyleSubrole } from '../notebook.js';
 import { NotebookView } from '../notebook-view.js';
@@ -57,9 +57,31 @@ export class FormulaCellView extends CellView {
     this.renderFormula(style);
   }
 
-  public select(solo: boolean): void {
-    super.select(solo);
-    this.renderTools();
+  public renderTools($tools: HTMLDivElement): void {
+    super.renderTools($tools);
+    const style = this.notebookView.openNotebook.getStyle(this.styleId);
+    // REVIEW: If we attached tool styles to the top-level style,
+    //         then we would not need to do a recursive search.
+    const findOptions2: FindStyleOptions = { type: 'TOOL', recursive: true };
+    const toolStyles = this.notebookView.openNotebook.findStyles(findOptions2, style.id);
+    for (const toolStyle of toolStyles) {
+      const toolInfo: ToolInfo = toolStyle.data;
+      let html: Html;
+      if (toolInfo.tex) {
+        const latexRenderer = getRenderer('LATEX');
+        const results = latexRenderer!(toolInfo.tex);
+        if (results.html) { html = results.html; }
+        else { html = results.errorHtml!; }
+      } else {
+        html = toolInfo.html!;
+      }
+      const $button = $new('button', {
+        class: 'tool',
+        html,
+        listeners: { 'click': _e=>this.notebookView.useTool(toolStyle.id) }
+      });
+      $tools.appendChild($button);
+    }
   }
 
   // -- PRIVATE --
@@ -140,36 +162,6 @@ export class FormulaCellView extends CellView {
     }
 
     this.$formula.innerHTML = html!;
-  }
-
-  private renderTools(): void {
-    const style = this.notebookView.openNotebook.getStyle(this.styleId);
-
-    const $tools = $<HTMLDivElement>(document, '#tools');
-
-    // REVIEW: If we attached tool styles to the top-level style,
-    //         then we would not need to do a recursive search.
-    const findOptions2: FindStyleOptions = { type: 'TOOL', recursive: true };
-    const toolStyles = this.notebookView.openNotebook.findStyles(findOptions2, style.id);
-    for (const toolStyle of toolStyles) {
-      const toolInfo: ToolInfo = toolStyle.data;
-      let html: Html;
-      if (toolInfo.tex) {
-        const latexRenderer = getRenderer('LATEX');
-        const results = latexRenderer!(toolInfo.tex);
-        if (results.html) { html = results.html; }
-        else { html = results.errorHtml!; }
-      } else {
-        html = toolInfo.html!;
-      }
-      const $button = $new('button', {
-        class: 'tool',
-        html,
-        listeners: { 'click': _e=>this.notebookView.useTool(toolStyle.id) }
-      });
-      $tools.appendChild($button);
-    }
-
   }
 
   // PRIVATE EVENT HANDLERS
