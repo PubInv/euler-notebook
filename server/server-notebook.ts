@@ -190,6 +190,8 @@ export class ServerNotebook extends Notebook {
   public async exportLatex(): Promise<LatexData> {
     const ourPreamble = `\\documentclass[12pt]{article}
 \\usepackage{amsmath}
+\\usepackage{amssymb}
+\\usepackage[normalem]{ulem}
 \\usepackage{graphicx}
 \\usepackage{epstopdf}
 \\epstopdfDeclareGraphicsRule{.gif}{png}{.png}{convert gif:#1 png:\\OutputFile}
@@ -207,8 +209,13 @@ export class ServerNotebook extends Notebook {
     function displayFormula(f : string) : string {
       return `\\begin{align}\n ${f} \\end{align}\n`;
     }
-    function renderHintAsIndependent(s: StyleObject) {
-      return '= \\{ '+ s.data.text + ' \\}';
+    function renderHintAsIndependent(hint: string, relationship: number, from: number, to: number, status: number) : string {
+      // a checkmark or an X for monochrome rendering.
+      const statussym = (status == 1) ? "\\checkmark" : "\\sout{\\checkmark}";
+
+      // TODO: I don't what the other statuses are supposed to be!
+      const relationsym = (relationship == 1) ? "\\equiv" : "\\implies";
+      return `$ ${relationsym} ${statussym} $ \\{  ${hint} \\}  $ (${from}) \\mapsto (${to}) $`;
     }
     const tlso = this.topLevelStyleOrder();
     const cells = [];
@@ -217,15 +224,28 @@ export class ServerNotebook extends Notebook {
       var retLaTeX = "";
       const styleObject = this.getStyle(tls);
       if (styleObject.role == 'HINT') {
-        if (styleObject.type == 'HINT-DATA')
-          retLaTeX += renderHintAsIndependent(styleObject);
-        else {
+        if (styleObject.type == 'HINT-DATA') {
+
+          // TODO: This will be off in terms of equation numbering. We need to decide
+          // If we should number by notebook numbers of equational order! It is currently inconsistent.
+          const from_id = this.topLevelStyleOf(styleObject.data.fromId).id;
+          console.log("from",from_id);
+          const to_id = this.topLevelStyleOf(styleObject.data.toId).id;
+          console.log("to",to_id);
+          const status = styleObject.data.status;
+          console.log("from",from_id);
+          const relationship = styleObject.data.relationship;
+
+          const reps = this.findStyles({ type: 'TEXT', recursive: true }, tls);
+          var hint = "";
+          for(const r of reps) {
+            hint += r.data;
+          }
+          retLaTeX += renderHintAsIndependent(hint,relationship,from_id,to_id,status);
+        } else {
           console.error("HINT role of type other than HINT-DATA not implemented");
         }
       } else {
-
-
-
         // REVIEW: Does this search need to be recursive?
         const latex = this.findStyles({ type: 'LATEX', recursive: true }, tls);
         if (latex.length > 1) { // here we have to have some disambiguation
@@ -233,6 +253,8 @@ export class ServerNotebook extends Notebook {
         } else if (latex.length == 1) {  // here it is obvious, maybe...
           retLaTeX += displayFormula(latex[0].data);
         }
+
+
         // REVIEW: Does this search need to be recursive?
         const image = this.findStyles({ type: 'IMAGE', role: 'PLOT', recursive: true }, tls);
         if (image.length > 0) {
