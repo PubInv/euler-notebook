@@ -73,7 +73,6 @@ export abstract class BaseObserver implements ObserverInstance {
 
   // Instance Methods
 
-
   public async onChangesAsync(changes: NotebookChange[]): Promise<NotebookChangeRequest[]> {
     // IMPORTANT: This code is identical to onChangesSync, except this code has awaits and that code doesn't.
     debug(`onChangesAsync ${this.notebook._path} ${changes.length}`);

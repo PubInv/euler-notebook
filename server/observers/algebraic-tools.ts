@@ -24,10 +24,20 @@ const MODULE = __filename.split(/[/\\]/).slice(-1)[0].slice(0,-3);
 const debug = debug1(`server:${MODULE}`);
 
 import { StyleType,NotebookChange, StyleObject, HintData, HintRelationship, HintStatus } from '../../client/notebook';
-import { ToolInfo, NotebookChangeRequest, StyleInsertRequest, StyleDeleteRequest, StylePropertiesWithSubprops } from '../../client/math-tablet-api';
+import { ToolInfo, NotebookChangeRequest, StyleInsertRequest, StyleDeleteRequest, StylePropertiesWithSubprops, WolframData } from '../../client/math-tablet-api';
 import { ServerNotebook, ObserverInstance } from '../server-notebook';
 import { execute,  convertWolframToTeX} from '../wolframscript';
 import { Config } from '../config';
+import { BaseObserver, Rules } from './base-observer';
+
+// Types
+
+interface ToolData {
+  transformation: WolframData;
+  output: WolframData;
+}
+
+// Exported Class
 
 export class AlgebraicToolsObserver implements ObserverInstance {
 
@@ -68,7 +78,11 @@ export class AlgebraicToolsObserver implements ObserverInstance {
   public async useTool(toolStyle: StyleObject): Promise<NotebookChangeRequest[]> {
     debug(`useTool ${this.notebook._path} ${toolStyle.id}`);
 
-    const fromId = this.notebook.topLevelStyleOf(toolStyle.data.origin_id).id;
+    const toolInfo: ToolInfo = toolStyle.data;
+    const toolData: ToolData = toolInfo.data;
+    console.dir(toolInfo.data);
+
+    const fromId = this.notebook.topLevelStyleOf(toolInfo.origin_id!).id;
     const toId = this.notebook.reserveId();
 
     const data: HintData = {
@@ -80,7 +94,7 @@ export class AlgebraicToolsObserver implements ObserverInstance {
     const hintProps: StylePropertiesWithSubprops = {
       role: 'HINT', type: 'HINT-DATA', data,
       subprops: [
-        { role: 'REPRESENTATION', subrole: 'INPUT', type: 'TEXT', data: `From ${toolStyle.data.name}` },
+        { role: 'REPRESENTATION', subrole: 'INPUT', type: 'TEXT', data: `From ${toolInfo.name}` },
       ]
     };
     const hintReq: StyleInsertRequest = {
@@ -97,12 +111,15 @@ export class AlgebraicToolsObserver implements ObserverInstance {
       subprops: [{
         role: 'REPRESENTATION',
         type: 'WOLFRAM',
-        data: toolStyle.data.data,
+        data: toolData.output,
         subrole: 'INPUT',
         // REVIEW: Possibly this should be 'FACTORIZATION'
         // or some other meaning. 'INPUT' is a stop-gap
         // to work with the current GUI.
       }],
+      relationsFrom: {
+        [fromId]: { role: 'TRANSFORMATION', data: toolData },
+      }
     };
     const changeReq: StyleInsertRequest = {
       type: 'insertStyle',
@@ -151,20 +168,21 @@ export class AlgebraicToolsObserver implements ObserverInstance {
   }
   private async addTool(style : StyleObject,
                               rval: NotebookChangeRequest[],
-                              wolfram_fun : (s: string) =>  Promise<string> ,
+                              transformation: WolframData,
                               name: string,
                         html_fun: (s: string) => string,
                         tex_fun: (s: string) => string) :
   Promise<void> {
     //    const f = await this.factor(style.data);
-    const f = await wolfram_fun(style.data);
-    debug("FFFFFFFFFF", f);
-    if (this.effectiveEqual(f,style.data)) { // nothing interesting to do!
+    const input = transformation.replace('${expr}', style.data);
+    const output = await execute(input);
+    debug("FFFFFFFFFF", output);
+    if (this.effectiveEqual(output,style.data)) { // nothing interesting to do!
       return;
     }
     debug("look for match");
     debug("style  :",style.data);
-    debug("wolfram:",f);
+    debug("wolfram:",output);
 
     // WARNING: I'm producing LaTeX here, but I am not handling variable
     // substitutions or changes. This will likely not work very well
@@ -172,13 +190,14 @@ export class AlgebraicToolsObserver implements ObserverInstance {
     // some rendering work on the tool side immediately. I will have to
     // come back in and handle this more complete later. - rlr
 
-    const tex_f : string = await convertWolframToTeX(f);
+    const tex_f : string = await convertWolframToTeX(output);
 
     // (Actually we want to put the LaTeX in here, but that is a separate step!
+    const data = { output, transformation };
     const toolInfo: ToolInfo = { name: name,
-                                 html: html_fun(f),
+                                 html: html_fun(output),
                                  tex: tex_fun(tex_f),
-                                 data: f,
+                                 data,
                                  origin_id: style.id};
     const styleProps2: StylePropertiesWithSubprops = {
       type: 'TOOL',
@@ -216,37 +235,37 @@ export class AlgebraicToolsObserver implements ObserverInstance {
     // if they are duplicates (which happens often), we add only
     // one tool for them.
     await this.addTool(style,rval,
-                             ((expr : string) => execute(`InputForm[Factor[${expr}]]`)),
+                             "InputForm[Factor[${expr}]]",
                              "factor",
                              (s : string) => `Factor: ${s}`,
                        (s : string) => `\\text{Expand: } ${s}`);
     await this.addTool(style,rval,
-                             ((expr : string) => execute(`InputForm[Expand[${expr}]]`)),
+                             "InputForm[Expand[${expr}]]",
                              "expand",
                        (s : string) => `Expand: ${s}`,
                        (s : string) => `\\text{Expand: } ${s}`);
     await this.addTool(style,rval,
-                             ((expr : string) => execute(`InputForm[ExpandAll[${expr}]]`)),
+                             "InputForm[ExpandAll[${expr}]]",
                              "expand all",
                        (s : string) => `ExpandAll: ${s}`,
                        (s : string) => `\\text{ExpandAll: } ${s}`);
     await this.addTool(style,rval,
-                             ((expr : string) => execute(`InputForm[Simplify[${expr}]]`)),
+                             "InputForm[Simplify[${expr}]]",
                              "simplify",
                        (s : string) => `Simplify: ${s}`,
                        (s : string) => `\\text{Simplify: } ${s}`);
      await this.addTool(style,rval,
-                             ((expr : string) => execute(`InputForm[Cancel[${expr}]]`)),
+                             "InputForm[Cancel[${expr}]]",
                              "cancel",
                              (s : string) => `Cancel: ${s}`,
                        (s : string) => `\\text{Cancel: } ${s}`);
      await this.addTool(style,rval,
-                             ((expr : string) => execute(`InputForm[Together[${expr}]]`)),
+                             "InputForm[Together[${expr}]]",
                              "together",
                         (s : string) => `Together: ${s}`,
                        (s : string) => `\\text{Together: } ${s}`);
       await this.addTool(style,rval,
-                             ((expr : string) => execute(`InputForm[Apart[${expr}]]`)),
+                             "InputForm[Apart[${expr}]]",
                              "apart",
                              (s : string) => `Apart: ${s}`,
                        (s : string) => `\\text{Apart: } ${s}`);
@@ -336,4 +355,4 @@ export class AlgebraicToolsObserver implements ObserverInstance {
   // }
 }
 
-// Private Functions
+// Helper Functions

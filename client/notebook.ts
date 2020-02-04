@@ -162,7 +162,8 @@ export interface RelationshipObject extends RelationshipProperties {
 export type RelationshipRole =
   'SYMBOL-DEPENDENCY' |
   'DUPLICATE-DEFINITION' |
-  'EQUIVALENCE';
+  'EQUIVALENCE' |
+  'TRANSFORMATION';
 
 export interface RelationshipMap {
   [id: /* RelationshipId */number]: RelationshipObject;
@@ -170,6 +171,7 @@ export interface RelationshipMap {
 
 export interface RelationshipProperties {
   role: RelationshipRole;
+  data?: any;
 }
 
 export type StyleId = number;
@@ -308,7 +310,7 @@ export type StyleSource = typeof STYLE_SOURCES[number];
 
 // Constants
 
-export const VERSION = "0.0.12";
+export const VERSION = "0.0.13";
 
 // Exported Class
 
@@ -562,7 +564,8 @@ export class Notebook {
   // Private Instance Property Functions
 
   private relationshipToHtml(relationship: RelationshipObject): Html {
-    return `<div><span class="leaf">R${relationship.id} ${relationship.fromId} &#x27a1; ${relationship.toId} ${relationship.role}</span></div>`;
+    const dataJson = (typeof relationship.data != 'undefined' ? escapeHtml(JSON.stringify(relationship.data)) : 'undefined' );
+    return `<div><span class="leaf">R${relationship.id} ${relationship.fromId} &#x27a1; ${relationship.toId} ${relationship.role} ${dataJson}</span></div>`;
   }
 
   private styleToHtml(style: StyleObject): Html {
@@ -570,15 +573,15 @@ export class Notebook {
     const childStyleObjects = Array.from(this.childStylesOf(style.id));
     // TODO: This is very inefficient as notebook.relationshipOf goes through *all* relationships.
     const relationshipObjects = Array.from(this.relationshipsOf(style.id));
-    const json = (typeof style.data != 'undefined' ? escapeHtml(JSON.stringify(style.data)) : 'undefined' );
+    const dataJson = (typeof style.data != 'undefined' ? escapeHtml(JSON.stringify(style.data)) : 'undefined' );
     const roleSubrole = (style.subrole ? `${style.role}|${style.subrole}` : style.role);
     const styleInfo = `S${style.id} ${roleSubrole} ${style.type} ${style.source}`
-    if (childStyleObjects.length == 0 && relationshipObjects.length == 0 && json.length<30) {
-      return `<div><span class="leaf">${styleInfo} <tt>${json}</tt></span></div>`;
+    if (childStyleObjects.length == 0 && relationshipObjects.length == 0 && dataJson.length<30) {
+      return `<div><span class="leaf">${styleInfo} <tt>${dataJson}</tt></span></div>`;
     } else {
       const stylesHtml = childStyleObjects.map(s=>this.styleToHtml(s)).join('');
       const relationshipsHtml = relationshipObjects.map(r=>this.relationshipToHtml(r)).join('');
-      const [ shortJsonTt, longJsonTt ] = json.length<30 ? [` <tt>${json}</tt>`, ''] : [ '', `<tt>${json}</tt>` ];
+      const [ shortJsonTt, longJsonTt ] = dataJson.length<30 ? [` <tt>${dataJson}</tt>`, ''] : [ '', `<tt>${dataJson}</tt>` ];
       return `<div>
   <span class="collapsed">${styleInfo}${shortJsonTt}</span>
   <div class="nested" style="display:none">${longJsonTt}
