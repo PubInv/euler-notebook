@@ -70,6 +70,19 @@ export interface FindStyleOptions {
   recursive?: boolean;
 }
 
+export interface HintData {
+  fromId: StyleId,
+  status: HintStatus,
+  text: string,
+  toId: StyleId,
+}
+
+export enum HintStatus {
+  Unknown = 0,
+  Correct = 1,
+  Incorrect = 2,
+}
+
 export type NotebookChange =
   RelationshipDeleted|RelationshipInserted|
   StyleChanged|StyleConverted|StyleDeleted|StyleInserted|StyleMoved;
@@ -200,6 +213,7 @@ export interface StyleObject extends StyleProperties {
 export type StyleOrdinalPosition = number;
 
 export interface StyleProperties {
+  id?: StyleId;
   data: any;
   role: StyleRole;
   subrole?: StyleSubrole;
@@ -239,7 +253,7 @@ export const STYLE_SUBROLES = [
   'UNKNOWN',
 
   // REPRESENTATION subroles
-  'INPUT',
+  'INPUT',          // TODO: Rename to 'PRIMARY'
   'ALTERNATE',
 ];
 export type StyleSubrole = typeof STYLE_SUBROLES[number];
@@ -333,7 +347,7 @@ export class Notebook {
 
   // Instance Properties
 
-  public nextId: StyleId;
+  public nextId: StyleId; // TODO: Move nextId to server-notebook because it is not needed on the client.
 
   // Instance Property Functions
 
@@ -371,6 +385,14 @@ export class Notebook {
     const rval = this.relationshipMap[id];
     if (!rval) { throw new RelationshipIdDoesNotExistError(`Relationship ${id} doesn't exist.`); }
     return rval;
+  }
+
+  public followingStyleId(id: StyleId): StyleId {
+    // Returns the id of the style immediately after the top-level style specified.
+    const i = this.styleOrder.indexOf(id);
+    if (i<0) { throw new Error(`Style ${id} not found for followingStyleId.`); }
+    if (i+1>=this.styleOrder.length) { throw new Error(`Style ${id} for followingStyleId is last style.`); }
+    return this.styleOrder[i+1];
   }
 
   public getStyle(id: StyleId): StyleObject {

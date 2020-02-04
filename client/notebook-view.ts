@@ -26,7 +26,7 @@ import { $, configure } from './dom.js';
 import {
   DrawingData, StyleId, StyleObject, NotebookChange,
   StyleType, StyleRelativePosition,
-  StylePosition, DOCUMENT, PageId,
+  StylePosition, DOCUMENT, PageId, HintData, HintStatus,
 } from './notebook.js';
 import {
   StyleChangeRequest, StyleDeleteRequest,
@@ -145,17 +145,20 @@ export class NotebookView {
   public async developmentButtonClicked(): Promise<void> {
     // FOR DEVELOPMENT TESTING ONLY
     // This code is executed when the user presses the underwear button in the sidebar.
-    let afterId: StyleRelativePosition;
-    if (this.lastCellSelected) { afterId = this.lastCellSelected.styleId; }
-    else { afterId = StylePosition.Bottom; }
-    const data = "This is a hint.";
-    const styleProps: StylePropertiesWithSubprops = {
-      role: 'HINT', type: 'HINT-DATA', data: null,
-      subprops: [
-        { role: 'REPRESENTATION', subrole: 'INPUT', type: 'TEXT', data }
-      ]
+    if (!this.lastCellSelected) {
+      throw new Error("Must select a cell to insert a hint.");
+    }
+    const fromId = this.lastCellSelected.styleId;
+    const toId = this.openNotebook.followingStyleId(fromId);
+
+    const data: HintData = {
+      fromId,
+      toId,
+      status: HintStatus.Unknown,
+      text: "Expand LHS",
     };
-    const changeRequest: StyleInsertRequest = { type: 'insertStyle', afterId, styleProps };
+    const styleProps: StylePropertiesWithSubprops = { role: 'HINT', type: 'HINT-DATA', data };
+    const changeRequest: StyleInsertRequest = { type: 'insertStyle', afterId: fromId, styleProps };
     /* const undoChangeRequest = */ await this.sendUndoableChangeRequest(changeRequest);
     // const styleId = (<StyleDeleteRequest>undoChangeRequest).styleId
   }

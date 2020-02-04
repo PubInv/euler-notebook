@@ -178,7 +178,7 @@ export class ServerNotebook extends Notebook {
   // Instance Properties
 
   // NOTE: Properties with an underscore prefix are not persisted.
-  public _path?: NotebookPath;
+  public _path?: NotebookPath;  // TODO: Don't need underscore prefix.
 
   // Instance Property Functions
 
@@ -648,6 +648,12 @@ export class ServerNotebook extends Notebook {
     return allSyncChanges.concat(asyncChanges);
   }
 
+  public reserveId(): StyleId {
+    const styleId = this.nextId++;
+    this.reservedIds.add(styleId);
+    return styleId;
+  }
+
   public async useTool(styleId: StyleId): Promise<NotebookChange[]> {
     debug(`useTool ${styleId}`);
     this.assertNotClosed('useTool');
@@ -686,6 +692,7 @@ export class ServerNotebook extends Notebook {
     this.clientObservers = new Map();
     this.observers = new Map();
     this._path = notebookPath;
+    this.reservedIds = new Set();
   }
 
   // Private Instance Properties
@@ -694,6 +701,7 @@ export class ServerNotebook extends Notebook {
   private clientObservers: Map<ClientId, ClientObserver>;
   private closed?: boolean;
   private observers: Map<StyleSource, ObserverInstance>;
+  private reservedIds: Set<StyleId>;
   private saving?: boolean;
 
   // Private Instance Property Functions
@@ -901,9 +909,18 @@ export class ServerNotebook extends Notebook {
     const styleProps = request.styleProps;
     const afterId = request.hasOwnProperty('afterId') ? request.afterId : -1;
 
+    let id: StyleId;
+    if (styleProps.id) {
+      id = styleProps.id;
+      if (!this.reservedIds.has(id)) { throw new Error(`Specified style ID is not reserved: ${id}`); }
+      this.reservedIds.delete(id);
+    } else {
+      id = this.nextId++;
+    }
+
     const style: StyleObject = {
       data: styleProps.data,
-      id: this.nextId++,
+      id,
       role: styleProps.role,
       parentId: parentId || 0,
       source,

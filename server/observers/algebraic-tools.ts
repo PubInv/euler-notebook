@@ -23,7 +23,7 @@ import * as debug1 from 'debug';
 const MODULE = __filename.split(/[/\\]/).slice(-1)[0].slice(0,-3);
 const debug = debug1(`server:${MODULE}`);
 
-import { NotebookChange, StyleObject } from '../../client/notebook';
+import { NotebookChange, StyleObject, HintData, HintStatus } from '../../client/notebook';
 import { ToolInfo, NotebookChangeRequest, StyleInsertRequest, StylePropertiesWithSubprops } from '../../client/math-tablet-api';
 import { ServerNotebook, ObserverInstance } from '../server-notebook';
 import { execute} from '../wolframscript';
@@ -66,45 +66,44 @@ export class AlgebraicToolsObserver implements ObserverInstance {
   public async useTool(toolStyle: StyleObject): Promise<NotebookChangeRequest[]> {
     debug(`useTool ${this.notebook._path} ${toolStyle.id}`);
 
-      const hintProps: StylePropertiesWithSubprops = {
-        role: 'HINT',
-        type: 'HINT-DATA',
-        data: undefined,
-        subprops: [{
-          role: 'REPRESENTATION',
-          subrole: 'INPUT',
-          type: 'TEXT',
-          data: "This came from an algebraic operation: "+toolStyle.data.name
-          + " of (" + toolStyle.data.origin_id + ")",
-        }],
-      };
-      const hintReq: StyleInsertRequest = {
-        type: 'insertStyle',
-        // TODO: afterId should be ID of subtrivariate.
-        styleProps: hintProps,
-      };
+    const fromId = this.notebook.topLevelStyleOf(toolStyle.data.origin_id).id;
+    const toId = this.notebook.reserveId();
 
-      const styleProps: StylePropertiesWithSubprops = {
-        role: 'FORMULA',
-        type: 'FORMULA-DATA',
-        data: undefined,
-        subprops: [{
-          role: 'REPRESENTATION',
-          subrole: 'INPUT',
-          type: 'WOLFRAM',
-          data: toolStyle.data.data,
-          // WARNING! : Possibly this should be 'FACTORIZATION'
-          // or some other meaning. 'INPUT' is a stop-gap
-          // to work with the current GUI.
-        }],
-      };
-      const changeReq: StyleInsertRequest = {
-        type: 'insertStyle',
-        // TODO: afterId should be ID of subtrivariate.
-        styleProps,
-      };
+    const data: HintData = {
+      fromId, toId,
+      status: HintStatus.Correct,
+      text: `From ${toolStyle.data.name}`,
+    };
 
-    return [ hintReq,changeReq ];
+    const hintProps: StylePropertiesWithSubprops = { role: 'HINT', type: 'HINT-DATA', data };
+    const hintReq: StyleInsertRequest = {
+      type: 'insertStyle',
+      // TODO: afterId should be ID of subtrivariate.
+      styleProps: hintProps,
+    };
+
+    const styleProps: StylePropertiesWithSubprops = {
+      id: toId,
+      role: 'FORMULA',
+      type: 'FORMULA-DATA',
+      data: undefined,
+      subprops: [{
+        role: 'REPRESENTATION',
+        type: 'WOLFRAM',
+        data: toolStyle.data.data,
+        subrole: 'INPUT',
+        // REVIEW: Possibly this should be 'FACTORIZATION'
+        // or some other meaning. 'INPUT' is a stop-gap
+        // to work with the current GUI.
+      }],
+    };
+    const changeReq: StyleInsertRequest = {
+      type: 'insertStyle',
+      // TODO: afterId should be ID of subtrivariate.
+      styleProps,
+    };
+
+    return [ hintReq, changeReq ];
   }
 
   // --- PRIVATE ---

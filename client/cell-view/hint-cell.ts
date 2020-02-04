@@ -19,7 +19,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 // Requirements
 
-import { StyleObject } from '../notebook.js';
+import { StyleObject, HintData, HintStatus } from '../notebook.js';
 import { NotebookView } from '../notebook-view.js';
 // import { getRenderer } from '../renderers.js';
 
@@ -28,6 +28,10 @@ import { CellView } from './index.js';
 // Types
 
 // Constants
+
+const GREEN_CHECKMARK = '<span style="color:green">&#x2714;</span>';
+const RED_X = '<span style="color:red">&#x2718;</span>';
+const BLUE_QUESTION_MARK = '<b style="color:blue"><i>?</i></b>';
 
 // Class
 
@@ -44,14 +48,16 @@ export class HintCellView extends CellView {
   // Instance Methods
 
   public render(style: StyleObject): void {
-    const repStyle = this.notebookView.openNotebook.findStyle({ role: 'REPRESENTATION', subrole: 'INPUT' }, style.id);
-    if (!repStyle) {
-      console.log("NO HINT REPSTYLE");
-      this.$elt.innerHTML = "";
-      return;
+    const data = <HintData>style.data;
+    let mark: string;
+    switch(data.status) {
+      case HintStatus.Correct: mark = GREEN_CHECKMARK; break;
+      case HintStatus.Incorrect: mark = RED_X; break;
+      case HintStatus.Unknown: mark = BLUE_QUESTION_MARK; break;
+      default: throw new Error('Unexpected.');
     }
-
-    this.$elt.innerHTML = `HINT: <i>${repStyle.data}</i>`;
+    let text = data.text.replace('(1)', `(${data.fromId})`).replace('(2)', `(${data.toId})`);
+    this.$elt.innerHTML = `HINT: ${data.fromId} &#x290F; ${data.toId}: <i>${text}</i> ${mark}`;
   }
 
   // -- PRIVATE --
