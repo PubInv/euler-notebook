@@ -170,6 +170,7 @@ export interface RelationshipMap {
 }
 
 export interface RelationshipProperties {
+  id?: StyleId;
   role: RelationshipRole;
   data?: any;
 }

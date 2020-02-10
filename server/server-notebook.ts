@@ -814,8 +814,20 @@ export class ServerNotebook extends Notebook {
     request: RelationshipInsertRequest,
     rval: NotebookChange[],
   ): RelationshipDeleteRequest {
+
+    const relationshipProps = request.props;
+
+    let id: StyleId;
+    if (relationshipProps.id) {
+      id = relationshipProps.id;
+      if (!this.reservedIds.has(id)) { throw new Error(`Specified relationship ID is not reserved: ${id}`); }
+      this.reservedIds.delete(id);
+    } else {
+      id = this.nextId++;
+    }
+
     const relationship: RelationshipObject = {
-      id: this.nextId++,
+      id,
       source,
       fromId: request.fromId,
       toId: request.toId,
