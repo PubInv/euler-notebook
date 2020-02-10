@@ -48,7 +48,8 @@ export class HintCellView extends CellView {
     // TODO: If hint cell is moved then it needs to be re-rendered.
     const repStyle = this.notebookView.openNotebook.findStyle({ role: 'REPRESENTATION', subrole: 'INPUT' }, style.id);
     if (!repStyle) {
-      this.$elt.innerHTML = "";
+      // TODO: Better way to handle this error.
+      this.$elt.innerHTML = "ERROR: No REPRESENTATION/INPUT substyle.";
       return;
     }
 
@@ -75,7 +76,7 @@ export class HintCellView extends CellView {
         default: throw new Error('Unexpected.');
       }
     }
-    let innerHtml = `${relationshipMark}${statusMark}<i>${escapeHtml(repStyle.data)}</i> `;
+    let innerHtml = `${relationshipMark}${statusMark}<i>${escapeHtml(repStyle.data||'blank')}</i> `;
     const precedingStyleId = this.notebookView.openNotebook.precedingStyleId(style.id);
     const afterFrom = (precedingStyleId == hintData.fromId);
     const followingStyleId = this.notebookView.openNotebook.followingStyleId(style.id);

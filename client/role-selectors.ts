@@ -27,15 +27,16 @@ import { StyleRole, StyleSubrole, StyleType } from './notebook.js';
 export const ROLE_OPTIONS = new Map<StyleRole,Html>([
   [ 'UNKNOWN', "Choose..." ],
   [ 'FORMULA', "Formula" ],
+  [ 'HINT', "Hint" ],
   [ 'TEXT', "Text" ],
   //[ 'FIGURE', "Figure" ],
 ]);
 
-// const FIGURE_SUBROLE_OPTIONS = new Map([
-//   [ 'UNKNOWN', "Choose..." ],
-//   [ 'SKETCH', "Sketch" ],
-//   [ 'DRAWING', "Drawing" ],
-// ]);
+const FIGURE_SUBROLE_OPTIONS = new Map([
+  [ 'UNKNOWN', "Choose..." ],
+  [ 'SKETCH', "Sketch" ],
+  [ 'DRAWING', "Drawing" ],
+]);
 
 const FORMULA_SUBROLE_OPTIONS = new Map<StyleSubrole,string>([
   // IMPORTANT: Keep in sync with FORMULA_SUBROLE_PREFIX
@@ -55,6 +56,9 @@ export const FORMULA_SUBROLE_PREFIX = new Map<StyleSubrole,string>([
   [ 'OTHER', "<i>Other </i>&nbsp;" ],
 ]);
 
+const HINT_SUBROLE_OPTIONS = new Map();
+
+const PLOT_SUBROLE_OPTIONS = new Map();
 
 const TEXT_SUBROLE_OPTIONS = new Map([
   [ 'UNKNOWN', "Choose..." ],
@@ -66,15 +70,17 @@ const TEXT_SUBROLE_OPTIONS = new Map([
 const UNKNOWN_SUBROLE_OPTIONS = new Map();
 
 export const SUBROLE_OPTIONS = new Map<StyleRole,Map<StyleSubrole,string>>([
-  [ 'UNKNOWN', UNKNOWN_SUBROLE_OPTIONS ],
+  [ 'FIGURE', FIGURE_SUBROLE_OPTIONS ],
   [ 'FORMULA', FORMULA_SUBROLE_OPTIONS ],
+  [ 'HINT', HINT_SUBROLE_OPTIONS ],
+  [ 'PLOT', PLOT_SUBROLE_OPTIONS ],
   [ 'TEXT', TEXT_SUBROLE_OPTIONS ],
-  // [ 'FIGURE', FIGURE_SUBROLE_OPTIONS ],
+  [ 'UNKNOWN', UNKNOWN_SUBROLE_OPTIONS ],
 ]);
 
 const UNKNOWN_TYPE_OPTIONS = new Map<StyleType,string>();
 
-// const FIGURE_TYPE_OPTIONS = new Map<StyleType,string>();
+const FIGURE_TYPE_OPTIONS = new Map<StyleType,string>();
 
 const FORMULA_TYPE_OPTIONS = new Map<StyleType,string>([
   [ 'WOLFRAM', "Wolfram" ],
@@ -82,15 +88,22 @@ const FORMULA_TYPE_OPTIONS = new Map<StyleType,string>([
   [ 'MATHML', "MathML" ],
 ]);
 
+const HINT_TYPE_OPTIONS = new Map<StyleType,string>([
+  [ 'TEXT', "Plain Text" ],
+]);
+
+const PLOT_TYPE_OPTIONS = new Map<StyleType,string>();
+
 const TEXT_TYPE_OPTIONS = new Map<StyleType,string>([
   [ 'TEXT', "Plain Text" ],
   [ 'HTML', "HTML" ],
 ]);
 
 export const TYPE_OPTIONS = new Map<StyleRole,Map<StyleType,string>>([
-  [ 'UNKNOWN', UNKNOWN_TYPE_OPTIONS ],
+  [ 'FIGURE', FIGURE_TYPE_OPTIONS ],
   [ 'FORMULA', FORMULA_TYPE_OPTIONS ],
+  [ 'HINT', HINT_TYPE_OPTIONS ],
+  [ 'PLOT', PLOT_TYPE_OPTIONS ],
   [ 'TEXT', TEXT_TYPE_OPTIONS ],
-  // [ 'FIGURE', FIGURE_TYPE_OPTIONS ],
-
+  [ 'UNKNOWN', UNKNOWN_TYPE_OPTIONS ],
 ]);
