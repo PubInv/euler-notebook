@@ -25,6 +25,7 @@ import {
 import { NotebookChangeRequest } from '../../client/math-tablet-api';
 import { ObserverInstance, ServerNotebook }  from '../server-notebook';
 import { Config } from '../config';
+import { ServerKeys } from '../myscript-batch-api';
 
 const MODULE = __filename.split(/[/\\]/).slice(-1)[0].slice(0,-3);
 const debug = debug1(`server:${MODULE}`);
@@ -62,7 +63,7 @@ export abstract class BaseObserver implements ObserverInstance {
 
   // Class Methods
 
-  public static async initialize(_config: Config): Promise<void> {
+  public static async initialize(_config: Config, _keys: ServerKeys): Promise<void> {
     debug(`initialize`);
   }
 
@@ -148,7 +149,7 @@ export abstract class BaseObserver implements ObserverInstance {
     const sourceStyle = change.style;
     const styleTest = (rule.parentStyleTest || rule.peerStyleTest)!;
     if (!styleMatchesTest(this.notebook, sourceStyle, styleTest)) { return undefined; }
-    const data = await rule.computeAsync!(sourceStyle.data);
+    const data = await rule.computeAsync!.call(this.constructor, sourceStyle.data);
     const parentId = (rule.parentStyleTest ? sourceStyle.id: sourceStyle.parentId);
     const targetStyle = (change.type == 'styleChanged' && this.notebook.findStyle({ role: rule.props.role, type: rule.props.type}, parentId));
     let changeRequest: NotebookChangeRequest|undefined = undefined;
@@ -179,7 +180,7 @@ export abstract class BaseObserver implements ObserverInstance {
     const sourceStyle = change.style;
     const styleTest = (rule.parentStyleTest || rule.peerStyleTest)!;
     if (!styleMatchesTest(this.notebook, sourceStyle, styleTest)) { return undefined; }
-    const data = rule.computeSync!(sourceStyle.data);
+    const data = rule.computeSync!.call(this.constructor, sourceStyle.data);
     const parentId = (rule.parentStyleTest ? sourceStyle.id: sourceStyle.parentId);
     const targetStyle = (change.type == 'styleChanged' && this.notebook.findStyle({ role: rule.props.role, type: rule.props.type}, parentId));
     let changeRequest: NotebookChangeRequest|undefined = undefined;
