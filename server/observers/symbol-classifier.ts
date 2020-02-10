@@ -303,7 +303,6 @@ export class SymbolClassifierObserver implements ObserverInstance {
   }
 
   private async insertFromStyleRule(style: StyleObject, rval: NotebookChangeRequest[]) : Promise<NotebookChangeRequest[]>  {
-//    const style = change.style;
 
     debug("style insertFromStyleRule",style);
     var tlStyle;

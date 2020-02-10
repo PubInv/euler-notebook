@@ -209,7 +209,7 @@ export class ServerNotebook extends Notebook {
     function displayFormula(f : string) : string {
       return `\\begin{align}\n ${f} \\end{align}\n`;
     }
-    function renderHintAsIndependent(hint: string, relationship: number, from: number, to: number, status: number) : string {
+    function renderHintAsIndependent(hint: string, relationship: number, from: string, to: string, status: number) : string {
       // a checkmark or an X for monochrome rendering.
       const statussym = (status == 1) ? "\\checkmark" : "\\sout{\\checkmark}";
 
@@ -228,8 +228,20 @@ export class ServerNotebook extends Notebook {
 
           // TODO: This will be off in terms of equation numbering. We need to decide
           // If we should number by notebook numbers of equational order! It is currently inconsistent.
-          const from_id = this.topLevelStyleOf(styleObject.data.fromId).id;
-          const to_id = this.topLevelStyleOf(styleObject.data.toId).id;
+          var from_id : string;
+          try {
+             from_id = "" + this.topLevelStyleOf(styleObject.data.fromId).id;
+          } catch (e) {
+            console.error("Internal Error:",e);
+            from_id = "\\text{Internal Error}";
+          }
+          var to_id : string;
+          try {
+            to_id = "" + this.topLevelStyleOf(styleObject.data.toId).id;
+          } catch (e) {
+            console.error("Internal Error:",e);
+            to_id = "\\text{Internal Error}";
+          }
           const status = styleObject.data.status;
           const relationship = styleObject.data.relationship;
 
