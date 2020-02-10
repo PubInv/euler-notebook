@@ -94,7 +94,8 @@ export class SymbolClassifierObserver implements ObserverInstance {
     const toId = this.notebook.reserveId();
 
     const data: HintData = {
-      fromId, toId,
+      fromId,
+      toId,
       relationship: HintRelationship.Equivalent,
       status: HintStatus.Correct,
     };
@@ -174,8 +175,31 @@ export class SymbolClassifierObserver implements ObserverInstance {
     if (style.type == 'SYMBOL' && (style.role == 'SYMBOL-USE' || style.role == 'SYMBOL-DEFINITION')) {
       this.deleteRelationships(style, rval);
     }
+    this.deleteDependentHints(style,rval);
   }
 
+  // TODO: I personally think this should be added to the high-level api
+  // by allow any style to declare styles which invalidate it when removed
+  // or force its re-computation when changed. - rlr
+  // Doing it this way seems to create the possibility of multiple deletes
+  // do to concurrency problems.
+  private async deleteDependentHints(style: StyleObject, rval: NotebookChangeRequest[]) : Promise<void>  {
+  //    if (style.source == 'SYMBOL-CLASSIFIER') {
+        const did = style.id;
+
+        const hints = this.notebook.findStyles({ type: 'HINT-DATA', role: 'HINT', recursive: true });
+        hints.forEach(h => {
+          const fromId = h.data.fromId;
+          const toId = h.data.toId;
+          debug("=================== ",fromId,toId,did);
+          if ((did == fromId) || (did == toId)) {
+            const deleteReq : StyleDeleteRequest = { type: 'deleteStyle',
+                                                   styleId: h.id };
+            rval.push(deleteReq);
+          }
+        });
+//      }
+  }
   private async deleteRelationships(style: StyleObject, rval: NotebookChangeRequest[]) : Promise<void>  {
       if (style.role == 'SYMBOL-DEFINITION') {
         const did = style.id;
