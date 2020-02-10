@@ -25,8 +25,8 @@ import { /* escapeHtml, */ $new, /* Html */} from '../dom.js';
 import { NotebookView } from '../notebook-view.js';
 import { KeyboardInputPanel } from '../keyboard-input-panel.js';
 import { StyleObject, StyleId, /* RelationshipObject */ } from '../notebook.js';
+import { NotebookChangeRequest } from '../math-tablet-api.js';
 // import { LatexData, ToolInfo, NameValuePair } from '../math-tablet-api.js';
-import { getRenderer } from '../renderers.js';
 
 // Exported Class
 
@@ -62,16 +62,15 @@ export abstract class CellView {
 
     // Only allow editing of user input cells, which have a data type
     // that is string-based, with a renderer.
-    // const style = this.notebookView.openNotebook.getStyleById(this.styleId);
+    const style = this.notebookView.openNotebook.getStyle(this.styleId);
     const repStyle = this.notebookView.openNotebook.findStyle({ role: 'REPRESENTATION', subrole: 'INPUT' }, this.styleId);
     if (!repStyle) { return false; }
-    const renderer = getRenderer(repStyle.type);
     if (typeof repStyle.data!='string') { return false; }
 
     this.keyboardInputPanel = KeyboardInputPanel.create(
-      repStyle.data,
-      renderer!,
-      (text)=>this.onKeyboardInputPanelDismissed(text)
+      style,
+      repStyle,
+      (changes)=>this.onKeyboardInputPanelDismissed(changes)
     );
     this.$elt.parentElement!.insertBefore(this.keyboardInputPanel.$elt, this.$elt.nextSibling);
     this.keyboardInputPanel.focus();
@@ -173,10 +172,13 @@ export abstract class CellView {
     }
   }
 
-  private onKeyboardInputPanelDismissed(text: string|undefined): void {
-    if (text !== undefined) {
-      const repStyle = this.notebookView.openNotebook.findStyle({ role: 'REPRESENTATION', subrole: 'INPUT' }, this.styleId);
-      this.notebookView.changeStyle(repStyle!.id, text);
+  private onKeyboardInputPanelDismissed(changeRequests: NotebookChangeRequest[]): void {
+    if (changeRequests.length>0) {
+      this.notebookView.editStyle(changeRequests)
+      .catch((err: Error)=>{
+        // TODO: Display error to user?
+        console.error(`Error submitting keyboard input changes: ${err.message}`);
+      });
     }
     this.$elt.parentElement!.removeChild(this.keyboardInputPanel!.$elt);
     delete this.keyboardInputPanel;

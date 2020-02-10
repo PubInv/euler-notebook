@@ -868,8 +868,10 @@ export class ServerNotebook extends Notebook {
     const style = this.getStyle(request.styleId);
     const previousRole = style.role;
     const previousSubrole = style.subrole;
-    style.role = request.role;
-    style.subrole = request.subrole;
+    if (request.role) { style.role = request.role; }
+    if (request.subrole) { style.subrole = request.subrole; }
+    if (request.styleType) { style.type = request.styleType; }
+    if (request.data) { style.data = request.data; }
     const change: StyleConverted = { type: 'styleConverted', styleId: style.id, role: request.role, subrole: request.subrole };
     this.appendChange(source, change, rval);
     const undoChangeRequest: StyleConvertRequest = {

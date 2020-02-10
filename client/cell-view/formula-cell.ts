@@ -21,23 +21,16 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 import { $new, escapeHtml, Html } from '../dom.js';
 import { ToolInfo } from '../math-tablet-api.js';
-import { StyleObject, FindRelationshipOptions, FindStyleOptions, StyleSubrole } from '../notebook.js';
+import { StyleObject, FindRelationshipOptions, FindStyleOptions } from '../notebook.js';
 import { NotebookView } from '../notebook-view.js';
 import { getRenderer } from '../renderers.js';
+import { FORMULA_SUBROLE_PREFIX } from '../role-selectors.js';
 
 import { CellView } from './index.js';
 
 // Types
 
 // Constants
-
-const SUBROLE_PREFIX = new Map<StyleSubrole,string>([
-  [ 'UNKNOWN', "<b><i>Unknown</i></b>" ],
-  [ 'ASSUME', "<b><i>Assume</i></b>" ],
-  [ 'DEFINITION', "<b><i>Definition</i></b>" ],
-  [ 'PROVE', "<b><i>Prove</i></b>" ],
-  [ 'OTHER', "<b><i>Other</i></b>" ],
-]);
 
 // Class
 
@@ -54,7 +47,7 @@ export class FormulaCellView extends CellView {
   // Instance Methods
 
   public render(style: StyleObject): void {
-    this.renderFormula(style);
+    this.renderFormula(style); // TODO: Expand inline.
   }
 
   public renderTools($tools: HTMLDivElement): void {
@@ -93,8 +86,7 @@ export class FormulaCellView extends CellView {
 
     // Create our child elements: handle, status, formula, tools, and delete button.
     // REVIEW: Use $new above to create children declaratively.
-    const $prefix = $new<HTMLDivElement>('div', { class: 'prefix', appendTo: this.$elt });
-    $prefix.innerHTML = style.subrole ? SUBROLE_PREFIX.get(style.subrole!)! : '';
+    this.$prefix = $new<HTMLDivElement>('div', { class: 'prefix', appendTo: this.$elt });
     this.$formula = $new<HTMLDivElement>('div', { class: 'formula', appendTo: this.$elt });
     $new<HTMLDivElement>('div', { class: 'handle', html: `(${style.id})`, appendTo: this.$elt });
     $new<HTMLDivElement>('div', { class: 'status', html: "&nbsp;", appendTo: this.$elt });
@@ -103,11 +95,13 @@ export class FormulaCellView extends CellView {
   // Private Instance Properties
 
   private $formula: HTMLDivElement;
+  private $prefix: HTMLDivElement;
 
   // Private Instance Methods
 
-
   private renderFormula(style: StyleObject): void {
+
+    this.$prefix.innerHTML = style.subrole ? FORMULA_SUBROLE_PREFIX.get(style.subrole!)! : '';
 
     // Look for a LATEX REPRESENTATION.
     let repStyle = this.notebookView.openNotebook.findStyle({ role: 'REPRESENTATION', type: 'LATEX' }, style.id);

@@ -21,14 +21,15 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 // Requirements
 
-import { $new, $newSvg, escapeHtml, Html } from '../dom.js';
+import { $new, $newSvg, escapeHtml } from '../dom.js';
 import { DrawingData, StyleObject, StyleRole, StyleSubrole } from '../notebook.js';
 import { NotebookView } from '../notebook-view.js';
 import { getRenderer } from '../renderers.js';
 import { SvgStroke } from '../svg-stroke.js';
+import { ROLE_OPTIONS, SUBROLE_OPTIONS } from '../role-selectors.js';
 
 import { CellView } from './index.js';
-import { NotebookChangeRequest } from '../math-tablet-api.js';
+import { NotebookChangeRequest, StyleChangeRequest } from '../math-tablet-api.js';
 
 // Types
 
@@ -40,45 +41,6 @@ interface PointerInfo {
 }
 
 // Constants
-
-const SELECTOR_OPTIONS = new Map<StyleRole,Html>([
-  [ 'UNKNOWN', "Choose..." ],
-  [ 'FORMULA', "Formula" ],
-  [ 'TEXT', "Text" ],
-  [ 'FIGURE', "Figure" ],
-]);
-
-const FIGURE_SUBROLE_OPTIONS = new Map([
-  [ 'UNKNOWN', "Choose..." ],
-  [ 'SKETCH', "Sketch" ],
-  [ 'DRAWING', "Drawing" ],
-]);
-
-const FORMULA_SUBROLE_OPTIONS = new Map<StyleSubrole,string>([
-  [ 'UNKNOWN', "Choose..." ],
-  [ 'ASSUME', "Assume" ],
-  [ 'DEFINITION', "Definition" ],
-  [ 'PROVE', "Prove" ],
-  [ 'OTHER', "Other" ],
-]);
-
-const TEXT_SUBROLE_OPTIONS = new Map([
-  [ 'UNKNOWN', "Choose..." ],
-  [ 'HEADING1', "Heading 1" ],
-  [ 'HEADING2', "Heading 2" ],
-  [ 'NORMAL', "Normal" ],
-]);
-
-const UNKNOWN_SUBROLE_OPTIONS = new Map([
-  [ 'UNKNOWN', "Choose..." ],
-]);
-
-const SUBROLE_OPTIONS = new Map<StyleRole,Map<StyleSubrole,string>>([
-  [ 'UNKNOWN', UNKNOWN_SUBROLE_OPTIONS ],
-  [ 'FORMULA', FORMULA_SUBROLE_OPTIONS ],
-  [ 'TEXT', TEXT_SUBROLE_OPTIONS ],
-  [ 'FIGURE', FIGURE_SUBROLE_OPTIONS ],
-]);
 
 // Class
 
@@ -121,7 +83,7 @@ export class StylusCell extends CellView {
         input: e=>this.onSelectorChange(e),
       }
     });
-    for (const [ role, html ] of SELECTOR_OPTIONS) {
+    for (const [ role, html ] of ROLE_OPTIONS) {
       $new<HTMLOptionElement>('option', {
         appendTo: $selector,
         attrs: {
@@ -289,8 +251,9 @@ export class StylusCell extends CellView {
     const data: DrawingData = strokesStyle.data;
     data.strokeGroups[0].strokes.push(stroke.data); // REVIEW: Modifying existing data in place???
 
-    this.notebookView.changeStyle(strokesStyle.id, data)
-    .catch(err=>{
+    const changeRequest: StyleChangeRequest = { type: 'changeStyle', styleId: strokesStyle.id, data };
+    this.notebookView.editStyle([ changeRequest ])
+    .catch((err: Error)=>{
       // TODO: Display error to user?
       console.error(`Error submitting stroke: ${err.message}`);
     });

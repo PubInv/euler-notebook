@@ -22,7 +22,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 // Requirements
 
-import { RelationshipProperties, StyleProperties, StyleId, NotebookChange, NotebookObject, StyleRelativePosition, StyleRole, StyleSubrole } from './notebook.js';
+import { RelationshipProperties, StyleProperties, StyleId, NotebookChange, NotebookObject, StyleRelativePosition, StyleRole, StyleSubrole, StyleType } from './notebook.js';
 
 // Types
 
@@ -107,8 +107,10 @@ export interface StyleChangeRequest {
 export interface StyleConvertRequest {
   type: 'convertStyle';
   styleId: StyleId;
-  role: StyleRole;
+  role?: StyleRole;
   subrole?: StyleSubrole;
+  styleType?: StyleType;
+  data?: any;
 }
 export interface StyleDeleteRequest {
   type: 'deleteStyle';

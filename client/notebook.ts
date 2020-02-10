@@ -112,8 +112,11 @@ export interface StyleChanged {
 export interface StyleConverted {
   type: 'styleConverted';
   styleId: StyleId;
-  role: StyleRole;
+  role?: StyleRole;
   subrole?: StyleSubrole;
+  // TODO: Rename 'type' to 'action' and then 'styleType' to just 'type'.
+  styleType?: StyleType;
+  data?: any;
 }
 export interface StyleDeleted {
   type: 'styleDeleted';
@@ -612,8 +615,10 @@ export class Notebook {
   private convertStyle(change: StyleConverted): void {
     const style = this.getStyle(change.styleId);
     if (!style) { throw new Error(`Converting unknown style ${change.styleId}`); }
-    style.role = change.role;
-    style.subrole = change.subrole;
+    if (change.role) { style.role = change.role; }
+    if (change.subrole) { style.subrole = change.subrole; }
+    if (change.styleType) { style.type = change.styleType; }
+    if (change.data) { style.data = change.data; }
   }
 
   private deleteRelationship(relationship: RelationshipObject): void {

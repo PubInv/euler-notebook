@@ -29,7 +29,7 @@ import {
   StylePosition, DOCUMENT, PageId, HintData, HintStatus, HintRelationship,
 } from './notebook.js';
 import {
-  StyleChangeRequest, StyleDeleteRequest,
+  StyleDeleteRequest,
   StyleInsertRequest, StylePropertiesWithSubprops, StyleMoveRequest, NotebookChangeRequest, ChangeNotebookOptions,
 } from './math-tablet-api.js';
 import { ClientNotebook, TrackedChangesResults } from './client-notebook.js';
@@ -361,11 +361,6 @@ export class NotebookView {
 
   // Instance Methods
 
-  public async changeStyle(styleId: StyleId, data: any): Promise<void> {
-    const changeRequest: StyleChangeRequest = { type: 'changeStyle', styleId, data };
-    await this.sendUndoableChangeRequests([ changeRequest ]);
-  }
-
   public createCell(style: StyleObject, afterId: StyleRelativePosition): CellView {
     const cellView = createCellView(this, style);
     this.cellViews.set(style.id, cellView);
@@ -379,6 +374,12 @@ export class NotebookView {
     }
     this.$elt.removeChild(cellView.$elt);
     this.cellViews.delete(cellView.styleId);
+  }
+
+  // REVIEW: Should be limited to changing a single style so this isn't used as backdoor
+  //         for submitting arbitrary changes.
+  public async editStyle(changeRequests: NotebookChangeRequest[]): Promise<void> {
+    await this.sendUndoableChangeRequests(changeRequests);
   }
 
   public insertCell(cellView: CellView, afterId: StyleRelativePosition): void {
