@@ -237,7 +237,9 @@ describe("test symbol observer", function() {
     });
     it("a definition and a use creates a relationship if combined", async function(){
       const changeRequests = [insertRequest[0],insertRequest[1]];
-      await notebook.requestChanges('TEST', changeRequests);
+
+      await serializeChangeRequests(notebook,changeRequests);
+//      await notebook.requestChanges('TEST', changeRequests);
       const style = notebook.topLevelStyleOf(1);
       assert.deepEqual(style.type,
                        'WOLFRAM'
@@ -254,7 +256,8 @@ describe("test symbol observer", function() {
 
     it("deleting used doesn't fail", async function(){
       const changeRequests = [insertRequest[0],insertRequest[1]];
-      await notebook.requestChanges('TEST', changeRequests);
+      await serializeChangeRequests(notebook,changeRequests);
+//      await notebook.requestChanges('TEST', changeRequests);
       const style = notebook.topLevelStyleOf(1);
       assert.deepEqual(style.type,'WOLFRAM');
 
@@ -270,8 +273,13 @@ describe("test symbol observer", function() {
       // but still keep a linear chain.
       const changeRequests0 = [insertRequest[0],insertRequest[2]];
       const changeRequests1 = [insertRequest[3]];
-      await notebook.requestChanges('TEST', changeRequests0);
+      await serializeChangeRequests(notebook,changeRequests0);
+      console.log("two exes",notebook);
+      // We need a duplication relationship to show up here...
+      assert.equal(notebook.allRelationships().length,1);
+//      await notebook.requestChanges('TEST', changeRequests0);
       await notebook.requestChanges('TEST', changeRequests1);
+      console.log("three exes",notebook);
 
       const style = notebook.topLevelStyleOf(1);
       assert.deepEqual(style.type,'WOLFRAM');

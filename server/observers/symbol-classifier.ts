@@ -24,7 +24,7 @@ const MODULE = __filename.split(/[/\\]/).slice(-1)[0].slice(0,-3);
 const debug = debug1(`server:${MODULE}`);
 
 import { NotebookChange, StyleObject, StyleId,
-         RelationshipObject, RelationshipProperties,
+         RelationshipObject, RelationshipId, RelationshipProperties,
          StyleDeleted,
          StyleMoved,
          FindRelationshipOptions,
@@ -58,12 +58,10 @@ export class SymbolClassifierObserver implements ObserverInstance {
   // Instance Methods
 
   public async onChangesAsync(changes: NotebookChange[]): Promise<NotebookChangeRequest[]> {
-    debug(`onChanges ${changes.length}`);
     const rval: NotebookChangeRequest[] = [];
     for (const change of changes) {
       await this.onChange(change, rval);
     }
-    debug(`onChanges returning ${rval.length} changes.`);
     return rval;
   }
 
@@ -89,7 +87,10 @@ export class SymbolClassifierObserver implements ObserverInstance {
   public async useTool(toolStyle: StyleObject): Promise<NotebookChangeRequest[]> {
     debug(`useTool ${this.notebook._path} ${toolStyle.id}`);
 
-    const fromId = this.notebook.topLevelStyleOf(toolStyle.data.origin_id).id;
+    // the origin_id is a relationship Id; we want a "From ID" in the
+    // style for the HINT, at least I think so if doing as a refactoring
+    const relationship = this.notebook.getRelationship(toolStyle.data.origin_id);
+    const fromId = this.notebook.topLevelStyleOf(relationship.fromId).id;
     const toId = this.notebook.reserveId();
 
     const data: HintData = {
@@ -244,6 +245,53 @@ export class SymbolClassifierObserver implements ObserverInstance {
     // should be removed.
     debug("RVAL deletion ====XXXX",rval);
   }
+  private async recomputeTools(relId: RelationshipId,
+                               fromId: StyleId,
+                               toId: StyleId,
+                               rval: NotebookChangeRequest[])
+  : Promise<NotebookChangeRequest[]> {
+    debug("BEGINNING TOOL ADD");
+
+    const fromS = this.notebook.getStyle(fromId);
+    const toTopS = this.notebook.topLevelStyleOf(toId);
+    debug("To Top",toTopS.id);
+    const toEval = this.notebook.findStyle({role: 'EVALUATION', type: 'WOLFRAM',recursive: true },
+                                           toTopS.id);
+    debug("fromId",fromId);
+    if (!toEval) {
+      console.error("Could not find an EVALUATION WOLFRAM style");
+    } else {
+      debug("toEval",toEval.id);
+      const expr = toEval.data;
+      const sub_expr =
+        constructSubstitution(expr,
+                              [{ name: fromS.data.name,
+                                 value: fromS.data.value}]);
+      const isolated = `InputForm[runPrivate[FullSimplify[${sub_expr}]]]`;
+      const substituted = await execute(isolated);
+      debug("substituted",substituted);
+      const toolInfo: ToolInfo = { name: "substitute",
+                                   html: sub_expr,
+                                   tex: substituted,
+                                   //                                        html: html_fun(f),
+                                   //                                        tex: tex_fun(tex_f),
+                                   data: substituted,
+                                   origin_id: relId};
+      const styleProps2: StylePropertiesWithSubprops = {
+        type: 'TOOL',
+        role: 'ATTRIBUTE',
+        data: toolInfo,
+      }
+      const changeReq2: StyleInsertRequest = {
+        type: 'insertStyle',
+        parentId: toEval.id,
+        styleProps: styleProps2
+      };
+      rval.push(changeReq2);
+    }
+    return rval;
+  }
+
 
   // Since a relationship may already exist and this code is trying to handle
   // both inserts and changes, we have to decide how we make sure there are not duplicates.
@@ -251,8 +299,13 @@ export class SymbolClassifierObserver implements ObserverInstance {
   // for this, to test that a change does not result int
   private async insertRule(change: StyleInserted | StyleChanged, rval: NotebookChangeRequest[]) : Promise<NotebookChangeRequest[]>  {
     const style = change.style;
+    return await this.insertFromStyleRule(style,rval);
+  }
 
-    debug("AAAA in insertRule",change);
+  private async insertFromStyleRule(style: StyleObject, rval: NotebookChangeRequest[]) : Promise<NotebookChangeRequest[]>  {
+//    const style = change.style;
+
+    debug("style insertFromStyleRule",style);
     var tlStyle;
     try {
       tlStyle = this.notebook.topLevelStyleOf(style.id);
@@ -271,27 +324,28 @@ export class SymbolClassifierObserver implements ObserverInstance {
       await this.removeAllCurrentSymbols(style,rval);
       await this.addSymbolUseStyles(style, rval);
       await this.addSymbolDefStyles(style, rval);
-//      await this.addEquationStyles(style,rval);
-      debug("BBB rval",rval);
+    } else if (style.type == 'SYMBOL') {
+      await this.recomputeInsertRelationships(tlid,style,rval);
     }
-    this.recomputeInsertRelationships(tlid,style,rval);
     return rval;
   }
 
+  // Insert relations related to type SYMBOL
   private async recomputeInsertRelationships(tlid: StyleId,
-                                       style: StyleObject,
-                                       rval: NotebookChangeRequest[])
+                                             style: StyleObject,
+                                             rval: NotebookChangeRequest[])
   : Promise<NotebookChangeRequest[]>
   {
-
     if (style.type == 'SYMBOL' && (style.role == 'SYMBOL-USE' || style.role == 'SYMBOL-DEFINITION')) {
       const name = (style.role == 'SYMBOL-USE') ?
-        style.data :
+        style.data.name :
         style.data.name;
       const relationsUse: RelationshipPropertiesMap =
         this.getAllMatchingNameAndType(name,'SYMBOL-USE');
       const relationsDef: RelationshipPropertiesMap =
         this.getAllMatchingNameAndType(name,'SYMBOL-DEFINITION');
+      debug("relationsUse",relationsUse);
+      debug("relationsDef",relationsDef);
       const relations = (style.role == 'SYMBOL-USE') ? relationsDef : relationsUse;
 
       // defs and uses below are ment to be toplevel styles that participate in
@@ -323,108 +377,48 @@ export class SymbolClassifierObserver implements ObserverInstance {
           uses.push(v);
       }
 
-      debug("defs",defs);
-      debug("uses",uses);
-      debug("rels",relations);
-
-      // I've completely forgotten what I intended here. This makes little sense now.
       if (relations) {
         const index = (style.role == 'SYMBOL-USE') ?
           this.getLatestOfListOfStyleIds(defs) :
           this.getLatestOfListOfStyleIds(uses);
         if (index >= 0) {
-          const props : RelationshipProperties = { role: 'SYMBOL-DEPENDENCY' };
-          const changeReq: RelationshipInsertRequest =
-            { type: 'insertRelationship',
-              fromId:
-              (style.role == 'SYMBOL-USE') ?
-              index :
-              style.id,
-              toId:
-              (style.role == 'SYMBOL-USE') ?
-              style.id :
-              index,
-              props: props };
+          const myFromId =
+            (style.role == 'SYMBOL-USE') ?
+            index :
+            style.id;
+          const myToId =
+            (style.role == 'SYMBOL-USE') ?
+            style.id :
+            index;
+
+
           debug('ZZZZZ');
-          debug(changeReq);
           debug(style.role);
-          const relOp : FindRelationshipOptions = { toId: changeReq.toId,
-                                                    fromId: changeReq.fromId,
+          const relOp : FindRelationshipOptions = { toId: myToId,
+                                                    fromId: myFromId,
                                                     role: 'SYMBOL-DEPENDENCY',
                                                     source: 'SYMBOL-CLASSIFIER' };
-          // Now I think we need to do something tricky...
-          // this is place to add a TOOL of substitution type.
-          // How we remove this when the relationship is broken
-          // may be a little tricky.
-          // 1) Add a tool here.
-          // 2) make it dependent on this relationship so
-          // that if we delete the relationship we can remove it.
-          // The tool should follow the relationship; that means
-          // that if the symbol changes the tool chould change.
-          // making that happen may be a little difficult.
-          // This tool should be added to the "EVALUTION WOLFRAM WOLFRAM" of the
-          // "to" object.
 
-          // (Actually we want to put the LaTeX in here, but that is a separate step!
-          {
-              debug("BEGINNING TOOL ADD");
-              const fromId = changeReq.fromId;
-              const toId = changeReq.toId;
-              const fromS = this.notebook.getStyle(fromId);
-              const toTopS = this.notebook.topLevelStyleOf(toId);
-            // Ideally this would be the latex of the formula
-            // with the substitution in place....that's
-            // a little tricky.
-            debug("To Top",toTopS.id);
-            const toEval = this.notebook.findStyle({role: 'EVALUATION', type: 'WOLFRAM',recursive: true },
-                                                     toTopS.id);
-              debug("fromId",fromId);
-              if (!toEval) {
-                console.error("Could not find an EVALUATION WOLFRAM style");
-              } else {
-                debug("toEval",toEval.id);
-                const expr = toEval.data;
-                const sub_expr =
-                  constructSubstitution(expr,
-                                        [{ name: fromS.data.name,
-                                           value: fromS.data.value}]);
-                const isolated = `InputForm[runPrivate[FullSimplify[${sub_expr}]]]`;
-                const substituted = await execute(isolated);
-                debug("substituted",substituted);
-                const toolInfo: ToolInfo = { name: "substitute",
-                                             html: sub_expr,
-                                             tex: substituted,
-                                             //                                        html: html_fun(f),
-                                             //                                        tex: tex_fun(tex_f),
-                                             data: substituted,
-                                             origin_id: fromId};
-                const styleProps2: StylePropertiesWithSubprops = {
-                  type: 'TOOL',
-                  role: 'ATTRIBUTE',
-                  data: toolInfo,
-                }
-                const changeReq2: StyleInsertRequest = {
-                  type: 'insertStyle',
-                  parentId: toEval.id,
-                  styleProps: styleProps2
-                };
-                rval.push(changeReq2);
-              }
-          }
 
           const relsInPlace : RelationshipObject[] = this.notebook.findRelationships(relOp);
 
           if (relsInPlace.length == 0) {
           // Check that the notebook already had this relationship,
-            // which may be cause by a change change rather than an insertion...
-
+          const props : RelationshipProperties = { role: 'SYMBOL-DEPENDENCY'
+                                                 };
+          const changeReq: RelationshipInsertRequest =
+            { type: 'insertRelationship',
+              fromId: myFromId,
+              toId: myToId,
+              props: props };
+          debug(changeReq);
           rval.push(
             changeReq
           );
           }
         }
       }
-
+        debug("ZZZZZZZ role",style.role);
       // Now we need to check for inconsistency;
       if (style.role == 'SYMBOL-DEFINITION') {
 
@@ -438,6 +432,7 @@ export class SymbolClassifierObserver implements ObserverInstance {
           if (v < style.id)
             defs.push(v);
         }
+        debug("ZZZZZZZ defs",defs);
         if (defs.length >= 1) {
           const dup_prop : RelationshipProperties =
             { role: 'DUPLICATE-DEFINITION' };
@@ -464,7 +459,6 @@ export class SymbolClassifierObserver implements ObserverInstance {
   }
 
     private async moveRule(change: StyleMoved, rval: NotebookChangeRequest[]) : Promise<NotebookChangeRequest[]>  {
-      debug("AAAA in moveRule",change);
 
       // Now trying to implement this using our recomputation capability...
       // we will remove all relationship references to this name,
@@ -528,7 +522,6 @@ export class SymbolClassifierObserver implements ObserverInstance {
   private async onChange(change: NotebookChange, rval: NotebookChangeRequest[]): Promise<void> {
     if (change == null) return;
 
-    debug(`onChange ${this.notebook._path} ${change.type}`);
     switch (change.type) {
       case 'styleDeleted': {
         this.deleteRule(change,rval);
@@ -540,27 +533,74 @@ export class SymbolClassifierObserver implements ObserverInstance {
       }
       case 'styleChanged': {
         await this.insertRule(change,rval);
-        debug("change RVAL =========",rval);
         break;
       }
       case 'styleInserted': {
         await this.insertRule(change,rval);
-        debug("insert RVAL =========",rval);
         break;
-        }
+      }
+        // This is pretty awful; this is just an experiment for now.
+      case 'relationshipInserted': {
+        await this.relationshipInsertedRule(change.relationship, rval);
+        break;
+      }
+      case 'relationshipDeleted': {
+        await this.relationshipDeletedRule(change.relationship, rval);
+        break;
+      }
     }
   }
 
-  // refactor this to be style independent so that we can figure it out later
-  // private async addEquationStyles(style: StyleObject, rval: NotebookChangeRequest[]): Promise<void> {
+
+  // ===================== //
+  // We need a way to invalidate and remove tools. Probably
+  // the best way to do this is based on Relationship ID.
+  // Therefore I'm passing a relationship to put in
+  // the origin of the tool.
+  // ===================== //
+  private async removeToolsDependentOnRel(relationship: RelationshipObject,
+                                          rval: NotebookChangeRequest[]): Promise<void> {
+    // Although PROBABLY only the from and to styles in the relatinship
+    // depend on this, that might not be true...for example a hint.
+    // At this writing, FindStyleOptions doesn't support looking into
+    // the data. Making that an optional lambda expression
+    // is probably a good idea for efficiency and concision. TODO!
+    // In fact we could explicitly make a "depends on" set in the style
+    // that names a set of ids (either relationships or styles) on which
+    // the style depends.
+    const children = this.notebook.findStyles({ type: 'TOOL',
+                                                source: 'SYMBOL-CLASSIFIER',
+                                                recursive: true }
+                                              );
+    children.forEach( kid => {
+      if ((kid.data.origin_id == relationship.id)) {
+        const deleteReq : StyleDeleteRequest = { type: 'deleteStyle',
+                                                 styleId: kid.id };
+        rval.push(deleteReq);
+      };
+    });
+  }
 
 
-  // }
+
+  private async relationshipInsertedRule(relationship: RelationshipObject, rval: NotebookChangeRequest[]): Promise<NotebookChangeRequest[]> {
+
+    if (relationship.role == 'SYMBOL-DEPENDENCY') {
+      await this.recomputeTools(relationship.id,relationship.fromId,
+                              relationship.toId,
+                              rval);
+    }
+    return rval;
+  }
+  private async relationshipDeletedRule(relationship: RelationshipObject, rval: NotebookChangeRequest[]): Promise<NotebookChangeRequest[]> {
+
+    await this.removeToolsDependentOnRel(relationship,
+                              rval);
+    return rval;
+  }
   private async addSymbolDefStyles(style: StyleObject, rval: NotebookChangeRequest[]): Promise<void> {
-    debug('addSymbolDefStyles',style.data);
     const script = `FullForm[Hold[${style.data}]]`;
     const result = await execute(script);
-    debug('CCC result',result);
     if (!result) { return; }
     if (result.startsWith("Hold[Set[")) {
       // WARNING! TODO!  This may work but will not match
@@ -569,8 +609,6 @@ export class SymbolClassifierObserver implements ObserverInstance {
       const name_matches = name_matcher.exec(result);
       const value_matcher = /,\s+(.+)\]\]/g;
       const value_matches = value_matcher.exec(result);
-      debug(`name_matches ${name_matches}`);
-      debug(`value_matches ${value_matches}`);
       if (name_matches && value_matches) {
         // We have a symbol definition.
         const name = name_matches[1];
@@ -678,7 +716,6 @@ export class SymbolClassifierObserver implements ObserverInstance {
 
 
             const data = { lhs: lw, rhs: rw };
-            debug("slhs,srhs",lw, rw);
 
             var styleProps: StylePropertiesWithSubprops;
             styleProps = {
@@ -706,13 +743,10 @@ export class SymbolClassifierObserver implements ObserverInstance {
       const script = `runPrivate[Variables[` + math + `]]`;
       const oresult = await execute(script);
       if (!oresult) { return []; }
-      debug("BEFORE: "+oresult);
       const result = draftChangeContextName(oresult);
-      debug("CONTEXT REMOVED: "+result);
 
       // TODO: validate return value is in expected format with regex.
       const symbols = result.slice(1,-1).split(', ').filter( s => !!s)
-      debug(`symbols ${symbols}`);
       return symbols;
     }
   }
@@ -728,7 +762,6 @@ export class SymbolClassifierObserver implements ObserverInstance {
             otherStyle.role == useOrDef &&
             otherStyle.data.name == name) {
           relationsFrom[otherStyle.id] = { role: 'SYMBOL-DEPENDENCY' };
-          debug(`Inserting relationship`);
         }
       }
     } else {
@@ -813,7 +846,6 @@ export class SymbolClassifierObserver implements ObserverInstance {
 
   private async  addSymbolUseStylesFromString(data: string,style: StyleObject, rval: NotebookChangeRequest[]): Promise<void> {
     const symbols = await this.findSymbols(data);
-    debug("SSS USES",data,symbols);
     symbols.forEach(s => {
       const relationsFrom: RelationshipPropertiesMap =
         this.getLatestMatchingNameAndType(s,'SYMBOL-DEFINITION');
