@@ -64,6 +64,12 @@ export interface ToolInfo {
   origin_id?: number;
 }
 
+export interface ToolData {
+  transformation: WolframData;
+  output: WolframData;
+  transformationName: string;
+}
+
 export interface RelationshipPropertiesMap {
   [id: /* StyleId */number]: RelationshipProperties;
 }

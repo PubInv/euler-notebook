@@ -23,18 +23,16 @@ import * as debug1 from 'debug';
 const MODULE = __filename.split(/[/\\]/).slice(-1)[0].slice(0,-3);
 const debug = debug1(`server:${MODULE}`);
 
-import { StyleType,NotebookChange, StyleObject, HintData, HintRelationship, HintStatus } from '../../client/notebook';
-import { ToolInfo, NotebookChangeRequest, StyleInsertRequest, StyleDeleteRequest, StylePropertiesWithSubprops, WolframData } from '../../client/math-tablet-api';
+import { StyleType,NotebookChange, StyleObject,
+         HintData, HintRelationship, HintStatus} from '../../client/notebook';
+import { ToolInfo, NotebookChangeRequest, StyleInsertRequest, StyleDeleteRequest, StylePropertiesWithSubprops, WolframData,
+         ToolData
+       } from '../../client/math-tablet-api';
 import { ServerNotebook, ObserverInstance } from '../server-notebook';
 import { execute,  convertWolframToTeX} from '../wolframscript';
 import { Config } from '../config';
 
 // Types
-
-interface ToolData {
-  transformation: WolframData;
-  output: WolframData;
-}
 
 // Exported Class
 
@@ -126,6 +124,7 @@ export class AlgebraicToolsObserver implements ObserverInstance {
       styleProps,
     };
 
+
     return [ hintReq, changeReq ];
   }
 
@@ -192,7 +191,7 @@ export class AlgebraicToolsObserver implements ObserverInstance {
     const tex_f : string = await convertWolframToTeX(output);
 
     // (Actually we want to put the LaTeX in here, but that is a separate step!
-    const data = { output, transformation };
+    const data = { output, transformation, transformationName: name };
     const toolInfo: ToolInfo = { name: name,
                                  html: html_fun(output),
                                  tex: tex_fun(tex_f),

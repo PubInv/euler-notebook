@@ -35,7 +35,7 @@ import { SymbolData, WolframData, NotebookChangeRequest, StyleInsertRequest,
          ToolInfo,
          StyleDeleteRequest,
          StylePropertiesWithSubprops, RelationshipPropertiesMap,
-         RelationshipInsertRequest,  isEmptyOrSpaces,
+         RelationshipInsertRequest,  isEmptyOrSpaces, ToolData
 //         RelationshipDeleteRequest
        } from '../../client/math-tablet-api';
 import { ServerNotebook, ObserverInstance } from '../server-notebook';
@@ -90,7 +90,8 @@ export class SymbolClassifierObserver implements ObserverInstance {
     // the origin_id is a relationship Id; we want a "From ID" in the
     // style for the HINT, at least I think so if doing as a refactoring
     const relationship = this.notebook.getRelationship(toolStyle.data.origin_id);
-    const fromId = this.notebook.topLevelStyleOf(relationship.fromId).id;
+    //    const fromId = this.notebook.topLevelStyleOf(relationship.fromId).id;
+    const fromId = relationship.fromId;
     const toId = this.notebook.reserveId();
 
     const data: HintData = {
@@ -120,7 +121,7 @@ export class SymbolClassifierObserver implements ObserverInstance {
       subprops: [{
         role: 'REPRESENTATION',
         type: 'WOLFRAM',
-        data: toolStyle.data.data,
+        data: toolStyle.data.data.output,
         subrole: 'INPUT',
         // REVIEW: Possibly this should be 'FACTORIZATION'
         // or some other meaning. 'INPUT' is a stop-gap
@@ -132,8 +133,22 @@ export class SymbolClassifierObserver implements ObserverInstance {
       // TODO: afterId should be ID of subtrivariate.
       styleProps,
     };
+    // At present, the tool name is the only data we will record
+    // about the transformation---in the future that might be enriched.
+    const tdata: ToolData =
+      { output : toolStyle.data.data.output,
+        transformation: toolStyle.data.data.transformation,
+        transformationName: toolStyle.data.name };
+    const props : RelationshipProperties = { role: 'TRANSFORMATION',
+                                             data: tdata };
 
-    return [ hintReq, changeReq ];
+    const relReq : RelationshipInsertRequest = { type: 'insertRelationship',
+                     fromId: fromId,
+                     toId: toId,
+                     props: props
+                   };
+
+    return [ hintReq, changeReq, relReq ];
   }
 
   // --- PRIVATE ---
@@ -299,7 +314,10 @@ export class SymbolClassifierObserver implements ObserverInstance {
                                    tex: substituted,
                                    //                                        html: html_fun(f),
                                    //                                        tex: tex_fun(tex_f),
-                                   data: substituted,
+                                   data: { output: substituted,
+                                           transformation: isolated,
+                                           trabsformationName: "substitute"
+                                         },
                                    origin_id: relId};
       const styleProps2: StylePropertiesWithSubprops = {
         type: 'TOOL',
