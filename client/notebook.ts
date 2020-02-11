@@ -177,6 +177,8 @@ export interface RelationshipMap {
 export interface RelationshipProperties {
   id?: StyleId;
   role: RelationshipRole;
+  status?: HintStatus;
+  logic?: HintRelationship;
   data?: any;
 }
 
@@ -490,7 +492,9 @@ export class Notebook {
     //         so we could obtain an iterator over the values, and not have to
     //         construct an intermediate array.
     for (const relationship of <RelationshipObject[]>Object.values(this.relationshipMap)) {
-      if ((options.fromId || options.toId) && relationship.fromId != options.fromId && relationship.toId != options.toId) { continue; }
+      //      if ((options.fromId || options.toId) && relationship.fromId != options.fromId && relationship.toId != options.toId) { continue; }
+      if ((options.fromId) && relationship.fromId != options.fromId) { continue; }
+      if ((options.toId) && relationship.toId != options.toId) { continue; }
       if (options.source && relationship.source != options.source) { continue; }
       if (options.role && relationship.role != options.role) { continue; }
       rval.push(relationship);
@@ -571,7 +575,9 @@ export class Notebook {
 
   private relationshipToHtml(relationship: RelationshipObject): Html {
     const dataJson = (typeof relationship.data != 'undefined' ? escapeHtml(JSON.stringify(relationship.data)) : 'undefined' );
-    return `<div><span class="leaf">R${relationship.id} ${relationship.fromId} &#x27a1; ${relationship.toId} ${relationship.role} ${dataJson}</span></div>`;
+    const logic = relationship.logic;
+    const status = relationship.status;
+    return `<div><span class="leaf">R${relationship.id} ${relationship.fromId} &#x27a1; ${relationship.toId} ${relationship.role} ${dataJson} logic: ${logic} status: ${status}</span></div>`;
   }
 
   private styleToHtml(style: StyleObject): Html {

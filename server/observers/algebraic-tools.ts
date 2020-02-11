@@ -24,9 +24,14 @@ const MODULE = __filename.split(/[/\\]/).slice(-1)[0].slice(0,-3);
 const debug = debug1(`server:${MODULE}`);
 
 import { StyleType,NotebookChange, StyleObject,
+         RelationshipObject,
+         RelationshipProperties,
+         FindRelationshipOptions,
          HintData, HintRelationship, HintStatus} from '../../client/notebook';
 import { ToolInfo, NotebookChangeRequest, StyleInsertRequest, StyleDeleteRequest, StylePropertiesWithSubprops, WolframData,
-         ToolData
+         ToolData,RelationshipInsertRequest,
+         RelationshipDeleteRequest,
+         StyleChangeRequest,
        } from '../../client/math-tablet-api';
 import { ServerNotebook, ObserverInstance } from '../server-notebook';
 import { execute,  convertWolframToTeX} from '../wolframscript';
@@ -101,12 +106,34 @@ export class AlgebraicToolsObserver implements ObserverInstance {
       styleProps: hintProps,
     };
 
+    // I believe the "id" in relationsFrom is not working below!!!
+    // const styleProps: StylePropertiesWithSubprops = {
+    //   role: 'FORMULA',
+    //   type: 'FORMULA-DATA',
+    //   data: undefined,
+    //   subprops: [{
+    //     id: toId,
+    //     role: 'REPRESENTATION',
+    //     type: 'WOLFRAM',
+    //     data: toolData.output,
+    //     subrole: 'INPUT',
+    //     // REVIEW: Possibly this should be 'FACTORIZATION'
+    //     // or some other meaning. 'INPUT' is a stop-gap
+    //     // to work with the current GUI.
+    //   }],
+    //   relationsFrom: {
+    //     [fromId]: { role: 'TRANSFORMATION',
+    //                 data: toolData,
+    //                 id: relId },
+    //   }
+    // };
+
     const styleProps: StylePropertiesWithSubprops = {
-      id: toId,
       role: 'FORMULA',
       type: 'FORMULA-DATA',
       data: undefined,
       subprops: [{
+        id: toId,
         role: 'REPRESENTATION',
         type: 'WOLFRAM',
         data: toolData.output,
@@ -115,20 +142,29 @@ export class AlgebraicToolsObserver implements ObserverInstance {
         // or some other meaning. 'INPUT' is a stop-gap
         // to work with the current GUI.
       }],
-      relationsFrom: {
-        [fromId]: { role: 'TRANSFORMATION',
-                    data: toolData,
-                    id: relId },
-      }
     };
+
     const changeReq: StyleInsertRequest = {
       type: 'insertStyle',
       // TODO: afterId should be ID of subtrivariate.
       styleProps,
     };
 
+    const relProps : RelationshipProperties =
+      { role: 'TRANSFORMATION',
+        data: toolData,
+        id: relId,
+        logic: HintRelationship.Equivalent,
+        status: HintStatus.Correct,
+      };
 
-    return [ hintReq, changeReq ];
+    const relReq: RelationshipInsertRequest =
+      { type: 'insertRelationship',
+        fromId: fromId,
+        toId: toId,
+        props: relProps };
+
+    return [ hintReq, changeReq, relReq ];
   }
 
   // --- PRIVATE ---
@@ -148,10 +184,14 @@ export class AlgebraicToolsObserver implements ObserverInstance {
   private async onChange(change: NotebookChange, rval: NotebookChangeRequest[]): Promise<void> {
     debug(`onChange ${this.notebook._path} ${change.type}`);
     switch (change.type) {
-      case 'styleInserted':
-      case 'styleChanged':
-        await this.algebraicToolsRule(change.style, rval);
+      case 'styleInserted': {
+        await this.algebraicToolsStyleInsertRule(change.style, rval);
         break;
+      }
+      case 'styleChanged': {
+        await this.algebraicToolsStyleChangeRule(change.style, rval);
+        break;
+      }
       // case 'relationshipInserted':
       //   await this.algebraicToolsChangedRule(change.relationship, rval);
       //   break;
@@ -177,7 +217,6 @@ export class AlgebraicToolsObserver implements ObserverInstance {
     //    const f = await this.factor(style.data);
     const input = transformation.replace('${expr}', style.data);
     const output = await execute(input);
-    debug("FFFFFFFFFF", output);
     if (this.effectiveEqual(output,style.data)) { // nothing interesting to do!
       return;
     }
@@ -227,11 +266,10 @@ export class AlgebraicToolsObserver implements ObserverInstance {
 
   }
 
-  private async algebraicToolsRule(style: StyleObject, rval: NotebookChangeRequest[]): Promise<void> {
+  private async algebraicToolsStyleInsertRule(style: StyleObject, rval: NotebookChangeRequest[]): Promise<void> {
 
     if (style.type != 'WOLFRAM' || style.role != 'EVALUATION') { return; }
 
-    this.removeAllOffspringOfType(style,rval,'TOOL');
     // TODO: collect these strings in some way so that
     // if they are duplicates (which happens often), we add only
     // one tool for them.
@@ -269,91 +307,97 @@ export class AlgebraicToolsObserver implements ObserverInstance {
                              "InputForm[Apart[${expr}]]",
                              "apart",
                              (s : string) => `Apart: ${s}`,
-                       (s : string) => `\\text{Apart: } ${s}`);
+                         (s : string) => `\\text{Apart: } ${s}`);
   }
 
-  // private async algebraicToolsChangedRule(relationship: RelationshipObject, rval: NotebookChangeRequest[]): Promise<void> {
+  private async algebraicToolsStyleChangeRule(style: StyleObject, rval: NotebookChangeRequest[]): Promise<void> {
+    debug("cccc",style);
+    this.removeAllOffspringOfType(style,rval,'TOOL');
+    await this.algebraicToolsStyleInsertRule(style, rval);
 
-  //   if (relationship.role != 'SYMBOL-DEPENDENCY') return;
+    // The relationship will be tied to the Representation
 
-  //   debug("RELATIONSHIP",relationship);
+    // I think all of the above is correct, but now we wish to see
+    // if any relationships against that force us to
+    // First, we want to find all TRANSFORM relations that have
+    // a To clause mathing this style. They must be marked unverified.
+    const relOp : FindRelationshipOptions = {
+      toId: style.id,
+      role: 'TRANSFORMATION' };
 
-  //   var target_ancestor = null;
-  //   try {
-  //     target_ancestor = this.notebook.topLevelStyleOf(relationship.toId);
-  //   } catch (e) {
-  //     return;
-  //   }
-  //   if (target_ancestor == null) {
-  //     throw new Error("Could not find ancestor Thought: "+relationship.toId);
-  //     return;
-  //   }
 
-  //   // now we want to find any potentially (re)classifiable style on
-  //   // this ancestor thought...
+    const relsInPlace : RelationshipObject[] = this.notebook.findRelationships(relOp);
+    debug("AAA",relsInPlace);
 
-  //   const candidate_styles =
-  //     this.notebook.findStyles({ type: 'WOLFRAM', role: 'EVALUATION', recursive: true }, target_ancestor.id);
-  //   debug("candidate styles",candidate_styles);
-  //   // Not really sure what to do here if there is more than one!!!
-  //   // TODO: This can also be empty!!! The code below needs
-  //   // to respect this.
-  //   if (candidate_styles.length >= 1) {
-  //     // REVIEW: Does this need to be recursive?
-  //     const beforeChangeClassifiedAsSubTrivariate = this.notebook.hasStyle({ type: 'CLASSIFICATION', role: 'SUBTRIVARIATE', recursive: true }, candidate_styles[0].id);
-  //     debug(beforeChangeClassifiedAsSubTrivariate);
+    // TODO: Here we want to change the status, which we have not
+    // yet even moved to the relationship.
+    // Then we need to listen for a relationship change so that the
+    // hint can change appropriately.
 
-  //     // Now it is possible that any classifications need to be removed;
-  //     // it is also possible that that a new classification should be added.
+    relsInPlace.forEach(
+      r => {
+        // I guess since we don't have a relationshipChanged property,
+        // we need to delete this relationship and
+        // add another. We probably to publish a hint changed
+        // request as well.
+        const toId = this.notebook.reserveId();
+        const relId = this.notebook.reserveId();
+        const relProps : RelationshipProperties =
+          {
+            role: r.role,
+            data: r.data,
+            id: relId,
+            logic: HintRelationship.Equivalent,
+            status: HintStatus.Unknown,
+          };
 
-  //     // A simple thing would be to rmove all classifications and regenerate.
-  //     // However, we want to be as minimal as possible. I think we shold distinguish
-  //     // the case: Either we are adding a UNIVARIATE-QUADRATIC, or disqalifying one.
-  //     // So we should just check if this EVALAUTION is plottable. If so, we
-  //     // should make sure one exists, by adding a CLASSIFICATION if it does not.
-  //     // if one does exist, we whold remove it if we are not.
-  //     const unique_style = candidate_styles[0];
+        const relReq: RelationshipInsertRequest =
+          { type: 'insertRelationship',
+            fromId: r.fromId,
+            toId: toId,
+            props: relProps };
+        rval.push(relReq);
 
-  //     var isSubTrivariate;
-  //     try {
-  //       // here I attempt to find the dependency relationships....
-  //       const rs = this.notebook.getSymbolStylesIDependOn(unique_style);
-  //       debug("RS ",rs);
-  //       // Now each member of rs should have a name and a value
-  //       // that we should use in our quadratic classification....
-  //       isSubTrivariate = await isExpressionSubTrivariate(unique_style.data,rs);
-  //       debug("SUBTRI CLASSIFER SAYS:",isSubTrivariate);
-  //     } catch (e) {
-  //       debug("MATHEMATICA EVALUATION FAILED :",e);
-  //     }
-  //     debug("IS PLOTTABLE",isSubTrivariate);
-  //     debug("IS BEFOREQUDRATIC",beforeChangeClassifiedAsSubTrivariate);
-  //     if (isSubTrivariate && !beforeChangeClassifiedAsSubTrivariate) {
-  //       const styleProps: StylePropertiesWithSubprops = {
-  //         type: 'CLASSIFICATION',
-  //         data: isSubTrivariate,
-  //         role: 'SUBTRIVARIATE',
-  //         //          exclusiveChildTypeAndMeaning: true,
-  //       }
-  //       const changeReq: StyleInsertRequest = {
-  //         type: 'insertStyle',
-  //         parentId: unique_style.id,
-  //         styleProps,
-  //       };
-  //       rval.push(changeReq);
-  //     }
-  //     if (!isSubTrivariate && beforeChangeClassifiedAsSubTrivariate) {
-  //       debug("CHOOSING DELETION");
-  //       const classifications =
-  //         this.notebook.findStyles({ type: 'CLASSIFICATION', role: 'SUBTRIVARIATE', recursive: true }, target_ancestor.id);
-  //       const changeReq: StyleDeleteRequest = {
-  //         type: 'deleteStyle',
-  //         styleId: classifications[0].id
-  //       };
-  //       rval.push(changeReq);
-  //     }
-  //   }
-  // }
+        const deleteReq : RelationshipDeleteRequest = {
+          type: 'deleteRelationship',
+          id: r.id
+        };
+        rval.push(deleteReq);
+
+// Now we find the HINT
+        const hintStyle =
+          this.notebook.findStyles({ type: 'HINT-DATA',
+                                    role: 'HINT',
+                                    recursive: true,
+                                   }).find(s =>
+                                           s.data.idOfRelationshipDecorated == r.id );
+        if (hintStyle) {
+
+        const data: HintData = {
+          relationship: HintRelationship.Equivalent,
+          status: HintStatus.Unknown,
+          idOfRelationshipDecorated: relId
+        };
+
+        const hintReq: StyleChangeRequest = {
+          styleId: hintStyle.id,
+          type: 'changeStyle',
+          data,
+        };
+          rval.push(hintReq);
+        } else {
+          console.error("internal error");
+        }
+    }
+
+    );
+    debug("PUSHES",rval);
+
+
+// Now the hint won't redraw unless we listen for this change or submit..
+
+  }
+
+  // Helper Functions
+
 }
-
-// Helper Functions
