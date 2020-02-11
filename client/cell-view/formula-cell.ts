@@ -47,7 +47,58 @@ export class FormulaCellView extends CellView {
   // Instance Methods
 
   public render(style: StyleObject): void {
-    this.renderFormula(style); // TODO: Expand inline.
+    this.$prefix.innerHTML = style.subrole ? FORMULA_SUBROLE_PREFIX.get(style.subrole!)! : '';
+
+    // Look for a LATEX REPRESENTATION.
+    let repStyle = this.notebookView.openNotebook.findStyle({ role: 'REPRESENTATION', type: 'LATEX' }, style.id);
+
+    let html: Html|undefined
+    if (repStyle) {
+      let errorHtml: Html|undefined;
+      // Render the formula data.
+      const renderer = getRenderer(repStyle.type);
+      ({ html, errorHtml } = renderer(repStyle.data));
+      if (errorHtml) {
+        html = `<div class="error">${errorHtml}</div><tt>${escapeHtml(style.data.toString())}</tt>`;
+      }
+    } else {
+      html = "<i>No TeX representations for formula</i>";
+    }
+
+    // Render Wolfram evaluation if it exists.
+    // REVIEW: Rendering evaluation annotations should probably be
+    //         done separately from rendering the formula,
+    //         but for now, for lack of a better place to put them,
+    //         we are just appending the evaluation
+    //         to the end of the formula.
+    {
+      const findOptions: FindStyleOptions = { role: 'EVALUATION', recursive: true };
+      const evaluationStyles = this.notebookView.openNotebook.findStyles(findOptions, style.id);
+      for (const evaluationStyle of evaluationStyles) {
+        // HACK ALERT: We only take evaluations that are numbers:
+        const evalStr = evaluationStyle.data.toString();
+        if (/^\d+$/.test(evalStr)) {
+          html += ` [=${evalStr}]`;
+        }
+      }
+    }
+
+    // Render list of equivalent styles, if there are any.
+    // REVIEW: Rendering equivalency annotations should probably be
+    //         done separately from rendering the formula,
+    //         but for now, for lack of a better place to put them,
+    //         we are just appending the list of equivalent formulas
+    //         to the end of the formula.
+    {
+      const findOptions: FindRelationshipOptions = { fromId: style.id, toId: style.id, role: 'EQUIVALENCE' };
+      const relationships = this.notebookView.openNotebook.findRelationships(findOptions);
+      const equivalentStyleIds = relationships.map(r=>(r.toId!=style.id ? r.toId : r.fromId)).sort();
+      if (equivalentStyleIds.length>0) {
+        html += ` {${equivalentStyleIds.join(', ')}}`;
+      }
+    }
+
+    this.$formula.innerHTML = html!;
   }
 
   public renderTools($tools: HTMLDivElement): void {
@@ -98,66 +149,5 @@ export class FormulaCellView extends CellView {
   private $prefix: HTMLDivElement;
 
   // Private Instance Methods
-
-  private renderFormula(style: StyleObject): void {
-
-    this.$prefix.innerHTML = style.subrole ? FORMULA_SUBROLE_PREFIX.get(style.subrole!)! : '';
-
-    // Look for a LATEX REPRESENTATION.
-    let repStyle = this.notebookView.openNotebook.findStyle({ role: 'REPRESENTATION', type: 'LATEX' }, style.id);
-    if (!repStyle) {
-      repStyle = this.notebookView.openNotebook.findStyle({ role: 'REPRESENTATION', subrole: 'INPUT' }, style.id);
-    }
-
-    let html: Html|undefined
-    if (repStyle) {
-      let errorHtml: Html|undefined;
-      // Render the formula data.
-      const renderer = getRenderer(repStyle.type);
-      ({ html, errorHtml } = renderer(repStyle.data));
-      if (errorHtml) {
-        html = `<div class="error">${errorHtml}</div><tt>${escapeHtml(style.data.toString())}</tt>`;
-      }
-    } else {
-      html = "<i>No renderable representations for formula</i>";
-    }
-
-    // Render Wolfram evaluation if it exists.
-    // REVIEW: Rendering evaluation annotations should probably be
-    //         done separately from rendering the formula,
-    //         but for now, for lack of a better place to put them,
-    //         we are just appending the evaluation
-    //         to the end of the formula.
-    {
-      const findOptions: FindStyleOptions = { role: 'EVALUATION', recursive: true };
-      const evaluationStyles = this.notebookView.openNotebook.findStyles(findOptions, style.id);
-      for (const evaluationStyle of evaluationStyles) {
-        // HACK ALERT: We only take evaluations that are numbers:
-        const evalStr = evaluationStyle.data.toString();
-        if (/^\d+$/.test(evalStr)) {
-          html += ` [=${evalStr}]`;
-        }
-      }
-    }
-
-    // Render list of equivalent styles, if there are any.
-    // REVIEW: Rendering equivalency annotations should probably be
-    //         done separately from rendering the formula,
-    //         but for now, for lack of a better place to put them,
-    //         we are just appending the list of equivalent formulas
-    //         to the end of the formula.
-    {
-      const findOptions: FindRelationshipOptions = { fromId: style.id, toId: style.id, role: 'EQUIVALENCE' };
-      const relationships = this.notebookView.openNotebook.findRelationships(findOptions);
-      const equivalentStyleIds = relationships.map(r=>(r.toId!=style.id ? r.toId : r.fromId)).sort();
-      if (equivalentStyleIds.length>0) {
-        html += ` {${equivalentStyleIds.join(', ')}}`;
-      }
-    }
-
-    this.$formula.innerHTML = html!;
-  }
-
-  // PRIVATE EVENT HANDLERS
 
 }

@@ -23,7 +23,6 @@ import { StyleObject } from '../notebook.js';
 import { NotebookView } from '../notebook-view.js';
 
 import { CellView } from './index';
-import { StylusCell } from './stylus-cell.js';
 import { FormulaCellView } from './formula-cell.js';
 import { HintCellView } from './hint-cell.js';
 import { PlotCellView } from './plot-cell.js';
@@ -37,22 +36,17 @@ export function createCellView(notebookView: NotebookView, style: StyleObject): 
 
   // If a style has a child of REPRESENTATION|INPUT/STROKES then use a stylus cell.
   let rval: CellView;
-  const hasStrokes = notebookView.openNotebook.hasStyle({ role: 'REPRESENTATION', subrole: 'INPUT', type: 'STROKES' }, style.id);
-  if (hasStrokes) {
-    rval = StylusCell.create(notebookView, style);
-  } else {
-    switch(style.role) {
-      case 'FIGURE':  // TODO: rval = FiguireCellView.create(notebookView, style); break;
-      case 'FORMULA': rval = FormulaCellView.create(notebookView, style); break;
-      case 'HINT':    rval = HintCellView.create(notebookView, style); break;
-      case 'TEXT':    rval = TextCellView.create(notebookView, style); break;
-      case 'PLOT':    rval = PlotCellView.create(notebookView, style); break;
-      // HACK: We don't actually know an 'UNKNOWN' cell will end up being a stylus cell until
-      // the REPRESENTATION|INPUT/STROKES style is attached, but this prevents us from needing
-      // the extra machinery to defer creating the cell until the substyles have been attached.
-      case 'UNKNOWN': rval = StylusCell.create(notebookView, style); break;
-      default: throw new Error(`Unknown top-level cell role: ${style.role}`);
-    }
+  switch(style.role) {
+    case 'FIGURE':  // TODO: rval = FiguireCellView.create(notebookView, style); break;
+    case 'FORMULA': rval = FormulaCellView.create(notebookView, style); break;
+    case 'HINT':    rval = HintCellView.create(notebookView, style); break;
+    case 'TEXT':    rval = TextCellView.create(notebookView, style); break;
+    case 'PLOT':    rval = PlotCellView.create(notebookView, style); break;
+    // HACK: We don't actually know an 'UNKNOWN' cell will end up being a stylus cell until
+    // the REPRESENTATION|INPUT/STROKES style is attached, but this prevents us from needing
+    // the extra machinery to defer creating the cell until the substyles have been attached.
+    // LATER?: case 'UNKNOWN': rval = UnknownCellView.create(notebookView, style); break;
+    default: throw new Error(`Unknown top-level cell role: ${style.role}`);
   }
   return rval;
 }
