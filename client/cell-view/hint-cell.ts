@@ -54,36 +54,46 @@ export class HintCellView extends CellView {
     }
 
     const hintData = <HintData>style.data;
-
     let relationshipMark: string;
-    switch(hintData.relationship) {
-      case HintRelationship.Unknown: relationshipMark = ""; break;
-      case HintRelationship.Equivalent: relationshipMark = "&#x2261 "; break;
-      case HintRelationship.NotEquivalent: relationshipMark = "&#x2262 "; break;
-      case HintRelationship.Implies: relationshipMark = "&#x221D2 "; break;
-      case HintRelationship.ImpliedBy: relationshipMark = "&#x21D0 "; break;
-      default: throw new Error('Unexpected.');
-    }
-
     let statusMark: string;
-    if (hintData.relationship == HintRelationship.Unknown) {
-      statusMark = '';
+
+    if (typeof hintData === 'string' || hintData instanceof String) {
+      relationshipMark = "???";
+      statusMark = '<b style="color:blue"><i>?</i></b> ';
     } else {
-      switch(hintData.status) {
-        case HintStatus.Unknown: statusMark = '<b style="color:blue"><i>?</i></b> '; break;
-        case HintStatus.Correct: statusMark = '<span style="color:green">&#x2714;</span> '; break;
-        case HintStatus.Incorrect: statusMark = '<span style="color:red">&#x2718;</span> '; break;
-        default: throw new Error('Unexpected.');
+
+      switch(hintData.relationship) {
+        case HintRelationship.Unknown: relationshipMark = ""; break;
+        case HintRelationship.Equivalent: relationshipMark = "&#x2261 "; break;
+        case HintRelationship.NotEquivalent: relationshipMark = "&#x2262 "; break;
+        case HintRelationship.Implies: relationshipMark = "&#x221D2 "; break;
+        case HintRelationship.ImpliedBy: relationshipMark = "&#x21D0 "; break;
+        default: throw new Error('Unexpected relationship:'+ hintData.relationship);
+      }
+
+      if (hintData.relationship == HintRelationship.Unknown) {
+        statusMark = '';
+      } else {
+        switch(hintData.status) {
+          case HintStatus.Unknown: statusMark = '<b style="color:blue"><i>?</i></b> '; break;
+          case HintStatus.Correct: statusMark = '<span style="color:green">&#x2714;</span> '; break;
+          case HintStatus.Incorrect: statusMark = '<span style="color:red">&#x2718;</span> '; break;
+          default: throw new Error('Unexpected status:'+hintData.status);
+        }
       }
     }
     let innerHtml = `${relationshipMark}${statusMark}<i>${escapeHtml(repStyle.data||'blank')}</i> `;
     const precedingStyleId = this.notebookView.openNotebook.precedingStyleId(style.id);
-    const afterFrom = (precedingStyleId == hintData.fromId);
-    const followingStyleId = this.notebookView.openNotebook.followingStyleId(style.id);
-    const beforeTo = (followingStyleId == hintData.toId);
-    const inBetween =  afterFrom && beforeTo;
-    if (!inBetween) {
-      innerHtml =  `${innerHtml}: ${hintData.fromId} &#x290F; ${hintData.toId}`;
+    const hintedRelId : number | undefined = hintData.idOfRelationshipDecorated;
+    if (hintedRelId) {
+      const hintedRel = this.notebookView.openNotebook.getRelationship(hintedRelId);
+      const afterFrom = (precedingStyleId == hintedRel.fromId);
+      const followingStyleId = this.notebookView.openNotebook.followingStyleId(style.id);
+      const beforeTo = (followingStyleId == hintedRel.toId);
+      const inBetween =  afterFrom && beforeTo;
+      if (!inBetween) {
+        innerHtml =  `${innerHtml}: ${hintedRel.fromId} &#x290F; ${hintedRel.toId}`;
+      }
     }
     this.$elt.innerHTML = innerHtml;
   }

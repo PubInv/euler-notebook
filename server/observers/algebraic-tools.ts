@@ -81,11 +81,12 @@ export class AlgebraicToolsObserver implements ObserverInstance {
 
     const fromId = this.notebook.topLevelStyleOf(toolInfo.origin_id!).id;
     const toId = this.notebook.reserveId();
+    const relId = this.notebook.reserveId();
 
     const data: HintData = {
-      fromId, toId,
       relationship: HintRelationship.Equivalent,
       status: HintStatus.Correct,
+      idOfRelationshipDecorated: relId
     };
 
     const hintProps: StylePropertiesWithSubprops = {
@@ -115,7 +116,9 @@ export class AlgebraicToolsObserver implements ObserverInstance {
         // to work with the current GUI.
       }],
       relationsFrom: {
-        [fromId]: { role: 'TRANSFORMATION', data: toolData },
+        [fromId]: { role: 'TRANSFORMATION',
+                    data: toolData,
+                    id: relId },
       }
     };
     const changeReq: StyleInsertRequest = {

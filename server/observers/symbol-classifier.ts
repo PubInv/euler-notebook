@@ -93,12 +93,12 @@ export class SymbolClassifierObserver implements ObserverInstance {
     //    const fromId = this.notebook.topLevelStyleOf(relationship.fromId).id;
     const fromId = relationship.fromId;
     const toId = this.notebook.reserveId();
+    const relId = this.notebook.reserveId();
 
     const data: HintData = {
-      fromId,
-      toId,
-      relationship: HintRelationship.Equivalent,
+      relationship: HintRelationship.Implies,
       status: HintStatus.Correct,
+      idOfRelationshipDecorated: relId
     };
 
     const hintProps: StylePropertiesWithSubprops = {
@@ -140,13 +140,15 @@ export class SymbolClassifierObserver implements ObserverInstance {
         transformation: toolStyle.data.data.transformation,
         transformationName: toolStyle.data.name };
     const props : RelationshipProperties = { role: 'TRANSFORMATION',
+                                             id: relId,
                                              data: tdata };
 
-    const relReq : RelationshipInsertRequest = { type: 'insertRelationship',
-                     fromId: fromId,
-                     toId: toId,
-                     props: props
-                   };
+    const relReq : RelationshipInsertRequest =
+      { type: 'insertRelationship',
+        fromId: fromId,
+        toId: toId,
+        props: props
+      };
 
     return [ hintReq, changeReq, relReq ];
   }

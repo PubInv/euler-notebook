@@ -71,10 +71,11 @@ export interface FindStyleOptions {
 }
 
 export interface HintData {
-  fromId: StyleId,
+//  fromId: StyleId,
   relationship: HintRelationship,
   status: HintStatus,
-  toId: StyleId,
+  //  toId: StyleId,
+  idOfRelationshipDecorated? : RelationshipId;
 }
 
 export enum HintRelationship {
@@ -166,7 +167,8 @@ export type RelationshipRole =
   'SYMBOL-DEPENDENCY' |
   'DUPLICATE-DEFINITION' |
   'EQUIVALENCE' |
-  'TRANSFORMATION';
+  'TRANSFORMATION' |
+  'USER-DEFINED';
 
 export interface RelationshipMap {
   [id: /* RelationshipId */number]: RelationshipObject;

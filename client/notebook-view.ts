@@ -177,17 +177,18 @@ export class NotebookView {
     }
 
     const data: HintData = {
-      fromId,
-      toId,
       relationship: HintRelationship.Unknown,
       status: HintStatus.Unknown,
+//      idOfRelationshipDecorated: relId
     };
+
     const styleProps: StylePropertiesWithSubprops = {
       role: 'HINT', type: 'HINT-DATA', data,
       subprops: [
         { role: 'REPRESENTATION', subrole: 'INPUT', type: 'TEXT', data: "" },
       ]
     };
+
     const changeRequest: StyleInsertRequest = { type: 'insertStyle', afterId: fromId, styleProps };
     const undoChangeRequest = await this.sendUndoableChangeRequest(changeRequest);
     const styleId = (<StyleDeleteRequest>undoChangeRequest).styleId;
@@ -696,4 +697,3 @@ export class NotebookView {
 }
 
 // Helper Functions
-

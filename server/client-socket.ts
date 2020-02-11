@@ -110,7 +110,7 @@ export class ClientSocket {
     tracker?: Tracker,
   ): void {
     // REVIEW: verify that notebook is one of our opened ones?
-    if (!notebook._path) { throw new Error("Unexpected."); }
+    if (!notebook._path) { throw new Error("Unexpected #1."); }
     const msg: NotebookChanged = { type: 'notebookChanged', notebookPath: notebook._path, changes, complete, tracker, undoChangeRequests };
     this.sendMessage(msg);
   }
