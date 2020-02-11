@@ -93,7 +93,7 @@ export class KeyboardInputPanel {
     this.style = style;
     this.repStyle = repStyle;
 
-    this.$elt = $new('div', { class: 'keyboardInputPanel' });
+    this.$elt = $new('div', { class: 'inputPanel' });
 
     // Three rows: preview, error message, and input row.
     this.$preview = $new('div', { appendTo: this.$elt, class: 'preview' });
@@ -223,7 +223,6 @@ export class KeyboardInputPanel {
 
   private onRoleSelectorChange(event: Event /* REVIEW: More specific event? */): void {
     const role = <StyleRole>(<HTMLSelectElement>event.target).value;
-    console.dir(role);
     this.populateSubroleSelector(role);
     this.populateTypeSelector(role);
     // const subrole = 'UNKNOWN';
@@ -231,9 +230,8 @@ export class KeyboardInputPanel {
     // this.notebookView.openNotebook.sendChangeRequest(changeRequest, { wantUndo: true });
   }
 
-  private onSubroleSelectorChange(event: Event /* REVIEW: More specific event? */): void {
-    const subrole = <StyleSubrole>(<HTMLSelectElement>event.target).value;
-    console.dir(subrole);
+  private onSubroleSelectorChange(_event: Event /* REVIEW: More specific event? */): void {
+    // const subrole = <StyleSubrole>(<HTMLSelectElement>event.target).value;
     // TODO: Theoretically, preview should change.
   }
 

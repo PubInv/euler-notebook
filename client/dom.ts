@@ -148,7 +148,9 @@ function listenerError(err: Error, $elt: Element, eventName: EventName): void {
   for (let i = 0; i<$elt.classList.length; i++) {
     specifier += `.${$elt.classList.item(i)}`
   }
-  console.error(`Error in ${specifier} ${eventName} listener: ${err.message}`);
+  console.log(`Error in ${specifier} ${eventName} listener: ${err.message}`);
+  console.dir(err);
+
   // TODO: Throw???
   // TODO: Report error to the server.
   // TODO: Display error to the user.

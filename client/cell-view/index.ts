@@ -20,13 +20,14 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 // Requirements
 
 import { assert } from '../common.js';
-import { /* escapeHtml, */ $new, /* Html */} from '../dom.js';
+import { /* escapeHtml, */ $new, $, /* Html */} from '../dom.js';
 // import { getKatex } from '../katex-types.js';
 import { NotebookView } from '../notebook-view.js';
 import { KeyboardInputPanel } from '../keyboard-input-panel.js';
 import { StyleObject, StyleId, /* RelationshipObject */ } from '../notebook.js';
 import { NotebookChangeRequest } from '../math-tablet-api.js';
 // import { LatexData, ToolInfo, NameValuePair } from '../math-tablet-api.js';
+import { StylusInputPanel } from '../stylus-input-panel.js';
 
 // Exported Class
 
@@ -35,7 +36,6 @@ export abstract class CellView {
   // Class Constants
 
   static MISSING_ERROR = "<i>No primary representation.</i>";
-
 
   // Class Methods
 
@@ -58,24 +58,39 @@ export abstract class CellView {
     // REVIEW: Not completely sure we will not get double-clicks.
     //         We may need to stopPropagation or preventDefault
     //         in the right places.
-    assert(!this.keyboardInputPanel);
+    assert(!this.inputPanel);
 
     // Only allow editing of user input cells, which have a data type
     // that is string-based, with a renderer.
     const style = this.notebookView.openNotebook.getStyle(this.styleId);
     const repStyle = this.notebookView.openNotebook.findStyle({ role: 'REPRESENTATION', subrole: 'INPUT' }, this.styleId);
     if (!repStyle) { return false; }
-    if (typeof repStyle.data!='string') { return false; }
 
-    this.keyboardInputPanel = KeyboardInputPanel.create(
-      style,
-      repStyle,
-      (changes)=>this.onKeyboardInputPanelDismissed(changes)
-    );
-    this.$elt.parentElement!.insertBefore(this.keyboardInputPanel.$elt, this.$elt.nextSibling);
-    this.keyboardInputPanel.focus();
-    this.hide();
-    return true;
+    if (repStyle.type == 'STROKES') {
+      this.inputPanel = StylusInputPanel.create(
+        style,
+        repStyle,
+        (changes)=>this.onInputPanelDismissed(changes)
+      );
+    } else if (typeof repStyle.data=='string') {
+      this.inputPanel = KeyboardInputPanel.create(
+        style,
+        repStyle,
+        (changes)=>this.onInputPanelDismissed(changes)
+      );
+    } else {
+      // Not a cell we can edit.
+    }
+
+    if (this.inputPanel) {
+      $<HTMLDivElement>(document, '#tools').style.display = 'none';
+      this.$elt.parentElement!.insertBefore(this.inputPanel.$elt, this.$elt.nextSibling);
+      this.inputPanel.focus();
+      this.hide();
+      return true;
+    } else {
+      return false;
+    }
   }
 
   public render(style: StyleObject): void {
@@ -116,10 +131,10 @@ export abstract class CellView {
   }
 
   public unselect(): void {
-    if (this.keyboardInputPanel) {
+    if (this.inputPanel) {
       // 'dismiss' will call the callback function, onKeyboardInputPanelDismissed,
       // which will delete the keyboard input panel and show ourself.
-      this.keyboardInputPanel.dismiss(false);
+      this.inputPanel.dismiss(false);
     }
     this.$elt.classList.remove('selected');
   }
@@ -145,7 +160,7 @@ export abstract class CellView {
 
   // Private Instance Properties
 
-  protected keyboardInputPanel?: KeyboardInputPanel;
+  protected inputPanel?: KeyboardInputPanel|StylusInputPanel;
   protected notebookView: NotebookView;
 
   // Private Instance Methods
@@ -172,18 +187,19 @@ export abstract class CellView {
     }
   }
 
-  private onKeyboardInputPanelDismissed(changeRequests: NotebookChangeRequest[]): void {
+  private onInputPanelDismissed(changeRequests: NotebookChangeRequest[]): void {
     if (changeRequests.length>0) {
       this.notebookView.editStyle(changeRequests)
       .catch((err: Error)=>{
         // TODO: Display error to user?
-        console.error(`Error submitting keyboard input changes: ${err.message}`);
+        console.error(`Error submitting input changes: ${err.message}`);
       });
     }
-    this.$elt.parentElement!.removeChild(this.keyboardInputPanel!.$elt);
-    delete this.keyboardInputPanel;
+    this.$elt.parentElement!.removeChild(this.inputPanel!.$elt);
+    delete this.inputPanel;
 
     this.show();
+    $<HTMLDivElement>(document, '#tools').style.display = 'block';
     this.notebookView.setFocus();
   }
 

@@ -209,7 +209,7 @@ export class NotebookView {
       ],
     };
     const styleProps: StylePropertiesWithSubprops = {
-      role: 'UNKNOWN', type: 'UNKNOWN', data: null,
+      role: 'FORMULA', subrole: 'OTHER', type: 'FORMULA-DATA', data: null,
       subprops: [
         { role: 'REPRESENTATION', subrole: 'INPUT', type: 'STROKES', data }
       ]
@@ -217,11 +217,7 @@ export class NotebookView {
     const changeRequest: StyleInsertRequest = { type: 'insertStyle', afterId, styleProps };
     const undoChangeRequest = await this.sendUndoableChangeRequest(changeRequest);
     const styleId = (<StyleDeleteRequest>undoChangeRequest).styleId
-
-    const cellView = this.cellViewFromStyleId(styleId);
-    cellView.scrollIntoView();
-    this.selectCell(cellView);
-    this.setFocus();
+    this.startEditingCell(styleId);
   }
 
   public async insertKeyboardCellAbove(): Promise<void> {
