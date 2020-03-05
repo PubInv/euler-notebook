@@ -22,19 +22,19 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 // Requirements
 
-import { RelationshipProperties, StyleProperties, StyleId, NotebookChange, NotebookObject, StyleRelativePosition, StyleRole, StyleSubrole, StyleType } from './notebook.js';
+import { RelationshipProperties, StyleProperties, StyleId, NotebookChange, NotebookObject, StyleRelativePosition, StyleRole, StyleSubrole, StyleType, RelationshipStyle } from './notebook.js';
 
 // Types
 
 export type ImageData = string;
-export type LatexData = string;
+export type LatexData = string; // TODO: Rename TexExpression
 export type MathMlData = string;
 export type MthMtcaData = string;
-export type SvgData = string;
+export type SvgData = string; // TODO: Rename SvgMarkup
 export type Symbol = string;
-export type TextData = string;
+export type TextData = string; // TODO: Rename PlainText
 export type Tracker = string; // Tracking identifier supplied by the client.
-export type WolframData = string;
+export type WolframData = string; // TODO: Rename WolframExpression
 
 export interface SymbolData {
   name: string;
@@ -54,7 +54,7 @@ export type NotebookPath = string;
 // MyScript Types
 
 export type ToolName = string;
-export interface ToolInfo {
+export interface ToolData {
   name: ToolName;
   // REVIEW: This is a sum type, not a product type.
   //         i.e. we use either the html field or the tex field but never both.
@@ -64,7 +64,7 @@ export interface ToolInfo {
   origin_id?: number;
 }
 
-export interface ToolData {
+export interface TransformationToolData {
   transformation: WolframData;
   output: WolframData;
   transformationName: string;
@@ -102,7 +102,9 @@ export interface RelationshipDeleteRequest {
 export interface RelationshipInsertRequest {
   type: 'insertRelationship';
   fromId: StyleId;
+  inStyles: RelationshipStyle[];
   toId: StyleId;
+  outStyles: RelationshipStyle[];
   props: RelationshipProperties;
 }
 export interface StyleChangeRequest {

@@ -1,7 +1,7 @@
 [
-  { "type": "insertStyle", "styleProps": { "role": "FORMULA", "type": "FORMULA", "data": null, "subprops" : [{ "role": "REPRESENTATION", "subrole": "ALTERNATE", "type": "LATEX", "data": "x_1" }]}},
-  { "type": "insertStyle", "styleProps": { "role": "FORMULA", "type": "FORMULA", "data": null, "subprops" : [{ "role": "REPRESENTATION", "subrole": "ALTERNATE", "type": "LATEX", "data": "x_2" }]}},
-  { "type": "insertStyle", "styleProps": { "role": "FORMULA", "type": "FORMULA", "data": null, "subprops" : [{ "role": "REPRESENTATION", "subrole": "ALTERNATE", "type": "LATEX", "data": "x_3" }]}},
-  { "type": "insertStyle", "styleProps": { "role": "FORMULA", "type": "FORMULA", "data": null, "subprops" : [{ "role": "REPRESENTATION", "subrole": "ALTERNATE", "type": "LATEX", "data": "x_4" }]}},
-  { "type": "insertStyle", "styleProps": { "role": "FORMULA", "type": "FORMULA", "data": null, "subprops" : [{ "role": "REPRESENTATION", "subrole": "ALTERNATE", "type": "LATEX", "data": "x_5" }]}}
+  { "type": "insertStyle", "styleProps": { "role": "FORMULA", "type": "FORMULA-DATA", "data": { "wolframData": "x_1" }}},
+  { "type": "insertStyle", "styleProps": { "role": "FORMULA", "type": "FORMULA-DATA", "data": { "wolframData": "x_1" }}},
+  { "type": "insertStyle", "styleProps": { "role": "FORMULA", "type": "FORMULA-DATA", "data": { "wolframData": "x_1" }}},
+  { "type": "insertStyle", "styleProps": { "role": "FORMULA", "type": "FORMULA-DATA", "data": { "wolframData": "x_1" }}},
+  { "type": "insertStyle", "styleProps": { "role": "FORMULA", "type": "FORMULA-DATA", "data": { "wolframData": "x_1" }}}
 ]

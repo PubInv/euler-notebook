@@ -22,13 +22,16 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 // import * as debug1 from 'debug';
 // const MODULE = __filename.split(/[/\\]/).slice(-1)[0].slice(0,-3);
-// const debug = debug1(`server:${MODULE}`);
+// const debug = debug1(`tests:${MODULE}`);
 import { assert } from 'chai';
 import 'mocha';
 
 import { StyleType, VERSION }  from '../../client/notebook';
 import { NotebookChangeRequest, StyleInsertRequest, StylePropertiesWithSubprops } from '../../client/math-tablet-api';
 import { ServerNotebook }  from '../server-notebook';
+
+import { ensureGlobalLoaded } from './global';
+ensureGlobalLoaded();
 
 // Unit Tests
 
@@ -40,7 +43,7 @@ describe("notebook", function() {
     let td: ServerNotebook;
 
     before("Create a notebook with three styles", async function(){
-      td = await createNotebookFromText('TEXT', styleData.join(';'));
+      td = await createNotebookFromText('PLAIN-TEXT', styleData.join(';'));
     });
 
     it("Converts to and from a JSON object", async function() {
@@ -49,9 +52,9 @@ describe("notebook", function() {
         "nextId": 4,
         "relationshipMap": {},
         "styleMap": {
-          "1": { "data": "a", "id": 1, "role": "TEXT", "parentId": 0, "source": "TEST", "type": "TEXT", },
-          "2": { "data": "b", "id": 2, "role": "TEXT", "parentId": 0, "source": "TEST", "type": "TEXT", },
-          "3": { "data": "c", "id": 3, "role": "TEXT", "parentId": 0, "source": "TEST", "type": "TEXT", }
+          "1": { "data": "a", "id": 1, "role": "TEXT", "parentId": 0, "source": "TEST", "type": "PLAIN-TEXT", },
+          "2": { "data": "b", "id": 2, "role": "TEXT", "parentId": 0, "source": "TEST", "type": "PLAIN-TEXT", },
+          "3": { "data": "c", "id": 3, "role": "TEXT", "parentId": 0, "source": "TEST", "type": "PLAIN-TEXT", }
         },
         "styleOrder": [ 1, 2, 3 ],
         "version": VERSION,

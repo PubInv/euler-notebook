@@ -80,15 +80,6 @@ interface StyleOrderMapping {
 
 const MAX_CHANGE_ROUNDS = 10;
 
-// Helper Functions
-// TODO: Rewrite this to using findStyles
-export function assertHasStyle(styles: StyleObject[], type: StyleType, role: StyleRole, data: any): StyleObject {
-  const style = styles.find(s=>s.type==type && s.role==role && s.data==data);
-  assert.exists(style);
-  return style!;
-}
-
-
 // Exported Class
 
 export class ServerNotebook extends Notebook {
@@ -131,10 +122,19 @@ export class ServerNotebook extends Notebook {
     return notebook;
   }
 
+  public static deregisterObserver(source: StyleSource): void {
+    debug(`Deregistering observer: ${source}`);
+    this.observerClasses.delete(source);
+  }
+
   public static async open(notebookPath: NotebookPath): Promise<ServerNotebook> {
     // If the document is already open, then return the existing instance.
     const openNotebook = this.persistentNotebooks.get(notebookPath);
-    if (openNotebook) { return openNotebook; }
+    if (openNotebook) {
+      debug(`Opening in-memory notebook: "${notebookPath}"`);
+      return openNotebook;
+    }
+    debug(`Opening notebook from filesystem: "${notebookPath}"`)
     const json = await readNotebookFile(notebookPath);
     const notebook = await this.fromJSON(json, notebookPath);
     this.persistentNotebooks.set(notebookPath, notebook);
@@ -245,7 +245,7 @@ export class ServerNotebook extends Notebook {
           const status = styleObject.data.status;
           const relationship = styleObject.data.relationship;
 
-          const reps = this.findStyles({ type: 'TEXT', recursive: true }, tls);
+          const reps = this.findStyles({ type: 'PLAIN-TEXT', recursive: true }, tls);
           var hint = "";
           for(const r of reps) {
             hint += r.data;
@@ -256,7 +256,7 @@ export class ServerNotebook extends Notebook {
         }
       } else {
         // REVIEW: Does this search need to be recursive?
-        const latex = this.findStyles({ type: 'LATEX', recursive: true }, tls);
+        const latex = this.findStyles({ type: 'TEX-EXPRESSION', recursive: true }, tls);
         if (latex.length > 1) { // here we have to have some disambiguation
           retLaTeX += "ambiguous: " +displayFormula(latex[0].data);
         } else if (latex.length == 1) {  // here it is obvious, maybe...
@@ -265,7 +265,7 @@ export class ServerNotebook extends Notebook {
 
 
         // REVIEW: Does this search need to be recursive?
-        const image = this.findStyles({ type: 'IMAGE', role: 'PLOT', recursive: true }, tls);
+        const image = this.findStyles({ type: 'IMAGE-URL', role: 'PLOT', recursive: true }, tls);
         if (image.length > 0) {
           const plot = image[0];
           const apath = this.absoluteDirectoryPath();
@@ -284,7 +284,7 @@ export class ServerNotebook extends Notebook {
         // .svgs, but not necessarily, which allows the possibility
         // of photographs being included in output later.
         // REVIEW: Does this search need to be recursive?
-        const svgs = this.findStyles({ type: 'SVG', recursive: true }, tls);
+        const svgs = this.findStyles({ type: 'SVG-MARKUP', recursive: true }, tls);
 
         debug("SVGS:",svgs);
         debug("tlso:",styleObject);
@@ -427,21 +427,14 @@ export class ServerNotebook extends Notebook {
     const rs = this.allRelationships();
     var symbolStyles: StyleObject[] = [];
     const mp = this.topLevelStyleOf(style.id);
-    // TODO: Remove this check. topLevelStyleOf will throw error if style not found.
-    if (!mp) {
-      throw new Error(`INTERNAL ERROR: did not produce ancenstor: ${style.id}`);
-    }
     rs.forEach(r => {
-      try {  // TODO: I don't know why this can be an error....
+      try {
+        // TODO: I don't know why this can be an error....
         // doing a catch here seems to make it work but this is a concurrency
         // problem, one way or another...we should not have relationship
         // that is not pointing to something, though of course concurrent
         // operation makes this difficult.
         const rp = this.topLevelStyleOf(r.toId);
-        // TODO: Remove this check. topLevelStyleOf will throw error if style not found.
-        if (!rp) {
-          throw new Error(`INTERNAL ERROR: did not produce ancenstor: ${style.id}`);
-        }
         if (rp.id == mp.id) {
           // We are a user of this definition...
           try {
@@ -450,6 +443,11 @@ export class ServerNotebook extends Notebook {
             // REVIEW: Proper error handling??
             console.error(`GSSIDO Error: fromId ${r.fromId} missing (inner)`);
             // console.error(this);
+            // I believe now what we have "reserve" ids
+            // It should always be possible to remove this relation.
+            // The danger here is that we are covering up where these are
+            // coming from! REVIEW - rlr
+            this.deleteRelationship(r);
           }
 
         }
@@ -457,6 +455,7 @@ export class ServerNotebook extends Notebook {
         // REVIEW: Proper error handling??
         console.error(`GSSIDO Errior: fromId ${r.fromId} missing (outer)`);
         // console.error(this);
+        this.deleteRelationship(r);
       }
     });
     return symbolStyles;
@@ -555,7 +554,7 @@ export class ServerNotebook extends Notebook {
     tlso.forEach( tls => {
       // console.error("operating on tls:",tls);
       // REVIEW: Does this search need to be recursive?
-      const syms = this.findStyles({ type: 'SYMBOL', recursive: true }, tls);
+      const syms = this.findStyles({ type: 'SYMBOL-DATA', recursive: true }, tls);
       syms.forEach(sym => {
         const s = sym.data.name;
         symbols.add(s);
@@ -577,7 +576,7 @@ export class ServerNotebook extends Notebook {
     tlso.forEach( tls => {
       // console.error("operating on tls:",tls);
       // REVIEW: Does this search need to be recursive?
-      const syms = this.findStyles({ type: 'SYMBOL', recursive: true }, tls);
+      const syms = this.findStyles({ type: 'SYMBOL-DATA', recursive: true }, tls);
       syms.forEach(sym => {
         const s = sym.data.name;
         if (symbols.has(s)) {
@@ -615,12 +614,15 @@ export class ServerNotebook extends Notebook {
             // console.error("fromId for i",fromId,us[i]);
             // Since we are not at present injecting into the notebook,
             // the id will remain -1.
+            const toId = us[i].sid;
             var r : RelationshipObject = {
               source: 'TEST',
               id: -1,
-              fromId: fromId,
-              toId: us[i].sid,
+              fromId,
+              toId,
               role: 'SYMBOL-DEPENDENCY',
+              inStyles: [ { role: 'LEGACY', id: fromId } ],
+              outStyles: [ { role: 'LEGACY', id: toId } ],
             };
             rs.push(r);
           } else {
@@ -645,13 +647,16 @@ export class ServerNotebook extends Notebook {
         // Since we are not at present injecting into the notebook,
         // the id will remain -1.
         if (fromId) {
+          const toId = ds[i].sid;
           var r : RelationshipObject = {
             source: 'TEST',
             id: -1,
-            fromId: fromId,
-            toId: ds[i].sid,
+            fromId,
+            toId,
             role: 'DUPLICATE-DEFINITION',
-          };
+            inStyles: [ { role: 'LEGACY', id: fromId } ],
+            outStyles: [ { role: 'LEGACY', id: toId } ],
+        };
           rs.push(r);
         }
       }
@@ -662,6 +667,14 @@ export class ServerNotebook extends Notebook {
     // However, those are a function of evaluation, and so are quite different.
     return rs;
 
+  }
+
+  public async requestChange(
+    source: StyleSource,
+    changeRequest: NotebookChangeRequest,
+    options?: RequestChangesOptions,
+  ): Promise<NotebookChange[]> {
+    return this.requestChanges(source, [changeRequest], options);
   }
 
   public async requestChanges(
@@ -816,6 +829,8 @@ export class ServerNotebook extends Notebook {
       type: 'insertRelationship',
       fromId: relationship.fromId,
       toId: relationship.toId,
+      inStyles: [ { role: 'LEGACY', id: relationship.fromId } ],
+      outStyles: [ { role: 'LEGACY', id: relationship.toId } ],
       props: { role: relationship.role },
     }
     return undoChangeRequest;
@@ -843,6 +858,8 @@ export class ServerNotebook extends Notebook {
       source,
       fromId: request.fromId,
       toId: request.toId,
+      inStyles: request.inStyles,   // REVIEW: Make a copy of the array?
+      outStyles: request.outStyles, // REVIEW: Make a copy of the array?
       ...request.props,
     };
     const change: RelationshipInserted = { type: 'relationshipInserted', relationship };
@@ -985,6 +1002,18 @@ export class ServerNotebook extends Notebook {
       type: styleProps.type,
     };
     if (styleProps.subrole) { style.subrole = styleProps.subrole; }
+
+    // If exclusive flag is set then delete any other descendants that are of the same type and role.
+    // REVIEW: Does this search need to be recursive or can we limit it to children?
+    // TODO: Gather undo info for these delete requests.
+    if (styleProps.exclusiveChildTypeAndRole) {
+      const children = this.findStyles({ role: style.role, type: style.type, recursive: true }, parentId);
+      for (const child of children) {
+        const request2: StyleDeleteRequest = { type: 'deleteStyle', styleId: child.id };
+        this.applyStyleDeleteRequest(source, request2, rval);
+      }
+    }
+
     const change: StyleInserted =  { type: 'styleInserted', style, afterId };
     this.appendChange(source, change, rval);
 
@@ -997,30 +1026,33 @@ export class ServerNotebook extends Notebook {
 
     if (styleProps.relationsFrom) {
       for (const [idStr, props] of Object.entries(styleProps.relationsFrom)) {
-        const request2: RelationshipInsertRequest = { type: 'insertRelationship', fromId: parseInt(idStr, 10), toId: style.id, props };
+        const fromId = parseInt(idStr, 10);
+        const toId = style.id;
+        const request2: RelationshipInsertRequest = {
+          type: 'insertRelationship',
+          fromId,
+          toId,
+          inStyles: [ { role: 'LEGACY', id: fromId } ],
+          outStyles: [ { role: 'LEGACY', id: toId } ],
+          props
+        };
         this.applyRelationshipInsertRequest(source, request2, rval);
       }
     }
 
     if (styleProps.relationsTo) {
       for (const [idStr, props] of Object.entries(styleProps.relationsTo)) {
-        const request2: RelationshipInsertRequest = { type: 'insertRelationship', fromId: style.id, toId: parseInt(idStr, 10), props };
+        const fromId = style.id;
+        const toId = parseInt(idStr, 10);
+        const request2: RelationshipInsertRequest = {
+          type: 'insertRelationship',
+          fromId,
+          toId ,
+          inStyles: [ { role: 'LEGACY', id: fromId } ],
+          outStyles: [ { role: 'LEGACY', id: toId } ],
+          props
+        };
         this.applyRelationshipInsertRequest(source, request2, rval);
-      }
-    }
-
-    if (styleProps.exclusiveChildTypeAndRole) {
-      // REVIEW: Does this search need to be recursive?
-      const children = this.findStyles({ type: style.type, recursive: true }, parentId);
-
-      // console.log("KIDS FOUND OF PARENT",children);
-      // now in the set to be removed, remove ourself, and anyting with a different meaning
-      const toRemove = children.filter(c => ((c.id != parentId) && (c.id != style.id) && (c.role == style.role) && (c.type == style.type)));
-      // now remove the remainder
-      // console.log("TO REMOVE",toRemove);
-      for (const childToRemove of toRemove) {
-        const request2: StyleDeleteRequest = { type: 'deleteStyle', styleId: childToRemove.id };
-        this.applyStyleDeleteRequest(source, request2, rval);
       }
     }
 
@@ -1189,4 +1221,13 @@ export class ServerNotebook extends Notebook {
     await writeNotebookFile(this._path, json);
     this.saving = false;
   }
+}
+
+// Helper Functions
+
+// TODO: Rewrite this to using findStyles
+export function assertHasStyle(styles: StyleObject[], type: StyleType, role: StyleRole, data: any): StyleObject {
+  const style = styles.find(s=>s.type==type && s.role==role && s.data==data);
+  assert.exists(style);
+  return style!;
 }

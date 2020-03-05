@@ -25,9 +25,10 @@ const debug = debug1(`server:${MODULE}`);
 
 import { NotebookChange, StyleObject,
          RelationshipObject,
-         StyleId
+         StyleId,
+         FormulaData
        } from '../../client/notebook';
-import { ToolInfo, NotebookChangeRequest, StyleInsertRequest, StylePropertiesWithSubprops,
+import { ToolData, NotebookChangeRequest, StyleInsertRequest, StylePropertiesWithSubprops,
          StyleDeleteRequest,
          RelationshipPropertiesMap,
          NameValuePair
@@ -90,17 +91,13 @@ export class EquationSolverObserver implements ObserverInstance {
     //   relationsTo,
     // };
     debug("npv.value",nvp.value);
+    const wolframData = nvp.name + ' = ' + nvp.value;
+    const formulaData: FormulaData = { wolframData };
     const styleProps: StylePropertiesWithSubprops = {
       role: 'FORMULA',
       type: 'FORMULA-DATA',
-      data: undefined,
+      data: formulaData,
       relationsTo,
-      subprops: [{
-        role: 'REPRESENTATION',
-        subrole: 'ALTERNATE',
-        type: 'WOLFRAM',
-        data: nvp.name + ' = ' + nvp.value,
-      }],
     };
     const changeReq: StyleInsertRequest = {
         type: 'insertStyle',
@@ -147,7 +144,7 @@ export class EquationSolverObserver implements ObserverInstance {
 
     // We're looking for the EQUATION style...
     // REVIEW: Does this search need to be recursive?
-    const equationStyle = this.notebook.findStyle({ type: 'EQUATION', role: 'EQUATION-DEFINITION', recursive: true}, parent.id);
+    const equationStyle = this.notebook.findStyle({ type: 'EQUATION-DATA', role: 'EQUATION-DEFINITION', recursive: true}, parent.id);
     const newsolutions : NameValuePair[] = [];
     if (!equationStyle) {
   // In some cases, this is not really an error, I guess.
@@ -190,7 +187,7 @@ export class EquationSolverObserver implements ObserverInstance {
       debug(`sub_expr ${sub_expr}, ${variables}`);
 
       // REVIEW: Does this search need to be recursive?
-      const symbolUses = this.notebook.findStyles({ type: 'SYMBOL', role: 'SYMBOL-USE', recursive: true }, parent.id);
+      const symbolUses = this.notebook.findStyles({ type: 'SYMBOL-DATA', role: 'SYMBOL-USE', recursive: true }, parent.id);
 
       debug(`symbolUses ${symbolUses}`);
 
@@ -237,13 +234,13 @@ export class EquationSolverObserver implements ObserverInstance {
     debug("Equation Solver Tex", lhs,rhs);
     const tex_def = lhs + " = " + rhs;
 
-    const toolInfo: ToolInfo = { name: 'promote',
+    const toolData: ToolData = { name: 'promote',
                                  tex: tex_def,
                                  data: JSON.stringify(sol) };
     const styleProps2: StylePropertiesWithSubprops = {
-      type: 'TOOL',
+      type: 'TOOL-DATA',
       role: 'ATTRIBUTE',
-      data: toolInfo,
+      data: toolData,
     }
     const changeReq2: StyleInsertRequest = {
       type: 'insertStyle',
@@ -254,7 +251,7 @@ export class EquationSolverObserver implements ObserverInstance {
   }
 
   private async equationSolverRule(style: StyleObject, rval: NotebookChangeRequest[]): Promise<void> {
-    if (style.type != 'EQUATION' || style.role != 'EQUATION-DEFINITION') { return; }
+    if (style.type != 'EQUATION-DATA' || style.role != 'EQUATION-DEFINITION') { return; }
     debug("INSIDE SOLVER RULE :",style);
 
     const solutions : NameValuePair[] = await this.computeSolutionsOfThought(style);
@@ -290,7 +287,7 @@ export class EquationSolverObserver implements ObserverInstance {
       return;
     }
 
-      if (target_ancestor.type != 'EQUATION' || target_ancestor.role != 'EQUATION-DEFINITION') { return; }
+      if (target_ancestor.type != 'EQUATION-DATA' || target_ancestor.role != 'EQUATION-DEFINITION') { return; }
 
     // I'm just going to try to handle this as a straight recomputation...
     // The alternative would be to see if a definion has been inserted
@@ -299,7 +296,7 @@ export class EquationSolverObserver implements ObserverInstance {
     // So we find the TOOL style...might need to distinguish by source
     // but for now we will just find it.
     // REVIEW: Does this search need to be recursive?
-    const tools = this.notebook.findStyles({ type: 'TOOL', role: 'ATTRIBUTE', recursive: true }, target_ancestor.id);
+    const tools = this.notebook.findStyles({ type: 'TOOL-DATA', role: 'ATTRIBUTE', recursive: true }, target_ancestor.id);
     debug("tools in changed",tools);
     for(const tool of tools) {
       const changeReq: StyleDeleteRequest = {

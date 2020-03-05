@@ -38,18 +38,18 @@ export interface RenderResult {
 // Constants
 
 const RENDERERS = new Map<StyleType, Renderer>([
-  [ 'HTML',     htmlRenderer ],
-  [ 'LATEX',    latexRenderer ],
-  [ 'MATHML',   /* TODO: */ textRenderer ],
-  [ 'TEXT',     textRenderer ],
-  [ 'WOLFRAM',  /* TODO: */ textRenderer ],
+  [ 'HTML',               htmlRenderer ],
+  [ 'TEX-EXPRESSION',     latexRenderer ],
+  [ 'MATHML-XML',         /* TODO: */ textRenderer ],
+  [ 'PLAIN-TEXT',         textRenderer ],
+  [ 'WOLFRAM-EXPRESSION', /* TODO: */ textRenderer ],
 ]);
 
 // Exported Functions
 
 export function getRenderer(type: StyleType): Renderer {
   const rval = RENDERERS.get(type);
-  assert(rval);
+  assert(rval, `Cannot find renderer for type ${type}`);
   return rval!;
 }
 

@@ -21,7 +21,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 import debug1 from 'debug';
 
-import { BaseObserver, Rules } from './base-observer';
+import { BaseObserver, Rules, StyleRelation } from './base-observer';
 import { ServerNotebook } from '../server-notebook';
 import { SvgData } from '../../client/math-tablet-api';
 import { Stroke, DrawingData } from '../../client/notebook';
@@ -53,8 +53,9 @@ export class SvgObserver extends BaseObserver {
   private static RULES: Rules = [
     {
       name: "strokes-to-svg",
-      peerStyleTest: { role: 'REPRESENTATION', type: 'STROKES' },
-      props: { role: 'REPRESENTATION', subrole: 'ALTERNATE', type: 'SVG' },
+      styleTest: { role: 'REPRESENTATION', type: 'STROKE-DATA' },
+      styleRelation: StyleRelation.PeerToPeer,
+      props: { role: 'REPRESENTATION', type: 'SVG-MARKUP' },
       computeSync: SvgObserver.ruleConvertDrawingToSvg,
     },
   ];

@@ -21,7 +21,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 import * as debug1 from 'debug';
 import {
-  NotebookChange, StyleObject, FindStyleOptions, styleMatchesPattern, StyleProperties} from '../../client/notebook';
+  NotebookChange, StyleObject, FindStyleOptions, styleMatchesPattern, StyleProperties, StyleId} from '../../client/notebook';
 import { NotebookChangeRequest } from '../../client/math-tablet-api';
 import { ObserverInstance, ServerNotebook }  from '../server-notebook';
 import { Config } from '../config';
@@ -32,21 +32,31 @@ const debug = debug1(`server:${MODULE}`);
 
 // Types
 
+export enum StyleRelation {
+  ChildToParent = 0,
+  ParentToChild = 1,
+  PeerToPeer = 2,
+}
+
 type StyleTestFunction = (notebook: ServerNotebook, style: StyleObject)=>boolean;
 
 type StyleTest  = FindStyleOptions|StyleTestFunction;
 
 export type Rules = Rule[];
 
-// TYPESCRIPT: AsyncRule vs. SyncRule?
-// TYPESCRIPT: ParentRule vs. PeerRule?
-interface Rule {
+type Rule = AsyncRule | SyncRule
+interface BaseRule {
+  exclusiveChildTypeAndRole?: boolean;
   name: string;   // Rule name for debugging.
-  parentStyleTest?: StyleTest;
-  peerStyleTest?: StyleTest;
+  styleTest: StyleTest;
+  styleRelation: StyleRelation;
   props: Omit<StyleProperties, "data">;
-  computeSync?: (parentData: /* TYPESCRIPT: */any)=>/* TYPESCRIPT: */any|undefined;
-  computeAsync?: (parentData: /* TYPESCRIPT: */any)=>Promise</* TYPESCRIPT: */any|undefined>;
+}
+interface AsyncRule extends BaseRule {
+  computeAsync: (parentData: /* TYPESCRIPT: */any)=>Promise</* TYPESCRIPT: */any|undefined>;
+}
+interface SyncRule extends BaseRule {
+  computeSync: (parentData: /* TYPESCRIPT: */any)=>/* TYPESCRIPT: */any|undefined;
 }
 
 // Exported Class
@@ -67,52 +77,36 @@ export abstract class BaseObserver implements ObserverInstance {
     debug(`initialize`);
   }
 
-  // public static async onOpen(notebook: ServerNotebook): Promise<ObserverInstance> {
-  //   debug(`onOpen`);
-  //   return new this(notebook);
-  // }
-
   // Instance Methods
 
   public async onChangesAsync(changes: NotebookChange[]): Promise<NotebookChangeRequest[]> {
     // IMPORTANT: This code is identical to onChangesSync, except this code has awaits and that code doesn't.
-    debug(`onChangesAsync ${this.notebook._path} ${changes.length}`);
     const rval: NotebookChangeRequest[] = [];
-    for (const rule of this.rules) {
-      // If the rule is asynchronous, then don't bother.
-      if (!rule.computeAsync) { continue; }
-      // REVIEW: Can we just check rules once, instead of on every set of changes?
-      if (rule.parentStyleTest && rule.peerStyleTest) { throw new Error(`Rule has both parent and peer style tests.`); }
-      if (!rule.parentStyleTest && !rule.peerStyleTest) { throw new Error(`Rule doesn't have parent or peer style test.`); }
-
-      for (const change of changes) {
-        if (!change) { /* REVIEW: Don't allow falsy changes */ continue; }
+    for (const change of changes) {
+      if (!change) { /* REVIEW: Don't allow falsy changes */ continue; }
+      for (const rule of this.rules) {
+        // If the rule is asynchronous, then don't bother.
+        // TODO: separate list of sync rules from async rules.
+        if (!isAsyncRule(rule)) { continue; }
         const changeRequest = await this.onChangeAsync(rule, change);
         if (changeRequest) { rval.push(changeRequest); }
       }
     }
-    debug(`onChangesAsync returning ${rval.length} changes.`);
     return rval;
   }
 
   public onChangesSync(changes: NotebookChange[]): NotebookChangeRequest[] {
     // IMPORTANT: This code is identical to onChangesAsync, except that code has awaits and this code doesn't.
-    debug(`onChangesSync ${changes.length}`);
     const rval: NotebookChangeRequest[] = [];
-    for (const rule of this.rules) {
-      // If the rule is asynchronous, then don't bother.
-      if (!rule.computeSync) { continue; }
-      // REVIEW: Can we just check rules once, instead of on every set of changes?
-      if (rule.parentStyleTest && rule.peerStyleTest) { throw new Error(`Rule has both parent and peer style tests.`); }
-      if (!rule.parentStyleTest && !rule.peerStyleTest) { throw new Error(`Rule doesn't have parent or peer style test.`); }
-
-      for (const change of changes) {
-        if (!change) { /* REVIEW: Don't allow falsy changes */ continue; }
+    for (const change of changes) {
+      if (!change) { /* REVIEW: Don't allow falsy changes */ continue; }
+      for (const rule of this.rules) {
+        // If the rule is asynchronous, then don't bother.
+        if (isAsyncRule(rule)) { continue; }
         const changeRequest = this.onChangeSync(rule, change);
         if (changeRequest) { rval.push(changeRequest); }
       }
     }
-    debug(`onChangesSync returning ${rval.length} changes.`);
     return rval;
   }
 
@@ -141,66 +135,82 @@ export abstract class BaseObserver implements ObserverInstance {
 
   // Private Instance Methods
 
-  private async onChangeAsync(rule: Rule, change: NotebookChange): Promise<NotebookChangeRequest|undefined> {
-    // TODO: 'styleDeleted': if styleInserted resulted in creating a peer style, then styleDeleted should delete that style.
-    // TODO: 'styleConverted': should be treated like a style deleted followed by a style inserted.
+  private async onChangeAsync(rule: AsyncRule, change: NotebookChange): Promise<NotebookChangeRequest|undefined> {
     // IMPORTANT: This code is identical to onChangeSync, except this code has awaits and that code doesn't.
-    if (change.type != 'styleChanged' && change.type != 'styleInserted') { return undefined; }
-    const sourceStyle = change.style;
-    const styleTest = (rule.parentStyleTest || rule.peerStyleTest)!;
-    if (!styleMatchesTest(this.notebook, sourceStyle, styleTest)) { return undefined; }
-    const data = await rule.computeAsync!.call(this.constructor, sourceStyle.data);
-    const parentId = (rule.parentStyleTest ? sourceStyle.id: sourceStyle.parentId);
-    const targetStyle = (change.type == 'styleChanged' && this.notebook.findStyle({ role: rule.props.role, type: rule.props.type}, parentId));
-    let changeRequest: NotebookChangeRequest|undefined = undefined;
-    if (data) {
-      // Data was produced by the rule.
-      // Insert the target style if it doesn't exist, or change the target style's data if it exists.
-      if (change.type == 'styleInserted' || (change.type == 'styleChanged' && !targetStyle)) {
-        changeRequest = { type: 'insertStyle', parentId, styleProps: { ...rule.props, data } };
-      } else {
-        changeRequest = { type: 'changeStyle', styleId: (<StyleObject>targetStyle).id, data };
-      }
-    } else {
-      // No data was produced by the rule.
-      // Delete the target style if it exists.
-      if (targetStyle) { changeRequest = { type: 'deleteStyle', styleId: targetStyle.id }; }
-    }
-    if (changeRequest) {
-      debug(`Rule: ${JSON.stringify(rule)}`);
-      debug(`Change: ${JSON.stringify(change)}`);
-      debug(`Yields: ${JSON.stringify(changeRequest)}`);
-    }
-    return changeRequest;
+    const inputData = this.preChange(rule, change);
+    if (typeof inputData == 'undefined') { return undefined; }
+    // TODO: The function in the rule should be an instance method, not a class method.
+    //       See how it is done in the dataflow-observer base class.
+    const outputData = await rule.computeAsync!.call(this.constructor, inputData);
+    return this.postChange(rule, change, outputData);
   }
 
-  private onChangeSync(rule: Rule, change: NotebookChange): NotebookChangeRequest|undefined {
+  private onChangeSync(rule: SyncRule, change: NotebookChange): NotebookChangeRequest|undefined {
     // IMPORTANT: This code is identical to onChangeAsync, except that code has awaits and this code doesn't.
-    if (change.type != 'styleChanged' && change.type != 'styleInserted') { return undefined; }
-    const sourceStyle = change.style;
-    const styleTest = (rule.parentStyleTest || rule.peerStyleTest)!;
-    if (!styleMatchesTest(this.notebook, sourceStyle, styleTest)) { return undefined; }
-    const data = rule.computeSync!.call(this.constructor, sourceStyle.data);
-    const parentId = (rule.parentStyleTest ? sourceStyle.id: sourceStyle.parentId);
-    const targetStyle = (change.type == 'styleChanged' && this.notebook.findStyle({ role: rule.props.role, type: rule.props.type}, parentId));
+    const inputData = this.preChange(rule, change);
+    if (typeof inputData == 'undefined') { return undefined; }
+    const outputData = rule.computeSync!.call(this.constructor, inputData);
+    return this.postChange(rule, change, outputData);
+  }
+
+  private preChange(rule: Rule, change: NotebookChange): any|undefined {
+    switch(change.type) {
+      case 'styleChanged':
+      case 'styleInserted':
+        if (styleMatchesRuleTest(this.notebook, change.style, rule.styleTest)) { return change.style.data; }
+        else { return undefined; }
+      default:
+        // TODO: 'styleDeleted': if styleInserted resulted in creating a peer style, then styleDeleted should delete that style.
+        // TODO: 'styleConverted': should be treated like a style deleted followed by a style inserted.
+        return undefined;
+    }
+  }
+
+  private postChange(rule: Rule, change: NotebookChange, data: any): NotebookChangeRequest|undefined {
+
+    if (change.type != 'styleChanged' && change.type != 'styleInserted') { throw new Error('Unexpected.'); }
+
+    let parentId: StyleId|undefined;
+    let targetStyle: StyleObject|undefined|false;
+    switch (rule.styleRelation) {
+      case StyleRelation.ChildToParent:
+        parentId = undefined;
+        targetStyle = this.notebook.getStyle(change.style.parentId);
+        // TODO: Verify parent matches rule.props?
+        break;
+      case StyleRelation.ParentToChild:
+        parentId = change.style.id;
+        targetStyle = this.notebook.findStyle({ role: rule.props.role, subrole: rule.props.subrole, type: rule.props.type}, parentId);
+        break;
+      case StyleRelation.PeerToPeer:
+        parentId = change.style.parentId;
+        targetStyle = this.notebook.findStyle({ role: rule.props.role, subrole: rule.props.subrole, type: rule.props.type}, parentId);
+        break;
+    }
+
     let changeRequest: NotebookChangeRequest|undefined = undefined;
-    if (data) {
+    if (typeof data != 'undefined') {
       // Data was produced by the rule.
-      // Insert the target style if it doesn't exist, or change the target style's data if it exists.
-      if (change.type == 'styleInserted' || (change.type == 'styleChanged' && !targetStyle)) {
-        changeRequest = { type: 'insertStyle', parentId, styleProps: { ...rule.props, data } };
+      // Change the target style if it exists, otherwise create the target style.
+      if (targetStyle) {
+        // Only change the target style if the data actually changed.
+        // TODO: We should do a deep compare here.
+        if (data !== targetStyle.data) {
+          changeRequest = { type: 'changeStyle', styleId: targetStyle.id, data };
+        }
       } else {
-        changeRequest = { type: 'changeStyle', styleId: (<StyleObject>targetStyle).id, data };
+        changeRequest = { type: 'insertStyle', parentId, styleProps: { ...rule.props, data, exclusiveChildTypeAndRole: rule.exclusiveChildTypeAndRole } };
       }
     } else {
       // No data was produced by the rule.
       // Delete the target style if it exists.
-      if (targetStyle) { changeRequest = { type: 'deleteStyle', styleId: targetStyle.id }; }
+      if (targetStyle && parentId) { changeRequest = { type: 'deleteStyle', styleId: targetStyle.id }; }
     }
+
     if (changeRequest) {
-      debug(`Rule: ${JSON.stringify(rule)}`);
-      debug(`Change: ${JSON.stringify(change)}`);
-      debug(`Yields: ${JSON.stringify(changeRequest)}`);
+      debug(`Rule ${this.constructor.name}/${rule.name}\n  Applied to ${JSON.stringify(change)}\n  yields ${JSON.stringify(changeRequest)}`);
+    } else {
+      debug(`Rule ${this.constructor.name}/${rule.name}\n  Applied to ${JSON.stringify(change)}\n  yields no change.`);
     }
     return changeRequest;
   }
@@ -209,6 +219,10 @@ export abstract class BaseObserver implements ObserverInstance {
 
 // Helper Functions
 
-function styleMatchesTest(notebook: ServerNotebook, style: StyleObject, test: StyleTest): boolean {
+function isAsyncRule(rule: Rule): rule is AsyncRule {
+  return rule.hasOwnProperty('computeAsync');
+}
+
+function styleMatchesRuleTest(notebook: ServerNotebook, style: StyleObject, test: StyleTest): boolean {
   return (typeof test == 'function' ? test(notebook, style) : styleMatchesPattern(style, test));
 }

@@ -24,7 +24,7 @@ const MODULE = __filename.split(/[/\\]/).slice(-1)[0].slice(0,-3);
 const debug = debug1(`server:${MODULE}`);
 
 import { NotebookChange, StyleObject, RelationshipObject } from '../../client/notebook';
-import { ToolInfo, NotebookChangeRequest, StyleInsertRequest, StylePropertiesWithSubprops, StyleDeleteRequest } from '../../client/math-tablet-api';
+import { ToolData, NotebookChangeRequest, StyleInsertRequest, StylePropertiesWithSubprops, StyleDeleteRequest } from '../../client/math-tablet-api';
 
 import { absDirPathFromNotebookPath } from '../files-and-folders';
 import { ServerNotebook, ObserverInstance } from '../server-notebook';
@@ -78,7 +78,7 @@ export class SubtrivClassifierObserver implements ObserverInstance {
 
     // The WOLFRAM/EVALUATION style will have a CLASSIFICATION/SUBTRIVARIATE child.
     // REVIEW: Does this search need to be recursive?
-    const classificationStyle = this.notebook.findStyle({ type: 'CLASSIFICATION', role: 'SUBTRIVARIATE', recursive: true }, evaluationStyle.id);
+    const classificationStyle = this.notebook.findStyle({ type: 'CLASSIFICATION-DATA', role: 'SUBTRIVARIATE', recursive: true }, evaluationStyle.id);
     if (!classificationStyle) { throw new Error(`Classification style not found.`); }
 
     const targetPath = absDirPathFromNotebookPath(this.notebook._path!);
@@ -164,7 +164,7 @@ export class SubtrivClassifierObserver implements ObserverInstance {
   }
 
   private async subtrivariateClassifierRule(style: StyleObject, rval: NotebookChangeRequest[]): Promise<void> {
-    if (style.type != 'WOLFRAM' || style.role != 'EVALUATION') { return; }
+    if (style.type != 'WOLFRAM-EXPRESSION' || style.role != 'EVALUATION') { return; }
     // debug("INSIDE QUAD CLASSIFIER :",style);
 
     var isSubTrivariate;
@@ -183,7 +183,7 @@ export class SubtrivClassifierObserver implements ObserverInstance {
 
     if (isSubTrivariate) {
       const styleProps: StylePropertiesWithSubprops = {
-        type: 'CLASSIFICATION',
+        type: 'CLASSIFICATION-DATA',
         data: isSubTrivariate,
         role: 'SUBTRIVARIATE',
         exclusiveChildTypeAndRole: true,
@@ -196,11 +196,11 @@ export class SubtrivClassifierObserver implements ObserverInstance {
       rval.push(changeReq);
 
       debug("STYLE ADDED XXX", style.id);
-      const toolInfo: ToolInfo = { name: 'plot', html: "Plot" };
+      const toolData: ToolData = { name: 'plot', html: "Plot" };
       const styleProps2: StylePropertiesWithSubprops = {
-        type: 'TOOL',
+        type: 'TOOL-DATA',
         role: 'ATTRIBUTE',
-        data: toolInfo,
+        data: toolData,
       }
       const changeReq2: StyleInsertRequest = {
         type: 'insertStyle',
@@ -232,14 +232,14 @@ export class SubtrivClassifierObserver implements ObserverInstance {
     // this ancestor thought...
     // REVIEW: Does this search need to be recursive?
     const candidate_styles =
-      this.notebook.findStyles({ type: 'WOLFRAM', role: 'EVALUATION', recursive: true }, target_ancestor.id);
+      this.notebook.findStyles({ type: 'WOLFRAM-EXPRESSION', role: 'EVALUATION', recursive: true }, target_ancestor.id);
     debug("candidate styles",candidate_styles);
     // Not really sure what to do here if there is more than one!!!
     // TODO: This can also be empty!!! The code below needs
     // to respect this.
     if (candidate_styles.length >= 1) {
       // REVIEW: Does this need to be recursive?
-      const beforeChangeClassifiedAsSubTrivariate = this.notebook.hasStyle({ type: 'CLASSIFICATION', role: 'SUBTRIVARIATE', recursive: true }, candidate_styles[0].id);
+      const beforeChangeClassifiedAsSubTrivariate = this.notebook.hasStyle({ type: 'CLASSIFICATION-DATA', role: 'SUBTRIVARIATE', recursive: true }, candidate_styles[0].id);
       debug(beforeChangeClassifiedAsSubTrivariate);
 
       // Now it is possible that any classifications need to be removed;
@@ -269,7 +269,7 @@ export class SubtrivClassifierObserver implements ObserverInstance {
       debug("IS BEFOREQUDRATIC",beforeChangeClassifiedAsSubTrivariate);
       if (isSubTrivariate && !beforeChangeClassifiedAsSubTrivariate) {
         const styleProps: StylePropertiesWithSubprops = {
-          type: 'CLASSIFICATION',
+          type: 'CLASSIFICATION-DATA',
           data: isSubTrivariate,
           role: 'SUBTRIVARIATE',
 //          exclusiveChildTypeAndMeaning: true,
@@ -285,7 +285,7 @@ export class SubtrivClassifierObserver implements ObserverInstance {
         debug("CHOOSING DELETION");
         // REVIEW: Does this search need to be recursive?
         const classification =
-          this.notebook.findStyle({ type: 'CLASSIFICATION', role:'SUBTRIVARIATE', recursive: true }, target_ancestor.id);
+          this.notebook.findStyle({ type: 'CLASSIFICATION-DATA', role:'SUBTRIVARIATE', recursive: true }, target_ancestor.id);
         const changeReq: StyleDeleteRequest = {
           type: 'deleteStyle',
           styleId: classification!.id
@@ -344,7 +344,7 @@ async function plotSubtrivariate(expr : string, variables: string[], filename : 
     subprops: [{
       role: 'REPRESENTATION',
       subrole: 'PRIMARY',
-      type: 'SVG',
+      type: 'SVG-MARKUP',
       data: svg_data,
     }],
   };

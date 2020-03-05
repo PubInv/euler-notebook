@@ -83,19 +83,19 @@ const UNKNOWN_TYPE_OPTIONS = new Map<StyleType,string>();
 const FIGURE_TYPE_OPTIONS = new Map<StyleType,string>();
 
 const FORMULA_TYPE_OPTIONS = new Map<StyleType,string>([
-  [ 'WOLFRAM', "Wolfram" ],
-  [ 'LATEX', "LaTeX" ],
-  [ 'MATHML', "MathML" ],
+  [ 'WOLFRAM-EXPRESSION', "Wolfram" ],
+  [ 'TEX-EXPRESSION', "LaTeX" ],
+  [ 'MATHML-XML', "MathML" ],
 ]);
 
 const HINT_TYPE_OPTIONS = new Map<StyleType,string>([
-  [ 'TEXT', "Plain Text" ],
+  [ 'PLAIN-TEXT', "Plain Text" ],
 ]);
 
 const PLOT_TYPE_OPTIONS = new Map<StyleType,string>();
 
 const TEXT_TYPE_OPTIONS = new Map<StyleType,string>([
-  [ 'TEXT', "Plain Text" ],
+  [ 'PLAIN-TEXT', "Plain Text" ],
   [ 'HTML', "HTML" ],
 ]);
 

@@ -28,7 +28,7 @@ import { Config } from '../config';
 import { ServerKeys, postLatexRequest } from '../myscript-batch-api';
 import { ServerNotebook }  from '../server-notebook';
 
-import { BaseObserver, Rules } from './base-observer';
+import { BaseObserver, Rules, StyleRelation } from './base-observer';
 
 const MODULE = __filename.split(/[/\\]/).slice(-1)[0].slice(0,-3);
 const debug = debug1(`server:${MODULE}`);
@@ -62,8 +62,9 @@ export class MyScriptObserver extends BaseObserver {
   private static RULES: Rules = [
     {
       name: "strokes-to-latex",
-      peerStyleTest: { role: 'REPRESENTATION', type: 'STROKES' },
-      props: { role: 'REPRESENTATION', subrole: 'ALTERNATE', type: 'LATEX' },
+      styleTest: { role: 'REPRESENTATION', type: 'STROKE-DATA' },
+      styleRelation: StyleRelation.PeerToPeer,
+      props: { role: 'REPRESENTATION', type: 'TEX-EXPRESSION' },
       computeAsync: MyScriptObserver.ruleConvertStrokesToLatex,
     },
   ];

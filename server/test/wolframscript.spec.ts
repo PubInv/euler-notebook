@@ -32,12 +32,16 @@ TODO: Additional Test cases
 
 // Requirements
 
-import { execute, start, stop, checkEquiv, convertTeXtoWolfram } from '../wolframscript';
+import { execute, checkEquiv, convertTeXtoWolfram } from '../wolframscript';
 
 // import { expect } from 'chai';
 import { assert } from 'chai';
 import 'mocha';
-import { loadConfig } from '../config';
+
+import { ensureGlobalLoaded } from './global';
+ensureGlobalLoaded();
+
+// Constants
 
 const TEST_CASES = [
   ['FullForm[Hold[y = 13]]',
@@ -78,60 +82,6 @@ const TEST_CASES = [
    'x']
 ];
 
-
-describe("wolframscript", function(){
-
-    let gWolframStarted: boolean = false;
-    this.timeout(10*1000);
-
-    before("starting", async function(){
-      const config = await loadConfig();
-      await start(config.wolframscript);
-      gWolframStarted = true;
-    });
-
-    // it("test case", async function(){
-    //   //throw new Error("CRASH");
-    //   try {
-    //     const [ expr, expected ] = TEST_CASES[3];
-    //     const results = await execute(expr);
-    //     assert.equal(results, expected);
-    //   } catch(err) {
-    //     console.error(`EXCEPTION: ${err.message}`);
-    //     // throw err;
-    //     throw new Error("CRASH2");
-    //   }
-    // });
-
-    for (const [expr, expected] of TEST_CASES) {
-
-      const label = (expr.length<=20 ?
-        `evaluates ${expr}` :
-        `evaluates ${expr.slice(0,20)}...`
-      )
-      it(label, async function(){
-        const results = await execute(expr);
-        assert.equal(results, expected);
-      });
-
-    }
-
-    it("serializes execution", async function(){
-      const p1 = await execute('Pause[2]; "Hello,"');
-      const p2 = await execute('Pause[2]; "World!"');
-      const [ r1, r2 ] = await Promise.all([p1, p2]);
-      assert.equal(r1, 'Hello,');
-      assert.equal(r2, 'World!');
-    });
-
-
-    after("stopping", async function(){
-      if (gWolframStarted) {
-        await stop();
-      }
-    });
-});
-
 const MATHML_TEST_CASES = [
   ["<math xmlns='http://www.w3.org/1998/Math/MathML'>  <mi> x </mi>  <mo> = </mo>  <mn> 4 </mn></math>",
    'HoldComplete[x = 4]'],
@@ -143,16 +93,72 @@ const MATHML_TEST_CASES = [
     'HoldComplete[a = x^2]']
 ];
 
+// This is an attempt to make a simple boolean test
+// of whether two expressions are the same or not.
+const EQUIVALENCE_TEST_CASES = [
+  ['x',
+   'x',
+   'true'],
+  ['x',
+   'y',
+   'false'],
+  ['x^2 + x^2',
+   '2x^2',
+   'true'],
+];
+
+const TEX_TEST_CASES = [
+  ['x',
+   'x'],
+  ['\\frac{(x+y)^2}{\\sqrt{x y}}',
+   '(x + y)^2/Sqrt[xy]'
+  ],
+];
+
+// Unit Tests
+
+describe("wolframscript", function(){
+  this.timeout(10*1000);
+
+  // it("test case", async function(){
+  //   //throw new Error("CRASH");
+  //   try {
+  //     const [ expr, expected ] = TEST_CASES[3];
+  //     const results = await execute(expr);
+  //     assert.equal(results, expected);
+  //   } catch(err) {
+  //     console.error(`EXCEPTION: ${err.message}`);
+  //     // throw err;
+  //     throw new Error("CRASH2");
+  //   }
+  // });
+
+  for (const [expr, expected] of TEST_CASES) {
+
+    const label = (expr.length<=20 ?
+      `evaluates ${expr}` :
+      `evaluates ${expr.slice(0,20)}...`
+    )
+    it(label, async function(){
+      const results = await execute(expr);
+      assert.equal(results, expected);
+    });
+
+  }
+
+  it("serializes execution", async function(){
+    const p1 = await execute('Pause[2]; "Hello,"');
+    const p2 = await execute('Pause[2]; "World!"');
+    const [ r1, r2 ] = await Promise.all([p1, p2]);
+    assert.equal(r1, 'Hello,');
+    assert.equal(r2, 'World!');
+  });
+
+});
+
 
 describe("wolframscriptmathml", function(){
-
-    let gWolframStarted: boolean = false;
-    this.timeout(10*1000);
-
-    before("starting", async function(){
-      await start({});
-      gWolframStarted = true;
-    });
+  this.timeout(10*1000);
 
     for (const [expr, expected] of MATHML_TEST_CASES) {
       const label = (expr.length<=20 ?
@@ -175,38 +181,10 @@ describe("wolframscriptmathml", function(){
       assert.equal(r2, 'World!');
     });
 
-
-    after("stopping", async function(){
-      if (gWolframStarted) {
-        await stop();
-      }
-    });
 });
 
-// This is an attempt to make a simple boolean test
-// of whether two expressions are the same or not.
-const EQUIVALENCE_TEST_CASES = [
-  ['x',
-   'x',
-   'true'],
-  ['x',
-   'y',
-   'false'],
-  ['x^2 + x^2',
-   '2x^2',
-   'true'],
-];
-
-
 describe("wolframscriptequivalence", function(){
-
-  let gWolframStarted: boolean = false;
-    this.timeout(10*1000);
-
-    before("starting", async function(){
-      await start({});
-      gWolframStarted = true;
-    });
+  this.timeout(10*1000);
 
   for (const [a,b, expected] of EQUIVALENCE_TEST_CASES) {
       const label = (a.length<=20 ?
@@ -219,31 +197,10 @@ describe("wolframscriptequivalence", function(){
       });
     }
 
-    after("stopping", async function(){
-      if (gWolframStarted) {
-        await stop();
-      }
-    });
 });
 
-
-const TEX_TEST_CASES = [
-  ['x',
-   'x'],
-  ['\\frac{(x+y)^2}{\\sqrt{x y}}',
-   '(x + y)^2/Sqrt[xy]'
-  ],
-];
-
 describe("wolframTeXConversion", function(){
-
-  let gWolframStarted: boolean = false;
-    this.timeout(10*1000);
-
-    before("starting", async function(){
-      await start({});
-      gWolframStarted = true;
-    });
+  this.timeout(10*1000);
 
   it("simple TeX works (x)", async function(){
     const expr = TEX_TEST_CASES[0][0];
@@ -261,9 +218,4 @@ describe("wolframTeXConversion", function(){
     assert.equal(result, r);
   });
 
-    after("stopping", async function(){
-      if (gWolframStarted) {
-        await stop();
-      }
-    });
 });

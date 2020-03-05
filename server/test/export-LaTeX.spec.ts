@@ -19,58 +19,73 @@
 
 // Requirements
 
+import * as fs from 'fs';
+
 // import * as debug1 from 'debug';
 // const MODULE = __filename.split(/[/\\]/).slice(-1)[0].slice(0,-3);
-// const debug = debug1(`server:${MODULE}`);
+// const debug = debug1(`tests:${MODULE}`);
 import { assert } from 'chai';
+const latex = require('node-latex'); // REVIEW: why not import?
 import 'mocha';
 // import * as sinon from 'sinon';
 
-import { NotebookChange,  StyleObject, } from '../../client/notebook';
-import { NotebookChangeRequest, StyleInsertRequest, LatexData } from '../../client/math-tablet-api';
-import { ServerNotebook, ObserverInstance }  from '../server-notebook';
+import { FormulaData } from '../../client/notebook';
+import { StyleInsertRequest, LatexData } from '../../client/math-tablet-api';
+import { ServerNotebook }  from '../server-notebook';
 
-import { SymbolClassifierObserver } from '../observers/symbol-classifier';
-import { EquationSolverObserver } from '../observers/equation-solver';
-import { MathematicaObserver } from '../observers/mathematica-cas';
-import { TeXFormatterObserver } from '../observers/tex-formatter';
-import { AnyInputObserver } from '../observers/any-input';
-import { WolframObserver } from '../observers/wolfram-cas';
-import { start as startWolframscript } from '../wolframscript';
-import { Config, loadConfig } from '../config';
-import * as fs from 'fs';
-const latex = require('node-latex'); // REVIEW: why not import?
+import { ensureGlobalLoaded } from './global';
+ensureGlobalLoaded();
 
+// Unit Tests
 
-// Test Observer
+describe("LaTeX export tests", function() {
+  let notebook: ServerNotebook;
 
-export class TestObserver implements ObserverInstance {
-  static async initialize(_config: Config): Promise<void> { }
-  static async onOpen(_notebook: ServerNotebook): Promise<TestObserver> { return new this(); }
-  constructor() {}
-  async onChangesAsync(_changes: NotebookChange[]): Promise<NotebookChangeRequest[]> { return []; }
-  public onChangesSync(_changes: NotebookChange[]): NotebookChangeRequest[] { return []; }
-  async onClose(): Promise<void> {}
-  async useTool(_style: StyleObject): Promise<NotebookChangeRequest[]> { return []; }
-}
+  beforeEach(async function(){
+    notebook = await ServerNotebook.createAnonymous();
+  });
+
+  afterEach(async function(){
+    await notebook.close();
+  });
+
+  it("export LaTeX is actually generated", async function(){
+    const data:string[] = [
+      "X = 4",
+      "X + Y",
+      "X = 5",
+      "X = 6",
+      "Y = X^2"];
+    const changeRequests = generateInsertRequests(data);
+    await notebook.requestChange('TEST', changeRequests[0]);
+    const latexInput = await notebook.exportLatex();
+    // console.log(latexInput);
+    assert(latexInput.length > 10,"The latex file should be at least 10 characters long:"+latexInput);
+
+    // TODO: Use TMPDIR environment variable instead of having a directory in the repository.
+    // TODO: Delete the file after verifying that it was created.
+    const path = "test/tmp/basictest";
+
+    writeLaTeX(latexInput,path);
+    const input = fs.createReadStream(path+".tex")
+    writePDFfromStream(input,path);
+
+    writePDFfromString(latexInput,path);
+  });
+});
 
 // Helper Functions
 
 function generateInsertRequests(inputs :string[]) : StyleInsertRequest[] {
   var reqs : StyleInsertRequest[] = [];
-  for(const i of inputs) {
+  for(const wolframData of inputs) {
+    const formulaData: FormulaData = { wolframData };
     reqs.push({
       type: 'insertStyle',
       styleProps: {
         role: 'FORMULA',
         type: 'FORMULA-DATA',
-        data: undefined,
-        subprops: [{
-          role: 'REPRESENTATION',
-          subrole: 'INPUT',
-          type: 'WOLFRAM',
-          data: i,
-        }],
+        data: formulaData,
       }
     });
   }
@@ -108,7 +123,6 @@ function writePDFfromStream(input,path: string) {
   // pdf.on('finish', () => console.log('PDF generated!'))
 }
 
-
 // Supply path with no extension; we will use .tex
 // for the LaTeX and .pdf for pdf by convention!
 // @ts-ignore
@@ -118,79 +132,3 @@ function writePDFfromString(latex : LatexData,path: string) {
   writePDFfromStream(input,path);
 }
 
-// Unit Tests
-
-describe("test symbol observer", function() {
-  let notebook: ServerNotebook;
-
-  before("correctly configure stuff", async function(){
-    // We can't do this test if we don't have mathematica
-    const config = await loadConfig();
-
-    // TODO: stopWolframscript before exiting.
-    if (config.mathematica) { await startWolframscript(config.wolframscript); }
-
-    if (config.mathematica) {
-      await MathematicaObserver.initialize(config);
-    } else {
-    }
-  });
-
-  beforeEach("Reinitialize notebook",async function(){
-    // Create a notebook
-    notebook = await ServerNotebook.createAnonymous();
-
-    // Register the observer
-    const testObserver = await TestObserver.onOpen(notebook);
-    const symbolClassifierObserver = await SymbolClassifierObserver.onOpen(notebook);
-    const mathematicaObserver = await MathematicaObserver.onOpen(notebook);
-    const equationSolverObserver = await EquationSolverObserver.onOpen(notebook);
-    const teXFormatterObserver = await TeXFormatterObserver.onOpen(notebook);
-    const anyInputObserver = await AnyInputObserver.onOpen(notebook);
-    const wolframObserver = await WolframObserver.onOpen(notebook);
-
-    notebook.registerObserver('TEST', testObserver);
-    notebook.registerObserver('SYMBOL-CLASSIFIER', symbolClassifierObserver);
-    notebook.registerObserver('MATHEMATICA', mathematicaObserver);
-    notebook.registerObserver('EQUATION-SOLVER', equationSolverObserver);
-    notebook.registerObserver('TEX-FORMATTER', teXFormatterObserver);
-    notebook.registerObserver('ANY-INPUT', anyInputObserver);
-    notebook.registerObserver('WOLFRAM', wolframObserver);
-
-  });
-
-  afterEach("Close notebook",async function(){
-    // Close the notebook.
-    await notebook.close();
-  });
-
-  after("onClose is called when notebook is closed", async function(){
-
-  });
-
-  describe("observer", function(){
-    it("export LaTeX is actually generated", async function(){
-      const data:string[] = [
-        "X = 4",
-        "X + Y",
-        "X = 5",
-        "X = 6",
-        "Y = X^2"];
-      const changeRequests = generateInsertRequests(data);
-      await notebook.requestChanges('TEST', [changeRequests[0]]);
-      const latexInput = await notebook.exportLatex();
-      // console.log(latexInput);
-      assert(latexInput.length > 10,"The latex file should be at least 10 characters long:"+latexInput);
-
-      // TODO: Use TMPDIR environment variable instead of having a directory in the repository.
-      // TODO: Delete the file after verifying that it was created.
-      const path = "test/tmp/basictest";
-
-      writeLaTeX(latexInput,path);
-      const input = fs.createReadStream(path+".tex")
-      writePDFfromStream(input,path);
-
-      writePDFfromString(latexInput,path);
-    });
-  });
-});

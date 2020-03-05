@@ -21,19 +21,22 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 // import * as debug1 from 'debug';
 // const MODULE = __filename.split(/[/\\]/).slice(-1)[0].slice(0,-3);
-// const debug = debug1(`server:${MODULE}`);
+// const debug = debug1(`tests:${MODULE}`);
 import { assert } from 'chai';
 import 'mocha';
 import * as sinon from 'sinon';
 
-import { NotebookChange, StyleInserted, StyleObject } from '../../client/notebook';
-import { NotebookChangeRequest, StyleInsertRequest, StylePropertiesWithSubprops, ToolInfo } from '../../client/math-tablet-api';
+import { NotebookChange, StyleInserted, StyleObject, FormulaData } from '../../client/notebook';
+import { NotebookChangeRequest, StyleInsertRequest, StylePropertiesWithSubprops, ToolData } from '../../client/math-tablet-api';
 import { ServerNotebook, ObserverInstance }  from '../server-notebook';
 import { Config } from '../config';
 
-// Test Observer
+import { ensureGlobalLoaded } from './global';
+ensureGlobalLoaded();
 
-export class TestObserver implements ObserverInstance {
+// Test Observer Class
+
+class TestObserver implements ObserverInstance {
   static async initialize(_config: Config): Promise<void> { }
   static async onOpen(_notebook: ServerNotebook): Promise<TestObserver> { return new this(); }
   constructor() {}
@@ -58,7 +61,6 @@ describe("server notebook", function() {
     let onCloseSpy: sinon.SinonSpy<[], Promise<void>>;
     let useToolSpy: sinon.SinonSpy<[StyleObject], Promise<NotebookChangeRequest[]>>;
 
-
     before("onOpen is called when notebook is created", async function(){
       // Register the observer
       notebook = await ServerNotebook.createAnonymous();
@@ -74,7 +76,6 @@ describe("server notebook", function() {
       onChangesSyncSpy = sinon.spy(observer, 'onChangesSync');
       onCloseSpy = sinon.spy(observer, 'onClose');
       useToolSpy = sinon.spy(observer, 'useTool');
-
     });
 
     after("onClose is called when notebook is closed", async function(){
@@ -118,29 +119,22 @@ describe("server notebook", function() {
     it("useTool is called when tool is used", async function(){
 
       // Insert a top-level style with a tool style attached.
-      const toolInfo: ToolInfo = { name: 'test-tool', html: "Check Equivalences", data: "tool-data" };
+      const toolData: ToolData = { name: 'test-tool', html: "Check Equivalences", data: "tool-data" };
+      const formulaData: FormulaData = { wolframData: '' };
       const styleProps: StylePropertiesWithSubprops = {
         role: 'FORMULA',
         type: 'FORMULA-DATA',
-        data: undefined,
+        data: formulaData,
         subprops: [
-          { type: 'TOOL', role: 'ATTRIBUTE', data: toolInfo },
+          { role: 'ATTRIBUTE', type: 'TOOL-DATA', data: toolData },
         ]
       };
       const insertRequest: StyleInsertRequest = { type: 'insertStyle', styleProps };
-      await notebook.requestChanges('TEST', [insertRequest]);
+      const changes = await notebook.requestChange('TEST', insertRequest);
 
-      // Observer's onChange should be called with two new styles.
-      // Pick out the tool style.
-      const changesAsync: NotebookChange[] = onChangesAsyncSpy.lastCall.args[0];
-      const changesSync: NotebookChange[] = onChangesSyncSpy.lastCall.args[0];
-      assert.equal(changesAsync.length, 2);
-      assert.equal(changesSync.length, 2);
-      const toolChangeAsync = changesAsync.find(c=> c && c.type=='styleInserted' && c.style.type=='TOOL');
-      const toolChangeSync = changesSync.find(c=> c && c.type=='styleInserted' && c.style.type=='TOOL');
-      assert.exists(toolChangeAsync);
-      assert.exists(toolChangeSync);
-      const toolStyle = (<StyleInserted>toolChangeAsync).style;
+      // Find the tool style that was inserted.
+      const insertToolChange = changes.find(c=>c.type=='styleInserted' && c.style.role=='ATTRIBUTE');
+      const toolStyle = (<StyleInserted>insertToolChange).style;
 
       // Invoke the tool.
       const callCount = useToolSpy.callCount;
@@ -152,3 +146,4 @@ describe("server notebook", function() {
     });
   });
 });
+

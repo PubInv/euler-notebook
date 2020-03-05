@@ -29,13 +29,13 @@ import { NotebookChange, StyleObject, StyleId,
          StyleMoved,
          FindRelationshipOptions,
          StyleInserted, StyleChanged,
-         HintData, HintRelationship, HintStatus
+         HintData, HintRelationship, HintStatus, FormulaData
        } from '../../client/notebook';
 import { SymbolData, WolframData, NotebookChangeRequest, StyleInsertRequest,
-         ToolInfo,
+         ToolData,
          StyleDeleteRequest,
          StylePropertiesWithSubprops, RelationshipPropertiesMap,
-         RelationshipInsertRequest,  isEmptyOrSpaces, ToolData
+         RelationshipInsertRequest,  isEmptyOrSpaces, TransformationToolData
 //         RelationshipDeleteRequest
        } from '../../client/math-tablet-api';
 import { ServerNotebook, ObserverInstance } from '../server-notebook';
@@ -104,7 +104,7 @@ export class SymbolClassifierObserver implements ObserverInstance {
     const hintProps: StylePropertiesWithSubprops = {
       role: 'HINT', type: 'HINT-DATA', data,
       subprops: [
-        { role: 'REPRESENTATION', subrole: 'INPUT', type: 'TEXT', data: `From ${toolStyle.data.name}` },
+        { role: 'INPUT', type: 'PLAIN-TEXT', data: `From ${toolStyle.data.name}` },
       ]
     };
     const hintReq: StyleInsertRequest = {
@@ -113,20 +113,13 @@ export class SymbolClassifierObserver implements ObserverInstance {
       styleProps: hintProps,
     };
 
+    const wolframData = toolStyle.data.data.output;
+    const formulaData: FormulaData = { wolframData };
     const styleProps: StylePropertiesWithSubprops = {
       id: toId,
       role: 'FORMULA',
       type: 'FORMULA-DATA',
-      data: undefined,
-      subprops: [{
-        role: 'REPRESENTATION',
-        type: 'WOLFRAM',
-        data: toolStyle.data.data.output,
-        subrole: 'INPUT',
-        // REVIEW: Possibly this should be 'FACTORIZATION'
-        // or some other meaning. 'INPUT' is a stop-gap
-        // to work with the current GUI.
-      }],
+      data: formulaData,
     };
     const changeReq: StyleInsertRequest = {
       type: 'insertStyle',
@@ -135,7 +128,7 @@ export class SymbolClassifierObserver implements ObserverInstance {
     };
     // At present, the tool name is the only data we will record
     // about the transformation---in the future that might be enriched.
-    const tdata: ToolData =
+    const tdata: TransformationToolData =
       { output : toolStyle.data.data.output,
         transformation: toolStyle.data.data.transformation,
         transformationName: toolStyle.data.name };
@@ -145,8 +138,10 @@ export class SymbolClassifierObserver implements ObserverInstance {
 
     const relReq : RelationshipInsertRequest =
       { type: 'insertRelationship',
-        fromId: fromId,
-        toId: toId,
+        fromId,
+        toId,
+        inStyles: [ { role: 'LEGACY', id: fromId } ],
+        outStyles: [ { role: 'LEGACY', id: toId } ],
         props: props
       };
 
@@ -189,7 +184,7 @@ export class SymbolClassifierObserver implements ObserverInstance {
   private async deleteRule(change: StyleDeleted, rval: NotebookChangeRequest[]) : Promise<void>  {
 
     const style = change.style;
-    if (style.type == 'SYMBOL' && (style.role == 'SYMBOL-USE' || style.role == 'SYMBOL-DEFINITION')) {
+    if (style.type == 'SYMBOL-DATA' && (style.role == 'SYMBOL-USE' || style.role == 'SYMBOL-DEFINITION')) {
       this.deleteRelationships(style, rval);
     }
     this.deleteDependentHints(style,rval);
@@ -251,11 +246,16 @@ export class SymbolClassifierObserver implements ObserverInstance {
           rids.add(duplicateof.id);
           for(const u of users) {
             const props : RelationshipProperties = { role: 'SYMBOL-DEPENDENCY' };
-            rval.push({ type: 'insertRelationship',
-                        fromId: duplicateof.fromId,
-                        toId: u,
-                        props: props,
-                      });
+            const fromId = duplicateof.fromId;
+            const toId = u;
+            rval.push({
+              type: 'insertRelationship',
+              fromId,
+              toId,
+              inStyles: [ { role: 'LEGACY', id: fromId } ],
+              outStyles: [ { role: 'LEGACY', id: toId } ],
+              props: props,
+            });
           }
         }
         rids.forEach(id => rval.push({ type: 'deleteRelationship',
@@ -296,7 +296,7 @@ export class SymbolClassifierObserver implements ObserverInstance {
     const fromS = this.notebook.getStyle(fromId);
     const toTopS = this.notebook.topLevelStyleOf(toId);
     debug("To Top",toTopS.id);
-    const toEval = this.notebook.findStyle({role: 'EVALUATION', type: 'WOLFRAM',recursive: true },
+    const toEval = this.notebook.findStyle({role: 'EVALUATION', type: 'WOLFRAM-EXPRESSION',recursive: true },
                                            toTopS.id);
     debug("fromId",fromId);
     if (!toEval) {
@@ -311,7 +311,7 @@ export class SymbolClassifierObserver implements ObserverInstance {
       const isolated = `InputForm[runPrivate[FullSimplify[${sub_expr}]]]`;
       const substituted = await execute(isolated);
       debug("substituted",substituted);
-      const toolInfo: ToolInfo = { name: "substitute",
+      const toolData: ToolData = { name: "substitute",
                                    html: sub_expr,
                                    tex: substituted,
                                    //                                        html: html_fun(f),
@@ -322,9 +322,9 @@ export class SymbolClassifierObserver implements ObserverInstance {
                                          },
                                    origin_id: relId};
       const styleProps2: StylePropertiesWithSubprops = {
-        type: 'TOOL',
+        type: 'TOOL-DATA',
         role: 'ATTRIBUTE',
-        data: toolInfo,
+        data: toolData,
       }
       const changeReq2: StyleInsertRequest = {
         type: 'insertStyle',
@@ -354,6 +354,7 @@ export class SymbolClassifierObserver implements ObserverInstance {
       tlStyle = this.notebook.topLevelStyleOf(style.id);
     } catch (e) { // If we can't find a topLevelStyle, we have in
       // inconsistency most likely caused by concurrency in some way
+      debug(this.notebook.toText());
       console.log("error",e);
     }
     if (!tlStyle) return rval;
@@ -361,13 +362,13 @@ export class SymbolClassifierObserver implements ObserverInstance {
     // I believe listening only for the WOLFRAM/INPUT forces
     // a serialization that we don't want to support. We also must
     // listen for definition and use and handle them separately...
-    if (style.role == 'REPRESENTATION' && style.type == 'WOLFRAM') {
+    if (style.role == 'REPRESENTATION' && style.type == 'WOLFRAM-EXPRESSION') {
       // at this point, we are doing a complete "recomputation" based the use.
       // TODO: We should remove all Substitution tools here
       await this.removeAllCurrentSymbols(style,rval);
       await this.addSymbolUseStyles(style, rval);
       await this.addSymbolDefStyles(style, rval);
-    } else if (style.type == 'SYMBOL') {
+    } else if (style.type == 'SYMBOL-DATA') {
       await this.recomputeInsertRelationships(tlid,style,rval);
     }
     return rval;
@@ -379,7 +380,7 @@ export class SymbolClassifierObserver implements ObserverInstance {
                                              rval: NotebookChangeRequest[])
   : Promise<NotebookChangeRequest[]>
   {
-    if (style.type == 'SYMBOL' && (style.role == 'SYMBOL-USE' || style.role == 'SYMBOL-DEFINITION')) {
+    if (style.type == 'SYMBOL-DATA' && (style.role == 'SYMBOL-USE' || style.role == 'SYMBOL-DEFINITION')) {
       const name = (style.role == 'SYMBOL-USE') ?
         style.data.name :
         style.data.name;
@@ -449,11 +450,14 @@ export class SymbolClassifierObserver implements ObserverInstance {
           // Check that the notebook already had this relationship,
           const props : RelationshipProperties = { role: 'SYMBOL-DEPENDENCY'
                                                  };
-          const changeReq: RelationshipInsertRequest =
-            { type: 'insertRelationship',
-              fromId: myFromId,
-              toId: myToId,
-              props: props };
+          const changeReq: RelationshipInsertRequest = {
+            type: 'insertRelationship',
+            fromId: myFromId,
+            toId: myToId,
+            inStyles: [ { role: 'LEGACY', id: myFromId } ],
+            outStyles: [ { role: 'LEGACY', id: myToId } ],
+            props: props
+          };
           debug(changeReq);
           rval.push(
             changeReq
@@ -483,12 +487,16 @@ export class SymbolClassifierObserver implements ObserverInstance {
           const last_def = this.getLatestOfListOfStyleIds(defs);
 
           if (last_def < style.id) {
-            // @ts-ignore
-            const changeReq: RelationshipInsertRequest =
-              { type: 'insertRelationship',
-                fromId: last_def,
-                toId: style.id,
-                props: dup_prop };
+            const fromId = last_def;
+            const toId = style.id;
+            const changeReq: RelationshipInsertRequest = {
+              type: 'insertRelationship',
+              fromId,
+              toId,
+              inStyles: [ { role: 'LEGACY', id: fromId } ],
+              outStyles: [ { role: 'LEGACY', id: toId } ],
+                props: dup_prop
+            };
             debug('QQQQQQ');
             rval.push(
               changeReq
@@ -511,7 +519,7 @@ export class SymbolClassifierObserver implements ObserverInstance {
       // Now for each style is as use or defintion, collect the names...
       const symbols : Set<string> = new Set<string>();
       // REVIEW: Does this search need to be recursive?
-      const syms = this.notebook.findStyles({ type: 'SYMBOL', recursive: true }, tlStyle.id);
+      const syms = this.notebook.findStyles({ type: 'SYMBOL-DATA', recursive: true }, tlStyle.id);
       syms.forEach(sym => {
         const s = sym.data.name;
         symbols.add(s);
@@ -524,7 +532,7 @@ export class SymbolClassifierObserver implements ObserverInstance {
         rs.forEach(r => {
         const fromS = this.notebook.getStyle(r.fromId);
         const toS = this.notebook.getStyle(r.toId);
-        if (fromS.type == 'SYMBOL' &&
+        if (fromS.type == 'SYMBOL-DATA' &&
             (fromS.role == 'SYMBOL-USE' ||
              fromS.role == 'SYMBOL-DEFINITION'
             ) &&
@@ -532,7 +540,7 @@ export class SymbolClassifierObserver implements ObserverInstance {
           rval.push({ type: 'deleteRelationship',
                       id: r.id });
         }
-        if (toS.type == 'SYMBOL' &&
+        if (toS.type == 'SYMBOL-DATA' &&
             (toS.role == 'SYMBOL-USE' ||
              toS.role == 'SYMBOL-DEFINITION'
             ) &&
@@ -549,11 +557,14 @@ export class SymbolClassifierObserver implements ObserverInstance {
       rels.forEach(r => {
           const prop : RelationshipProperties =
             { role: r.role };
-            const changeReq: RelationshipInsertRequest =
-              { type: 'insertRelationship',
-                fromId: r.fromId,
-                toId: r.toId,
-                props: prop };
+            const changeReq: RelationshipInsertRequest = {
+              type: 'insertRelationship',
+              fromId: r.fromId,
+              toId: r.toId,
+              inStyles: [ { role: 'LEGACY', id: r.fromId } ],
+              outStyles: [ { role: 'LEGACY', id: r.toId } ],
+              props: prop
+            };
             rval.push(
               changeReq
             );
@@ -611,7 +622,7 @@ export class SymbolClassifierObserver implements ObserverInstance {
     // In fact we could explicitly make a "depends on" set in the style
     // that names a set of ids (either relationships or styles) on which
     // the style depends.
-    const children = this.notebook.findStyles({ type: 'TOOL',
+    const children = this.notebook.findStyles({ type: 'TOOL-DATA',
                                                 source: 'SYMBOL-CLASSIFIER',
                                                 recursive: true }
                                               );
@@ -670,7 +681,7 @@ export class SymbolClassifierObserver implements ObserverInstance {
           debug('defining symbol',name);
           const data = { name, value };
           styleProps = {
-            type: 'SYMBOL',
+            type: 'SYMBOL-DATA',
             data,
             role: 'SYMBOL-DEFINITION',
             exclusiveChildTypeAndRole: true,
@@ -686,7 +697,7 @@ export class SymbolClassifierObserver implements ObserverInstance {
           debug(`lhs,rhs ${lhs} ${rhs}`);
           const data = { lhs, rhs };
           styleProps = {
-            type: 'EQUATION',
+            type: 'EQUATION-DATA',
             data,
             role: 'EQUATION-DEFINITION',
             relationsTo,
@@ -762,7 +773,7 @@ export class SymbolClassifierObserver implements ObserverInstance {
 
             var styleProps: StylePropertiesWithSubprops;
             styleProps = {
-              type: 'EQUATION',
+              type: 'EQUATION-DATA',
               data,
               role: 'EQUATION-DEFINITION',
               exclusiveChildTypeAndRole: true,
@@ -801,7 +812,7 @@ export class SymbolClassifierObserver implements ObserverInstance {
     // Add any symbol-dependency relationships as a result of the new symbol-use style
     if (this.notebook) {
       for (const otherStyle of this.notebook.allStyles()) {
-        if (otherStyle.type == 'SYMBOL' &&
+        if (otherStyle.type == 'SYMBOL-DATA' &&
             otherStyle.role == useOrDef &&
             otherStyle.data.name == name) {
           relationsFrom[otherStyle.id] = { role: 'SYMBOL-DEPENDENCY' };
@@ -827,7 +838,7 @@ export class SymbolClassifierObserver implements ObserverInstance {
     // to compute the "lates" but that is a tad wastefule. - rlr
     const [max,maxstyle] = this.notebook.allStyles().reduce(
       (acc,val) => {
-        if (val.type == 'SYMBOL' &&
+        if (val.type == 'SYMBOL-DATA' &&
           val.role == useOrDef &&
             val.data.name == name) {
           const idx = this.notebook.topLevelStylePosition(val.id);
@@ -853,11 +864,11 @@ export class SymbolClassifierObserver implements ObserverInstance {
   // SYMBOL-USE / SYMBOL children before add these in.
   private async removeAllCurrentUses(style: StyleObject, rval: NotebookChangeRequest[]): Promise<void> {
     // REVIEW: Does this search need to be recursive?
-    const children = this.notebook.findStyles({ type: 'SYMBOL', recursive: true }, style.id);
+    const children = this.notebook.findStyles({ type: 'SYMBOL-DATA', recursive: true }, style.id);
 
     children.forEach( kid => {
       if ((kid.parentId == style.id) &&
-          (kid.type == 'SYMBOL') &&
+          (kid.type == 'SYMBOL-DATA') &&
           (kid.role == 'SYMBOL-USE')) {
         const deleteReq : StyleDeleteRequest = { type: 'deleteStyle',
                                                  styleId: kid.id };
@@ -868,13 +879,13 @@ export class SymbolClassifierObserver implements ObserverInstance {
   }
   private async removeAllCurrentSymbols(style: StyleObject, rval: NotebookChangeRequest[]): Promise<void> {
     // REVIEW: Does this search need to be recursive?
-    const children = this.notebook.findStyles({ type: 'SYMBOL',
+    const children = this.notebook.findStyles({ type: 'SYMBOL-DATA',
                                                 source: 'SYMBOL-CLASSIFIER',
                                                 recursive: true }, style.id);
 
     children.forEach( kid => {
       if ((kid.parentId == style.id) &&
-          (kid.type == 'SYMBOL')) {
+          (kid.type == 'SYMBOL-DATA')) {
         const deleteReq : StyleDeleteRequest = { type: 'deleteStyle',
                                                  styleId: kid.id };
         rval.push(deleteReq);
@@ -884,7 +895,8 @@ export class SymbolClassifierObserver implements ObserverInstance {
   }
   private async  addSymbolUseStyles(style: StyleObject, rval: NotebookChangeRequest[]): Promise<void> {
     await this.removeAllCurrentUses(style,rval);
-    await this.addSymbolUseStylesFromString(style.data, style, rval);
+    const data : string = (style.data.wolframData) ? style.data.wolframData : style.data;
+    await this.addSymbolUseStylesFromString(data, style, rval);
   }
 
   private async  addSymbolUseStylesFromString(data: string,style: StyleObject, rval: NotebookChangeRequest[]): Promise<void> {
@@ -895,7 +907,7 @@ export class SymbolClassifierObserver implements ObserverInstance {
 
       const data: SymbolData = { name: s };
       const styleProps: StylePropertiesWithSubprops = {
-        type: 'SYMBOL',
+        type: 'SYMBOL-DATA',
         data,
         role: 'SYMBOL-USE',
         relationsFrom,

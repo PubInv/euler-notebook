@@ -22,10 +22,10 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 import debug1 from 'debug';
 
 
-import { BaseObserver, Rules } from './base-observer';
-import { convertTeXtoWolfram, convertMathTabletLanguageToWolfram, execute, convertWolframToTeX } from '../wolframscript';
+import { BaseObserver, Rules, StyleRelation } from './base-observer';
+import { convertMathTabletLanguageToWolfram, execute } from '../wolframscript';
 import { ServerNotebook } from '../server-notebook';
-import { WolframData, LatexData, isEmptyOrSpaces } from '../../client/math-tablet-api';
+import { WolframData, isEmptyOrSpaces } from '../../client/math-tablet-api';
 
 const MODULE = __filename.split(/[/\\]/).slice(-1)[0].slice(0,-3);
 const debug = debug1(`server:${MODULE}`);
@@ -53,37 +53,16 @@ export class WolframObserver extends BaseObserver {
 
   private static RULES: Rules = [
     {
-      name: "tex-to-wolfram",
-      peerStyleTest: { role: 'REPRESENTATION', type: 'LATEX', notSource: 'WOLFRAM' },
-      props: { role: 'REPRESENTATION', subrole: 'ALTERNATE', type: 'WOLFRAM' },
-      computeAsync: WolframObserver.ruleConvertTexToWolfram,
-    },
-    {
-      name: "wolfram-to-tex",
-      peerStyleTest: { role: 'REPRESENTATION', subrole: 'INPUT', type: 'WOLFRAM' },
-      props: { role: 'REPRESENTATION', subrole: 'ALTERNATE', type: 'LATEX' },
-      computeAsync: WolframObserver.ruleConvertWolframToTex,
-    },
-    {
       name: "evaluate-wolfram",
       // REVIEW: Should evaluation be attached to FORMULA, rather than REPRESENTATION?
-      parentStyleTest: { role: 'REPRESENTATION', type: 'WOLFRAM' },
-      props: { role: 'EVALUATION', type: 'WOLFRAM' },
+      styleTest: { role: 'REPRESENTATION', type: 'WOLFRAM-EXPRESSION' },
+      styleRelation: StyleRelation.ParentToChild,
+      props: { role: 'EVALUATION', type: 'WOLFRAM-EXPRESSION' },
       computeAsync: WolframObserver.ruleEvaluateWolframExpr,
     },
   ];
 
   // Private Class Methods
-
-  private static async ruleConvertTexToWolfram(data: LatexData): Promise<WolframData|undefined> {
-    // REVIEW: If conversion fails?
-    return data ? await convertTeXtoWolfram(data) : undefined;
-  }
-
-  private static async ruleConvertWolframToTex(data: WolframData): Promise<LatexData|undefined> {
-    // REVIEW: If conversion fails?
-    return data ? await convertWolframToTeX(data) : undefined;
-  }
 
   // One problem here is that we are not rewriting the single equal, which is the "math-tablet input" language,
   // to the double equal, which is essentially the wolfram language (thought not a one-to-one correspondence.)

@@ -21,155 +21,56 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 // import * as debug1 from 'debug';
 // const MODULE = __filename.split(/[/\\]/).slice(-1)[0].slice(0,-3);
-// const debug = debug1(`server:${MODULE}`);
+// const debug = debug1(`tests:${MODULE}`);
 import { assert } from 'chai';
 import 'mocha';
 // import * as sinon from 'sinon';
 
-import { NotebookChange,  StyleObject, RelationshipObject,
-         StyleId
+import { StyleObject, RelationshipObject,
+         StyleId,
+         FormulaData
        } from '../../client/notebook';
 import { NotebookChangeRequest, StyleInsertRequest,
          StyleChangeRequest,
          StyleMoveRequest,
          StyleDeleteRequest, StylePropertiesWithSubprops
        } from '../../client/math-tablet-api';
-import { ServerNotebook, ObserverInstance }  from '../server-notebook';
+import { ServerNotebook }  from '../server-notebook';
 
-import { SymbolClassifierObserver } from '../observers/symbol-classifier';
-import { EquationSolverObserver } from '../observers/equation-solver';
-import { MathematicaObserver } from '../observers/mathematica-cas';
-import { TeXFormatterObserver } from '../observers/tex-formatter';
-import { AnyInputObserver } from '../observers/any-input';
-import { WolframObserver } from '../observers/wolfram-cas';
-import { start as startWolframscript } from '../wolframscript';
-import { Config, loadConfig } from '../config';
+import { ensureGlobalLoaded } from './global';
+ensureGlobalLoaded();
 
-// Test Observer
-
-export class TestObserver implements ObserverInstance {
-  static async initialize(_config: Config): Promise<void> { }
-  static async onOpen(_notebook: ServerNotebook): Promise<TestObserver> { return new this(); }
-  constructor() {}
-  async onChangesAsync(_changes: NotebookChange[]): Promise<NotebookChangeRequest[]> { return []; }
-  public onChangesSync(_changes: NotebookChange[]): NotebookChangeRequest[] { return []; }
-  async onClose(): Promise<void> {}
-  async useTool(_style: StyleObject): Promise<NotebookChangeRequest[]> { return []; }
-}
-
-// Unit Tests
-// I don't know why this might work....
-async function serializeChangeRequests(notebook: ServerNotebook,
-                                 changes: NotebookChangeRequest[]) {
-  for(const cr of changes) {
-      await notebook.requestChanges('TEST', [cr]);
-  }
-}
-
-function generateInsertRequests(inputs :string[]) : StyleInsertRequest[] {
-  var reqs : StyleInsertRequest[] = [];
-  for(const i of inputs) {
-    reqs.push( { type: 'insertStyle',
-            styleProps: { role: 'REPRESENTATION', type: 'WOLFRAM', data: i } }
-        );
-  }
-  return reqs;
-}
-
-const data:string[] = [
-  "X = 4",
-  "X + Y",
-  "X = 5",
-  "X = 6",
-  "Y = X^2"];
+// Types
 
 interface RelationshipStringObject {
   from: string;
   to: string;
 }
 
-function constructMapRelations(notebook: ServerNotebook,
-                               rs : RelationshipObject[]) :RelationshipStringObject[] {
-  return rs.map(r => {
-    const frS = notebook.getStyle(r.fromId);
-    const frTS = notebook.topLevelStyleOf(frS.id);
-    const toS = notebook.getStyle(r.toId);
-    const toTS = notebook.topLevelStyleOf(toS.id);
-    return { from: frTS.data, to: toTS.data};
-  });
-}
+// Constants
 
-function texformatOfLastThought(notebook : ServerNotebook) : string {
-  // To try to make this robust, we will specifically construct
-  // the value. We also need to be able to get the last thought.
-  const lastThoughtId = getThought(notebook,-1);
+const data:string[] = [
+  "X = 4",
+  "X + Y",
+  "X = 5",
+  "X = 6",
+  "Y = X^2"
+];
 
-  // now that we have the lastThought, we want to get the
-  // LATEX type...
-  const lastThought = notebook.getStyle(lastThoughtId);
-  // REVIEW: Does this search need to be recursive?
-  const texformatter = notebook.findStyle({ type: 'LATEX', recursive: true }, lastThought.id);
-  return texformatter!.data;
-}
-function getThought(notebook : ServerNotebook,n : number) : StyleId {
-  const tls = notebook.topLevelStyleOrder();
-  const thoughtId = tls.slice(n)[0];
-  return thoughtId;
-}
+const insertRequest:StyleInsertRequest[] = insertWolframFormulas(data);
 
-
-const insertRequest:StyleInsertRequest[] = generateInsertRequests(data);
+// Unit Tests
 
 describe("test symbol observer", function() {
   let notebook: ServerNotebook;
 
-  before("correctly configure stuff", async function(){
-    // We can't do this test if we don't have mathematica
-    const config = await loadConfig();
-
-    // TODO: stopWolframscript before exiting.
-    if (config.mathematica) { await startWolframscript(config.wolframscript); }
-
-    if (config.mathematica) {
-      await MathematicaObserver.initialize(config);
-    } else {
-    }
-
-
-
-  });
-
-  beforeEach("Reinitialize notebook",async function(){
-    // Create a notebook
+  beforeEach(async function(){
     notebook = await ServerNotebook.createAnonymous();
-
-    // Register the observer
-    const testObserver = await TestObserver.onOpen(notebook);
-    const symbolClassifierObserver = await SymbolClassifierObserver.onOpen(notebook);
-    const mathematicaObserver = await MathematicaObserver.onOpen(notebook);
-    const equationSolverObserver = await EquationSolverObserver.onOpen(notebook);
-    const teXFormatterObserver = await TeXFormatterObserver.onOpen(notebook);
-    const anyInputObserver = await AnyInputObserver.onOpen(notebook);
-    const wolframObserver = await WolframObserver.onOpen(notebook);
-
-    notebook.registerObserver('TEST', testObserver);
-    notebook.registerObserver('SYMBOL-CLASSIFIER', symbolClassifierObserver);
-    notebook.registerObserver('MATHEMATICA', mathematicaObserver);
-    notebook.registerObserver('EQUATION-SOLVER', equationSolverObserver);
-    notebook.registerObserver('TEX-FORMATTER', teXFormatterObserver);
-    notebook.registerObserver('ANY-INPUT', anyInputObserver);
-    notebook.registerObserver('WOLFRAM', wolframObserver);
-
   });
-  afterEach("Close notebook",async function(){
-    // Close the notebook.
+
+  afterEach(async function(){
     await notebook.close();
   });
-
-  after("onClose is called when notebook is closed", async function(){
-
-  });
-
 
   describe("observer", function(){
     // Note: Doing this for WOLFRAM / INPUT is not really
@@ -177,18 +78,22 @@ describe("test symbol observer", function() {
     it("two insert requests, if marked exclusive, only produce one child", async function(){
       const data:string[] = [
         "X = 4"];
-      const changeRequests = generateInsertRequests(data);
+      const changeRequests = insertWolframFormulas(data);
 
 
-      await notebook.requestChanges('TEST', [changeRequests[0]]);
+      await notebook.requestChange('TEST', changeRequests[0]);
+
+      // This should not rely on an id!!!
       const style = notebook.topLevelStyleOf(1);
-      assert.deepEqual(style.type,'WOLFRAM');
+
+      // This is fragile and stupid.
+//      assert.deepEqual(style.type,'WOLFRAM-EXPRESSION');
 
       // Now we want to try to create two child requests,
       // and see that only one is created
       const fake_result = "4";
       const styleProps1: StylePropertiesWithSubprops = {
-        type: 'WOLFRAM',
+        type: 'WOLFRAM-EXPRESSION',
         data: <string>fake_result,
         role: 'EVALUATION',
         exclusiveChildTypeAndRole: true,
@@ -200,7 +105,7 @@ describe("test symbol observer", function() {
       };
 
       const styleProps2: StylePropertiesWithSubprops = {
-        type: 'WOLFRAM',
+        type: 'WOLFRAM-EXPRESSION',
         data: <string>fake_result,
         role: 'EVALUATION',
         exclusiveChildTypeAndRole: true,
@@ -215,25 +120,30 @@ describe("test symbol observer", function() {
       // Now we want to assert that "style" has only one WOLFRAM EVALUATION
       // child.
       // REVIEW: Does this search need to be recursive?
-      const children = notebook.findStyles({ type: 'WOLFRAM', recursive: true }, style.id);
-      const properChildren = children.filter(c => (c.parentId == style.id));
-      assert(properChildren.length == 1,"There should be one child, but there are:"+children.length);
+      const childEvaluation = notebook.findStyles({ type: 'WOLFRAM-EXPRESSION', role: 'EVALUATION', recursive: true }, style.id);
+      assert(childEvaluation.length == 1,"There should be one evaluation, but there are:"+childEvaluation.length);
+
+
+      const childRepresentation = notebook.findStyles({ type: 'WOLFRAM-EXPRESSION', role: 'REPRESENTATION', recursive: true }, style.id);
+      assert(childRepresentation.length == 1,"There should be one evaluation, but there are:"+childRepresentation.length);
+
+
 
     });
 
     it("a definition and a use creates a relationship if separate", async function(){
 
       const changeRequests = [insertRequest[0],insertRequest[1]];
-      await notebook.requestChanges('TEST', [changeRequests[0]]);
-      await notebook.requestChanges('TEST', [changeRequests[1]]);
+      await notebook.requestChange('TEST', changeRequests[0]);
+      await notebook.requestChange('TEST', changeRequests[1]);
       const style = notebook.topLevelStyleOf(1);
-      assert.deepEqual(style.type,'WOLFRAM');
+      assert.deepEqual(style.type,'FORMULA-DATA');
       assert.equal(notebook.allRelationships().length,1);
       const r : RelationshipObject = notebook.allRelationships()[0];
       const fromObj : StyleObject = notebook.topLevelStyleOf(r.fromId);
       const toObj : StyleObject =  notebook.topLevelStyleOf(r.toId);
-      assert.equal(fromObj.data,data[0]);
-      assert.equal(toObj.data,data[1]);
+      assert.equal(fromObj.data.wolframData,data[0]);
+      assert.equal(toObj.data.wolframData,data[1]);
     });
     it("a definition and a use creates a relationship if combined", async function(){
       const changeRequests = [insertRequest[0],insertRequest[1]];
@@ -242,7 +152,7 @@ describe("test symbol observer", function() {
 //      await notebook.requestChanges('TEST', changeRequests);
       const style = notebook.topLevelStyleOf(1);
       assert.deepEqual(style.type,
-                       'WOLFRAM'
+                       'FORMULA-DATA'
                       );
 
       assert.equal(notebook.allRelationships().length,1);
@@ -250,8 +160,8 @@ describe("test symbol observer", function() {
       const fromObj : StyleObject = notebook.topLevelStyleOf(r.fromId);
       const toObj : StyleObject =  notebook.topLevelStyleOf(r.toId);
 
-      assert.equal(fromObj.data,data[0]);
-      assert.equal(toObj.data,data[1]);
+      assert.equal(fromObj.data.wolframData,data[0]);
+      assert.equal(toObj.data.wolframData,data[1]);
     });
 
     it("deleting used doesn't fail", async function(){
@@ -259,13 +169,13 @@ describe("test symbol observer", function() {
       await serializeChangeRequests(notebook,changeRequests);
 //      await notebook.requestChanges('TEST', changeRequests);
       const style = notebook.topLevelStyleOf(1);
-      assert.deepEqual(style.type,'WOLFRAM');
+      assert.deepEqual(style.type,'FORMULA-DATA');
 
       assert.equal(notebook.allRelationships().length,1);
       const deleteReq : StyleDeleteRequest = { type: 'deleteStyle',
                            styleId: style.id };
 
-      await notebook.requestChanges('TEST', [deleteReq]);
+      await notebook.requestChange('TEST', deleteReq);
       assert.equal(notebook.allRelationships().length,0);
     });
     it("multiple definitions create inconsistencies",async function(){
@@ -274,15 +184,14 @@ describe("test symbol observer", function() {
       const changeRequests0 = [insertRequest[0],insertRequest[2]];
       const changeRequests1 = [insertRequest[3]];
       await serializeChangeRequests(notebook,changeRequests0);
-      console.log("two exes",notebook);
+      // console.log("two exes",notebook);
       // We need a duplication relationship to show up here...
       assert.equal(notebook.allRelationships().length,1);
-//      await notebook.requestChanges('TEST', changeRequests0);
+      // await notebook.requestChanges('TEST', changeRequests0);
       await notebook.requestChanges('TEST', changeRequests1);
-      console.log("three exes",notebook);
 
       const style = notebook.topLevelStyleOf(1);
-      assert.deepEqual(style.type,'WOLFRAM');
+      assert.deepEqual(style.type,'FORMULA-DATA');
       assert.equal(notebook.allRelationships().length,2);
       // We want to check that the relaionship is "duplicate def".
       const r : RelationshipObject = notebook.allRelationships()[0];
@@ -310,7 +219,7 @@ describe("test symbol observer", function() {
       const data:string[] = [
         "X = 4",
         "X^2 + Y"];
-      const changeRequests = generateInsertRequests(data);
+      const changeRequests = insertWolframFormulas(data);
 
       await serializeChangeRequests(notebook,changeRequests);
 
@@ -323,7 +232,7 @@ describe("test symbol observer", function() {
       const cr: StyleChangeRequest = {
         type: 'changeStyle',
         styleId: fromId,
-        data: "X = 5",
+        data: { wolframData: "X = 5"},
       };
       await serializeChangeRequests(notebook,[cr]);
 
@@ -334,7 +243,7 @@ describe("test symbol observer", function() {
       const data:string[] = [
         "X = 4",
         "X^2 + Y"];
-      const changeRequests = generateInsertRequests(data);
+      const changeRequests = insertWolframFormulas(data);
 
       await serializeChangeRequests(notebook,changeRequests);
 
@@ -347,7 +256,7 @@ describe("test symbol observer", function() {
       const cr: StyleChangeRequest = {
         type: 'changeStyle',
         styleId: fromId,
-        data: "X = 5",
+        data: { wolframData: "X = 5"},
       };
       await serializeChangeRequests(notebook,[cr]);
 
@@ -359,13 +268,13 @@ describe("test symbol observer", function() {
       const data0:string[] = [
         "3x - 10 = 11",
         ];
-      const changeRequests = generateInsertRequests(data0);
+      const changeRequests = insertWolframFormulas(data0);
       await serializeChangeRequests(notebook,changeRequests);
 
       // I really want a way to find this from the notebook....
       const initialId = 1;
       // REVIEW: Does this search need to be recursive?
-      const children = notebook.findStyles({ type: 'EQUATION', recursive: true }, initialId);
+      const children = notebook.findStyles({ type: 'EQUATION-DATA', recursive: true }, initialId);
       assert.equal(1,children.length);
     });
 
@@ -374,7 +283,7 @@ describe("test symbol observer", function() {
       const data:string[] = [
         "X = 4",
         "X^2 + Y"];
-      const changeRequests = generateInsertRequests(data);
+      const changeRequests = insertWolframFormulas(data);
 
       await serializeChangeRequests(notebook,changeRequests);
 
@@ -396,7 +305,7 @@ describe("test symbol observer", function() {
         "X = 3",
         "X = 4",
         "X^2"];
-      const changeRequests = generateInsertRequests(data);
+      const changeRequests = insertWolframFormulas(data);
 
       await serializeChangeRequests(notebook,changeRequests);
       const rels = notebook.recomputeAllSymbolRelationships();
@@ -409,7 +318,7 @@ describe("test symbol observer", function() {
         "X = 5",
         "X = 6",
         "Y = X^2"];
-      const changeRequests = generateInsertRequests(data);
+      const changeRequests = insertWolframFormulas(data);
 
       await serializeChangeRequests(notebook,changeRequests);
 
@@ -429,7 +338,7 @@ describe("test symbol observer", function() {
       const lastThought = notebook.getStyle(lastThoughtId);
 
       // REVIEW: Does this search need to be recursive?
-      const children = notebook.findStyles({ type: 'LATEX', recursive: true }, lastThought.id);
+      const children = notebook.findStyles({ type: 'TEX-EXPRESSION', recursive: true }, lastThought.id);
       const texformatter = children[0];
       assert.equal('Y = 36',texformatter.data);
       const rels = notebook.recomputeAllSymbolRelationships();
@@ -440,7 +349,7 @@ describe("test symbol observer", function() {
       const data:string[] = [
         "X = 6",
         "Y = X^2"];
-      const insertRequests = generateInsertRequests(data);
+      const insertRequests = insertWolframFormulas(data);
       await serializeChangeRequests(notebook,insertRequests);
 
       const rs = notebook.allRelationships();
@@ -456,7 +365,7 @@ describe("test symbol observer", function() {
         "X = 4",
         "X = 6",
         "Y = X^2"];
-      const insertRequests = generateInsertRequests(data);
+      const insertRequests = insertWolframFormulas(data);
       await serializeChangeRequests(notebook,insertRequests);
 
       const secondThoughtId = notebook.topLevelStyleOrder()[1];
@@ -481,7 +390,7 @@ describe("test symbol observer", function() {
       const lastThought = notebook.getStyle(lastThoughtId);
 
       // REVIEW: Does this search need to be recursive?
-      const texformatter = notebook.findStyle({ type: 'LATEX', recursive: true}, lastThought.id);
+      const texformatter = notebook.findStyle({ type: 'TEX-EXPRESSION', recursive: true}, lastThought.id);
       assert.equal('Y = 16',texformatter!.data);
 
 
@@ -494,7 +403,7 @@ describe("test symbol observer", function() {
         data[i] = "X = "+(i+3);
       }
       data.push("Y = X^2");
-      const insertRequests = generateInsertRequests(data);
+      const insertRequests = insertWolframFormulas(data);
       await serializeChangeRequests(notebook,insertRequests);
 
 
@@ -527,15 +436,12 @@ describe("test symbol observer", function() {
     });
 
     it("reorderings are supported in simplest possible case",async function(){
+      // REVIEW: Just use a static array.
       let data:string[] = [];
-      notebook.deRegisterObserver('MATHEMATICA');
-      notebook.deRegisterObserver('EQUATION-SOLVER');
-      notebook.deRegisterObserver('TEX-FORMATTER');
-
       data.push("X = 3");
       data.push("X = 4");
       data.push("Y = X^2");
-      const insertRequests = generateInsertRequests(data);
+      const insertRequests = insertWolframFormulas(data);
       await serializeChangeRequests(notebook,insertRequests);
 
 
@@ -551,41 +457,45 @@ describe("test symbol observer", function() {
       assert.equal(rel_r.length,
                    rel_recomp.length);
     });
-    it("reorderings are supported across symbols",async function(){
-      let data:string[] = [];
-      notebook.deRegisterObserver('MATHEMATICA');
-      notebook.deRegisterObserver('EQUATION-SOLVER');
-      notebook.deRegisterObserver('TEX-FORMATTER');
 
-      data.push("X = 3");
-      data.push("A = 4");
-      data.push("X = 4");
-      data.push("Y = X^2");
-      data.push("B = A^2");
-      const insertRequests = generateInsertRequests(data);
+    it("multiple formulae are handled correctly", async function(){
 
-      await serializeChangeRequests(notebook,insertRequests);
+      const data:string[] = [ "X = 3", "A = 4", "X = 5", "Y = X^2", "B = A^2" ];
+      const insertRequests = insertWolframFormulas(data);
+      await serializeChangeRequests(notebook, insertRequests);
+      const rel_r_o =  notebook.allRelationships();
+      const rsos = constructMapRelations(notebook, rel_r_o);
+      assert.equal(rsos.find( r => r.from == "X = 3")!.to, "X = 5");
+    });
 
 
-      let penultimate = getThought(notebook,2);
-      const moveRequest : StyleMoveRequest = { type: 'moveStyle',
-                                                 styleId: penultimate,
-                                                 afterId: 0
-                                               };
-      await serializeChangeRequests(notebook,[moveRequest]);
+    it("reorderings are supported across symbols", async function(){
+
+      const data:string[] = [ "X = 3", "A = 4", "X = 5", "Y = X^2", "B = A^2" ];
+      const insertRequests = insertWolframFormulas(data);
+      await serializeChangeRequests(notebook, insertRequests);
+
+      // the goal here is to move Y = X^2 to the first position.
+      let penultimate = getThought(notebook, -2);
+      const moveRequest: StyleMoveRequest = {
+        type: 'moveStyle',
+        styleId: penultimate,
+        afterId: 1
+      };
+
+      await serializeChangeRequests(notebook, [moveRequest]);
+
       const rel_r =  notebook.allRelationships();
       const rel_recomp = notebook.recomputeAllSymbolRelationships();
 
-      assert.equal(rel_r.length,
-                   rel_recomp.length);
+      assert.equal(rel_r.length, rel_recomp.length);
       const rsos = constructMapRelations(notebook, rel_r);
-      // @ts-ignore
-      assert.equal(rsos.find( r => r.from == "X = 3").to,"Y = X^2");
-      // @ts-ignore
-      assert.equal(rsos.find( r => r.from == "X = 4").to,"X = 3");
-      // @ts-ignore
-      assert.equal(rsos.find( r => r.from == "A = 4").to,"B = A^2");
+
+      assert.equal(rsos.find( r => r.from == "X = 3")!.to, "Y = X^2");
+      assert.equal(rsos.find( r => r.from == "A = 4")!.to, "B = A^2");
+
     });
+
     it("A change correctly updates all relationships",async function(){
       const data0:string[] = [
         "x = 2",
@@ -594,44 +504,56 @@ describe("test symbol observer", function() {
       const data1:string[] = [
         "x = 3",
         ];
-      const changeRequests = generateInsertRequests(data0);
+      const changeRequests = insertWolframFormulas(data0);
       await serializeChangeRequests(notebook,changeRequests);
       // I really want a way to find this from the notebook....
-      const initialId = 1;
+
+      const formulas = notebook.findStyles({ type: 'FORMULA-DATA', recursive: true });
+      assert.equal(formulas.length,2);
+
+      const first_formula = formulas[0];
+      const initialId = first_formula!.id;
 
       const cr: StyleChangeRequest = {
         type: 'changeStyle',
         styleId: initialId,
-        data: data1[0],
+        data: { wolframData: data1[0] } ,
       };
 
       await serializeChangeRequests(notebook,[cr]);
+
       const rel_r = notebook.allRelationships();
 
       assert.equal(rel_r.length,1);
     });
 
     it("A change of an equation produces only one equation, not two",async function(){
-      const data0:string[] = [
+       const data0:string[] = [
         "3x - 10 = 11",
         ];
       const data1:string[] = [
         "3x - 10 = 14",
         ];
-      const changeRequests = generateInsertRequests(data0);
+      const changeRequests = insertWolframFormulas(data0);
       await serializeChangeRequests(notebook,changeRequests);
-      // I really want a way to find this from the notebook....
-      const initialId = 1;
 
+      const topformula = notebook.findStyle({ type: 'FORMULA-DATA', recursive: true});
+      if (!topformula) {
+        assert.equal(true,false,"topformula not found");
+      }
+      const initialId = topformula!.id;
       const cr: StyleChangeRequest = {
         type: 'changeStyle',
         styleId: initialId,
-        data: data1[0],
+        data: { wolframData:  data1[0]},
       };
+
       await serializeChangeRequests(notebook,[cr]);
+
+
       // Now there should be only ONE EQUATION-DEFINITON attached to the single input!!!
       // REVIEW: Does this search need to be recursive?
-      const children = notebook.findStyles({ type: 'EQUATION', recursive: true }, initialId);
+      const children = notebook.findStyles({ type: 'EQUATION-DATA', recursive: true }, initialId);
       assert.equal(1,children.length);
     });
 
@@ -644,7 +566,7 @@ describe("test symbol observer", function() {
         "x = 4"
         ];
 
-      const changeRequests = generateInsertRequests([data[0],data[1]]);
+      const changeRequests = insertWolframFormulas([data[0],data[1]]);
       await serializeChangeRequests(notebook,changeRequests);
       // I really want a way to find this from the notebook....
       const initialId = 1;
@@ -662,12 +584,66 @@ describe("test symbol observer", function() {
         data: data[3],
       };
       await serializeChangeRequests(notebook,[cr1]);
-      const texformatter = notebook.findStyle({ type: 'LATEX', recursive: true},
+      const texformatter = notebook.findStyle({ type: 'TEX-EXPRESSION', recursive: true},
                                               initialId);
-      console.log("DEBUG",notebook);
       assert.equal('x = 4',texformatter!.data);
     });
-
-
   });
 });
+
+// Helper Functions
+
+// REVIEW: It seems like we shouldn't have to serialize requests in most instances. Why are we doing this?
+// I don't know why this might work....
+async function serializeChangeRequests(notebook: ServerNotebook,
+  changes: NotebookChangeRequest[]) {
+  for(const cr of changes) {
+    await notebook.requestChange('TEST', cr);
+  }
+}
+
+function insertWolframFormulas(wolframDatas :string[]) : StyleInsertRequest[] {
+  var reqs : StyleInsertRequest[] = [];
+  for(const wolframData of wolframDatas) {
+    const data: FormulaData = { wolframData };
+    reqs.push({
+      type: 'insertStyle',
+      styleProps: { role: 'FORMULA', type: 'FORMULA-DATA', data }
+    });
+  }
+  return reqs;
+}
+
+function constructMapRelations(notebook: ServerNotebook, rs: RelationshipObject[]): RelationshipStringObject[] {
+  return rs.map(r => {
+    const frS = notebook.getStyle(r.fromId);
+    const frTS = notebook.topLevelStyleOf(frS.id);
+    const toS = notebook.getStyle(r.toId);
+    const toTS = notebook.topLevelStyleOf(toS.id);
+    return { from: frTS.data.wolframData, to: toTS.data.wolframData };
+  });
+}
+
+function texformatOfLastThought(notebook : ServerNotebook) : string {
+  // To try to make this robust, we will specifically construct
+  // the value. We also need to be able to get the last thought.
+  const lastThoughtId = getThought(notebook,-1);
+
+  // now that we have the lastThought, we want to get the
+  // LATEX type...
+  const lastThought = notebook.getStyle(lastThoughtId);
+
+  // REVIEW: Does this search need to be recursive?
+  const texformatter = notebook.findStyle({ type: 'TEX-EXPRESSION', recursive: true }, lastThought.id);
+  return texformatter!.data;
+}
+
+// Note: i is allowed to be negative, to use the javascript
+// convention of negatives counting from the back of the array.
+function getThought(notebook: ServerNotebook, i: number): StyleId {
+//  assert(i>=0);
+  const tls = notebook.topLevelStyleOrder();
+  const idx = (i < 0) ?  (tls.length + i) : i;
+  assert(i<tls.length);
+  return tls[idx];
+}

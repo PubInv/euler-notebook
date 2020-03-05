@@ -46,7 +46,7 @@ export class HintCellView extends CellView {
 
   public render(style: StyleObject): void {
     // TODO: If hint cell is moved then it needs to be re-rendered.
-    const repStyle = this.notebookView.openNotebook.findStyle({ role: 'REPRESENTATION', subrole: 'INPUT' }, style.id);
+    const repStyle = this.notebookView.openNotebook.findStyle({ role: 'INPUT' }, style.id);
     if (!repStyle) {
       // TODO: Better way to handle this error.
       this.$elt.innerHTML = "ERROR: No REPRESENTATION/INPUT substyle.";

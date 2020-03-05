@@ -76,10 +76,10 @@ export class MathematicaObserver implements ObserverInstance {
 
   public async useTool(style: StyleObject): Promise<NotebookChangeRequest[]> {
     throw new Error(`Unexpected useTool for style ${style.id}`);
-    // const toolInfo: ToolInfo = style.data;
-    // if (toolInfo.name != 'checkeqv') { throw new Error(`Unexpected tool ${toolInfo}`)};
+    // const toolData: ToolData = style.data;
+    // if (toolData.name != 'checkeqv') { throw new Error(`Unexpected tool ${toolData}`)};
     // debug("INSIDE onUSE BEGIN :");
-    // debug("INSIDE onUSE CHECKEQV :", toolInfo.data.styleId);
+    // debug("INSIDE onUSE CHECKEQV :", toolData.data.styleId);
     // await this.checkEquivalence(style);
   }
 
@@ -124,16 +124,26 @@ export class MathematicaObserver implements ObserverInstance {
   }
 
   private async checkEquivalenceRule(style: StyleObject): Promise<NotebookChangeRequest[]> {
-    if (style.type != 'WOLFRAM') { return []; }
+    if (style.type != 'WOLFRAM-EXPRESSION') { return []; }
 
-    if (isEmptyOrSpaces(style.data)) { return []; }
+    debug("style in check equivalence rule",style);
+
+
+    // TODO: Does this server any purpose??
+    const data_s : string =
+      ((style.role == 'FORMULA') ||
+       (style.role == 'REPRESENTATION' && style.type == 'WOLFRAM-EXPRESSION'))
+    ? style.data : style.data;
+
+    debug("data_s",data_s);
+    if (isEmptyOrSpaces(data_s)) { return []; }
 
     const rval: NotebookChangeRequest[] = [];
 
     try {
       const substitutions : NVPair[] = this.getSubstitutionsForStyle(style);
       const sub_expr =
-        constructSubstitution(style.data,
+        constructSubstitution(data_s,
                               substitutions);
 
       debug("sustitutions",substitutions);
@@ -147,8 +157,8 @@ export class MathematicaObserver implements ObserverInstance {
           if (anc == parentThought) return false;
           else {
             debug(s);
-            debug(s.role == 'REPRESENTATION' && s.type == 'WOLFRAM');
-            return (s.role == 'REPRESENTATION' && s.type == 'WOLFRAM');
+            debug(s.role == 'REPRESENTATION' && s.type == 'WOLFRAM-EXPRESSION');
+            return (s.role == 'REPRESENTATION' && s.type == 'WOLFRAM-EXPRESSION');
           }
         });
       debug("expressions",expressions);
@@ -156,7 +166,7 @@ export class MathematicaObserver implements ObserverInstance {
 
       const expressionEquivalence : StyleIdToBooleanMap = {};
       const sub_expr1 =
-        constructSubstitution(style.data,substitutions);
+        constructSubstitution(data_s,substitutions);
       for (var exp of expressions) {
         const expressID : number = exp.id;
         try {
@@ -199,6 +209,8 @@ export class MathematicaObserver implements ObserverInstance {
               type: 'insertRelationship',
               fromId: src.id,
               toId: tar.id,
+              inStyles: [ { role: 'LEGACY', id: src.id } ],
+              outStyles: [ { role: 'LEGACY', id: tar.id } ],
               props,
             }
             rval.push(cr);
@@ -240,7 +252,7 @@ export class MathematicaObserver implements ObserverInstance {
 
     const rval: NotebookChangeRequest[] = [];
 
-    if (style.type != 'MATHML') { return []; }
+    if (style.type != 'MATHML-XML') { return []; }
     if (style.role != 'REPRESENTATION') { return []; }
 
     const mathMl = style.data.split('\n').join('').replace(/"/g, '\\"');
@@ -263,7 +275,7 @@ export class MathematicaObserver implements ObserverInstance {
       // In fact this is a meta-rule --- for some styles, there is only one style
       // of a type allowed. It will be best to add that into the metaframework.
       // REVIEW: Does this search need to be recursive?
-      let kids = this.notebook.findStyles({ type: 'WOLFRAM', recursive: true }, style.id);
+      let kids = this.notebook.findStyles({ type: 'WOLFRAM-EXPRESSION', recursive: true }, style.id);
       for(const k of kids) {
         const changeReq: StyleDeleteRequest = {
           type: 'deleteStyle',
@@ -273,7 +285,7 @@ export class MathematicaObserver implements ObserverInstance {
       }
 
       const styleProps: StylePropertiesWithSubprops = {
-        type: 'WOLFRAM',
+        type: 'WOLFRAM-EXPRESSION',
         role: 'REPRESENTATION',
         data: wolframexpr,
       };
@@ -286,7 +298,7 @@ export class MathematicaObserver implements ObserverInstance {
 
     } catch(err) {
       const styleProps: StylePropertiesWithSubprops = {
-        type: 'TEXT',
+        type: 'PLAIN-TEXT',
         role: 'EVALUATION-ERROR',
         data: `Cannot convert to Wolfram expression: ${err.message}`,
         exclusiveChildTypeAndRole: true,

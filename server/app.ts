@@ -61,6 +61,7 @@ async function main() {
   // TODO: stopWolframscript before exiting.
   if (config.mathematica) { await startWolframscript(config.wolframscript); }
 
+  // TODO: We should terminateObservers when shutting down.
   await initializeObservers(config, credentials);
 
   const app: express.Express = express();

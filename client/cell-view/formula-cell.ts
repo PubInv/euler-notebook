@@ -20,7 +20,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 // Requirements
 
 import { $new, escapeHtml, Html } from '../dom.js';
-import { ToolInfo } from '../math-tablet-api.js';
+import { ToolData } from '../math-tablet-api.js';
 import { StyleObject, FindRelationshipOptions, FindStyleOptions } from '../notebook.js';
 import { NotebookView } from '../notebook-view.js';
 import { getRenderer } from '../renderers.js';
@@ -50,7 +50,12 @@ export class FormulaCellView extends CellView {
     this.$prefix.innerHTML = style.subrole ? FORMULA_SUBROLE_PREFIX.get(style.subrole!)! : '';
 
     // Look for a LATEX REPRESENTATION.
-    let repStyle = this.notebookView.openNotebook.findStyle({ role: 'REPRESENTATION', type: 'LATEX' }, style.id);
+    const repStyles = this.notebookView.openNotebook.findStyles({ role: 'REPRESENTATION', type: 'TEX-EXPRESSION' }, style.id);
+    let repStyle: StyleObject|undefined;
+    if (repStyles.length > 0) {
+      if (repStyles.length > 1) { console.warn("More than one REPRESENTATION/TEX-EXPRESSION styles found."); }
+      repStyle = repStyles[0];
+    } else { repStyle = undefined; }
 
     let html: Html|undefined
     if (repStyle) {
@@ -106,18 +111,18 @@ export class FormulaCellView extends CellView {
     const style = this.notebookView.openNotebook.getStyle(this.styleId);
     // REVIEW: If we attached tool styles to the top-level style,
     //         then we would not need to do a recursive search.
-    const findOptions2: FindStyleOptions = { type: 'TOOL', recursive: true };
+    const findOptions2: FindStyleOptions = { type: 'TOOL-DATA', recursive: true };
     const toolStyles = this.notebookView.openNotebook.findStyles(findOptions2, style.id);
     for (const toolStyle of toolStyles) {
-      const toolInfo: ToolInfo = toolStyle.data;
+      const toolData: ToolData = toolStyle.data;
       let html: Html;
-      if (toolInfo.tex) {
-        const latexRenderer = getRenderer('LATEX');
-        const results = latexRenderer!(toolInfo.tex);
+      if (toolData.tex) {
+        const latexRenderer = getRenderer('TEX-EXPRESSION');
+        const results = latexRenderer!(toolData.tex);
         if (results.html) { html = results.html; }
         else { html = results.errorHtml!; }
       } else {
-        html = toolInfo.html!;
+        html = toolData.html!;
       }
       const $button = $new('button', {
         class: 'tool',

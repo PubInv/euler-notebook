@@ -63,10 +63,10 @@ export abstract class CellView {
     // Only allow editing of user input cells, which have a data type
     // that is string-based, with a renderer.
     const style = this.notebookView.openNotebook.getStyle(this.styleId);
-    const repStyle = this.notebookView.openNotebook.findStyle({ role: 'REPRESENTATION', subrole: 'INPUT' }, this.styleId);
+    const repStyle = this.notebookView.openNotebook.findStyle({ role: 'INPUT' }, this.styleId);
     if (!repStyle) { return false; }
 
-    if (repStyle.type == 'STROKES') {
+    if (repStyle.type == 'STROKE-DATA') {
       this.inputPanel = StylusInputPanel.create(
         style,
         repStyle,
@@ -103,12 +103,12 @@ export abstract class CellView {
     }
 
     switch(repStyle.type) {
-      case 'IMAGE': {
+      case 'IMAGE-URL': {
         const url: string = style.data;
         this.$elt.innerHTML = `<image src="${url}"/>`
         break;
       }
-      case 'SVG': {
+      case 'SVG-MARKUP': {
         this.$elt.innerHTML = repStyle.data;
         break;
       }

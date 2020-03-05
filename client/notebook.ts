@@ -1,3 +1,5 @@
+import { WolframData } from "./math-tablet-api";
+
 /*
 Math Tablet
 Copyright (C) 2019 Public Invention
@@ -54,6 +56,7 @@ export interface StrokeGroup {
 
 // NOTE: toId and fromId are mutually "or". The ids and all other fields are "and".
 export interface FindRelationshipOptions {
+  dataflow?: boolean;
   toId?: StyleId;
   fromId?: StyleId;
   role?: RelationshipRole;
@@ -70,11 +73,13 @@ export interface FindStyleOptions {
   recursive?: boolean;
 }
 
+export interface FormulaData {
+  wolframData: WolframData;
+}
+
 export interface HintData {
-//  fromId: StyleId,
   relationship: HintRelationship,
   status: HintStatus,
-  //  toId: StyleId,
   idOfRelationshipDecorated? : RelationshipId;
 }
 
@@ -159,8 +164,10 @@ export type RelationshipId = number;
 export interface RelationshipObject extends RelationshipProperties {
   id: RelationshipId;
   source: StyleSource;
-  fromId: StyleId;
-  toId: StyleId;
+  /* TODO: Legacy. Eliminate. */ fromId: StyleId;
+  /* TODO: Legacy. Eliminate. */ toId: StyleId;
+  inStyles: RelationshipStyle[];
+  outStyles: RelationshipStyle[];
 }
 
 export type RelationshipRole =
@@ -180,7 +187,21 @@ export interface RelationshipProperties {
   status?: HintStatus;
   logic?: HintRelationship;
   data?: any;
+  // REVIEW: Use role: DATAFLOW with a subrole instead of dataflow flag?
+  dataflow?: boolean;
 }
+
+export interface RelationshipStyle {
+  role: RelationshipStyleRole;
+  id: StyleId;
+}
+
+export type RelationshipStyleRole =
+  'LEGACY' |      // Legacy compatibility. TODO: remove
+  'INPUT-FORMULA' |
+  'OUTPUT-FORMULA' |
+  'TRANSFORMATION-TOOL' |
+  'TRANSFORMATION-HINT';
 
 export type StyleId = number;
 
@@ -203,6 +224,7 @@ export const STYLE_ROLES = [
   'EVALUATION-ERROR',     // Error in CAS evaluation of an expression.
   'EXPOSITION',           // A longer discussion or description.
   'HANDWRITING',          // REVIEW: Used? Deprecate? Stroke information for the user's handwriting.
+  'INPUT',                // Holds the original user input.
   'QUADRATIC',            // DEPRECATED: A quadratic expression, presumably worth plotting.
   'SIMPLIFICATION',       // CAS simplification of expression or equation.
   'EQUATION',             // An equation
@@ -269,10 +291,6 @@ export const STYLE_SUBROLES = [
 
   // 'UNKNOWN' subroles
   'UNKNOWN',
-
-  // REPRESENTATION subroles
-  'INPUT',          // TODO: Rename to 'PRIMARY'
-  'ALTERNATE',
 ];
 export type StyleSubrole = typeof STYLE_SUBROLES[number];
 
@@ -280,21 +298,21 @@ export const STYLE_TYPES = [
   'FORMULA-DATA',    // Type of data for top-level 'FORMULA' styles
   'HINT-DATA',       // Type of data for top-level 'HINT' styles
   'HTML',            // Html: HTML-formatted text
-  'IMAGE',           // ImageData: URL of image relative to notebook folder.
-  'JIIX',            // Jiix: MyScript JIIX export from 'MATH' editor.
-  'LATEX',           // LatexData: LaTeX string // TODO: rename 'TEX'
-  'CLASSIFICATION',  // DEPRECATED: A classifcication of the style.
-  'MATHML',          // MathMlData: MathML Presentation XML
-  'STROKES',         // Strokes of user sketch in our own format.
-  'SYMBOL',          // SymbolData: symbol in a definition or expression.
-  'SOLUTION',        // The result of a "solve" operation
-  'SVG',             // SvgData: SVG markup
+  'IMAGE-URL',       // ImageData: URL of image relative to notebook folder.
+  'MYSCRIPT-DATA',   // Jiix: MyScript JIIX export from 'MATH' editor.
+  'TEX-EXPRESSION',      // LatexData: LaTeX string // TODO: rename 'TEX'
+  'CLASSIFICATION-DATA',  // DEPRECATED: A classifcication of the style.
+  'MATHML-XML',      // MathMlData: MathML Presentation XML
+  'STROKE-DATA',     // Strokes of user sketch in our own format.
+  'SYMBOL-DATA',     // SymbolData: symbol in a definition or expression.
+  'SOLUTION-DATA',   // The result of a "solve" operation
+  'SVG-MARKUP',      // SvgData: SVG markup
   'PLOT-DATA',       // Generic type to handle unspecified plot data
-  'EQUATION',        // An equation (ambiguously assertion or relation)
-  'TEXT',            // TextData: Plain text
-  'TOOL',            // ToolInfo: Tool that can be applied to the parent style.
-  'UNKNOWN',         // Type is as-yet unknown. Data field should be 'null'.
-  'WOLFRAM',         // WolframData: Wolfram language expression
+  'EQUATION-DATA',   // An equation (ambiguously assertion or relation)
+  'PLAIN-TEXT',      // TextData: Plain text  // REVIEW: Encoding? UTF-8?
+  'TOOL-DATA',       // ToolInfo: Tool that can be applied to the parent style.
+  // 'UNKNOWN',       // Type is as-yet unknown. Data field should be 'null'.
+  'WOLFRAM-EXPRESSION', // WolframData: Wolfram language expression
 ] as const;
 export type StyleType = typeof STYLE_TYPES[number];
 
@@ -309,16 +327,18 @@ export const STYLE_SOURCES = [
   'SYMBOL-CLASSIFIER',
   'TEX-FORMATTER',
   'ANY-INPUT',        // This represents ANY input, no matter the type enterred.
+  'ALGEBRAIC-DATAFLOW-OBSERVER',
+  'FORMULA-OBSERVER',
   'SYSTEM',           // The Math-Tablet app itself, not the user or an observer.
   'TEST',             // An example source used only by our test system
   'USER',             // Directly entered by user
-  'WOLFRAM',          // Wolfram C.A.S.
+  'WOLFRAM-OBSERVER', // Wolfram C.A.S.
 ] as const;
 export type StyleSource = typeof STYLE_SOURCES[number];
 
 // Constants
 
-export const VERSION = "0.0.13";
+export const VERSION = "0.0.14";
 
 // Exported Class
 
@@ -379,7 +399,7 @@ export class Notebook {
   }
 
   public relationshipsOf(id: StyleId): RelationshipObject[] {
-    return this.allRelationships().filter(r=>(r.fromId == id || r.toId == id));
+    return this.allRelationships().filter(r=>r.inStyles.find(rs=>rs.id == id) || r.outStyles.find(rs=>rs.id == id));
   }
 
   // REVIEW: Return an iterator?
@@ -436,6 +456,16 @@ export class Notebook {
     .join('');
   }
 
+  // A textual representation useful for debugging.
+  public toText(): string {
+    return this.topLevelStyleOrder()
+    .map(styleId=>{
+      const style = this.getStyle(styleId);
+      return this.styleToText(style);
+    })
+    .join('');
+  }
+
   // REVIEW: Return an iterator?
   public topLevelStyles(): StyleObject[] {
     return this.styleOrder.map(styleId=>this.getStyle(styleId));
@@ -486,15 +516,16 @@ export class Notebook {
     for (const change of changes) { this.applyChange(change); }
   }
 
+  // TODO: Find relationships with styles of certain relationship roles.
   public findRelationships(options: FindRelationshipOptions): RelationshipObject[] {
     const rval: RelationshipObject[] = [];
     // REVIEW: Ideally, relationships would be stored in a Map, not an object,
     //         so we could obtain an iterator over the values, and not have to
     //         construct an intermediate array.
     for (const relationship of <RelationshipObject[]>Object.values(this.relationshipMap)) {
-      //      if ((options.fromId || options.toId) && relationship.fromId != options.fromId && relationship.toId != options.toId) { continue; }
-      if ((options.fromId) && relationship.fromId != options.fromId) { continue; }
-      if ((options.toId) && relationship.toId != options.toId) { continue; }
+      if (typeof options.dataflow != 'undefined' && relationship.dataflow != options.dataflow) { continue; }
+      if (options.fromId && !relationship.inStyles.find(rs=>rs.id==options.fromId)) { continue; }
+      if (options.toId && !relationship.outStyles.find(rs=>rs.id==options.toId)) { continue; }
       if (options.source && relationship.source != options.source) { continue; }
       if (options.role && relationship.role != options.role) { continue; }
       rval.push(relationship);
@@ -506,15 +537,17 @@ export class Notebook {
     options: FindStyleOptions,
     rootId?: StyleId,           // Search child styles of this style, otherwise top-level styles.
   ): StyleObject|undefined {
-    // Option to throw if style not found.
     // REVIEW: If we don't need to throw on multiple matches, then we can terminate the search
     //         after we find the first match.
     // Like findStyles but expects to find zero or one matching style.
-    // If it finds more than one matching style then it throws an exception.
+    // If it finds more than one matching style then it returns the first and outputs a warning.
     const styles = this.findStyles(options, rootId);
-    if (styles.length == 0) { return undefined; }
-    else if (styles.length == 1) { return styles[0]; }
-    else { throw new Error(`findStyle found more than one matching style.`); }
+    if (styles.length > 0) {
+      if (styles.length > 1) { console.warn(`WARNING: More than one style found for ${rootId}/${JSON.stringify(options)}`); }
+      return styles[0];
+    } else {
+      return undefined;
+    }
   }
 
   public findStyles(
@@ -577,7 +610,18 @@ export class Notebook {
     const dataJson = (typeof relationship.data != 'undefined' ? escapeHtml(JSON.stringify(relationship.data)) : 'undefined' );
     const logic = relationship.logic;
     const status = relationship.status;
-    return `<div><span class="leaf">R${relationship.id} ${relationship.fromId} &#x27a1; ${relationship.toId} ${relationship.role} ${dataJson} logic: ${logic} status: ${status}</span></div>`;
+    const inStylesHtml = relationship.inStyles.map(rs=>`${rs.role} ${rs.id}`).join(", ");
+    const outStylesHtml = relationship.outStyles.map(rs=>`${rs.role} ${rs.id}`).join(", ");
+    return `<div><span class="leaf">R${relationship.id} ${relationship.role} [${inStylesHtml} &#x27a1; ${outStylesHtml}] (${relationship.fromId} &#x27a1; ${relationship.toId}) ${dataJson} logic: ${logic} status: ${status}</span></div>`;
+  }
+
+  private relationshipToText(relationship: RelationshipObject, indentationLevel: number): string {
+    const dataJson = (typeof relationship.data != 'undefined' ? JSON.stringify(relationship.data) : 'undefined' );
+    const logic = relationship.logic;
+    const status = relationship.status;
+    const inStylesText = relationship.inStyles.map(rs=>`${rs.role} ${rs.id}`).join(", ");
+    const outStylesText = relationship.outStyles.map(rs=>`${rs.role} ${rs.id}`).join(", ");
+    return `${indentation(indentationLevel)}R${relationship.id} ${relationship.role} [${inStylesText} => ${outStylesText}] (${relationship.fromId}=> ${relationship.toId}) ${dataJson} logic: ${logic} status: ${status}\n`;
   }
 
   private styleToHtml(style: StyleObject): Html {
@@ -604,6 +648,33 @@ export class Notebook {
     }
   }
 
+  private styleToText(style: StyleObject, indentationLevel: number = 0): string {
+    // TODO: This is very inefficient as notebook.childStylesOf goes through *all* styles.
+    const childStyleObjects = Array.from(this.childStylesOf(style.id));
+    // TODO: This is very inefficient as notebook.relationshipOf goes through *all* relationships.
+    const relationshipObjects = Array.from(this.relationshipsOf(style.id));
+    const dataJson = (typeof style.data != 'undefined' ? JSON.stringify(style.data) : 'undefined' );
+    const roleSubrole = (style.subrole ? `${style.role}|${style.subrole}` : style.role);
+    const styleInfo = `S${style.id} ${roleSubrole} ${style.type} ${style.source}`
+    if (childStyleObjects.length == 0 && relationshipObjects.length == 0 && dataJson.length<50) {
+      return `${indentation(indentationLevel)}${styleInfo} ${dataJson}\n`;
+    } else {
+      let rval: string;
+      if (dataJson.length<30) {
+        rval = `${indentation(indentationLevel)}${styleInfo}${dataJson}\n`;
+      } else {
+        rval = `${indentation(indentationLevel)}${styleInfo}\n${indentation(indentationLevel)}${dataJson}\n`;
+      }
+      for (const childStyle of childStyleObjects) {
+        rval += this.styleToText(childStyle, indentationLevel+1)
+      }
+      for (const relationship of relationshipObjects) {
+        rval += this.relationshipToText(relationship, indentationLevel+1);
+      }
+      return rval;
+    }
+  }
+
   // Private Event Handlers
 
   // Private Instance Methods
@@ -614,7 +685,7 @@ export class Notebook {
     style.data = change.style.data;
     // This is experimental; for SVG, we need a timestamp for
     // cleaning up the .PNG files
-    if (style.type == 'SVG') {
+    if (style.type == 'SVG-MARKUP') {
       // @ts-ignore
       style.timestamp = Date.now();
     }
@@ -629,7 +700,9 @@ export class Notebook {
     if (change.data) { style.data = change.data; }
   }
 
-  private deleteRelationship(relationship: RelationshipObject): void {
+  // Making this public for the purpose of error handling
+  // in server-notebook...this requires REVEIW - rlr
+  public deleteRelationship(relationship: RelationshipObject): void {
     // TODO: relationship may have already been deleted by another observer.
     const id = relationship.id;
     if (!this.relationshipMap[id]) { throw new Error(`Deleting unknown relationship ${id}`); }
@@ -705,6 +778,8 @@ export function escapeHtml(str: string): Html {
             .replace('>', "&gt;")
             .replace('<', "&lt;");
 }
+
+function indentation(indentationLevel: number): string { return ' '.repeat(indentationLevel*2); }
 
 // TEMPORARY
 
