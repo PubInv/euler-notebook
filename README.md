@@ -17,7 +17,7 @@ We are actively seeking volunteers and contributors.
 
 ## Current Screenshot
 
-Our current code can accept handwriting and put togetether simple mathematical assertions to perform calculations.
+Our current code can accept handwriting and put together simple mathematical assertions to perform calculations.
 
 ![Screen Shot 2019-04-25 at 12 49 54 PM](https://user-images.githubusercontent.com/5296671/56757194-3e827c80-6759-11e9-969d-e0a49395ce0d.png)
 
@@ -40,10 +40,10 @@ Step 4: Create a credentials and configuration directory:
 cp -r ~/math-tablet/server/config-dir/ ~/.math-tablet
 ```
 
-Edit ~/.math-tablet/credentials.json to insert your MyScript applicationKey and hmacKey.
+Edit `~/.math-tablet/credentials.json` to insert your MyScript applicationKey and hmacKey.
 
 Step 4: Create a directory to store user notebooks.
-In your HOME directory, create a subdirectory <tt>math-tablet-usr</tt>.
+In your `HOME directory, create a subdirectory <tt>math-tablet-usr</tt>.
 Then, create a subdirectory of that directory named after a user,
 e.g. <tt>~/math-tablet-usr/david</tt>.
 The following command should do the trick on Mac and Linux:
