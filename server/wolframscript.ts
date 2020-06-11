@@ -263,6 +263,7 @@ export async function checkEquiv(a:string, b:string) : Promise<boolean> {
 // being an assignment properly...it is best to texify
 // both sides of an assignment and handle that way.
 export async function convertWolframToTeX(text: WolframData): Promise<LatexData> {
+    if (text == '') { return ''; }
     const getTex = `TeXForm[HoldForm[${text}]]`;
     try {
       const tex = await execute(getTex);
@@ -273,6 +274,7 @@ export async function convertWolframToTeX(text: WolframData): Promise<LatexData>
 }
 
 export async function convertEvaluatedWolframToTeX(text: WolframData): Promise<LatexData> {
+    if (text == '') { return ''; }
     const getTex = `TeXForm[HoldForm[Evaluate[${text}]]]`;
     try {
       const tex = await execute(getTex);
