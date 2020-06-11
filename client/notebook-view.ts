@@ -203,16 +203,17 @@ export class NotebookView {
     if (this.lastCellSelected) { afterId = this.lastCellSelected.styleId; }
     else { afterId = StylePosition.Bottom; }
 
-    const data: DrawingData = {
+    const formulaData: FormulaData = { wolframData: '' };
+    const strokeData: DrawingData = {
       size: { height: '1in', width: '6.5in' },
       strokeGroups: [
         { strokes: [] }
       ],
     };
     const styleProps: StylePropertiesWithSubprops = {
-      role: 'FORMULA', subrole: 'OTHER', type: 'FORMULA-DATA', data: null,
+      role: 'FORMULA', subrole: 'OTHER', type: 'FORMULA-DATA', data: formulaData,
       subprops: [
-        { role: 'INPUT', type: 'STROKE-DATA', data }
+        { role: 'INPUT', type: 'STROKE-DATA', data: strokeData }
       ]
     };
     const changeRequest: StyleInsertRequest = { type: 'insertStyle', afterId, styleProps };
