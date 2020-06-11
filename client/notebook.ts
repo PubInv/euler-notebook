@@ -439,6 +439,11 @@ export class Notebook {
     return rval;
   }
 
+  public isEmpty(): boolean {
+    // Returns true iff the notebook does not have any contents.
+    return this.styleOrder.length == 0;
+  }
+
   public precedingStyleId(id: StyleId): StyleId {
     // Returns the id of the style immediately before the top-level style specified.
     const i = this.styleOrder.indexOf(id);
@@ -448,12 +453,15 @@ export class Notebook {
   }
 
   public toHtml(): Html {
-    return this.topLevelStyleOrder()
-    .map(styleId=>{
-      const style = this.getStyle(styleId);
-      return this.styleToHtml(style);
-    })
-    .join('');
+    if (this.isEmpty()) { return "<i>Notebook is empty.</i>"; }
+    else {
+      return this.topLevelStyleOrder()
+      .map(styleId=>{
+        const style = this.getStyle(styleId);
+        return this.styleToHtml(style);
+      })
+      .join('');
+    }
   }
 
   // A textual representation useful for debugging.
