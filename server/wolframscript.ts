@@ -34,6 +34,7 @@ export interface NVPair { name: string; value: string }
 // Constants
 
 const WOLFRAM_LICENSE_EXPIRING_MSG = "\n\tWolfram Language 12.0.0 Engine license you are using is expiring.\n\tPlease contact Wolfram Research or an authorized\n\tWolfram product distributor to extend your license and\n\tobtain a new password.\n"
+const WOLFRAM_ENGINE_ACTIVATED_MSG = "Wolfram Engine activated. See https://www.wolfram.com/wolframscript/ for more information.\n";
 
 const DEFAULT_WOLFRAMSCRIPT_PATH: Map<NodeJS.Platform, string> = new Map([
   [ 'darwin', '/usr/local/bin/wolframscript' ],
@@ -220,9 +221,11 @@ async function startProcess(config?: WolframScriptConfig): Promise<void> {
     };
     const stderrListener = (data: Buffer)=>{
       const dataString = data.toString();
-      // Ignore any text to standard out that is part of the license expiring string.
+      // Ignore any text to stderr that is part of the license expiring string.
       // TODO: This is specific to the version encoded in the string (12.0.0). Make this version independent.
+      // REVIEW: Some small chunks of text could coincidentally match some substring of these messages.
       if (WOLFRAM_LICENSE_EXPIRING_MSG.indexOf(dataString)>=0) { return; }
+      if (WOLFRAM_ENGINE_ACTIVATED_MSG.indexOf(dataString)>=0) { return; }
       console.error(`ERROR: WolframScript: stderr output: ${showInvisible(dataString)}`);
     };
     const stdoutListener = (data: Buffer) => {
