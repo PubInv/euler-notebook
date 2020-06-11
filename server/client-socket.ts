@@ -186,7 +186,7 @@ export class ClientSocket {
       debug(`Client Socket: received socket message: ${msg.type} ${msg.notebookPath}`);
       switch(msg.type) {
         case 'changeNotebook':
-          runAsync(this.cmChangeNotebook(msg), MODULE, 'cmCloseNotebook');
+          runAsync(this.cmChangeNotebook(msg), MODULE, 'cmChangeNotebook');
           break;
         case 'closeNotebook':
           runAsync(this.cmCloseNotebook(msg), MODULE, 'cmCloseNotebook');
