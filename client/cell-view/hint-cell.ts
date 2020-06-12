@@ -21,7 +21,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 import { escapeHtml } from '../dom.js';
 import { StyleObject, HintData, HintStatus, HintRelationship } from '../notebook.js';
-import { NotebookView } from '../notebook-view.js';
+import { NotebookView } from '../notebook/notebook-view.js';
 // import { getRenderer } from '../renderers.js';
 
 import { CellView } from './index.js';

@@ -19,16 +19,18 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 // Requirements
 
-import { $new, $newSvg } from './dom.js';
+import { $new, $newSvg } from '../dom.js';
 // TODO: import { getRenderer } from './renderers.js';
 import { ROLE_OPTIONS, SUBROLE_OPTIONS } from './role-selectors.js';
-import { StyleObject, StyleRole, StyleSubrole, DrawingData } from './notebook.js';
-import { NotebookChangeRequest, StyleChangeRequest, StyleConvertRequest } from './math-tablet-api.js';
+import { StyleObject, StyleRole, StyleSubrole, DrawingData } from '../notebook.js';
+import { NotebookChangeRequest, StyleChangeRequest, StyleConvertRequest } from '../math-tablet-api.js';
 import { SvgStroke } from './svg-stroke.js';
 
 // Types
 
 type DismissCallback = (changeRequests: NotebookChangeRequest[])=>void;
+
+// REVIEW: These types are duplicated in ink-cell-view.ts.
 
 type PointerId = number;
 type PointerMap = Map<PointerId, PointerInfo>;
@@ -321,6 +323,7 @@ export class StylusInputPanel {
 
 // Helper Functions
 
+// REVIEW: Duplicated in ink-cell-view.ts
 function copyDrawingData(data: DrawingData): DrawingData {
   return JSON.parse(JSON.stringify(data));
 }

@@ -17,17 +17,19 @@ You should have received a copy of the GNU Affero General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
+// REVIEW: Files exporting a class should be named after the class exported. Rename this to cell-view.ts?
+
 // Requirements
 
 import { assert } from '../common.js';
 import { /* escapeHtml, */ $new, $, /* Html */} from '../dom.js';
 // import { getKatex } from '../katex-types.js';
-import { NotebookView } from '../notebook-view.js';
-import { KeyboardInputPanel } from '../keyboard-input-panel.js';
+import { NotebookView } from '../notebook/notebook-view.js';
+import { KeyboardInputPanel } from '../notebook/keyboard-input-panel.js';
 import { StyleObject, StyleId, /* RelationshipObject */ } from '../notebook.js';
 import { NotebookChangeRequest } from '../math-tablet-api.js';
 // import { LatexData, ToolInfo, NameValuePair } from '../math-tablet-api.js';
-import { StylusInputPanel } from '../stylus-input-panel.js';
+import { StylusInputPanel } from '../notebook/stylus-input-panel.js';
 
 // Exported Class
 

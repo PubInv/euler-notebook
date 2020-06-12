@@ -19,8 +19,8 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 // Requirements
 
-import { Html } from './dom.js';
-import { StyleRole, StyleSubrole, StyleType } from './notebook.js';
+import { Html } from '../dom.js';
+import { StyleRole, StyleSubrole, StyleType } from '../notebook.js';
 
 // Constants
 

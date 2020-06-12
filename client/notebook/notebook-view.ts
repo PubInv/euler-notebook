@@ -19,19 +19,19 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 // Requirements
 
-import { CellView } from './cell-view/index.js';
-import { createCellView } from './cell-view/instantiator.js';
-import { assert } from './common.js';
-import { $, configure } from './dom.js';
+import { CellView } from '../cell-view/index.js';
+import { createCellView } from '../cell-view/instantiator.js';
+import { assert } from '../common.js';
+import { $, configure } from '../dom.js';
 import {
   DrawingData, StyleId, StyleObject, NotebookChange,
   StyleType, StyleRelativePosition,
   StylePosition, DOCUMENT, PageId, HintData, HintStatus, HintRelationship, FormulaData,
-} from './notebook.js';
+} from '../notebook.js';
 import {
   StyleDeleteRequest,
   StyleInsertRequest, StylePropertiesWithSubprops, StyleMoveRequest, NotebookChangeRequest, ChangeNotebookOptions,
-} from './math-tablet-api.js';
+} from '../math-tablet-api.js';
 import { ClientNotebook, TrackedChangesResults } from './client-notebook.js';
 import { Sidebar } from './sidebar.js';
 
@@ -195,15 +195,13 @@ export class NotebookView {
     this.startEditingCell(styleId);
   }
 
-  // NFC: Out of alphabetical order.
-  public async insertStylusCellBelow(): Promise<void> {
+  public async insertInkCellBelow(): Promise<void> {
     // If cells are selected then in insert a keyboard input cell below the last cell selected.
     // Otherwise, insert at the end of the notebook.
     let afterId: StyleRelativePosition;
     if (this.lastCellSelected) { afterId = this.lastCellSelected.styleId; }
     else { afterId = StylePosition.Bottom; }
 
-    const formulaData: FormulaData = { wolframData: '' };
     const strokeData: DrawingData = {
       size: { height: '1in', width: '6.5in' },
       strokeGroups: [
@@ -211,15 +209,14 @@ export class NotebookView {
       ],
     };
     const styleProps: StylePropertiesWithSubprops = {
-      role: 'FORMULA', subrole: 'OTHER', type: 'FORMULA-DATA', data: formulaData,
+      role: 'UNINTERPRETED-INK', subrole: 'OTHER', type: 'NONE', data: null,
       subprops: [
         { role: 'INPUT', type: 'STROKE-DATA', data: strokeData }
       ]
     };
     const changeRequest: StyleInsertRequest = { type: 'insertStyle', afterId, styleProps };
-    const undoChangeRequest = await this.sendUndoableChangeRequest(changeRequest);
-    const styleId = (<StyleDeleteRequest>undoChangeRequest).styleId
-    this.startEditingCell(styleId);
+    /* const undoChangeRequest = */ await this.sendUndoableChangeRequest(changeRequest);
+    // const styleId = (<StyleDeleteRequest>undoChangeRequest).styleId
   }
 
   public async insertKeyboardCellAbove(): Promise<void> {
@@ -540,7 +537,7 @@ export class NotebookView {
 
   // -- PRIVATE --
 
-  // Constructor
+  // Private Constructor
 
   private constructor($elt: HTMLDivElement) {
     this.$elt = $elt;

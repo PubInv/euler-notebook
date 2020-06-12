@@ -23,8 +23,9 @@ include iconmonstr
 
 mixin header
   #header
-    button#homeButton(title="Math Tablet home")
-      +svgIconHome6
+    span
+      button#homeButton(title="Math Tablet home")
+        +svgIconHome6
     div
       each segment, i in pathSegments
         if i < pathSegments.length-1
@@ -33,8 +34,11 @@ mixin header
           | /
         else
           = segment
-    button#userButton(title="User settings")
-      +svgIconUser1
+    span
+      button#refreshButton(title="Refresh page")
+        +svgIconRefresh2
+      button#userButton(title="User settings")
+        +svgIconUser1
 
 mixin sidebar
   #sidebar
@@ -52,7 +56,7 @@ block styles
 
 block scripts
   script(type='module', src='/javascripts/header.js')
-  script(type='module', src='/javascripts/folder-app.js')
+  script(type='module', src='/javascripts/folder/app.js')
 
 block content
   +header
@@ -69,12 +73,12 @@ block content
         input(type='text', name='notebookName', placeholder="Notebook name")
         button(type='submit', name='action', value='newNotebook') New Notebook
 
-    #importFileView
+    #importFileView(style='display:none')
       form(method='POST', enctype="multipart/form-data")
         input(type='file', name='importFile', accept='.json')
         button(type='submit', name='action', value='importFile') Import
 
-    #filesAndFoldersView
+    #filesAndFoldersView(style='display:none')
       form(method='POST')
         - const isEmpty = folders.length==0 && notebooks.length==0
         table

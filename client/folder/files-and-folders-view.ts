@@ -19,38 +19,33 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 // Requirements
 
-// import { $new, escapeHtml, Html } from '../dom.js';
-import { StyleObject } from '../notebook.js';
-import { NotebookView } from '../notebook/notebook-view.js';
+// Exported Class
 
-import { CellView } from './index.js';
-// import { assert } from '../common.js';
-
-// Types
-
-// Constants
-
-// Class
-
-export class PlotCellView extends CellView {
+export class FilesAndFoldersView {
 
   // Class Methods
 
-  public static create(notebookView: NotebookView, style: StyleObject): PlotCellView {
-    const instance = new this(notebookView, style);
-    instance.render(style);
-    return instance;
+  public static attach($elt: HTMLDivElement): FilesAndFoldersView {
+    return new this($elt);
   }
+
+  // Instance Properties
+
+  public $elt: HTMLElement;
 
   // Instance Methods
 
+  public connect(): void { }
+
   // -- PRIVATE --
 
-  // Constructor
+  // Private Constructor
 
-  private constructor(notebookView: NotebookView, style: StyleObject) {
-    super(notebookView, style, 'plotCell');
+  private constructor($elt: HTMLDivElement) {
+    this.$elt = $elt;
   }
+
+  // Private Instance Properties
 
 
 }

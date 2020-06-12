@@ -15,7 +15,19 @@ Math Tablet was created by David Jeschke, and he is the Invention Coach and "Ben
 The project is currently licensed under the [Affero GPL](https://www.gnu.org/licenses/agpl-3.0.en.html).
 We are actively seeking volunteers and contributors.
 
-## Running locally
+## Supported Browsers and Devices
+
+For Math Tablet we use the __Google Chrome__ browser on computers and devices.
+There is a good chance that Math Tablet will not work properly on other browsers because we do not test them.
+
+As for devices with a stylus, we use the __Apple iPad Pro TBD:version__ and __Microsoft Surface Pro 6__.
+Note that Google Chrome is not the default browser on either of these devices, so you will need to install it.
+
+We run the server on Apple Mac computers with the latest version of OS X.
+
+If you want Math Tablet to support other browsers, devices, or operating systems, [let us know](https://www.pubinv.org/contact-us/).
+
+## Running Locally
 
 Step 1: Create a [MyScript developer account](https://developer.myscript.com/getting-started/web)
 to obtain application keys for their handwriting recognition services.
@@ -37,13 +49,10 @@ cp -r ~/math-tablet/server/config-dir/ ~/.math-tablet
 Edit `~/.math-tablet/credentials.json` to insert your MyScript applicationKey and hmacKey.
 
 Step 4: Create a directory to store user notebooks.
-In your `HOME` directory, create a subdirectory <tt>math-tablet-usr</tt>.
-Then, create a subdirectory of that directory named after a user,
-e.g. <tt>~/math-tablet-usr/david</tt>.
-The following command should do the trick on Mac and Linux:
+In your `HOME` directory, create a subdirectory <tt>math-tablet-usr</tt>:
 
 ```bash
-mkdir -p ~/math-tablet-usr/$USER
+mkdir -p ~/math-tablet-usr
 ```
 
 Step 5: Install dependencies, build, run unit tests, and run the math-tablet server:
@@ -53,6 +62,15 @@ scripts/go
 ```
 
 Step 6: Open a browser to [localhost:3000](http://localhost:3000) and enjoy!
+
+## Useful Tips
+
+In the Chrome browser on Windows, press `F11` to go fullscreen,
+or tap the three vertical dots to the right of the browser address bar,
+then tap on the incomplete square icon to the right of "Zoom".
+To exit fullscreen mode, press `F11` again,
+or hover the mouse cursor at the top of the screen with pen or mouse,
+and a close button will appear.
 
 ## Development
 

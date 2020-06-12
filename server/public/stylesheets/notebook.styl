@@ -22,7 +22,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 :root
   --cell-left-margin 60px
   --page-aspect-ratio calc(8.5 / 11)
-  --tools-width 40%
+  --tools-height 20%
 
 // Specific elements
 
@@ -116,8 +116,17 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
   .hintCell
     padding-left 20px
 
+  .inkCell
+
+    .canvas
+      background-color white
+      fill none
+      pen-action none
+      touch-action none
+      stroke black
+
 #notebookView:focus
-  background-color white
+  background-color #f8f8f8
   outline none
 
 #pageView
@@ -131,12 +140,13 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 #tools
   background-color transparent
+  border-top 1px solid gray
   bottom 0
+  left 0
   position fixed
   padding 20px
   right 0
-  top var(--header-height)
-  width var(--tools-width)
+  height var(--tools-height)
 
   .tool
     color blue

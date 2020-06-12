@@ -39,6 +39,8 @@ mixin header
         | /
       = notebookName
     span
+      button#refreshButton(title="Refresh page")
+        +svgIconRefresh2
       button#exportButton(title="Export notebook")
         +svgIconLogOut18
       button#debugButton(title="Debug window")
@@ -96,7 +98,7 @@ block styles
 block scripts
   script(src='/javascripts/pep-0.4.3.js')
   script(src='/javascripts/katex-0.10.1.js')
-  script(type='module', src='/javascripts/app.js')
+  script(type='module', src='/javascripts/notebook/app.js')
 
 block content
   +debugPopup

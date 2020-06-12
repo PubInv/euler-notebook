@@ -71,7 +71,7 @@ const SVG_NS = 'http://www.w3.org/2000/svg';
 
 export function $<T extends Element>(root: Element|Document, selector: CssSelector): T {
   const $elts = $all<T>(root, selector);
-  assert($elts.length == 1);
+  assert($elts.length == 1, `Expected one element for selector '${selector}', got ${$elts.length}.`);
   return $elts[0];
 }
 

@@ -19,16 +19,16 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 // Requirements
 
-import { $ } from './dom.js';
+import { $ } from '../dom.js';
 import { DebugPopup } from './debug-popup.js';
-import { showErrorMessage } from './global.js';
+import { showErrorMessage } from '../global.js';
 import { Header } from './header.js';
 import { NotebookView } from './notebook-view.js';
 import { ClientNotebook } from './client-notebook.js';
 import { PageView, PageViewType } from './page-view.js';
 import { ServerSocket } from './server-socket.js';
 import { Sidebar, View } from './sidebar.js';
-import { NotebookPath } from './math-tablet-api.js';
+import { NotebookPath } from '../math-tablet-api.js';
 
 // Types
 
@@ -128,22 +128,20 @@ class App {
 
 // Application Entry Point
 
-async function onDomReady(_event: Event){
+// REVIEW: Class static method?
+function onDomReady(_event: Event): void {
   try {
-    console.log('onDomReady');
+    console.log('DOM ready.');
     const wsUrl = `ws://${window.location.host}/`;
     const notebookPath: NotebookPath = <NotebookPath>window.location.pathname;
     gApp = App.attach(<HTMLBodyElement>document.body);
     gApp.connect(wsUrl, notebookPath)
     .then(
-      function() {
-        console.log('App ready');
-        if (false) { console.dir(gApp); }
-      },
+      function() { console.log('App ready.'); },
       function(err: Error) { console.error(`Asynchronous error in onDomReady: ${err.message}`); },
     )
   } catch (err) {
-    showErrorMessage(`Initialization error: ${err.message}`);
+    showErrorMessage("App initialization error.", err);
     throw err;
   }
 }

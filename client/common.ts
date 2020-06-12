@@ -23,10 +23,14 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 type StackTrace = string;
 
+// Constants
+
+const ASSERTION_FAILED_MSG = "Assertion failed.";
+
 // Exported Functions
 
 export function assert(value: any, message?: string): void {
-  if (!value) { throw new Error(message); }
+  if (!value) { throw new Error(message || ASSERTION_FAILED_MSG); }
 }
 
 export function stackTrace(): StackTrace {

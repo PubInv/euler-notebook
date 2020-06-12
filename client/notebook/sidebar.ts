@@ -19,7 +19,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 // Requirements
 
-import { $, $attach } from './dom.js';
+import { $, $attach } from '../dom.js';
 import { NotebookView } from './notebook-view.js';
 
 // Types
@@ -83,6 +83,7 @@ export class Sidebar {
       ['page',      $(document, '#pageView')],
       ['thumbnail', $(document, '#thumbnailView')],
     ]);
+    this.currentView = '';
 
     // Sidebar button events
     $attach($elt, '#thumbnailViewButton', { listeners: { click: (_e: MouseEvent)=>this.switchView('thumbnail') }});
@@ -95,7 +96,6 @@ export class Sidebar {
     this.$redoButton = $attach<HTMLButtonElement>($elt, '#redoButton', { listeners: { click: (e: MouseEvent)=>this.onRedoButtonClicked(e) }});
     this.$trashButton = $attach<HTMLButtonElement>($elt, '#trashButton', { listeners: { click: (e: MouseEvent)=>this.onTrashButtonClicked(e) }});
     this.$undoButton = $attach<HTMLButtonElement>($elt, '#undoButton', { listeners: { click: (e: MouseEvent)=>this.onUndoButtonClicked(e) }});
-    this.currentView = '';
   }
 
   // Private Instance Properties
@@ -127,7 +127,7 @@ export class Sidebar {
   }
 
   private onInsertDrawingButtonClicked(_e: MouseEvent): void {
-    this.asyncCommand("Insert-Drawing", this.notebookView.insertStylusCellBelow());
+    this.asyncCommand("Insert-Drawing", this.notebookView.insertInkCellBelow());
   }
 
   private onInsertHintButtonClicked(_e: MouseEvent): void {

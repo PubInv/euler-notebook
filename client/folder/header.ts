@@ -17,11 +17,11 @@ You should have received a copy of the GNU Affero General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
+// TODO: Disable home button when we are on the home page.
+
 // Requirements
 
-import { $attach } from './dom.js';
-import { DebugPopup } from './debug-popup.js';
-import { ClientNotebook } from './client-notebook.js';
+import { $attach } from '../dom.js';
 
 // Types
 
@@ -41,44 +41,22 @@ export class Header {
 
   // Instance Methods
 
-  public connect(debugPopup: DebugPopup, openNotebook: ClientNotebook): void {
-    this.debugPopup = debugPopup;
-    this.openNotebook = openNotebook;
-  }
-
-  public enableDebugButton(enable: boolean): void {
-    this.$debugButton.disabled = !enable;
-  }
+  public connect(): void { }
 
   // -- PRIVATE --
 
   // Constructor
 
   private constructor($elt: HTMLDivElement) {
-    $attach($elt, '#exportButton', { listeners: { click: e=>this.onExportButtonClicked(e) }});
     $attach($elt, '#homeButton', { listeners: { click: _e=>{ window.location.href = '/'; }}});
+    $attach($elt, '#refreshButton', { listeners: { click: _e=>{ window.location.reload(); }}});
     $attach($elt, '#userButton', { listeners: { click: _e=>{ alert("User menu not yet implemented."); }}});
-    this.$debugButton = $attach($elt, '#debugButton', { listeners: { click: e=>this.onDebugButtonClicked(e) }});
   }
 
   // Private Instance Properties
 
-  private $debugButton: HTMLButtonElement;
-  private debugPopup!: DebugPopup
-
-  private openNotebook!: ClientNotebook
-
   // Private Instance Methods
 
   // Private Event Handlers
-
-  private onDebugButtonClicked(_event: MouseEvent): void {
-    this.enableDebugButton(false);
-    this.debugPopup.show();
-  }
-
-  private onExportButtonClicked(_event: MouseEvent): void {
-    this.openNotebook.export();
-  }
 
 }
