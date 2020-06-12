@@ -18,9 +18,9 @@ We are actively seeking volunteers and contributors.
 ## Supported Browsers and Devices
 
 For Math Tablet we use the __Google Chrome__ browser on computers and devices.
-There is a good chance that Math Tablet will not work properly on other browsers because we do not test them.
+There is a good chance that Math Tablet will not work properly on other browsers because we currently do not test them.
 
-As for devices with a stylus, we use the __Apple iPad Pro TBD:version__ and __Microsoft Surface Pro 6__.
+As for devices with a stylus, we test with the __Apple iPad Pro__ (12.9" 3rd gen) and __Microsoft Surface Pro__ (6).
 Note that Google Chrome is not the default browser on either of these devices, so you will need to install it.
 
 We run the server on Apple Mac computers with the latest version of OS X.
@@ -71,6 +71,9 @@ then tap on the incomplete square icon to the right of "Zoom".
 To exit fullscreen mode, press `F11` again,
 or hover the mouse cursor at the top of the screen with pen or mouse,
 and a close button will appear.
+
+If you would like a more paper-like feel when using the Apple Pencil with the iPad
+you could consider a [Paperlike screen protector](https://paperlike.com).
 
 ## Development
 
