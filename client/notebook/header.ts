@@ -17,9 +17,12 @@ You should have received a copy of the GNU Affero General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
+// TODO: Full-screen button should be like a toggle and look depressed when in full-screen mode.
+
 // Requirements
 
 import { $attach } from '../dom.js';
+// import { showErrorMessageIfPromiseRejects } from '../global.js';
 import { DebugPopup } from './debug-popup.js';
 import { ClientNotebook } from './client-notebook.js';
 
@@ -60,6 +63,9 @@ export class Header {
     $attach($elt, '#refreshButton', { listeners: { click: _e=>{ window.location.reload(); }}});
     $attach($elt, '#userButton', { listeners: { click: _e=>{ alert("User menu not yet implemented."); }}});
     this.$debugButton = $attach($elt, '#debugButton', { listeners: { click: e=>this.onDebugButtonClicked(e) }});
+
+    const $fullscreenButton = $attach<HTMLButtonElement>($elt, '#fullscreenButton', { listeners: { click: e=>this.onFullscreenButtonClicked(e) }});
+    $fullscreenButton.disabled = !fullScreenIsEnabled();
   }
 
   // Private Instance Properties
@@ -82,4 +88,39 @@ export class Header {
     this.openNotebook.export();
   }
 
+  private onFullscreenButtonClicked(_event: MouseEvent): void {
+    if (!document.fullscreenElement) {
+      requestFullscreen(document.documentElement);
+      // // NOTE: Saw it mentioned somewhere that not all implementations return a promise.
+      // const promise = Promise.resolve(document.documentElement.requestFullscreen());
+      // showErrorMessageIfPromiseRejects(promise, "Cannot go full screen.");
+    } else {
+      document.exitFullscreen && document.exitFullscreen();
+    }
+  }
+
+}
+
+// HELPER FUNCTIONS
+
+function fullScreenIsEnabled(): boolean {
+  // @ts-ignore
+  return !!(document.fullscreenEnabled || document.mozFullScreenEnabled || document.documentElement.webkitRequestFullScreen);
+}
+
+function requestFullscreen(element: HTMLElement): void {
+  // TODO: Check for error on promise that is returned and show it to user if so. Not all implementations return a promise.
+  // REVIEW: Maybe use this: https://github.com/sindresorhus/screenfull.js?
+  // See https://developer.mozilla.org/en-US/docs/Web/API/Fullscreen_API/Guide.
+  if (element.requestFullscreen) {
+    element.requestFullscreen();
+  // @ts-ignore
+	} else if (element.mozRequestFullScreen) {
+    // @ts-ignore
+    element.mozRequestFullScreen();
+  // @ts-ignore
+	} else if (element.webkitRequestFullScreen) {
+    // @ts-ignore
+		element.webkitRequestFullScreen(Element.ALLOW_KEYBOARD_INPUT);
+	}
 }

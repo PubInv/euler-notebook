@@ -40,6 +40,10 @@ export function showErrorMessage(html: Html, err?: Error): void {
   throw err;
 }
 
+export function showErrorMessageIfPromiseRejects(promise: Promise<any>, html: Html): void {
+  promise.catch(err=>{ showErrorMessage(html, err); });
+}
+
 // export function showSuccessMessage(html: Html): void {
 //   addSuccessMessageToHeader(html);
 // }
