@@ -20,8 +20,8 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 // Requirements
 
 // import { $new, escapeHtml, Html } from '../dom.js';
-import { StyleObject } from '../shared/notebook.js';
-import { NotebookView } from '../notebook/notebook-view.js';
+import { StyleObject } from '../../shared/notebook.js';
+import { NotebookView } from '../notebook-view.js';
 
 import { CellView } from './index.js';
 // import { assert } from '../common.js';

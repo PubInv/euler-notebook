@@ -19,8 +19,8 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 // Requirements
 
-import { CellView } from '../cell-view/index.js';
-import { createCellView } from '../cell-view/instantiator.js';
+import { CellView } from './cell-view/index.js';
+import { createCellView } from './cell-view/instantiator.js';
 import { assert } from '../common.js';
 import { $, configure } from '../dom.js';
 import {
