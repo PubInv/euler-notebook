@@ -61,7 +61,7 @@ export class ClientSocket {
   }
 
   public static initialize(server: Server): void {
-    debug("Client Socket: initialize");
+    debug("Initialize");
     const wss = new WebSocket.Server({ server });
     wss.on('connection', (ws: WebSocket, req: Request)=>{ this.onConnection(ws, req); });
   }
@@ -84,7 +84,7 @@ export class ClientSocket {
         this.closeAllNotebooks(notify);
         this.closePromise = new Promise((resolve, reject)=>{ this.closeResolver = { resolve, reject }; });
         if (this.socket.readyState != WebSocket.CLOSING) {
-          debug(`Client Socket ${this.id}: closing.`);
+          debug(`Socket closing: ${this.id}`);
           this.socket.close(code, reason);
         } else {
           console.warn(`WARNING: Client Socket ${this.id}: closing socket that is closing.`)
@@ -125,7 +125,7 @@ export class ClientSocket {
 
   private static async onConnection(ws: WebSocket, req: Request): Promise<void> {
     try {
-      debug(`Client Socket: new connection: ${req.url}`);
+      debug(`New connection: ${req.url}`);
       // TODO: Client generate ID and send it with connection.
       const id: ClientId = `C${Date.now()}`;
       const instance = new this(id, ws);
@@ -138,7 +138,7 @@ export class ClientSocket {
   // Private Constructor
 
   private constructor(id: ClientId, ws: WebSocket) {
-    debug(`Client Socket: constructor`)
+    debug(`Constructor`)
     this.id = id;
     this.socket = ws;
     this.clientObservers = new Map();
@@ -157,10 +157,10 @@ export class ClientSocket {
     try {
       // Normal close appears to be code 1001, reason empty string.
       if (this.closeResolver) {
-        debug(`Client Socket: web socket closed by server: ${code} '${reason}' ${this.clientObservers.size}`);
+        debug(`Socket closed by server: ${code} '${reason}' ${this.clientObservers.size}`);
         this.closeResolver.resolve();
       } else {
-        debug(`Client Socket: web socket closed by client: ${code} '${reason}' ${this.clientObservers.size}`);
+        debug(`Socket closed by client: ${code} '${reason}' ${this.clientObservers.size}`);
         this.closeAllNotebooks(false);
       }
       ClientSocket.clientSockets.delete(this.id);
@@ -181,9 +181,7 @@ export class ClientSocket {
   private onWsMessage(_ws: WebSocket, message: WebSocket.Data): void {
     try {
       const msg: ClientMessage = JSON.parse(message.toString());
-      // console.log(`Message from client: ${msg.notebookName} ${msg.type}`);
-      // console.dir(msg);
-      debug(`Client Socket: received socket message: ${msg.type} ${msg.notebookPath}`);
+      debug(`Received socket message: ${msg.type} ${msg.notebookPath}`);
       switch(msg.type) {
         case 'changeNotebook':
           runAsync(this.cmChangeNotebook(msg), MODULE, 'cmChangeNotebook');
@@ -275,7 +273,20 @@ export class ClientSocket {
 
   private sendMessage(msg: ServerMessage): void {
     const json = JSON.stringify(msg);
-    debug(`Client Socket: sending socket message ${msg.type}.`);
+    switch(msg.type) {
+      case 'notebookOpened':
+        debug(`Sending notebookOpened socket message: ${msg.notebookPath}.`);
+        break;
+      case 'notebookClosed':
+        debug(`Sending notebookClosed socket message: ${msg.notebookPath}.`);
+        break;
+      case 'notebookChanged':
+        debug(`Sending notebookChanged socket message: ${msg.notebookPath}\n${JSON.stringify(msg.changes, null, 2)}.`);
+        break;
+      default:
+        console.error(`Sending unknown socket message: ${(<any>msg).type}.`);
+        break;
+    }
     try {
       // REVIEW: Should we check ws.readyState
       // REVIEW: Should we use the callback to see if the message went through?

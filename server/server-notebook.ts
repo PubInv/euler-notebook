@@ -322,26 +322,18 @@ export class ServerNotebook extends Notebook {
               return parseInt(nametsAndExtension[0]);
             }
 
-
-            function fileIsEarlierVersionThan(id:number, ts : string|undefined,name: string) : boolean {
+            function fileIsEarlierVersionThan(id:number, ts: number|undefined, name: string) : boolean {
               if (!ts) return false;
               const filets = getTimeStampOfCompatibleFileName(id, name);
-              if (filets) {
-                return parseInt(ts) > filets;
-              } else {
-                return false;
-              }
+              return !!filets && ts>filets;
             }
 
-            function fileIsLaterVersionThan(id:number, ts : string|undefined,name: string) : boolean {
+            function fileIsLaterVersionThan(id:number, ts: number|undefined, name: string) : boolean {
               if (!ts) return false;
               const filets = getTimeStampOfCompatibleFileName(id, name);
-              if (filets) {
-                return parseInt(ts) < filets;
-              } else {
-                return false;
-              }
+              return !!filets && ts<filets;
             }
+
             const b: Buffer = await apiFunctionWrapper(s.data);
             const ts = Date.now();
             console.log(tls);
@@ -353,13 +345,13 @@ export class ServerNotebook extends Notebook {
             const directory = apath;
 
             var foundfile = "";
-            debug("BEGIN",directory);
+            debug("BEGIN", directory);
             // @ts-ignore
             var files = fs.readdirSync(directory);
-            debug("files",files);
+            debug("files", files);
             for (const file of files) {
               // I don't know why this is needed!
-              if (fileIsLaterVersionThan(s.id,s.timestamp,file)) {
+              if (fileIsLaterVersionThan(s.id, s.timestamp, file)) {
                 foundfile = file;
               }
             }
@@ -374,7 +366,7 @@ export class ServerNotebook extends Notebook {
               for (const file of files) {
                 debug("file",file);
                 // I don't know why this is needed!
-                if (fileIsEarlierVersionThan(s.id,""+ts,file)) {
+                if (fileIsEarlierVersionThan(s.id,ts,file)) {
                   // @ts-ignore
                   fs.unlink(path.join(directory, file), err  => {
                     if (err) throw err;

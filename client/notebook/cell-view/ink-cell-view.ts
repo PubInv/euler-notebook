@@ -55,7 +55,8 @@ export class InkCellView extends CellView {
   // Instance Methods
 
   public render(_style: StyleObject): void {
-    throw new Error("UNEXPECTED");
+    // TODO:
+    console.error("TODO: Render requested for ink-cell-view.");
   }
 
   // -- PRIVATE --

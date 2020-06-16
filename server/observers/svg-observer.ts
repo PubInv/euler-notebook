@@ -42,7 +42,7 @@ export class SvgObserver extends BaseObserver {
   // --- PUBLIC ---
 
   public static async onOpen(notebook: ServerNotebook): Promise<SvgObserver> {
-    debug(`Opening StrokeObserver for ${notebook._path}.`);
+    debug(`Opening SvgObserver for ${notebook._path}.`);
     return new this(notebook);
   }
 
@@ -53,16 +53,17 @@ export class SvgObserver extends BaseObserver {
   private static RULES: Rules = [
     {
       name: "strokes-to-svg",
-      styleTest: { role: 'REPRESENTATION', type: 'STROKE-DATA' },
+      styleTest: { role: 'INPUT', type: 'STROKE-DATA' },
       styleRelation: StyleRelation.PeerToPeer,
       props: { role: 'REPRESENTATION', type: 'SVG-MARKUP' },
-      computeSync: SvgObserver.ruleConvertDrawingToSvg,
+      computeSync: SvgObserver.convertDrawingToSvgRule,
     },
   ];
 
   // Private Class Methods
 
-  private static ruleConvertDrawingToSvg(data: DrawingData): SvgData|undefined {
+  private static convertDrawingToSvgRule(data: DrawingData): SvgData|undefined {
+    debug(`convertDrawingToSvg rule on ${JSON.stringify(data)}`);
     const paths: string[] = [];
     for (const strokeGroup of data.strokeGroups) {
       for (const stroke of strokeGroup.strokes) {
@@ -70,7 +71,9 @@ export class SvgObserver extends BaseObserver {
         paths.push(path);
       }
     }
-    return `<svg height="${data.size.height}" width="${data.size.width}"  fill="none" stroke="black">${paths.join('')}</svg>`;
+    const svgMarkup = `<svg height="${data.size.height}" width="${data.size.width}"  fill="none" stroke="black">${paths.join('')}</svg>`;
+    debug(`convertDrawingToSvg rule returns '${svgMarkup}'`);
+    return svgMarkup;
   }
 
   // Private Constructor
