@@ -24,16 +24,17 @@ include iconmonstr
 mixin header
   #header
     span
-      button#homeButton(title="Math Tablet home")
-        +svgIconHome6
     div
-      each segment, i in pathSegments
-        if i < pathSegments.length-1
-          - const url = '/' + pathSegments.slice(0,i+1).join('/') + '/'
-          a(href=url)= segment
-          | /
-        else
-          = segment
+      if pathSegments.length == 0
+        | Math Tablet
+      else
+        each segment, i in pathSegments
+          if i < pathSegments.length-1
+            - const url = '/' + pathSegments.slice(0,i+1).join('/') + '/'
+            a(href=url)= segment
+            | /
+          else
+            = segment
     span
       button#refreshButton(title="Refresh page")
         +svgIconRefresh2
@@ -42,13 +43,15 @@ mixin header
 
 mixin sidebar
   #sidebar
-    button#filesAndFoldersViewButton
+    button#homeButton(title="Math Tablet home")
+      +svgIconHome6
+    button#filesAndFoldersViewButton(title="Folders & Notebooks")
       +svgIconFolder15
-    button#createFileViewButton
+    button#createFileViewButton(title="Create Notebook")
       +svgIconFile15
-    button#createFolderViewButton
+    button#createFolderViewButton(title="Create Folder")
       +svgIconFolder5
-    button#importFileViewButton
+    button#importFileViewButton(title="Import Notebook")
       +svgIconUpload21
 
 block styles

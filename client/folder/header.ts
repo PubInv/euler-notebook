@@ -48,7 +48,6 @@ export class Header {
   // Constructor
 
   private constructor($elt: HTMLDivElement) {
-    $attach($elt, '#homeButton', { listeners: { click: _e=>{ window.location.href = '/'; }}});
     $attach($elt, '#refreshButton', { listeners: { click: _e=>{ window.location.reload(); }}});
     $attach($elt, '#userButton', { listeners: { click: _e=>{ alert("User menu not yet implemented."); }}});
   }

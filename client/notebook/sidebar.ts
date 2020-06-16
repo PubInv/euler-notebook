@@ -86,6 +86,7 @@ export class Sidebar {
     this.currentView = '';
 
     // Sidebar button events
+    $attach($elt, '#homeButton', { listeners: { click: _e=>{ window.location.href = '/'; }}});
     $attach($elt, '#thumbnailViewButton', { listeners: { click: (_e: MouseEvent)=>this.switchView('thumbnail') }});
     $attach($elt, '#pageViewButton', { listeners: { click: (_e: MouseEvent)=>this.switchView('page') }});
     $attach($elt, '#notebookViewButton', { listeners: { click: (_e: MouseEvent)=>this.switchView('notebook') }});

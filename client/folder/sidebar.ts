@@ -93,6 +93,7 @@ export class Sidebar {
     $attach($elt, '#filesAndFoldersViewButton', { listeners: { click: (_e: MouseEvent)=>this.switchView('filesAndFolders') }});
     $attach($elt, '#createFolderViewButton', { listeners: { click: (_e: MouseEvent)=>this.switchView('createFolder') }});
     $attach($elt, '#createFileViewButton', { listeners: { click: (_e: MouseEvent)=>this.switchView('createFile') }});
+    $attach($elt, '#homeButton', { listeners: { click: _e=>{ window.location.href = '/'; }}});
     $attach($elt, '#importFileViewButton', { listeners: { click: (_e: MouseEvent)=>this.switchView('importFile') }});
   }
 

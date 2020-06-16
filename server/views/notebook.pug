@@ -29,8 +29,6 @@ mixin debugPopup
 mixin header
   #header
     span
-      button#homeButton(title="Math Tablet home")
-        +svgIconHome6
       +keyboardInputSelector
     div
       each segment, i in pathSegments
@@ -59,6 +57,8 @@ mixin keyboardInputSelector
 
 mixin sidebar
   #sidebar
+    button#homeButton(title="Math Tablet home")
+      +svgIconHome6
     button#thumbnailViewButton(title="Page thumbnail view")
       +svgIconFile12
     button#pageViewButton(title="Reading view")
