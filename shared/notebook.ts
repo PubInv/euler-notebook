@@ -643,8 +643,6 @@ export class Notebook {
     const childStyleObjects = Array.from(this.childStylesOf(style.id));
     // TODO: This is very inefficient as notebook.relationshipOf goes through *all* relationships.
     const relationshipObjects = Array.from(this.relationshipsOf(style.id));
-    console.log("STYLE DATA FOR HTML:");
-    console.dir(style.data);
     const dataJson = (typeof style.data != 'undefined' ? escapeHtml(JSON.stringify(style.data)) : 'undefined' );
     const roleSubrole = (style.subrole ? `${style.role}|${style.subrole}` : style.role);
     const styleInfo = `S${style.id} ${roleSubrole} ${style.type} ${style.source}`
@@ -697,7 +695,7 @@ export class Notebook {
   private changeStyle(change: StyleChanged): void {
     const styleId = change.style.id;
     const style = this.getStyle(styleId);
-    console.log(`Changing style ${styleId} data to ${JSON.stringify(change.style.data)}`); // BUGBUG
+    // console.log(`Changing style ${styleId} data to ${JSON.stringify(change.style.data)}`); // BUGBUG
     style.data = change.style.data;
     // This is experimental; for SVG, we need a timestamp for
     // cleaning up the .PNG files

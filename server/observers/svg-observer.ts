@@ -71,7 +71,7 @@ export class SvgObserver extends BaseObserver {
         paths.push(path);
       }
     }
-    const svgMarkup = `<svg height="${data.size.height}" width="${data.size.width}"  fill="none" stroke="black">${paths.join('')}</svg>`;
+    const svgMarkup = `<svg class="svgPanel" height="${data.size.height}" width="${data.size.width}"  fill="none" stroke="black">${paths.join('')}</svg>`;
     debug(`convertDrawingToSvg rule returns '${svgMarkup}'`);
     return svgMarkup;
   }

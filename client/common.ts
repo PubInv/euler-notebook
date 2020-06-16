@@ -33,6 +33,10 @@ export function assert(value: any, message?: string): void {
   if (!value) { throw new Error(message || ASSERTION_FAILED_MSG); }
 }
 
+export function deepCopy<T>(data: T): T {
+  return JSON.parse(JSON.stringify(data));
+}
+
 export function stackTrace(): StackTrace {
   let rval: string;
   try { throw new Error('StackTrace'); }

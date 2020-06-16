@@ -23,6 +23,8 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
   --cell-left-margin 60px
   --page-aspect-ratio calc(8.5 / 11)
   --tools-height 20%
+  --svg-left-offset 6px
+  --svg-top-offset 3px
 
 // Specific elements
 
@@ -117,13 +119,24 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
     padding-left 20px
 
   .inkCell
+    padding var(--svg-top-offset) 6px 3px var(--svg-left-offset)
+    position relative
 
-    .canvas
+    .stylusDrawingPanel
+      background-color transparent
+      fill none
+      left var(--svg-left-offset)
+      pen-action none
+      position absolute
+      stroke gray
+      top var(--svg-top-offset)
+      touch-action none
+
+    .svgPanel
       background-color white
       fill none
-      pen-action none
-      touch-action none
       stroke black
+
 
 #notebookView:focus
   background-color #f8f8f8
@@ -166,15 +179,6 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 .inputPanel
   outline 1px solid blue
 
-  .canvas
-    background-color #F8F8F8
-    display block
-    fill none
-    margin 6px 0 0 0
-    pen-action none
-    touch-action none
-    stroke black
-
   .inputRow
     align-items center
     display flex
@@ -191,6 +195,15 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
   .selectors
     padding 0 12px 0 8px
+
+  .stylusInputPanel
+    background-color #F8F8F8
+    display block
+    fill none
+    margin 6px 0 0 0
+    pen-action none
+    touch-action none
+    stroke black
 
   select
     display block

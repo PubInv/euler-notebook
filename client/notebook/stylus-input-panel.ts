@@ -19,7 +19,9 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 // Requirements
 
+import { deepCopy } from '../common.js';
 import { $new, $newSvg } from '../dom.js';
+
 // TODO: import { getRenderer } from './renderers.js';
 import { ROLE_OPTIONS, SUBROLE_OPTIONS } from './role-selectors.js';
 import { StyleObject, StyleRole, StyleSubrole, DrawingData } from '../shared/notebook.js';
@@ -94,7 +96,7 @@ export class StylusInputPanel {
   ) {
     this.style = style;
     this.repStyle = repStyle;
-    this.drawingData = copyDrawingData(<DrawingData>repStyle.data);
+    this.drawingData = deepCopy(<DrawingData>repStyle.data);
     this.drawingDataChanged = false;
     this.pointerMap = new Map();
 
@@ -112,7 +114,7 @@ export class StylusInputPanel {
     this.$drawingArea = $newSvg<SVGSVGElement>('svg', {
       appendTo: $inputRow,
       attrs: { width: '6.5in', height: '1in' }, // TODO: strokesStyle.data.size,
-      class: 'canvas',
+      class: 'stylusInputPanel',
       id: `svg${style.id}`,
       listeners: {
         pointercancel:  e=>this.onPointerCancel(e),
@@ -319,11 +321,4 @@ export class StylusInputPanel {
     // TODO: Theoretically, preview should change.
   }
 
-}
-
-// Helper Functions
-
-// REVIEW: Duplicated in ink-cell-view.ts
-function copyDrawingData(data: DrawingData): DrawingData {
-  return JSON.parse(JSON.stringify(data));
 }
