@@ -23,8 +23,8 @@ import debug1 from 'debug';
 
 import { BaseObserver, Rules, StyleRelation } from './base-observer';
 import { ServerNotebook } from '../server-notebook';
-import { SvgData } from '../../client/math-tablet-api';
-import { Stroke, DrawingData } from '../../client/notebook';
+import { SvgData } from '../shared/math-tablet-api';
+import { Stroke, DrawingData } from '../shared/notebook';
 
 const MODULE = __filename.split(/[/\\]/).slice(-1)[0].slice(0,-3);
 const debug = debug1(`server:${MODULE}`);

@@ -28,7 +28,7 @@ import { ClientNotebook } from './client-notebook.js';
 import { PageView, PageViewType } from './page-view.js';
 import { ServerSocket } from './server-socket.js';
 import { Sidebar, View } from './sidebar.js';
-import { NotebookPath } from '../math-tablet-api.js';
+import { NotebookPath } from '../shared/math-tablet-api.js';
 
 // Types
 

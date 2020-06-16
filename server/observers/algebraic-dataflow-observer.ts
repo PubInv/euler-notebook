@@ -25,7 +25,7 @@ import { DataflowObserver, Rules, DataflowValue, DataflowStatus } from './datafl
 import { ServerNotebook } from '../server-notebook';
 import { execute } from '../wolframscript';
 
-import { RelationshipObject, HintData, HintRelationship, HintStatus } from '../../client/notebook';
+import { RelationshipObject, HintData, HintRelationship, HintStatus } from '../shared/notebook';
 
 const MODULE = __filename.split(/[/\\]/).slice(-1)[0].slice(0,-3);
 const debug = debug1(`server:${MODULE}`);

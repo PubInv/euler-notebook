@@ -22,7 +22,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 // TYPESCRIPT: Can we get this from the katex library?
 
-import { LatexData } from '../math-tablet-api.js'
+import { LatexData } from '../shared/math-tablet-api.js'
 
 // Types
 

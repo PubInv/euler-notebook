@@ -23,7 +23,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 // Requirements
 
 import { addErrorMessageToHeader } from '../global.js';
-import { ClientMessage, ServerMessage, NotebookOpened, NotebookClosed, NotebookChanged, NotebookPath } from '../math-tablet-api.js';
+import { ClientMessage, ServerMessage, NotebookOpened, NotebookClosed, NotebookChanged, NotebookPath } from '../shared/math-tablet-api.js';
 import { ClientNotebook } from './client-notebook.js';
 
 // Types

@@ -23,8 +23,8 @@ import * as debug1 from 'debug';
 const MODULE = __filename.split(/[/\\]/).slice(-1)[0].slice(0,-3);
 const debug = debug1(`server:${MODULE}`);
 
-import { NotebookChange, StyleObject, RelationshipObject } from '../../client/notebook';
-import { ToolData, NotebookChangeRequest, StyleInsertRequest, StylePropertiesWithSubprops, StyleDeleteRequest } from '../../client/math-tablet-api';
+import { NotebookChange, StyleObject, RelationshipObject } from '../shared/notebook';
+import { ToolData, NotebookChangeRequest, StyleInsertRequest, StylePropertiesWithSubprops, StyleDeleteRequest } from '../shared/math-tablet-api';
 
 import { absDirPathFromNotebookPath } from '../files-and-folders';
 import { ServerNotebook, ObserverInstance } from '../server-notebook';

@@ -26,8 +26,8 @@ import { assert } from 'chai';
 import 'mocha';
 // import * as sinon from 'sinon';
 
-import { FormulaData, StyleId, StyleInserted } from '../../client/notebook';
-import { StyleInsertRequest, StyleChangeRequest, WolframData } from '../../client/math-tablet-api';
+import { FormulaData, StyleId, StyleInserted, WolframExpression } from '../shared/notebook';
+import { StyleInsertRequest, StyleChangeRequest } from '../shared/math-tablet-api';
 import { ServerNotebook }  from '../server-notebook';
 
 import { ensureGlobalLoaded } from './global';
@@ -113,7 +113,7 @@ describe("test relationships", function() {
 
 // Helper Functions
 
-function wolframFormulaInsertRequest(wolframData: WolframData): StyleInsertRequest {
+function wolframFormulaInsertRequest(wolframData: WolframExpression): StyleInsertRequest {
   const data: FormulaData = { wolframData };
   const request: StyleInsertRequest = {
     type: 'insertStyle',
@@ -123,7 +123,7 @@ function wolframFormulaInsertRequest(wolframData: WolframData): StyleInsertReque
   return request;
 }
 
-function wolframFormulaChangeRequest(id: StyleId, wolframData: WolframData): StyleChangeRequest {
+function wolframFormulaChangeRequest(id: StyleId, wolframData: WolframExpression): StyleChangeRequest {
   const request: StyleChangeRequest = { type: 'changeStyle', styleId: id, data: { wolframData } };
   return request;
 }

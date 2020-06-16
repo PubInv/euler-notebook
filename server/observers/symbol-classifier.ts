@@ -23,21 +23,16 @@ import * as debug1 from 'debug';
 const MODULE = __filename.split(/[/\\]/).slice(-1)[0].slice(0,-3);
 const debug = debug1(`server:${MODULE}`);
 
-import { NotebookChange, StyleObject, StyleId,
-         RelationshipObject, RelationshipId, RelationshipProperties,
-         StyleDeleted,
-         StyleMoved,
-         FindRelationshipOptions,
-         StyleInserted, StyleChanged,
-         HintData, HintRelationship, HintStatus, FormulaData
-       } from '../../client/notebook';
-import { SymbolData, WolframData, NotebookChangeRequest, StyleInsertRequest,
-         ToolData,
-         StyleDeleteRequest,
-         StylePropertiesWithSubprops, RelationshipPropertiesMap,
-         RelationshipInsertRequest,  isEmptyOrSpaces, TransformationToolData
-//         RelationshipDeleteRequest
-       } from '../../client/math-tablet-api';
+import {
+  NotebookChange, StyleObject, StyleId, RelationshipObject, RelationshipId, RelationshipProperties,
+  StyleDeleted, StyleMoved, FindRelationshipOptions, StyleInserted, StyleChanged, HintData,
+  HintRelationship, HintStatus, FormulaData, WolframExpression
+} from '../shared/notebook';
+import {
+  SymbolData, NotebookChangeRequest, StyleInsertRequest, ToolData, StyleDeleteRequest,
+  StylePropertiesWithSubprops, RelationshipPropertiesMap, RelationshipInsertRequest,
+  isEmptyOrSpaces, TransformationToolData
+} from '../shared/math-tablet-api';
 import { ServerNotebook, ObserverInstance } from '../server-notebook';
 import { execute as executeWolframscript, constructSubstitution, draftChangeContextName } from '../wolframscript';
 import { Config } from '../config';
@@ -923,8 +918,8 @@ export class SymbolClassifierObserver implements ObserverInstance {
 
   // Helper Functios
 
-  async function execute(script: WolframData): Promise<WolframData|undefined> {
-    let result: WolframData;
+  async function execute(script: WolframExpression): Promise<WolframExpression|undefined> {
+    let result: WolframExpression;
     try {
       // debug(`Executing: ${script}`)
       result = await executeWolframscript(script);

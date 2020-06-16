@@ -20,8 +20,8 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 // Requirements
 
 import { $newSvg } from '../dom.js';
-import { DrawingData, /* StyleId, */ StyleObject } from '../notebook.js';
-// import { StyleChangeRequest } from '../math-tablet-api.js';
+import { DrawingData, /* StyleId, */ StyleObject } from '../shared/notebook.js';
+// import { StyleChangeRequest } from '../shared/math-tablet-api.js';
 import { NotebookView } from '../notebook/notebook-view.js';
 // import { getRenderer } from '../renderers.js';
 import { SvgStroke } from '../notebook/svg-stroke.js';

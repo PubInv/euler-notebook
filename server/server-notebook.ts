@@ -30,12 +30,12 @@ import {
   Notebook, NotebookObject, NotebookChange, StyleObject, StyleRole, StyleType, StyleSource, StyleId,
   RelationshipObject, StyleMoved, StylePosition, VERSION, StyleChanged, RelationshipDeleted,
   RelationshipInserted, StyleIdDoesNotExistError, StyleInserted, StyleDeleted, StyleConverted
-} from '../client/notebook';
+} from './shared/notebook';
 import {
   NotebookChangeRequest, StyleMoveRequest, StyleInsertRequest, StyleChangeRequest,
   RelationshipDeleteRequest, StyleDeleteRequest, RelationshipInsertRequest,
   StylePropertiesWithSubprops, ChangeNotebookOptions, LatexData, NotebookPath, StyleConvertRequest
-} from '../client/math-tablet-api';
+} from './shared/math-tablet-api';
 
 import {
   readNotebookFile, AbsDirectoryPath, absDirPathFromNotebookPath, writeNotebookFile,

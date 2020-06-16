@@ -25,10 +25,10 @@ import * as debug1 from 'debug';
 const MODULE = __filename.split(/[/\\]/).slice(-1)[0].slice(0,-3);
 const debug = debug1(`server:${MODULE}`);
 
-import { NotebookChange, StyleObject, RelationshipObject, StyleId } from '../../client/notebook';
+import { NotebookChange, StyleObject, RelationshipObject, StyleId } from '../shared/notebook';
 import {  NotebookChangeRequest, StyleInsertRequest,
           StyleDeleteRequest, StylePropertiesWithSubprops,
-       } from '../../client/math-tablet-api';
+       } from '../shared/math-tablet-api';
 import { ServerNotebook, ObserverInstance } from '../server-notebook';
 import { convertWolframToTeX, convertEvaluatedWolframToTeX, constructSubstitution
        } from '../wolframscript';

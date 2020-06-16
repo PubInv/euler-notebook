@@ -23,14 +23,14 @@ import * as debug1 from 'debug';
 const MODULE = __filename.split(/[/\\]/).slice(-1)[0].slice(0,-3);
 const debug = debug1(`server:${MODULE}`);
 
-import { StyleType,NotebookChange, StyleObject,
-//         RelationshipObject,
-         RelationshipProperties,
-         HintData, HintRelationship, HintStatus, FormulaData} from '../../client/notebook';
 import {
-  ToolData, NotebookChangeRequest, StyleInsertRequest, StyleDeleteRequest, StylePropertiesWithSubprops, WolframData,
+  StyleType,NotebookChange, StyleObject, RelationshipProperties, HintData, HintRelationship,
+  HintStatus, FormulaData, WolframExpression
+} from '../shared/notebook';
+import {
+  ToolData, NotebookChangeRequest, StyleInsertRequest, StyleDeleteRequest, StylePropertiesWithSubprops,
   TransformationToolData,RelationshipInsertRequest,
-} from '../../client/math-tablet-api';
+} from '../shared/math-tablet-api';
 
 // import {
 //   DataflowStatus,
@@ -225,7 +225,7 @@ export class AlgebraicToolsObserver implements ObserverInstance {
   }
   private async addTool(style : StyleObject,
                         rval: NotebookChangeRequest[],
-                        transformation: WolframData,
+                        transformation: WolframExpression,
                         name: string,
                         html_fun: (s: string) => string,
                         tex_fun: (s: string) => string) :

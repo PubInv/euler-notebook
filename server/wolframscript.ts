@@ -24,7 +24,10 @@ const MODULE = __filename.split(/[/\\]/).slice(-1)[0].slice(0,-3);
 const debug = debug1(`server:${MODULE}`);
 
 import { spawn, ChildProcess } from 'child_process';
-import { WolframData, LatexData } from '../client/math-tablet-api';
+
+import { WolframExpression } from './shared/notebook';
+import { LatexData } from './shared/math-tablet-api';
+
 import { WolframScriptConfig } from './config';
 
 // Types
@@ -53,14 +56,14 @@ const OUR_PRIVATE_CTX_NAME = "runPrv`";
 let gChildProcess: ChildProcess;
 
 // This promise is used to serialize sending commands to WolframScript.
-let gExecutingPromise: Promise<WolframData> = Promise.resolve('');
+let gExecutingPromise: Promise<WolframExpression> = Promise.resolve('');
 
 let gServerStartingPromise: Promise<void>|undefined = undefined;
 let gServerStoppingPromise: Promise<void>|undefined = undefined;
 
 // Exported functions
 
-export async function execute(command: WolframData): Promise<WolframData> {
+export async function execute(command: WolframExpression): Promise<WolframExpression> {
   // Wait for the server to start.
   if (!gServerStartingPromise) { throw new Error("Can't execute -- WolframScript not started."); }
   if (gServerStoppingPromise) { throw new Error("Can't execute -- WolframScript is stopping."); }
@@ -68,7 +71,7 @@ export async function execute(command: WolframData): Promise<WolframData> {
 
   // Create a promise for the next 'execute' invocation to wait on.
   const executingPromise = gExecutingPromise;
-  gExecutingPromise = new Promise<WolframData>((resolve, reject)=>{
+  gExecutingPromise = new Promise<WolframExpression>((resolve, reject)=>{
     // Wait on the previous 'execute' invocation.
     // LATER: Use .finally instead when everyone is at node 10 or later.
     executingPromise.then(
@@ -80,7 +83,7 @@ export async function execute(command: WolframData): Promise<WolframData> {
   return gExecutingPromise;
 }
 
-export async function convertTeXtoWolfram(tex: string) : Promise<WolframData> {
+export async function convertTeXtoWolfram(tex: string) : Promise<WolframExpression> {
   const wrapped = `InputForm[ToExpression["${tex}", TeXForm]]`;
   const escaped = wrapped.replace(/\\/g,"\\\\");
   return execute(escaped);
@@ -146,7 +149,7 @@ export function convertMathTabletLanguageToWolfram(expr: string) : string {
   return expr.replace("=","==");
 }
 
-function executeNow(command: WolframData, resolve: (data: string)=>void, reject: (reason: any)=>void): void {
+function executeNow(command: WolframExpression, resolve: (data: string)=>void, reject: (reason: any)=>void): void {
   debug(`Executing: "${command}".`)
   let results = '';
   const stdoutListener = (data: Buffer)=>{
@@ -262,7 +265,7 @@ export async function checkEquiv(a:string, b:string) : Promise<boolean> {
 // Note: As often happens, this does not handle the input
 // being an assignment properly...it is best to texify
 // both sides of an assignment and handle that way.
-export async function convertWolframToTeX(text: WolframData): Promise<LatexData> {
+export async function convertWolframToTeX(text: WolframExpression): Promise<LatexData> {
     if (text == '') { return ''; }
     const getTex = `TeXForm[HoldForm[${text}]]`;
     try {
@@ -273,7 +276,7 @@ export async function convertWolframToTeX(text: WolframData): Promise<LatexData>
     }
 }
 
-export async function convertEvaluatedWolframToTeX(text: WolframData): Promise<LatexData> {
+export async function convertEvaluatedWolframToTeX(text: WolframExpression): Promise<LatexData> {
     if (text == '') { return ''; }
     const getTex = `TeXForm[HoldForm[Evaluate[${text}]]]`;
     try {

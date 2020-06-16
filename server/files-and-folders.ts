@@ -28,7 +28,7 @@ const MODULE = __filename.split(/[/\\]/).slice(-1)[0].slice(0,-3);
 const debug = debug1(`server:${MODULE}`);
 import * as rimraf from 'rimraf';
 
-import { NotebookName, NotebookPath } from '../client/math-tablet-api';
+import { NotebookName, NotebookPath } from './shared/math-tablet-api';
 
 const mkdir2 = promisify(mkdir);
 const readdir2 = promisify(readdir);

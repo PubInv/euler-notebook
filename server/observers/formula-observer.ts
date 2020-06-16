@@ -21,8 +21,8 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 import debug1 from 'debug';
 
-import { WolframData, LatexData } from '../../client/math-tablet-api';
-import { FormulaData } from '../../client/notebook';
+import { FormulaData, WolframExpression } from '../shared/notebook';
+import { LatexData } from '../shared/math-tablet-api';
 
 import { ServerNotebook } from '../server-notebook';
 import { convertTeXtoWolfram, convertWolframToTeX } from '../wolframscript';
@@ -88,12 +88,12 @@ export class FormulaObserver extends BaseObserver {
 
   // Private Class Methods
 
-  private static parseWolframInput(wolframData: WolframData): FormulaData|undefined {
+  private static parseWolframInput(wolframData: WolframExpression): FormulaData|undefined {
     // TODO: Make this async, pass the string to WolframScript to normalize.
     return { wolframData };
   }
 
-  private static renderFormulaToWolframRepresentation(formulaData: FormulaData): WolframData|undefined {
+  private static renderFormulaToWolframRepresentation(formulaData: FormulaData): WolframExpression|undefined {
     return formulaData.wolframData;
   }
 

@@ -20,8 +20,8 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 // Requirements
 
 import { $new, escapeHtml, Html } from '../dom.js';
-import { ToolData } from '../math-tablet-api.js';
-import { StyleObject, FindRelationshipOptions, FindStyleOptions } from '../notebook.js';
+import { ToolData } from '../shared/math-tablet-api.js';
+import { StyleObject, FindRelationshipOptions, FindStyleOptions } from '../shared/notebook.js';
 import { NotebookView } from '../notebook/notebook-view.js';
 import { getRenderer } from '../notebook/renderers.js';
 import { FORMULA_SUBROLE_PREFIX } from '../notebook/role-selectors.js';

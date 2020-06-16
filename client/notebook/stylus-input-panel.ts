@@ -22,8 +22,8 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 import { $new, $newSvg } from '../dom.js';
 // TODO: import { getRenderer } from './renderers.js';
 import { ROLE_OPTIONS, SUBROLE_OPTIONS } from './role-selectors.js';
-import { StyleObject, StyleRole, StyleSubrole, DrawingData } from '../notebook.js';
-import { NotebookChangeRequest, StyleChangeRequest, StyleConvertRequest } from '../math-tablet-api.js';
+import { StyleObject, StyleRole, StyleSubrole, DrawingData } from '../shared/notebook.js';
+import { NotebookChangeRequest, StyleChangeRequest, StyleConvertRequest } from '../shared/math-tablet-api.js';
 import { SvgStroke } from './svg-stroke.js';
 
 // Types

@@ -20,7 +20,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 // Requirements
 
 import { escapeHtml } from '../dom.js';
-import { StyleObject, HintData, HintStatus, HintRelationship } from '../notebook.js';
+import { StyleObject, HintData, HintStatus, HintRelationship } from '../shared/notebook.js';
 import { NotebookView } from '../notebook/notebook-view.js';
 // import { getRenderer } from '../renderers.js';
 

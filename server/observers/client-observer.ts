@@ -25,8 +25,8 @@ import * as debug1 from 'debug';
 const MODULE = __filename.split(/[/\\]/).slice(-1)[0].slice(0,-3);
 const debug = debug1(`server:${MODULE}`);
 
-import { NotebookChange } from '../../client/notebook';
-import { Tracker, NotebookChangeRequest } from '../../client/math-tablet-api';
+import { NotebookChange } from '../shared/notebook';
+import { Tracker, NotebookChangeRequest } from '../shared/math-tablet-api';
 import { ServerNotebook } from '../server-notebook';
 import { ClientSocket } from '../client-socket';
 

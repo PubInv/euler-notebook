@@ -21,8 +21,8 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 import { escapeHtml, Html } from '../dom.js';
 import { getKatex } from './katex-types.js';
-import { LatexData, } from '../math-tablet-api.js';
-import { StyleType } from '../notebook.js';
+import { LatexData, } from '../shared/math-tablet-api.js';
+import { StyleType } from '../shared/notebook.js';
 import { assert } from '../common.js';
 
 // Types

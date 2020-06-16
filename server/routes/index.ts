@@ -25,7 +25,7 @@ import * as multer from 'multer'
 import { NextFunction, Request, Response, Router } from 'express';
 
 import { ClientSocket } from '../client-socket';
-import { NotebookName, NotebookPath, NotebookChangeRequest } from '../../client/math-tablet-api';
+import { NotebookName, NotebookPath, NotebookChangeRequest } from '../shared/math-tablet-api';
 
 import { ServerNotebook } from '../server-notebook';
 import { isValidNotebookPath, getListOfNotebooksAndFoldersInFolder,

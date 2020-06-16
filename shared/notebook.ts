@@ -1,5 +1,3 @@
-import { WolframData } from "./math-tablet-api";
-
 /*
 Math Tablet
 Copyright (C) 2019 Public Invention
@@ -75,7 +73,7 @@ export interface FindStyleOptions {
 }
 
 export interface FormulaData {
-  wolframData: WolframData;
+  wolframData: WolframExpression;
 }
 
 export interface HintData {
@@ -317,7 +315,7 @@ export const STYLE_TYPES = [
   'SYMBOL-DATA',     // SymbolData: symbol in a definition or expression.
   'TEX-EXPRESSION',      // LatexData: LaTeX string // TODO: rename 'TEX'
   'TOOL-DATA',       // ToolInfo: Tool that can be applied to the parent style.
-  'WOLFRAM-EXPRESSION', // WolframData: Wolfram language expression
+  'WOLFRAM-EXPRESSION', // WolframExpression: Wolfram language expression
   // 'UNKNOWN',       // Type is as-yet unknown. Data field should be 'null'.
 ] as const;
 export type StyleType = typeof STYLE_TYPES[number];
@@ -341,6 +339,8 @@ export const STYLE_SOURCES = [
   'WOLFRAM-OBSERVER', // Wolfram C.A.S.
 ] as const;
 export type StyleSource = typeof STYLE_SOURCES[number];
+
+export type WolframExpression = string; // TODO: Rename WolframExpression
 
 // Constants
 

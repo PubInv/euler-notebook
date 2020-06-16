@@ -23,7 +23,7 @@ import { $newSvg } from '../dom.js';
 import { NotebookView } from './notebook-view.js';
 import { Sidebar } from './sidebar.js';
 
-/* TEMPORARY */ import { DOCUMENT } from '../notebook.js';
+/* TEMPORARY */ import { DOCUMENT } from '../shared/notebook.js';
 
 // Types
 

@@ -27,11 +27,11 @@ import {
   DrawingData, StyleId, StyleObject, NotebookChange,
   StyleType, StyleRelativePosition,
   StylePosition, DOCUMENT, PageId, HintData, HintStatus, HintRelationship, FormulaData,
-} from '../notebook.js';
+} from '../shared/notebook.js';
 import {
   StyleDeleteRequest,
   StyleInsertRequest, StylePropertiesWithSubprops, StyleMoveRequest, NotebookChangeRequest, ChangeNotebookOptions,
-} from '../math-tablet-api.js';
+} from '../shared/math-tablet-api.js';
 import { ClientNotebook, TrackedChangesResults } from './client-notebook.js';
 import { Sidebar } from './sidebar.js';
 

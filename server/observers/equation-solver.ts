@@ -27,12 +27,12 @@ import { NotebookChange, StyleObject,
          RelationshipObject,
          StyleId,
          FormulaData
-       } from '../../client/notebook';
+       } from '../shared/notebook';
 import { ToolData, NotebookChangeRequest, StyleInsertRequest, StylePropertiesWithSubprops,
          StyleDeleteRequest,
          RelationshipPropertiesMap,
          NameValuePair
-       } from '../../client/math-tablet-api';
+       } from '../shared/math-tablet-api';
 import { ServerNotebook, ObserverInstance } from '../server-notebook';
 import { execute,
          convertWolframToTeX

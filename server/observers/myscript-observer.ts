@@ -21,8 +21,8 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 import * as debug1 from 'debug';
 
-import { DrawingData } from '../../client/notebook';
-import { LatexData } from '../../client/math-tablet-api';
+import { DrawingData } from '../shared/notebook';
+import { LatexData } from '../shared/math-tablet-api';
 
 import { Config } from '../config';
 import { ServerKeys, postLatexRequest } from '../myscript-batch-api';

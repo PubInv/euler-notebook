@@ -25,13 +25,13 @@ import * as nodeLatex from 'node-latex';
 
 import { NextFunction, Request, Response, Router } from 'express';
 
-import { NotebookPath } from '../../client/math-tablet-api';
+import { NotebookPath } from '../shared/math-tablet-api';
 
 import { globalConfig } from '../config';
 import { ServerNotebook } from '../server-notebook';
 import { isValidNotebookPath, NOTEBOOK_PATH_RE, notebookNameFromNotebookPath } from '../files-and-folders';
 
-// import { NotebookName, NotebookChangeRequest } from '../../client/math-tablet-api';
+// import { NotebookName, NotebookChangeRequest } from '../shared/math-tablet-api';
 
 const MODULE = __filename.split(/[/\\]/).slice(-1)[0].slice(0,-3);
 const debug = debug1(`server:${MODULE}`);

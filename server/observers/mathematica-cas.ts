@@ -20,9 +20,9 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 // Requirements
 
 import * as debug1 from 'debug';
-// import { MthMtcaText } from '../client/math-tablet-api';
-import { StyleObject, NotebookChange, StyleId, RelationshipProperties } from '../../client/notebook';
-import { NotebookChangeRequest, StyleInsertRequest, StyleDeleteRequest, StylePropertiesWithSubprops, RelationshipInsertRequest, isEmptyOrSpaces } from '../../client/math-tablet-api';
+// import { MthMtcaText } from './shared/math-tablet-api';
+import { StyleObject, NotebookChange, StyleId, RelationshipProperties } from '../shared/notebook';
+import { NotebookChangeRequest, StyleInsertRequest, StyleDeleteRequest, StylePropertiesWithSubprops, RelationshipInsertRequest, isEmptyOrSpaces } from '../shared/math-tablet-api';
 import { ServerNotebook, ObserverInstance } from '../server-notebook';
 import { execute, constructSubstitution, checkEquiv, NVPair } from '../wolframscript';
 // import * as fs from 'fs';

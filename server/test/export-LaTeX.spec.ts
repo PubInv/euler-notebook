@@ -29,8 +29,8 @@ const latex = require('node-latex'); // REVIEW: why not import?
 import 'mocha';
 // import * as sinon from 'sinon';
 
-import { FormulaData } from '../../client/notebook';
-import { StyleInsertRequest, LatexData } from '../../client/math-tablet-api';
+import { FormulaData } from '../shared/notebook';
+import { StyleInsertRequest, LatexData } from '../shared/math-tablet-api';
 import { ServerNotebook }  from '../server-notebook';
 
 import { ensureGlobalLoaded } from './global';

@@ -21,8 +21,8 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 // import { $ } from './dom.js';
 import { assert } from '../common.js';
-import { NotebookChanged, NotebookPath, Tracker, NotebookChangeRequest, ChangeNotebook, UseTool, ChangeNotebookOptions, NotebookName } from '../math-tablet-api.js';
-import { Notebook, NotebookObject, NotebookChange, StyleId } from '../notebook.js';
+import { NotebookChanged, NotebookPath, Tracker, NotebookChangeRequest, ChangeNotebook, UseTool, ChangeNotebookOptions, NotebookName } from '../shared/math-tablet-api.js';
+import { Notebook, NotebookObject, NotebookChange, StyleId } from '../shared/notebook.js';
 import { NotebookView } from './notebook-view.js';
 import { ServerSocket } from './server-socket.js';
 

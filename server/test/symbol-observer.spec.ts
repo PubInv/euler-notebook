@@ -29,12 +29,12 @@ import 'mocha';
 import { StyleObject, RelationshipObject,
          StyleId,
          FormulaData
-       } from '../../client/notebook';
+       } from '../shared/notebook';
 import { NotebookChangeRequest, StyleInsertRequest,
          StyleChangeRequest,
          StyleMoveRequest,
          StyleDeleteRequest, StylePropertiesWithSubprops
-       } from '../../client/math-tablet-api';
+       } from '../shared/math-tablet-api';
 import { ServerNotebook }  from '../server-notebook';
 
 import { ensureGlobalLoaded } from './global';
