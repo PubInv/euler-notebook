@@ -20,8 +20,8 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 // Requirements
 
 import { $newSvg } from '../dom.js';
-import { DrawingData, /* StyleId, */ StyleObject } from '../shared/notebook.js';
-// import { StyleChangeRequest } from '../shared/math-tablet-api.js';
+import { DrawingData, StyleId, StyleObject } from '../shared/notebook.js';
+import { StyleChangeRequest } from '../shared/math-tablet-api.js';
 import { NotebookView } from '../notebook/notebook-view.js';
 // import { getRenderer } from '../renderers.js';
 import { SvgStroke } from '../notebook/svg-stroke.js';
@@ -70,9 +70,10 @@ export class InkCellView extends CellView {
       // TODO: Better way to handle this error.
       throw new Error("No REPRESENTATION/INPUT substyle for UNINTERPRETED-INK style.");
     }
+    // TODO: What about when other clients drawing in the same cell? How do their changes get propagated into our drawing data?
     this.drawingData = copyDrawingData(repStyle.data);
     this.pointerMap = new Map();
-    // this.repStyleId = repStyle.id;
+    this.repStyleId = repStyle.id;
 
     this.$drawingArea = $newSvg<SVGSVGElement>('svg', {
       appendTo: this.$elt,
@@ -105,7 +106,7 @@ export class InkCellView extends CellView {
   private $drawingArea: SVGSVGElement;
   private drawingData: DrawingData;
   private pointerMap: PointerMap;
-  // private repStyleId: StyleId;
+  private repStyleId: StyleId;
 
   // Private Instance Property Functions
 
@@ -185,16 +186,12 @@ export class InkCellView extends CellView {
 
     this.drawingData.strokeGroups[0].strokes.push(stroke.data);
 
-    // TODO: Incremental change request
-    // const changeRequest: StyleChangeRequest = { type: 'changeStyle', styleId: this.repStyleId, data: this.drawingData };
-
-    // LATER: Incremental change request
-    // const changeRequest: StyleChangeRequest = { type: 'changeStyle', styleId: strokesStyle.id, data };
-    // this.notebookView.editStyle([ changeRequest ])
-    // .catch((err: Error)=>{
-    //   // TODO: Display error to user?
-    //   console.error(`Error submitting stroke: ${err.message}`);
-    // });
+    const changeRequest: StyleChangeRequest = { type: 'changeStyle', styleId: this.repStyleId, data: this.drawingData };
+    this.notebookView.editStyle([ changeRequest ])
+    .catch((err: Error)=>{
+      // TODO: Display error to user?
+      console.error(`Error submitting stroke: ${err.message}`);
+    });
   }
 
 }
