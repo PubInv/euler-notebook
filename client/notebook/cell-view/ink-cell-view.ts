@@ -52,11 +52,15 @@ export class InkCellView extends CellView {
 
   public render(style: StyleObject): void {
     // TODO: What if the user is in the middle of a stroke?
+
+    console.log("RENDERING INK CELL VIEW");
     this.$elt.innerHTML = '';
     const inputStyle = this.notebookView.openNotebook.findStyle({ role: 'INPUT', type: 'STROKE-DATA' }, style.id);
     if (!inputStyle) {
       // TODO: Better way to handle this error.
-      throw new Error("No INPUT substyle for UNINTERPRETED-INK style.");
+      // throw new Error("No INPUT substyle for UNINTERPRETED-INK style.");
+      console.warn("No INPUT substyle for UNINTERPRETED-INK style.");
+      return;
     }
     this.drawingData = deepCopy(inputStyle.data);
     this.inputStyleId = inputStyle.id;
@@ -66,7 +70,7 @@ export class InkCellView extends CellView {
       this.$elt.innerHTML = svgRepStyle.data;
     } else {
       // TODO: What to do in this case?
-      console.error("No SVG-MARKUP substyle for UNINTERPRETED-INK style.");
+      console.warn("No SVG-MARKUP substyle for UNINTERPRETED-INK style.");
     }
 
     // TODO: Get dimensions from svgPanel?
@@ -91,11 +95,13 @@ export class InkCellView extends CellView {
   // Private Event Handlers
 
   private onStrokeComplete(stroke: SvgStroke): void {
+    // TODO: What if socket to server is closed? We'll just accumulate strokes that will never get saved.
+    //       How do we handle offline operation?
     this.drawingData.strokeGroups[0].strokes.push(stroke.data);
     const changeRequest: StyleChangeRequest = { type: 'changeStyle', styleId: this.inputStyleId, data: this.drawingData };
     this.notebookView.editStyle([ changeRequest ])
     .catch((err: Error)=>{
-      // TODO: Display error to user?
+      // TODO: What to do here?
       console.error(`Error submitting stroke: ${err.message}`);
     });
   }
