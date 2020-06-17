@@ -76,13 +76,21 @@ export class InkCellView extends CellView {
     // TODO: Get dimensions from svgPanel?
     /* this.stylusDrawingPanel = */ StylusDrawingPanel.create(this.$elt, (stroke)=>this.onStrokeComplete(stroke));
 
-    // LATER: Insert button be on *all* cells, not just ink cells.
-    /* this.$insertBelowButton = */ $new('button', {
+    // LATER: These button be on *all* cells, not just ink cells.
+    $new('button', {
       appendTo: this.$elt,
-      class: 'insertBelowButton',
+      class: 'insertCellBelowButton',
       html: '&#x25B6;',
       listeners: {
-        click: e=>this.onInsertBelowButtonClicked(e),
+        click: e=>this.onInsertCellBelowButtonClicked(e),
+      },
+    });
+    $new('button', {
+      appendTo: this.$elt,
+      class: 'deleteCellButton',
+      html: '&#x2715;',
+      listeners: {
+        click: e=>this.onDeleteCellButtonClicked(e),
       },
     });
   }
@@ -104,8 +112,18 @@ export class InkCellView extends CellView {
 
   // Private Event Handlers
 
-  private onInsertBelowButtonClicked(_event: MouseEvent): void {
-    this.notebookView.insertInkCellBelow(this.styleId);
+  private onDeleteCellButtonClicked(_event: MouseEvent): void {
+    this.notebookView.deleteTopLevelStyle(this.styleId).catch(err=>{
+      // TODO: Better handling of this error.
+      console.error(`Error deleting cell:\n${err.stack}`);
+    });
+  }
+
+  private onInsertCellBelowButtonClicked(_event: MouseEvent): void {
+    this.notebookView.insertInkCellBelow(this.styleId).catch(err=>{
+      // TODO: Better handling of this error.
+      console.error(`Error inserting cell below:\n${err.stack}`);
+    });
   }
 
   private onStrokeComplete(stroke: SvgStroke): void {

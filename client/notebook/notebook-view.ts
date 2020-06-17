@@ -105,6 +105,12 @@ export class NotebookView {
 
   // Instance Methods
 
+  public async deleteTopLevelStyle(styleId: StyleId): Promise<void> {
+    await this.unselectAll();
+    const changeRequest: StyleDeleteRequest = { type: 'deleteStyle', styleId: styleId };
+    await this.sendUndoableChangeRequests([changeRequest]);
+  }
+
   public connect(openNotebook: ClientNotebook, sidebar: Sidebar): void {
     this.openNotebook = openNotebook;
     this.sidebar = sidebar;
