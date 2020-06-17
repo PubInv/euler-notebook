@@ -24,7 +24,6 @@ import { StyleChangeRequest } from '../../shared/math-tablet-api.js';
 
 // import { $ } from '../../dom.js';
 import { deepCopy } from '../../common.js';
-
 import { SvgStroke } from '../svg-stroke.js';
 import { StylusDrawingPanel } from '../stylus-drawing-panel.js';
 
@@ -33,6 +32,7 @@ import { NotebookView } from '../notebook-view.js';
 // import { getRenderer } from '../renderers.js';
 
 import { CellView } from './index.js';
+import { $new } from '../../dom.js';
 
 // Types
 
@@ -75,6 +75,16 @@ export class InkCellView extends CellView {
 
     // TODO: Get dimensions from svgPanel?
     /* this.stylusDrawingPanel = */ StylusDrawingPanel.create(this.$elt, (stroke)=>this.onStrokeComplete(stroke));
+
+    // LATER: Insert button be on *all* cells, not just ink cells.
+    /* this.$insertBelowButton = */ $new('button', {
+      appendTo: this.$elt,
+      class: 'insertBelowButton',
+      html: '&#x25B6;',
+      listeners: {
+        click: e=>this.onInsertBelowButtonClicked(e),
+      },
+    });
   }
 
   // -- PRIVATE --
@@ -93,6 +103,10 @@ export class InkCellView extends CellView {
   private inputStyleId!: StyleId;  // REVIEW: What if the input style id changes?
 
   // Private Event Handlers
+
+  private onInsertBelowButtonClicked(_event: MouseEvent): void {
+    this.notebookView.insertInkCellBelow(this.styleId);
+  }
 
   private onStrokeComplete(stroke: SvgStroke): void {
     // TODO: What if socket to server is closed? We'll just accumulate strokes that will never get saved.

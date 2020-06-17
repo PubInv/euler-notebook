@@ -195,12 +195,14 @@ export class NotebookView {
     this.startEditingCell(styleId);
   }
 
-  public async insertInkCellBelow(): Promise<void> {
-    // If cells are selected then in insert a keyboard input cell below the last cell selected.
-    // Otherwise, insert at the end of the notebook.
-    let afterId: StyleRelativePosition;
-    if (this.lastCellSelected) { afterId = this.lastCellSelected.styleId; }
-    else { afterId = StylePosition.Bottom; }
+  public async insertInkCellBelow(afterId?: StyleRelativePosition): Promise<void> {
+    if (afterId === undefined) {
+      // Cell to insert after is not specified.
+      // If cells are selected then in insert a keyboard input cell below the last cell selected.
+      // Otherwise, insert at the end of the notebook.
+      if (this.lastCellSelected) { afterId = this.lastCellSelected.styleId; }
+      else { afterId = StylePosition.Bottom; }
+    }
 
     const strokeData: DrawingData = {
       size: { height: '1in', width: '6.5in' },
