@@ -23,7 +23,7 @@ import { DrawingData, StyleId, StyleObject } from '../../shared/notebook.js';
 import { StyleChangeRequest, StyleMoveRequest } from '../../shared/math-tablet-api.js';
 
 import { $, $configure } from '../../dom.js';
-import { deepCopy } from '../../common.js';
+import { deepCopy, assert } from '../../common.js';
 import { SvgStroke } from '../svg-stroke.js';
 import { StylusDrawingPanel } from '../stylus-drawing-panel.js';
 
@@ -59,7 +59,6 @@ export class InkCellView extends CellView {
   public render(style: StyleObject): void {
     // TODO: What if the user is in the middle of a stroke?
 
-    console.log("RENDERING INK CELL VIEW");
     this.$elt.innerHTML = '';
     const inputStyle = this.notebookView.openNotebook.findStyle({ role: 'INPUT', type: 'STROKE-DATA' }, style.id);
     if (!inputStyle) {
@@ -146,55 +145,60 @@ export class InkCellView extends CellView {
   // TODO: Remove or comment out all of the drag/drop console messages.
 
   private onDragEnter(event: DragEvent): void {
-    const dropAllowed = event.dataTransfer!.types.includes(CELL_MIME_TYPE);
+    // console.log("Drag enter");
+
+    // REVIEW: Very odd. If we try to get the data from the data transfer object we get an empty string
+    //         even though the dataTranspfer.types array indicates that the data is there.
+    //         So we can't make any decisions based on the data itself.
+    // const cellDragData = getDragData(event);
+
+    const dropAllowed = hasDragData(event);
     if (!dropAllowed) {
-      console.log("Drag enter, unsupported datatype.");
+      console.warn(`Drag enter: aborting, no ${CELL_MIME_TYPE} data.`);
       return;
     }
-    console.log("Drag enter, supported datatype.");
+
+    // Allow a drop by preventing the default action.
     event.preventDefault();
+    // REVIEW: Set event.dataTransfer.dropEffect?
   }
 
   private onDragOver(event: DragEvent): void {
-    const dropAllowed = event.dataTransfer!.types.includes(CELL_MIME_TYPE);
+    // REVIEW: See review comment in onDragEnter. Getting the drag data from the event.dataTransfer fails.
+    const dropAllowed = hasDragData(event);
     if (!dropAllowed) {
-      console.log("Drag over, unsupported datatype.");
+      console.warn(`Drag over: aborting, no ${CELL_MIME_TYPE} data.`);
       return;
     }
-    console.log("Drag over, supported datatype.");
+
+    // Allow a drop by preventing the default action.
     event.preventDefault();
   }
 
   private onDragStart(event: DragEvent): void {
-    console.log("Dragging start");
+    // console.log("Drag start");
     const cellDragData: CellDragData = {
       styleId: this.styleId,
     }
-    const json = JSON.stringify(cellDragData);
-    event.dataTransfer!.setData(CELL_MIME_TYPE, json);
     // TODO: Other data types: LaTeX, SVG, text/plain, text/uri-list etc.
+    setDragData(event, cellDragData);
     event.dataTransfer!.effectAllowed = 'all';
   }
 
-  private onDragEnd(event: DragEvent): void {
-    console.log(`Dragging end: ${event.dataTransfer?.dropEffect}`)
+  private onDragEnd(_event: DragEvent): void {
+    // console.log(`Drag end: ${event.dataTransfer?.dropEffect}`)
   }
 
   private onDrop(event: DragEvent): void {
-    const json = event.dataTransfer!.getData(CELL_MIME_TYPE);
-    if (!json) {
-      console.error(`Unexpected drop with no ${CELL_MIME_TYPE} data.`);
-      return;
-    }
-    const cellDragData = <CellDragData>JSON.parse(json);
-    console.log(`Dropped style ${cellDragData.styleId} onto style ${this.styleId}`);
+    const cellDragData = getDragData(event);
+    if (!cellDragData) { return; }
+    // console.log(`Dropped style ${cellDragData.styleId} onto style ${this.styleId}`);
 
     const c = this.notebookView.openNotebook.compareStylePositions(cellDragData.styleId, this.styleId);
-    if (c==0) {
-      console.log("Dropped on itself. Ignoring.");
-      return;
-    }
+    if (c==0) { /* Dropped onto self */ return; }
 
+    // If dragging down, then put dragged cell below the cell that was dropped on.
+    // If dragging up, then put dragged cell above the cell that was dropped on.
     const afterId = c<0 ? this.styleId : this.notebookView.openNotebook.precedingStyleId(this.styleId);
     const moveRequest: StyleMoveRequest = {
       type: 'moveStyle',
@@ -226,4 +230,26 @@ export class InkCellView extends CellView {
       console.error(`Error submitting stroke: ${err.message}`);
     });
   }
+}
+
+
+// HELPER FUNCTIONS
+
+function getDragData(event: DragEvent): CellDragData|undefined {
+  assert(event.dataTransfer);
+  const json = event.dataTransfer!.getData(CELL_MIME_TYPE);
+  if (!json) { return undefined; }
+  const cellDragData = <CellDragData>JSON.parse(json);
+  return cellDragData;
+}
+
+function hasDragData(event: DragEvent): boolean {
+  return event.dataTransfer!.types.includes(CELL_MIME_TYPE);
+}
+
+function setDragData(event: DragEvent, cellDragData: CellDragData): void {
+  assert(event.dataTransfer);
+  const json = JSON.stringify(cellDragData);
+  event.dataTransfer!.setData(CELL_MIME_TYPE, json);
+  // TODO: Other data types: LaTeX, SVG, text/plain, text/uri-list etc.
 }
