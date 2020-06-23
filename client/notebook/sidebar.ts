@@ -99,7 +99,7 @@ export class Sidebar {
     this.$undoButton = $attach<HTMLButtonElement>($elt, '#undoButton', { listeners: { click: (e: MouseEvent)=>this.onUndoButtonClicked(e) }});
 
     // Prevent sidebar buttons from taking focus when clicked.
-    // REVIEW: Code duplicated in header.
+    // REVIEW: Code duplicated in header.ts.
     $configureAll($all($elt, 'button'), {
       // REVIEW: Use pointer event instead? Will this handle touches and stylus taps?
       listeners: { mousedown: (e: MouseEvent)=>{ e.preventDefault(); }},

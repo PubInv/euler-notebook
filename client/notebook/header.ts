@@ -67,7 +67,7 @@ export class Header {
     $fullscreenButton.disabled = !fullScreenIsEnabled();
 
     // Prevent header buttons from taking focus when clicked.
-    // REVIEW: Code duplicated in sidebar.
+    // REVIEW: Code duplicated in sidebar.ts.
     $configureAll($all($elt, 'button'), {
       // REVIEW: Use pointer event instead? Will this handle touches and stylus taps?
       listeners: { mousedown: (e: MouseEvent)=>{ e.preventDefault(); }},

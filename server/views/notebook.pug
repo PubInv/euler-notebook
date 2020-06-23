@@ -48,11 +48,6 @@ mixin header
       button#userButton(title="User settings")
         +svgIconUser1
 
-mixin icons
-  #icons(style="display:none")
-    #iconMenu1
-      +svgIconMenu1
-
 mixin keyboardInputSelector
   select#keyboardInputType()
     option(value='TEX-EXPRESSION') LaTeX
@@ -109,4 +104,3 @@ block content
     #pageView(style='display:none')
     #notebookView(style='display:none')
   +tools
-  +icons

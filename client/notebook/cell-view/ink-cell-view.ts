@@ -22,7 +22,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 import { DrawingData, StyleId, StyleObject } from '../../shared/notebook.js';
 import { StyleChangeRequest, StyleMoveRequest } from '../../shared/math-tablet-api.js';
 
-import { $, $configure } from '../../dom.js';
+import { $configure } from '../../dom.js';
 import { deepCopy, assert } from '../../common.js';
 import { SvgStroke } from '../svg-stroke.js';
 import { StylusDrawingPanel } from '../stylus-drawing-panel.js';
@@ -109,7 +109,7 @@ export class InkCellView extends CellView {
       appendTo: this.$elt,
       attrs: { draggable: true },
       class: 'dragIcon',
-      html: $(document, '#icons>#iconMenu1').innerHTML,
+      html: "&equiv;",
       listeners: {
         dragend: e=>this.onDragEnd(e),
         dragstart: e=>this.onDragStart(e),
