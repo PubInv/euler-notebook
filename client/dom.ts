@@ -39,9 +39,15 @@ interface Listeners {
   blur?: Listener<FocusEvent>;
   click?: Listener<MouseEvent>;
   dblclick?: Listener<MouseEvent>;
+  dragend?: Listener<DragEvent>;
+  dragstart?: Listener<DragEvent>;
+  dragover?: Listener<DragEvent>;
+  dragenter?: Listener<DragEvent>;
+  drop?: Listener<DragEvent>;
   focus?: Listener<FocusEvent>;
   input?: Listener<Event>; // REVIEW: More specific event type?
   keyup?: Listener<KeyboardEvent>;
+  mousedown?: Listener<MouseEvent>;
   pointercancel?: Listener<PointerEvent>;
   pointerdown?: Listener<PointerEvent>;
   pointerenter?: Listener<PointerEvent>;
@@ -67,6 +73,8 @@ interface NewOptions {
 
 const SVG_NS = 'http://www.w3.org/2000/svg';
 
+const ENUMERATED_ATTRIBUTES = new Set<string>([ 'draggable']);
+
 // Exported Functions
 
 export function $<T extends Element>(root: Element|Document, selector: CssSelector): T {
@@ -81,7 +89,7 @@ export function $all<T extends Element>(root: Element|Document, selector: CssSel
 
 export function $attach<T extends Element>(root: Element|Document, selector: CssSelector, options: NewOptions): T {
   const $elt = $<T>(root, selector);
-  configure<T>($elt, options);
+  $configure<T>($elt, options);
   return $elt;
 }
 
@@ -89,35 +97,25 @@ export function $attach<T extends Element>(root: Element|Document, selector: Css
 
 export function $new<T extends HTMLElement>(tag: ElementTag, options?: NewOptions): T {
   const $elt = <T>document.createElement(tag);
-  if (options) { configure($elt, options); }
+  if (options) { $configure($elt, options); }
   options = options || {};
   return $elt;
 }
 
 export function $newSvg<T extends SVGElement>(tag: ElementTag, options?: NewOptions): T {
   const $elt = <T>document.createElementNS(SVG_NS, tag);
-  if (options) { configure($elt, options); }
+  if (options) { $configure($elt, options); }
   options = options || {};
   return $elt;
 }
 
-export function configure<T extends Element>($elt: T, options: NewOptions): void {
+export function $configure<T extends Element>($elt: T, options: NewOptions): void {
   if (options.id) { $elt.setAttribute('id', options.id); }
   if (options.class) { $elt.classList.add(options.class); }
   if (options.classes) {
     for (const cls of options.classes) { $elt.classList.add(cls); }
   }
-  if (options.attrs) {
-    for (const key of Object.keys(options.attrs)) {
-      const value = options.attrs[key];
-      if (typeof value != 'boolean') {
-        $elt.setAttribute(key, value.toString());
-      } else {
-        // Boolean types are present if set to any value, and MDN documentation recommends the empty string.
-        if (value) { $elt.setAttribute(key, ''); }
-      }
-    }
-  }
+  if (options.attrs) { attachAttributes($elt, options.attrs); }
   if (options.html) { $elt.innerHTML = options.html; }
   if (options.style) { $elt.setAttribute('style', options.style); }
   if (options.appendTo) { options.appendTo.appendChild($elt); }
@@ -134,7 +132,24 @@ export function escapeHtml(str: string): Html {
 
 // HELPER FUNCTIONS
 
-function attachListeners($elt: Element, listeners: Listeners) {
+function attachAttributes($elt: Element, attrs: Attributes): void {
+  for (const key of Object.keys(attrs)) {
+    const value = attrs[key];
+    if (typeof value !== 'boolean') {
+      $elt.setAttribute(key, value.toString());
+    } else {
+      // Boolean types are present if set to any value, and MDN documentation recommends the empty string,
+      // unless they are "enumerated", in which case they should be explicitly "true" or "false".
+      if (ENUMERATED_ATTRIBUTES.has(key)) {
+        $elt.setAttribute(key, value.toString());
+      } else {
+        if (value) { $elt.setAttribute(key, ''); }
+      }
+    }
+  }
+}
+
+function attachListeners($elt: Element, listeners: Listeners): void {
   const eventNames = <EventName[]>Object.keys(listeners);
   for (const eventName of eventNames) {
     const listener = listeners[eventName]!;

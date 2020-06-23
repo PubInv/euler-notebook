@@ -22,7 +22,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 import { CellView } from './cell-view/index.js';
 import { createCellView } from './cell-view/instantiator.js';
 import { assert } from '../common.js';
-import { $, configure } from '../dom.js';
+import { $, $configure } from '../dom.js';
 import {
   DrawingData, StyleId, StyleObject, NotebookChange,
   StyleType, StyleRelativePosition,
@@ -549,7 +549,7 @@ export class NotebookView {
 
   private constructor($elt: HTMLDivElement) {
     this.$elt = $elt;
-    configure($elt, { listeners: {
+    $configure($elt, { listeners: {
       blur: e=>this.onBlur(e),
       focus: e=>this.onFocus(e),
       keyup: e=>this.onKeyUp(e),

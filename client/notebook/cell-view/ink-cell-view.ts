@@ -20,9 +20,9 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 // Requirements
 
 import { DrawingData, StyleId, StyleObject } from '../../shared/notebook.js';
-import { StyleChangeRequest } from '../../shared/math-tablet-api.js';
+import { StyleChangeRequest, StyleMoveRequest } from '../../shared/math-tablet-api.js';
 
-// import { $ } from '../../dom.js';
+import { $, $configure } from '../../dom.js';
 import { deepCopy } from '../../common.js';
 import { SvgStroke } from '../svg-stroke.js';
 import { StylusDrawingPanel } from '../stylus-drawing-panel.js';
@@ -36,7 +36,13 @@ import { $new } from '../../dom.js';
 
 // Types
 
+interface CellDragData {
+  styleId: StyleId;
+}
+
 // Constants
+
+const CELL_MIME_TYPE = 'application/vnd.mathtablet.cell';
 
 // Exported Class
 
@@ -77,6 +83,13 @@ export class InkCellView extends CellView {
     /* this.stylusDrawingPanel = */ StylusDrawingPanel.create(this.$elt, (stroke)=>this.onStrokeComplete(stroke));
 
     // LATER: These button be on *all* cells, not just ink cells.
+    $configure(this.$elt, {
+      listeners: {
+        dragenter: e=>this.onDragEnter(e),
+        dragover: e=>this.onDragOver(e),
+        drop: e=>this.onDrop(e),
+      }
+    });
     $new('button', {
       appendTo: this.$elt,
       class: 'insertCellBelowButton',
@@ -92,6 +105,17 @@ export class InkCellView extends CellView {
       listeners: {
         click: e=>this.onDeleteCellButtonClicked(e),
       },
+    });
+    $new('div', {
+      appendTo: this.$elt,
+      attrs: { draggable: true },
+      class: 'dragIcon',
+      html: $(document, '#icons>#iconMenu1').innerHTML,
+      listeners: {
+        dragend: e=>this.onDragEnd(e),
+        dragstart: e=>this.onDragStart(e),
+      },
+      style: "width:16px;height:16px",
     });
   }
 
@@ -116,6 +140,71 @@ export class InkCellView extends CellView {
     this.notebookView.deleteTopLevelStyle(this.styleId).catch(err=>{
       // TODO: Better handling of this error.
       console.error(`Error deleting cell:\n${err.stack}`);
+    });
+  }
+
+  // TODO: Remove or comment out all of the drag/drop console messages.
+
+  private onDragEnter(event: DragEvent): void {
+    const dropAllowed = event.dataTransfer!.types.includes(CELL_MIME_TYPE);
+    if (!dropAllowed) {
+      console.log("Drag enter, unsupported datatype.");
+      return;
+    }
+    console.log("Drag enter, supported datatype.");
+    event.preventDefault();
+  }
+
+  private onDragOver(event: DragEvent): void {
+    const dropAllowed = event.dataTransfer!.types.includes(CELL_MIME_TYPE);
+    if (!dropAllowed) {
+      console.log("Drag over, unsupported datatype.");
+      return;
+    }
+    console.log("Drag over, supported datatype.");
+    event.preventDefault();
+  }
+
+  private onDragStart(event: DragEvent): void {
+    console.log("Dragging start");
+    const cellDragData: CellDragData = {
+      styleId: this.styleId,
+    }
+    const json = JSON.stringify(cellDragData);
+    event.dataTransfer!.setData(CELL_MIME_TYPE, json);
+    // TODO: Other data types: LaTeX, SVG, text/plain, text/uri-list etc.
+    event.dataTransfer!.effectAllowed = 'all';
+  }
+
+  private onDragEnd(event: DragEvent): void {
+    console.log(`Dragging end: ${event.dataTransfer?.dropEffect}`)
+  }
+
+  private onDrop(event: DragEvent): void {
+    const json = event.dataTransfer!.getData(CELL_MIME_TYPE);
+    if (!json) {
+      console.error(`Unexpected drop with no ${CELL_MIME_TYPE} data.`);
+      return;
+    }
+    const cellDragData = <CellDragData>JSON.parse(json);
+    console.log(`Dropped style ${cellDragData.styleId} onto style ${this.styleId}`);
+
+    const c = this.notebookView.openNotebook.compareStylePositions(cellDragData.styleId, this.styleId);
+    if (c==0) {
+      console.log("Dropped on itself. Ignoring.");
+      return;
+    }
+
+    const afterId = c<0 ? this.styleId : this.notebookView.openNotebook.precedingStyleId(this.styleId);
+    const moveRequest: StyleMoveRequest = {
+      type: 'moveStyle',
+      styleId: cellDragData.styleId,
+      afterId,
+    }
+    this.notebookView.editStyle([ moveRequest ])
+    .catch((err: Error)=>{
+      // TODO: What to do here?
+      console.error(`Error moving style for drag/drop: ${err.message}`);
     });
   }
 

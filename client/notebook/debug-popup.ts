@@ -19,7 +19,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 // Requirements
 
-import { configure } from '../dom.js';
+import { $configure } from '../dom.js';
 import { ClientNotebook } from './client-notebook.js';
 import { Header } from './header.js';
 
@@ -65,8 +65,8 @@ export class DebugPopup {
     this.$closeButton = $elt.querySelector<HTMLButtonElement>('.close')!;
     this.$content = $elt.querySelector<HTMLDivElement>('.content')!;
 
-    configure(this.$content, { listeners: { 'click': e=>this.onContentClick(e) }});
-    configure(this.$closeButton, { listeners: { 'click': e=> this.onCloseClick(e) }});
+    $configure(this.$content, { listeners: { 'click': e=>this.onContentClick(e) }});
+    $configure(this.$closeButton, { listeners: { 'click': e=> this.onCloseClick(e) }});
   }
 
   // Private Instance Properties

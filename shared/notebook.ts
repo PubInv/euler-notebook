@@ -30,8 +30,8 @@ export interface CssSize {
   width: CssLength;
 }
 
-// TODO: Rename StrokeData.
 export interface DrawingData {
+  // TODO: Rename this interface to StrokeData.
   size: CssSize;
   strokeGroups: StrokeGroup[];
 }
@@ -53,8 +53,8 @@ export interface StrokeGroup {
 }
 
 
-// NOTE: toId and fromId are mutually "or". The ids and all other fields are "and".
 export interface FindRelationshipOptions {
+  // NOTE: toId and fromId are mutually "or". The ids and all other fields are "and".
   dataflow?: boolean;
   toId?: StyleId;
   fromId?: StyleId;
@@ -62,8 +62,8 @@ export interface FindRelationshipOptions {
   source?: StyleSource;
 }
 
-// REVIEW: Rename to FindStylePattern
 export interface FindStyleOptions {
+  // REVIEW: Rename this interface to FindStylePattern
   role?: StyleRole|RegExp;
   subrole?: StyleSubrole;
   source?: StyleSource;
@@ -152,15 +152,15 @@ export interface NotebookObject {
 
 export type RelationshipId = number;
 
-// Some invariants are needed here:
-// The first definition of a symbol does not create a relationship.
-// The second mentions of a symbol creates a relationship attached
-// (via source) to either the use or definition.
-// Props may give this the role of DUPLICATE DEFINITION if that is true.
-// It is critically that all of these respect the "top level thought order",
-// not the style order, so that reordering thoughts has a role.
-// Each symbol name creates a separate independent "channel" of that name.
 export interface RelationshipObject extends RelationshipProperties {
+  // Some invariants are needed here:
+  // The first definition of a symbol does not create a relationship.
+  // The second mentions of a symbol creates a relationship attached
+  // (via source) to either the use or definition.
+  // Props may give this the role of DUPLICATE DEFINITION if that is true.
+  // It is critically that all of these respect the "top level thought order",
+  // not the style order, so that reordering thoughts has a role.
+  // Each symbol name creates a separate independent "channel" of that name.
   id: RelationshipId;
   source: StyleSource;
   /* TODO: Legacy. Eliminate. */ fromId: StyleId;
@@ -340,31 +340,13 @@ export const STYLE_SOURCES = [
 ] as const;
 export type StyleSource = typeof STYLE_SOURCES[number];
 
-export type WolframExpression = string; // TODO: Rename WolframExpression
+export type WolframExpression = string;
 
 // Constants
 
 export const VERSION = "0.0.14";
 
 // Exported Class
-
-export class StyleIdDoesNotExistError extends Error {
-    constructor(m: string) {
-      super(m);
-      // Set the prototype explicitly to make work
-      Object.setPrototypeOf(this, StyleIdDoesNotExistError.prototype);
-      this.name = "StyleIdDoesNotExistError";
-    }
-}
-
-export class RelationshipIdDoesNotExistError extends Error {
-    constructor(m: string) {
-      super(m);
-      // Set the prototype explicitly to make work
-      Object.setPrototypeOf(this, RelationshipIdDoesNotExistError.prototype);
-      this.name = "RelationshipIdDoesNotExistError";
-    }
-}
 
 export class Notebook {
 
@@ -395,8 +377,8 @@ export class Notebook {
 
   // Instance Property Functions
 
-  // REVIEW: Return an iterator?
   public allRelationships(): RelationshipObject[] {
+    // REVIEW: Return an iterator?
     // REVIEW: Does it matter whether we return relationships in sorted order or not?
     //       This could be as simple as: return Object.values(this.relationshipMap);
     //       Caller can sort if necessary.
@@ -404,12 +386,8 @@ export class Notebook {
     return sortedIds.map(id=>this.relationshipMap[id]);
   }
 
-  public relationshipsOf(id: StyleId): RelationshipObject[] {
-    return this.allRelationships().filter(r=>r.inStyles.find(rs=>rs.id == id) || r.outStyles.find(rs=>rs.id == id));
-  }
-
-  // REVIEW: Return an iterator?
   public allStyles(): StyleObject[] {
+    // REVIEW: Return an iterator?
     // REVIEW: Does it matter whether we return relationships in sorted order or not?
     //       This could be as simple as: return Object.values(this.relationshipMap);
     //       Caller can sort if necessary.
@@ -417,18 +395,18 @@ export class Notebook {
     return sortedIds.map(id=>this.getStyle(id));
   }
 
-  // Returns all thoughts in notebook order
-  // REVIEW: Return an iterator?
-  public topLevelStyleOrder(): StyleId[] { return this.styleOrder; }
-
   public childStylesOf(id: StyleId): StyleObject[] {
     return this.allStyles().filter(s=>(s.parentId==id));
   }
 
-  public getRelationship(id: RelationshipId): RelationshipObject {
-    const rval = this.relationshipMap[id];
-    if (!rval) { throw new RelationshipIdDoesNotExistError(`Relationship ${id} doesn't exist.`); }
-    return rval;
+  public compareStylePositions(id1: StyleId, id2: StyleId): number {
+    // Returns a negative number if style1 is before style2,
+    // zero if they are the same styles,
+    // or a positive number if style1 is after style2.
+    const p1 = this.styleOrder.indexOf(id1);
+    const p2 = this.styleOrder.indexOf(id2);
+    if (p1<0 || p2<0) { throw new Error("Comparing position of non-existent or non-top-level styles."); }
+    return p1 - p2;
   }
 
   public followingStyleId(id: StyleId): StyleId {
@@ -437,6 +415,12 @@ export class Notebook {
     if (i<0) { throw new Error(`Style ${id} not found for followingStyleId.`); }
     if (i+1>=this.styleOrder.length) { return 0; }
     return this.styleOrder[i+1];
+  }
+
+  public getRelationship(id: RelationshipId): RelationshipObject {
+    const rval = this.relationshipMap[id];
+    if (!rval) { throw new RelationshipIdDoesNotExistError(`Relationship ${id} doesn't exist.`); }
+    return rval;
   }
 
   public getStyle(id: StyleId): StyleObject {
@@ -450,12 +434,20 @@ export class Notebook {
     return this.styleOrder.length == 0;
   }
 
+  public isTopLevelStyle(id: StyleId): boolean {
+    return (this.getStyle(id).parentId == 0);
+  }
+
   public precedingStyleId(id: StyleId): StyleId {
     // Returns the id of the style immediately before the top-level style specified.
     const i = this.styleOrder.indexOf(id);
     if (i<0) { throw new Error(`Style ${id} not found for precedingStyleId.`); }
     if (i<1) { return 0; }
     return this.styleOrder[i-1];
+  }
+
+  public relationshipsOf(id: StyleId): RelationshipObject[] {
+    return this.allRelationships().filter(r=>r.inStyles.find(rs=>rs.id == id) || r.outStyles.find(rs=>rs.id == id));
   }
 
   public toHtml(): Html {
@@ -470,18 +462,14 @@ export class Notebook {
     }
   }
 
-  // A textual representation useful for debugging.
-  public toText(): string {
-    return this.topLevelStyleOrder()
-    .map(styleId=>{
-      const style = this.getStyle(styleId);
-      return this.styleToText(style);
-    })
-    .join('');
+  public topLevelStyleOrder(): StyleId[] {
+    // Returns all thoughts in notebook order
+    // REVIEW: Return an iterator?
+    return this.styleOrder;
   }
 
-  // REVIEW: Return an iterator?
   public topLevelStyles(): StyleObject[] {
+    // REVIEW: Return an iterator?
     return this.styleOrder.map(styleId=>this.getStyle(styleId));
   }
 
@@ -494,17 +482,23 @@ export class Notebook {
     return style;
   }
 
-  public isTopLevelStyle(id: StyleId): boolean {
-    return (this.getStyle(id).parentId == 0);
-  }
-
-  // Return the order-dependent position of the top level thought
-  // this is attached to; this is used in "causal ordering".
-  // getThoughtIndex(A) < getThoughtIndex(B) implies A may not
-  // in anyway depend on B.
   public topLevelStylePosition(id: StyleId): StyleOrdinalPosition {
+    // Return the order-dependent position of the top level thought
+    // this is attached to; this is used in "causal ordering".
+    // getThoughtIndex(A) < getThoughtIndex(B) implies A may not
+    // in anyway depend on B.
     const top = this.topLevelStyleOf(id);
     return this.styleOrder.indexOf(top.id);
+  }
+
+  public toText(): string {
+    // A textual representation useful for debugging.
+    return this.topLevelStyleOrder()
+    .map(styleId=>{
+      const style = this.getStyle(styleId);
+      return this.styleToText(style);
+    })
+    .join('');
   }
 
   // Instance Methods
@@ -530,8 +524,16 @@ export class Notebook {
     for (const change of changes) { this.applyChange(change); }
   }
 
-  // TODO: Find relationships with styles of certain relationship roles.
+  public deleteRelationship(relationship: RelationshipObject): void {
+    // REVIEW: Making this public for the purpose of error handling in server-notebook - rlr
+    // TODO: relationship may have already been deleted by another observer.
+    const id = relationship.id;
+    if (!this.relationshipMap[id]) { throw new Error(`Deleting unknown relationship ${id}`); }
+    delete this.relationshipMap[id];
+  }
+
   public findRelationships(options: FindRelationshipOptions): RelationshipObject[] {
+    // TODO: Find relationships with styles of certain relationship roles.
     const rval: RelationshipObject[] = [];
     // REVIEW: Ideally, relationships would be stored in a Map, not an object,
     //         so we could obtain an iterator over the values, and not have to
@@ -583,13 +585,6 @@ export class Notebook {
   public hasRelationshipId(relationshipId: RelationshipId): boolean {
     return this.relationshipMap.hasOwnProperty(relationshipId);
   }
-
-  // public hasRelationships(options: FindRelationshipOptions): boolean {
-  //   // Returns true iff findStyles with the same parameters would return a non-empty list.
-  //   // LATER: Make this more efficient. We can return true when we find the first matching relationship.
-  //   const relationships = this.findRelationships(options);
-  //   return relationships.length>0;
-  // }
 
   public hasStyleId(styleId: StyleId): boolean {
     return this.styleMap.hasOwnProperty(styleId);
@@ -689,9 +684,8 @@ export class Notebook {
     }
   }
 
-  // Private Event Handlers
-
   // Private Instance Methods
+
   private changeStyle(change: StyleChanged): void {
     const styleId = change.style.id;
     const style = this.getStyle(styleId);
@@ -711,15 +705,6 @@ export class Notebook {
     if (change.subrole) { style.subrole = change.subrole; }
     if (change.styleType) { style.type = change.styleType; }
     if (change.data) { style.data = change.data; }
-  }
-
-  // Making this public for the purpose of error handling
-  // in server-notebook...this requires REVEIW - rlr
-  public deleteRelationship(relationship: RelationshipObject): void {
-    // TODO: relationship may have already been deleted by another observer.
-    const id = relationship.id;
-    if (!this.relationshipMap[id]) { throw new Error(`Deleting unknown relationship ${id}`); }
-    delete this.relationshipMap[id];
   }
 
   private deleteStyle(style: StyleObject): void {
@@ -754,10 +739,10 @@ export class Notebook {
     }
   }
 
-  // Although questionable, executed a "moveStyle" on children
-  // of a top level style. However, only a move a top-level thought
-  // actually should be affected here.
   private moveStyle(change: StyleMoved): void {
+    // Although questionable, executed a "moveStyle" on children
+    // of a top level style. However, only a move a top-level thought
+    // actually should be affected here.
     if (this.isTopLevelStyle(change.styleId)) {
       this.styleOrder.splice(change.oldPosition, 1);
       this.styleOrder.splice(change.newPosition, 0, change.styleId);
@@ -765,8 +750,45 @@ export class Notebook {
   }
 }
 
-// REVIEW: Function should not start with a capital letter.
+// Helper Classes
+
+export class StyleIdDoesNotExistError extends Error {
+  // REVIEW: Is this class necessary?
+  constructor(m: string) {
+    super(m);
+    // Set the prototype explicitly to make work
+    Object.setPrototypeOf(this, StyleIdDoesNotExistError.prototype);
+    this.name = "StyleIdDoesNotExistError";
+  }
+}
+
+export class RelationshipIdDoesNotExistError extends Error {
+  // REVIEW: Is this class necessary?
+  constructor(m: string) {
+    super(m);
+    // Set the prototype explicitly to make work
+    Object.setPrototypeOf(this, RelationshipIdDoesNotExistError.prototype);
+    this.name = "RelationshipIdDoesNotExistError";
+  }
+}
+
+// Helper Functions
+
+export function escapeHtml(str: string): Html {
+  // REVIEW: This function also exists in dom.ts, but that only works in the browser.
+  // From http://jehiah.cz/a/guide-to-escape-sequences. Note that has a bug in that it only replaces the first occurrence.
+  // REVIEW: Is this sufficient?
+  return str.replace(/&/g, "&amp;")
+            .replace(/"/g, "&quot;")
+            .replace(/'/g, "&#39;")
+            .replace(/>/g, "&gt;")
+            .replace(/</g, "&lt;");
+}
+
+function indentation(indentationLevel: number): string { return ' '.repeat(indentationLevel*2); }
+
 export function StyleInsertedFromNotebookChange(change: NotebookChange): StyleInserted {
+  // TODO: Rename this function so it doesn't start with a capital letter.
   if (change.type != 'styleInserted') { throw new Error("Not StyleInserted change."); }
   return change;
 }
@@ -778,21 +800,6 @@ export function styleMatchesPattern(style: StyleObject, options: FindStyleOption
          && (!options.source || style.source == options.source)
          && (!options.notSource || style.source != options.notSource);
 }
-
-// Helper Functions
-
-// REVIEW: This function also exists in dom.ts, but that only works in the browser.
-export function escapeHtml(str: string): Html {
-  // From http://jehiah.cz/a/guide-to-escape-sequences. Note that has a bug in that it only replaces the first occurrence.
-  // REVIEW: Is this sufficient?
-  return str.replace(/&/g, "&amp;")
-            .replace(/"/g, "&quot;")
-            .replace(/'/g, "&#39;")
-            .replace(/>/g, "&gt;")
-            .replace(/</g, "&lt;");
-}
-
-function indentation(indentationLevel: number): string { return ' '.repeat(indentationLevel*2); }
 
 // TEMPORARY
 
