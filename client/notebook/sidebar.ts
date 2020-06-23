@@ -19,7 +19,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 // Requirements
 
-import { $, $attach } from '../dom.js';
+import { $, $attach, $configureAll, $all } from '../dom.js';
 import { NotebookView } from './notebook-view.js';
 
 // Types
@@ -97,6 +97,13 @@ export class Sidebar {
     this.$redoButton = $attach<HTMLButtonElement>($elt, '#redoButton', { listeners: { click: (e: MouseEvent)=>this.onRedoButtonClicked(e) }});
     this.$trashButton = $attach<HTMLButtonElement>($elt, '#trashButton', { listeners: { click: (e: MouseEvent)=>this.onTrashButtonClicked(e) }});
     this.$undoButton = $attach<HTMLButtonElement>($elt, '#undoButton', { listeners: { click: (e: MouseEvent)=>this.onUndoButtonClicked(e) }});
+
+    // Prevent sidebar buttons from taking focus when clicked.
+    // REVIEW: Code duplicated in header.
+    $configureAll($all($elt, 'button'), {
+      // REVIEW: Use pointer event instead? Will this handle touches and stylus taps?
+      listeners: { mousedown: (e: MouseEvent)=>{ e.preventDefault(); }},
+    });
   }
 
   // Private Instance Properties

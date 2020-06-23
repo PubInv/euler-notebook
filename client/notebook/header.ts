@@ -21,7 +21,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 // Requirements
 
-import { $attach } from '../dom.js';
+import { $attach, $configureAll, $all } from '../dom.js';
 // import { showErrorMessageIfPromiseRejects } from '../global.js';
 import { DebugPopup } from './debug-popup.js';
 import { ClientNotebook } from './client-notebook.js';
@@ -65,6 +65,14 @@ export class Header {
 
     const $fullscreenButton = $attach<HTMLButtonElement>($elt, '#fullscreenButton', { listeners: { click: e=>this.onFullscreenButtonClicked(e) }});
     $fullscreenButton.disabled = !fullScreenIsEnabled();
+
+    // Prevent header buttons from taking focus when clicked.
+    // REVIEW: Code duplicated in sidebar.
+    $configureAll($all($elt, 'button'), {
+      // REVIEW: Use pointer event instead? Will this handle touches and stylus taps?
+      listeners: { mousedown: (e: MouseEvent)=>{ e.preventDefault(); }},
+    });
+
   }
 
   // Private Instance Properties

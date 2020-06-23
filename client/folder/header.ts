@@ -21,7 +21,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 // Requirements
 
-import { $attach } from '../dom.js';
+import { $attach, $configureAll, $all } from '../dom.js';
 
 // Types
 
@@ -50,6 +50,13 @@ export class Header {
   private constructor($elt: HTMLDivElement) {
     $attach($elt, '#refreshButton', { listeners: { click: _e=>{ window.location.reload(); }}});
     $attach($elt, '#userButton', { listeners: { click: _e=>{ alert("User menu not yet implemented."); }}});
+
+    // Prevent header buttons from taking focus when clicked.
+    // REVIEW: Code duplicated in sidebar.ts.
+    $configureAll($all($elt, 'button'), {
+      // REVIEW: Use pointer event instead? Will this handle touches and stylus taps?
+      listeners: { mousedown: (e: MouseEvent)=>{ e.preventDefault(); }},
+    });
   }
 
   // Private Instance Properties

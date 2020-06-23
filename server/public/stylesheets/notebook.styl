@@ -46,7 +46,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
   width calc(100% - var(--sidebar-width))
 
 #debugPopup
-  background-color #eeeeee
+  background-color #EEEEEE
   border 1px solid black
   font-size smaller
   height 80%
@@ -86,7 +86,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
       content "\0025cf "
 
 #notebookView
-  background-color #eeeeee
+  background-color #F8F8F8
   min-height 100%
 
   .cell
@@ -107,7 +107,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
       width 36px
 
   .cell.selected
-    outline 1px dotted blue
+    background-color #F0F0F0
 
   .formulaCell
     align-items center
@@ -167,18 +167,12 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
       fill none
       stroke black
 
-
-#notebookView:focus
-  background-color #f8f8f8
-  outline none
-
 #pageView
 #thumbnailView
   background-color lightgray
   display flex
   flex-flow row wrap
   min-height 100%
-  outline none
   width 100%
 
 #tools
@@ -207,7 +201,6 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
   font-size x-small
 
 .inputPanel
-  outline 1px solid blue
 
   .inputRow
     align-items center

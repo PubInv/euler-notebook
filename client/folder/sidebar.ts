@@ -19,7 +19,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 // Requirements
 
-import { $, $attach } from '../dom.js';
+import { $, $attach, $configureAll, $all } from '../dom.js';
 
 // Types
 
@@ -95,6 +95,13 @@ export class Sidebar {
     $attach($elt, '#createFileViewButton', { listeners: { click: (_e: MouseEvent)=>this.switchView('createFile') }});
     $attach($elt, '#homeButton', { listeners: { click: _e=>{ window.location.href = '/'; }}});
     $attach($elt, '#importFileViewButton', { listeners: { click: (_e: MouseEvent)=>this.switchView('importFile') }});
+
+    // Prevent sidebar buttons from taking focus when clicked.
+    // REVIEW: Code duplicated in header.ts.
+    $configureAll($all($elt, 'button'), {
+      // REVIEW: Use pointer event instead? Will this handle touches and stylus taps?
+      listeners: { mousedown: (e: MouseEvent)=>{ e.preventDefault(); }},
+    });
   }
 
   // Private Instance Properties

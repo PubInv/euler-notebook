@@ -122,6 +122,9 @@ export function $configure<T extends Element>($elt: T, options: NewOptions): voi
   if (options.listeners) { attachListeners($elt, options.listeners); }
 }
 
+export function $configureAll<T extends Element>($elts: NodeListOf<T>, options: NewOptions): void {
+  for (const $elt of $elts) { $configure($elt, options); }
+}
 
 // From: http://shebang.brandonmintern.com/foolproof-html-escaping-in-javascript/
 export function escapeHtml(str: string): Html {
