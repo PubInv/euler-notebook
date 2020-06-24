@@ -91,6 +91,7 @@ export class InkCellView extends CellView {
     });
     $new('button', {
       appendTo: this.$elt,
+      attrs: { tabindex: -1 },
       class: 'insertCellBelowButton',
       html: '&#x25B6;',
       listeners: {
@@ -99,6 +100,7 @@ export class InkCellView extends CellView {
     });
     $new('button', {
       appendTo: this.$elt,
+      attrs: { tabindex: -1 },
       class: 'deleteCellButton',
       html: '&#x2715;',
       listeners: {

@@ -150,6 +150,7 @@ export abstract class CellView {
     this.styleId = style.id;
 
     this.$elt = $new<HTMLDivElement>('div', {
+      attrs: { tabindex: 0 },
       classes: [ 'cell', subclass ],
       id: `C${style.id}`,
       listeners: {
