@@ -113,7 +113,7 @@ export class StylusInputPanel {
 
     this.$drawingArea = $newSvg<SVGSVGElement>('svg', {
       appendTo: $inputRow,
-      attrs: { width: '6.5in', height: '1in' }, // TODO: strokesStyle.data.size,
+      attrs: { height: '96px', width: '624px' }, // TODO: strokesStyle.data.size,
       class: 'stylusInputPanel',
       id: `svg${style.id}`,
       listeners: {

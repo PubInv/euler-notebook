@@ -49,6 +49,18 @@ export class StylusDrawingPanel  {
     return new this($parentElt, strokeCallbackFn);
   }
 
+  // Public Instance Methods
+
+  public matchSizeOfUnderlyingPanel($svg: SVGSVGElement): void {
+    for (const attr of ['height', 'width']) {
+      const currentValue = this.$elt.getAttribute(attr);
+      const expectedValue = $svg.getAttribute(attr)!;
+      if (currentValue != expectedValue) {
+        this.$elt.setAttribute(attr, expectedValue);
+      }
+    }
+  }
+
   // -- PRIVATE --
 
   // Private Constructor
@@ -60,7 +72,7 @@ export class StylusDrawingPanel  {
 
     this.$elt = $newSvg<SVGSVGElement>('svg', {
       appendTo: $parentElt,
-      attrs: { width: '6.5in', height: '1in' }, // TODO: strokesStyle.data.size,
+      attrs: { height: '0px', width: '0px',  }, // Will be resized in matchSizeOfUnderlyingPanel,
       class: 'stylusDrawingPanel',
       listeners: {
         pointercancel:  e=>this.onPointerCancel(e),
@@ -147,6 +159,7 @@ export class StylusDrawingPanel  {
   }
 
   private onPointerUp(event: PointerEvent): void {
+    // REVIEW: Remove pointer info from pointer map??
     // console.log(`${event.pointerType} ${event.pointerId} ${event.type}`);
     // console.dir(event);
     const pi = this.pointerInfo(event);

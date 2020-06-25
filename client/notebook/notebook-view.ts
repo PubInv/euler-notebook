@@ -214,7 +214,7 @@ export class NotebookView {
     }
 
     const strokeData: DrawingData = {
-      size: { height: '1in', width: '6.5in' },
+      size: { height: '96px', width: '624px' }, // 1in x 6.5in = 96px
       strokeGroups: [
         { strokes: [] }
       ],

@@ -344,7 +344,7 @@ export type WolframExpression = string;
 
 // Constants
 
-export const VERSION = "0.0.14";
+export const VERSION = "0.0.15";
 
 // Exported Class
 

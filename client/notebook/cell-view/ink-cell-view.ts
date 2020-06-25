@@ -22,12 +22,13 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 import { DrawingData, StyleId, StyleObject } from '../../shared/notebook.js';
 import { StyleChangeRequest, StyleMoveRequest } from '../../shared/math-tablet-api.js';
 
-import { $configure } from '../../dom.js';
+import { $configure, $newSvg, $ } from '../../dom.js';
 import { deepCopy, assert } from '../../common.js';
-import { SvgStroke } from '../svg-stroke.js';
-import { StylusDrawingPanel } from '../stylus-drawing-panel.js';
 
 import { NotebookView } from '../notebook-view.js';
+import { ResizerBar } from '../resizer-bar.js';
+import { SvgStroke } from '../svg-stroke.js';
+import { StylusDrawingPanel } from '../stylus-drawing-panel.js';
 
 // import { getRenderer } from '../renderers.js';
 
@@ -57,9 +58,81 @@ export class InkCellView extends CellView {
   // Instance Methods
 
   public render(style: StyleObject): void {
-    // TODO: What if the user is in the middle of a stroke?
+    const svgRepStyle = this.notebookView.openNotebook.findStyle({ role: 'REPRESENTATION', type: 'SVG-MARKUP' }, style.id);
+    if (!svgRepStyle) {
+      // TODO: What to do in this case? Put an error message in the cell?
+      console.warn("No SVG-MARKUP substyle for UNINTERPRETED-INK style.");
+      return;
+    }
 
-    this.$elt.innerHTML = '';
+    // Replace the existing SVG panel with the new one from the server.
+    const $oldSvgPanel = $(this.$elt, '.svgPanel');
+    $oldSvgPanel.outerHTML = svgRepStyle.data;
+
+    // If the SVG panel has changed size, resize the drawing panel overlay to match.
+    const $newSvgPanel = $<SVGSVGElement>(this.$elt, '.svgPanel');
+    this.stylusDrawingPanel.matchSizeOfUnderlyingPanel($newSvgPanel);
+  }
+
+  // -- PRIVATE --
+
+  // Private Constructor
+
+  private constructor(notebookView: NotebookView, style: StyleObject) {
+    super(notebookView, style, 'inkCell');
+
+    // LATER: These button be on *all* cells, not just ink cells.
+    $configure(this.$elt, {
+      listeners: {
+        dragenter: e=>this.onDragEnter(e),
+        dragover: e=>this.onDragOver(e),
+        drop: e=>this.onDrop(e),
+      }
+    });
+
+    const $content = $new('div', {
+      appendTo: this.$elt,
+      class: 'content',
+    });
+
+    // Create placeholder SVG panel. Will be replaced in this.render().
+    $newSvg('svg', {
+      appendTo: $content,
+      class: 'svgPanel',
+    });
+
+    // Create an overlay SVG for accepting drawing input.
+    // TODO: Get dimensions from svgPanel?
+    // TODO: Resize drawing panel if underlying SVG panel changes size.
+    this.stylusDrawingPanel = StylusDrawingPanel.create($content, (stroke)=>this.onStrokeComplete(stroke));
+
+    $new('button', {
+      appendTo: $content,
+      attrs: { tabindex: -1 },
+      class: 'deleteCellButton',
+      html: '&#x2715;',
+      listeners: {
+        click: e=>this.onDeleteCellButtonClicked(e),
+      },
+    });
+
+    $new('div', {
+      appendTo: $content,
+      attrs: { draggable: true },
+      class: 'dragIcon',
+      html: "&equiv;",
+      listeners: {
+        dragend: e=>this.onDragEnd(e),
+        dragstart: e=>this.onDragStart(e),
+      },
+      style: "width:16px;height:16px",
+    });
+
+    /* this.resizerBar = */ ResizerBar.create(this.$elt, (deltaY: number, final: boolean)=>this.onResize(deltaY, final), ()=>this.onInsertCellBelow());
+
+    // TODO: This assumes we have the same input style for the lifetime of this cell.
+    //       But our API doesn't prevent the input style from getting deleted or replaced with a different one.
+    //       Some plugin may do that in the future.
     const inputStyle = this.notebookView.openNotebook.findStyle({ role: 'INPUT', type: 'STROKE-DATA' }, style.id);
     if (!inputStyle) {
       // TODO: Better way to handle this error.
@@ -70,70 +143,14 @@ export class InkCellView extends CellView {
     this.drawingData = deepCopy(inputStyle.data);
     this.inputStyleId = inputStyle.id;
 
-    const svgRepStyle = this.notebookView.openNotebook.findStyle({ role: 'REPRESENTATION', type: 'SVG-MARKUP' }, style.id);
-    if (svgRepStyle) {
-      this.$elt.innerHTML = svgRepStyle.data;
-    } else {
-      // TODO: What to do in this case?
-      console.warn("No SVG-MARKUP substyle for UNINTERPRETED-INK style.");
-    }
-
-    // TODO: Get dimensions from svgPanel?
-    /* this.stylusDrawingPanel = */ StylusDrawingPanel.create(this.$elt, (stroke)=>this.onStrokeComplete(stroke));
-
-    // LATER: These button be on *all* cells, not just ink cells.
-    $configure(this.$elt, {
-      listeners: {
-        dragenter: e=>this.onDragEnter(e),
-        dragover: e=>this.onDragOver(e),
-        drop: e=>this.onDrop(e),
-      }
-    });
-    $new('button', {
-      appendTo: this.$elt,
-      attrs: { tabindex: -1 },
-      class: 'insertCellBelowButton',
-      html: '&#x25B6;',
-      listeners: {
-        click: e=>this.onInsertCellBelowButtonClicked(e),
-      },
-    });
-    $new('button', {
-      appendTo: this.$elt,
-      attrs: { tabindex: -1 },
-      class: 'deleteCellButton',
-      html: '&#x2715;',
-      listeners: {
-        click: e=>this.onDeleteCellButtonClicked(e),
-      },
-    });
-    $new('div', {
-      appendTo: this.$elt,
-      attrs: { draggable: true },
-      class: 'dragIcon',
-      html: "&equiv;",
-      listeners: {
-        dragend: e=>this.onDragEnd(e),
-        dragstart: e=>this.onDragStart(e),
-      },
-      style: "width:16px;height:16px",
-    });
-  }
-
-  // -- PRIVATE --
-
-  // Private Constructor
-
-  private constructor(notebookView: NotebookView, style: StyleObject) {
-    super(notebookView, style, 'inkCell');
     this.render(style);
   }
 
   // Private Instance Properties
 
-  // private stylusDrawingPanel: StylusDrawingPanel;
   private drawingData!: DrawingData;
   private inputStyleId!: StyleId;  // REVIEW: What if the input style id changes?
+  private stylusDrawingPanel: StylusDrawingPanel;
 
   // Private Event Handlers
 
@@ -214,16 +231,38 @@ export class InkCellView extends CellView {
     });
   }
 
-  private onInsertCellBelowButtonClicked(_event: MouseEvent): void {
+  private onInsertCellBelow(): void {
     this.notebookView.insertInkCellBelow(this.styleId).catch(err=>{
       // TODO: Better handling of this error.
       console.error(`Error inserting cell below:\n${err.stack}`);
     });
   }
 
+  private onResize(deltaY: number, final: boolean): void {
+    const $svgPanel = $<SVGSVGElement>(this.$elt, '.svgPanel');
+    const currentHeight = parseInt($svgPanel.getAttribute('height')!.slice(0, -2), 10);
+    // TODO: resizer bar should enforce minimum.
+    // TODO: minimum height should be based on ink content.
+    const newHeight = Math.max(currentHeight + deltaY, 10);
+    const newHeightStr = `${newHeight}px`;
+    $svgPanel.setAttribute('height', newHeightStr);
+
+    if (final) {
+      // TODO: Incremental change request?
+      this.drawingData.size.height = newHeightStr;
+      const changeRequest: StyleChangeRequest = { type: 'changeStyle', styleId: this.inputStyleId, data: this.drawingData };
+      this.notebookView.editStyle([ changeRequest ])
+      .catch((err: Error)=>{
+        // TODO: What to do here?
+        console.error(`Error submitting resize: ${err.message}`);
+      });
+    }
+  }
+
   private onStrokeComplete(stroke: SvgStroke): void {
     // TODO: What if socket to server is closed? We'll just accumulate strokes that will never get saved.
     //       How do we handle offline operation?
+    // TODO: Incremental change request.
     this.drawingData.strokeGroups[0].strokes.push(stroke.data);
     const changeRequest: StyleChangeRequest = { type: 'changeStyle', styleId: this.inputStyleId, data: this.drawingData };
     this.notebookView.editStyle([ changeRequest ])

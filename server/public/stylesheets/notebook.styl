@@ -24,7 +24,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
   --page-aspect-ratio calc(8.5 / 11)
   --tools-height 20%
   --svg-left-offset 6px
-  --svg-top-offset 3px
+  --svg-top-offset 0px
 
 // Specific elements
 
@@ -107,10 +107,12 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
       width 36px
 
   .cell:focus
-    background-color #E8E8E8 !important
     outline none
 
-  .cell.selected
+    >.content
+      background-color #E8E8E8 !important
+
+  .cell.selected > .content
     background-color #F0F0F0
 
   .formulaCell
@@ -123,51 +125,59 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
     padding-left 20px
 
   .inkCell
-    padding var(--svg-top-offset) 6px 3px var(--svg-left-offset)
+    padding var(--svg-top-offset) 0px 0px var(--svg-left-offset)
     position relative
 
-    .deleteCellButton
-      background transparent
-      border none
-      top 0
-      color lightgray
-      padding 3px 12px 3px 3px
-      position absolute
-      right 0
+    .content
 
-    .dragIcon
-      color lightgray
-      padding 6px 12px 6px 6px
-      position absolute
-      right 0
-      top 30px
+      .deleteCellButton
+        background transparent
+        border none
+        top 0
+        color lightgray
+        padding 3px 12px 3px 3px
+        position absolute
+        right 0
 
-    .insertCellBelowButton
-      background transparent
-      border none
-      bottom -11px
-      color gray
-      left 0
-      padding 3px 3px 3px 6px
-      position absolute
+      .dragIcon
+        color lightgray
+        padding 6px 12px 6px 6px
+        position absolute
+        right 0
+        top 30px
+
+      .stylusDrawingPanel
+        background-color transparent
+        display block
+        fill none
+        left var(--svg-left-offset)
+        pen-action none
+        position absolute
+        stroke gray
+        top var(--svg-top-offset)
+        touch-action none
+
+      .svgPanel
+        background-color white
+        display block
+        fill none
+        stroke black
+
+    .resizeBar
+      cursor row-resize
+      margin -8px 0px
+      pen-action none
+      position relative
+      touch-action none
+      width 100%
       z-index 10
 
-    .stylusDrawingPanel
-      background-color transparent
-      display block
-      fill none
-      left var(--svg-left-offset)
-      pen-action none
-      position absolute
-      stroke gray
-      top var(--svg-top-offset)
-      touch-action none
-
-    .svgPanel
-      background-color white
-      display block
-      fill none
-      stroke black
+      .insertCellBelowButton
+        background transparent
+        border none
+        color gray
+        display block
+        padding 3px 3px 3px 6px
 
 #pageView
 #thumbnailView
