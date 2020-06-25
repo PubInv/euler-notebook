@@ -259,17 +259,13 @@ export class InkCellView extends CellView {
     }
   }
 
-  private onStrokeComplete(stroke: SvgStroke): void {
+  private onStrokeComplete(stroke: SvgStroke): Promise<void> {
     // TODO: What if socket to server is closed? We'll just accumulate strokes that will never get saved.
     //       How do we handle offline operation?
     // TODO: Incremental change request.
     this.drawingData.strokeGroups[0].strokes.push(stroke.data);
     const changeRequest: StyleChangeRequest = { type: 'changeStyle', styleId: this.inputStyleId, data: this.drawingData };
-    this.notebookView.editStyle([ changeRequest ])
-    .catch((err: Error)=>{
-      // TODO: What to do here?
-      console.error(`Error submitting stroke: ${err.message}`);
-    });
+    return this.notebookView.editStyle([ changeRequest ]);
   }
 }
 

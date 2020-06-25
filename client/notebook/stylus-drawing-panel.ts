@@ -29,7 +29,7 @@ import { SvgStroke } from './svg-stroke.js';
 
 type PointerId = number;
 type PointerMap = Map<PointerId, PointerInfo>;
-type StrokeCallbackFn = (stroke: SvgStroke)=>void;
+type StrokeCallbackFn = (stroke: SvgStroke)=>Promise<void>;
 
 interface PointerInfo {
   stroke?: SvgStroke;
@@ -77,11 +77,11 @@ export class StylusDrawingPanel  {
       listeners: {
         pointercancel:  e=>this.onPointerCancel(e),
         pointerdown:    e=>this.onPointerDown(e),
-        pointerenter:   e=>this.onPointerEnter(e),
-        pointerleave:   e=>this.onPointerLeave(e),
+        // pointerenter:   e=>this.onPointerEnter(e),
+        // pointerleave:   e=>this.onPointerLeave(e),
         pointermove:    e=>this.onPointerMove(e),
-        pointerout:     e=>this.onPointerOut(e),
-        pointerover:    e=>this.onPointerOver(e),
+        // pointerout:     e=>this.onPointerOut(e),
+        // pointerover:    e=>this.onPointerOver(e),
         pointerup:      e=>this.onPointerUp(e),
       }
     });
@@ -111,6 +111,8 @@ export class StylusDrawingPanel  {
   private onPointerCancel(_event: PointerEvent): void {
     // console.log(`${event.pointerType} ${event.pointerId} ${event.type}`);
     // console.dir(event);
+
+    // TODO: Cancel stroke?
   }
 
   private onPointerDown(event: PointerEvent): void {
@@ -129,15 +131,15 @@ export class StylusDrawingPanel  {
     pi.stroke.start(event, clientRect);
   }
 
-  private onPointerEnter(_event: PointerEvent): void {
-    // console.log(`${event.pointerType} ${event.pointerId} ${event.type}`);
-    // console.dir(event);
-  }
+  // private onPointerEnter(_event: PointerEvent): void {
+  //   // console.log(`${event.pointerType} ${event.pointerId} ${event.type}`);
+  //   // console.dir(event);
+  // }
 
-  private onPointerLeave(_event: PointerEvent): void {
-    // console.log(`${event.pointerType} ${event.pointerId} ${event.type}`);
-    // console.dir(event);
-  }
+  // private onPointerLeave(_event: PointerEvent): void {
+  //   // console.log(`${event.pointerType} ${event.pointerId} ${event.type}`);
+  //   // console.dir(event);
+  // }
 
   private onPointerMove(event: PointerEvent): void {
     // console.dir(event);
@@ -148,15 +150,15 @@ export class StylusDrawingPanel  {
     }
   }
 
-  private onPointerOut(_event: PointerEvent): void {
-    // console.log(`${event.pointerType} ${event.pointerId} ${event.type}`);
-    // console.dir(event);
-  }
+  // private onPointerOut(_event: PointerEvent): void {
+  //   // console.log(`${event.pointerType} ${event.pointerId} ${event.type}`);
+  //   // console.dir(event);
+  // }
 
-  private onPointerOver(_event: PointerEvent): void {
-    // console.log(`${event.pointerType} ${event.pointerId} ${event.type}`);
-    // console.dir(event);
-  }
+  // private onPointerOver(_event: PointerEvent): void {
+  //   // console.log(`${event.pointerType} ${event.pointerId} ${event.type}`);
+  //   // console.dir(event);
+  // }
 
   private onPointerUp(event: PointerEvent): void {
     // REVIEW: Remove pointer info from pointer map??
@@ -172,7 +174,15 @@ export class StylusDrawingPanel  {
     stroke.end(event, clientRect);
     delete pi.stroke;
 
-    this.strokeCallbackFn(stroke);
+    // Notify the container that the stroke is finished.
+    // Once the container has updated the underlying drawing, we can remove the stroke.
+    this.strokeCallbackFn(stroke)
+    .then(
+      ()=>{ stroke.remove(); },
+      (err)=>{ console.error(`Error updating stroke: ${err.message}`); },
+    )
+
+
   }
 
 }

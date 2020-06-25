@@ -30,8 +30,8 @@ export class SvgStroke {
 
   // Class Methods
 
-  public static create($svg: SVGSVGElement, data?: Stroke): SvgStroke {
-    return new this($svg, data);
+  public static create($container: SVGSVGElement): SvgStroke {
+    return new this($container);
   }
 
   // Instance Properties
@@ -49,6 +49,8 @@ export class SvgStroke {
   }
 
   public extend(event: PointerEvent, clientRect: ClientRect): void {
+    // REVIEW: Do we ever trivially extend the stroke? I.E. dx == dy == 0.
+    //         Should we detect that case and do something about it?
     this.pushEventCoordinates(event, clientRect);
     const l = this.data.x.length;
     const dx = this.data.x[l-1] - this.data.x[l-2];
@@ -63,28 +65,18 @@ export class SvgStroke {
     this.updatePathAttribute();
   }
 
+  public remove(): void {
+    this.$path.remove();
+  }
+
   // ----- Private -----
 
   // Private Constructor
 
-  private constructor($svg: SVGSVGElement, data?: Stroke) {
-    this.$path = $newSvg<SVGPathElement>('path', {
-      // attrs: { d: this.pathData },
-      appendTo: $svg,
-    });
+  private constructor($container: SVGSVGElement) {
+    this.$path = $newSvg<SVGPathElement>('path', { appendTo: $container });
     this.pathData = '';
-    if (data) {
-      this.data = data; // REVIEW: Deep copy?
-      if (data.x.length>0) {
-        this.startPath(data.x[0], data.y[0]);
-        for (let i = 1; i<data.x.length; i++) {
-          this.extendPath(data.x[i]-data.x[i-1], data.y[i]-data.y[i-1]);
-        }
-        this.updatePathAttribute();
-      }
-    } else {
-      this.data = { x: [], y: [], /* TODO: t: [], p: [], tx: [], ty: [] */};
-    }
+    this.data = { x: [], y: [], /* TODO: t: [], p: [], tx: [], ty: [] */};
   }
 
   // Private Instance Properties
@@ -95,7 +87,7 @@ export class SvgStroke {
   // Private Instance Methods
 
   private extendPath(dx: number, dy: number): void {
-    this.pathData += `l${round(dx)},${round(dy)}`;
+    this.pathData += `l${roundToTwoDecimalPlaces(dx)},${roundToTwoDecimalPlaces(dy)}`;
   }
 
   private pushEventCoordinates(event: PointerEvent, clientRect: ClientRect): void {
@@ -108,7 +100,7 @@ export class SvgStroke {
   }
 
   private startPath(x: number, y: number): void {
-    this.pathData = `M${round(x)},${round(y)}`;
+    this.pathData = `M${roundToTwoDecimalPlaces(x)},${roundToTwoDecimalPlaces(y)}`;
   }
 
   private updatePathAttribute(): void {
@@ -118,6 +110,6 @@ export class SvgStroke {
 
 // Helper Functions
 
-function round(x: number): string {
+function roundToTwoDecimalPlaces(x: number): string {
   return (Math.round(x*100)/100).toString();
 }
