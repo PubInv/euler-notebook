@@ -29,7 +29,6 @@ import { KeyboardInputPanel } from '../keyboard-input-panel.js';
 import { StyleObject, StyleId, /* RelationshipObject */ } from '../../shared/notebook.js';
 import { NotebookChangeRequest } from '../../shared/math-tablet-api.js';
 // import { LatexData, ToolInfo, NameValuePair } from '../shared/math-tablet-api.js';
-import { StylusInputPanel } from '../stylus-input-panel.js';
 
 // Exported Class
 
@@ -68,13 +67,7 @@ export abstract class CellView {
     const repStyle = this.notebookView.openNotebook.findStyle({ role: 'INPUT' }, this.styleId);
     if (!repStyle) { return false; }
 
-    if (repStyle.type == 'STROKE-DATA') {
-      this.inputPanel = StylusInputPanel.create(
-        style,
-        repStyle,
-        (changes)=>this.onInputPanelDismissed(changes)
-      );
-    } else if (typeof repStyle.data=='string') {
+    if (typeof repStyle.data=='string') {
       this.inputPanel = KeyboardInputPanel.create(
         style,
         repStyle,
@@ -163,7 +156,7 @@ export abstract class CellView {
 
   // Private Instance Properties
 
-  protected inputPanel?: KeyboardInputPanel|StylusInputPanel;
+  protected inputPanel?: KeyboardInputPanel;
   protected notebookView: NotebookView;
 
   // Private Instance Methods
