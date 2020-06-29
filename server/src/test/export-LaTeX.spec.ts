@@ -64,7 +64,7 @@ describe("LaTeX export tests", function() {
 
     // TODO: Use TMPDIR environment variable instead of having a directory in the repository.
     // TODO: Delete the file after verifying that it was created.
-    const path = "test/tmp/basictest";
+    const path = "src/test/tmp/basictest";
 
     writeLaTeX(latexInput,path);
     const input = fs.createReadStream(path+".tex")
