@@ -67,11 +67,11 @@ async function main() {
   const app: express.Express = express();
 
   // view engine setup
-  app.set('views', join(__dirname, 'views'));
+  app.set('views', join(__dirname, '..', 'views'));
   app.set('view engine', 'pug');
 
-  app.use(stylusMiddleware(join(__dirname, 'public')));
-  app.use(express.static(join(__dirname, 'public')));
+  app.use(stylusMiddleware(join(__dirname, '..', 'public')));
+  app.use(express.static(join(__dirname, '..', 'public')));
   app.use(express.static(notebookRootDir(), { index: false, redirect: false }));
 
   // REVIEW: Putting this logger *after* the static routes means the static routes are not logged.
