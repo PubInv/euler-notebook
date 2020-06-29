@@ -19,11 +19,11 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 // Requirements
 
-import { $new } from '../dom.js';
+import { $new } from './dom.js';
 import { getRenderer, Renderer } from './renderers.js';
 import { ROLE_OPTIONS, SUBROLE_OPTIONS, TYPE_OPTIONS } from './role-selectors.js';
-import { StyleObject, StyleRole, StyleSubrole, StyleType } from '../shared/notebook.js';
-import { NotebookChangeRequest, StyleChangeRequest, StyleConvertRequest } from '../shared/math-tablet-api.js';
+import { StyleObject, StyleRole, StyleSubrole, StyleType } from './shared/notebook.js';
+import { NotebookChangeRequest, StyleChangeRequest, StyleConvertRequest } from './shared/math-tablet-api.js';
 
 // Types
 

@@ -19,8 +19,8 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 // Requirements
 
-import { $newSvg } from '../dom.js';
-import { Stroke } from '../shared/notebook.js';
+import { $newSvg } from './dom.js';
+import { Stroke } from './shared/notebook.js';
 
 // Types
 

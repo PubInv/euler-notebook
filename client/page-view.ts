@@ -19,11 +19,11 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 // Requirements
 
-import { $newSvg } from '../dom.js';
+import { $newSvg } from './dom.js';
 import { NotebookView } from './notebook-view.js';
 import { Sidebar } from './sidebar.js';
 
-/* TEMPORARY */ import { DOCUMENT } from '../shared/notebook.js';
+/* TEMPORARY */ import { DOCUMENT } from './shared/notebook.js';
 
 // Types
 

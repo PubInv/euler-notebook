@@ -21,7 +21,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 // Requirements
 
-import { $new } from '../dom.js';
+import { $new } from './dom.js';
 
 // Types
 

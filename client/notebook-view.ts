@@ -24,17 +24,17 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 import { CellView } from './cell-view/index.js';
 import { createCellView } from './cell-view/instantiator.js';
-import { assert } from '../common.js';
-import { $, $configure } from '../dom.js';
+import { assert } from './common.js';
+import { $, $configure } from './dom.js';
 import {
   DrawingData, StyleId, StyleObject, NotebookChange,
   StyleType, StyleRelativePosition,
   StylePosition, DOCUMENT, PageId, HintData, HintStatus, HintRelationship, FormulaData,
-} from '../shared/notebook.js';
+} from './shared/notebook.js';
 import {
   StyleDeleteRequest,
   StyleInsertRequest, StylePropertiesWithSubprops, StyleMoveRequest, NotebookChangeRequest, ChangeNotebookOptions,
-} from '../shared/math-tablet-api.js';
+} from './shared/math-tablet-api.js';
 import { ClientNotebook, TrackedChangesResults } from './client-notebook.js';
 import { Sidebar } from './sidebar.js';
 

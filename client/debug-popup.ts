@@ -19,7 +19,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 // Requirements
 
-import { $configure } from '../dom.js';
+import { $configure } from './dom.js';
 import { ClientNotebook } from './client-notebook.js';
 import { Header } from './header.js';
 

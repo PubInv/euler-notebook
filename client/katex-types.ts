@@ -17,40 +17,26 @@ You should have received a copy of the GNU Affero General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-// Requirements
+// NOTE: This is not a complete set of types for the library.
+//       Just the stuff that we have used.
 
-// import { $new, escapeHtml, Html } from '../dom.js';
-import { StyleObject } from '../../shared/notebook.js';
-import { NotebookView } from '../notebook-view.js';
+// TYPESCRIPT: Can we get this from the katex library?
 
-import { CellView } from './index.js';
-// import { assert } from '../common.js';
+import { LatexData } from './shared/math-tablet-api.js'
 
 // Types
 
-// Constants
+interface KatexGlobal {
+  render(latex: LatexData, $elt: HTMLElement, options: KatexOptions): void;
+  renderToString(latex: LatexData, options: KatexOptions): /* TYPESCRIPT: Html */ string;
+}
 
-// Class
+interface KatexOptions {
+  throwOnError?: boolean;
+}
 
-export class PlotCellView extends CellView {
+// Exported functions
 
-  // Class Methods
-
-  public static create(notebookView: NotebookView, style: StyleObject): PlotCellView {
-    const instance = new this(notebookView, style);
-    instance.render(style);
-    return instance;
-  }
-
-  // Instance Methods
-
-  // -- PRIVATE --
-
-  // Constructor
-
-  private constructor(notebookView: NotebookView, style: StyleObject) {
-    super(notebookView, style, 'plotCell');
-  }
-
-
+export function getKatex(): KatexGlobal {
+  return (<any>window).katex;
 }

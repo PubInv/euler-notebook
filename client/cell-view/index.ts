@@ -21,13 +21,13 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 // Requirements
 
-import { assert } from '../../common.js';
-import { /* escapeHtml, */ $new, $, /* Html */} from '../../dom.js';
+import { assert } from '../common.js';
+import { /* escapeHtml, */ $new, $, /* Html */} from '../dom.js';
 // import { getKatex } from '../katex-types.js';
 import { NotebookView } from '../notebook-view.js';
 import { KeyboardInputPanel } from '../keyboard-input-panel.js';
-import { StyleObject, StyleId, /* RelationshipObject */ } from '../../shared/notebook.js';
-import { NotebookChangeRequest } from '../../shared/math-tablet-api.js';
+import { StyleObject, StyleId, /* RelationshipObject */ } from '../shared/notebook.js';
+import { NotebookChangeRequest } from '../shared/math-tablet-api.js';
 // import { LatexData, ToolInfo, NameValuePair } from '../shared/math-tablet-api.js';
 
 // Exported Class

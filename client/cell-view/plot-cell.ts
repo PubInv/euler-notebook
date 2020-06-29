@@ -19,11 +19,12 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 // Requirements
 
-import { StyleObject } from '../../shared/notebook.js';
+// import { $new, escapeHtml, Html } from '../dom.js';
+import { StyleObject } from '../shared/notebook.js';
 import { NotebookView } from '../notebook-view.js';
-import { getRenderer } from '../renderers.js';
 
 import { CellView } from './index.js';
+// import { assert } from '../common.js';
 
 // Types
 
@@ -31,11 +32,11 @@ import { CellView } from './index.js';
 
 // Class
 
-export class TextCellView extends CellView {
+export class PlotCellView extends CellView {
 
   // Class Methods
 
-  public static create(notebookView: NotebookView, style: StyleObject): TextCellView {
+  public static create(notebookView: NotebookView, style: StyleObject): PlotCellView {
     const instance = new this(notebookView, style);
     instance.render(style);
     return instance;
@@ -43,19 +44,13 @@ export class TextCellView extends CellView {
 
   // Instance Methods
 
-  public render(style: StyleObject): void {
-    const renderer = getRenderer(style.type);
-    const { html, errorHtml } = renderer(style.data);
-    // TODO: Error formatting.
-    if (html) { this.$elt.innerHTML = html; }
-    else { this.$elt.innerHTML = errorHtml!; }
-  }
-
   // -- PRIVATE --
 
   // Constructor
 
   private constructor(notebookView: NotebookView, style: StyleObject) {
-    super(notebookView, style, 'textCell');
+    super(notebookView, style, 'plotCell');
   }
+
+
 }

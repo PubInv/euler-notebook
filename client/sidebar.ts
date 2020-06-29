@@ -19,7 +19,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 // Requirements
 
-import { $, $attach, $configureAll, $all } from '../dom.js';
+import { $, $attach, $configureAll, $all } from './dom.js';
 import { NotebookView } from './notebook-view.js';
 
 // Types

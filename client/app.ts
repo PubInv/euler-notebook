@@ -19,16 +19,16 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 // Requirements
 
-import { $ } from '../dom.js';
+import { $ } from './dom.js';
 import { DebugPopup } from './debug-popup.js';
-import { showErrorMessage } from '../global.js';
+import { showErrorMessage } from './global.js';
 import { Header } from './header.js';
 import { NotebookView } from './notebook-view.js';
 import { ClientNotebook } from './client-notebook.js';
 import { PageView, PageViewType } from './page-view.js';
 import { ServerSocket } from './server-socket.js';
 import { Sidebar, View } from './sidebar.js';
-import { NotebookPath } from '../shared/math-tablet-api.js';
+import { NotebookPath } from './shared/math-tablet-api.js';
 
 // Types
 

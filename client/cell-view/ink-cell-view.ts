@@ -19,11 +19,11 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 // Requirements
 
-import { DrawingData, StyleId, StyleObject } from '../../shared/notebook.js';
-import { StyleChangeRequest, StyleMoveRequest } from '../../shared/math-tablet-api.js';
+import { DrawingData, StyleId, StyleObject } from '../shared/notebook.js';
+import { StyleChangeRequest, StyleMoveRequest } from '../shared/math-tablet-api.js';
 
-import { $configure, $newSvg, $ } from '../../dom.js';
-import { deepCopy, assert } from '../../common.js';
+import { $configure, $newSvg, $ } from '../dom.js';
+import { deepCopy, assert } from '../common.js';
 
 import { NotebookView } from '../notebook-view.js';
 import { ResizerBar } from '../resizer-bar.js';
@@ -33,7 +33,7 @@ import { StylusDrawingPanel } from '../stylus-drawing-panel.js';
 // import { getRenderer } from '../renderers.js';
 
 import { CellView } from './index.js';
-import { $new } from '../../dom.js';
+import { $new } from '../dom.js';
 
 // Types
 

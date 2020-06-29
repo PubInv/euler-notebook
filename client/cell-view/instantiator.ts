@@ -19,7 +19,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 // Requirements
 
-import { StyleObject } from '../../shared/notebook.js';
+import { StyleObject } from '../shared/notebook.js';
 import { NotebookView } from '../notebook-view.js';
 
 import { CellView } from './index';
