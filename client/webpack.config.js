@@ -17,26 +17,26 @@ You should have received a copy of the GNU Affero General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-// NOTE: This is not a complete set of types for the library.
-//       Just the stuff that we have used.
+const path = require('path');
 
-// TYPESCRIPT: Can we get this from the katex library?
-
-import { LatexData } from './shared/math-tablet-api.js'
-
-// Types
-
-interface KatexGlobal {
-  render(latex: LatexData, $elt: HTMLElement, options: KatexOptions): void;
-  renderToString(latex: LatexData, options: KatexOptions): /* TYPESCRIPT: Html */ string;
-}
-
-interface KatexOptions {
-  throwOnError?: boolean;
-}
-
-// Exported functions
-
-export function getKatex(): KatexGlobal {
-  return (<any>window).katex;
-}
+module.exports = {
+  entry: './src/app.ts',
+  devtool: 'inline-source-map',
+  mode: process.env.NODE_ENV||'development',
+  module: {
+    rules: [
+      {
+        test: /\.ts$/,
+        use: 'ts-loader',
+        exclude: /node_modules/,
+      },
+    ],
+  },
+  output: {
+    path: path.resolve(__dirname, '..', 'server', 'public', 'javascripts'),
+    filename: 'app.js'
+  },
+  resolve: {
+    extensions: [ '.ts', '.js' ],
+  },
+};

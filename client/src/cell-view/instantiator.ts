@@ -19,15 +19,15 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 // Requirements
 
-import { StyleObject } from '../shared/notebook.js';
-import { NotebookView } from '../notebook-view.js';
+import { StyleObject } from '../shared/notebook';
+import { NotebookView } from '../notebook-view';
 
 import { CellView } from './index';
-import { FormulaCellView } from './formula-cell.js';
-import { HintCellView } from './hint-cell.js';
-import { InkCellView } from './ink-cell-view.js';
-import { PlotCellView } from './plot-cell.js';
-import { TextCellView } from './text-cell.js';
+import { FormulaCellView } from './formula-cell';
+import { HintCellView } from './hint-cell';
+import { InkCellView } from './ink-cell-view';
+import { PlotCellView } from './plot-cell';
+import { TextCellView } from './text-cell';
 
 // Constants
 

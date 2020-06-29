@@ -19,14 +19,14 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 // Requirements
 
-import { $new, escapeHtml, Html } from '../dom.js';
-import { ToolData } from '../shared/math-tablet-api.js';
-import { StyleObject, FindRelationshipOptions, FindStyleOptions } from '../shared/notebook.js';
-import { NotebookView } from '../notebook-view.js';
-import { getRenderer } from '../renderers.js';
-import { FORMULA_SUBROLE_PREFIX } from '../role-selectors.js';
+import { $new, escapeHtml, Html } from '../dom';
+import { ToolData } from '../shared/math-tablet-api';
+import { StyleObject, FindRelationshipOptions, FindStyleOptions } from '../shared/notebook';
+import { NotebookView } from '../notebook-view';
+import { getRenderer } from '../renderers';
+import { FORMULA_SUBROLE_PREFIX } from '../role-selectors';
 
-import { CellView } from './index.js';
+import { CellView } from './index';
 
 // Types
 

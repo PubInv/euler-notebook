@@ -19,11 +19,11 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 // Requirements
 
-import { escapeHtml, Html } from './dom.js';
-import { getKatex } from './katex-types.js';
-import { LatexData, } from './shared/math-tablet-api.js';
-import { StyleType } from './shared/notebook.js';
-import { assert } from './common.js';
+import { escapeHtml, Html } from './dom';
+import { getKatex } from './katex-types';
+import { LatexData, } from './shared/math-tablet-api';
+import { StyleType } from './shared/notebook';
+import { assert } from './common';
 
 // Types
 

@@ -25,7 +25,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 import {
   RelationshipProperties, StyleProperties, StyleId, NotebookChange, NotebookObject, StyleRelativePosition,
   StyleRole, StyleSubrole, StyleType, RelationshipStyle, WolframExpression
-} from './notebook.js';
+} from './notebook';
 
 // Types
 

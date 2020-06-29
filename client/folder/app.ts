@@ -19,8 +19,8 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 // Requirements
 
-import { $ } from '../dom.js';
-import { showErrorMessage } from '../global.js';
+import { $ } from '../src/dom.js';
+import { showErrorMessage } from '../src/global.js';
 
 import { FilesAndFoldersView } from './files-and-folders-view.js';
 import { Header } from './header.js';

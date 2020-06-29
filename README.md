@@ -104,6 +104,10 @@ Static assets to be served by the web server are placed in the <tt>server/public
 If you modify a client source file you need to rebuild the client before re-running the server.
 This can be accomplished with `scripts/build && scripts/run`.
 
+To rebuild the client every time there are changes: `~/math-tablet/client$ npx webpack --watch`
+
+To restart the server every time there are changes: `~/math-tablet/server$ npx nodemon`
+
 ## Credits
 
 * Various icons, [IconMonster](https://iconmonstr.com/).

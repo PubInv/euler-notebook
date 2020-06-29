@@ -1,7 +1,7 @@
 {
   "name": "math-tablet-client",
   "version": "0.0.1",
-  "private": false,
+  "private": true,
   "scripts": {
     "build": "tsc -p tsconfig.json",
     "check-types": "tsc -p tsconfig.no-output.json"
@@ -10,7 +10,10 @@
     "svg.js": "^2.7.1"
   },
   "devDependencies": {
-    "typescript": "^3.5.3"
+    "ts-loader": "^7.0.5",
+    "typescript": "^3.5.3",
+    "webpack": "^4.43.0",
+    "webpack-cli": "^3.3.12"
   },
   "description": "Math Tablet Client.",
   "main": "app.ts",

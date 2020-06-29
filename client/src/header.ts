@@ -21,10 +21,10 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 // Requirements
 
-import { $attach, $configureAll, $all } from './dom.js';
-// import { showErrorMessageIfPromiseRejects } from '../global.js';
-import { DebugPopup } from './debug-popup.js';
-import { ClientNotebook } from './client-notebook.js';
+import { $attach, $configureAll, $all } from './dom';
+// import { showErrorMessageIfPromiseRejects } from '../global';
+import { DebugPopup } from './debug-popup';
+import { ClientNotebook } from './client-notebook';
 
 // Types
 

@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
 set -e
 pushd client/ > /dev/null
-npm run build
+npx webpack
 popd > /dev/null

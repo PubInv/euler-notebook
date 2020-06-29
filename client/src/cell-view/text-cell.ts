@@ -19,11 +19,11 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 // Requirements
 
-import { StyleObject } from '../shared/notebook.js';
-import { NotebookView } from '../notebook-view.js';
-import { getRenderer } from '../renderers.js';
+import { StyleObject } from '../shared/notebook';
+import { NotebookView } from '../notebook-view';
+import { getRenderer } from '../renderers';
 
-import { CellView } from './index.js';
+import { CellView } from './index';
 
 // Types
 
