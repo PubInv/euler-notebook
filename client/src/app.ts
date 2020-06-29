@@ -131,7 +131,7 @@ class App {
 // REVIEW: Class static method?
 function onDomReady(_event: Event): void {
   try {
-    console.log('DOM ready.');
+    console.log("DOM ready.");
     const wsUrl = `ws://${window.location.host}/`;
     const notebookPath: NotebookPath = <NotebookPath>window.location.pathname;
     gApp = App.attach(<HTMLBodyElement>document.body);
