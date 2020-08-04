@@ -18,17 +18,50 @@
 
 extends layout
 
+include iconmonstr
+
+//- mixin debugPopup
+//-   #debugPopup(style='display:none')
+//-     button.close &#x2715;
+//-     .content
+
+mixin header
+  #header
+    span
+      button#homeButton(title="Math Tablet home")
+        +svgIconHome6
+      +keyboardInputSelector
+    div#title
+    span
+      button#refreshButton(title="Refresh page")
+        +svgIconRefresh2
+      button#fullscreenButton(title="Full screen")
+        +svgIconFullscreen7
+      button#userButton(title="User settings")
+        +svgIconUser1
+
+mixin keyboardInputSelector
+  select#keyboardInputType()
+    option(value='TEX-EXPRESSION') LaTeX
+    option(value='MATHML-XML') MathML
+    option(value='PLAIN-TEXT') Text
+    option(value='WOLFRAM-EXPRESSION', selected=true) Wolfram
+
+block styles
+  link(rel='stylesheet', href='/stylesheets/katex-0.10.1.css')
+  link(rel='stylesheet', href='/stylesheets/index.css')
+
+block scripts
+  script(src='/javascripts/katex-0.10.1.js')
+  script(type='module', src='/javascripts/app.js')
+
 block content
-  h1 Math Tablet Users
-  if (userEntries.length>0)
-    ul
-      each entry in userEntries
-        li
-          a(href=`/${entry.userName}`)= entry.userName
-  else
-    p
-      | No users found.
-      | Run the following Mac/Linux shell command and and refresh the page:
-      br
-      br
-      tt mkdir -p ~/math-tablet-usr/$USER
+  +svgIcons
+  +header
+  //- #notebookScreen.screen
+  //-   +debugPopup
+  //-   +notebookSidebar
+  //-   +tools
+  //- #pageScreen.screen
+  //-   +pageSidebar
+  //-   +pageView

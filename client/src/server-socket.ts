@@ -23,13 +23,16 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 // Requirements
 
 import { addErrorMessageToHeader } from './global';
-import { ClientMessage, ServerMessage, NotebookOpened, NotebookClosed, NotebookChanged, NotebookPath } from './shared/math-tablet-api';
+import { FolderPath, NotebookPath } from './shared/folder';
+import { ClientMessage, ServerMessage, NotebookOpened, NotebookClosed, NotebookChanged, FolderOpened, FolderClosed, FolderChanged } from './shared/math-tablet-api';
+import { ClientFolder } from './client-folder';
 import { ClientNotebook } from './client-notebook';
 
 // Types
 
 type ConnectPromise = PromiseResolver<ServerSocket>;
-type OpenPromise = PromiseResolver<ClientNotebook>;
+type OpenFolderPromise = PromiseResolver<ClientFolder>;
+type OpenNotebookPromise = PromiseResolver<ClientNotebook>;
 
 // REVIEW: This is also defined in server/common.ts.
 interface PromiseResolver<T> {
@@ -53,9 +56,14 @@ export class ServerSocket {
 
   // Instance Methods
 
+  public async openFolder(folderPath: FolderPath): Promise<ClientFolder> {
+    this.sendMessage({ type: 'openFolder', folderPath });
+    return new Promise((resolve, reject)=>this.openFolderPromises.set(folderPath, { resolve, reject }))
+  }
+
   public async openNotebook(notebookPath: NotebookPath): Promise<ClientNotebook> {
     this.sendMessage({ type: 'openNotebook', notebookPath: notebookPath });
-    return new Promise((resolve, reject)=>this.openPromises.set(notebookPath, { resolve, reject }))
+    return new Promise((resolve, reject)=>this.openNotebookPromises.set(notebookPath, { resolve, reject }))
   }
 
   public sendMessage(obj: ClientMessage): void {
@@ -77,7 +85,8 @@ export class ServerSocket {
 
   private constructor(url: string, connectPromise: ConnectPromise) {
     this.connectPromise = connectPromise;
-    this.openPromises = new Map();
+    this.openFolderPromises = new Map();
+    this.openNotebookPromises = new Map();
     const ws = this.ws = new WebSocket(url);
     ws.addEventListener('close', (event: CloseEvent)=>this.onWsClose(event));
     ws.addEventListener('error', (event: Event)=>this.onWsError(event));
@@ -87,7 +96,8 @@ export class ServerSocket {
 
   // Private Instance Properties
 
-  private openPromises: Map<NotebookPath, OpenPromise>;
+  private openFolderPromises: Map<FolderPath, OpenFolderPromise>;
+  private openNotebookPromises: Map<NotebookPath, OpenNotebookPromise>;
   private connectPromise: ConnectPromise;
   private ws: WebSocket;
 
@@ -120,12 +130,15 @@ export class ServerSocket {
       // console.log(`Message from server: ${msg.type}`);
       // console.dir(msg);
       switch(msg.type) {
-      case 'notebookChanged': this.smNotebookChanged(msg); break;
-      case 'notebookClosed':  this.smNotebookClosed(msg); break;
-      case 'notebookOpened':  this.smNotebookOpened(msg); break;
-      default:
-        console.error(`Unexpected server message type '${(<any>msg).type}' in WebSocket message`);
-        break;
+        case 'folderChanged': this.smFolderChanged(msg); break;
+        case 'folderClosed':  this.smFolderClosed(msg); break;
+        case 'folderOpened':  this.smFolderOpened(msg); break;
+        case 'notebookChanged': this.smNotebookChanged(msg); break;
+        case 'notebookClosed':  this.smNotebookClosed(msg); break;
+        case 'notebookOpened':  this.smNotebookOpened(msg); break;
+        default:
+          console.error(`Unexpected server message type '${(<any>msg).type}' in WebSocket message`);
+          break;
       }
     } catch(err) {
       console.error("Unexpected client error handling `WebSocket message event.");
@@ -144,15 +157,35 @@ export class ServerSocket {
 
   // Private Server Message Handlers
 
+  private smFolderOpened(msg: FolderOpened): void {
+    // TODO: notebook open failure
+    const openRequest = this.openFolderPromises.get(msg.obj.path);
+    if (!openRequest) { throw new Error(`Folder opened message for unknown folder: ${msg.obj.path}`); }
+    const openFolder = ClientFolder.open(this, msg.obj);
+    openRequest.resolve(openFolder);
+    this.openFolderPromises.delete(msg.obj.path);
+  }
+
+  private smFolderClosed(msg: FolderClosed): void {
+    const folderView = ClientFolder.get(msg.folderPath);
+    if (!folderView) { throw new Error(`Unknown folder closed: ${msg.folderPath}`); }
+    folderView.smClose();
+  }
+
+  private smFolderChanged(msg: FolderChanged): void {
+    const folderView = ClientFolder.get(msg.folderPath);
+    if (!folderView) { throw new Error(`Folder change from unknown folder: ${msg.folderPath}`); }
+    folderView.smChange(msg);
+  }
+
   private smNotebookOpened(msg: NotebookOpened): void {
-    const openRequest = this.openPromises.get(msg.notebookPath);
+    // TODO: notebook open failure
+    const openRequest = this.openNotebookPromises.get(msg.notebookPath);
     if (!openRequest) { throw new Error(`Notebook opened message for unknown notebook: ${msg.notebookPath}`); }
     const openNotebook = ClientNotebook.open(this, msg.notebookPath, msg.obj);
     openRequest.resolve(openNotebook);
-    this.openPromises.delete(msg.notebookPath);
+    this.openNotebookPromises.delete(msg.notebookPath);
   }
-
-  // TODO: notebook open failure
 
   private smNotebookClosed(msg: NotebookClosed): void {
     const notebookView = ClientNotebook.get(msg.notebookPath);

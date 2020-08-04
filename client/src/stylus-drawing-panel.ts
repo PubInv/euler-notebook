@@ -70,7 +70,8 @@ export class StylusDrawingPanel  {
     this.pointerMap = new Map();
     this.strokeCallbackFn = strokeCallbackFn;
 
-    this.$elt = $newSvg<SVGSVGElement>('svg', {
+    this.$elt = $newSvg({
+      tag: 'svg',
       appendTo: $parentElt,
       attrs: { height: '0px', width: '0px',  }, // Will be resized in matchSizeOfUnderlyingPanel,
       class: 'stylusDrawingPanel',

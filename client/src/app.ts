@@ -17,18 +17,20 @@ You should have received a copy of the GNU Affero General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
+// TODO: Dispose of screens if they have not been shown in a sufficiently long time.
+
 // Requirements
 
+import { FOLDER_PATH_RE, NOTEBOOK_PATH_RE, Path, FolderPath, NotebookPath } from './shared/folder';
+
 import { $ } from './dom';
-import { DebugPopup } from './debug-popup';
-import { showErrorMessage } from './global';
+import { addAsyncEventListener, addSyncEventListener } from './error-handler';
+import { FolderScreen } from './folder-screen';
 import { Header } from './header';
-import { NotebookView } from './notebook-view';
-import { ClientNotebook } from './client-notebook';
-import { PageView, PageViewType } from './page-view';
+import { NotebookScreen } from './notebook-screen';
+import { PageScreen } from './page-screen';
+import { Screen } from './screen';
 import { ServerSocket } from './server-socket';
-import { Sidebar, View } from './sidebar';
-import { NotebookPath } from './shared/math-tablet-api';
 
 // Types
 
@@ -36,118 +38,93 @@ import { NotebookPath } from './shared/math-tablet-api';
 
 // Global Variables
 
-let gApp: App;
-
 // App Class
 
 class App {
 
   // Class Methods
 
-  public static attach($body: HTMLBodyElement): App {
-    return new this($body);
+  public static create(): App {
+    return new this();
   }
 
   // Constructor
 
-  private constructor($body: HTMLBodyElement) {
-    this.debugPopup = DebugPopup.attach($body.querySelector<HTMLDivElement>('#debugPopup')!);
-    this.header = Header.attach($body.querySelector<HTMLDivElement>('#header')!);
-    this.notebookView = NotebookView.attach($body.querySelector<HTMLDivElement>('#notebookView')!);
-    this.sidebar = Sidebar.attach($body.querySelector<HTMLDivElement>('#sidebar')!);
-    this.pageView = PageView.attach($body.querySelector<HTMLDivElement>('#pageView')!, PageViewType.Single);
-    this.thumbnailView = PageView.attach($<HTMLDivElement>(document, '#thumbnailView')!, PageViewType.Thumbnail);
-
-    // Window events
-    const that = this;
-    window.addEventListener<'resize'>('resize', function(this: Window, e: UIEvent) { that.onResize(this, e); });
+  private constructor() {
+    this.$body = <HTMLBodyElement>window.document.body;
+    this.screens = new Map();
+    addAsyncEventListener(window, 'DOMContentLoaded', e=>this.onDomReady(e), "App initialization error.");
+    addSyncEventListener<HashChangeEvent>(window, 'hashchange', e=>this.onHashChange(e), "App navigation error.");
   }
 
   // Instance Properties
 
   // Instance Methods
 
-  public async connect(wsUrl: string, notebookPath: NotebookPath): Promise<void> {
-
-    // Make websocket connection to the notebook.
-    this.socket = await ServerSocket.connect(wsUrl);
-
-    // Open the notebook specified in our URL.
-    const openNotebook = this.openNotebook = await this.socket.openNotebook(notebookPath);
-    if (false) { console.dir(this.openNotebook); }
-
-    openNotebook.connect(this.notebookView);
-    this.debugPopup.connect(this.header, openNotebook);
-    this.header.connect(this.debugPopup, openNotebook);
-    this.notebookView.connect(openNotebook, this.sidebar);
-    this.pageView.connect(this.notebookView, this.sidebar);
-    this.sidebar.connect(this.notebookView);
-    this.thumbnailView.connect(this.notebookView, this.sidebar);
-
-
-    // LATER: If the notebook could have a non-empty selection initially
-    //        (e.g. selection was saved across browser refresh) then we
-    //        need to enable or disable the #trashButton here
-    //        depending on whether the selection is empty or not.
-    // $<HTMLButtonElement>(document, '#trashButton') = gNotebook.selectionIsEmpty();
-
-    // const initialView: View = (DOCUMENT.pages.length>1 ? 'thumbnail' : 'page');
-    const initialView: View = 'notebook';
-    this.sidebar.switchView(initialView);
-  }
-
   // Private Instance Properties
 
-  private debugPopup: DebugPopup;
-  private header: Header;
-  private notebookView: NotebookView;
-  private openNotebook!: ClientNotebook;
-  private pageView: PageView;
-  private sidebar: Sidebar;
-  private socket!: ServerSocket;
-  private thumbnailView: PageView;
+  private $body: HTMLBodyElement;
+  private header?: Header;
+  private screens: Map<Path, Screen>;
+  private socket?: ServerSocket;
 
   // Private Property Functions
 
+  private get currentPath(): Path {
+    const hash = window.location.hash;
+    return <Path>(hash.length <= 1 ? '/' : hash.slice(1));
+  }
+
   // Private Instance Methods
+
+  private createScreenForPath(path: Path): Screen {
+    // Check if the path is to a folder or a notebook.
+    if (NOTEBOOK_PATH_RE.test(path)) {
+      // const clientNotebook = await this.socket.openNotebook(path);
+      const isPageView = false;
+      if (!isPageView) {
+        return NotebookScreen.create(this.$body, this.socket!, <NotebookPath>path);
+        // await this.notebookScreen.connect(this.socket, clientNotebook);
+        // clientNotebook.connect(this.notebookScreen);
+      } else {
+        return PageScreen.create(this.$body, this.socket!, <NotebookPath>path);
+        // await this.pageScreen.connect(this.socket, clientNotebook);
+        // clientNotebook.connect(this.pageScreen);
+      }
+    } else if (FOLDER_PATH_RE.test(path)) {
+      return FolderScreen.create(this.$body, this.socket!, <FolderPath>path);
+    } else {
+      throw new Error("Invalid path.");
+    }
+  }
+
+  private navigateTo(path: Path): void {
+    console.log(`Navigating to ${this.currentPath}`);
+
+    let nextScreen = this.screens.get(path);
+    if (!nextScreen) {
+      nextScreen = this.createScreenForPath(path);
+      this.screens.set(path, nextScreen);
+    }
+    this.header!.setPathTitle(path);
+    Screen.show(nextScreen);
+  }
 
   // Private Event Handlers
 
-  private onResize(_window: Window, _event: UIEvent): void {
-    try {
-      // const bodyViewRect = $('#content').getBoundingClientRect();
-      this.pageView.resize(/* bodyViewRect.width */);
-      this.thumbnailView.resize(/* bodyViewRect.width */);
-    } catch(err) {
-      showErrorMessage("Error handling resize event.", err);
-    }
+  private async onDomReady(_event: Event): Promise<void> {
+    // TODO: this.banner = Banner.attach($(document, '#banner'));
+    this.header = Header.attach($<'div'>(document, '#header'));
+    // TODO: Show a "connecting..." spinner.
+    this.socket = await ServerSocket.connect(`ws://${window.location.host}/`);
+    this.navigateTo(this.currentPath);
+  }
+
+  private onHashChange(_event: HashChangeEvent): void {
+    this.navigateTo(this.currentPath);
   }
 }
 
-// Helper Functions
+// Exported singleton instance
 
-// Application Entry Point
-
-// REVIEW: Class static method?
-function onDomReady(_event: Event): void {
-  try {
-    console.log("DOM ready.");
-    const wsUrl = `ws://${window.location.host}/`;
-    const notebookPath: NotebookPath = <NotebookPath>window.location.pathname;
-    gApp = App.attach(<HTMLBodyElement>document.body);
-    gApp.connect(wsUrl, notebookPath)
-    .then(
-      function() { console.log('App ready.'); },
-      function(err: Error) { console.error(`Asynchronous error in onDomReady: ${err.message}`); },
-    )
-  } catch (err) {
-    showErrorMessage("App initialization error.", err);
-    throw err;
-  }
-}
-
-function main(){
-  window.addEventListener('DOMContentLoaded', onDomReady);
-}
-
-main();
+export const appInstance = App.create();

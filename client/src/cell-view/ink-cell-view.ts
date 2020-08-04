@@ -22,7 +22,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 import { DrawingData, StyleId, StyleObject } from '../shared/notebook';
 import { StyleChangeRequest, StyleMoveRequest } from '../shared/math-tablet-api';
 
-import { $configure, $newSvg, $ } from '../dom';
+import { $configure, $newSvg, $, $svg } from '../dom';
 import { deepCopy, assert } from '../common';
 
 import { NotebookView } from '../notebook-view';
@@ -58,7 +58,7 @@ export class InkCellView extends CellView {
   // Instance Methods
 
   public render(style: StyleObject): void {
-    const svgRepStyle = this.notebookView.openNotebook.findStyle({ role: 'REPRESENTATION', type: 'SVG-MARKUP' }, style.id);
+    const svgRepStyle = this.notebookView.notebook.findStyle({ role: 'REPRESENTATION', type: 'SVG-MARKUP' }, style.id);
     if (!svgRepStyle) {
       // TODO: What to do in this case? Put an error message in the cell?
       console.warn("No SVG-MARKUP substyle for UNINTERPRETED-INK style.");
@@ -70,7 +70,7 @@ export class InkCellView extends CellView {
     $oldSvgPanel.outerHTML = svgRepStyle.data;
 
     // If the SVG panel has changed size, resize the drawing panel overlay to match.
-    const $newSvgPanel = $<SVGSVGElement>(this.$elt, '.svgPanel');
+    const $newSvgPanel = $svg<'svg'>(this.$elt, '.svgPanel');
     this.stylusDrawingPanel.matchSizeOfUnderlyingPanel($newSvgPanel);
   }
 
@@ -90,23 +90,18 @@ export class InkCellView extends CellView {
       }
     });
 
-    const $content = $new('div', {
-      appendTo: this.$elt,
-      class: 'content',
-    });
+    const $content = $new({ tag: 'div', appendTo: this.$elt, class: 'content' });
 
     // Create placeholder SVG panel. Will be replaced in this.render().
-    $newSvg('svg', {
-      appendTo: $content,
-      class: 'svgPanel',
-    });
+    $newSvg({ tag: 'svg', appendTo: $content, class: 'svgPanel' });
 
     // Create an overlay SVG for accepting drawing input.
     // TODO: Get dimensions from svgPanel?
     // TODO: Resize drawing panel if underlying SVG panel changes size.
     this.stylusDrawingPanel = StylusDrawingPanel.create($content, (stroke)=>this.onStrokeComplete(stroke));
 
-    $new('button', {
+    $new({
+      tag: 'button',
       appendTo: $content,
       attrs: { tabindex: -1 },
       class: 'deleteCellButton',
@@ -116,7 +111,8 @@ export class InkCellView extends CellView {
       },
     });
 
-    $new('div', {
+    $new({
+      tag: 'div',
       appendTo: $content,
       attrs: { draggable: true },
       class: 'dragIcon',
@@ -133,7 +129,7 @@ export class InkCellView extends CellView {
     // TODO: This assumes we have the same input style for the lifetime of this cell.
     //       But our API doesn't prevent the input style from getting deleted or replaced with a different one.
     //       Some plugin may do that in the future.
-    const inputStyle = this.notebookView.openNotebook.findStyle({ role: 'INPUT', type: 'STROKE-DATA' }, style.id);
+    const inputStyle = this.notebookView.notebook.findStyle({ role: 'INPUT', type: 'STROKE-DATA' }, style.id);
     if (!inputStyle) {
       // TODO: Better way to handle this error.
       // throw new Error("No INPUT substyle for UNINTERPRETED-INK style.");
@@ -213,12 +209,12 @@ export class InkCellView extends CellView {
     if (!cellDragData) { return; }
     // console.log(`Dropped style ${cellDragData.styleId} onto style ${this.styleId}`);
 
-    const c = this.notebookView.openNotebook.compareStylePositions(cellDragData.styleId, this.styleId);
+    const c = this.notebookView.notebook.compareStylePositions(cellDragData.styleId, this.styleId);
     if (c==0) { /* Dropped onto self */ return; }
 
     // If dragging down, then put dragged cell below the cell that was dropped on.
     // If dragging up, then put dragged cell above the cell that was dropped on.
-    const afterId = c<0 ? this.styleId : this.notebookView.openNotebook.precedingStyleId(this.styleId);
+    const afterId = c<0 ? this.styleId : this.notebookView.notebook.precedingStyleId(this.styleId);
     const moveRequest: StyleMoveRequest = {
       type: 'moveStyle',
       styleId: cellDragData.styleId,
@@ -239,7 +235,7 @@ export class InkCellView extends CellView {
   }
 
   private onResize(deltaY: number, final: boolean): void {
-    const $svgPanel = $<SVGSVGElement>(this.$elt, '.svgPanel');
+    const $svgPanel = $svg<'svg'>(this.$elt, '.svgPanel');
     const currentHeight = parseInt($svgPanel.getAttribute('height')!.slice(0, -2), 10);
     // TODO: resizer bar should enforce minimum.
     // TODO: minimum height should be based on ink content.

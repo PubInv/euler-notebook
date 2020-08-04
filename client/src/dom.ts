@@ -20,53 +20,72 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 // Requirements
 
 import { assert } from './common';
+import { SyncListener, addSyncEventListener, addAsyncEventListener } from './error-handler';
 
 // Types
 
 type CssSelector = string;
 type ElementId = string;
-type ElementTag = string;
 export type ElementClass = string;
-type EventName = 'click'|'dblclick'; // TYPESCRIPT: Already defined somewhere?
 export type Html = string;
-type Listener<E extends Event> = (event: E)=>void;
 
 interface Attributes {
   [name: string]: boolean|number|string,
 }
 
-interface Listeners {
-  blur?: Listener<FocusEvent>;
-  click?: Listener<MouseEvent>;
-  dblclick?: Listener<MouseEvent>;
-  dragend?: Listener<DragEvent>;
-  dragstart?: Listener<DragEvent>;
-  dragover?: Listener<DragEvent>;
-  dragenter?: Listener<DragEvent>;
-  drop?: Listener<DragEvent>;
-  focus?: Listener<FocusEvent>;
-  input?: Listener<Event>; // REVIEW: More specific event type?
-  keyup?: Listener<KeyboardEvent>;
-  mousedown?: Listener<MouseEvent>;
-  pointercancel?: Listener<PointerEvent>;
-  pointerdown?: Listener<PointerEvent>;
-  pointerenter?: Listener<PointerEvent>;
-  pointerleave?: Listener<PointerEvent>;
-  pointermove?: Listener<PointerEvent>;
-  pointerout?: Listener<PointerEvent>;
-  pointerover?: Listener<PointerEvent>;
-  pointerup?: Listener<PointerEvent>;
+interface AsyncListeners {
+  // As needed:
+  //   click?: AsyncListener<MouseEvent>;
+  // etc.
 }
 
-interface NewOptions {
+interface SyncListeners {
+  // REVIEW: Can we populate this declaratively from the standard DOM types?
+  blur?: SyncListener<FocusEvent>;
+  click?: SyncListener<MouseEvent>;
+  dblclick?: SyncListener<MouseEvent>;
+  dragend?: SyncListener<DragEvent>;
+  dragstart?: SyncListener<DragEvent>;
+  dragover?: SyncListener<DragEvent>;
+  dragenter?: SyncListener<DragEvent>;
+  drop?: SyncListener<DragEvent>;
+  focus?: SyncListener<FocusEvent>;
+  input?: SyncListener<Event>; // REVIEW: More specific event type?
+  keyup?: SyncListener<KeyboardEvent>;
+  mousedown?: SyncListener<MouseEvent>;
+  pointercancel?: SyncListener<PointerEvent>;
+  pointerdown?: SyncListener<PointerEvent>;
+  pointerenter?: SyncListener<PointerEvent>;
+  pointerleave?: SyncListener<PointerEvent>;
+  pointermove?: SyncListener<PointerEvent>;
+  pointerout?: SyncListener<PointerEvent>;
+  pointerover?: SyncListener<PointerEvent>;
+  pointerup?: SyncListener<PointerEvent>;
+}
+
+interface NewCommonOptions {
   appendTo?: Element;
+  asyncListeners?: AsyncListeners;
   attrs?: Attributes;
   class?: ElementClass;
   classes?: ElementClass[];
-  html?: Html;
   id?: ElementId;
-  listeners?: Listeners;
+  hidden?: boolean;
+  listeners?: SyncListeners;
   style?: string;
+  title?: string; // TODO: Implement
+}
+
+interface NewHtmlOptions<K extends keyof HTMLElementTagNameMap> extends NewCommonOptions {
+  tag: K;
+  children?: NewHtmlOptions<any>[];
+  html?: Html;
+}
+
+interface NewSvgOptions<K extends keyof SVGElementTagNameMap> extends NewCommonOptions {
+  tag: K;
+  children?: NewSvgOptions<any>[];
+  html?: Html;
 }
 
 // Constants
@@ -77,52 +96,71 @@ const ENUMERATED_ATTRIBUTES = new Set<string>([ 'draggable']);
 
 // Exported Functions
 
-export function $<T extends Element>(root: Element|Document, selector: CssSelector): T {
-  const $elts = $all<T>(root, selector);
+export function $<K extends keyof HTMLElementTagNameMap>(root: Element|Document, selector: string): HTMLElementTagNameMap[K] {
+  const $elts = $all<K>(root, selector);
   assert($elts.length == 1, `Expected one element for selector '${selector}', got ${$elts.length}.`);
   return $elts[0];
 }
 
-export function $all<T extends Element>(root: Element|Document, selector: CssSelector): NodeListOf<T> {
-  return root.querySelectorAll<T>(selector);
+export function $svg<K extends keyof SVGElementTagNameMap>(root: Element|Document, selector: string): SVGElementTagNameMap[K] {
+  const $elts = $allSvg<K>(root, selector);
+  assert($elts.length == 1, `Expected one element for selector '${selector}', got ${$elts.length}.`);
+  return $elts[0];
 }
 
-export function $attach<T extends Element>(root: Element|Document, selector: CssSelector, options: NewOptions): T {
-  const $elt = $<T>(root, selector);
-  $configure<T>($elt, options);
+export function $all<K extends keyof HTMLElementTagNameMap>(root: Element|Document, selector: string): NodeListOf<HTMLElementTagNameMap[K]> {
+  return root.querySelectorAll<HTMLElementTagNameMap[K]>(selector);
+}
+
+export function $allSvg<K extends keyof SVGElementTagNameMap>(root: Element|Document, selector: string): NodeListOf<SVGElementTagNameMap[K]> {
+  return root.querySelectorAll<SVGElementTagNameMap[K]>(selector);
+}
+
+export function $attach<K extends keyof HTMLElementTagNameMap>(
+  root: Element|Document,
+  selector: CssSelector,
+  options: NewCommonOptions,
+): HTMLElementTagNameMap[K] {
+  const $elt = $<K>(root, selector);
+  $configure($elt, options);
   return $elt;
 }
 
 // REVIEW: $attachAll
 
-export function $new<T extends HTMLElement>(tag: ElementTag, options?: NewOptions): T {
-  const $elt = <T>document.createElement(tag);
-  if (options) { $configure($elt, options); }
-  options = options || {};
+export function $new<K extends keyof HTMLElementTagNameMap>(options: NewHtmlOptions<K>): HTMLElementTagNameMap[K] {
+  const $elt = document.createElement(options.tag);
+  $configure($elt, options);
+  if (options.html) { $elt.innerHTML = options.html; }
+  if (options.children) {
+    for (const childOptions of options.children) {
+      $new({ ...childOptions, appendTo: $elt});
+    }
+  }
   return $elt;
 }
 
-export function $newSvg<T extends SVGElement>(tag: ElementTag, options?: NewOptions): T {
-  const $elt = <T>document.createElementNS(SVG_NS, tag);
-  if (options) { $configure($elt, options); }
-  options = options || {};
+export function $newSvg<K extends keyof SVGElementTagNameMap>(options: NewSvgOptions<K>): SVGElementTagNameMap[K] {
+  const $elt = document.createElementNS(SVG_NS, options.tag);
+  $configure($elt, options);
   return $elt;
 }
 
-export function $configure<T extends Element>($elt: T, options: NewOptions): void {
+export function $configure($elt: HTMLElement|SVGElement, options: NewCommonOptions): void {
   if (options.id) { $elt.setAttribute('id', options.id); }
   if (options.class) { $elt.classList.add(options.class); }
   if (options.classes) {
     for (const cls of options.classes) { $elt.classList.add(cls); }
   }
   if (options.attrs) { attachAttributes($elt, options.attrs); }
-  if (options.html) { $elt.innerHTML = options.html; }
   if (options.style) { $elt.setAttribute('style', options.style); }
+  if (options.hidden) { $elt.style.display = 'none'; }
   if (options.appendTo) { options.appendTo.appendChild($elt); }
-  if (options.listeners) { attachListeners($elt, options.listeners); }
+  if (options.listeners) { attachSyncListeners($elt, options.listeners); }
+  if (options.asyncListeners) { attachAsyncListeners($elt, options.asyncListeners); }
 }
 
-export function $configureAll<T extends Element>($elts: NodeListOf<T>, options: NewOptions): void {
+export function $configureAll($elts: NodeListOf<HTMLElement|SVGElement>, options: NewCommonOptions): void {
   for (const $elt of $elts) { $configure($elt, options); }
 }
 
@@ -131,6 +169,10 @@ export function escapeHtml(str: string): Html {
   var $div = document.createElement('div');
   $div.appendChild(document.createTextNode(str));
   return $div.innerHTML;
+}
+
+export function svgIconReference(id: string): string {
+  return `<svg class="icon"><use xlink:href="#${id}"/></svg>`
 }
 
 // HELPER FUNCTIONS
@@ -152,34 +194,32 @@ function attachAttributes($elt: Element, attrs: Attributes): void {
   }
 }
 
-function attachListeners($elt: Element, listeners: Listeners): void {
-  const eventNames = <EventName[]>Object.keys(listeners);
-  for (const eventName of eventNames) {
-    const listener = listeners[eventName]!;
-    $elt.addEventListener(eventName, listenerWrapper</* TYPESCRIPT: */any>($elt, eventName, listener))
+function attachAsyncListeners($elt: Element, listeners: AsyncListeners): void {
+  // REVIEW: Might be nice to pass a function to generate the error message to addSyncEventListener,
+  //         so we don't have to do the work of generating the "specifier" unless an error actually occurs.
+  const specifier = elementSpecifier($elt);
+  for (const [ eventName, listener ] of Object.entries(listeners)) {
+    addAsyncEventListener($elt, eventName, listener, `Internal error processing ${specifier} ${eventName} event.`);
   }
 }
 
-function listenerError(err: Error, $elt: Element, eventName: EventName): void {
+function attachSyncListeners($elt: Element, listeners: SyncListeners): void {
+  // REVIEW: Might be nice to pass a function to generate the error message to addSyncEventListener,
+  //         so we don't have to do the work of generating the "specifier" unless an error actually occurs.
+  const specifier = elementSpecifier($elt);
+  for (const [ eventName, listener ] of Object.entries(listeners)) {
+    addSyncEventListener($elt, eventName, listener, `Internal error processing ${specifier} ${eventName} event.`);
+  }
+}
+
+function elementSpecifier($elt: Element): string {
+  // Returns a string that attempts to identify the element for debugging.
+  // LATER: We could walk the parent chain concatenating specifiers.
   let specifier = $elt.tagName;
   if ($elt.id) { specifier += `#${$elt.id}` }
   for (let i = 0; i<$elt.classList.length; i++) {
     specifier += `.${$elt.classList.item(i)}`
   }
-  console.log(`Error in ${specifier} ${eventName} listener: ${err.message}`);
-  console.dir(err);
-
-  // TODO: Throw???
-  // TODO: Report error to the server.
-  // TODO: Display error to the user.
+  return specifier;
 }
 
-export function listenerWrapper<E extends Event>($elt: Element, eventName: EventName, listener: Listener<E>): (event: E)=>void {
-  return function(event: E): void {
-    try {
-      listener(event);
-    } catch(err) {
-      listenerError(err, $elt, eventName);
-    }
-  };
-}

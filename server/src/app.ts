@@ -34,7 +34,7 @@ import { middleware as stylusMiddleware } from 'stylus';
 import { initialize as initializeObservers } from './observers';
 import { start as startWolframscript } from './wolframscript';
 import { ClientSocket } from './client-socket';
-import { rootDir as notebookRootDir } from './files-and-folders';
+import { rootDir as notebookRootDir } from './server-folder';
 import { loadConfig, loadCredentials} from './config';
 
 import { router as apiRouter } from './routes/api';

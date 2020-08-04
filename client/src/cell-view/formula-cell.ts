@@ -20,13 +20,13 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 // Requirements
 
 import { $new, escapeHtml, Html } from '../dom';
-import { ToolData } from '../shared/math-tablet-api';
 import { StyleObject, FindRelationshipOptions, FindStyleOptions } from '../shared/notebook';
 import { NotebookView } from '../notebook-view';
 import { getRenderer } from '../renderers';
 import { FORMULA_SUBROLE_PREFIX } from '../role-selectors';
 
 import { CellView } from './index';
+import { NotebookTools } from '../notebook-tools';
 
 // Types
 
@@ -50,7 +50,7 @@ export class FormulaCellView extends CellView {
     this.$prefix.innerHTML = style.subrole ? FORMULA_SUBROLE_PREFIX.get(style.subrole!)! : '';
 
     // Look for a LATEX REPRESENTATION.
-    const repStyles = this.notebookView.openNotebook.findStyles({ role: 'REPRESENTATION', type: 'TEX-EXPRESSION' }, style.id);
+    const repStyles = this.notebookView.notebook.findStyles({ role: 'REPRESENTATION', type: 'TEX-EXPRESSION' }, style.id);
     let repStyle: StyleObject|undefined;
     if (repStyles.length > 0) {
       if (repStyles.length > 1) { console.warn("More than one REPRESENTATION/TEX-EXPRESSION styles found."); }
@@ -78,7 +78,7 @@ export class FormulaCellView extends CellView {
     //         to the end of the formula.
     {
       const findOptions: FindStyleOptions = { role: 'EVALUATION', recursive: true };
-      const evaluationStyles = this.notebookView.openNotebook.findStyles(findOptions, style.id);
+      const evaluationStyles = this.notebookView.notebook.findStyles(findOptions, style.id);
       for (const evaluationStyle of evaluationStyles) {
         // HACK ALERT: We only take evaluations that are numbers:
         const evalStr = evaluationStyle.data.toString();
@@ -96,7 +96,7 @@ export class FormulaCellView extends CellView {
     //         to the end of the formula.
     {
       const findOptions: FindRelationshipOptions = { fromId: style.id, toId: style.id, role: 'EQUIVALENCE' };
-      const relationships = this.notebookView.openNotebook.findRelationships(findOptions);
+      const relationships = this.notebookView.notebook.findRelationships(findOptions);
       const equivalentStyleIds = relationships.map(r=>(r.toId!=style.id ? r.toId : r.fromId)).sort();
       if (equivalentStyleIds.length>0) {
         html += ` {${equivalentStyleIds.join(', ')}}`;
@@ -106,31 +106,9 @@ export class FormulaCellView extends CellView {
     this.$formula.innerHTML = html!;
   }
 
-  public renderTools($tools: HTMLDivElement): void {
-    super.renderTools($tools);
-    const style = this.notebookView.openNotebook.getStyle(this.styleId);
-    // REVIEW: If we attached tool styles to the top-level style,
-    //         then we would not need to do a recursive search.
-    const findOptions2: FindStyleOptions = { type: 'TOOL-DATA', recursive: true };
-    const toolStyles = this.notebookView.openNotebook.findStyles(findOptions2, style.id);
-    for (const toolStyle of toolStyles) {
-      const toolData: ToolData = toolStyle.data;
-      let html: Html;
-      if (toolData.tex) {
-        const latexRenderer = getRenderer('TEX-EXPRESSION');
-        const results = latexRenderer!(toolData.tex);
-        if (results.html) { html = results.html; }
-        else { html = results.errorHtml!; }
-      } else {
-        html = toolData.html!;
-      }
-      const $button = $new('button', {
-        class: 'tool',
-        html,
-        listeners: { 'click': _e=>this.notebookView.useTool(toolStyle.id) }
-      });
-      $tools.appendChild($button);
-    }
+  public renderTools(tools: NotebookTools): void {
+    super.renderTools(tools);
+    tools.render(this.styleId);
   }
 
   // -- PRIVATE --
@@ -142,10 +120,10 @@ export class FormulaCellView extends CellView {
 
     // Create our child elements: handle, status, formula, tools, and delete button.
     // REVIEW: Use $new above to create children declaratively.
-    this.$prefix = $new<HTMLDivElement>('div', { class: 'prefix', appendTo: this.$elt });
-    this.$formula = $new<HTMLDivElement>('div', { class: 'formula', appendTo: this.$elt });
-    $new<HTMLDivElement>('div', { class: 'handle', html: `(${style.id})`, appendTo: this.$elt });
-    $new<HTMLDivElement>('div', { class: 'status', html: "&nbsp;", appendTo: this.$elt });
+    this.$prefix = $new({ tag: 'div', class: 'prefix', appendTo: this.$elt });
+    this.$formula = $new({ tag: 'div', class: 'formula', appendTo: this.$elt });
+    $new({ tag: 'div', class: 'handle', html: `(${style.id})`, appendTo: this.$elt });
+    $new({ tag: 'div', class: 'status', html: "&nbsp;", appendTo: this.$elt });
   }
 
   // Private Instance Properties

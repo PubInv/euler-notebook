@@ -17,11 +17,12 @@ You should have received a copy of the GNU Affero General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-// TODO: Disable home button when we are on the home page.
-
 // Requirements
 
-import { $attach, $configureAll, $all } from '../src/dom.js';
+import { ButtonBar } from './button-bar';
+import { ClientNotebook } from './client-notebook';
+import { $new } from './dom';
+import { PageView } from './page-view';
 
 // Types
 
@@ -29,34 +30,30 @@ import { $attach, $configureAll, $all } from '../src/dom.js';
 
 // Global Variables
 
-// Class
+// Exported Class
 
-export class Header {
+export class PageSidebar extends ButtonBar {
 
   // Class Methods
 
-  public static attach($elt: HTMLDivElement): Header {
-    return new this($elt);
+  public static create($parent: HTMLElement, notebook: ClientNotebook): PageSidebar {
+    return new this($parent, notebook);
   }
+
+  // Instance Properties
+
 
   // Instance Methods
 
-  public connect(): void { }
+  public connect(_notebook: ClientNotebook, _pageView: PageView): void { }
 
   // -- PRIVATE --
 
   // Constructor
 
-  private constructor($elt: HTMLDivElement) {
-    $attach($elt, '#refreshButton', { listeners: { click: _e=>{ window.location.reload(); }}});
-    $attach($elt, '#userButton', { listeners: { click: _e=>{ alert("User menu not yet implemented."); }}});
-
-    // Prevent header buttons from taking focus when clicked.
-    // REVIEW: Code duplicated in sidebar.ts.
-    $configureAll($all($elt, 'button'), {
-      // REVIEW: Use pointer event instead? Will this handle touches and stylus taps?
-      listeners: { mousedown: (e: MouseEvent)=>{ e.preventDefault(); }},
-    });
+  private constructor($parent: HTMLElement, _notebook: ClientNotebook) {
+    const $elt = $new({ tag: 'div', appendTo: $parent, class: 'sidebar' });
+    super($elt);
   }
 
   // Private Instance Properties
@@ -64,5 +61,6 @@ export class Header {
   // Private Instance Methods
 
   // Private Event Handlers
+
 
 }

@@ -26,6 +26,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 import * as debug1 from 'debug';
 
 import { assert } from 'chai';
+import { NotebookPath } from './shared/folder';
 import {
   Notebook, NotebookObject, NotebookChange, StyleObject, StyleRole, StyleType, StyleSource, StyleId,
   RelationshipObject, StyleMoved, StylePosition, VERSION, StyleChanged, RelationshipDeleted,
@@ -34,12 +35,12 @@ import {
 import {
   NotebookChangeRequest, StyleMoveRequest, StyleInsertRequest, StyleChangeRequest,
   RelationshipDeleteRequest, StyleDeleteRequest, RelationshipInsertRequest,
-  StylePropertiesWithSubprops, ChangeNotebookOptions, LatexData, NotebookPath, StyleConvertRequest
+  StylePropertiesWithSubprops, ChangeNotebookOptions, LatexData, StyleConvertRequest
 } from './shared/math-tablet-api';
 
 import {
   readNotebookFile, AbsDirectoryPath, absDirPathFromNotebookPath, writeNotebookFile,
-} from './files-and-folders';
+} from './server-folder';
 import { constructSubstitution } from './wolframscript';
 import { ClientObserver } from './observers/client-observer';
 import { ClientId } from './client-socket';
@@ -177,7 +178,6 @@ export class ServerNotebook extends Notebook {
 
   // Instance Properties
 
-  // NOTE: Properties with an underscore prefix are not persisted.
   public _path?: NotebookPath;  // TODO: Don't need underscore prefix.
 
   // Instance Property Functions

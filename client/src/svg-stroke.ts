@@ -74,7 +74,7 @@ export class SvgStroke {
   // Private Constructor
 
   private constructor($container: SVGSVGElement) {
-    this.$path = $newSvg<SVGPathElement>('path', { appendTo: $container });
+    this.$path = $newSvg({ tag: 'path', appendTo: $container });
     this.pathData = '';
     this.data = { x: [], y: [], /* TODO: t: [], p: [], tx: [], ty: [] */};
   }

@@ -68,7 +68,8 @@ export class ResizerBar  {
 
     this.pointerMap = new Map();
 
-    this.$elt = $new<HTMLDivElement>('div', {
+    this.$elt = $new({
+      tag: 'div',
       appendTo: $parentElt,
       class: 'resizeBar',
       listeners: {
@@ -83,7 +84,8 @@ export class ResizerBar  {
       }
     });
 
-    $new('button', {
+    $new( {
+      tag: 'button',
       appendTo: this.$elt,
       attrs: { tabindex: -1 },
       class: 'insertCellBelowButton',

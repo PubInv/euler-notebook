@@ -36,7 +36,7 @@ export class ClientObserver {
 
   // Class Methods
 
-  public static open(notebook: ServerNotebook, clientSocket: ClientSocket): ClientObserver {
+  public static openNotebook(notebook: ServerNotebook, clientSocket: ClientSocket): ClientObserver {
     const instance = new this(notebook, clientSocket);
     const clientId = clientSocket.id;
     notebook.registerClientObserver(clientId, instance);

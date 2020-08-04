@@ -26,11 +26,16 @@ import { Request } from 'express';
 import * as WebSocket from 'ws';
 
 // TODO: Handle websocket lifecycle: closing, unexpected disconnects, errors, etc.
+import { FolderPath, NotebookPath } from './shared/folder';
 import { NotebookChange } from './shared/notebook';
-import { ClientMessage, NotebookPath, NotebookChanged, ServerMessage, CloseNotebook, OpenNotebook, UseTool, NotebookOpened, ChangeNotebook, Tracker, NotebookChangeRequest } from './shared/math-tablet-api';
+import {
+  ClientMessage, NotebookChanged, ServerMessage, CloseNotebook, OpenNotebook, UseTool,
+  NotebookOpened, ChangeNotebook, Tracker, NotebookChangeRequest, OpenFolder, CloseFolder, FolderOpened
+} from './shared/math-tablet-api';
 
 import { PromiseResolver, runAsync } from './common';
 // REVIEW: This file should not be dependent on any specific observers.
+import { ServerFolder } from './server-folder';
 import { ServerNotebook, RequestChangesOptions } from './server-notebook';
 import { ClientObserver } from './observers/client-observer';
 
@@ -181,13 +186,19 @@ export class ClientSocket {
   private onWsMessage(_ws: WebSocket, message: WebSocket.Data): void {
     try {
       const msg: ClientMessage = JSON.parse(message.toString());
-      debug(`Received socket message: ${msg.type} ${msg.notebookPath}`);
+      debug(`Received socket message: ${msg.type}`);
       switch(msg.type) {
         case 'changeNotebook':
           runAsync(this.cmChangeNotebook(msg), MODULE, 'cmChangeNotebook');
           break;
+        case 'closeFolder':
+          runAsync(this.cmCloseFolder(msg), MODULE, 'cmCloseFolder');
+          break;
         case 'closeNotebook':
           runAsync(this.cmCloseNotebook(msg), MODULE, 'cmCloseNotebook');
+          break;
+        case 'openFolder':
+          runAsync(this.cmOpenFolder(msg), MODULE, 'cmOpenFolder');
           break;
         case 'openNotebook':
           runAsync(this.cmOpenNotebook(msg), MODULE, 'cmOpenNotebook');
@@ -216,8 +227,17 @@ export class ClientSocket {
     await clientObserver.notebook.requestChanges('USER', msg.changeRequests, options);
   }
 
+  private async cmCloseFolder(msg: CloseFolder): Promise<void> {
+    await this.closeFolder(msg.folderPath, true);
+  }
+
   private async cmCloseNotebook(msg: CloseNotebook): Promise<void> {
     await this.closeNotebook(msg.notebookPath, true);
+  }
+
+  private async cmOpenFolder(msg: OpenFolder): Promise<void> {
+    // REVIEW: Check that the open folder message is not a duplicate?
+    await this.openFolder(msg.folderPath);
   }
 
   private async cmOpenNotebook(msg: OpenNotebook): Promise<void> {
@@ -246,6 +266,13 @@ export class ClientSocket {
     }
   }
 
+  private async closeFolder(folderPath: FolderPath, notify: boolean): Promise<void> {
+    // REVIEW: Release resources?
+    if (notify) {
+      this.sendMessage({ type: 'folderClosed', folderPath });
+    }
+  }
+
   private async closeNotebook(notebookPath: NotebookPath, notify: boolean): Promise<void> {
     const clientObserver = this.clientObservers.get(notebookPath);
     if (!clientObserver) {
@@ -259,9 +286,18 @@ export class ClientSocket {
     }
   }
 
+  private async openFolder(folderPath: FolderPath): Promise<void> {
+    const folder = await ServerFolder.open(folderPath);
+    const msg: FolderOpened = {
+      type: 'folderOpened',
+      obj: folder.toJSON(),
+    }
+    this.sendMessage(msg);
+  }
+
   private async openNotebook(notebookPath: NotebookPath): Promise<void> {
     const notebook = await ServerNotebook.open(notebookPath);
-    const clientObserver = ClientObserver.open(notebook, this);
+    const clientObserver = ClientObserver.openNotebook(notebook, this);
     this.clientObservers.set(notebook._path!, clientObserver);
     const msg: NotebookOpened = {
       type: 'notebookOpened',
@@ -274,14 +310,23 @@ export class ClientSocket {
   private sendMessage(msg: ServerMessage): void {
     const json = JSON.stringify(msg);
     switch(msg.type) {
-      case 'notebookOpened':
-        debug(`Sending notebookOpened socket message: ${msg.notebookPath}.`);
+      case 'folderChanged':
+        debug(`Sending folderChanged socket message: ${msg.folderPath}\n${JSON.stringify(msg.changes, null, 2)}.`);
+        break;
+      case 'folderClosed':
+        debug(`Sending folderClosed socket message: ${msg.folderPath}.`);
+        break;
+      case 'folderOpened':
+        debug(`Sending folderOpened socket message: ${msg.obj.path}.`);
+        break;
+      case 'notebookChanged':
+        debug(`Sending notebookChanged socket message: ${msg.notebookPath}\n${JSON.stringify(msg.changes, null, 2)}.`);
         break;
       case 'notebookClosed':
         debug(`Sending notebookClosed socket message: ${msg.notebookPath}.`);
         break;
-      case 'notebookChanged':
-        debug(`Sending notebookChanged socket message: ${msg.notebookPath}\n${JSON.stringify(msg.changes, null, 2)}.`);
+      case 'notebookOpened':
+        debug(`Sending notebookOpened socket message: ${msg.notebookPath}.`);
         break;
       default:
         console.error(`Sending unknown socket message: ${(<any>msg).type}.`);

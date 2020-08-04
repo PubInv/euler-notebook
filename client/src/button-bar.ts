@@ -17,31 +17,33 @@ You should have received a copy of the GNU Affero General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-// Globals
+// Requirements
 
-// Specific elements
+import { $configureAll, $all } from './dom';
 
-#content
-  height calc(100% - var(--header-height))
-  left var(--sidebar-width)
-  overflow scroll
-  padding 60px
-  position fixed
-  top var(--header-height)
-  width calc(100% - var(--sidebar-width))
+// Class
 
-#createFolderView
-#createFileView
-#importFileView
-  border-bottom 1px solid gray
+export class ButtonBar {
 
-// Element classes
 
-.icon
-  height 1em
-  width 1em
+  // --- PRIVATE ---
 
-// Element types
+  // Private Constructor
 
-table
-  border-collapse collapse
+  protected constructor($elt: HTMLDivElement) {
+    this.$elt = $elt;
+
+    // Prevent buttons from taking focus when clicked.
+    // REVIEW: Code duplicated in sidebar.ts.
+    $configureAll($all($elt, 'button'), {
+      // REVIEW: Use pointer event instead? Will this handle touches and stylus taps?
+      listeners: { mousedown: (e: MouseEvent)=>{ e.preventDefault(); }},
+    });
+
+  }
+
+  // Private Instance Properties
+
+  protected $elt: HTMLDivElement;
+
+}

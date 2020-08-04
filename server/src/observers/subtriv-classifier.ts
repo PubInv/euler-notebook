@@ -26,7 +26,7 @@ const debug = debug1(`server:${MODULE}`);
 import { NotebookChange, StyleObject, RelationshipObject } from '../shared/notebook';
 import { ToolData, NotebookChangeRequest, StyleInsertRequest, StylePropertiesWithSubprops, StyleDeleteRequest } from '../shared/math-tablet-api';
 
-import { absDirPathFromNotebookPath } from '../files-and-folders';
+import { absDirPathFromNotebookPath } from '../server-folder';
 import { ServerNotebook, ObserverInstance } from '../server-notebook';
 import { execute, constructSubstitution} from '../wolframscript';
 import { Config } from '../config';

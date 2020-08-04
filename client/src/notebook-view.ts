@@ -25,18 +25,19 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 import { CellView } from './cell-view/index';
 import { createCellView } from './cell-view/instantiator';
 import { assert } from './common';
-import { $, $configure } from './dom';
+import { $, $new } from './dom';
 import {
   DrawingData, StyleId, StyleObject, NotebookChange,
   StyleType, StyleRelativePosition,
-  StylePosition, DOCUMENT, PageId, HintData, HintStatus, HintRelationship, FormulaData,
+  StylePosition, HintData, HintStatus, HintRelationship, FormulaData,
 } from './shared/notebook';
 import {
-  StyleDeleteRequest,
-  StyleInsertRequest, StylePropertiesWithSubprops, StyleMoveRequest, NotebookChangeRequest, ChangeNotebookOptions,
+  StyleDeleteRequest, StyleInsertRequest, StylePropertiesWithSubprops, StyleMoveRequest, NotebookChangeRequest,
+  ChangeNotebookOptions,
 } from './shared/math-tablet-api';
 import { ClientNotebook, TrackedChangesResults } from './client-notebook';
-import { Sidebar } from './sidebar';
+import { NotebookSidebar } from './notebook-sidebar';
+import { NotebookTools } from './notebook-tools';
 
 // Types
 
@@ -89,18 +90,18 @@ export class NotebookView {
 
   // Class Methods
 
-  public static attach($elt: HTMLDivElement): NotebookView {
-    return new this($elt);
+  public static create($parent: HTMLElement): NotebookView {
+    return new this($parent);
   }
 
   // Instance Properties
 
-  public openNotebook!: ClientNotebook;
+  public notebook!: ClientNotebook;
 
   // Instance Property Functions
 
   public topLevelCellOf(style: StyleObject): CellView {
-    for (; style.parentId; style = this.openNotebook.getStyle(style.parentId));
+    for (; style.parentId; style = this.notebook.getStyle(style.parentId));
     const cell = this.cellViews.get(style.id);
     assert(cell);
     return cell!;
@@ -114,26 +115,27 @@ export class NotebookView {
     await this.sendUndoableChangeRequests([changeRequest]);
   }
 
-  public connect(openNotebook: ClientNotebook, sidebar: Sidebar): void {
-    this.openNotebook = openNotebook;
+  public connect(clientNotebook: ClientNotebook, sidebar: NotebookSidebar, tools: NotebookTools): void {
+    this.notebook = clientNotebook;
     this.sidebar = sidebar;
+    this.tools = tools;
 
-    for (const styleId of this.openNotebook.topLevelStyleOrder()) {
-      const style = this.openNotebook.getStyle(styleId);
+    for (const styleId of this.notebook.topLevelStyleOrder()) {
+      const style = this.notebook.getStyle(styleId);
       this.createCell(style, -1);
     }
   }
 
-  public scrollPageIntoView(pageId: PageId): void {
-    // TODO: This will not work when cells can be added or removed.
-    const pageData = DOCUMENT.pages.find(p=>p.id == pageId);
-    if (!pageData) { throw new Error(`Page with ID not found: ${pageId}`); }
-    const cellData = pageData.cells[0];
-    // TODO: This doesn't work of the page doesn't have any cells.
-    const cellId = cellData.id;
-    const $cell = this.$elt.querySelector<SVGSVGElement>(`#${cellId}`);
-    $cell!.scrollIntoView({ block: 'start'});
-  }
+  // public scrollPageIntoView(pageId: PageId): void {
+  //   // TODO: This will not work when cells can be added or removed.
+  //   const pageData = DOCUMENT.pages.find(p=>p.id == pageId);
+  //   if (!pageData) { throw new Error(`Page with ID not found: ${pageId}`); }
+  //   const cellData = pageData.cells[0];
+  //   // TODO: This doesn't work of the page doesn't have any cells.
+  //   const cellId = cellData.id;
+  //   const $cell = $<SVGSVGElement>(this.$elt, `#${cellId}`);
+  //   $cell!.scrollIntoView({ block: 'start'});
+  // }
 
   // NOTE: When sidebar switches views it calls .focus() on the element directly,
   //       It does not call this function.
@@ -172,15 +174,15 @@ export class NotebookView {
       throw new Error("Must select a FORMULA cell to insert a hint.");
     }
     const fromId = this.lastCellSelected.styleId;
-    const fromStyle = this.openNotebook.getStyle(fromId);
+    const fromStyle = this.notebook.getStyle(fromId);
     if (fromStyle.role != 'FORMULA') {
       throw new Error("Must select a FORMULA cell to insert a hint.");
     }
-    const toId = this.openNotebook.followingStyleId(fromId);
+    const toId = this.notebook.followingStyleId(fromId);
     if (!toId) {
       throw new Error("Can't insert a hint after last formula.");
     }
-    const toStyle = this.openNotebook.getStyle(toId);
+    const toStyle = this.notebook.getStyle(toId);
     if (toStyle.role != 'FORMULA') {
       throw new Error("Can only insert a hint between two FORMULA cells.");
     }
@@ -406,7 +408,7 @@ export class NotebookView {
     // TODO: Inserting text cells, not just formula cells.
 
     // REVIEW: We shouldn't be assuming a specific HTML control on the page.
-    const $typeSelector = $<HTMLSelectElement>(document, '#keyboardInputType');
+    const $typeSelector = $<'select'>(document, '#keyboardInputType');
 
     const data: FormulaData = { wolframData: '' };
     const styleProps: StylePropertiesWithSubprops = {
@@ -436,14 +438,14 @@ export class NotebookView {
     indivExtending?: boolean, // Extending selection by an individual cell, possibly non-contiguous.
   ): void {
     // Erase tools panel. Newly selected cell will populate, if it is the only cell selected.
-    $<HTMLDivElement>(document, '#tools').innerHTML = '';
+    this.tools.clear();
 
     const solo = !rangeExtending && !indivExtending;
     if (solo) {
       this.unselectAll(true);
     }
     cellView.select();
-    cellView.renderTools($<HTMLDivElement>(document, '#tools'));
+    cellView.renderTools(this.tools);
     this.lastCellSelected = cellView;
     this.sidebar.enableTrashButton(true);
   }
@@ -462,32 +464,32 @@ export class NotebookView {
         // REVIEW: Is there a way to tell what relationships affect display?
         // REVIEW: This assumes both incoming and outgoing relationships can affect display.
         //         Is that too conservative?
-        this.dirtyCells.add(this.openNotebook.topLevelStyleOf(change.relationship.fromId).id);
-        this.dirtyCells.add(this.openNotebook.topLevelStyleOf(change.relationship.toId).id);
+        this.dirtyCells.add(this.notebook.topLevelStyleOf(change.relationship.fromId).id);
+        this.dirtyCells.add(this.notebook.topLevelStyleOf(change.relationship.toId).id);
         break;
       }
       case 'relationshipInserted': {
         // REVIEW: Is there a way to tell what relationships affect display?
         // REVIEW: This assumes both incoming and outgoing relationships can affect display.
         //         Is that too conservative?
-        this.dirtyCells.add(this.openNotebook.topLevelStyleOf(change.relationship.fromId).id);
-        this.dirtyCells.add(this.openNotebook.topLevelStyleOf(change.relationship.toId).id);
+        this.dirtyCells.add(this.notebook.topLevelStyleOf(change.relationship.fromId).id);
+        this.dirtyCells.add(this.notebook.topLevelStyleOf(change.relationship.toId).id);
         break;
       }
       case 'styleChanged': {
         // REVIEW: Is there a way to tell what styles affect display?
-        this.dirtyCells.add(this.openNotebook.topLevelStyleOf(change.style.id).id);
+        this.dirtyCells.add(this.notebook.topLevelStyleOf(change.style.id).id);
         break;
       }
       case 'styleConverted': {
-        this.dirtyCells.add(this.openNotebook.topLevelStyleOf(change.styleId).id);
+        this.dirtyCells.add(this.notebook.topLevelStyleOf(change.styleId).id);
         break;
       }
       case 'styleDeleted': {
         // If a substyle is deleted then mark the cell as dirty.
         // If a top-level style is deleted then remove the cell.
-        const style = this.openNotebook.getStyle(change.style.id);
-        const topLevelStyle = this.openNotebook.topLevelStyleOf(style.id);
+        const style = this.notebook.getStyle(change.style.id);
+        const topLevelStyle = this.notebook.topLevelStyleOf(style.id);
         if (style.id != topLevelStyle.id) {
           // REVIEW: Is there a way to tell what styles affect display?
           this.dirtyCells.add(topLevelStyle.id);
@@ -504,13 +506,13 @@ export class NotebookView {
           this.createCell(change.style, change.afterId!);
         } else {
           // REVIEW: Is there a way to tell what styles affect display?
-          const topLevelStyle = this.openNotebook.topLevelStyleOf(change.style.id);
+          const topLevelStyle = this.notebook.topLevelStyleOf(change.style.id);
           this.dirtyCells.add(topLevelStyle.id);
         }
         break;
       }
       case 'styleMoved': {
-        const style = this.openNotebook.getStyle(change.styleId);
+        const style = this.notebook.getStyle(change.styleId);
         if (style.parentId) {
           console.warn(`Non top-level style moved: ${style.id}`);
           break;
@@ -529,20 +531,19 @@ export class NotebookView {
   public updateView(): void {
     // Redraw all of the cells that (may) have changed.
     for (const styleId of this.dirtyCells) {
-      const style = this.openNotebook.getStyle(styleId);
+      const style = this.notebook.getStyle(styleId);
       const cellView = this.cellViewFromStyleId(styleId);
       if (!cellView) { throw new Error(`Can't find dirty Change style message for style without top-level element`); }
       cellView.render(style);
     }
     if (this.lastCellSelected) {
-      const $tools = $<HTMLDivElement>(document, '#tools');
-      this.lastCellSelected.renderTools($tools);
+      this.lastCellSelected.renderTools(this.tools);
     }
     this.dirtyCells.clear();
   }
 
   public useTool(id: StyleId): void {
-    this.openNotebook.useTool(id);
+    this.notebook.useTool(id);
     this.setFocus();
   }
 
@@ -550,13 +551,17 @@ export class NotebookView {
 
   // Private Constructor
 
-  private constructor($elt: HTMLDivElement) {
-    this.$elt = $elt;
-    $configure($elt, { listeners: {
-      blur: e=>this.onBlur(e),
-      focus: e=>this.onFocus(e),
-      keyup: e=>this.onKeyUp(e),
-    }});
+  private constructor($parent: HTMLElement) {
+    this.$elt = $new({
+      tag: 'div',
+      appendTo: $parent,
+      class: 'view',
+      listeners: {
+        blur: e=>this.onBlur(e),
+        focus: e=>this.onFocus(e),
+        keyup: e=>this.onKeyUp(e),
+      }
+    });
 
     this.cellViews = new Map();
     this.dirtyCells = new Set();
@@ -568,10 +573,11 @@ export class NotebookView {
 
   private $elt: HTMLElement;
   private cellViews: Map<StyleId, CellView>;
-  private dirtyCells: Set<StyleId>;             // Style ids of top-level styles that need to be redrawn.
+  private dirtyCells: Set<StyleId>;     // Style ids of top-level styles that need to be redrawn.
   private lastCellSelected?: CellView;
-  private sidebar!: Sidebar;
-  private topOfUndoStack: number; // Index of the top of the stack. May not be the length of the undoStack array if there have been some undos.
+  private sidebar!: NotebookSidebar;    // Initialized in connect method.
+  private tools!: NotebookTools;        // Initialized in connect method.
+  private topOfUndoStack: number;       // Index of the top of the stack. May not be the length of the undoStack array if there have been some undos.
   private undoStack: UndoEntry[];
 
   // Private Instance Property Functions
@@ -587,7 +593,7 @@ export class NotebookView {
   }
 
   private firstCell(): CellView | undefined {
-    const styleOrder = this.openNotebook.topLevelStyleOrder();
+    const styleOrder = this.notebook.topLevelStyleOrder();
     if (styleOrder.length==0) { return undefined; }
     const styleId = styleOrder[0];
     const cellView = this.cellViewFromStyleId(styleId);
@@ -632,7 +638,7 @@ export class NotebookView {
   // Private Event Handlers
 
   private async sendTrackedChangeRequests(changeRequests: NotebookChangeRequest[], options?: ChangeNotebookOptions): Promise<TrackedChangesResults> {
-    return await this.openNotebook.sendTrackedChangeRequests(changeRequests, options);
+    return await this.notebook.sendTrackedChangeRequests(changeRequests, options);
   }
 
   private async sendUndoableChangeRequest(changeRequest: NotebookChangeRequest): Promise<NotebookChangeRequest> {

@@ -22,6 +22,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 // Requirements
 
+import { FolderObject, FolderPath, NotebookPath, FolderName, NotebookName, FolderChange } from './folder';
 import {
   RelationshipProperties, StyleProperties, StyleId, NotebookChange, NotebookObject, StyleRelativePosition,
   StyleRole, StyleSubrole, StyleType, RelationshipStyle, WolframExpression
@@ -42,16 +43,6 @@ export interface SymbolData {
   name: string;
   value?: string;
 }
-
-// Just the name of the notebook, no .mtnb extension.
-export type NotebookName = string;
-
-// Notebook paths are a FolderPath (see server/files-and-folders.ts) followed by a NotebookName,
-// then a '.mtnb' extension, and a slash.
-// Note that we always use forward slash, even on Windows where the filesystem
-// separator is a backslash.
-export type NotebookPath = string;
-
 
 // MyScript Types
 
@@ -84,6 +75,30 @@ export interface StylePropertiesWithSubprops extends StyleProperties {
     // that type and meaning should exist for the parent. If this is added
     // at the time the insertion request is made, the code to do the insertion
     // should automatically remove all other such instances
+}
+
+// Folder Change Requests
+
+export type FolderChangeRequest =
+  FolderCreateRequest|
+  FolderDeleteRequest|
+  NotebookCreateRequest|
+  NotebookDeleteRequest;
+export interface FolderCreateRequest {
+  type: 'createFolder';
+  folderName: FolderName;
+}
+export interface FolderDeleteRequest {
+  type: 'deleteFolder';
+  folderName: FolderName;
+}
+export interface NotebookCreateRequest {
+  type: 'createNotebook';
+  notebookName: NotebookName;
+}
+export interface NotebookDeleteRequest {
+  type: 'deleteNotebook';
+  notebookName: NotebookName;
 }
 
 // Notebook Change Requests
@@ -141,7 +156,12 @@ export interface StyleMoveRequest {
 
 // Messages from the server
 
-export type ServerMessage = NotebookChanged|NotebookClosed|NotebookOpened;
+export type ServerMessage = FolderChanged|FolderClosed|FolderOpened|NotebookChanged|NotebookClosed|NotebookOpened;
+export interface FolderChanged {
+  type: 'folderChanged';
+  folderPath: FolderPath;
+  changes: FolderChange[];
+}
 export interface NotebookChanged {
   type: 'notebookChanged';
   notebookPath: NotebookPath;
@@ -152,6 +172,15 @@ export interface NotebookChanged {
   tracker?: Tracker;            // An optional, client-supplied, tracking
                                 // identifier from the original change request.
   undoChangeRequests?: NotebookChangeRequest[];
+}
+export interface FolderClosed {
+  type: 'folderClosed';
+  folderPath: FolderPath;
+}
+export interface FolderOpened {
+  type: 'folderOpened';
+  // folderPath: FolderPath;
+  obj: FolderObject;
 }
 export interface NotebookClosed {
   type: 'notebookClosed';
@@ -165,7 +194,15 @@ export interface NotebookOpened {
 
 // Messages from the client
 
-export type ClientMessage = ChangeNotebook|CloseNotebook|OpenNotebook|UseTool;
+export type ClientMessage = ChangeFolder|ChangeNotebook|CloseFolder|CloseNotebook|OpenFolder|OpenNotebook|UseTool;
+export interface ChangeFolder {
+  type: 'changeFolder';
+  folderPath: FolderPath;
+  changeRequests: FolderChangeRequest[];
+  options?: ChangeFolderOptions;
+}
+export interface ChangeFolderOptions {
+}
 export interface ChangeNotebook {
   type: 'changeNotebook';
   notebookPath: NotebookPath;
@@ -176,9 +213,17 @@ export interface ChangeNotebookOptions {
   tracker?: Tracker;  // value passed back in NotebookChanged messages.
   wantUndo?: boolean; // true iff want undo change requests in return.
 }
+export interface CloseFolder {
+  type: 'closeFolder';
+  folderPath: FolderPath;
+}
 export interface CloseNotebook {
   type: 'closeNotebook';
   notebookPath: NotebookPath;
+}
+export interface OpenFolder {
+  type: 'openFolder';
+  folderPath: FolderPath;
 }
 export interface OpenNotebook {
   type: 'openNotebook';

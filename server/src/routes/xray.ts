@@ -24,10 +24,10 @@ import * as debug1 from 'debug';
 
 import { NextFunction, Request, Response, Router } from 'express';
 
-import { NotebookPath } from '../shared/math-tablet-api';
+import { NotebookPath, NOTEBOOK_PATH_RE } from '../shared/folder';
 
 import { ServerNotebook } from '../server-notebook';
-import { isValidNotebookPath, NOTEBOOK_PATH_RE } from '../files-and-folders';
+import { isValidNotebookPath } from '../server-folder';
 
 // import { NotebookName, NotebookChangeRequest } from './shared/math-tablet-api';
 

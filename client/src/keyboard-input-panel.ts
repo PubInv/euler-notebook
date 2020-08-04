@@ -93,16 +93,17 @@ export class KeyboardInputPanel {
     this.style = style;
     this.repStyle = repStyle;
 
-    this.$elt = $new('div', { class: 'inputPanel' });
+    this.$elt = $new({ tag: 'div', class: 'inputPanel' });
 
     // Three rows: preview, error message, and input row.
-    this.$preview = $new('div', { appendTo: this.$elt, class: 'preview' });
-    this.$messages = $new('div', { appendTo: this.$elt, class: 'messages' });
-    const $inputRow = $new('div', { appendTo: this.$elt, class: 'inputRow' });
+    this.$preview = $new({ tag: 'div', appendTo: this.$elt, class: 'preview' });
+    this.$messages = $new({ tag: 'div', appendTo: this.$elt, class: 'messages' });
+    const $inputRow = $new({ tag: 'div', appendTo: this.$elt, class: 'inputRow' });
 
     // Input row contains role/subrole/type selectors, and textarea.
-    const $selectors = $new<HTMLDivElement>('div', { appendTo: $inputRow, class: 'selectors' });
-    this.$textArea = $new<HTMLTextAreaElement>('textarea', {
+    const $selectors = $new({ tag: 'div', appendTo: $inputRow, class: 'selectors' });
+    this.$textArea = $new({
+      tag: 'textarea',
       appendTo: $inputRow,
       listeners: {
         input: (event)=>this.onInput(event),
@@ -143,12 +144,14 @@ export class KeyboardInputPanel {
   private constructSelectors($selectors: HTMLDivElement, style: StyleObject, repStyle: StyleObject): void {
 
     // Role selector
-    const $roleSelector = this.$roleSelector = $new<HTMLSelectElement>('select', {
+    const $roleSelector = this.$roleSelector = $new( {
+      tag: 'select',
       appendTo: $selectors,
       listeners: { input: e=>this.onRoleSelectorChange(e), }
     });
     for (const [ value, html ] of ROLE_OPTIONS) {
-      $new<HTMLOptionElement>('option', {
+      $new({
+        tag: 'option',
         appendTo: $roleSelector,
         attrs: { value, selected: (value == style.role) },
         html
@@ -156,14 +159,16 @@ export class KeyboardInputPanel {
     }
 
     // Subrole selector
-    this.$subroleSelector = $new<HTMLSelectElement>('select', {
+    this.$subroleSelector = $new({
+      tag: 'select',
       appendTo: $selectors,
       listeners: { input: e=>this.onSubroleSelectorChange(e), }
     });
     this.populateSubroleSelector(style.role, style.subrole!);
 
     // Type selector
-    this.$typeSelector = $new<HTMLSelectElement>('select', {
+    this.$typeSelector = $new({
+      tag: 'select',
       appendTo: $selectors,
       listeners: { input: e=>this.onTypeSelectorChange(e), }
     });
@@ -173,7 +178,8 @@ export class KeyboardInputPanel {
   private populateSubroleSelector(role: StyleRole, subrole?: StyleSubrole): void {
     this.$subroleSelector.innerHTML = '';
     for (const [ value, html ] of SUBROLE_OPTIONS.get(role)!) {
-      $new<HTMLOptionElement>('option', {
+      $new({
+        tag: 'option',
         appendTo: this.$subroleSelector,
         attrs: { value, selected: (value === subrole) },
         html
@@ -184,7 +190,8 @@ export class KeyboardInputPanel {
   private populateTypeSelector(role: StyleRole, type?: StyleType): void {
     this.$typeSelector.innerHTML = '';
     for (const [ value, html ] of TYPE_OPTIONS.get(role)!) {
-      $new<HTMLOptionElement>('option', {
+      $new( {
+        tag: 'option',
         appendTo: this.$typeSelector,
         attrs: { value, selected: (value === type) },
         html

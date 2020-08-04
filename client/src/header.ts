@@ -21,10 +21,10 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 // Requirements
 
-import { $attach, $configureAll, $all } from './dom';
-// import { showErrorMessageIfPromiseRejects } from '../global';
-import { DebugPopup } from './debug-popup';
-import { ClientNotebook } from './client-notebook';
+import { ButtonBar } from './button-bar';
+import { escapeHtml, $attach, $ } from './dom';
+import { monitorPromise } from './error-handler';
+import { Path } from './shared/folder';
 
 // Types
 
@@ -32,25 +32,29 @@ import { ClientNotebook } from './client-notebook';
 
 // Global Variables
 
-// Class
+// Exported Class
 
-export class Header {
+export class Header extends ButtonBar {
 
-  // Class Methods
+  // Public Class Methods
 
   public static attach($elt: HTMLDivElement): Header {
     return new this($elt);
   }
 
-  // Instance Methods
+  // Public Instance Methods
 
-  public connect(debugPopup: DebugPopup, openNotebook: ClientNotebook): void {
-    this.debugPopup = debugPopup;
-    this.openNotebook = openNotebook;
-  }
-
-  public enableDebugButton(enable: boolean): void {
-    this.$debugButton.disabled = !enable;
+  public setPathTitle(path: Path): void {
+    let html = '<a href="#/">Home</a>';
+    const segments = path.split('/').slice(1);
+    if (segments[segments.length-1].length == 0) { segments.pop(); }
+    for (let i=0; i<segments.length; i++) {
+      const escapedSegment = escapeHtml(segments[i]);
+      const href = `#/${segments.slice(0, i+1).join('/')}/`;
+      const segmentHtml = (i < segments.length-1 ? `<a href="${href}">${escapedSegment}</a>` : escapedSegment);
+      html += ' / ' + segmentHtml;
+    }
+    $(this.$elt, '#title').innerHTML = html;
   }
 
   // -- PRIVATE --
@@ -58,76 +62,33 @@ export class Header {
   // Constructor
 
   private constructor($elt: HTMLDivElement) {
-    $attach($elt, '#exportButton', { listeners: { click: e=>this.onExportButtonClicked(e) }});
+    super($elt)
+    $attach($elt, '#homeButton', { listeners: { click: _e=>{ window.location.href = '/#/'; }}});
     $attach($elt, '#refreshButton', { listeners: { click: _e=>{ window.location.reload(); }}});
     $attach($elt, '#userButton', { listeners: { click: _e=>{ alert("User menu not yet implemented."); }}});
-    this.$debugButton = $attach($elt, '#debugButton', { listeners: { click: e=>this.onDebugButtonClicked(e) }});
 
-    const $fullscreenButton = $attach<HTMLButtonElement>($elt, '#fullscreenButton', { listeners: { click: e=>this.onFullscreenButtonClicked(e) }});
-    $fullscreenButton.disabled = !fullScreenIsEnabled();
-
-    // Prevent header buttons from taking focus when clicked.
-    // REVIEW: Code duplicated in sidebar.ts.
-    $configureAll($all($elt, 'button'), {
-      // REVIEW: Use pointer event instead? Will this handle touches and stylus taps?
-      listeners: { mousedown: (e: MouseEvent)=>{ e.preventDefault(); }},
-    });
+    const $fullscreenButton = $attach<'button'>($elt, '#fullscreenButton', { listeners: { click: e=>this.onFullscreenButtonClicked(e) }});
+    $fullscreenButton.disabled = !document.fullscreenEnabled;
 
   }
 
   // Private Instance Properties
 
-  private $debugButton: HTMLButtonElement;
-  private debugPopup!: DebugPopup
-
-  private openNotebook!: ClientNotebook
-
   // Private Instance Methods
 
   // Private Event Handlers
 
-  private onDebugButtonClicked(_event: MouseEvent): void {
-    this.enableDebugButton(false);
-    this.debugPopup.show();
-  }
-
-  private onExportButtonClicked(_event: MouseEvent): void {
-    this.openNotebook.export();
-  }
-
   private onFullscreenButtonClicked(_event: MouseEvent): void {
+    // REVIEW: Maybe use this: https://github.com/sindresorhus/screenfull.js?
+    // REVIEW: Saw it mentioned somewhere that not all implementations return a promise.
+    // See https://developer.mozilla.org/en-US/docs/Web/API/Fullscreen_API/Guide.
     if (!document.fullscreenElement) {
-      requestFullscreen(document.documentElement);
-      // // NOTE: Saw it mentioned somewhere that not all implementations return a promise.
-      // const promise = Promise.resolve(document.documentElement.requestFullscreen());
-      // showErrorMessageIfPromiseRejects(promise, "Cannot go full screen.");
+      monitorPromise(document.documentElement.requestFullscreen(), `Browser error switching to full-screen mode.`);
     } else {
-      document.exitFullscreen && document.exitFullscreen();
+      document.exitFullscreen();
     }
   }
 
 }
 
 // HELPER FUNCTIONS
-
-function fullScreenIsEnabled(): boolean {
-  // @ts-ignore
-  return !!(document.fullscreenEnabled || document.mozFullScreenEnabled || document.documentElement.webkitRequestFullScreen);
-}
-
-function requestFullscreen(element: HTMLElement): void {
-  // TODO: Check for error on promise that is returned and show it to user if so. Not all implementations return a promise.
-  // REVIEW: Maybe use this: https://github.com/sindresorhus/screenfull.js?
-  // See https://developer.mozilla.org/en-US/docs/Web/API/Fullscreen_API/Guide.
-  if (element.requestFullscreen) {
-    element.requestFullscreen();
-  // @ts-ignore
-	} else if (element.mozRequestFullScreen) {
-    // @ts-ignore
-    element.mozRequestFullScreen();
-  // @ts-ignore
-	} else if (element.webkitRequestFullScreen) {
-    // @ts-ignore
-		element.webkitRequestFullScreen(Element.ALLOW_KEYBOARD_INPUT);
-	}
-}

@@ -25,11 +25,11 @@ import * as nodeLatex from 'node-latex';
 
 import { NextFunction, Request, Response, Router } from 'express';
 
-import { NotebookPath } from '../shared/math-tablet-api';
+import { NotebookPath, NOTEBOOK_PATH_RE } from '../shared/folder';
 
 import { globalConfig } from '../config';
 import { ServerNotebook } from '../server-notebook';
-import { isValidNotebookPath, NOTEBOOK_PATH_RE, notebookNameFromNotebookPath } from '../files-and-folders';
+import { isValidNotebookPath, notebookNameFromNotebookPath } from '../server-folder';
 
 // import { NotebookName, NotebookChangeRequest } from './shared/math-tablet-api';
 

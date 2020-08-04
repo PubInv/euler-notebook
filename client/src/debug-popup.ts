@@ -19,9 +19,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 // Requirements
 
-import { $configure } from './dom';
-import { ClientNotebook } from './client-notebook';
-import { Header } from './header';
+import { $, Html, $new } from './dom';
 
 // Types
 
@@ -35,24 +33,19 @@ export class DebugPopup {
 
   // Class Methods
 
-  public static attach($elt: HTMLDivElement): DebugPopup {
-    return new this($elt);
+  public static create($parent: HTMLElement): DebugPopup {
+    return new this($parent);
   }
 
   // Instance Methods
 
-  public connect(header: Header, openNotebook: ClientNotebook): void {
-    this.header = header;
-    this.openNotebook = openNotebook;
-  }
-
   public hide(): void {
-    this.$content.innerHTML = '';
     this.$elt.style.display = 'none';
   }
 
-  public show(): void {
-    this.$content.innerHTML = this.openNotebook.toHtml();
+  public show(html: Html): void {
+    const $content = $(this.$elt, '.content');
+    $content.innerHTML = html;
     this.$elt.style.display = 'block';
   }
 
@@ -60,23 +53,31 @@ export class DebugPopup {
 
   // Constructor
 
-  private constructor($elt: HTMLDivElement) {
-    this.$elt = $elt;
-    this.$closeButton = $elt.querySelector<HTMLButtonElement>('.close')!;
-    this.$content = $elt.querySelector<HTMLDivElement>('.content')!;
-
-    $configure(this.$content, { listeners: { 'click': e=>this.onContentClick(e) }});
-    $configure(this.$closeButton, { listeners: { 'click': e=> this.onCloseClick(e) }});
+  private constructor($parent: HTMLElement) {
+    this.$elt = $new({
+      tag: 'div',
+      appendTo: $parent,
+      class: 'debugPopup',
+      children: [
+        {
+          tag: 'button',
+          class: 'close',
+          html: '&#x2715',
+          listeners: { click: e=> this.onCloseClick(e), }
+        }, {
+          tag: 'div',
+          appendTo: $parent,
+          class: 'content',
+          listeners: { click: e=>this.onContentClick(e) , }
+        }
+      ],
+      hidden: true,
+    });
   }
 
   // Private Instance Properties
 
   private $elt: HTMLDivElement;
-  private $content: HTMLDivElement;
-  private $closeButton: HTMLButtonElement;
-
-  private header!: Header;
-  private openNotebook!: ClientNotebook
 
   // Private Instance Property Functions
 
@@ -86,7 +87,7 @@ export class DebugPopup {
 
   private onCloseClick(_event: MouseEvent): void {
     this.hide();
-    this.header.enableDebugButton(true);
+    // LATER: this.header.enableDebugButton(true);
   }
 
   private onContentClick(event: MouseEvent): void {

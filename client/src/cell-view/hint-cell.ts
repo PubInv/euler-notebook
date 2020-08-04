@@ -46,7 +46,7 @@ export class HintCellView extends CellView {
 
   public render(style: StyleObject): void {
     // TODO: If hint cell is moved then it needs to be re-rendered.
-    const repStyle = this.notebookView.openNotebook.findStyle({ role: 'INPUT' }, style.id);
+    const repStyle = this.notebookView.notebook.findStyle({ role: 'INPUT' }, style.id);
     if (!repStyle) {
       // TODO: Better way to handle this error.
       this.$elt.innerHTML = "ERROR: No REPRESENTATION/INPUT substyle.";
@@ -83,12 +83,12 @@ export class HintCellView extends CellView {
       }
     }
     let innerHtml = `${relationshipMark}${statusMark}<i>${escapeHtml(repStyle.data||'blank')}</i> `;
-    const precedingStyleId = this.notebookView.openNotebook.precedingStyleId(style.id);
+    const precedingStyleId = this.notebookView.notebook.precedingStyleId(style.id);
     const hintedRelId : number | undefined = hintData.idOfRelationshipDecorated;
     if (hintedRelId) {
-      const hintedRel = this.notebookView.openNotebook.getRelationship(hintedRelId);
+      const hintedRel = this.notebookView.notebook.getRelationship(hintedRelId);
       const afterFrom = (precedingStyleId == hintedRel.fromId);
-      const followingStyleId = this.notebookView.openNotebook.followingStyleId(style.id);
+      const followingStyleId = this.notebookView.notebook.followingStyleId(style.id);
       const beforeTo = (followingStyleId == hintedRel.toId);
       const inBetween =  afterFrom && beforeTo;
       if (!inBetween) {

@@ -21,10 +21,11 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 // import { $ } from './dom';
 import { assert } from './common';
-import { NotebookChanged, NotebookPath, Tracker, NotebookChangeRequest, ChangeNotebook, UseTool, ChangeNotebookOptions, NotebookName } from './shared/math-tablet-api';
+import { NotebookName, NotebookPath } from './shared/folder';
 import { Notebook, NotebookObject, NotebookChange, StyleId } from './shared/notebook';
-import { NotebookView } from './notebook-view';
+import { NotebookChanged, Tracker, NotebookChangeRequest, ChangeNotebook, UseTool, ChangeNotebookOptions } from './shared/math-tablet-api';
 import { ServerSocket } from './server-socket';
+import { NotebookBasedScreen } from './screen';
 
 // Types
 
@@ -58,13 +59,21 @@ export class ClientNotebook extends Notebook {
     return this.notebooks.get(notebookName);
   }
 
+  public static htmlIdFromPath(path: NotebookPath): string {
+    return `notebook:${path}`;
+  }
+
   // Instance Properties
 
   // Instance Property Functions
 
+  public get htmlId(): string {
+    return ClientNotebook.htmlIdFromPath(this.notebookPath);
+  }
+
   public get notebookName(): NotebookName {
     const i = this.notebookPath.lastIndexOf('/');
-    return <NotebookName>this.notebookPath.slice(i, -5); // -5 == '.mtnb'.length
+    return <NotebookName>this.notebookPath.slice(i);
   }
 
   // Instance Methods
@@ -75,8 +84,8 @@ export class ClientNotebook extends Notebook {
     ClientNotebook.notebooks.delete(this.notebookPath);
   }
 
-  public connect(notebookView: NotebookView): void {
-    this.notebookView = notebookView;
+  public connect(screen: NotebookBasedScreen): void {
+    this.screen = screen;
   }
 
   public export(): void {
@@ -136,7 +145,7 @@ export class ClientNotebook extends Notebook {
       const isDelete = (change.type == 'relationshipDeleted' || change.type == 'styleDeleted');
       if (!isDelete) { this.applyChange(change); }
       try {
-        this.notebookView.smChange(change);
+        this.screen.smChange(change);
       } catch(err) {
         console.error(`Error applying change to notebookView: "${err.message}", ${JSON.stringify(change)}`);
       }
@@ -145,7 +154,7 @@ export class ClientNotebook extends Notebook {
 
     // Update the notebooks view
     // REVIEW: Might we want to postpone updating the view until the tracker promises are resolved?
-    this.notebookView.updateView();
+    this.screen.updateView();
 
     // If the changes were tracked then accumulate the changes
     // and resolve the tracking promise if complete.
@@ -188,8 +197,8 @@ export class ClientNotebook extends Notebook {
   // Private Instance Properties
 
   private notebookPath: NotebookPath;
-  // REVIEW: Could there be more than one notebookView attached to this openNotebook?
-  private notebookView!: NotebookView;
+  // REVIEW: Could there be more than one screen attached to this openNotebook?
+  private screen!: NotebookBasedScreen;
   private socket: ServerSocket;
   private trackedChangeRequests: Map<Tracker, { resolve: (results: TrackedChangesResults)=>void, reject: (reason: any)=>void }>;
   private trackedChangeResponses: Map<Tracker, TrackedChangesResults>;

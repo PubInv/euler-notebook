@@ -17,7 +17,7 @@ You should have received a copy of the GNU Affero General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-// TODO: Disable home button when we are on the home page.
+// TODO: Rename this to banner.ts, export a Banner class, and have these as methods on a global banner instance.
 
 // Requirements
 
@@ -38,10 +38,6 @@ export function showErrorMessage(html: Html, err?: Error): void {
   }
   addErrorMessageToHeader(html);
   throw err;
-}
-
-export function showErrorMessageIfPromiseRejects(promise: Promise<any>, html: Html): void {
-  promise.catch(err=>{ showErrorMessage(html, err); });
 }
 
 // export function showSuccessMessage(html: Html): void {
@@ -79,8 +75,8 @@ function onBannerClick(event: Event): void {
 // Helper functions
 
 function addMessageToHeader(type: ElementClass, html: Html, autoDismiss?: boolean): void {
-  const $elt = $new<HTMLDivElement>('div', { class: type, html});
-  const $button = $new<HTMLButtonElement>('button', { class: 'close', html: "&#x2715;" });
+  const $elt = $new({ tag: 'div', class: type, html});
+  const $button = $new({ tag: 'button', class: 'close', html: "&#x2715;" });
   $elt.appendChild($button);
   const $banner = $(document, '#banner');
   $banner.appendChild($elt);
