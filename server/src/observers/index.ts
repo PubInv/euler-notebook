@@ -32,8 +32,10 @@ import { EquationSolverObserver } from './equation-solver';
 import { FormulaObserver } from './formula-observer';
 import { TeXFormatterObserver } from './tex-formatter';
 import { SymbolClassifierObserver } from './symbol-classifier';
+// import { SymbolTableObserver } from './symbol-table';
 import { SvgObserver } from './svg-observer';
 import { WolframObserver } from './wolfram-cas';
+
 
 // Globals
 
@@ -62,6 +64,7 @@ export async function initialize(config: Config, credentials: Credentials): Prom
     ServerNotebook.registerObserver('MATHEMATICA', MathematicaObserver);
     ServerNotebook.registerObserver('SUBTRIV-CLASSIFIER', SubtrivClassifierObserver);
     ServerNotebook.registerObserver('SYMBOL-CLASSIFIER', SymbolClassifierObserver);
+//    ServerNotebook.registerObserver('SYMBOL-TABLE', SymbolTableObserver);
     ServerNotebook.registerObserver('EQUATION-SOLVER', EquationSolverObserver);
     ServerNotebook.registerObserver('TEX-FORMATTER', TeXFormatterObserver);
     ServerNotebook.registerObserver('WOLFRAM-OBSERVER', WolframObserver);
@@ -91,6 +94,7 @@ export function terminate(): void {
     ServerNotebook.deregisterObserver('MATHEMATICA');
     ServerNotebook.deregisterObserver('SUBTRIV-CLASSIFIER');
     ServerNotebook.deregisterObserver('SYMBOL-CLASSIFIER');
+//    ServerNotebook.deregisterObserver('SYMBOL-TABLE');
     ServerNotebook.deregisterObserver('EQUATION-SOLVER');
     ServerNotebook.deregisterObserver('TEX-FORMATTER');
     ServerNotebook.deregisterObserver('WOLFRAM-OBSERVER');

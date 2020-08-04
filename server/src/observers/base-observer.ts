@@ -20,8 +20,11 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 // Requirements
 
 import * as debug1 from 'debug';
+const deepEqual = require('deep-equal');
+
 import {
-  NotebookChange, StyleObject, FindStyleOptions, styleMatchesPattern, StyleProperties, StyleId} from '../shared/notebook';
+  NotebookChange, StyleObject, FindStyleOptions, styleMatchesPattern, StyleProperties, StyleId
+} from '../shared/notebook';
 import { NotebookChangeRequest } from '../shared/math-tablet-api';
 import { ObserverInstance, ServerNotebook }  from '../server-notebook';
 import { Config } from '../config';
@@ -116,6 +119,7 @@ export abstract class BaseObserver implements ObserverInstance {
     delete this.notebook;
   }
 
+  // REVIEW: abstract?
   public async useTool(style: StyleObject): Promise<NotebookChangeRequest[]> {
     debug(`useTool ${this.notebook._path} ${style.id}`);
     return [];
@@ -194,10 +198,9 @@ export abstract class BaseObserver implements ObserverInstance {
       // Change the target style if it exists, otherwise create the target style.
       if (targetStyle) {
         // Only change the target style if the data actually changed.
-        // TODO: We should do a deep compare here.
-        if (data !== targetStyle.data) {
+        if (!deepEqual(data, targetStyle.data)) {
           changeRequest = { type: 'changeStyle', styleId: targetStyle.id, data };
-        }
+        } else { console.log("DATA IS DEEPLY EQUAL, IGNORING."); }
       } else {
         changeRequest = { type: 'insertStyle', parentId, styleProps: { ...rule.props, data, exclusiveChildTypeAndRole: rule.exclusiveChildTypeAndRole } };
       }

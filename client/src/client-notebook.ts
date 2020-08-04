@@ -65,6 +65,8 @@ export class ClientNotebook extends Notebook {
 
   // Instance Properties
 
+  public notebookPath: NotebookPath;
+
   // Instance Property Functions
 
   public get htmlId(): string {
@@ -196,7 +198,6 @@ export class ClientNotebook extends Notebook {
 
   // Private Instance Properties
 
-  private notebookPath: NotebookPath;
   // REVIEW: Could there be more than one screen attached to this openNotebook?
   private screen!: NotebookBasedScreen;
   private socket: ServerSocket;

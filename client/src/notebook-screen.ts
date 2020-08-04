@@ -17,6 +17,9 @@ You should have received a copy of the GNU Affero General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
+// TODO: Don't have singleton debug popup window. Instead, anyone that needs a debug popup can create one,
+//       and the element is destroyed when the user clicks the close button.
+
 // Requirements
 
 import { NotebookPath } from './shared/folder';
@@ -83,7 +86,7 @@ export class NotebookScreen extends NotebookBasedScreen {
     const notebook = await socket.openNotebook(path);
 
     this.sidebar.connect(this.view, this.debugPopup);
-    this.view.connect(notebook, this.sidebar, this.tools);
+    this.view.connect(notebook, this.sidebar, this.tools, this.debugPopup);
     this.tools.connect(this.view);
   }
 

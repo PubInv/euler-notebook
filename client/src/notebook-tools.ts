@@ -20,9 +20,9 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 // Requirements
 
 import { StyleId, FindStyleOptions } from './shared/notebook';
-import { ToolData } from './shared/math-tablet-api';
+import { SymbolTable, ToolData } from './shared/math-tablet-api';
 
-import { $new, Html } from './dom';
+import { $new, escapeHtml, Html } from './dom';
 import { NotebookView } from './notebook-view';
 import { getRenderer } from './renderers';
 
@@ -54,6 +54,20 @@ export class NotebookTools {
 
   public render(styleId: StyleId): void {
     const style = this.view.notebook.getStyle(styleId);
+
+
+    // Render the symbol table
+    const findOptions: FindStyleOptions = { role: 'SYMBOL-TABLE', /* recursive: true */ };
+    const symbolTableStyle = this.view.notebook.findStyle(findOptions, style.id);
+    if (symbolTableStyle) {
+      const symbolTableData = <SymbolTable>symbolTableStyle.data;
+      let html = '<tr><td colspan="2">Symbols</td></tr>';
+      for (const [symbol, constraints] of Object.entries(symbolTableData)) {
+        html += `<tr><td>${escapeHtml(symbol)}</td><td>${constraints.map(c=>escapeHtml(c)).join('; ')}</td></tr>`
+      }
+      const $table = $new({ tag: 'table', class: 'symbolTable', html });
+      this.$elt.appendChild($table);
+    }
 
     // REVIEW: If we attached tool styles to the top-level style,
     //         then we would not need to do a recursive search.

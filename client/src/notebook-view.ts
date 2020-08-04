@@ -32,10 +32,11 @@ import {
   StylePosition, HintData, HintStatus, HintRelationship, FormulaData,
 } from './shared/notebook';
 import {
-  StyleDeleteRequest, StyleInsertRequest, StylePropertiesWithSubprops, StyleMoveRequest, NotebookChangeRequest,
-  ChangeNotebookOptions,
+  DebugParams, DebugResults, StyleDeleteRequest, StyleInsertRequest, StylePropertiesWithSubprops,
+  StyleMoveRequest, NotebookChangeRequest, ChangeNotebookOptions,
 } from './shared/math-tablet-api';
 import { ClientNotebook, TrackedChangesResults } from './client-notebook';
+import { DebugPopup } from './debug-popup';
 import { NotebookSidebar } from './notebook-sidebar';
 import { NotebookTools } from './notebook-tools';
 
@@ -115,10 +116,11 @@ export class NotebookView {
     await this.sendUndoableChangeRequests([changeRequest]);
   }
 
-  public connect(clientNotebook: ClientNotebook, sidebar: NotebookSidebar, tools: NotebookTools): void {
+  public connect(clientNotebook: ClientNotebook, sidebar: NotebookSidebar, tools: NotebookTools, debugPopup: DebugPopup): void {
     this.notebook = clientNotebook;
     this.sidebar = sidebar;
     this.tools = tools;
+    this.debugPopup = debugPopup;
 
     for (const styleId of this.notebook.topLevelStyleOrder()) {
       const style = this.notebook.getStyle(styleId);
@@ -156,7 +158,22 @@ export class NotebookView {
   public async developmentButtonClicked(): Promise<void> {
     // This code is executed when the user presses the underwear button in the sidebar.
     // For when a developer needs a button to initiate a test action.
-    console.log('Development Button Clicked!')
+    console.log('Development Button Clicked!');
+    const notebookPath = this.notebook.notebookPath;
+    const styleId = this.lastCellSelected?.styleId;
+    const params: DebugParams = { notebookPath, styleId };
+
+    const api = '/api/debug';
+    const headers = new Headers();
+    headers.append('Content-Type', 'application/json');
+    const body = JSON.stringify(params);
+    const response = await fetch(api, { method: 'POST', headers, body });
+    if (response.status != 200) {
+      console.error(`Error ${response.status} returned from ${api}`);
+    }
+    // REVIEW: Check results headers for content type?
+    const results = <DebugResults>await response.json();
+    this.debugPopup.show(results.html);
   }
 
   public async editSelectedCell(): Promise<void> {
@@ -573,6 +590,7 @@ export class NotebookView {
 
   private $elt: HTMLElement;
   private cellViews: Map<StyleId, CellView>;
+  private debugPopup!: DebugPopup;      // Initialized in connect method.
   private dirtyCells: Set<StyleId>;     // Style ids of top-level styles that need to be redrawn.
   private lastCellSelected?: CellView;
   private sidebar!: NotebookSidebar;    // Initialized in connect method.

@@ -46,7 +46,10 @@ const DEFAULT_WOLFRAMSCRIPT_PATH: Map<NodeJS.Platform, string> = new Map([
 ]);
 
 const INPUT_PROMPT_RE = /\s*In\[(\d+)\]:=\s*$/;
-const OUTPUT_PROMPT_RE = /^\s*Out\[(\d+)\](\/\/\w+)?=\s*/;
+// const OUTPUT_PROMPT_RE = /^\s*Out\[(\d+)\](\/\/\w+)?=\s*/;
+// sometimes Wofram prints out a warning on its own line which
+// we wish to discard, so we used this moderately dangerous regex
+const OUTPUT_PROMPT_RE = /.*Out\[(\d+)\](\/\/\w+)?=\s*/s;
 const SYNTAX_ERROR_RE = /^\s*(Syntax::.*)/;
 
 const OUR_PRIVATE_CTX_NAME = "runPrv`";

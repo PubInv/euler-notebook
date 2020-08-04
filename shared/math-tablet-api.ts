@@ -44,6 +44,15 @@ export interface SymbolData {
   value?: string;
 }
 
+export interface SymbolTable {
+  [symbol: string]: SymbolConstraints;
+}
+
+export type SymbolConstraint = WolframExpression;
+export type SymbolConstraints = SymbolConstraint[];
+
+// Just the name of the notebook, no .mtnb extension.
+
 // MyScript Types
 
 export type ToolName = string;
@@ -235,11 +244,27 @@ export interface UseTool {
   styleId: StyleId;
 }
 
-export interface NameValuePair {
-    name: string;
-    value: string;
+// API Calls
+
+export interface DebugParams {
+  // /api/debug post JSON params
+  notebookPath: NotebookPath;
+  styleId?: StyleId;
 }
 
+export interface DebugResults {
+  // /api/debug JSON return value
+  html: string;
+}
+
+// Other
+
+export interface NameValuePair {
+  name: string;
+  value: string;
+}
+
+// REVIEW: Belongs somewhere else
 export function isEmptyOrSpaces(str: string) : boolean{
-    return str === null || str.match(/^ *$/) !== null;
-  }
+  return str === null || str.match(/^ *$/) !== null;
+}

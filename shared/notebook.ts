@@ -233,6 +233,7 @@ export const STYLE_ROLES = [
   'REPRESENTATION',       // A representation of the parent style.
   'SYMBOL',               // Symbols extracted from an expression.
   'SYMBOL-DEFINITION',    // Definition of a symbol.
+  'SYMBOL-TABLE',         //
   'SYMBOL-USE',           // Use of a symbol.
   'DECORATION',           // Clearly indicates this is NOT the input but a decoration
   'EQUIVALENT-CHECKS',    // Checking expression equivalence of with other styles
@@ -313,7 +314,8 @@ export const STYLE_TYPES = [
   'STROKE-DATA',     // Strokes of user sketch in our own format.
   'SVG-MARKUP',      // SvgData: SVG markup
   'SYMBOL-DATA',     // SymbolData: symbol in a definition or expression.
-  'TEX-EXPRESSION',      // LatexData: LaTeX string // TODO: rename 'TEX'
+  'SYMBOL-TABLE',     // SymbolTable // REVIEW: Rename SYMBOL-TABLE-DATA?
+  'TEX-EXPRESSION',  // LatexData: LaTeX string // TODO: rename 'TEX'
   'TOOL-DATA',       // ToolInfo: Tool that can be applied to the parent style.
   'WOLFRAM-EXPRESSION', // WolframExpression: Wolfram language expression
   // 'UNKNOWN',       // Type is as-yet unknown. Data field should be 'null'.
@@ -329,6 +331,7 @@ export const STYLE_SOURCES = [
   'EQUATION-SOLVER',  // Attempt to expose Wolfram solutions
   'SVG',              // SVG observer
   'SYMBOL-CLASSIFIER',
+  'SYMBOL-TABLE',
   'TEX-FORMATTER',
   'ANY-INPUT',        // This represents ANY input, no matter the type enterred.
   'ALGEBRAIC-DATAFLOW-OBSERVER',
@@ -657,7 +660,7 @@ export class Notebook {
     }
   }
 
-  private styleToText(style: StyleObject, indentationLevel: number = 0): string {
+  public styleToText(style: StyleObject, indentationLevel: number = 0): string {
     // TODO: This is very inefficient as notebook.childStylesOf goes through *all* styles.
     const childStyleObjects = Array.from(this.childStylesOf(style.id));
     // TODO: This is very inefficient as notebook.relationshipOf goes through *all* relationships.
