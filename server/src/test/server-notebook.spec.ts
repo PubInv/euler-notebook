@@ -63,7 +63,7 @@ describe("server notebook", function() {
 
     before("onOpen is called when notebook is created", async function(){
       // Register the observer
-      notebook = await ServerNotebook.createAnonymous();
+      notebook = await ServerNotebook.openEphemeral();
       const testObserver = await TestObserver.onOpen(notebook);
       notebook.registerObserver('TEST', testObserver);
 
@@ -84,7 +84,7 @@ describe("server notebook", function() {
       assert.equal(onCloseSpy.callCount, 0);
 
       // Close the notebook.
-      await notebook.close();
+      notebook.close();
 
       // Observer's onClose should be called for the first and only time.
       // onClose takes no arguments.

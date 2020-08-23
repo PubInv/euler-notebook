@@ -62,15 +62,10 @@ const insertRequest:StyleInsertRequest[] = insertWolframFormulas(data);
 // Unit Tests
 
 describe("test symbol observer", function() {
+
   let notebook: ServerNotebook;
-
-  beforeEach(async function(){
-    notebook = await ServerNotebook.createAnonymous();
-  });
-
-  afterEach(async function(){
-    await notebook.close();
-  });
+  beforeEach(async function(){ notebook = await ServerNotebook.openEphemeral(); });
+  afterEach(function(){ notebook.close(); });
 
   describe("observer", function(){
     // Note: Doing this for WOLFRAM / INPUT is not really
@@ -123,16 +118,11 @@ describe("test symbol observer", function() {
       const childEvaluation = notebook.findStyles({ type: 'WOLFRAM-EXPRESSION', role: 'EVALUATION', recursive: true }, style.id);
       assert(childEvaluation.length == 1,"There should be one evaluation, but there are:"+childEvaluation.length);
 
-
       const childRepresentation = notebook.findStyles({ type: 'WOLFRAM-EXPRESSION', role: 'REPRESENTATION', recursive: true }, style.id);
       assert(childRepresentation.length == 1,"There should be one evaluation, but there are:"+childRepresentation.length);
-
-
-
     });
 
     it("a definition and a use creates a relationship if separate", async function(){
-
       const changeRequests = [insertRequest[0],insertRequest[1]];
       await notebook.requestChange('TEST', changeRequests[0]);
       await notebook.requestChange('TEST', changeRequests[1]);
@@ -145,15 +135,14 @@ describe("test symbol observer", function() {
       assert.equal(fromObj.data.wolframData,data[0]);
       assert.equal(toObj.data.wolframData,data[1]);
     });
+
     it("a definition and a use creates a relationship if combined", async function(){
       const changeRequests = [insertRequest[0],insertRequest[1]];
 
       await serializeChangeRequests(notebook,changeRequests);
 //      await notebook.requestChanges('TEST', changeRequests);
       const style = notebook.topLevelStyleOf(1);
-      assert.deepEqual(style.type,
-                       'FORMULA-DATA'
-                      );
+      assert.deepEqual(style.type, 'FORMULA-DATA');
 
       assert.equal(notebook.allRelationships().length,1);
       const r : RelationshipObject = notebook.allRelationships()[0];

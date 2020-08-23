@@ -19,7 +19,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 // Requirements
 
-import { $, Html, $new } from './dom';
+import { $, Html, $new, CLOSE_X_ENTITY } from './dom';
 
 // Types
 
@@ -62,7 +62,7 @@ export class DebugPopup {
         {
           tag: 'button',
           class: 'close',
-          html: '&#x2715',
+          html: CLOSE_X_ENTITY,
           listeners: { click: e=> this.onCloseClick(e), }
         }, {
           tag: 'div',

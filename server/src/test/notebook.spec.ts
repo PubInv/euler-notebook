@@ -40,14 +40,15 @@ describe("notebook", function() {
   describe("structure", function() {
 
     const styleData = ['a', 'b', 'c'];
-    let td: ServerNotebook;
 
+    let notebook: ServerNotebook;
     before("Create a notebook with three styles", async function(){
-      td = await createNotebookFromText('PLAIN-TEXT', styleData.join(';'));
+      notebook = await createNotebookFromText('PLAIN-TEXT', styleData.join(';'));
     });
+    after(function(){ notebook.close(); });
 
     it("Converts to and from a JSON object", async function() {
-      const obj = td.toJSON();
+      const obj = notebook.toJSON();
       assert.deepEqual(obj, {
         "nextId": 4,
         "relationshipMap": {},
@@ -63,11 +64,11 @@ describe("notebook", function() {
     });
 
     it("Retrieves styles with allStyles and getStyle", async function() {
-      const styles = td.allStyles();
+      const styles = notebook.allStyles();
       assert.equal(styles.length, 3);
       assert.equal(styles[0].data, styleData[0]);
 
-      const styleObject = td.getStyle(styles[0].id);
+      const styleObject = notebook.getStyle(styles[0].id);
       assert.equal(styleObject, styles[0]);
     });
 
@@ -78,7 +79,7 @@ describe("notebook", function() {
 // Helper Functions
 
 async function createNotebookFromText(type: StyleType, text: string): Promise<ServerNotebook> {
-  const td = await ServerNotebook.createAnonymous();
+  const td = await ServerNotebook.openEphemeral();
   const changeRequests: NotebookChangeRequest[] = text.split(";").map(s=>{
     const data = s.trim();
     const styleProps: StylePropertiesWithSubprops = { role: 'TEXT', type, data };

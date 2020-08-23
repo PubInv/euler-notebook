@@ -71,12 +71,12 @@ export class EquationSolverObserver implements ObserverInstance {
   }
 
   public async onClose(): Promise<void> {
-    debug(`onClose ${this.notebook._path}`);
+    debug(`onClose ${this.notebook.path}`);
     delete this.notebook;
   }
 
   public async useTool(toolStyle: StyleObject): Promise<NotebookChangeRequest[]> {
-    debug(`useTool ${this.notebook._path} ${toolStyle.id}`);
+    debug(`useTool ${this.notebook.path} ${toolStyle.id}`);
 
     const nvp = JSON.parse(toolStyle.data.data);
 
@@ -122,7 +122,7 @@ export class EquationSolverObserver implements ObserverInstance {
 
   private async onChange(change: NotebookChange, rval: NotebookChangeRequest[]): Promise<void> {
     if (change == null) return;
-    debug(`onChange ${this.notebook._path} ${change.type}`);
+    debug(`onChange ${this.notebook.path} ${change.type}`);
     switch (change.type) {
       case 'styleInserted':
         await this.equationSolverRule(change.style, rval);

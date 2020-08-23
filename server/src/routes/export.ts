@@ -29,7 +29,6 @@ import { NotebookPath, NOTEBOOK_PATH_RE } from '../shared/folder';
 
 import { globalConfig } from '../config';
 import { ServerNotebook } from '../server-notebook';
-import { isValidNotebookPath, notebookNameFromNotebookPath } from '../server-folder';
 
 // import { NotebookName, NotebookChangeRequest } from './shared/math-tablet-api';
 
@@ -69,7 +68,7 @@ async function onExportPage(req: Request, res: Response, next: NextFunction): Pr
     // TODO: validate export format
     debug(`Exporting ${exportFormat} ${notebookPath}`);
 
-    if (!isValidNotebookPath(notebookPath)) { return next(); }
+    if (!ServerNotebook.isValidNotebookPath(notebookPath)) { return next(); }
 
     const fileExtension = FILE_EXTENSIONS.get(exportFormat);
     if (!fileExtension) {
@@ -80,60 +79,59 @@ async function onExportPage(req: Request, res: Response, next: NextFunction): Pr
       return res.status(400).render('expected-error', locals)
     }
 
-    let notebook: ServerNotebook;
+    const notebook: ServerNotebook = await ServerNotebook.open(notebookPath, { mustExist: true });
     try {
-      // REVIEW: Maybe ServerNotebook.open should return undefined or null on not found.
-      notebook = await ServerNotebook.open(notebookPath);
-    } catch(err) {
-      if (err.code == 'ENOENT') {
-        const locals = {
-          title: "Notebook Not Found",
-          messageHtml: `Notebook <tt>${notebookPath}</tt> not found for export.`,
+      const latex = await notebook.exportLatex();
+
+      switch(exportFormat) {
+        case 'latex':
+          // LaTeX source requested.
+          // REVIEW: Shouldn't we have notebook.name property?
+          const downloadFilename = `${ServerNotebook.nameFromPath(notebookPath)}.${fileExtension}`;
+          res.set('Content-Type', LATEX_MIME_TYPE);
+          res.set('Content-Disposition', `attachment; filename="${downloadFilename}"`);
+          res.send(latex);
+          break;
+        case 'pdf': {
+          // PDF requested
+          // TODO: If pdflatex is not found this will crash the server.
+          // TODO: Update readme for LaTeX installation.
+          const options = globalConfig.nodeLatex;
+          const pdf = (</* TYPESCRIPT: */any>nodeLatex)(latex, options);
+          res.set('Content-Type', PDF_MIME_TYPE);
+          pdf.pipe(res);
+          pdf.on('error', (err: Error)=>{
+            console.error(`ERROR: Error generating LaTeX for export: ${err}`);
+            res.set('Content-Type', 'text/html');
+            res.status(500);
+            const locals = {
+              title: "Error Generating LaTeX",
+              messageHtml: `An error occurred generating LaTeX for <tt>${notebookPath}</tt>:`,
+              messageDetails: err.toString(),
+            }
+            res.render('expected-error', locals);
+          });
+          // pdf.on('finish', ()=> console.log('PDF generated!'));
+          break;
         }
-        return res.status(404).render('expected-error', locals);
-      } else {
-        throw err;
+        default:
+          throw new Error(`Unexpected export format '${exportFormat}'.`)
       }
-    }
-
-    const latex = await notebook.exportLatex();
-
-    switch(exportFormat) {
-      case 'latex':
-        // LaTeX source requested.
-        // REVIEW: Shouldn't we have notebook.name property?
-        const downloadFilename = `${notebookNameFromNotebookPath(notebookPath)}.${fileExtension}`;
-        res.set('Content-Type', LATEX_MIME_TYPE);
-        res.set('Content-Disposition', `attachment; filename="${downloadFilename}"`);
-        res.send(latex);
-        break;
-      case 'pdf': {
-        // PDF requested
-        // TODO: If pdflatex is not found this will crash the server.
-        // TODO: Update readme for LaTeX installation.
-        const options = globalConfig.nodeLatex;
-        const pdf = (</* TYPESCRIPT: */any>nodeLatex)(latex, options);
-        res.set('Content-Type', PDF_MIME_TYPE);
-        pdf.pipe(res);
-        pdf.on('error', (err: Error)=>{
-          console.error(`ERROR: Error generating LaTeX for export: ${err}`);
-          res.set('Content-Type', 'text/html');
-          res.status(500);
-          const locals = {
-            title: "Error Generating LaTeX",
-            messageHtml: `An error occurred generating LaTeX for <tt>${notebookPath}</tt>:`,
-            messageDetails: err.toString(),
-          }
-          res.render('expected-error', locals);
-        });
-        // pdf.on('finish', ()=> console.log('PDF generated!'));
-        break;
-      }
-      default:
-        throw new Error(`Unexpected export format '${exportFormat}'.`)
+    } finally {
+      notebook.close();
     }
 
   } catch(err) {
+      // TODO: If opening notebook fails then give a graceful error message.
+      // // REVIEW: Is this still the error that is generated if the notebook file doesn't exist?
+      // if (err.code == 'ENOENT') {
+      //   const locals = {
+      //     title: "Notebook Not Found",
+      //     messageHtml: `Notebook <tt>${notebookPath}</tt> not found for export.`,
+      //   }
+      //   return res.status(404).render('expected-error', locals);
+      // }
+
     res.status(404).send(`Can't export '${notebookPath}': ${err.message}`);
   }
 }

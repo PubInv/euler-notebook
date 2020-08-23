@@ -65,14 +65,14 @@ export class SymbolClassifierObserver implements ObserverInstance {
   }
 
   public async onClose(): Promise<void> {
-    debug(`onClose ${this.notebook._path}`);
+    debug(`onClose ${this.notebook.path}`);
     delete this.notebook;
   }
 
 
   // Note: This can be separated into an attempt to compute new solutions..
   // public async useTool(toolStyle: StyleObject): Promise<NotebookChangeRequest[]> {
-  //   debug(`useTool ${this.notebook._path} ${toolStyle.id}`);
+  //   debug(`useTool ${this.notebook.path} ${toolStyle.id}`);
   //   return [];
   // }
 
@@ -80,7 +80,7 @@ export class SymbolClassifierObserver implements ObserverInstance {
   // TODO: This is a direct duplicate code in algebraic-tools.ts
   // that duplication must be removed.
   public async useTool(toolStyle: StyleObject): Promise<NotebookChangeRequest[]> {
-    debug(`useTool ${this.notebook._path} ${toolStyle.id}`);
+    debug(`useTool ${this.notebook.path} ${toolStyle.id}`);
 
     // the origin_id is a relationship Id; we want a "From ID" in the
     // style for the HINT, at least I think so if doing as a refactoring

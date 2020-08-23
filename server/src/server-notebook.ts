@@ -24,9 +24,11 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 // Requirements
 
 import * as debug1 from 'debug';
+import { readdirSync, writeFileSync } from 'fs'; // LATER: Eliminate synchronous file operations.
+import { join } from 'path';
 
-import { assert } from 'chai';
-import { NotebookPath } from './shared/folder';
+import { assert, Timestamp } from './shared/common';
+import { NotebookPath, NOTEBOOK_PATH_RE, NotebookName, NOTEBOOK_NAME_RE, FolderPath } from './shared/folder';
 import {
   Notebook, NotebookObject, NotebookChange, StyleObject, StyleRole, StyleType, StyleSource, StyleId,
   RelationshipObject, StyleMoved, StylePosition, VERSION, StyleChanged, RelationshipDeleted,
@@ -35,21 +37,15 @@ import {
 import {
   NotebookChangeRequest, StyleMoveRequest, StyleInsertRequest, StyleChangeRequest,
   RelationshipDeleteRequest, StyleDeleteRequest, RelationshipInsertRequest,
-  StylePropertiesWithSubprops, ChangeNotebookOptions, LatexData, StyleConvertRequest
+  StylePropertiesWithSubprops, LatexData, StyleConvertRequest, ServerNotebookChangedMessage, ClientNotebookChangeMessage, ClientNotebookUseToolMessage
 } from './shared/math-tablet-api';
 
-import {
-  readNotebookFile, AbsDirectoryPath, absDirPathFromNotebookPath, writeNotebookFile,
-} from './server-folder';
-import { constructSubstitution } from './wolframscript';
-import { ClientObserver } from './observers/client-observer';
 import { ClientId } from './client-socket';
+import { AbsDirectoryPath, ROOT_DIR_PATH, mkDir, readFile, rmRaf, writeFile } from './file-system';
+import { constructSubstitution } from './wolframscript';
 
-// import { v4 as uuid } from 'uuid';
 
-const fs = require('fs');
-const path = require('path');
-
+// LATER: Convert these to imports.
 const svg2img = require('svg2img');
 
 const MODULE = __filename.split(/[/\\]/).slice(-1)[0].slice(0,-3);
@@ -57,10 +53,18 @@ const debug = debug1(`server:${MODULE}`);
 
 // Types
 
+type AbsFilePath = string; // Absolute path to a file in the file system.
+
+interface InstanceInfo {
+  openTally: number;                // The number of times opened but not yet closed.
+  promise: Promise<ServerNotebook>; // Promise for the instance returned from 'watch'.
+  watchers: Set<Watcher>;
+}
+
 export interface ObserverInstance {
   onChangesAsync: (changes: NotebookChange[]) => Promise<NotebookChangeRequest[]>;
   onChangesSync: (changes: NotebookChange[]) => NotebookChangeRequest[];
-  onClose: ()=>Promise<void>;
+  onClose: () => void;
   useTool: (styleObject: StyleObject) => Promise<NotebookChangeRequest[]>;
 }
 
@@ -68,7 +72,14 @@ export interface ObserverClass {
   onOpen: (notebook: ServerNotebook)=>Promise<ObserverInstance>;
 }
 
-export interface RequestChangesOptions extends ChangeNotebookOptions {
+interface OpenOptions {
+  ephemeral?: boolean;    // true iff notebook not persisted to the file system and disappears after last close.
+  mustExist?: boolean;
+  mustNotExist?: boolean;
+  watcher?: Watcher;
+}
+
+export interface RequestChangesOptions {
   clientId?: ClientId;
 }
 
@@ -77,69 +88,91 @@ interface StyleOrderMapping {
   tls: number;
 }
 
+export interface Watcher {
+  onChanged(msg: ServerNotebookChangedMessage): void;
+  onClosed(): void;
+}
+
 // Constants
 
 const MAX_CHANGE_ROUNDS = 10;
+const NOTEBOOK_ENCODING = 'utf8';
+const NOTEBOOK_FILE_NAME = 'notebook.json';
 
 // Exported Class
 
 export class ServerNotebook extends Notebook {
 
-  // Class Properties
+  // Public Class Constants
 
-  // Note: contrary to the name, this only returns persistent notebooks.
-  public static allNotebooks(): IterableIterator<ServerNotebook> {
-    return this.persistentNotebooks.values();
+  public static NOTEBOOK_DIR_SUFFIX = '.mtnb';
+
+  // Public Class Properties
+
+  // Public Class Property Functions
+
+  public static isOpen(path: NotebookPath): boolean {
+    return this.instanceMap.has(path);
+  }
+
+  public static isValidNotebookName(name: NotebookName): boolean {
+    return NOTEBOOK_NAME_RE.test(name);
+  }
+
+  public static isValidNotebookPath(path: NotebookPath): boolean {
+    return NOTEBOOK_PATH_RE.test(path);
+  }
+
+  public static generateUniqueEphemeralPath(): NotebookPath {
+    let timestamp = <Timestamp>Date.now();
+    if (timestamp <= this.lastEphemeralPathTimestamp) {
+      timestamp = this.lastEphemeralPathTimestamp+1;
+    }
+    this.lastEphemeralPathTimestamp = timestamp;
+    return  <NotebookPath>`/enb${timestamp}${this.NOTEBOOK_DIR_SUFFIX}`;
+  }
+
+  public static nameFromPath(path: NotebookPath): NotebookName {
+    const match = NOTEBOOK_PATH_RE.exec(path);
+    if (!match) { throw new Error(`Invalid notebook path: ${path}`); }
+    return <NotebookName>match[3];
+  }
+
+  public static validateNotebookName(name: NotebookName): void {
+    if (!this.isValidNotebookName(name)) { throw new Error(`Invalid notebook name: ${name}`); }
   }
 
   // Class Methods
 
-  public static async close(notebookName: NotebookPath): Promise<void> {
-    const instance = this.persistentNotebooks.get(notebookName);
-    if (!instance) { throw new Error(`Unknown notebook ${notebookName} requested in close.`); }
-    await instance.close();
+  public static async close(path: NotebookPath): Promise<boolean> {
+    // Closes the specified notebook.
+    // All watchers and observers are notified.
+    // Has no effect if the notebook is not open.
+    // Returns true iff the notebook was open.
+    if (!this.isOpen(path)) { return false; }
+    const info = this.instanceMap.get(path)!;
+    const notebook = await info.promise;
+    notebook.destroyInstance();
+    return true;
   }
 
-  public static async closeAll(): Promise<void> {
-    debug(`closing all: ${this.persistentNotebooks.size}`);
-    const notebooks = Array.from(this.persistentNotebooks.values());
-    const promises = notebooks.map(td=>td.close());
-    await Promise.all(promises);
-  }
+  public static async delete(path: NotebookPath): Promise<void> {
+    this.close(path); // no-op if the notebook is not open.
+    const absPath = absDirPathFromNotebookPath(path);
+    debug(`Deleting notebook directory ${absPath}`);
+    await rmRaf(absPath); // TODO: Handle failure.
+}
 
-  public static async create(notebookPath: NotebookPath): Promise<ServerNotebook> {
-    const openNotebook = this.persistentNotebooks.get(notebookPath);
-    if (openNotebook) { throw new Error(`A notebook with that name already exists: ${notebookPath}`); }
-    const notebook = new this(notebookPath);
-    await notebook.initialize(this.observerClasses);
-    await notebook.save();
-    this.persistentNotebooks.set(notebookPath, notebook);
-    return notebook;
-  }
-
-  public static async createAnonymous(): Promise<ServerNotebook> {
-    const notebook = new this();
-    await notebook.initialize(this.observerClasses);
-    return notebook;
-  }
+  // public static async closeAll(): Promise<void> {
+  //   debug(`closing all: ${this.instanceMap.size}`);
+  //   const notebooks = Array.from(this.instanceMap.values());
+  //   const promises = notebooks.map(td=>td.close());
+  //   await Promise.all(promises);
+  // }
 
   public static deregisterObserver(source: StyleSource): void {
     debug(`Deregistering observer: ${source}`);
     this.observerClasses.delete(source);
-  }
-
-  public static async open(notebookPath: NotebookPath): Promise<ServerNotebook> {
-    // If the document is already open, then return the existing instance.
-    const openNotebook = this.persistentNotebooks.get(notebookPath);
-    if (openNotebook) {
-      debug(`Opening in-memory notebook: "${notebookPath}"`);
-      return openNotebook;
-    }
-    debug(`Opening notebook from filesystem: "${notebookPath}"`)
-    const json = await readNotebookFile(notebookPath);
-    const notebook = await this.fromJSON(json, notebookPath);
-    this.persistentNotebooks.set(notebookPath, notebook);
-    return notebook;
   }
 
   public static registerObserver(source: StyleSource, observerClass: ObserverClass): void {
@@ -147,44 +180,38 @@ export class ServerNotebook extends Notebook {
     this.observerClasses.set(source, observerClass);
   }
 
-  // NFC: Move this to instance methods section.
-  // I think "variables" should be a parameter...
-  // That parameter will be different when used by
-  // SUBTRIVARIATE, and when used by EQUATION
-  public substitutionExpression(text: string,variables : string[],style: StyleObject) : [string[],string] {
-
-      // The parent of the TOOL/ATTRIBUTE style will be a WOLFRAM/EVALUATION style
-    const evaluationStyle = this.getStyle(style.parentId);
-
-    // We are only plottable if we make the normal substitutions...
-    const rs = this.getSymbolStylesIDependOn(evaluationStyle);
-    debug("RS",rs);
-
-    var cvariables  = [...variables];
-
-    const namevalues = rs.map(
-                              s => {
-                                cvariables = cvariables.filter(ele => (
-                                  ele != s.data.name));
-                                return { name: s.data.name,
-                                         value: s.data.value};
-                              });
-
-    const sub_expr =
-      constructSubstitution(text,
-                            namevalues);
-    return [cvariables,sub_expr];
+  public static open(path: NotebookPath, options: OpenOptions): Promise<ServerNotebook> {
+    let info = this.instanceMap.get(path);
+    if (!info) {
+      // This notebook is not already open. Create the instance.
+      const promise = this.createInstance(path, options);
+      const watchers = new Set<Watcher>();
+      if (options.watcher) { watchers.add(options.watcher); }
+      info = { openTally: 1, promise, watchers };
+      this.instanceMap.set(path, info);
+    } else {
+      // This notebook is already open. Tally and add the watcher if there is one.
+      assert(!options.mustNotExist); // TODO: Throw exception with useful error message.
+      info.openTally++;
+      if (options.watcher) { info.watchers.add(options.watcher); }
+    }
+    return info.promise;
   }
 
-  // Instance Properties
+  public static openEphemeral(): Promise<ServerNotebook> {
+    return this.open(this.generateUniqueEphemeralPath(), { ephemeral: true, mustNotExist: true });
+  }
 
-  public _path?: NotebookPath;  // TODO: Don't need underscore prefix.
+  // Public Class Event Handlers
 
-  // Instance Property Functions
+  // Public Instance Properties
+
+  public path: NotebookPath;
+
+  // Public Instance Property Functions
 
   public absoluteDirectoryPath(): AbsDirectoryPath {
-    if (!this._path) { throw new Error("No path for anonymous notebook."); }
-    return absDirPathFromNotebookPath(this._path);
+    return absDirPathFromNotebookPath(this.path);
   }
 
   public async exportLatex(): Promise<LatexData> {
@@ -359,9 +386,9 @@ export class ServerNotebook extends Notebook {
             if (foundfile) {
               abs_filename = `${apath}/${foundfile}`;
             } else {
-              fs.writeFileSync(abs_filename, b);
+              writeFileSync(abs_filename, b);
               debug("directory",directory);
-              var files = fs.readdirSync(directory);
+              var files = readdirSync(directory);
 
               for (const file of files) {
                 debug("file",file);
@@ -482,35 +509,20 @@ export class ServerNotebook extends Notebook {
     return rval;
   }
 
-  // Instance Methods
+  // Public Instance Methods
 
-  public async close(): Promise<void> {
-    // TODO: Ensure notebook is not in the middle of processing change requests or saving.
-    if (this.closed) { throw new Error("Closing notebook that is already closed."); }
-    debug(`closing: ${this._path}`);
-    this.closed = true;
-    if (this._path) { ServerNotebook.persistentNotebooks.delete(this._path); }
-    await Promise.all(Array.from(this.observers.values()).map(o=>o.onClose()));
-    for (const observer of this.clientObservers.values()) {
-      observer.onClose();
-    };
-
-    debug(`closed: ${this._path}`);
-  }
-
-  public deregisterClientObserver(clientId: ClientId): void {
-    const deleted = this.clientObservers.delete(clientId);
-    if (!deleted) {
-      console.error(`Cannot deregister non-registered client observer: ${clientId}`);
+  public close(watcher?: Watcher): void {
+    assert(!this.destroyed);
+    const info = ServerNotebook.instanceMap.get(this.path)!;
+    assert(info);
+    if (watcher) {
+      const had = info.watchers.delete(watcher);
+      assert(had);
     }
-  }
-
-  public registerClientObserver(clientId: ClientId, instance: ClientObserver): void {
-    this.clientObservers.set(clientId, instance)
-  }
-
-  public registerObserver(source: StyleSource, instance: ObserverInstance): void {
-    this.observers.set(source, instance);
+    if (--info.openTally == 0) {
+      // LATER: Set timer to destroy in the future.
+      this.destroyInstance();
+    }
   }
 
   public deRegisterObserver(source: StyleSource): void {
@@ -661,18 +673,20 @@ export class ServerNotebook extends Notebook {
 
   }
 
+  public registerObserver(source: StyleSource, instance: ObserverInstance): void {
+    this.observers.set(source, instance);
+  }
+
   public async requestChange(
     source: StyleSource,
     changeRequest: NotebookChangeRequest,
-    options?: RequestChangesOptions,
   ): Promise<NotebookChange[]> {
-    return this.requestChanges(source, [changeRequest], options);
+    return this.requestChanges(source, [changeRequest]);
   }
 
   public async requestChanges(
     source: StyleSource,
     changeRequests: NotebookChangeRequest[],
-    options?: RequestChangesOptions,
   ): Promise<NotebookChange[]> {
     // Applies the change requests to the notebook,
     // then runs the resulting changes through all of the
@@ -680,7 +694,6 @@ export class ServerNotebook extends Notebook {
     // or we reach a limit.
 
     this.assertNotClosed('requestChanges');
-    options = options || {};
     debug(`requestChanges ${changeRequests.length}`);
 
     // Make the requested changes to the notebook.
@@ -688,11 +701,11 @@ export class ServerNotebook extends Notebook {
     const undoChangeRequests = this.applyRequestedChanges(source, changeRequests, changes);
     const newSyncChanges = this.processChangesSync(changes);
     const allSyncChanges = changes.concat(newSyncChanges);
-    this.notifyClientsOfChanges(allSyncChanges, undoChangeRequests, options, false);
+    this.notifyWatchersOfChanges(allSyncChanges, undoChangeRequests, false);
     const asyncChanges = await this.processChangesAsync(allSyncChanges);
-    this.notifyClientsOfChanges(asyncChanges, undefined, options, true);
+    this.notifyWatchersOfChanges(asyncChanges, undefined, true);
 
-    if (this._path) { await this.save(); }
+    await this.save();
 
     return allSyncChanges.concat(asyncChanges);
   }
@@ -701,6 +714,34 @@ export class ServerNotebook extends Notebook {
     const styleId = this.nextId++;
     this.reservedIds.add(styleId);
     return styleId;
+  }
+
+  public substitutionExpression(text: string,variables : string[],style: StyleObject) : [string[],string] {
+    // I think "variables" should be a parameter...
+    // That parameter will be different when used by
+    // SUBTRIVARIATE, and when used by EQUATION
+
+    // The parent of the TOOL/ATTRIBUTE style will be a WOLFRAM/EVALUATION style
+    const evaluationStyle = this.getStyle(style.parentId);
+
+    // We are only plottable if we make the normal substitutions...
+    const rs = this.getSymbolStylesIDependOn(evaluationStyle);
+    debug("RS",rs);
+
+    var cvariables  = [...variables];
+
+    const namevalues = rs.map(
+                              s => {
+                                cvariables = cvariables.filter(ele => (
+                                  ele != s.data.name));
+                                return { name: s.data.name,
+                                         value: s.data.value};
+                              });
+
+    const sub_expr =
+      constructSubstitution(text,
+                            namevalues);
+    return [cvariables,sub_expr];
   }
 
   public async useTool(styleId: StyleId): Promise<NotebookChange[]> {
@@ -715,40 +756,72 @@ export class ServerNotebook extends Notebook {
     return changes;
   }
 
+  // Public Event Handlers
+
+  public onNotebookChangeMessage(
+    _originatingWatcher: Watcher,
+    msg: ClientNotebookChangeMessage,
+  ): void {
+    // TODO: pass request ID on responses to originatingWatcher.
+    // TODO: options.client ID
+    this.requestChanges('USER', msg.changeRequests);
+  }
+
+  public onNotebookUseToolMessage(
+    _originatingWatcher: Watcher,
+    msg: ClientNotebookUseToolMessage,
+  ): void {
+    // TODO: pass request ID on responses to originatingWatcher.
+    // TODO: options.client ID
+    this.useTool(msg.styleId);
+  }
+
+
   // --- PRIVATE ---
 
   // Private Class Properties
 
+  private static lastEphemeralPathTimestamp: Timestamp = 0;
+  private static instanceMap: Map<NotebookPath, InstanceInfo> = new Map();
   private static observerClasses: Map<StyleSource, ObserverClass> = new Map();
-  private static persistentNotebooks = new Map<NotebookPath, ServerNotebook>();
 
   // Private Class Methods
 
-  private static async fromJSON(json: /* TYPESCRIPT: JSON string type? */ string, notebookPath: NotebookPath): Promise<ServerNotebook> {
-    const obj = JSON.parse(json);
-    const notebook = new this(notebookPath, obj);
-    await notebook.initialize(this.observerClasses);
-    return notebook;
+  private static async createInstance(path: NotebookPath, options: OpenOptions): Promise<ServerNotebook> {
+    assert(!(options.mustExist && options.mustNotExist));
+    assert(options.mustExist || options.mustNotExist);
+
+    let obj: NotebookObject | undefined = undefined;
+    if (options.mustExist) {
+      const json = await readNotebookFile(path);
+      obj = JSON.parse(json);
+    }
+    const instance = new this(path, options, obj);
+    await instance.initialize(this.observerClasses);
+    if (options.mustNotExist) {
+      // TODO: Error if file already exists.
+      await instance.save();
+    }
+    return instance;
   }
+
+  // Private Class Event Handlers
 
   // Private Constructor
 
-  private constructor(
-    notebookPath?: NotebookPath,
-    obj?: NotebookObject
-  ) {
+  private constructor(notebookPath: NotebookPath, options: OpenOptions, obj?: NotebookObject) {
     super(obj);
-    this.clientObservers = new Map();
+    this.ephemeral = options.ephemeral;
     this.observers = new Map();
-    this._path = notebookPath;
+    this.path = notebookPath;
     this.reservedIds = new Set();
   }
 
   // Private Instance Properties
 
   // TODO: purge changes in queue that have been processed asynchronously.
-  private clientObservers: Map<ClientId, ClientObserver>;
-  private closed?: boolean;
+  private ephemeral?: boolean;  // Not persisted to the filesystem.
+  private destroyed?: boolean;  // Instance has been discarded and should not be used.
   private observers: Map<StyleSource, ObserverInstance>;
   private reservedIds: Set<StyleId>;
   private saving?: boolean;
@@ -756,7 +829,11 @@ export class ServerNotebook extends Notebook {
   // Private Instance Property Functions
 
   private assertNotClosed(action: string): void {
-    if (this.closed) { throw new Error(`Attempting ${action} on closed notebook.`); }
+    if (this.destroyed) { throw new Error(`Attempting ${action} on closed notebook.`); }
+  }
+
+  private get watchers(): IterableIterator<Watcher> {
+    return ServerNotebook.instanceMap.get(this.path)!.watchers.values();
   }
 
   // Private Instance Methods
@@ -1098,14 +1175,19 @@ export class ServerNotebook extends Notebook {
     return undoChangeRequest;
   }
 
+  private destroyInstance(): void {
+    // TODO: Ensure notebook is not in the middle of processing change requests or saving.
+    assert(!this.destroyed);
+    this.destroyed = true;
+    const info = ServerNotebook.instanceMap.get(this.path)!;
+    assert(info);
+    ServerNotebook.instanceMap.delete(this.path);
+    for (const observer of this.observers.values()) { observer.onClose(); }
+    for (const watcher of info.watchers) { watcher.onClosed(); }
+  }
+
   // This should be called on any newly created notebook immediately after the constructor.
   private async initialize(observerClasses: Map<StyleSource,ObserverClass>): Promise<void> {
-
-    if (this._path) {
-      if (ServerNotebook.persistentNotebooks.has(this._path)) { throw new Error(`Initializing a notebook with a name that already exists.`); }
-      ServerNotebook.persistentNotebooks.set(this._path, this);
-    }
-
     // Call "onOpen" to get an observer instance for every registered observer class.
     for (const [name, observerClass] of observerClasses.entries()) {
       const instance = await observerClass.onOpen(this);
@@ -1113,16 +1195,25 @@ export class ServerNotebook extends Notebook {
     }
   }
 
-  private notifyClientsOfChanges(
+  private notifyWatchersOfChanges(
     changes: NotebookChange[],
     undoChangeRequests: NotebookChangeRequest[]|undefined,
-    options: RequestChangesOptions,
-    complete: boolean,
+    complete?: boolean,
   ): void {
-    for (const [ clientId, observer ] of this.clientObservers) {
-      const isTrackingClient = (clientId == options.clientId);
-      let tracker = (options.tracker && isTrackingClient ? options.tracker : undefined);
-      observer.onChanges(changes, undoChangeRequests, complete, tracker);
+    for (const watcher of this.watchers) {
+      // TODO: Include request ID for message to initiating client.
+      // const isTrackingClient = (clientId == options.clientId);
+      // const requestId = isTrackingClient ? <RequestId>'TODO:' : undefined;
+      //socket.notifyNotebookChanged(this.path, changes, undoChangeRequests, requestId, complete);
+      const msg: ServerNotebookChangedMessage = {
+        type: 'notebook',
+        path: this.path,
+        operation: 'changed',
+        changes,
+        complete,
+        undoChangeRequests, // TODO: Only undo for initiating client.
+      }
+      watcher.onChanged(msg);
     };
   }
 
@@ -1204,22 +1295,70 @@ export class ServerNotebook extends Notebook {
   // Changes to the document should result in calls to notifyChange,
   // which will schedule a save, eventually getting here.
   private async save(): Promise<void> {
-    if (!this._path) { throw new Error("Cannot save non-persistent notebook."); }
-    // TODO: Handle this in a more robust way.
+
+    // "Ephemeral" notebooks are not persisted in the filesystem.
+    if (this.ephemeral) { return; }
+
+    // TODO: Handle this in a more robust way. Maybe a "saving" promise that we wait on?
     if (this.saving) { throw new Error(`Trying to save while save already in progress.`); }
-    debug(`saving ${this._path}`);
+    debug(`saving ${this.path}`);
     this.saving = true;
+
+    // Create the directory if it does not exists.
+    // LATER: Don't attempt to create the directory every time we save. Only the first time.
+    try {
+      const dirPath = absDirPathFromNotebookPath(this.path);
+      await mkDir(dirPath);
+    } catch(err) {
+      console.dir(err);
+    }
+
     const json = JSON.stringify(this);
-    await writeNotebookFile(this._path, json);
+    await writeNotebookFile(this.path, json);
     this.saving = false;
   }
 }
 
-// Helper Functions
+// Exported Functions
+
+export function absDirPathFromNotebookPath(path: NotebookPath): AbsDirectoryPath {
+  const pathSegments = path.split('/').slice(1);  // slice removes leading slash
+  return join(ROOT_DIR_PATH, ...pathSegments);
+}
 
 // TODO: Rewrite this to using findStyles
 export function assertHasStyle(styles: StyleObject[], type: StyleType, role: StyleRole, data: any): StyleObject {
   const style = styles.find(s=>s.type==type && s.role==role && s.data==data);
-  assert.exists(style);
+  assert(style);
   return style!;
 }
+
+export function notebookPath(path: FolderPath, name: NotebookName): NotebookPath {
+  return <NotebookPath>`${path}${name}${ServerNotebook.NOTEBOOK_DIR_SUFFIX}`;
+}
+
+export async function readNotebookFile(path: NotebookPath): Promise<string> {
+  if (!ServerNotebook.isValidNotebookPath(path)) {
+    throw new Error(`Invalid notebook path: ${path}`);
+  }
+  const absPath = absFilePathFromNotebookPath(path);
+  const json = await readFile(absPath, NOTEBOOK_ENCODING);
+  return json;
+}
+
+export async function writeNotebookFile(path: NotebookPath, json: string): Promise<void> {
+  if (!ServerNotebook.isValidNotebookPath(path)) {
+    throw new Error(`Invalid notebook path: ${path}`);
+  }
+  const filePath = absFilePathFromNotebookPath(path);
+  await writeFile(filePath, json, NOTEBOOK_ENCODING)
+}
+
+// Helper Functions
+
+function absFilePathFromNotebookPath(path: NotebookPath): AbsFilePath {
+  const absPath = absDirPathFromNotebookPath(path);
+  return join(absPath, NOTEBOOK_FILE_NAME);
+}
+
+

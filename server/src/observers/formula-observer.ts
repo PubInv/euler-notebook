@@ -45,7 +45,7 @@ export class FormulaObserver extends BaseObserver {
   // --- PUBLIC ---
 
   public static async onOpen(notebook: ServerNotebook): Promise<FormulaObserver> {
-    debug(`Opening FormulaObserver for ${notebook._path}.`);
+    debug(`Opening FormulaObserver for ${notebook.path}.`);
     return new this(notebook);
   }
 

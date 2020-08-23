@@ -24,7 +24,6 @@ import { StyleObject } from '../shared/notebook';
 import { NotebookView } from '../notebook-view';
 
 import { CellView } from './index';
-// import { assert } from '../common';
 
 // Types
 

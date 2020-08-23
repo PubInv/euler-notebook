@@ -48,7 +48,28 @@ class App {
     return new this();
   }
 
-  // Constructor
+  // Public Instance Properties
+
+  // REVIEW: Ensure read-only?
+  public socket!: ServerSocket;  // Connection initiated at DOM ready.
+
+  // Public Instance Methods
+
+  public navigateTo(path: Path): void {
+    console.log(`Navigating to ${this.currentPath}`);
+
+    let nextScreen = this.screens.get(path);
+    if (!nextScreen) {
+      nextScreen = this.createScreenForPath(path);
+      this.screens.set(path, nextScreen);
+    }
+    this.header!.setPathTitle(path);
+    Screen.show(nextScreen);
+  }
+
+  // --- PRIVATE ---
+
+  // Private Constructor
 
   private constructor() {
     this.$body = <HTMLBodyElement>window.document.body;
@@ -57,16 +78,11 @@ class App {
     addSyncEventListener<HashChangeEvent>(window, 'hashchange', e=>this.onHashChange(e), "App navigation error.");
   }
 
-  // Instance Properties
-
-  // Instance Methods
-
   // Private Instance Properties
 
   private $body: HTMLBodyElement;
   private header?: Header;
   private screens: Map<Path, Screen>;
-  private socket?: ServerSocket;
 
   // Private Property Functions
 
@@ -83,31 +99,19 @@ class App {
       // const clientNotebook = await this.socket.openNotebook(path);
       const isPageView = false;
       if (!isPageView) {
-        return NotebookScreen.create(this.$body, this.socket!, <NotebookPath>path);
+        return NotebookScreen.create(this.$body, <NotebookPath>path);
         // await this.notebookScreen.connect(this.socket, clientNotebook);
         // clientNotebook.connect(this.notebookScreen);
       } else {
-        return PageScreen.create(this.$body, this.socket!, <NotebookPath>path);
+        return PageScreen.create(this.$body, <NotebookPath>path);
         // await this.pageScreen.connect(this.socket, clientNotebook);
         // clientNotebook.connect(this.pageScreen);
       }
     } else if (FOLDER_PATH_RE.test(path)) {
-      return FolderScreen.create(this.$body, this.socket!, <FolderPath>path);
+      return FolderScreen.create(this.$body, <FolderPath>path);
     } else {
       throw new Error("Invalid path.");
     }
-  }
-
-  private navigateTo(path: Path): void {
-    console.log(`Navigating to ${this.currentPath}`);
-
-    let nextScreen = this.screens.get(path);
-    if (!nextScreen) {
-      nextScreen = this.createScreenForPath(path);
-      this.screens.set(path, nextScreen);
-    }
-    this.header!.setPathTitle(path);
-    Screen.show(nextScreen);
   }
 
   // Private Event Handlers

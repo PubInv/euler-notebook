@@ -39,15 +39,10 @@ ensureGlobalLoaded();
 // Unit Tests
 
 describe("LaTeX export tests", function() {
+
   let notebook: ServerNotebook;
-
-  beforeEach(async function(){
-    notebook = await ServerNotebook.createAnonymous();
-  });
-
-  afterEach(async function(){
-    await notebook.close();
-  });
+  beforeEach(async function(){ notebook = await ServerNotebook.openEphemeral(); });
+  afterEach(function(){ notebook.close(); });
 
   it("export LaTeX is actually generated", async function(){
     const data:string[] = [

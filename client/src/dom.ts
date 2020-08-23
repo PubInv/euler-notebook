@@ -19,8 +19,8 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 // Requirements
 
-import { assert } from './common';
-import { SyncListener, addSyncEventListener, addAsyncEventListener } from './error-handler';
+import { assert } from './shared/common';
+import { SyncListener, addSyncEventListener, addAsyncEventListener, AsyncListener } from './error-handler';
 
 // Types
 
@@ -34,9 +34,7 @@ interface Attributes {
 }
 
 interface AsyncListeners {
-  // As needed:
-  //   click?: AsyncListener<MouseEvent>;
-  // etc.
+  click?: AsyncListener<MouseEvent>;
 }
 
 interface SyncListeners {
@@ -94,6 +92,10 @@ const SVG_NS = 'http://www.w3.org/2000/svg';
 
 const ENUMERATED_ATTRIBUTES = new Set<string>([ 'draggable']);
 
+export const CLOSE_X_ENTITY = '&#x2715;'
+export const RIGHT_TRIANGLE_ENTITY = '&#x25B6;';
+export const RIGHT_ARROW_ENTITY = '&#x27A1;';
+
 // Exported Functions
 
 export function $<K extends keyof HTMLElementTagNameMap>(root: Element|Document, selector: string): HTMLElementTagNameMap[K] {
@@ -125,8 +127,6 @@ export function $attach<K extends keyof HTMLElementTagNameMap>(
   $configure($elt, options);
   return $elt;
 }
-
-// REVIEW: $attachAll
 
 export function $new<K extends keyof HTMLElementTagNameMap>(options: NewHtmlOptions<K>): HTMLElementTagNameMap[K] {
   const $elt = document.createElement(options.tag);

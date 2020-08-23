@@ -70,7 +70,7 @@ export class MathematicaObserver implements ObserverInstance {
   }
 
   public async onClose(): Promise<void> {
-    debug(`onClose ${this.notebook._path}`);
+    debug(`onClose ${this.notebook.path}`);
     delete this.notebook;
   }
 

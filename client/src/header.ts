@@ -21,10 +21,12 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 // Requirements
 
+import { notImplemented } from './shared/common';
+import { Path } from './shared/folder';
+
 import { ButtonBar } from './button-bar';
 import { escapeHtml, $attach, $ } from './dom';
 import { monitorPromise } from './error-handler';
-import { Path } from './shared/folder';
 
 // Types
 
@@ -65,7 +67,7 @@ export class Header extends ButtonBar {
     super($elt)
     $attach($elt, '#homeButton', { listeners: { click: _e=>{ window.location.href = '/#/'; }}});
     $attach($elt, '#refreshButton', { listeners: { click: _e=>{ window.location.reload(); }}});
-    $attach($elt, '#userButton', { listeners: { click: _e=>{ alert("User menu not yet implemented."); }}});
+    $attach($elt, '#userButton', { listeners: { click: _e=>{ notImplemented(); }}});
 
     const $fullscreenButton = $attach<'button'>($elt, '#fullscreenButton', { listeners: { click: e=>this.onFullscreenButtonClicked(e) }});
     $fullscreenButton.disabled = !document.fullscreenEnabled;

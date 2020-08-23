@@ -21,7 +21,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 // Requirements
 
-import { $new } from './dom';
+import { $new, RIGHT_TRIANGLE_ENTITY } from './dom';
 
 // Types
 
@@ -89,7 +89,7 @@ export class ResizerBar  {
       appendTo: this.$elt,
       attrs: { tabindex: -1 },
       class: 'insertCellBelowButton',
-      html: '&#x25B6;',
+      html: RIGHT_TRIANGLE_ENTITY,
       listeners: { click: _e=>insertCallbackFn() },
     });
 

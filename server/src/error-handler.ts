@@ -17,26 +17,13 @@ You should have received a copy of the GNU Affero General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-// BE VERY SPARING OF WHAT YOU PUT IN HERE!
-// THIS SHOULD *NOT* DEPEND ON OTHER FILES OR LIBRARIES!
+// TODO: Convert all console.error calls to reportError calls.
 
-// Types
-
-// Constants
-
-const NOT_EXISTS_MESSAGE = "Unexpected error. Object doesn't exist.";
+// Requirements
 
 // Exported Functions
 
-export function ensureExists<T>(val: T|undefined, message?: string): T {
-  if (!val) { throw new Error(message || NOT_EXISTS_MESSAGE); }
-  return val;
-}
-
-// If the promise fails, then log the error, but otherwise continue.
-export function runAsync<T>(promise: Promise<T>, module: string, functionName: string): void {
-  promise.catch((err: Error)=>{
-    console.error(`ERROR ${module}: Unexpected error in ${functionName}: ${err.message}`);
-    console.error(err.stack);
-  })
+export function reportError(err: Error, message: string /* TYPESCRIPT: Html type? */): void {
+  console.error(message);
+  console.dir(err);
 }

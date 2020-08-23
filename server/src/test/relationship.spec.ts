@@ -36,15 +36,10 @@ ensureGlobalLoaded();
 // Unit Tests
 
 describe("test relationships", function() {
+
   let notebook: ServerNotebook;
-
-  beforeEach(async function(){
-    notebook = await ServerNotebook.createAnonymous();
-  });
-
-  afterEach(async function(){
-    await notebook.close();
-  });
+  beforeEach(async function(){ notebook = await ServerNotebook.openEphemeral(); });
+  afterEach(function(){ notebook.close(); });
 
   describe("relationships support changes", function(){
 

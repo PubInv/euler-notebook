@@ -61,12 +61,12 @@ export class AnyInputObserver implements ObserverInstance {
 
   // TODO: can't these be inherited?
   public async onClose(): Promise<void> {
-    debug(`onClose ${this.notebook._path}`);
+    debug(`onClose ${this.notebook.path}`);
     delete this.notebook;
   }
 
   public async useTool(style: StyleObject): Promise<NotebookChangeRequest[]> {
-    debug(`useTool ${this.notebook._path} ${style.id}`);
+    debug(`useTool ${this.notebook.path} ${style.id}`);
     return [];
   }
 
@@ -87,7 +87,7 @@ export class AnyInputObserver implements ObserverInstance {
   private onChange(change: NotebookChange|undefined, rval: NotebookChangeRequest[]): void {
     // REVIEW; Don't allow null/undefined changes.
     if (!change) { return; }
-    debug(`onChange ${this.notebook._path} ${change.type}`);
+    debug(`onChange ${this.notebook.path} ${change.type}`);
     switch (change.type) {
       case 'styleMoved': this.chStyleMoved(change, rval); break;
       default: break;

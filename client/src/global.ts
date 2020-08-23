@@ -21,7 +21,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 // Requirements
 
-import { $, $new, Html, ElementClass } from './dom';
+import { $, $new, Html, ElementClass, CLOSE_X_ENTITY } from './dom';
 
 // Types
 
@@ -76,7 +76,7 @@ function onBannerClick(event: Event): void {
 
 function addMessageToHeader(type: ElementClass, html: Html, autoDismiss?: boolean): void {
   const $elt = $new({ tag: 'div', class: type, html});
-  const $button = $new({ tag: 'button', class: 'close', html: "&#x2715;" });
+  const $button = $new({ tag: 'button', class: 'close', html: CLOSE_X_ENTITY });
   $elt.appendChild($button);
   const $banner = $(document, '#banner');
   $banner.appendChild($elt);

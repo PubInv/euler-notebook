@@ -26,8 +26,7 @@ const debug = debug1(`server:${MODULE}`);
 import { NotebookChange, StyleObject, RelationshipObject } from '../shared/notebook';
 import { ToolData, NotebookChangeRequest, StyleInsertRequest, StylePropertiesWithSubprops, StyleDeleteRequest } from '../shared/math-tablet-api';
 
-import { absDirPathFromNotebookPath } from '../server-folder';
-import { ServerNotebook, ObserverInstance } from '../server-notebook';
+import { ServerNotebook, ObserverInstance, absDirPathFromNotebookPath } from '../server-notebook';
 import { execute, constructSubstitution} from '../wolframscript';
 import { Config } from '../config';
 // import * as uuid from 'uuid-js';
@@ -66,12 +65,12 @@ export class SubtrivClassifierObserver implements ObserverInstance {
   }
 
   public async onClose(): Promise<void> {
-    debug(`onClose ${this.notebook._path}`);
+    debug(`onClose ${this.notebook.path}`);
     delete this.notebook;
   }
 
   public async useTool(toolStyle: StyleObject): Promise<NotebookChangeRequest[]> {
-    debug(`useTool ${this.notebook._path} ${toolStyle.id}`);
+    debug(`useTool ${this.notebook.path} ${toolStyle.id}`);
 
     // The parent of the TOOL/ATTRIBUTE style will be a WOLFRAM/EVALUATION style
     const evaluationStyle = this.notebook.getStyle(toolStyle.parentId);
@@ -81,11 +80,11 @@ export class SubtrivClassifierObserver implements ObserverInstance {
     const classificationStyle = this.notebook.findStyle({ type: 'CLASSIFICATION-DATA', role: 'SUBTRIVARIATE', recursive: true }, evaluationStyle.id);
     if (!classificationStyle) { throw new Error(`Classification style not found.`); }
 
-    const targetPath = absDirPathFromNotebookPath(this.notebook._path!);
+    const targetPath = absDirPathFromNotebookPath(this.notebook.path!);
     var uuid4 = uuid();
     //    const plotName = "quadplot" + evaluationStyle.id + '-' + uuid4 + ".png";
     const plotName = "quadplot" + evaluationStyle.id + '-' + uuid4 + ".svg";
-//    const urlPath = `${this.notebook._path}${plotName}`;
+//    const urlPath = `${this.notebook.path}${plotName}`;
     const fullFilename = `${targetPath}/${plotName}`;
 
     // We are only plottable if we make the normal substitutions...
@@ -147,7 +146,7 @@ export class SubtrivClassifierObserver implements ObserverInstance {
   // Private Instance Methods
 
   private async onChange(change: NotebookChange, rval: NotebookChangeRequest[]): Promise<void> {
-    debug(`onChange ${this.notebook._path} ${change.type}`);
+    debug(`onChange ${this.notebook.path} ${change.type}`);
     switch (change.type) {
       case 'styleInserted':
       case 'styleChanged':

@@ -19,6 +19,8 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 // Requirements
 
+import { notImplemented } from './shared/common';
+
 import { ButtonBar } from './button-bar';
 import { DebugPopup } from './debug-popup';
 import { $new, $, svgIconReference } from './dom';
@@ -71,12 +73,12 @@ export class NotebookSidebar extends ButtonBar {
         { // #thumbnailViewButton
           tag: 'button',
           html: ICON_FILE12,
-          listeners: { click: (_e: MouseEvent)=>{ throw new Error("TODO: NOT IMPLEMENTED"); }},
+          listeners: { click: (_e: MouseEvent)=>{ notImplemented(); }},
           title: "Page thumbnail view",
         }, { // #pageViewButton
           tag: 'button',
           html: svgIconReference('iconMonstrFile15'),
-          listeners: { click: (_e: MouseEvent)=>{ throw new Error("TODO: NOT IMPLEMENTED"); }},
+          listeners: { click: (_e: MouseEvent)=>{ notImplemented(); }},
           title: "Reading view",
         }, {
           tag: 'div', class: 'separator'

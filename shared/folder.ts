@@ -19,9 +19,11 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 // Requirements
 
+import { assert } from './common';
+
 // Types
 
-export type FolderName = string; // Name of a folder without any slashes.
+export type FolderName = '{folder-name}'; // Name of a folder without any slashes.
 
 // Folder paths start with a slash, and are followed by zero or more
 // folder names, follewed by another slash. e.g. '/', '/foo/', or '/foo/bar/'
@@ -29,7 +31,7 @@ export type FolderName = string; // Name of a folder without any slashes.
 // separator is a backslash.
 export type FolderPath = '{folder-path}';
 
-export type NotebookName = string;  // Just the name of the notebook, no .mtnb extension.
+export type NotebookName = '{notebook-name}';  // Just the name of the notebook, no .mtnb extension.
 
 // Notebook paths are a FolderPath followed by a NotebookName, then a '.mtnb' extension.
 // Note that we always use forward slash, even on Windows where the filesystem
@@ -46,19 +48,19 @@ export interface FolderEntry {
 export type FolderChange = FolderCreated|FolderDeleted|NotebookCreated|NotebookDeleted;
 export interface FolderCreated {
   type: 'folderCreated';
-  folderName: FolderName;
+  entry: FolderEntry;
 }
 export interface FolderDeleted {
   type: 'folderDeleted';
-  folderName: FolderName;
+  name: FolderName;
 }
 export interface NotebookCreated {
   type: 'notebookCreated';
-  notebookName: NotebookName;
+  entry: NotebookEntry;
 }
 export interface NotebookDeleted {
   type: 'notebookDeleted';
-  notebookName: NotebookName;
+  name: NotebookName;
 }
 
 export interface FolderObject {
@@ -83,7 +85,7 @@ export interface NotebookEntry {
 export const FOLDER_NAME_RE = /^(\w+)$/;
 export const FOLDER_PATH_RE = /^\/(\w+\/)*$/;
 export const NOTEBOOK_NAME_RE = /^(\w+)$/;
-export const NOTEBOOK_PATH_RE = /^\/((\w+\/)*)(\w+)$/;
+export const NOTEBOOK_PATH_RE = /^\/((\w+\/)*)(\w+)\.mtnb$/;
 
 // Exported Class
 
@@ -133,19 +135,27 @@ export class Folder implements FolderObject {
 
   // Private Instance Methods
 
-  private createFolder(_change: FolderCreated): void {
-    throw new Error("NOT YET IMPLEMENTED");
+  private createFolder(change: FolderCreated): void {
+    // REVIEW: Keep in sorted order?
+    this.folders.push(change.entry);
   }
 
-  private deleteFolder(_change: FolderDeleted): void {
-    throw new Error("NOT YET IMPLEMENTED");
+  private deleteFolder(change: FolderDeleted): void {
+    // REVIEW: Case-sensitivity?
+    const i = this.folders.findIndex(entry=>(entry.name==change.name));
+    assert(i>=0);
+    this.folders.splice(i,1);
   }
 
-  private createNotebook(_change: NotebookCreated): void {
-    throw new Error("NOT YET IMPLEMENTED");
+  private createNotebook(change: NotebookCreated): void {
+    // REVIEW: Keep in sorted order?
+    this.notebooks.push(change.entry);
   }
 
-  private deleteNotebook(_change: NotebookDeleted): void {
-    throw new Error("NOT YET IMPLEMENTED");
+  private deleteNotebook(change: NotebookDeleted): void {
+    // REVIEW: Case-sensitivity?
+    const i = this.notebooks.findIndex(entry=>(entry.name==change.name));
+    assert(i>=0);
+    this.folders.splice(i,1);
   }
 }

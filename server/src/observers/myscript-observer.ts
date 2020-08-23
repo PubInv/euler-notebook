@@ -51,7 +51,7 @@ export class MyScriptObserver extends BaseObserver {
 }
 
   public static async onOpen(notebook: ServerNotebook): Promise<MyScriptObserver> {
-    debug(`Opening MyScriptObserver for ${notebook._path}.`);
+    debug(`Opening MyScriptObserver for ${notebook.path}.`);
     return new this(notebook);
   }
 

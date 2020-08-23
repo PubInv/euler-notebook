@@ -19,9 +19,11 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 // Requirements
 
-import { ButtonBar } from './button-bar';
-import { ClientFolder } from './client-folder';
+import { appInstance } from "./app";
 import { $new, svgIconReference } from "./dom";
+import { FolderScreen } from "./folder-screen";
+import { FolderPath, FolderChange } from './shared/folder';
+import { ClientFolder, Watcher as ClientFolderWatcher } from './client-folder';
 
 // Types
 
@@ -31,60 +33,98 @@ import { $new, svgIconReference } from "./dom";
 
 // Exported Class
 
-export class FolderSidebar extends ButtonBar {
+export class FolderSidebar implements ClientFolderWatcher {
 
   // Class Methods
 
-  public static create($parent: HTMLElement, folder: ClientFolder): FolderSidebar {
-    return new this($parent, folder);
+  public static create(screen: FolderScreen, path: FolderPath): FolderSidebar {
+    return new this(screen, path);
   }
 
   // Instance Properties
 
   // Instance Methods
 
+  // ClientFolder Watcher Methods
+
+  public onChange(_change: FolderChange): void { }
+
+  public onChangesComplete(): void { }
+
+  public onClosed(): void {
+    this.enableButtons(false);
+  }
+
   // -- PRIVATE --
 
   // Constructor
 
-  private constructor($parent: HTMLElement, _folder: ClientFolder) {
-    const $elt = $new({
+  private constructor(screen: FolderScreen, path: FolderPath) {
+
+    this.$elt = $new({
       tag: 'div',
-      appendTo: $parent,
+      appendTo: screen.$elt,
       class: 'sidebar',
-      children: [
-        { // #thumbnailViewButton
-          tag: 'button',
-          html: svgIconReference('iconMonstrFolder5'),
-          listeners: { click: (e: MouseEvent)=>this.onNewFolder(e) },
-          title: "Page thumbnail view",
-        }, { // #pageViewButton
-          tag: 'button',
-          html: svgIconReference('iconMonstrFile15'),
-          listeners: { click: (e: MouseEvent)=>this.onNewNotebook(e) },
-          title: "Reading view",
-        },
-      ],
     });
-    super($elt);
+
+    this.$newFolderButton = $new({ // #thumbnailViewButton
+      tag: 'button',
+      appendTo: this.$elt,
+      html: svgIconReference('iconMonstrFolder5'),
+      asyncListeners: {
+        click: (e: MouseEvent)=>this.onNewFolderClicked(e)
+      },
+      title: "Page thumbnail view",
+    });
+
+    this.$newNotebookButton = $new({ // #pageViewButton
+      tag: 'button',
+      appendTo: this.$elt,
+      html: svgIconReference('iconMonstrFile15'),
+      asyncListeners: {
+        click: (e: MouseEvent)=>this.onNewNotebookClicked(e)
+      },
+      title: "Reading view",
+    });
+
+    this.enableButtons(false);  // REVIEW: Create them disabled.
+
+    ClientFolder.watch(path, this)
+    .then(
+      (folder: ClientFolder)=>{
+        this.folder = folder;
+        this.enableButtons(true);
+      },
+    );
+
   }
 
   // Private Instance Properties
 
+  private $elt: HTMLDivElement;
+  private $newFolderButton: HTMLButtonElement;
+  private $newNotebookButton: HTMLButtonElement;
+  private folder?: ClientFolder;  // Assigned asynchronously at end of constructor.
+
   // Private Instance Methods
+
+  private enableButtons(enabled: boolean): void {
+    this.$newFolderButton.disabled = !enabled;
+    this.$newNotebookButton.disabled = !enabled;
+  }
 
   // Private Event Handlers
 
-  private onNewFolder(e: MouseEvent): Promise<void> {
+  private async onNewFolderClicked(e: MouseEvent): Promise<void> {
     e.preventDefault(); // Do not take focus.
-    console.dir(e);
-    throw new Error("TODO: New folder not yet implemented.");
+    const path = await this.folder!.newFolder();
+    appInstance.navigateTo(path);
   }
 
-  private onNewNotebook(e: MouseEvent): Promise<void> {
+  private async onNewNotebookClicked(e: MouseEvent): Promise<void> {
     e.preventDefault(); // Do not take focus.
-    console.dir(e);
-    throw new Error("TODO: New notebook not yet implemented.");
+    const path = await this.folder!.newNotebook();
+    appInstance.navigateTo(path);
   }
 
 }

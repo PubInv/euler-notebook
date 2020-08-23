@@ -68,7 +68,7 @@ export function monitorPromise(promise: Promise<any>, message: Html): void {
 
 export function reportError(err: Error, message: Html): void {
   console.error(message);
-  console.dir(err);
+  // console.dir(err);
   // TODO: Report error to server.
   showErrorMessage(message, err);
 }

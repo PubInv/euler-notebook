@@ -19,15 +19,22 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 // Requirements
 
-// import { $ } from './dom';
-import { assert } from './common';
-import { NotebookName, NotebookPath } from './shared/folder';
+import { PromiseResolver } from './shared/common';
 import { Notebook, NotebookObject, NotebookChange, StyleId } from './shared/notebook';
-import { NotebookChanged, Tracker, NotebookChangeRequest, ChangeNotebook, UseTool, ChangeNotebookOptions } from './shared/math-tablet-api';
-import { ServerSocket } from './server-socket';
+import { ServerNotebookChangedMessage, NotebookChangeRequest, ClientNotebookChangeMessage, ClientNotebookUseToolMessage, RequestId, ClientNotebookOpenMessage, ServerNotebookOpenedMessage, ServerNotebookMessage, ServerNotebookClosedMessage } from './shared/math-tablet-api';
+
+import { appInstance } from './app';
+import { NotebookName, NotebookPath } from './shared/folder';
 import { NotebookBasedScreen } from './screen';
+import { assert } from './shared/common';
 
 // Types
+
+interface InstanceInfo {
+  promise: Promise<ClientNotebook>;           // Promise for the instance returned from 'open'.
+  resolver?: PromiseResolver<ClientNotebook>;
+  instance?: ClientNotebook;
+}
 
 export interface TrackedChangesResults {
   changes: NotebookChange[];
@@ -44,47 +51,46 @@ export class ClientNotebook extends Notebook {
 
   // Class Methods
 
-  public static create(socket: ServerSocket, notebookPath: NotebookPath, obj: NotebookObject): ClientNotebook {
-    assert(!this.notebooks.has(notebookPath));
-    const instance = new this(socket, notebookPath, obj);
-    this.notebooks.set(notebookPath, instance);
-    return instance;
+  public static async open(path: NotebookPath): Promise<ClientNotebook> {
+    let existingInfo = this.instanceMap.get(path);
+    if (!existingInfo) {
+      const message: ClientNotebookOpenMessage = { type: 'notebook', operation: 'open', path };
+      appInstance.socket.sendMessage(message);
+      let resolver: PromiseResolver<ClientNotebook>;
+      const promise = new Promise<ClientNotebook>((resolve, reject)=>{ resolver = { resolve, reject }; });
+      // Ignoring: "Variable 'resolver' is used before being assigned.
+      // Resolver is set when promise is constructed.
+      // @ts-ignore
+      existingInfo = { promise, resolver };
+      this.instanceMap.set(path, existingInfo);
+    }
+    return existingInfo.promise;
   }
 
-  public static open(socket: ServerSocket, notebookPath: NotebookPath, tDoc: NotebookObject): ClientNotebook {
-    return this.notebooks.get(notebookPath) || this.create(socket, notebookPath, tDoc);
-  }
+  // Class Event Handlers
 
-  public static get(notebookName: NotebookPath): ClientNotebook|undefined {
-    return this.notebooks.get(notebookName);
-  }
-
-  public static htmlIdFromPath(path: NotebookPath): string {
-    return `notebook:${path}`;
+  public static onMessage(msg: ServerNotebookMessage): void {
+    // A notebook message was received from the server.
+    switch(msg.operation) {
+      case 'changed': this.smChanged(msg); break;
+      case 'closed':  this.smClosed(msg); break;
+      case 'opened': this.smOpened(msg); break;
+      default: assert(false); break;
+    }
   }
 
   // Instance Properties
 
-  public notebookPath: NotebookPath;
+  public path: NotebookPath;
 
   // Instance Property Functions
 
-  public get htmlId(): string {
-    return ClientNotebook.htmlIdFromPath(this.notebookPath);
-  }
-
   public get notebookName(): NotebookName {
-    const i = this.notebookPath.lastIndexOf('/');
-    return <NotebookName>this.notebookPath.slice(i);
+    const i = this.path.lastIndexOf('/');
+    return <NotebookName>this.path.slice(i);
   }
 
   // Instance Methods
-
-  // REVIEW: When is this called?
-  public close() {
-    // TODO: mark closed?
-    ClientNotebook.notebooks.delete(this.notebookPath);
-  }
 
   public connect(screen: NotebookBasedScreen): void {
     this.screen = screen;
@@ -92,50 +98,98 @@ export class ClientNotebook extends Notebook {
 
   public export(): void {
     // NOTE: Notebook path starts with a slash.
-    const url = `/export${this.notebookPath}`;
+    const url = `/export${this.path}`;
     // window.location.href = url;
     window.open(url, "_blank")
   }
 
-  public sendChangeRequest(changeRequest: NotebookChangeRequest, options: ChangeNotebookOptions): void {
-    this.sendChangeRequests([ changeRequest ], options);
+  public sendChangeRequest(changeRequest: NotebookChangeRequest): void {
+    this.sendChangeRequests([ changeRequest ]);
   }
 
-  public sendChangeRequests(changeRequests: NotebookChangeRequest[], options: ChangeNotebookOptions): void {
+  public sendChangeRequests(changeRequests: NotebookChangeRequest[]): void {
     if (changeRequests.length == 0) { return; }
-    const msg: ChangeNotebook = {
-      type: 'changeNotebook',
-      notebookPath: this.notebookPath,
+    const msg: ClientNotebookChangeMessage = {
+      type: 'notebook',
+      operation: 'change',
+      path: this.path,
       changeRequests,
-      options,
     }
-    this.socket.sendMessage(msg);
+    appInstance.socket.sendMessage(msg);
   }
 
-  public sendTrackedChangeRequest(changeRequest: NotebookChangeRequest, options?: ChangeNotebookOptions): Promise<TrackedChangesResults> {
-    return this.sendTrackedChangeRequests([ changeRequest ], options);
+  public sendTrackedChangeRequest(changeRequest: NotebookChangeRequest): Promise<TrackedChangesResults> {
+    return this.sendTrackedChangeRequests([ changeRequest ]);
   }
 
-  public sendTrackedChangeRequests(changeRequests: NotebookChangeRequest[], options?: ChangeNotebookOptions): Promise<TrackedChangesResults> {
-    options = options || {};
+  public sendTrackedChangeRequests(changeRequests: NotebookChangeRequest[]): Promise<TrackedChangesResults> {
     return new Promise((resolve, reject)=>{
-      // REVIEW: Could multiple requests occur in the same millisecond?
-      const tracker: Tracker = Date.now().toString();
+      const tracker: RequestId = appInstance.socket.generateRequestId();
       this.trackedChangeRequests.set(tracker, { resolve, reject });
       this.trackedChangeResponses.set(tracker, { changes: [], undoChangeRequests: [] });
-      options = { tracker, ...options };
-      this.sendChangeRequests(changeRequests, options);
+      this.sendChangeRequests(changeRequests);
     });
   }
 
   public useTool(id: StyleId): void {
-    const msg: UseTool = { type: 'useTool', notebookPath: this.notebookPath, styleId: id };
-    this.socket.sendMessage(msg);
+    const msg: ClientNotebookUseToolMessage = { type: 'notebook', operation: 'useTool', path: this.path, styleId: id };
+    appInstance.socket.sendMessage(msg);
   }
 
-  // Server Message Event Handlers
+  // -- PRIVATE --
 
-  public smChange(msg: NotebookChanged): void {
+  // Private Class Properties
+
+  private static instanceMap: Map<NotebookPath, InstanceInfo> = new Map();
+
+  // Private Class Methods
+
+  private static smChanged(msg: ServerNotebookChangedMessage): void {
+    const info = this.instanceMap.get(msg.path);
+    assert(info && info.instance && !info.resolver);
+    info!.instance!.onChanged(msg);
+  }
+
+  private static smClosed(msg: ServerNotebookClosedMessage): void {
+    const info = this.instanceMap.get(msg.path);
+    assert(info && info.instance && !info.resolver);
+    this.instanceMap.delete(msg.path);
+    info!.instance!.onClosed(msg);
+  }
+
+  private static smOpened(msg: ServerNotebookOpenedMessage): void {
+    // TODO: Handle if there is an error opening the folder.
+    const info = this.instanceMap.get(msg.path);
+    assert(info && !info.instance && info.resolver);
+    const instance = info!.instance = new this(msg.path, msg.obj);
+    info!.resolver!.resolve(instance);
+    delete info!.resolver;
+  }
+
+  // Private Constructor
+
+  private constructor(path: NotebookPath, obj: NotebookObject) {
+    super(obj);
+    this.path = path;
+    this.trackedChangeRequests = new Map();
+    this.trackedChangeResponses = new Map();
+  }
+
+  // Private Instance Properties
+
+  // REVIEW: Could there be more than one screen attached to this openNotebook?
+  private screen?: NotebookBasedScreen;
+  private trackedChangeRequests: Map<RequestId, { resolve: (results: TrackedChangesResults)=>void, reject: (reason: any)=>void }>;
+  private trackedChangeResponses: Map<RequestId, TrackedChangesResults>;
+
+  // Private Instance Methods
+
+  // Private Event Handlers
+
+  // Private Event Handlers
+
+  private onChanged(msg: ServerNotebookChangedMessage): void {
+    // Message from the server indicating this notebook has changed.
 
     // Apply changes to the notebook data structure, and notify the view of the change.
     // If the change is not a delete, then update the data structure first, then notify the view.
@@ -146,66 +200,37 @@ export class ClientNotebook extends Notebook {
     for (const change of msg.changes) {
       const isDelete = (change.type == 'relationshipDeleted' || change.type == 'styleDeleted');
       if (!isDelete) { this.applyChange(change); }
-      try {
-        this.screen.smChange(change);
-      } catch(err) {
-        console.error(`Error applying change to notebookView: "${err.message}", ${JSON.stringify(change)}`);
-      }
+      if (this.screen) { this.screen.smChange(change); }
       if (isDelete) { this.applyChange(change); }
     }
 
     // Update the notebooks view
     // REVIEW: Might we want to postpone updating the view until the tracker promises are resolved?
-    this.screen.updateView();
+    // TODO: convert to "Watcher" like ClientFolder
+    //       if (this.screen) { this.screen.updateView(); }
 
     // If the changes were tracked then accumulate the changes
     // and resolve the tracking promise if complete.
-    if (msg.tracker) {
-      const previousResults = this.trackedChangeResponses.get(msg.tracker);
+    if (msg.requestId) {
+      const previousResults = this.trackedChangeResponses.get(msg.requestId);
       if (!previousResults) { throw new Error("No previous results for tracker."); }
       previousResults.changes = previousResults.changes.concat(msg.changes);
       if (msg.undoChangeRequests) {
         previousResults.undoChangeRequests = previousResults.undoChangeRequests.concat(msg.undoChangeRequests);
       }
       if (msg.complete) {
-        this.trackedChangeResponses.delete(msg.tracker);
-        const fns = this.trackedChangeRequests.get(msg.tracker);
-        this.trackedChangeRequests.delete(msg.tracker);
-        if (!fns) { throw new Error(`Missing tracker promise functions for ${msg.tracker}`); }
+        this.trackedChangeResponses.delete(msg.requestId);
+        const fns = this.trackedChangeRequests.get(msg.requestId);
+        this.trackedChangeRequests.delete(msg.requestId);
+        if (!fns) { throw new Error(`Missing tracker promise functions for ${msg.requestId}`); }
         // REVIEW: Is there any way the promise could be rejected?
         fns.resolve(previousResults);
       }
     }
   }
 
-  public smClose(): void { return this.close(); }
-
-  // -- PRIVATE --
-
-  // Private Class Properties
-
-  private static notebooks: Map<NotebookPath, ClientNotebook> = new Map();
-
-  // Private Constructor
-
-  private constructor(socket: ServerSocket, notebookPath: NotebookPath, obj: NotebookObject) {
-    super(obj);
-    this.socket = socket;
-    this.notebookPath = notebookPath;
-    this.trackedChangeRequests = new Map();
-    this.trackedChangeResponses = new Map();
+  public onClosed(_msg: ServerNotebookClosedMessage): void {
+    // TODO: Notify our screen client that we are closing?
   }
-
-  // Private Instance Properties
-
-  // REVIEW: Could there be more than one screen attached to this openNotebook?
-  private screen!: NotebookBasedScreen;
-  private socket: ServerSocket;
-  private trackedChangeRequests: Map<Tracker, { resolve: (results: TrackedChangesResults)=>void, reject: (reason: any)=>void }>;
-  private trackedChangeResponses: Map<Tracker, TrackedChangesResults>;
-
-  // Private Instance Methods
-
-  // Private Change Event Handlers
 
 }

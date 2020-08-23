@@ -41,7 +41,7 @@ export class SandboxObserver implements ObserverInstance {
   }
 
   public static async onOpen(notebook: ServerNotebook): Promise<ObserverInstance> {
-    debug(`onOpen`);
+    debug(`onOpen ${notebook?notebook.path:'FALSY'}`);
     return new this(notebook);
   }
 
@@ -49,25 +49,25 @@ export class SandboxObserver implements ObserverInstance {
 
   public async onChangesAsync(changes: NotebookChange[]): Promise<NotebookChangeRequest[]> {
     for (const change of changes) {
-      debug(`async change:  ${this.notebook._path} ${change.type}`)
+      debug(`async change:  ${this.notebook.path} ${change.type}`)
     }
     return [];
   }
 
   public onChangesSync(changes: NotebookChange[]): NotebookChangeRequest[] {
     for (const change of changes) {
-      debug(`sync change:  ${this.notebook._path} ${change.type}`)
+      debug(`sync change:  ${this.notebook.path} ${change.type}`)
     }
     return [];
   }
 
   public async onClose(): Promise<void> {
-    debug(`onClose ${this.notebook._path}`);
+    debug(`onClose ${this.notebook.path}`);
     delete this.notebook;
   }
 
   public async useTool(style: StyleObject): Promise<NotebookChangeRequest[]> {
-    debug(`useTool ${this.notebook._path} ${style.id}`);
+    debug(`useTool ${this.notebook.path} ${style.id}`);
     return [];
   }
 

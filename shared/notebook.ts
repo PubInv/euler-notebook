@@ -17,6 +17,7 @@ You should have received a copy of the GNU Affero General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
+
 // Requirements
 
 // Types
@@ -347,6 +348,8 @@ export type WolframExpression = string;
 
 // Constants
 
+const RIGHT_ARROW_ENTITY = '&#x27A1;';
+
 export const VERSION = "0.0.15";
 
 // Exported Class
@@ -624,7 +627,7 @@ export class Notebook {
     const status = relationship.status;
     const inStylesHtml = relationship.inStyles.map(rs=>`${rs.role} ${rs.id}`).join(", ");
     const outStylesHtml = relationship.outStyles.map(rs=>`${rs.role} ${rs.id}`).join(", ");
-    return `<div><span class="leaf">R${relationship.id} ${relationship.role} [${inStylesHtml} &#x27a1; ${outStylesHtml}] (${relationship.fromId} &#x27a1; ${relationship.toId}) ${dataJson} logic: ${logic} status: ${status}</span></div>`;
+    return `<div><span class="leaf">R${relationship.id} ${relationship.role} [${inStylesHtml} ${RIGHT_ARROW_ENTITY} ${outStylesHtml}] (${relationship.fromId} ${RIGHT_ARROW_ENTITY} ${relationship.toId}) ${dataJson} logic: ${logic} status: ${status}</span></div>`;
   }
 
   private relationshipToText(relationship: RelationshipObject, indentationLevel: number): string {

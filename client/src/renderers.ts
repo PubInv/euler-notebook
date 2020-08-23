@@ -23,7 +23,7 @@ import { escapeHtml, Html } from './dom';
 import { getKatex } from './katex-types';
 import { LatexData, } from './shared/math-tablet-api';
 import { StyleType } from './shared/notebook';
-import { assert } from './common';
+import { assert } from './shared/common';
 
 // Types
 

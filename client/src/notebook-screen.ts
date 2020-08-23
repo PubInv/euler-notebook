@@ -30,9 +30,9 @@ import { DebugPopup } from './debug-popup';
 import { reportError } from './error-handler';
 import { NotebookView } from './notebook-view';
 import { NotebookBasedScreen } from './screen';
-import { ServerSocket } from './server-socket';
 import { NotebookSidebar } from './notebook-sidebar';
 import { NotebookTools } from './notebook-tools';
+import { ClientNotebook } from './client-notebook';
 
 // Types
 
@@ -46,9 +46,9 @@ export class NotebookScreen extends NotebookBasedScreen {
 
   // Public Class Methods
 
-  public static create($parent: HTMLElement, socket: ServerSocket, path: NotebookPath): NotebookScreen {
+  public static create($parent: HTMLElement, path: NotebookPath): NotebookScreen {
     const instance = new this($parent, path);
-    instance.connect(socket, path).catch(err=>reportError(err, `Error opening folder ${path}.`));
+    instance.connect(path).catch(err=>reportError(err, `Error opening folder ${path}.`));
     return instance;
   }
 
@@ -82,9 +82,8 @@ export class NotebookScreen extends NotebookBasedScreen {
 
   // Instance Methods
 
-  public async connect(socket: ServerSocket, path: NotebookPath): Promise<void> {
-    const notebook = await socket.openNotebook(path);
-
+  public async connect(path: NotebookPath): Promise<void> {
+    const notebook = await ClientNotebook.open(path);
     this.sidebar.connect(this.view, this.debugPopup);
     this.view.connect(notebook, this.sidebar, this.tools, this.debugPopup);
     this.tools.connect(this.view);

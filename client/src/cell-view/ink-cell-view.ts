@@ -19,11 +19,12 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 // Requirements
 
+import { assert } from '../shared/common';
 import { DrawingData, StyleId, StyleObject } from '../shared/notebook';
 import { StyleChangeRequest, StyleMoveRequest } from '../shared/math-tablet-api';
 
-import { $configure, $newSvg, $, $svg } from '../dom';
-import { deepCopy, assert } from '../common';
+import { $configure, $newSvg, $, $svg, CLOSE_X_ENTITY } from '../dom';
+import { deepCopy } from '../common';
 
 import { NotebookView } from '../notebook-view';
 import { ResizerBar } from '../resizer-bar';
@@ -105,7 +106,7 @@ export class InkCellView extends CellView {
       appendTo: $content,
       attrs: { tabindex: -1 },
       class: 'deleteCellButton',
-      html: '&#x2715;',
+      html: CLOSE_X_ENTITY,
       listeners: {
         click: e=>this.onDeleteCellButtonClicked(e),
       },

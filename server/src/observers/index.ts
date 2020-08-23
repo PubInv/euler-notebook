@@ -75,8 +75,8 @@ export async function initialize(config: Config, credentials: Credentials): Prom
     await MyScriptObserver.initialize(config, credentials.myscript);
     ServerNotebook.registerObserver('MYSCRIPT', MyScriptObserver);
   }
-  await SandboxObserver.initialize(config);
   ServerNotebook.registerObserver('FORMULA-OBSERVER', FormulaObserver);
+  await SandboxObserver.initialize(config);
   ServerNotebook.registerObserver('SANDBOX', SandboxObserver);
   ServerNotebook.registerObserver('SVG', SvgObserver);
 

@@ -24,7 +24,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 import { CellView } from './cell-view/index';
 import { createCellView } from './cell-view/instantiator';
-import { assert } from './common';
+import { assert } from './shared/common';
 import { $, $new } from './dom';
 import {
   DrawingData, StyleId, StyleObject, NotebookChange,
@@ -33,7 +33,7 @@ import {
 } from './shared/notebook';
 import {
   DebugParams, DebugResults, StyleDeleteRequest, StyleInsertRequest, StylePropertiesWithSubprops,
-  StyleMoveRequest, NotebookChangeRequest, ChangeNotebookOptions,
+  StyleMoveRequest, NotebookChangeRequest,
 } from './shared/math-tablet-api';
 import { ClientNotebook, TrackedChangesResults } from './client-notebook';
 import { DebugPopup } from './debug-popup';
@@ -159,7 +159,7 @@ export class NotebookView {
     // This code is executed when the user presses the underwear button in the sidebar.
     // For when a developer needs a button to initiate a test action.
     console.log('Development Button Clicked!');
-    const notebookPath = this.notebook.notebookPath;
+    const notebookPath = this.notebook.path;
     const styleId = this.lastCellSelected?.styleId;
     const params: DebugParams = { notebookPath, styleId };
 
@@ -655,8 +655,8 @@ export class NotebookView {
 
   // Private Event Handlers
 
-  private async sendTrackedChangeRequests(changeRequests: NotebookChangeRequest[], options?: ChangeNotebookOptions): Promise<TrackedChangesResults> {
-    return await this.notebook.sendTrackedChangeRequests(changeRequests, options);
+  private async sendTrackedChangeRequests(changeRequests: NotebookChangeRequest[]): Promise<TrackedChangesResults> {
+    return await this.notebook.sendTrackedChangeRequests(changeRequests);
   }
 
   private async sendUndoableChangeRequest(changeRequest: NotebookChangeRequest): Promise<NotebookChangeRequest> {
@@ -670,7 +670,7 @@ export class NotebookView {
     this.sidebar.enableRedoButton(false);
     this.sidebar.enableUndoButton(false);
 
-    const { undoChangeRequests } = await this.sendTrackedChangeRequests(changeRequests, { wantUndo: true });
+    const { undoChangeRequests } = await this.sendTrackedChangeRequests(changeRequests);
     if (!undoChangeRequests) { throw new Error("Did not get undo change requests when wantUndo is true."); }
     const entry: UndoEntry = { changeRequests, undoChangeRequests };
     while(this.undoStack.length > this.topOfUndoStack) { this.undoStack.pop(); }

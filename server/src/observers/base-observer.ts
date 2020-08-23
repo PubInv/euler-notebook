@@ -115,13 +115,13 @@ export abstract class BaseObserver implements ObserverInstance {
 
   // TODO: can't these be inherited?
   public async onClose(): Promise<void> {
-    debug(`onClose ${this.notebook._path}`);
+    debug(`onClose ${this.notebook.path}`);
     delete this.notebook;
   }
 
   // REVIEW: abstract?
   public async useTool(style: StyleObject): Promise<NotebookChangeRequest[]> {
-    debug(`useTool ${this.notebook._path} ${style.id}`);
+    debug(`useTool ${this.notebook.path} ${style.id}`);
     return [];
   }
 

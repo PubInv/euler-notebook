@@ -21,15 +21,11 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 // Requirements
 
-import { Path, FolderPath } from './shared/folder';
+import { FolderPath } from './shared/folder';
 import { $new } from "./dom";
-import { reportError } from "./error-handler";
 import { FolderView } from './folder-view';
 import { FolderSidebar } from './folder-sidebar';
 import { Screen } from './screen';
-// import { ServerSocket } from './server-socket';
-import { FolderChange } from './shared/folder';
-import { ServerSocket } from './server-socket';
 
 // Types
 
@@ -43,23 +39,15 @@ export class FolderScreen extends Screen {
 
   // Class Methods
 
-  public static create($parent: HTMLElement, socket: ServerSocket, path: FolderPath): FolderScreen {
-    const instance = new this($parent, path);
-    instance.connect(socket, path).catch(err=>reportError(err, `Error opening folder ${path}.`));
-    return instance;
+  public static create($parent: HTMLElement, path: FolderPath): FolderScreen {
+    return new this($parent, path);
   }
-
-  // Public Instance Methods
-
-  public smChange(_change: FolderChange): void { /* TODO: */ };
-
-  public updateView(): void { /* TODO: */ };
 
   // --- PRIVATE ---
 
   // Private Constructor
 
-  private constructor($parent: HTMLElement, path: Path) {
+  private constructor($parent: HTMLElement, path: FolderPath) {
     const $elt = $new({
       tag: 'div',
       appendTo: $parent,
@@ -68,46 +56,7 @@ export class FolderScreen extends Screen {
       style: 'display: none',
     });
     super($elt);
-
-
-    // // Window events
-    // const that = this;
-    // window.addEventListener<'resize'>('resize', function(this: Window, e: UIEvent) { that.onResize(this, e); });
+    /* this.sidebar = */ FolderSidebar.create(this, path);
+    /* this.view = */ FolderView.create(this, path);
   }
-
-  // Private Instance Properties
-
-  // private folder!: ClientFolder;
-
-  // Private Instance Methods
-
-  private async connect(socket: ServerSocket, path: FolderPath): Promise<void> {
-    const folder = /* this.folder = */ await socket.openFolder(path);
-    /* this.sidebar = */ FolderSidebar.create(this.$elt, folder);
-    /* this.view = */ FolderView.create(this.$elt, folder);
-  }
-
-  // Private Instance Properties
-
-  // private sidebar: FolderSidebar;
-  // private view: FolderView;
-
-  // Private Property Functions
-
-  // Private Instance Methods
-
-  // Private Event Handlers
-
-//   private onResize(_window: Window, _event: UIEvent): void {
-//     try {
-//       // const bodyViewRect = $('#content').getBoundingClientRect();
-//     } catch(err) {
-//       showErrorMessage("Error handling window resize event.", err);
-//     }
-//   }
 }
-
-// Helper Functions
-
-// function htmlIdFromPath(path: FolderPath|NotebookPath): string {
-// }

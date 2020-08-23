@@ -75,14 +75,14 @@ export class AlgebraicToolsObserver implements ObserverInstance {
   }
 
   public async onClose(): Promise<void> {
-    debug(`onClose ${this.notebook._path}`);
+    debug(`onClose ${this.notebook.path}`);
     delete this.notebook;
   }
 
   // TODO: This is a direct duplicate code in symbol-classifier.ts
   // that duplication must be removed.
   public async useTool(toolStyle: StyleObject): Promise<NotebookChangeRequest[]> {
-//    debug(`useTool ${this.notebook._path} ${toolStyle.id}`);
+//    debug(`useTool ${this.notebook.path} ${toolStyle.id}`);
 
     const toolData: ToolData = toolStyle.data;
     const transformationData: TransformationToolData = toolData.data;
@@ -198,7 +198,7 @@ export class AlgebraicToolsObserver implements ObserverInstance {
   // Private Instance Methods
 
   private async onChange(change: NotebookChange, rval: NotebookChangeRequest[]): Promise<void> {
-//    debug(`onChange ${this.notebook._path} ${change.type}`);
+//    debug(`onChange ${this.notebook.path} ${change.type}`);
     switch (change.type) {
       case 'styleInserted': {
         await this.algebraicToolsStyleInsertRule(change.style, rval);

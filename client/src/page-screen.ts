@@ -22,11 +22,11 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 import { NotebookChange } from './shared/notebook';
 import { Path, NotebookPath } from './shared/folder';
 
+import { ClientNotebook } from './client-notebook';
 import { $new } from './dom';
 import { reportError } from './error-handler';
 import { PageView, PageViewType } from './page-view';
 import { NotebookBasedScreen } from './screen';
-import { ServerSocket } from './server-socket';
 import { PageSidebar } from './page-sidebar';
 
 // Types
@@ -41,9 +41,9 @@ export class PageScreen extends NotebookBasedScreen {
 
   // Public Class Methods
 
-  public static create($parent: HTMLElement, socket: ServerSocket, path: NotebookPath): PageScreen {
+  public static create($parent: HTMLElement, path: NotebookPath): PageScreen {
     const instance = new this($parent, path);
-    instance.connect(socket, path).catch(err=>reportError(err, `Error opening folder ${path}.`));
+    instance.connect(path).catch(err=>reportError(err, `Error opening folder ${path}.`));
     return instance;
   }
 
@@ -74,8 +74,8 @@ export class PageScreen extends NotebookBasedScreen {
 
   // Instance Methods
 
-  public async connect(socket: ServerSocket, path: NotebookPath): Promise<void> {
-    const notebook = await socket.openNotebook(path);
+  public async connect(path: NotebookPath): Promise<void> {
+    const notebook = await ClientNotebook.open(path);
     this.pageView = PageView.create(this.$elt, notebook, PageViewType.Single);
     /* this.sidebar = */ PageSidebar.create(this.$elt, notebook);
   }

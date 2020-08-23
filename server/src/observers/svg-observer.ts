@@ -42,7 +42,7 @@ export class SvgObserver extends BaseObserver {
   // --- PUBLIC ---
 
   public static async onOpen(notebook: ServerNotebook): Promise<SvgObserver> {
-    debug(`Opening SvgObserver for ${notebook._path}.`);
+    debug(`Opening SvgObserver for ${notebook.path}.`);
     return new this(notebook);
   }
 

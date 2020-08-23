@@ -45,7 +45,7 @@ export class WolframObserver extends BaseObserver {
   // --- PUBLIC ---
 
   public static async onOpen(notebook: ServerNotebook): Promise<WolframObserver> {
-    debug(`Opening Wolfram CAS observer for ${notebook._path}.`);
+    debug(`Opening Wolfram CAS observer for ${notebook.path}.`);
     return new this(notebook);
   }
 

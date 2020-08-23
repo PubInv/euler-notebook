@@ -27,7 +27,6 @@ import { NextFunction, Request, Response, Router } from 'express';
 import { NotebookPath, NOTEBOOK_PATH_RE } from '../shared/folder';
 
 import { ServerNotebook } from '../server-notebook';
-import { isValidNotebookPath } from '../server-folder';
 
 // import { NotebookName, NotebookChangeRequest } from './shared/math-tablet-api';
 
@@ -82,30 +81,27 @@ async function onXrayPage(req: Request, res: Response, next: NextFunction): Prom
   const notebookPath = <NotebookPath>req.path;
   try {
     debug(`Debug rendering: ${notebookPath}`);
-    if (!isValidNotebookPath(notebookPath)) { return next(); }
-    let notebook: ServerNotebook;
+    if (!ServerNotebook.isValidNotebookPath(notebookPath)) { return next(); }
+    const notebook: ServerNotebook = await ServerNotebook.open(notebookPath, { mustExist: true });
     try {
-      // REVIEW: Maybe ServerNotebook.open should return undefined or null on not found.
-      notebook = await ServerNotebook.open(notebookPath);
-    } catch(err) {
-      if (err.code == 'ENOENT') {
-        const locals = {
-          title: "Notebook Not Found",
-          messageHtml: `Notebook <tt>${notebookPath}</tt> not found for debug rendering.`,
-        }
-        return res.status(404).render('expected-error', locals);
-      } else {
-        throw err;
-      }
+      const notebookHtml = await notebook.toHtml();
+      const html = `<html><head><style>${STYLESHEET}</style><script>${JAVASCRIPT}</script></head><body>${notebookHtml}</body>`;
+
+      res.set('Content-Type', 'text/html');
+      res.send(html);
+    } finally {
+      notebook.close();
     }
-
-    const notebookHtml = await notebook.toHtml();
-    const html = `<html><head><style>${STYLESHEET}</style><script>${JAVASCRIPT}</script></head><body>${notebookHtml}</body>`;
-
-    res.set('Content-Type', 'text/html');
-    res.send(html);
-
   } catch(err) {
+    // TODO: Graceful error message if notebook not found.
+    // if (err.code == 'ENOENT') {
+    //   const locals = {
+    //     title: "Notebook Not Found",
+    //     messageHtml: `Notebook <tt>${notebookPath}</tt> not found for debug rendering.`,
+    //   }
+    //   return res.status(404).render('expected-error', locals);
+    // }
+
     res.status(404).send(`Can't render debug '${notebookPath}': ${err.message}`);
   }
 }

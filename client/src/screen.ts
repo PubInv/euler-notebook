@@ -36,9 +36,9 @@ export abstract class Screen {
     screen.show();
   }
 
-  // Overridden Public Instance Methods
+  // Public Instance Properties
 
-  public abstract updateView(): void;
+  public $elt: HTMLDivElement;  // REVIEW: Make read-only?
 
   // Public Instance Methods
 
@@ -55,8 +55,6 @@ export abstract class Screen {
   }
 
   // Private Properties
-
-  protected $elt: HTMLDivElement;
 
   // Private Instance Methods
 

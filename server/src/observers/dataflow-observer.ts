@@ -26,11 +26,11 @@ import * as debug1 from 'debug';
 const MODULE = __filename.split(/[/\\]/).slice(-1)[0].slice(0,-3);
 const debug = debug1(`server:${MODULE}`);
 
+import { assert } from '../shared/common';
 import { NotebookChange, StyleObject, RelationshipObject, RelationshipRole } from '../shared/notebook';
 import { NotebookChangeRequest, StyleChangeRequest } from '../shared/math-tablet-api';
 import { ServerNotebook, ObserverInstance  } from '../server-notebook';
 import { Config } from '../config';
-import { assert } from '../common';
 
 // Types
 
@@ -161,7 +161,7 @@ export abstract class DataflowObserver implements ObserverInstance {
   }
 
   public async onClose(): Promise<void> {
-    debug(`onClose ${this.notebook._path}`);
+    debug(`onClose ${this.notebook.path}`);
     delete this.notebook;
   }
 

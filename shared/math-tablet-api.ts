@@ -34,10 +34,10 @@ export type ImageData = string;
 export type LatexData = string; // TODO: Rename TexExpression
 export type MathMlData = string;
 export type MthMtcaData = string;
+export type RequestId = '{RequestId}';
 export type SvgData = string; // TODO: Rename SvgMarkup
 export type Symbol = string;
 export type TextData = string; // TODO: Rename PlainText
-export type Tracker = string; // Tracking identifier supplied by the client.
 
 export interface SymbolData {
   name: string;
@@ -95,19 +95,19 @@ export type FolderChangeRequest =
   NotebookDeleteRequest;
 export interface FolderCreateRequest {
   type: 'createFolder';
-  folderName: FolderName;
+  name: FolderName;
 }
 export interface FolderDeleteRequest {
   type: 'deleteFolder';
-  folderName: FolderName;
+  name: FolderName;
 }
 export interface NotebookCreateRequest {
   type: 'createNotebook';
-  notebookName: NotebookName;
+  name: NotebookName;
 }
 export interface NotebookDeleteRequest {
   type: 'deleteNotebook';
-  notebookName: NotebookName;
+  name: NotebookName;
 }
 
 // Notebook Change Requests
@@ -165,84 +165,96 @@ export interface StyleMoveRequest {
 
 // Messages from the server
 
-export type ServerMessage = FolderChanged|FolderClosed|FolderOpened|NotebookChanged|NotebookClosed|NotebookOpened;
-export interface FolderChanged {
-  type: 'folderChanged';
-  folderPath: FolderPath;
+export interface ServerMessageBase {
+  requestId?: RequestId; // REVIEW: Just 'id'?
+}
+
+export interface ServerErrorMessage extends ServerMessageBase {
+  type: 'error',
+  message: string,
+}
+
+interface ServerFolderMessageBase extends ServerMessageBase {
+  type: 'folder',
+  path: FolderPath,
+}
+export interface ServerFolderChangedMessage extends ServerFolderMessageBase {
+  operation: 'changed';
   changes: FolderChange[];
 }
-export interface NotebookChanged {
-  type: 'notebookChanged';
-  notebookPath: NotebookPath;
-
-  changes: NotebookChange[];
-  complete?: boolean;            // True iff this is the last set of changes
-                                // resulting from the original request.
-  tracker?: Tracker;            // An optional, client-supplied, tracking
-                                // identifier from the original change request.
-  undoChangeRequests?: NotebookChangeRequest[];
+export interface ServerFolderClosedMessage extends ServerFolderMessageBase {
+  operation: 'closed';
 }
-export interface FolderClosed {
-  type: 'folderClosed';
-  folderPath: FolderPath;
-}
-export interface FolderOpened {
-  type: 'folderOpened';
-  // folderPath: FolderPath;
+export interface ServerFolderOpenedMessage extends ServerFolderMessageBase {
+  operation: 'opened';
   obj: FolderObject;
 }
-export interface NotebookClosed {
-  type: 'notebookClosed';
-  notebookPath: NotebookPath;
+
+interface ServerNotebookMessageBase extends ServerMessageBase {
+  type: 'notebook',
+  path: NotebookPath,
 }
-export interface NotebookOpened {
-  type: 'notebookOpened';
-  notebookPath: NotebookPath;
+export interface ServerNotebookChangedMessage extends ServerNotebookMessageBase {
+  operation: 'changed';
+  changes: NotebookChange[];
+  complete?: boolean;
+  undoChangeRequests?: NotebookChangeRequest[];
+}
+export interface ServerNotebookClosedMessage extends ServerNotebookMessageBase {
+  operation: 'closed';
+}
+export interface ServerNotebookOpenedMessage extends ServerNotebookMessageBase {
+  operation: 'opened';
   obj: NotebookObject;
 }
 
+export type ServerFolderMessage = ServerFolderChangedMessage|ServerFolderClosedMessage|ServerFolderOpenedMessage;
+export type ServerNotebookMessage = ServerNotebookChangedMessage|ServerNotebookClosedMessage|ServerNotebookOpenedMessage;
+export type ServerMessage = ServerErrorMessage|ServerFolderMessage|ServerNotebookMessage;
+
 // Messages from the client
 
-export type ClientMessage = ChangeFolder|ChangeNotebook|CloseFolder|CloseNotebook|OpenFolder|OpenNotebook|UseTool;
-export interface ChangeFolder {
-  type: 'changeFolder';
-  folderPath: FolderPath;
+interface ClientMessageBase {
+  requestId?: RequestId; // TYPESCRIPT: always added on at the end before sending. How to capture this?
+}
+
+interface ClientFolderMessageBase extends ClientMessageBase {
+  type: 'folder';
+  path: FolderPath;
+}
+export interface ClientFolderChangeMessage extends ClientFolderMessageBase {
+  operation: 'change';
   changeRequests: FolderChangeRequest[];
-  options?: ChangeFolderOptions;
 }
-export interface ChangeFolderOptions {
+export interface ClientFolderCloseMessage extends ClientFolderMessageBase {
+  operation: 'close';
 }
-export interface ChangeNotebook {
-  type: 'changeNotebook';
-  notebookPath: NotebookPath;
+export interface ClientFolderOpenMessage extends ClientFolderMessageBase {
+  operation: 'open';
+}
+
+interface ClientNotebookMessageBase extends ClientMessageBase {
+  type: 'notebook';
+  path: NotebookPath;
+}
+export interface ClientNotebookChangeMessage extends ClientNotebookMessageBase {
+  operation: 'change';
   changeRequests: NotebookChangeRequest[];
-  options?: ChangeNotebookOptions;
 }
-export interface ChangeNotebookOptions {
-  tracker?: Tracker;  // value passed back in NotebookChanged messages.
-  wantUndo?: boolean; // true iff want undo change requests in return.
+export interface ClientNotebookCloseMessage extends ClientNotebookMessageBase {
+  operation: 'close';
 }
-export interface CloseFolder {
-  type: 'closeFolder';
-  folderPath: FolderPath;
+export interface ClientNotebookOpenMessage extends ClientNotebookMessageBase {
+  operation: 'open';
 }
-export interface CloseNotebook {
-  type: 'closeNotebook';
-  notebookPath: NotebookPath;
-}
-export interface OpenFolder {
-  type: 'openFolder';
-  folderPath: FolderPath;
-}
-export interface OpenNotebook {
-  type: 'openNotebook';
-  notebookPath: NotebookPath;
-}
-export interface UseTool {
-  type: 'useTool';
-  notebookPath: NotebookPath;
+export interface ClientNotebookUseToolMessage extends ClientNotebookMessageBase {
+  operation: 'useTool';
   styleId: StyleId;
 }
+
+export type ClientFolderMessage = ClientFolderChangeMessage|ClientFolderCloseMessage|ClientFolderOpenMessage;
+export type ClientNotebookMessage = ClientNotebookChangeMessage|ClientNotebookCloseMessage|ClientNotebookOpenMessage|ClientNotebookUseToolMessage;
+export type ClientMessage = ClientFolderMessage|ClientNotebookMessage;
 
 // API Calls
 

@@ -49,13 +49,17 @@ export var router = Router();
 router.post('/debug', async function(req: Request, res: Response, _next: NextFunction) {
   try {
     const params: DebugParams = req.body;
-    const notebook = await ServerNotebook.open(params.notebookPath);
-    const styleId = params.styleId || notebook.topLevelStyleOrder().slice(-1)[0];
-    const style = notebook.getStyle(styleId);
-    var sym_table : SymbolTable  = await obtainFormulaeInContext(notebook, style);
-    const html = formatSymTable(styleId, sym_table);
-    const results: DebugResults = { html };
-    res.json(results);
+    const notebook = await ServerNotebook.open(params.notebookPath, { mustExist: true });
+    try {
+      const styleId = params.styleId || notebook.topLevelStyleOrder().slice(-1)[0];
+      const style = notebook.getStyle(styleId);
+      var sym_table : SymbolTable  = await obtainFormulaeInContext(notebook, style);
+      const html = formatSymTable(styleId, sym_table);
+      const results: DebugResults = { html };
+      res.json(results);
+    } finally {
+      notebook.close();
+    }
   } catch (err) {
     // TODO: Distinguish 400 from 500 responses
     console.error(`Error in /debug API: ${err.message}`)

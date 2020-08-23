@@ -43,7 +43,7 @@ export class AlgebraicDataflowObserver extends DataflowObserver {
   // --- PUBLIC ---
 
   public static async onOpen(notebook: ServerNotebook): Promise<DataflowObserver> {
-    debug(`Opening AlgebraicDataflowObserver for ${notebook._path}.`);
+    debug(`Opening AlgebraicDataflowObserver for ${notebook.path}.`);
     return new this(notebook);
   }
 
