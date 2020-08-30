@@ -1,0 +1,87 @@
+/*
+Math Tablet
+Copyright (C) 2019 Public Invention
+https://pubinv.github.io/PubInv/
+
+This program is free software: you can redistribute it and/or modify
+it under the terms of the GNU Affero General Public License as published by
+the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU Affero General Public License for more details.
+
+You should have received a copy of the GNU Affero General Public License
+along with this program.  If not, see <http://www.gnu.org/licenses/>.
+*/
+
+// TODO: Show last modified time for folders and notebooks
+// TODO: Animate the when adding or removing folders and notebooks
+// TODO: When another user makes a change show an indicator of what user made the change.
+
+import { assert } from "../../shared/common";
+import { FolderChange, FolderName, NotebookName } from "../../shared/folder";
+
+import { FolderScreen } from "..";
+import { HtmlElement } from "../../html-element";
+
+import { EntryList } from './entry-list';
+import { EntryType } from './entry-row';
+
+// Requirements
+
+// Exported Class
+
+export class FolderView extends HtmlElement<'div'> {
+
+  // Public Class Methods
+
+  public static create(screen: FolderScreen): FolderView {
+    return new this(screen);
+  }
+
+  // Public Instance Properties
+
+  // Public Instance Methods
+
+  public editFolderName(name: FolderName): void { this.foldersList.editName(name); }
+
+  public editNotebookName(name: NotebookName): void { this.notebooksList.editName(name); }
+
+  // ClientFolder Watcher Methods
+
+  public onChange(change: FolderChange): void {
+    switch(change.type) {
+      case 'folderCreated':   this.foldersList.addEntry(this.screen.folder, change.entry);     break;
+      case 'folderDeleted':   this.foldersList.removeEntry(change.entry);                      break;
+      case 'folderRenamed':   this.foldersList.renameEntry(change.oldName, change.entry);      break;
+      case 'notebookCreated': this.notebooksList.addEntry(this.screen.folder, change.entry);   break;
+      case 'notebookDeleted': this.notebooksList.removeEntry(change.entry);                    break;
+      case 'notebookRenamed': this.notebooksList.renameEntry(change.oldName, change.entry);    break;
+      default: assert(false); break;
+    }
+  }
+
+  // -- PRIVATE --
+
+  // Private Constructor
+
+  private constructor(screen: FolderScreen) {
+    super({ tag: 'div', appendTo: screen.$elt, class: 'view' });
+    this.screen = screen;
+    this.foldersList = new EntryList(this.$elt, screen.folder, EntryType.Folder, screen.folder.folders);
+    this.notebooksList = new EntryList(this.$elt, screen.folder, EntryType.Notebook, screen.folder.notebooks);
+  }
+
+  // Private Instance Properties
+
+  private screen: FolderScreen;
+  private foldersList: EntryList<'folder'>;
+  private notebooksList: EntryList<'notebook'>;
+
+  // Private Instance Methods
+
+}
+

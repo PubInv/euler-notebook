@@ -34,12 +34,17 @@ interface Attributes {
 }
 
 interface AsyncListeners {
+  blur?: SyncListener<FocusEvent>;
+  change?: AsyncListener<InputEvent>;
   click?: AsyncListener<MouseEvent>;
+  input?: AsyncListener<InputEvent>;
+  keypress?: AsyncListener<KeyboardEvent>;
 }
 
 interface SyncListeners {
   // REVIEW: Can we populate this declaratively from the standard DOM types?
   blur?: SyncListener<FocusEvent>;
+  change?: SyncListener<InputEvent>;
   click?: SyncListener<MouseEvent>;
   dblclick?: SyncListener<MouseEvent>;
   dragend?: SyncListener<DragEvent>;
@@ -48,7 +53,9 @@ interface SyncListeners {
   dragenter?: SyncListener<DragEvent>;
   drop?: SyncListener<DragEvent>;
   focus?: SyncListener<FocusEvent>;
-  input?: SyncListener<Event>; // REVIEW: More specific event type?
+  input?: SyncListener<InputEvent>;
+  keydown?: SyncListener<KeyboardEvent>;
+  keypress?: SyncListener<KeyboardEvent>;
   keyup?: SyncListener<KeyboardEvent>;
   mousedown?: SyncListener<MouseEvent>;
   pointercancel?: SyncListener<PointerEvent>;
@@ -62,7 +69,6 @@ interface SyncListeners {
 }
 
 interface NewCommonOptions {
-  appendTo?: Element;
   asyncListeners?: AsyncListeners;
   attrs?: Attributes;
   class?: ElementClass;
@@ -72,17 +78,23 @@ interface NewCommonOptions {
   listeners?: SyncListeners;
   style?: string;
   title?: string; // TODO: Implement
+
+  // TYPESCRIPT: Allow only one of the following to be used at a time.
+  appendTo?: Element;
+  prependTo?: Element
+  replaceInner?: Element;
 }
 
-interface NewHtmlOptions<K extends keyof HTMLElementTagNameMap> extends NewCommonOptions {
+type ElementOrSpecification = HtmlElementSpecification<any>|HTMLElement;
+export interface HtmlElementSpecification<K extends keyof HTMLElementTagNameMap> extends NewCommonOptions {
   tag: K;
-  children?: NewHtmlOptions<any>[];
+  children?: ElementOrSpecification[];
   html?: Html;
 }
 
-interface NewSvgOptions<K extends keyof SVGElementTagNameMap> extends NewCommonOptions {
+interface SvgElementSpecification<K extends keyof SVGElementTagNameMap> extends NewCommonOptions {
   tag: K;
-  children?: NewSvgOptions<any>[];
+  children?: SvgElementSpecification<any>[];
   html?: Html;
 }
 
@@ -92,22 +104,25 @@ const SVG_NS = 'http://www.w3.org/2000/svg';
 
 const ENUMERATED_ATTRIBUTES = new Set<string>([ 'draggable']);
 
+export const CHECKMARK_ENTITY = '&#x2713;'
 export const CLOSE_X_ENTITY = '&#x2715;'
+export const DOTTED_CIRCLE_ENTITY = '&#x25CC;';
+export const PENCIL_ENTITY = '&#x270E;';
 export const RIGHT_TRIANGLE_ENTITY = '&#x25B6;';
 export const RIGHT_ARROW_ENTITY = '&#x27A1;';
 
 // Exported Functions
 
 export function $<K extends keyof HTMLElementTagNameMap>(root: Element|Document, selector: string): HTMLElementTagNameMap[K] {
-  const $elts = $all<K>(root, selector);
-  assert($elts.length == 1, `Expected one element for selector '${selector}', got ${$elts.length}.`);
-  return $elts[0];
+  const $elt = $maybe<K>(root, selector)!;
+  assert($elt, `Expected element for selector '${selector}'.`);
+  return $elt;
 }
 
-export function $svg<K extends keyof SVGElementTagNameMap>(root: Element|Document, selector: string): SVGElementTagNameMap[K] {
-  const $elts = $allSvg<K>(root, selector);
-  assert($elts.length == 1, `Expected one element for selector '${selector}', got ${$elts.length}.`);
-  return $elts[0];
+export function $maybe<K extends keyof HTMLElementTagNameMap>(root: Element|Document, selector: string): HTMLElementTagNameMap[K]|undefined {
+  const $elts = $all<K>(root, selector);
+  assert($elts.length <= 1, `Expected no more than one element for selector '${selector}', got ${$elts.length}.`);
+  return $elts.length>=1 ? $elts[0] : undefined;
 }
 
 export function $all<K extends keyof HTMLElementTagNameMap>(root: Element|Document, selector: string): NodeListOf<HTMLElementTagNameMap[K]> {
@@ -128,24 +143,6 @@ export function $attach<K extends keyof HTMLElementTagNameMap>(
   return $elt;
 }
 
-export function $new<K extends keyof HTMLElementTagNameMap>(options: NewHtmlOptions<K>): HTMLElementTagNameMap[K] {
-  const $elt = document.createElement(options.tag);
-  $configure($elt, options);
-  if (options.html) { $elt.innerHTML = options.html; }
-  if (options.children) {
-    for (const childOptions of options.children) {
-      $new({ ...childOptions, appendTo: $elt});
-    }
-  }
-  return $elt;
-}
-
-export function $newSvg<K extends keyof SVGElementTagNameMap>(options: NewSvgOptions<K>): SVGElementTagNameMap[K] {
-  const $elt = document.createElementNS(SVG_NS, options.tag);
-  $configure($elt, options);
-  return $elt;
-}
-
 export function $configure($elt: HTMLElement|SVGElement, options: NewCommonOptions): void {
   if (options.id) { $elt.setAttribute('id', options.id); }
   if (options.class) { $elt.classList.add(options.class); }
@@ -156,6 +153,8 @@ export function $configure($elt: HTMLElement|SVGElement, options: NewCommonOptio
   if (options.style) { $elt.setAttribute('style', options.style); }
   if (options.hidden) { $elt.style.display = 'none'; }
   if (options.appendTo) { options.appendTo.appendChild($elt); }
+  // else if (options.prependTo) { options.prependTo.insertBefore($elt, options.prependTo.firstChild); }
+  else if (options.replaceInner) { options.replaceInner.innerHTML = ''; options.replaceInner.appendChild($elt); }
   if (options.listeners) { attachSyncListeners($elt, options.listeners); }
   if (options.asyncListeners) { attachAsyncListeners($elt, options.asyncListeners); }
 }
@@ -164,8 +163,36 @@ export function $configureAll($elts: NodeListOf<HTMLElement|SVGElement>, options
   for (const $elt of $elts) { $configure($elt, options); }
 }
 
-// From: http://shebang.brandonmintern.com/foolproof-html-escaping-in-javascript/
+export function $new<K extends keyof HTMLElementTagNameMap>(options: HtmlElementSpecification<K>): HTMLElementTagNameMap[K] {
+  const $elt = document.createElement(options.tag);
+  $configure($elt, options);
+  if (options.html) { $elt.innerHTML = options.html; }
+  if (options.children) {
+    for (const childOptions of options.children) {
+      if (!(childOptions instanceof HTMLElement)) {
+        $new({ ...childOptions, appendTo: $elt});
+      } else {
+        $elt.append(childOptions);
+      }
+    }
+  }
+  return $elt;
+}
+
+export function $newSvg<K extends keyof SVGElementTagNameMap>(options: SvgElementSpecification<K>): SVGElementTagNameMap[K] {
+  const $elt = document.createElementNS(SVG_NS, options.tag);
+  $configure($elt, options);
+  return $elt;
+}
+
+export function $svg<K extends keyof SVGElementTagNameMap>(root: Element|Document, selector: string): SVGElementTagNameMap[K] {
+  const $elts = $allSvg<K>(root, selector);
+  assert($elts.length == 1, `Expected one element for selector '${selector}', got ${$elts.length}.`);
+  return $elts[0];
+}
+
 export function escapeHtml(str: string): Html {
+  // From: http://shebang.brandonmintern.com/foolproof-html-escaping-in-javascript/
   var $div = document.createElement('div');
   $div.appendChild(document.createTextNode(str));
   return $div.innerHTML;

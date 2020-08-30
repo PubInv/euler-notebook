@@ -28,7 +28,7 @@ import { readdirSync, writeFileSync } from 'fs'; // LATER: Eliminate synchronous
 import { join } from 'path';
 
 import { assert, Timestamp } from './shared/common';
-import { NotebookPath, NOTEBOOK_PATH_RE, NotebookName, NOTEBOOK_NAME_RE, FolderPath } from './shared/folder';
+import { NotebookPath, NOTEBOOK_PATH_RE, NotebookName, FolderPath, NotebookEntry } from './shared/folder';
 import {
   Notebook, NotebookObject, NotebookChange, StyleObject, StyleRole, StyleType, StyleSource, StyleId,
   RelationshipObject, StyleMoved, StylePosition, VERSION, StyleChanged, RelationshipDeleted,
@@ -37,11 +37,11 @@ import {
 import {
   NotebookChangeRequest, StyleMoveRequest, StyleInsertRequest, StyleChangeRequest,
   RelationshipDeleteRequest, StyleDeleteRequest, RelationshipInsertRequest,
-  StylePropertiesWithSubprops, LatexData, StyleConvertRequest, ServerNotebookChangedMessage, ClientNotebookChangeMessage, ClientNotebookUseToolMessage
+  StylePropertiesWithSubprops, LatexData, StyleConvertRequest, ServerNotebookChangedMessage, ClientNotebookChangeMessage, ClientNotebookUseToolMessage, ServerNotebookMovedMessage
 } from './shared/math-tablet-api';
 
 import { ClientId } from './client-socket';
-import { AbsDirectoryPath, ROOT_DIR_PATH, mkDir, readFile, rmRaf, writeFile } from './file-system';
+import { AbsDirectoryPath, ROOT_DIR_PATH, mkDir, readFile, rename, rmRaf, writeFile } from './file-system';
 import { constructSubstitution } from './wolframscript';
 
 
@@ -91,6 +91,7 @@ interface StyleOrderMapping {
 export interface Watcher {
   onChanged(msg: ServerNotebookChangedMessage): void;
   onClosed(): void;
+  onMoved(msg: ServerNotebookMovedMessage): void;
 }
 
 // Constants
@@ -113,10 +114,6 @@ export class ServerNotebook extends Notebook {
 
   public static isOpen(path: NotebookPath): boolean {
     return this.instanceMap.has(path);
-  }
-
-  public static isValidNotebookName(name: NotebookName): boolean {
-    return NOTEBOOK_NAME_RE.test(name);
   }
 
   public static isValidNotebookPath(path: NotebookPath): boolean {
@@ -175,9 +172,26 @@ export class ServerNotebook extends Notebook {
     this.observerClasses.delete(source);
   }
 
-  public static registerObserver(source: StyleSource, observerClass: ObserverClass): void {
-    debug(`Registering observer: ${source}`);
-    this.observerClasses.set(source, observerClass);
+  public static async move(oldPath: NotebookPath, newPath: NotebookPath): Promise<NotebookEntry> {
+    // Called by the containing ServerFolder when one of its notebooks is renamed.
+
+    const oldAbsPath = absDirPathFromNotebookPath(oldPath);
+    const newAbsPath = absDirPathFromNotebookPath(newPath);
+
+    // REVIEW: If there is an existing *file* (not directory) at the new path then it will be overwritten silently.
+    //         However, we don't expect random files to be floating around out notebook storage filesystem.
+    await rename(oldAbsPath, newAbsPath);
+
+    if (this.isOpen(oldPath)) {
+      const info = this.instanceMap.get(oldPath)!;
+      this.instanceMap.delete(oldPath);
+      this.instanceMap.set(newPath, info);
+      // REVIEW: Could there be a race condition due to the async interval waiting on the open promise?
+      const instance = await info.promise;
+      instance.moved(newPath);
+    }
+
+    return { path: newPath, name: this.nameFromPath(newPath) }
   }
 
   public static open(path: NotebookPath, options: OpenOptions): Promise<ServerNotebook> {
@@ -199,7 +213,13 @@ export class ServerNotebook extends Notebook {
   }
 
   public static openEphemeral(): Promise<ServerNotebook> {
+    // For units testing, etc., to create a notebook that is not persisted to the filesystem.
     return this.open(this.generateUniqueEphemeralPath(), { ephemeral: true, mustNotExist: true });
+  }
+
+  public static registerObserver(source: StyleSource, observerClass: ObserverClass): void {
+    debug(`Registering observer: ${source}`);
+    this.observerClasses.set(source, observerClass);
   }
 
   // Public Class Event Handlers
@@ -1173,6 +1193,21 @@ export class ServerNotebook extends Notebook {
       afterId: oldAfterId
     };
     return undoChangeRequest;
+  }
+
+  private moved(newPath: NotebookPath): void {
+    const msg: ServerNotebookMovedMessage = {
+      type: 'notebook',
+      path: this.path,
+      operation: 'moved',
+      newPath,
+    };
+    this.path = newPath;
+    for (const watcher of this.watchers) {
+      // if (watcher === originatingWatcher) { continue; }
+      watcher.onMoved(msg);
+    }
+    // TODO: Notify observers.
   }
 
   private destroyInstance(): void {

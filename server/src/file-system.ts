@@ -19,7 +19,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 // Requirements
 
-import { mkdir, readdir, readFile as fsReadFile, rmdir, stat, writeFile as fsWriteFile } from 'fs';
+import { mkdir, readdir, readFile as fsReadFile, rename as fsRename, rmdir, stat, writeFile as fsWriteFile } from 'fs';
 import { join } from 'path';
 import { promisify } from 'util';
 
@@ -40,6 +40,7 @@ export const dirStat = promisify(stat);
 export const mkDir = promisify(mkdir);
 export const readDir = promisify(readdir);
 export const readFile = promisify(fsReadFile);
+export const rename = promisify(fsRename);
 export const rmDir = promisify(rmdir);
 export const rmRaf = promisify(rimraf);
 export const writeFile = promisify(fsWriteFile);

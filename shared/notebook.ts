@@ -20,6 +20,8 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 // Requirements
 
+import { NOTEBOOK_NAME_RE, NotebookName } from "./folder";
+
 // Types
 
 type CssLength = string; // TODO: Duplicated in stroke.ts
@@ -355,6 +357,12 @@ export const VERSION = "0.0.15";
 // Exported Class
 
 export class Notebook {
+
+  // Public Class Property Functions
+
+  public static isValidNotebookName(name: NotebookName): boolean {
+    return NOTEBOOK_NAME_RE.test(name);
+  }
 
   // Constructor
 

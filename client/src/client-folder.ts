@@ -19,10 +19,10 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 // Requirements
 
-import { Folder, FolderObject, FolderPath, NotebookName, FolderName, FolderChange, NotebookPath, FolderCreated, NotebookCreated } from './shared/folder';
+import { Folder, FolderObject, FolderPath, NotebookName, FolderName, FolderChange, FolderCreated, NotebookCreated, FolderEntry, NotebookEntry, FolderRenamed, NotebookRenamed, FolderDeleted, NotebookDeleted } from './shared/folder';
 import {
   FolderChangeRequest, ClientFolderChangeMessage, ServerFolderChangedMessage, ClientFolderOpenMessage,
-  ServerFolderMessage, ServerFolderOpenedMessage, ServerFolderClosedMessage, ClientFolderCloseMessage, FolderCreateRequest, NotebookCreateRequest, FolderDeleteRequest, NotebookDeleteRequest
+  ServerFolderMessage, ServerFolderOpenedMessage, ServerFolderClosedMessage, ClientFolderCloseMessage, FolderCreateRequest, NotebookCreateRequest, FolderDeleteRequest, NotebookDeleteRequest, FolderRenameRequest, NotebookRenameRequest
 } from './shared/math-tablet-api';
 
 import { appInstance } from './app';
@@ -95,7 +95,7 @@ export class ClientFolder extends Folder {
 
   // Public Instance Methods
 
-  public async newFolder(): Promise<FolderPath> {
+  public async newFolder(): Promise<FolderEntry> {
     assert(!this.closed);
 
     const name = this.getUntitledFolderName();
@@ -112,10 +112,10 @@ export class ClientFolder extends Folder {
     assert(response.changes.length == 1);
     assert(response.changes[0].type == 'folderCreated');
     const change = <FolderCreated>response.changes[0];
-    return change.entry.path;
+    return change.entry;
   }
 
-  public async newNotebook(): Promise<NotebookPath> {
+  public async newNotebook(): Promise<NotebookEntry> {
     assert(!this.closed);
     const name = this.getUntitledNotebookName();
     const changeRequest: NotebookCreateRequest = { type: 'createNotebook', name };
@@ -131,23 +131,41 @@ export class ClientFolder extends Folder {
     assert(response.changes.length == 1);
     assert(response.changes[0].type == 'notebookCreated');
     const change = <NotebookCreated>response.changes[0];
-    return change.entry.path;
+    return change.entry;
   }
 
   public async removeFolder(name: FolderName): Promise<void> {
     assert(!this.closed);
-    assert(this.folders.find(entry=>entry.name==name));
+    assert(this.hasFolderNamed(name, true));
     const changeRequest: FolderDeleteRequest = { type: 'deleteFolder', name };
-    const change = await this.sendChangeRequest(changeRequest);
+    const change = await this.sendChangeRequest<FolderDeleted>(changeRequest);
     assert(change.type == 'folderDeleted');
   }
 
   public async removeNotebook(name: NotebookName): Promise<void> {
     assert(!this.closed);
-    assert(this.notebooks.find(entry=>entry.name==name));
+    assert(this.hasNotebookNamed(name, true));
     const changeRequest: NotebookDeleteRequest = { type: 'deleteNotebook', name };
-    const change = await this.sendChangeRequest(changeRequest);
+    const change = await this.sendChangeRequest<NotebookDeleted>(changeRequest);
     assert(change.type == 'notebookDeleted');
+  }
+
+  public async renameFolder(name: FolderName, newName: FolderName): Promise<FolderRenamed> {
+    assert(!this.closed);
+    assert(this.hasFolderNamed(name, true));
+    const changeRequest: FolderRenameRequest = { type: 'renameFolder', name, newName };
+    const change = await this.sendChangeRequest<FolderRenamed>(changeRequest);
+    assert(change.type == 'folderRenamed');
+    return change;
+  }
+
+  public async renameNotebook(name: NotebookName, newName: NotebookName): Promise<NotebookRenamed> {
+    assert(!this.closed);
+    assert(this.hasNotebookNamed(name, true));
+    const changeRequest: NotebookRenameRequest = { type: 'renameNotebook', name, newName };
+    const change = await this.sendChangeRequest<NotebookRenamed>(changeRequest);
+    assert(change.type == 'notebookRenamed');
+    return change;
   }
 
   public unwatch(watcher: Watcher): void {
@@ -203,16 +221,6 @@ export class ClientFolder extends Folder {
 
   // Private Instance Property Functions
 
-  private hasFolderNamed(name: FolderName): boolean {
-    // I18N:
-    return !!this.folders.find(e=>name.localeCompare(e.name, 'en', { sensitivity: 'base' })==0);
-  }
-
-  private hasNotebookNamed(name: NotebookName): boolean {
-    // I18N:
-    return !!this.notebooks.find(e=>name.localeCompare(e.name, 'en', { sensitivity: 'base' })==0);
-  }
-
   private get watchers(): IterableIterator<Watcher> {
     return ClientFolder.instanceMap.get(this.path)!.watchers.values();
   }
@@ -249,10 +257,10 @@ export class ClientFolder extends Folder {
     }
   }
 
-  private async sendChangeRequest(changeRequest: FolderChangeRequest): Promise<FolderChange> {
+  private async sendChangeRequest<T extends FolderChange>(changeRequest: FolderChangeRequest): Promise<T> {
     const changes = await this.sendChangeRequests([ changeRequest ]);
     assert(changes.length == 1);
-    return changes[0];
+    return <T>changes[0];
   }
 
   private async sendChangeRequests(changeRequests: FolderChangeRequest[]): Promise<FolderChange[]> {

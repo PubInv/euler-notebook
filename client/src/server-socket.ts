@@ -111,14 +111,14 @@ export class ServerSocket {
   private onWsClose(event: CloseEvent): void {
     // For terminating server: code = 1006, reason = "";
     console.log(`Notebook Conn: socket closed: ${event.code} ${event.reason}`);
-    console.dir(event);
+    // console.dir(event);
     addErrorMessageToHeader(`Socket closed by server. Refresh this page in your browser to reconnect.`);
     // LATER: Attempt to reconnect after a few seconds with exponential backoff.
   }
 
-  private onWsError(event: Event): void {
+  private onWsError(_event: Event): void {
     console.error(`Notebook Conn: socket error.`);
-    console.dir(event);
+    // console.dir(event);
     // REVIEW: Error info?
     this.connectPromise.reject(new Error(`Cannot connect to server.`));
 

@@ -40,19 +40,26 @@ export type NotebookPath = '{notebook-path}';
 
 export type Path = FolderPath | NotebookPath;
 
-export interface FolderEntry {
-  name: FolderName;
-  path: FolderPath;
+export interface Entry<N,P> {
+  name: N;
+  path: P;
 }
 
-export type FolderChange = FolderCreated|FolderDeleted|NotebookCreated|NotebookDeleted;
+export type FolderEntry = Entry<FolderName, FolderPath>;
+
+export type FolderChange = FolderCreated|FolderDeleted|FolderRenamed|NotebookCreated|NotebookDeleted|NotebookRenamed;
 export interface FolderCreated {
   type: 'folderCreated';
   entry: FolderEntry;
 }
 export interface FolderDeleted {
   type: 'folderDeleted';
-  name: FolderName;
+  entry: FolderEntry;
+}
+export interface FolderRenamed {
+  type: 'folderRenamed';
+  entry: FolderEntry;
+  oldName: FolderName;
 }
 export interface NotebookCreated {
   type: 'notebookCreated';
@@ -60,7 +67,12 @@ export interface NotebookCreated {
 }
 export interface NotebookDeleted {
   type: 'notebookDeleted';
-  name: NotebookName;
+  entry: NotebookEntry;
+}
+export interface NotebookRenamed {
+  type: 'notebookRenamed';
+  entry: NotebookEntry;
+  oldName: NotebookName;
 }
 
 export interface FolderObject {
@@ -72,10 +84,7 @@ export interface FolderObject {
 
 // An entry in a list of notebooks.
 // NOT an entry in a notebook.
-export interface NotebookEntry {
-  name: NotebookName;
-  path: NotebookPath;
-}
+export type NotebookEntry = Entry<NotebookName, NotebookPath>;
 
 // Constants
 
@@ -83,13 +92,19 @@ export interface NotebookEntry {
 // SECURITY REVIEW: Any danger in allowing backslashes or forward slashes?
 //         Maybe should customize the RE to the correct separator depending on the system.
 export const FOLDER_NAME_RE = /^(\w+)$/;
-export const FOLDER_PATH_RE = /^\/(\w+\/)*$/;
+export const FOLDER_PATH_RE = /^\/((\w+)\/)*$/;
 export const NOTEBOOK_NAME_RE = /^(\w+)$/;
 export const NOTEBOOK_PATH_RE = /^\/((\w+\/)*)(\w+)\.mtnb$/;
 
 // Exported Class
 
 export class Folder implements FolderObject {
+
+  // Public Class Property Functions
+
+  public static isValidFolderName(name: FolderName): boolean {
+    return FOLDER_NAME_RE.test(name);
+  }
 
   // Public Instance Properties
 
@@ -98,18 +113,74 @@ export class Folder implements FolderObject {
   public notebooks: NotebookEntry[];
   public folders: FolderEntry[];
 
+  // Public Instance Property Functions
+
   public get isEmpty(): boolean {
     return (this.folders.length + this.notebooks.length == 0);
+  }
+
+  public hasFolderNamed(
+    name: FolderName,
+    sensitive?: boolean,    // true if strings much match exactly. false accommodates case insensitivity of the underlying filesystem.
+  ): boolean {
+    // REVIEW: JavaScript String's toUpperCase may not match exactly the file system's case insensitivity.
+    // REVIEW: I18N issues?
+    let nameUpperCase = !sensitive && name.toUpperCase();
+    const compareFn = sensitive ?
+                        (entry:FolderEntry)=>entry.name==name :
+                        (entry:FolderEntry)=>entry.name.toUpperCase() == nameUpperCase;
+    return !!this.folders.find(compareFn);
+  }
+
+  public hasNotebookNamed(
+    name: NotebookName,
+    sensitive?: boolean,    // true if strings much match exactly. false accommodates case insensitivity of the underlying filesystem.
+  ): boolean {
+    // REVIEW: JavaScript String's toUpperCase may not match exactly the file system's case insensitivity.
+    // REVIEW: I18N issues?
+    let nameUpperCase = !sensitive && name.toUpperCase();
+    const compareFn = sensitive ?
+                        (entry:NotebookEntry)=>entry.name==name :
+                        (entry:NotebookEntry)=>entry.name.toUpperCase() == nameUpperCase;
+    return !!this.notebooks.find(compareFn);
   }
 
   // Public Instance Methods
 
   public applyChange(change: FolderChange): void {
     switch(change.type) {
-      case 'folderCreated':     this.createFolder(change); break;
-      case 'folderDeleted':     this.deleteFolder(change); break;
-      case 'notebookCreated':   this.createNotebook(change); break;
-      case 'notebookDeleted':   this.deleteNotebook(change); break;
+      case 'folderCreated': {
+        this.folders.push(change.entry);
+        break;
+      }
+      case 'folderDeleted': {
+        const i = this.folderIndex(change.entry.name);
+        assert(i>=0);
+        this.folders.splice(i,1);
+        break;
+      }
+      case 'folderRenamed':  {
+        const i = this.folderIndex(change.oldName);
+        assert(i>=0);
+        this.folders[i] = change.entry;
+        break;
+      }
+      case 'notebookCreated': {
+        this.notebooks.push(change.entry);
+        break;
+      }
+      case 'notebookDeleted': {
+        const i = this.notebookIndex(change.entry.name);
+        assert(i>=0);
+        this.folders.splice(i,1);
+        break;
+      }
+      case 'notebookRenamed': {
+        const i = this.notebookIndex(change.oldName);
+        assert(i>=0);
+        this.notebooks[i] = change.entry;
+        break;
+      }
       default:
         throw new Error(`Applying unexpected change type: ${(<any>change).type}`);
     }
@@ -133,29 +204,16 @@ export class Folder implements FolderObject {
 
   // Private Instance Properties
 
+  // Private Instance Property Functions
+
+  private folderIndex(name: FolderName): number {
+    return this.folders.findIndex(entry=>(entry.name==name));
+  }
+
+  private notebookIndex(name: NotebookName): number {
+    return this.notebooks.findIndex(entry=>(entry.name==name));
+  }
+
   // Private Instance Methods
 
-  private createFolder(change: FolderCreated): void {
-    // REVIEW: Keep in sorted order?
-    this.folders.push(change.entry);
-  }
-
-  private deleteFolder(change: FolderDeleted): void {
-    // REVIEW: Case-sensitivity?
-    const i = this.folders.findIndex(entry=>(entry.name==change.name));
-    assert(i>=0);
-    this.folders.splice(i,1);
-  }
-
-  private createNotebook(change: NotebookCreated): void {
-    // REVIEW: Keep in sorted order?
-    this.notebooks.push(change.entry);
-  }
-
-  private deleteNotebook(change: NotebookDeleted): void {
-    // REVIEW: Case-sensitivity?
-    const i = this.notebooks.findIndex(entry=>(entry.name==change.name));
-    assert(i>=0);
-    this.folders.splice(i,1);
-  }
 }

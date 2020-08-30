@@ -27,12 +27,12 @@ import { join } from 'path';
 
 import { assert } from './shared/common';
 import {
-  Folder, FolderEntry, FolderName, FolderObject, FolderPath, FOLDER_NAME_RE, FOLDER_PATH_RE, NotebookEntry,
+  Folder, FolderEntry, FolderName, FolderObject, FolderPath, FOLDER_PATH_RE, NotebookEntry,
   NotebookName, NotebookPath, FolderChange,
 } from './shared/folder';
-import { ClientFolderChangeMessage, ServerFolderChangedMessage } from './shared/math-tablet-api';
+import { ClientFolderChangeMessage, ServerFolderChangedMessage, ServerFolderMovedMessage } from './shared/math-tablet-api';
 
-import { AbsDirectoryPath, ROOT_DIR_PATH, dirStat, mkDir, readDir, rmDir } from './file-system';
+import { AbsDirectoryPath, ROOT_DIR_PATH, dirStat, mkDir, readDir, rename, rmDir } from './file-system';
 import { ServerNotebook, notebookPath } from './server-notebook';
 
 const MODULE = __filename.split(/[/\\]/).slice(-1)[0].slice(0,-3);
@@ -55,6 +55,7 @@ interface OpenOptions {
 export interface Watcher {
   onChanged(msg: ServerFolderChangedMessage): void;
   onClosed(): void;
+  onMoved(msg: ServerFolderMovedMessage): void;
 }
 
 // Exported Class
@@ -63,17 +64,60 @@ export class ServerFolder extends Folder {
 
   // Public Class Properties
 
-  public static isValidFolderName(name: FolderName): boolean {
-    return FOLDER_NAME_RE.test(name);
-  }
-
   public static nameFromPath(path: FolderPath): FolderName {
     const match = FOLDER_PATH_RE.exec(path);
-    if (!match) { throw new Error(`Invalid notebook path: ${path}`); }
-    return <FolderName>match[3] || 'Root'; // REVIEW: Could use user name?
+    if (!match) { throw new Error(`Invalid folder path: ${path}`); }
+    return <FolderName>match[2] || 'Root'; // REVIEW: Could use user name for the Root folder?
+  }
+
+  // Public Class Property Functions
+
+  public static isOpen(path: FolderPath): boolean {
+    return this.instanceMap.has(path);
   }
 
   // Public Class Methods
+
+  public static async close(path: FolderPath): Promise<boolean> {
+    // Closes the specified folder.
+    // All watchers are notified.
+    // Has no effect if the folder is not open.
+    // Returns true iff the folder was open.
+    if (!this.isOpen(path)) { return false; }
+    const info = this.instanceMap.get(path)!;
+    const folder = await info.promise;
+    folder.destroyInstance();
+    return true;
+  }
+
+  public static async delete(path: FolderPath): Promise<void> {
+    this.close(path); // no-op if the folder is not open.
+    const absPath = absDirPathFromFolderPath(path);
+    debug(`Deleting folder directory ${absPath}`);
+    await rmDir(absPath); // TODO: Handle failure.
+  }
+
+  public static async move(oldPath: FolderPath, newPath: FolderPath): Promise<FolderEntry> {
+    // Called by the containing ServerFolder when one of its subfolders is renamed.
+
+    const oldAbsPath = absDirPathFromFolderPath(oldPath);
+    const newAbsPath = absDirPathFromFolderPath(newPath);
+
+    // REVIEW: If there is an existing *file* (not directory) at the new path then it will be overwritten silently.
+    //         However, we don't expect random files to be floating around out notebook storage filesystem.
+    await rename(oldAbsPath, newAbsPath);
+
+    if (this.isOpen(oldPath)) {
+      const info = this.instanceMap.get(oldPath)!;
+      this.instanceMap.delete(oldPath);
+      this.instanceMap.set(newPath, info);
+      // REVIEW: Could there be a race condition due to the async interval waiting on the open promise?
+      const instance = await info.promise;
+      instance.moved(newPath);
+    }
+
+    return { path: newPath, name: this.nameFromPath(newPath) }
+  }
 
   public static open(path: FolderPath, options: OpenOptions): Promise<ServerFolder> {
     let info = this.instanceMap.get(path);
@@ -91,7 +135,6 @@ export class ServerFolder extends Folder {
     }
     return info.promise;
   }
-
 
   public static validateFolderName(name: FolderName): void {
     if (!this.isValidFolderName(name)) { throw new Error(`Invalid folder name: ${name}`); }
@@ -132,7 +175,7 @@ export class ServerFolder extends Folder {
         case 'createFolder': {
           const name = changeRequest.name;
           ServerFolder.validateFolderName(name)
-          const path = subfolderPath(this.path, name);
+          const path = childFolderPath(this.path, name);
           debug(`Creating folder: ${path}`);
           const absPath = absDirPathFromFolderPath(path);
           console.log(absPath);
@@ -153,18 +196,32 @@ export class ServerFolder extends Folder {
         }
         case 'deleteFolder': {
           const name = changeRequest.name;
-          const path = subfolderPath(this.path, name);
-          const absPath = absDirPathFromFolderPath(path);
-          debug(`Deleting folder directory ${absPath}`);
-          await rmDir(absPath); // TODO: Handle failure.
-          change = { type: 'folderDeleted', name };
+          const path = childFolderPath(this.path, name);
+          ServerFolder.delete(path);
+          change = { type: 'folderDeleted', entry: { name, path }};
           break;
         }
         case 'deleteNotebook': {
           const name = changeRequest.name;
           const path = notebookPath(this.path, name);
-          ServerNotebook.delete(path);
-          change = { type: 'notebookDeleted', name };
+          await ServerNotebook.delete(path);
+          change = { type: 'notebookDeleted', entry: { name, path }};
+          break;
+        }
+        case 'renameFolder': {
+          const oldName = changeRequest.name;
+          const oldPath = childFolderPath(this.path, oldName);
+          const newPath = childFolderPath(this.path, changeRequest.newName);
+          const entry = await ServerFolder.move(oldPath, newPath);
+          change = { type: 'folderRenamed', entry, oldName };
+          break;
+        }
+        case 'renameNotebook': {
+          const oldName = changeRequest.name;
+          const oldPath = notebookPath(this.path, oldName);
+          const newPath = notebookPath(this.path, changeRequest.newName);
+          const entry = await ServerNotebook.move(oldPath, newPath);
+          change = { type: 'notebookRenamed', entry, oldName };
           break;
         }
       }
@@ -271,6 +328,21 @@ export class ServerFolder extends Folder {
     for (const watcher of info.watchers) { watcher.onClosed(); }
   }
 
+  private moved(newPath: FolderPath): void {
+    const msg: ServerFolderMovedMessage = {
+      type: 'folder',
+      path: this.path,
+      operation: 'moved',
+      newPath,
+    };
+    this.path = newPath;
+    for (const watcher of this.watchers) {
+      // if (watcher === originatingWatcher) { continue; }
+      watcher.onMoved(msg);
+    }
+    // TODO: recursively "move" open child folders and notebooks.
+  }
+
 }
 
 // Exported Functions
@@ -289,6 +361,13 @@ function absDirPathFromFolderPath(path: FolderPath): AbsDirectoryPath {
   return join(ROOT_DIR_PATH, ...pathSegments);
 }
 
-function subfolderPath(path: FolderPath, name: FolderName): FolderPath {
+function childFolderPath(path: FolderPath, name: FolderName): FolderPath {
   return <FolderPath>`${path}${name}/`;
 }
+
+// function parentFolderPath(path: FolderPath): FolderPath {
+//   if (<string>path == '/') { throw new Error("Root folder does not have a parent folder."); }
+//   const pathSegments = path.split('/');
+//   pathSegments.splice(-2, 1); // Modifies pathSegments as a side-effect.
+//   return <FolderPath>pathSegments.join('/');
+// }

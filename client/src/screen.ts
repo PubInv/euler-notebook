@@ -18,6 +18,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
 import { NotebookChange } from "./shared/notebook";
+import { assert } from "./shared/common";
 
 // Requirements
 
@@ -29,8 +30,8 @@ export abstract class Screen {
   // Public Class Methods
 
   public static show(screen: Screen): void {
-    // REVIEW: check if we are showing a screen that is already visible?
-    console.log(`Showing ${screen.$elt.id}`);
+    // console.log(`Showing ${screen.$elt.id}`);
+    assert(screen !== this.visibleScreen);
     if (this.visibleScreen) { this.visibleScreen.hide(); }
     this.visibleScreen = screen;
     screen.show();

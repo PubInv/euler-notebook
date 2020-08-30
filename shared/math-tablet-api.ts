@@ -91,8 +91,10 @@ export interface StylePropertiesWithSubprops extends StyleProperties {
 export type FolderChangeRequest =
   FolderCreateRequest|
   FolderDeleteRequest|
+  FolderRenameRequest|
   NotebookCreateRequest|
-  NotebookDeleteRequest;
+  NotebookDeleteRequest|
+  NotebookRenameRequest;
 export interface FolderCreateRequest {
   type: 'createFolder';
   name: FolderName;
@@ -101,6 +103,11 @@ export interface FolderDeleteRequest {
   type: 'deleteFolder';
   name: FolderName;
 }
+export interface FolderRenameRequest {
+  type: 'renameFolder';
+  name: FolderName;
+  newName: FolderName;
+}
 export interface NotebookCreateRequest {
   type: 'createNotebook';
   name: NotebookName;
@@ -108,6 +115,11 @@ export interface NotebookCreateRequest {
 export interface NotebookDeleteRequest {
   type: 'deleteNotebook';
   name: NotebookName;
+}
+export interface NotebookRenameRequest {
+  type: 'renameNotebook';
+  name: NotebookName;
+  newName: NotebookName;
 }
 
 // Notebook Change Requests
@@ -174,7 +186,7 @@ export interface ServerErrorMessage extends ServerMessageBase {
   message: string,
 }
 
-interface ServerFolderMessageBase extends ServerMessageBase {
+export interface ServerFolderMessageBase extends ServerMessageBase {
   type: 'folder',
   path: FolderPath,
 }
@@ -184,6 +196,10 @@ export interface ServerFolderChangedMessage extends ServerFolderMessageBase {
 }
 export interface ServerFolderClosedMessage extends ServerFolderMessageBase {
   operation: 'closed';
+}
+export interface ServerFolderMovedMessage extends ServerFolderMessageBase {
+  operation: 'moved';
+  newPath: FolderPath;
 }
 export interface ServerFolderOpenedMessage extends ServerFolderMessageBase {
   operation: 'opened';
@@ -203,13 +219,17 @@ export interface ServerNotebookChangedMessage extends ServerNotebookMessageBase 
 export interface ServerNotebookClosedMessage extends ServerNotebookMessageBase {
   operation: 'closed';
 }
+export interface ServerNotebookMovedMessage extends ServerNotebookMessageBase {
+  operation: 'moved';
+  newPath: NotebookPath;
+}
 export interface ServerNotebookOpenedMessage extends ServerNotebookMessageBase {
   operation: 'opened';
   obj: NotebookObject;
 }
 
-export type ServerFolderMessage = ServerFolderChangedMessage|ServerFolderClosedMessage|ServerFolderOpenedMessage;
-export type ServerNotebookMessage = ServerNotebookChangedMessage|ServerNotebookClosedMessage|ServerNotebookOpenedMessage;
+export type ServerFolderMessage = ServerFolderChangedMessage|ServerFolderClosedMessage|ServerFolderMovedMessage|ServerFolderOpenedMessage;
+export type ServerNotebookMessage = ServerNotebookChangedMessage|ServerNotebookClosedMessage|ServerNotebookMovedMessage|ServerNotebookOpenedMessage;
 export type ServerMessage = ServerErrorMessage|ServerFolderMessage|ServerNotebookMessage;
 
 // Messages from the client

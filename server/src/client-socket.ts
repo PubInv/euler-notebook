@@ -34,7 +34,7 @@ import {
   ClientMessage, ServerMessage, ServerErrorMessage, ClientFolderChangeMessage, ClientFolderOpenMessage,
   ClientNotebookChangeMessage, ClientNotebookOpenMessage, ClientNotebookUseToolMessage,
   ServerNotebookChangedMessage, NotebookChangeRequest, RequestId, ServerFolderChangedMessage,
-  ClientFolderCloseMessage, ServerFolderClosedMessage, ServerFolderOpenedMessage, ServerNotebookClosedMessage, ClientNotebookCloseMessage, ServerNotebookOpenedMessage
+  ClientFolderCloseMessage, ServerFolderClosedMessage, ServerFolderOpenedMessage, ServerNotebookClosedMessage, ClientNotebookCloseMessage, ServerNotebookOpenedMessage, ServerFolderMovedMessage, ServerNotebookMovedMessage
 } from './shared/math-tablet-api';
 
 // REVIEW: This file should not be dependent on any specific observers.
@@ -387,6 +387,10 @@ class FolderWatcher implements ServerFolderWatcher {
     // TODO: Remove from folderWatchers?
   }
 
+  public onMoved(msg: ServerFolderMovedMessage): void {
+    this.socket.sendMessage(msg);
+  }
+
   // Event Handlers
 
   public async onFolderChangeMessage(msg: ClientFolderChangeMessage): Promise<ServerFolderChangedMessage> {
@@ -442,6 +446,10 @@ class NotebookWatcher implements ServerNotebookWatcher {
     this.socket.sendMessage(msg);
     this.socket.removeNotebookWatcher(this.notebook.path);
     // TODO: Remove from folderWatchers?
+  }
+
+  public onMoved(msg: ServerNotebookMovedMessage): void {
+    this.socket.sendMessage(msg);
   }
 
   // Event Handlers

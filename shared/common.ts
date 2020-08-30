@@ -21,7 +21,8 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 // Types
 
-export type Timestamp = number;  // Number of MS since Jan 1, 1970 as returned by Date.now().
+export type Milliseconds = number;  // Time interval in milliseconds.
+export type Timestamp = number;     // Number of milliseconds since Jan 1, 1970 as returned by Date.now().
 
 // REVIEW: This is also defined in server/common.ts.
 export interface PromiseResolver<T> {
@@ -48,4 +49,8 @@ export function newPromiseResolver<T>(): { promise: Promise<T>, resolver: Promis
 
 export function notImplemented(): never {
   throw new Error("Not implemented.");
+}
+
+export function sleep(ms: Milliseconds): Promise<void> {
+  return new Promise<void>(resolve=>setTimeout(resolve, ms));
 }
