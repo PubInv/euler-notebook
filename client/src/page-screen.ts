@@ -19,15 +19,15 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 // Requirements
 
-import { NotebookChange } from './shared/notebook';
-import { Path, NotebookPath } from './shared/folder';
+import { NotebookChange } from "./shared/notebook"
+import { Path, NotebookPath } from "./shared/folder"
 
-import { ClientNotebook } from './client-notebook';
-import { $new } from './dom';
-import { reportError } from './error-handler';
-import { PageView, PageViewType } from './page-view';
-import { NotebookBasedScreen } from './screen';
-import { PageSidebar } from './page-sidebar';
+import { ClientNotebook } from "./client-notebook"
+import { $new } from "./dom"
+import { reportError } from "./error-handler"
+import { PageView, PageViewType } from "./page-view"
+import { NotebookBasedScreen } from "./screen"
+import { PageSidebar } from "./page-sidebar"
 
 // Types
 

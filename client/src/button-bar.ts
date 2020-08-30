@@ -19,7 +19,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 // Requirements
 
-import { $configureAll, $all } from './dom';
+import { $configureAll, $all } from "./dom"
 
 // Class
 

@@ -19,10 +19,10 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 // Requirements
 
-import { ButtonBar } from './button-bar';
-import { ClientNotebook } from './client-notebook';
-import { $new } from './dom';
-import { PageView } from './page-view';
+import { ButtonBar } from "./button-bar"
+import { ClientNotebook } from "./client-notebook"
+import { $new } from "./dom"
+import { PageView } from "./page-view"
 
 // Types
 

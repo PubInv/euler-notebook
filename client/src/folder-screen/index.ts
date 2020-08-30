@@ -21,13 +21,13 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 // Requirements
 
-import { FolderPath, FolderChange } from '../shared/folder';
+import { FolderPath, FolderChange } from "../shared/folder"
 import { $new } from "../dom";
-import { FolderView } from './folder-view';
-import { FolderSidebar } from './folder-sidebar';
-import { Screen } from '../screen';
-import { ClientFolder, Watcher as ClientFolderWatcher } from '../client-folder';
-import { reportError } from '../error-handler';
+import { FolderView } from "./folder-view"
+import { FolderSidebar } from "./folder-sidebar"
+import { Screen } from "../screen"
+import { ClientFolder, Watcher as ClientFolderWatcher } from "../client-folder"
+import { reportError } from "../error-handler"
 
 // Types
 

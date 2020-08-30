@@ -22,23 +22,23 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 // Requirements
 
-import { CellView } from './cell-view/index';
-import { createCellView } from './cell-view/instantiator';
-import { assert } from './shared/common';
-import { $, $new } from './dom';
+import { CellView } from "./cell-view/index"
+import { createCellView } from "./cell-view/instantiator"
+import { assert } from "./shared/common"
+import { $, $new } from "./dom"
 import {
   DrawingData, StyleId, StyleObject, NotebookChange,
   StyleType, StyleRelativePosition,
   StylePosition, HintData, HintStatus, HintRelationship, FormulaData,
-} from './shared/notebook';
+} from "./shared/notebook"
 import {
   DebugParams, DebugResults, StyleDeleteRequest, StyleInsertRequest, StylePropertiesWithSubprops,
   StyleMoveRequest, NotebookChangeRequest,
-} from './shared/math-tablet-api';
-import { ClientNotebook, TrackedChangesResults } from './client-notebook';
-import { DebugPopup } from './debug-popup';
-import { NotebookSidebar } from './notebook-sidebar';
-import { NotebookTools } from './notebook-tools';
+} from "./shared/math-tablet-api"
+import { ClientNotebook, TrackedChangesResults } from "./client-notebook"
+import { DebugPopup } from "./debug-popup"
+import { NotebookSidebar } from "./notebook-sidebar"
+import { NotebookTools } from "./notebook-tools"
 
 // Types
 

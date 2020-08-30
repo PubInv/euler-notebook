@@ -19,15 +19,15 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 // Requirements
 
-import * as debug1 from 'debug';
+import * as debug1 from "debug"
 // import * as multer from 'multer'
 
-import { NextFunction, Request, Response, Router } from 'express';
+import { NextFunction, Request, Response, Router } from "express"
 
-import { NotebookPath } from '../shared/folder';
+import { NotebookPath } from "../shared/folder"
 
-import { ClientSocket } from '../client-socket';
-import { ServerNotebook } from '../server-notebook';
+import { ClientSocket } from "../client-socket"
+import { ServerNotebook } from "../server-notebook"
 
 const MODULE = __filename.split(/[/\\]/).slice(-1)[0].slice(0,-3);
 const debug = debug1(`server:${MODULE}`);

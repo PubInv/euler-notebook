@@ -19,9 +19,9 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 // Requirements
 
-import { $newSvg } from './dom';
+import { $newSvg } from "./dom"
 
-import { SvgStroke } from './svg-stroke';
+import { SvgStroke } from "./svg-stroke"
 
 // Types
 

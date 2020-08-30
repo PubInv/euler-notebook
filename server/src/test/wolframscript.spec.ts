@@ -32,13 +32,13 @@ TODO: Additional Test cases
 
 // Requirements
 
-import { execute, checkEquiv, convertTeXtoWolfram } from '../wolframscript';
+import { execute, checkEquiv, convertTeXtoWolfram } from "../wolframscript"
 
-// import { expect } from 'chai';
-import { assert } from 'chai';
+// import { expect } from "chai"
+import { assert } from "chai"
 import 'mocha';
 
-import { ensureGlobalLoaded } from './global';
+import { ensureGlobalLoaded } from "./global"
 ensureGlobalLoaded();
 
 // Constants

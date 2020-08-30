@@ -19,22 +19,22 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 // Requirements
 
-import { assert } from '../shared/common';
-import { DrawingData, StyleId, StyleObject } from '../shared/notebook';
-import { StyleChangeRequest, StyleMoveRequest } from '../shared/math-tablet-api';
+import { assert } from "../shared/common"
+import { DrawingData, StyleId, StyleObject } from "../shared/notebook"
+import { StyleChangeRequest, StyleMoveRequest } from "../shared/math-tablet-api"
 
-import { $configure, $newSvg, $, $svg, CLOSE_X_ENTITY } from '../dom';
-import { deepCopy } from '../common';
+import { $configure, $newSvg, $, $svg, CLOSE_X_ENTITY } from "../dom"
+import { deepCopy } from "../common"
 
-import { NotebookView } from '../notebook-view';
-import { ResizerBar } from '../resizer-bar';
-import { SvgStroke } from '../svg-stroke';
-import { StylusDrawingPanel } from '../stylus-drawing-panel';
+import { NotebookView } from "../notebook-view"
+import { ResizerBar } from "../resizer-bar"
+import { SvgStroke } from "../svg-stroke"
+import { StylusDrawingPanel } from "../stylus-drawing-panel"
 
-// import { getRenderer } from '../renderers';
+// import { getRenderer } from "../renderers"
 
-import { CellView } from './index';
-import { $new } from '../dom';
+import { CellView } from "./index"
+import { $new } from "../dom"
 
 // Types
 

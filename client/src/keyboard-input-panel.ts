@@ -19,11 +19,11 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 // Requirements
 
-import { $new } from './dom';
-import { getRenderer, Renderer } from './renderers';
-import { ROLE_OPTIONS, SUBROLE_OPTIONS, TYPE_OPTIONS } from './role-selectors';
-import { StyleObject, StyleRole, StyleSubrole, StyleType } from './shared/notebook';
-import { NotebookChangeRequest, StyleChangeRequest, StyleConvertRequest } from './shared/math-tablet-api';
+import { $new } from "./dom"
+import { getRenderer, Renderer } from "./renderers"
+import { ROLE_OPTIONS, SUBROLE_OPTIONS, TYPE_OPTIONS } from "./role-selectors"
+import { StyleObject, StyleRole, StyleSubrole, StyleType } from "./shared/notebook"
+import { NotebookChangeRequest, StyleChangeRequest, StyleConvertRequest } from "./shared/math-tablet-api"
 
 // Types
 

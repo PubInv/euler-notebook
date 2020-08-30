@@ -19,21 +19,21 @@
 
 // Requirements
 
-import * as fs from 'fs';
+import * as fs from "fs"
 
-// import * as debug1 from 'debug';
+// import * as debug1 from "debug"
 // const MODULE = __filename.split(/[/\\]/).slice(-1)[0].slice(0,-3);
 // const debug = debug1(`tests:${MODULE}`);
-import { assert } from 'chai';
+import { assert } from "chai"
 const latex = require('node-latex'); // REVIEW: why not import?
 import 'mocha';
-// import * as sinon from 'sinon';
+// import * as sinon from "sinon"
 
-import { FormulaData } from '../shared/notebook';
-import { StyleInsertRequest, LatexData } from '../shared/math-tablet-api';
-import { ServerNotebook }  from '../server-notebook';
+import { FormulaData } from "../shared/notebook"
+import { StyleInsertRequest, LatexData } from "../shared/math-tablet-api"
+import { ServerNotebook }  from "../server-notebook"
 
-import { ensureGlobalLoaded } from './global';
+import { ensureGlobalLoaded } from "./global"
 ensureGlobalLoaded();
 
 // Unit Tests

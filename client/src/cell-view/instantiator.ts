@@ -19,15 +19,15 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 // Requirements
 
-import { StyleObject } from '../shared/notebook';
-import { NotebookView } from '../notebook-view';
+import { StyleObject } from "../shared/notebook"
+import { NotebookView } from "../notebook-view"
 
-import { CellView } from './index';
-import { FormulaCellView } from './formula-cell';
-import { HintCellView } from './hint-cell';
-import { InkCellView } from './ink-cell-view';
-import { PlotCellView } from './plot-cell';
-import { TextCellView } from './text-cell';
+import { CellView } from "./index"
+import { FormulaCellView } from "./formula-cell"
+import { HintCellView } from "./hint-cell"
+import { InkCellView } from "./ink-cell-view"
+import { PlotCellView } from "./plot-cell"
+import { TextCellView } from "./text-cell"
 
 // Constants
 

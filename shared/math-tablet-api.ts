@@ -22,11 +22,11 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 // Requirements
 
-import { FolderObject, FolderPath, NotebookPath, FolderName, NotebookName, FolderChange } from './folder';
+import { FolderObject, FolderPath, NotebookPath, FolderName, NotebookName, FolderChange } from "./folder"
 import {
   RelationshipProperties, StyleProperties, StyleId, NotebookChange, NotebookObject, StyleRelativePosition,
   StyleRole, StyleSubrole, StyleType, RelationshipStyle, WolframExpression
-} from './notebook';
+} from "./notebook"
 
 // Types
 

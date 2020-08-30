@@ -19,11 +19,11 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 // Requirements
 
-// import { $new, escapeHtml, Html } from '../dom';
-import { StyleObject } from '../shared/notebook';
-import { NotebookView } from '../notebook-view';
+// import { $new, escapeHtml, Html } from "../dom"
+import { StyleObject } from "../shared/notebook"
+import { NotebookView } from "../notebook-view"
 
-import { CellView } from './index';
+import { CellView } from "./index"
 
 // Types
 

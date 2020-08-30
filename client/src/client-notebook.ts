@@ -19,14 +19,14 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 // Requirements
 
-import { PromiseResolver } from './shared/common';
-import { Notebook, NotebookObject, NotebookChange, StyleId } from './shared/notebook';
-import { ServerNotebookChangedMessage, NotebookChangeRequest, ClientNotebookChangeMessage, ClientNotebookUseToolMessage, RequestId, ClientNotebookOpenMessage, ServerNotebookOpenedMessage, ServerNotebookMessage, ServerNotebookClosedMessage } from './shared/math-tablet-api';
+import { PromiseResolver } from "./shared/common"
+import { Notebook, NotebookObject, NotebookChange, StyleId } from "./shared/notebook"
+import { ServerNotebookChangedMessage, NotebookChangeRequest, ClientNotebookChangeMessage, ClientNotebookUseToolMessage, RequestId, ClientNotebookOpenMessage, ServerNotebookOpenedMessage, ServerNotebookMessage, ServerNotebookClosedMessage } from "./shared/math-tablet-api"
 
-import { appInstance } from './app';
-import { NotebookName, NotebookPath } from './shared/folder';
-import { NotebookBasedScreen } from './screen';
-import { assert } from './shared/common';
+import { appInstance } from "./app"
+import { NotebookName, NotebookPath } from "./shared/folder"
+import { NotebookBasedScreen } from "./screen"
+import { assert } from "./shared/common"
 
 // Types
 

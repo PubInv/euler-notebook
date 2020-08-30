@@ -19,16 +19,16 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 // Requirements
 
-import { notImplemented } from './shared/common';
+import { notImplemented } from "./shared/common"
 
-import { ButtonBar } from './button-bar';
-import { DebugPopup } from './debug-popup';
-import { $new, $, svgIconReference } from './dom';
+import { ButtonBar } from "./button-bar"
+import { DebugPopup } from "./debug-popup"
+import { $new, $, svgIconReference } from "./dom"
 import {
   ICON_BUG12, ICON_CLOTHING18, ICON_FILE12, ICON_IDEA10, ICON_KEYBOARD2, ICON_LOGOUT18,
   ICON_PENCIL9, ICON_REDO4, ICON_TRASHCAN2, ICON_UNDO4
-} from './iconmonstr-icons';
-import { NotebookView } from './notebook-view';
+} from "./iconmonstr-icons"
+import { NotebookView } from "./notebook-view"
 
 // Types
 

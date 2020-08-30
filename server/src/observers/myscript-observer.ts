@@ -19,16 +19,16 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 // Requirements
 
-import * as debug1 from 'debug';
+import * as debug1 from "debug"
 
-import { DrawingData } from '../shared/notebook';
-import { LatexData } from '../shared/math-tablet-api';
+import { DrawingData } from "../shared/notebook"
+import { LatexData } from "../shared/math-tablet-api"
 
-import { Config } from '../config';
-import { ServerKeys, postLatexRequest } from '../myscript-batch-api';
-import { ServerNotebook }  from '../server-notebook';
+import { Config } from "../config"
+import { ServerKeys, postLatexRequest } from "../myscript-batch-api"
+import { ServerNotebook }  from "../server-notebook"
 
-import { BaseObserver, Rules, StyleRelation } from './base-observer';
+import { BaseObserver, Rules, StyleRelation } from "./base-observer"
 
 const MODULE = __filename.split(/[/\\]/).slice(-1)[0].slice(0,-3);
 const debug = debug1(`server:${MODULE}`);

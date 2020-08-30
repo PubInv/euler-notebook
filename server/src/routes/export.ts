@@ -19,18 +19,18 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 // Requirements
 
-import * as debug1 from 'debug';
-import * as nodeLatex from 'node-latex';
+import * as debug1 from "debug"
+import * as nodeLatex from "node-latex"
 // import * as multer from 'multer'
 
-import { NextFunction, Request, Response, Router } from 'express';
+import { NextFunction, Request, Response, Router } from "express"
 
-import { NotebookPath, NOTEBOOK_PATH_RE } from '../shared/folder';
+import { NotebookPath, NOTEBOOK_PATH_RE } from "../shared/folder"
 
-import { globalConfig } from '../config';
-import { ServerNotebook } from '../server-notebook';
+import { globalConfig } from "../config"
+import { ServerNotebook } from "../server-notebook"
 
-// import { NotebookName, NotebookChangeRequest } from './shared/math-tablet-api';
+// import { NotebookName, NotebookChangeRequest } from "./shared/math-tablet-api"
 
 const MODULE = __filename.split(/[/\\]/).slice(-1)[0].slice(0,-3);
 const debug = debug1(`server:${MODULE}`);

@@ -19,7 +19,7 @@
 
 // Requirements
 
-import * as debug1 from 'debug';
+import * as debug1 from "debug"
 const MODULE = __filename.split(/[/\\]/).slice(-1)[0].slice(0,-3);
 const debug = debug1(`server:${MODULE}`);
 
@@ -27,15 +27,15 @@ import {
   NotebookChange, StyleObject, StyleId, RelationshipObject, RelationshipId, RelationshipProperties,
   StyleDeleted, StyleMoved, FindRelationshipOptions, StyleInserted, StyleChanged, HintData,
   HintRelationship, HintStatus, FormulaData, WolframExpression
-} from '../shared/notebook';
+} from "../shared/notebook"
 import {
   SymbolData, NotebookChangeRequest, StyleInsertRequest, ToolData, StyleDeleteRequest,
   StylePropertiesWithSubprops, RelationshipPropertiesMap, RelationshipInsertRequest,
   isEmptyOrSpaces, TransformationToolData
-} from '../shared/math-tablet-api';
-import { ServerNotebook, ObserverInstance } from '../server-notebook';
-import { execute as executeWolframscript, constructSubstitution, draftChangeContextName } from '../wolframscript';
-import { Config } from '../config';
+} from "../shared/math-tablet-api"
+import { ServerNotebook, ObserverInstance } from "../server-notebook"
+import { execute as executeWolframscript, constructSubstitution, draftChangeContextName } from "../wolframscript"
+import { Config } from "../config"
 
 export class SymbolClassifierObserver implements ObserverInstance {
 

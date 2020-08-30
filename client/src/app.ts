@@ -21,16 +21,16 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 // Requirements
 
-import { FOLDER_PATH_RE, NOTEBOOK_PATH_RE, Path, FolderPath, NotebookPath } from './shared/folder';
+import { FOLDER_PATH_RE, NOTEBOOK_PATH_RE, Path, FolderPath, NotebookPath } from "./shared/folder"
 
-import { $ } from './dom';
-import { addAsyncEventListener, addSyncEventListener } from './error-handler';
-import { FolderScreen } from './folder-screen';
-import { Header } from './header';
-import { NotebookScreen } from './notebook-screen';
-import { PageScreen } from './page-screen';
-import { Screen } from './screen';
-import { ServerSocket } from './server-socket';
+import { $ } from "./dom"
+import { addAsyncEventListener, addSyncEventListener } from "./error-handler"
+import { FolderScreen } from "./folder-screen"
+import { Header } from "./header"
+import { NotebookScreen } from "./notebook-screen"
+import { PageScreen } from "./page-screen"
+import { Screen } from "./screen"
+import { ServerSocket } from "./server-socket"
 
 // Types
 

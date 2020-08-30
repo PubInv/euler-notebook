@@ -21,15 +21,15 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 // Requirements
 
-import { assert } from '../shared/common';
-import { /* escapeHtml, */ $new, $, /* Html */} from '../dom';
-// import { getKatex } from '../katex-types';
-import { NotebookView } from '../notebook-view';
-import { KeyboardInputPanel } from '../keyboard-input-panel';
-import { StyleObject, StyleId, /* RelationshipObject */ } from '../shared/notebook';
-import { NotebookChangeRequest } from '../shared/math-tablet-api';
-import { NotebookTools } from '../notebook-tools';
-// import { LatexData, ToolInfo, NameValuePair } from './shared/math-tablet-api';
+import { assert } from "../shared/common"
+import { /* escapeHtml, */ $new, $, /* Html */} from "../dom"
+// import { getKatex } from "../katex-types"
+import { NotebookView } from "../notebook-view"
+import { KeyboardInputPanel } from "../keyboard-input-panel"
+import { StyleObject, StyleId, /* RelationshipObject */ } from "../shared/notebook"
+import { NotebookChangeRequest } from "../shared/math-tablet-api"
+import { NotebookTools } from "../notebook-tools"
+// import { LatexData, ToolInfo, NameValuePair } from "./shared/math-tablet-api"
 
 // Exported Class
 

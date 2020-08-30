@@ -17,13 +17,13 @@ You should have received a copy of the GNU Affero General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-import * as debug1 from 'debug';
+import * as debug1 from "debug"
 const MODULE = __filename.split(/[/\\]/).slice(-1)[0].slice(0,-3);
 const debug = debug1(`tests:${MODULE}`);
 
-import { initialize as initializeObservers, terminate as terminateObservers } from '../observers';
-import { start as startWolframscript, stop as stopWolframscript } from '../wolframscript';
-import { loadConfig, loadCredentials } from '../config';
+import { initialize as initializeObservers, terminate as terminateObservers } from "../observers"
+import { start as startWolframscript, stop as stopWolframscript } from "../wolframscript"
+import { loadConfig, loadCredentials } from "../config"
 
 // Exported functions
 

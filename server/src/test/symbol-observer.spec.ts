@@ -19,25 +19,25 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 // Requirements
 
-// import * as debug1 from 'debug';
+// import * as debug1 from "debug"
 // const MODULE = __filename.split(/[/\\]/).slice(-1)[0].slice(0,-3);
 // const debug = debug1(`tests:${MODULE}`);
-import { assert } from 'chai';
+import { assert } from "chai"
 import 'mocha';
-// import * as sinon from 'sinon';
+// import * as sinon from "sinon"
 
 import { StyleObject, RelationshipObject,
          StyleId,
          FormulaData
-       } from '../shared/notebook';
+       } from "../shared/notebook"
 import { NotebookChangeRequest, StyleInsertRequest,
          StyleChangeRequest,
          StyleMoveRequest,
          StyleDeleteRequest, StylePropertiesWithSubprops
-       } from '../shared/math-tablet-api';
-import { ServerNotebook }  from '../server-notebook';
+       } from "../shared/math-tablet-api"
+import { ServerNotebook }  from "../server-notebook"
 
-import { ensureGlobalLoaded } from './global';
+import { ensureGlobalLoaded } from "./global"
 ensureGlobalLoaded();
 
 // Types

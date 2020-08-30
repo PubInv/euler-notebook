@@ -21,12 +21,12 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 // Requirements
 
-import { notImplemented } from './shared/common';
-import { Path } from './shared/folder';
+import { notImplemented } from "./shared/common"
+import { Path } from "./shared/folder"
 
-import { ButtonBar } from './button-bar';
-import { escapeHtml, $attach, $ } from './dom';
-import { monitorPromise } from './error-handler';
+import { ButtonBar } from "./button-bar"
+import { escapeHtml, $attach, $ } from "./dom"
+import { monitorPromise } from "./error-handler"
 
 // Types
 

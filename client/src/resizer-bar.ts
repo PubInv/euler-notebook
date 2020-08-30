@@ -21,7 +21,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 // Requirements
 
-import { $new, RIGHT_TRIANGLE_ENTITY } from './dom';
+import { $new, RIGHT_TRIANGLE_ENTITY } from "./dom"
 
 // Types
 

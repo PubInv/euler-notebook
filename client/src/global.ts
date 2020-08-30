@@ -21,7 +21,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 // Requirements
 
-import { $, $new, Html, ElementClass, CLOSE_X_ENTITY } from './dom';
+import { $, $new, Html, ElementClass, CLOSE_X_ENTITY } from "./dom"
 
 // Types
 

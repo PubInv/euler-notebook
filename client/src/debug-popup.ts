@@ -19,7 +19,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 // Requirements
 
-import { $, Html, $new, CLOSE_X_ENTITY } from './dom';
+import { $, Html, $new, CLOSE_X_ENTITY } from "./dom"
 
 // Types
 

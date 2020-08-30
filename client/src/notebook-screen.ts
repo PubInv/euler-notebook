@@ -22,17 +22,17 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 // Requirements
 
-import { NotebookPath } from './shared/folder';
-import { NotebookChange } from './shared/notebook';
+import { NotebookPath } from "./shared/folder"
+import { NotebookChange } from "./shared/notebook"
 
-import { $new } from './dom';
-import { DebugPopup } from './debug-popup';
-import { reportError } from './error-handler';
-import { NotebookView } from './notebook-view';
-import { NotebookBasedScreen } from './screen';
-import { NotebookSidebar } from './notebook-sidebar';
-import { NotebookTools } from './notebook-tools';
-import { ClientNotebook } from './client-notebook';
+import { $new } from "./dom"
+import { DebugPopup } from "./debug-popup"
+import { reportError } from "./error-handler"
+import { NotebookView } from "./notebook-view"
+import { NotebookBasedScreen } from "./screen"
+import { NotebookSidebar } from "./notebook-sidebar"
+import { NotebookTools } from "./notebook-tools"
+import { ClientNotebook } from "./client-notebook"
 
 // Types
 

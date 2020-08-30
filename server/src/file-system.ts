@@ -19,11 +19,11 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 // Requirements
 
-import { mkdir, readdir, readFile as fsReadFile, rename as fsRename, rmdir, stat, writeFile as fsWriteFile } from 'fs';
-import { join } from 'path';
-import { promisify } from 'util';
+import { mkdir, readdir, readFile as fsReadFile, rename as fsRename, rmdir, stat, writeFile as fsWriteFile } from "fs"
+import { join } from "path"
+import { promisify } from "util"
 
-import * as rimraf from 'rimraf';
+import * as rimraf from "rimraf"
 
 // Types
 

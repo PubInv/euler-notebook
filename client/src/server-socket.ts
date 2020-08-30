@@ -22,13 +22,13 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 // Requirements
 
-import { assert, PromiseResolver, Timestamp, newPromiseResolver } from './shared/common';
-import { ClientMessage, ServerMessage, ServerMessageBase, RequestId } from './shared/math-tablet-api';
+import { assert, PromiseResolver, Timestamp, newPromiseResolver } from "./shared/common"
+import { ClientMessage, ServerMessage, ServerMessageBase, RequestId } from "./shared/math-tablet-api"
 
-import { addErrorMessageToHeader } from './global';
-import { ClientFolder } from './client-folder';
-import { ClientNotebook } from './client-notebook';
-import { reportError } from './error-handler';
+import { addErrorMessageToHeader } from "./global"
+import { ClientFolder } from "./client-folder"
+import { ClientNotebook } from "./client-notebook"
+import { reportError } from "./error-handler"
 
 // Types
 

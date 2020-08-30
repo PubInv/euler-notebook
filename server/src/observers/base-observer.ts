@@ -19,16 +19,16 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 // Requirements
 
-import * as debug1 from 'debug';
+import * as debug1 from "debug"
 const deepEqual = require('deep-equal');
 
 import {
   NotebookChange, StyleObject, FindStyleOptions, styleMatchesPattern, StyleProperties, StyleId
-} from '../shared/notebook';
-import { NotebookChangeRequest } from '../shared/math-tablet-api';
-import { ObserverInstance, ServerNotebook }  from '../server-notebook';
-import { Config } from '../config';
-import { ServerKeys } from '../myscript-batch-api';
+} from "../shared/notebook"
+import { NotebookChangeRequest } from "../shared/math-tablet-api"
+import { ObserverInstance, ServerNotebook }  from "../server-notebook"
+import { Config } from "../config"
+import { ServerKeys } from "../myscript-batch-api"
 
 const MODULE = __filename.split(/[/\\]/).slice(-1)[0].slice(0,-3);
 const debug = debug1(`server:${MODULE}`);

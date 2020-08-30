@@ -19,15 +19,15 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 // Requirements
 
-import debug1 from 'debug';
+import debug1 from "debug"
 
 
-import { WolframExpression } from '../shared/notebook';
-import { isEmptyOrSpaces } from '../shared/math-tablet-api';
+import { WolframExpression } from "../shared/notebook"
+import { isEmptyOrSpaces } from "../shared/math-tablet-api"
 
-import { BaseObserver, Rules, StyleRelation } from './base-observer';
-import { convertMathTabletLanguageToWolfram, execute } from '../wolframscript';
-import { ServerNotebook } from '../server-notebook';
+import { BaseObserver, Rules, StyleRelation } from "./base-observer"
+import { convertMathTabletLanguageToWolfram, execute } from "../wolframscript"
+import { ServerNotebook } from "../server-notebook"
 
 const MODULE = __filename.split(/[/\\]/).slice(-1)[0].slice(0,-3);
 const debug = debug1(`server:${MODULE}`);

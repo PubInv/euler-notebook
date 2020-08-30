@@ -21,14 +21,14 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 // Requirements
 
-import * as debug1 from 'debug';
+import * as debug1 from "debug"
 const MODULE = __filename.split(/[/\\]/).slice(-1)[0].slice(0,-3);
 const debug = debug1(`server:${MODULE}`);
 
-import { NotebookChange, StyleObject } from '../shared/notebook';
-import { NotebookChangeRequest } from '../shared/math-tablet-api';
-import { ServerNotebook, ObserverInstance  } from '../server-notebook';
-import { Config } from '../config';
+import { NotebookChange, StyleObject } from "../shared/notebook"
+import { NotebookChangeRequest } from "../shared/math-tablet-api"
+import { ServerNotebook, ObserverInstance  } from "../server-notebook"
+import { Config } from "../config"
 
 // Exported Class
 

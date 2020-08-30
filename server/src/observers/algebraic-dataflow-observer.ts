@@ -19,13 +19,13 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 // Requirements
 
-import debug1 from 'debug';
+import debug1 from "debug"
 
-import { DataflowObserver, Rules, DataflowValue, DataflowStatus } from './dataflow-observer';
-import { ServerNotebook } from '../server-notebook';
-import { execute } from '../wolframscript';
+import { DataflowObserver, Rules, DataflowValue, DataflowStatus } from "./dataflow-observer"
+import { ServerNotebook } from "../server-notebook"
+import { execute } from "../wolframscript"
 
-import { RelationshipObject, HintData, HintRelationship, HintStatus } from '../shared/notebook';
+import { RelationshipObject, HintData, HintRelationship, HintStatus } from "../shared/notebook"
 
 const MODULE = __filename.split(/[/\\]/).slice(-1)[0].slice(0,-3);
 const debug = debug1(`server:${MODULE}`);
