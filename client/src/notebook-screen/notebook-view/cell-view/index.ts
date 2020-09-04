@@ -21,15 +21,13 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 // Requirements
 
-import { assert } from "../shared/common"
-import { /* escapeHtml, */ $new, $, /* Html */} from "../dom"
-// import { getKatex } from "../katex-types"
-import { NotebookView } from "../notebook-view"
-import { KeyboardInputPanel } from "../keyboard-input-panel"
-import { StyleObject, StyleId, /* RelationshipObject */ } from "../shared/notebook"
-import { NotebookChangeRequest } from "../shared/math-tablet-api"
-import { NotebookTools } from "../notebook-tools"
-// import { LatexData, ToolInfo, NameValuePair } from "./shared/math-tablet-api"
+import { assert } from "../../../shared/common"
+import { $new } from "../../../dom"
+import { NotebookView } from "../../../notebook-screen/notebook-view"
+import { KeyboardInputPanel } from "../../../keyboard-input-panel"
+import { StyleObject, StyleId } from "../../../shared/notebook"
+import { NotebookChangeRequest } from "../../../shared/math-tablet-api"
+import { NotebookTools } from "../../../notebook-screen/notebook-tools"
 
 // Exported Class
 
@@ -64,8 +62,8 @@ export abstract class CellView {
 
     // Only allow editing of user input cells, which have a data type
     // that is string-based, with a renderer.
-    const style = this.notebookView.notebook.getStyle(this.styleId);
-    const repStyle = this.notebookView.notebook.findStyle({ role: 'INPUT' }, this.styleId);
+    const style = this.view.screen.notebook.getStyle(this.styleId);
+    const repStyle = this.view.screen.notebook.findStyle({ role: 'INPUT' }, this.styleId);
     if (!repStyle) { return false; }
 
     if (typeof repStyle.data=='string') {
@@ -79,7 +77,7 @@ export abstract class CellView {
     }
 
     if (this.inputPanel) {
-      $<'div'>(document, '#tools').style.display = 'none';
+      this.view.screen.tools.hide();
       this.$elt.parentElement!.insertBefore(this.inputPanel.$elt, this.$elt.nextSibling);
       this.inputPanel.focus();
       this.hide();
@@ -91,7 +89,7 @@ export abstract class CellView {
 
   public render(style: StyleObject): void {
     // get the primary representation
-    let repStyle = this.notebookView.notebook.findStyle({ role: 'REPRESENTATION', subrole: 'PRIMARY' }, style.id);
+    let repStyle = this.view.screen.notebook.findStyle({ role: 'REPRESENTATION', subrole: 'PRIMARY' }, style.id);
     if (!repStyle) {
       // TODO: Look for renderable alternate representations
       this.$elt.innerHTML = CellView.MISSING_ERROR;
@@ -140,7 +138,7 @@ export abstract class CellView {
   // Private Constructor
 
   protected constructor(notebookView: NotebookView, style: StyleObject, subclass: /* TYPESCRIPT: CssClass */string) {
-    this.notebookView = notebookView;
+    this.view = notebookView;
     this.styleId = style.id;
 
     this.$elt = $new({
@@ -159,7 +157,7 @@ export abstract class CellView {
   // Private Instance Properties
 
   protected inputPanel?: KeyboardInputPanel;
-  protected notebookView: NotebookView;
+  protected view: NotebookView;
 
   // Private Instance Methods
 
@@ -175,7 +173,7 @@ export abstract class CellView {
 
   private onClicked(event: MouseEvent): void {
     // Note: Shift-click or ctrl-click will extend the current selection.
-    this.notebookView.selectCell(this, event.shiftKey, event.metaKey);
+    this.view.selectCell(this, event.shiftKey, event.metaKey);
   }
 
   private onDoubleClicked(_event: MouseEvent): void {
@@ -187,7 +185,7 @@ export abstract class CellView {
 
   private onInputPanelDismissed(changeRequests: NotebookChangeRequest[]): void {
     if (changeRequests.length>0) {
-      this.notebookView.editStyle(changeRequests)
+      this.view.editStyle(changeRequests)
       .catch((err: Error)=>{
         // TODO: Display error to user?
         console.error(`Error submitting input changes: ${err.message}`);
@@ -197,8 +195,8 @@ export abstract class CellView {
     delete this.inputPanel;
 
     this.show();
-    $<'div'>(document, '#tools').style.display = 'block';
-    this.notebookView.setFocus();
+    this.view.screen.tools.show();
+    this.view.setFocus();
   }
 
 }

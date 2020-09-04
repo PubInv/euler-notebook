@@ -32,17 +32,18 @@ import { NotebookPath, NOTEBOOK_PATH_RE, NotebookName, FolderPath, NotebookEntry
 import {
   Notebook, NotebookObject, NotebookChange, StyleObject, StyleRole, StyleType, StyleSource, StyleId,
   RelationshipObject, StyleMoved, StylePosition, VERSION, StyleChanged, RelationshipDeleted,
-  RelationshipInserted, StyleIdDoesNotExistError, StyleInserted, StyleDeleted, StyleConverted
+  RelationshipInserted, StyleIdDoesNotExistError, StyleInserted, StyleDeleted, StyleConverted, NotebookWatcher
 } from "./shared/notebook"
 import {
   NotebookChangeRequest, StyleMoveRequest, StyleInsertRequest, StyleChangeRequest,
   RelationshipDeleteRequest, StyleDeleteRequest, RelationshipInsertRequest,
-  StylePropertiesWithSubprops, LatexData, StyleConvertRequest, ServerNotebookChangedMessage, ClientNotebookChangeMessage, ClientNotebookUseToolMessage, ServerNotebookMovedMessage
+  StylePropertiesWithSubprops, LatexData, StyleConvertRequest, ServerNotebookChangedMessage, ClientNotebookChangeMessage, ClientNotebookUseToolMessage,
 } from "./shared/math-tablet-api"
 
 import { ClientId } from "./client-socket"
 import { AbsDirectoryPath, ROOT_DIR_PATH, mkDir, readFile, rename, rmRaf, writeFile } from "./file-system"
 import { constructSubstitution } from "./wolframscript"
+import { OpenOptions } from "./shared/watched-resource"
 
 
 // LATER: Convert these to imports.
@@ -55,12 +56,6 @@ const debug = debug1(`server:${MODULE}`);
 
 type AbsFilePath = string; // Absolute path to a file in the file system.
 
-interface InstanceInfo {
-  openTally: number;                // The number of times opened but not yet closed.
-  promise: Promise<ServerNotebook>; // Promise for the instance returned from 'watch'.
-  watchers: Set<Watcher>;
-}
-
 export interface ObserverInstance {
   onChangesAsync: (changes: NotebookChange[]) => Promise<NotebookChangeRequest[]>;
   onChangesSync: (changes: NotebookChange[]) => NotebookChangeRequest[];
@@ -72,26 +67,21 @@ export interface ObserverClass {
   onOpen: (notebook: ServerNotebook)=>Promise<ObserverInstance>;
 }
 
-interface OpenOptions {
+export interface OpenNotebookOptions extends OpenOptions<ServerNotebookWatcher> {
   ephemeral?: boolean;    // true iff notebook not persisted to the file system and disappears after last close.
-  mustExist?: boolean;
-  mustNotExist?: boolean;
-  watcher?: Watcher;
 }
 
 export interface RequestChangesOptions {
   clientId?: ClientId;
 }
 
+export interface ServerNotebookWatcher extends NotebookWatcher {
+  onChanged(msg: ServerNotebookChangedMessage): void;
+}
+
 interface StyleOrderMapping {
   sid: StyleId;
   tls: number;
-}
-
-export interface Watcher {
-  onChanged(msg: ServerNotebookChangedMessage): void;
-  onClosed(): void;
-  onMoved(msg: ServerNotebookMovedMessage): void;
 }
 
 // Constants
@@ -100,9 +90,9 @@ const MAX_CHANGE_ROUNDS = 10;
 const NOTEBOOK_ENCODING = 'utf8';
 const NOTEBOOK_FILE_NAME = 'notebook.json';
 
-// Exported Class
+// Base Class
 
-export class ServerNotebook extends Notebook {
+export class ServerNotebook extends Notebook<ServerNotebookWatcher> {
 
   // Public Class Constants
 
@@ -112,21 +102,8 @@ export class ServerNotebook extends Notebook {
 
   // Public Class Property Functions
 
-  public static isOpen(path: NotebookPath): boolean {
-    return this.instanceMap.has(path);
-  }
-
   public static isValidNotebookPath(path: NotebookPath): boolean {
     return NOTEBOOK_PATH_RE.test(path);
-  }
-
-  public static generateUniqueEphemeralPath(): NotebookPath {
-    let timestamp = <Timestamp>Date.now();
-    if (timestamp <= this.lastEphemeralPathTimestamp) {
-      timestamp = this.lastEphemeralPathTimestamp+1;
-    }
-    this.lastEphemeralPathTimestamp = timestamp;
-    return  <NotebookPath>`/enb${timestamp}${this.NOTEBOOK_DIR_SUFFIX}`;
   }
 
   public static nameFromPath(path: NotebookPath): NotebookName {
@@ -139,82 +116,32 @@ export class ServerNotebook extends Notebook {
     if (!this.isValidNotebookName(name)) { throw new Error(`Invalid notebook name: ${name}`); }
   }
 
-  // Class Methods
-
-  public static async close(path: NotebookPath): Promise<boolean> {
-    // Closes the specified notebook.
-    // All watchers and observers are notified.
-    // Has no effect if the notebook is not open.
-    // Returns true iff the notebook was open.
-    if (!this.isOpen(path)) { return false; }
-    const info = this.instanceMap.get(path)!;
-    const notebook = await info.promise;
-    notebook.destroyInstance();
-    return true;
-  }
+  // Public Class Methods
 
   public static async delete(path: NotebookPath): Promise<void> {
-    this.close(path); // no-op if the notebook is not open.
+    // REVIEW: Race conditions?
+    this.close(path, "Notebook has been deleted."); // no-op if the notebook is not open.
     const absPath = absDirPathFromNotebookPath(path);
     debug(`Deleting notebook directory ${absPath}`);
     await rmRaf(absPath); // TODO: Handle failure.
-}
-
-  // public static async closeAll(): Promise<void> {
-  //   debug(`closing all: ${this.instanceMap.size}`);
-  //   const notebooks = Array.from(this.instanceMap.values());
-  //   const promises = notebooks.map(td=>td.close());
-  //   await Promise.all(promises);
-  // }
+  }
 
   public static deregisterObserver(source: StyleSource): void {
     debug(`Deregistering observer: ${source}`);
     this.observerClasses.delete(source);
   }
 
-  public static async move(oldPath: NotebookPath, newPath: NotebookPath): Promise<NotebookEntry> {
+  public static async move(path: NotebookPath, newPath: NotebookPath): Promise<NotebookEntry> {
     // Called by the containing ServerFolder when one of its notebooks is renamed.
 
-    const oldAbsPath = absDirPathFromNotebookPath(oldPath);
+    this.close(path, `Notebook is moving to ${newPath}.`)
+    const oldAbsPath = absDirPathFromNotebookPath(path);
     const newAbsPath = absDirPathFromNotebookPath(newPath);
 
     // REVIEW: If there is an existing *file* (not directory) at the new path then it will be overwritten silently.
     //         However, we don't expect random files to be floating around out notebook storage filesystem.
     await rename(oldAbsPath, newAbsPath);
-
-    if (this.isOpen(oldPath)) {
-      const info = this.instanceMap.get(oldPath)!;
-      this.instanceMap.delete(oldPath);
-      this.instanceMap.set(newPath, info);
-      // REVIEW: Could there be a race condition due to the async interval waiting on the open promise?
-      const instance = await info.promise;
-      instance.moved(newPath);
-    }
-
     return { path: newPath, name: this.nameFromPath(newPath) }
-  }
-
-  public static open(path: NotebookPath, options: OpenOptions): Promise<ServerNotebook> {
-    let info = this.instanceMap.get(path);
-    if (!info) {
-      // This notebook is not already open. Create the instance.
-      const promise = this.createInstance(path, options);
-      const watchers = new Set<Watcher>();
-      if (options.watcher) { watchers.add(options.watcher); }
-      info = { openTally: 1, promise, watchers };
-      this.instanceMap.set(path, info);
-    } else {
-      // This notebook is already open. Tally and add the watcher if there is one.
-      assert(!options.mustNotExist); // TODO: Throw exception with useful error message.
-      info.openTally++;
-      if (options.watcher) { info.watchers.add(options.watcher); }
-    }
-    return info.promise;
-  }
-
-  public static openEphemeral(): Promise<ServerNotebook> {
-    // For units testing, etc., to create a notebook that is not persisted to the filesystem.
-    return this.open(this.generateUniqueEphemeralPath(), { ephemeral: true, mustNotExist: true });
   }
 
   public static registerObserver(source: StyleSource, observerClass: ObserverClass): void {
@@ -222,11 +149,23 @@ export class ServerNotebook extends Notebook {
     this.observerClasses.set(source, observerClass);
   }
 
+  public static open(path: NotebookPath, options: OpenNotebookOptions): Promise<ServerNotebook> {
+    // IMPORTANT: This is a standard open pattern that all WatchedResource-derived classes should use.
+    //            Do not modify unless you know what you are doing!
+    const isOpen = this.isOpen(path);
+    const instance = isOpen ? this.getInstance(path) : new this(path, options);
+    instance.open(options, isOpen);
+    return instance.openPromise;
+  }
+
+  public static openEphemeral(): Promise<ServerNotebook> {
+    // For units testing, etc., to create a notebook that is not persisted to the filesystem.
+    return this.open(this.generateUniqueEphemeralPath(), { ephemeral: true, mustNotExist: true });
+  }
+
   // Public Class Event Handlers
 
   // Public Instance Properties
-
-  public path: NotebookPath;
 
   // Public Instance Property Functions
 
@@ -531,20 +470,6 @@ export class ServerNotebook extends Notebook {
 
   // Public Instance Methods
 
-  public close(watcher?: Watcher): void {
-    assert(!this.destroyed);
-    const info = ServerNotebook.instanceMap.get(this.path)!;
-    assert(info);
-    if (watcher) {
-      const had = info.watchers.delete(watcher);
-      assert(had);
-    }
-    if (--info.openTally == 0) {
-      // LATER: Set timer to destroy in the future.
-      this.destroyInstance();
-    }
-  }
-
   public deRegisterObserver(source: StyleSource): void {
     this.observers.delete(source);
   }
@@ -713,7 +638,7 @@ export class ServerNotebook extends Notebook {
     // observers synchronously, until there are no more changes,
     // or we reach a limit.
 
-    this.assertNotClosed('requestChanges');
+    assert(!this.terminated);
     debug(`requestChanges ${changeRequests.length}`);
 
     // Make the requested changes to the notebook.
@@ -766,7 +691,7 @@ export class ServerNotebook extends Notebook {
 
   public async useTool(styleId: StyleId): Promise<NotebookChange[]> {
     debug(`useTool ${styleId}`);
-    this.assertNotClosed('useTool');
+    assert(!this.terminated);
     const style = this.getStyle(styleId);
     const source = style.source;
     if (!style) { throw new Error(`Notebook useTool style ID not found: ${styleId}`); }
@@ -779,7 +704,7 @@ export class ServerNotebook extends Notebook {
   // Public Event Handlers
 
   public onNotebookChangeMessage(
-    _originatingWatcher: Watcher,
+    _originatingWatcher: NotebookWatcher,
     msg: ClientNotebookChangeMessage,
   ): void {
     // TODO: pass request ID on responses to originatingWatcher.
@@ -788,7 +713,7 @@ export class ServerNotebook extends Notebook {
   }
 
   public onNotebookUseToolMessage(
-    _originatingWatcher: Watcher,
+    _originatingWatcher: NotebookWatcher,
     msg: ClientNotebookUseToolMessage,
   ): void {
     // TODO: pass request ID on responses to originatingWatcher.
@@ -802,59 +727,46 @@ export class ServerNotebook extends Notebook {
   // Private Class Properties
 
   private static lastEphemeralPathTimestamp: Timestamp = 0;
-  private static instanceMap: Map<NotebookPath, InstanceInfo> = new Map();
   private static observerClasses: Map<StyleSource, ObserverClass> = new Map();
+
+  // Private Class Property Functions
+
+  protected static getInstance(path: NotebookPath): ServerNotebook {
+    return <ServerNotebook>super.getInstance(path);
+  }
 
   // Private Class Methods
 
-  private static async createInstance(path: NotebookPath, options: OpenOptions): Promise<ServerNotebook> {
-    assert(!(options.mustExist && options.mustNotExist));
-    assert(options.mustExist || options.mustNotExist);
-
-    let obj: NotebookObject | undefined = undefined;
-    if (options.mustExist) {
-      const json = await readNotebookFile(path);
-      obj = JSON.parse(json);
+  private static generateUniqueEphemeralPath(): NotebookPath {
+    let timestamp = <Timestamp>Date.now();
+    if (timestamp <= this.lastEphemeralPathTimestamp) {
+      timestamp = this.lastEphemeralPathTimestamp+1;
     }
-    const instance = new this(path, options, obj);
-    await instance.initialize(this.observerClasses);
-    if (options.mustNotExist) {
-      // TODO: Error if file already exists.
-      await instance.save();
-    }
-    return instance;
+    this.lastEphemeralPathTimestamp = timestamp;
+    return  <NotebookPath>`/eph${timestamp}${this.NOTEBOOK_DIR_SUFFIX}`;
   }
+
 
   // Private Class Event Handlers
 
   // Private Constructor
 
-  private constructor(notebookPath: NotebookPath, options: OpenOptions, obj?: NotebookObject) {
-    super(obj);
+  private constructor(path: NotebookPath, options: OpenNotebookOptions) {
+    super(path);
     this.ephemeral = options.ephemeral;
     this.observers = new Map();
-    this.path = notebookPath;
     this.reservedIds = new Set();
   }
 
   // Private Instance Properties
 
   // TODO: purge changes in queue that have been processed asynchronously.
-  private ephemeral?: boolean;  // Not persisted to the filesystem.
-  private destroyed?: boolean;  // Instance has been discarded and should not be used.
+  private ephemeral?: boolean;     // Not persisted to the filesystem.
   private observers: Map<StyleSource, ObserverInstance>;
   private reservedIds: Set<StyleId>;
   private saving?: boolean;
 
   // Private Instance Property Functions
-
-  private assertNotClosed(action: string): void {
-    if (this.destroyed) { throw new Error(`Attempting ${action} on closed notebook.`); }
-  }
-
-  private get watchers(): IterableIterator<Watcher> {
-    return ServerNotebook.instanceMap.get(this.path)!.watchers.values();
-  }
 
   // Private Instance Methods
 
@@ -1195,38 +1107,24 @@ export class ServerNotebook extends Notebook {
     return undoChangeRequest;
   }
 
-  private moved(newPath: NotebookPath): void {
-    const msg: ServerNotebookMovedMessage = {
-      type: 'notebook',
-      path: this.path,
-      operation: 'moved',
-      newPath,
-    };
-    this.path = newPath;
-    for (const watcher of this.watchers) {
-      // if (watcher === originatingWatcher) { continue; }
-      watcher.onMoved(msg);
+  protected async initialize(options: OpenNotebookOptions): Promise<void> {
+    if (options.mustExist) {
+      const json = await readNotebookFile(this.path);
+      const obj = JSON.parse(json);
+      assert(typeof obj == 'object');
+      Notebook.validateObject(obj);
+      this.initializeFromObject(obj);
     }
-    // TODO: Notify observers.
-  }
+    if (options.mustNotExist) {
+      // TODO: Verify that file does not exist.
+      await this.save();
+    }
 
-  private destroyInstance(): void {
-    // TODO: Ensure notebook is not in the middle of processing change requests or saving.
-    assert(!this.destroyed);
-    this.destroyed = true;
-    const info = ServerNotebook.instanceMap.get(this.path)!;
-    assert(info);
-    ServerNotebook.instanceMap.delete(this.path);
-    for (const observer of this.observers.values()) { observer.onClose(); }
-    for (const watcher of info.watchers) { watcher.onClosed(); }
-  }
-
-  // This should be called on any newly created notebook immediately after the constructor.
-  private async initialize(observerClasses: Map<StyleSource,ObserverClass>): Promise<void> {
+    // TODO: Use watcher interface for observers instead of separate observer interface?
     // Call "onOpen" to get an observer instance for every registered observer class.
-    for (const [name, observerClass] of observerClasses.entries()) {
-      const instance = await observerClass.onOpen(this);
-      this.registerObserver(name, instance)
+    for (const [name, observerClass] of ServerNotebook.observerClasses.entries()) {
+      const observer = await observerClass.onOpen(this);
+      this.registerObserver(name, observer)
     }
   }
 
@@ -1352,6 +1250,14 @@ export class ServerNotebook extends Notebook {
     await writeNotebookFile(this.path, json);
     this.saving = false;
   }
+
+  protected terminate(): void {
+    // TODO: Ensure notebook is not in the middle of processing change requests or saving.
+    for (const observer of this.observers.values()) {
+      observer.onClose();
+    }
+  }
+
 }
 
 // Exported Functions

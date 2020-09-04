@@ -19,28 +19,23 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 // Requirements
 
-import { Folder, FolderObject, FolderPath, NotebookName, FolderName, FolderChange, FolderCreated, NotebookCreated, FolderEntry, NotebookEntry, FolderRenamed, NotebookRenamed, FolderDeleted, NotebookDeleted } from "./shared/folder"
+import { Folder, FolderPath, NotebookName, FolderName, FolderChange, FolderCreated, NotebookCreated, FolderEntry, NotebookEntry, FolderRenamed, NotebookRenamed, FolderDeleted, NotebookDeleted, FolderWatcher } from "./shared/folder"
 import {
   FolderChangeRequest, ClientFolderChangeMessage, ServerFolderChangedMessage, ClientFolderOpenMessage,
-  ServerFolderMessage, ServerFolderOpenedMessage, ServerFolderClosedMessage, ClientFolderCloseMessage, FolderCreateRequest, NotebookCreateRequest, FolderDeleteRequest, NotebookDeleteRequest, FolderRenameRequest, NotebookRenameRequest
+  ServerFolderMessage, ServerFolderOpenedMessage, ServerFolderClosedMessage, FolderCreateRequest, NotebookCreateRequest, FolderDeleteRequest, NotebookDeleteRequest, FolderRenameRequest, NotebookRenameRequest
 } from "./shared/math-tablet-api"
 
 import { appInstance } from "./app"
 import { assert } from "./shared/common"
+import { OpenOptions } from "./shared/watched-resource";
 
 // Types
 
-interface InstanceInfo {
-  instance?: ClientFolder;
-  promise: Promise<ClientFolder>;           // Promise for the instance returned from 'open'.
-  watchers: Set<Watcher>;
+export interface ClientFolderWatcher extends FolderWatcher {
+  onChangesFinished(): void;
 }
 
-export interface Watcher {
-  onChange(change: FolderChange): void;
-  onChangesComplete(): void;
-  onClosed(): void; // TODO: implement.
-}
+export type OpenFolderOptions = OpenOptions<ClientFolderWatcher>;
 
 // Constants
 
@@ -50,46 +45,31 @@ const MAX_UNTITLED_COUNT = 99;
 
 // Class
 
-export class ClientFolder extends Folder {
+export class ClientFolder extends Folder<ClientFolderWatcher> {
 
   // Public Class Methods
 
-  private static async open(path: FolderPath): Promise<ClientFolder> {
-    const msg: ClientFolderOpenMessage = { type: 'folder', operation: 'open', path };
-    const response = await appInstance.socket.sendRequest<ServerFolderOpenedMessage>(msg);
-    const info = this.instanceMap.get(path)!;
-    assert(info);
-    const instance = info.instance = new this(msg.path, response.obj);
-    return instance;
-  }
-
-  public static watch(path: FolderPath, watcher: Watcher): Promise<ClientFolder> {
-    let info = this.instanceMap.get(path);
-    if (!info) {
-      const watchers = new Set([watcher]);
-      const promise = this.open(path);
-      info = { promise, watchers };
-      this.instanceMap.set(path, info);
-    } else {
-      info.watchers.add(watcher);
-    }
-    return info.promise;
+  public static async open(path: FolderPath, options: OpenFolderOptions): Promise<ClientFolder> {
+    // IMPORTANT: This is a standard open pattern that all WatchedResource-derived classes should use.
+    //            Do not modify unless you know what you are doing!
+    const isOpen = this.isOpen(path);
+    const instance = isOpen ? this.getInstance(path) : new this(path, options);
+    instance.open(options, isOpen);
+    return instance.openPromise;
   }
 
   // Class Event Handlers
 
-  public static onMessage(msg: ServerFolderMessage): void {
+  public static smMessage(msg: ServerFolderMessage): void {
     // A folder message was received from the server.
     switch(msg.operation) {
-      case 'changed': this.onChanged(msg); break;
-      case 'closed':  this.onClosed(msg); break;
+      case 'changed': this.smChanged(msg); break;
+      case 'closed':  this.smClosed(msg); break;
       default: assert(false); break;
     }
   }
 
   // Public Instance Properties
-
-  public path: FolderPath;
 
   // Public Instance Property Functions
 
@@ -108,7 +88,7 @@ export class ClientFolder extends Folder {
     };
     const response = await appInstance.socket.sendRequest<ServerFolderChangedMessage>(msg);
     // REVIEW: Change notification should not go out to watcher that requested the change.
-    this.onChanged(response);
+    this.smChanged(response);
     assert(response.changes.length == 1);
     assert(response.changes[0].type == 'folderCreated');
     const change = <FolderCreated>response.changes[0];
@@ -127,7 +107,7 @@ export class ClientFolder extends Folder {
     };
     const response = await appInstance.socket.sendRequest<ServerFolderChangedMessage>(msg);
     // REVIEW: Change notification should not go out to watcher that requested the change.
-    this.onChanged(response);
+    this.smChanged(response);
     assert(response.changes.length == 1);
     assert(response.changes[0].type == 'notebookCreated');
     const change = <NotebookCreated>response.changes[0];
@@ -168,51 +148,35 @@ export class ClientFolder extends Folder {
     return change;
   }
 
-  public unwatch(watcher: Watcher): void {
-    assert(!this.closed);
-    const info = ClientFolder.instanceMap.get(this.path)!;
-    assert(info);
-    const had = info.watchers.delete(watcher);
-    assert(had);
-    if (info.watchers.size == 0) {
-      // TODO: this.close();
-
-      // Nothing is watching this folder any more so we can close it.
-      // REVIEW: In the future we could delay this a while in case the folder is reopened in the near future.
-      ClientFolder.instanceMap.delete(this.path);
-      this.closed = true;
-      const msg: ClientFolderCloseMessage = { type: 'folder', operation: 'close', path: this.path };
-      appInstance.socket.sendMessage(msg);
-    }
-  }
-
   // -- PRIVATE --
 
   // Private Class Properties
 
-  private static instanceMap: Map<FolderPath, InstanceInfo> = new Map();
-
   // Private Class Methods
 
-  private static onChanged(msg: ServerFolderChangedMessage): void {
-    // A change message has come in that was not from our own change request.
-    const info = this.instanceMap.get(msg.path);
-    assert(info && info.instance);
-    info!.instance!.onChanged(msg);
+  protected static getInstance(path: FolderPath): ClientFolder {
+    return <ClientFolder>super.getInstance(path);
   }
 
-  private static onClosed(msg: ServerFolderClosedMessage): void {
-    const info = this.instanceMap.get(msg.path);
-    assert(info && info.instance);
-    this.instanceMap.delete(msg.path);
-    info!.instance!.onClosed(msg);
+  // Private Class Event Handlers
+
+  private static smChanged(msg: ServerFolderChangedMessage): void {
+    // A change message has come in that was not from our own change request.
+    const instance = this.getInstance(msg.path);
+    instance.smChanged(msg);
+  }
+
+  private static smClosed(msg: ServerFolderClosedMessage): void {
+    // Message from the server that the folder has been closed by the server.
+    // For example, if the folder was deleted or moved.
+    const had = this.close(msg.path, msg.reason);
+    assert(had);
   }
 
   // Private Constructor
 
-  private constructor(path: FolderPath, obj: FolderObject) {
-    super(obj);
-    this.path = path;
+  private constructor(path: FolderPath, _options: OpenFolderOptions) {
+    super(path);
   }
 
   // Private Instance Properties
@@ -220,10 +184,6 @@ export class ClientFolder extends Folder {
   private closed?: boolean;
 
   // Private Instance Property Functions
-
-  private get watchers(): IterableIterator<Watcher> {
-    return ClientFolder.instanceMap.get(this.path)!.watchers.values();
-  }
 
   // Private Instance Methods
 
@@ -257,6 +217,13 @@ export class ClientFolder extends Folder {
     }
   }
 
+  protected async initialize(_options: OpenFolderOptions): Promise<void> {
+    const message: ClientFolderOpenMessage = { type: 'folder', operation: 'open', path: this.path };
+    const response = await appInstance.socket.sendRequest<ServerFolderOpenedMessage>(message);
+    Folder.validateObject(response.obj);
+    this.initializeFromObject(response.obj);
+  }
+
   private async sendChangeRequest<T extends FolderChange>(changeRequest: FolderChangeRequest): Promise<T> {
     const changes = await this.sendChangeRequests([ changeRequest ]);
     assert(changes.length == 1);
@@ -273,13 +240,17 @@ export class ClientFolder extends Folder {
       changeRequests,
     }
     const response = await appInstance.socket.sendRequest<ServerFolderChangedMessage>(msg);
-    this.onChanged(response);
+    this.smChanged(response);
     return response.changes;
+  }
+
+  protected terminate(): void {
+    // TODO: ???
   }
 
   // Private Event Handlers
 
-  private onChanged(msg: ServerFolderChangedMessage): void {
+  private smChanged(msg: ServerFolderChangedMessage): void {
     // Message from the server indicating the folder has changed.
 
     // Apply changes to the notebook data structure, and notify the view of the change.
@@ -290,21 +261,11 @@ export class ClientFolder extends Folder {
     //  then it cannot do that.)
     for (const change of msg.changes) {
       this.applyChange(change);
-      for (const watcher of this.watchers) {
-        watcher.onChange(change);
-      }
     }
-    for (const watcher of this.watchers) {
-      watcher.onChangesComplete();
-    }
-  }
 
-  private onClosed(_msg: ServerFolderClosedMessage): void {
-    // The folder was closed from the server side.
-    // Notify our watchers, then
-    for (const watcher of this.watchers) { watcher.onClosed(); }
-    ClientFolder.instanceMap.get(this.path)!.watchers.clear();
-    this.closed = true;
+    for (const watcher of this.watchers) {
+      watcher.onChangesFinished();
+    }
   }
 
 }

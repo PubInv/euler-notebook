@@ -19,27 +19,27 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 // Requirements
 
-import { PromiseResolver } from "./shared/common"
-import { Notebook, NotebookObject, NotebookChange, StyleId } from "./shared/notebook"
+import { OpenOptions } from "./shared/watched-resource"
+import { Notebook, NotebookChange, StyleId, NotebookWatcher } from "./shared/notebook"
 import { ServerNotebookChangedMessage, NotebookChangeRequest, ClientNotebookChangeMessage, ClientNotebookUseToolMessage, RequestId, ClientNotebookOpenMessage, ServerNotebookOpenedMessage, ServerNotebookMessage, ServerNotebookClosedMessage } from "./shared/math-tablet-api"
 
 import { appInstance } from "./app"
 import { NotebookName, NotebookPath } from "./shared/folder"
-import { NotebookBasedScreen } from "./screen"
 import { assert } from "./shared/common"
 
 // Types
-
-interface InstanceInfo {
-  promise: Promise<ClientNotebook>;           // Promise for the instance returned from 'open'.
-  resolver?: PromiseResolver<ClientNotebook>;
-  instance?: ClientNotebook;
-}
 
 export interface TrackedChangesResults {
   changes: NotebookChange[];
   undoChangeRequests: NotebookChangeRequest[];
 }
+
+export interface ClientNotebookWatcher extends NotebookWatcher {
+  onChangesFinished(): void;
+}
+
+
+export type OpenNotebookOptions = OpenOptions<ClientNotebookWatcher>;
 
 // Constants
 
@@ -47,41 +47,31 @@ export interface TrackedChangesResults {
 
 // Class
 
-export class ClientNotebook extends Notebook {
+export class ClientNotebook extends Notebook<ClientNotebookWatcher> {
 
   // Class Methods
 
-  public static async open(path: NotebookPath): Promise<ClientNotebook> {
-    let existingInfo = this.instanceMap.get(path);
-    if (!existingInfo) {
-      const message: ClientNotebookOpenMessage = { type: 'notebook', operation: 'open', path };
-      appInstance.socket.sendMessage(message);
-      let resolver: PromiseResolver<ClientNotebook>;
-      const promise = new Promise<ClientNotebook>((resolve, reject)=>{ resolver = { resolve, reject }; });
-      // Ignoring: "Variable 'resolver' is used before being assigned.
-      // Resolver is set when promise is constructed.
-      // @ts-ignore
-      existingInfo = { promise, resolver };
-      this.instanceMap.set(path, existingInfo);
-    }
-    return existingInfo.promise;
+  public static async open(path: NotebookPath, options: OpenNotebookOptions): Promise<ClientNotebook> {
+    // IMPORTANT: This is a standard open pattern that all WatchedResource-derived classes should use.
+    //            Do not modify unless you know what you are doing!
+    const isOpen = this.isOpen(path);
+    const instance = isOpen ? this.getInstance(path) : new this(path, options);
+    instance.open(options, isOpen);
+    return instance.openPromise;
   }
 
   // Class Event Handlers
 
-  public static onMessage(msg: ServerNotebookMessage): void {
+  public static smMessage(msg: ServerNotebookMessage): void {
     // A notebook message was received from the server.
     switch(msg.operation) {
       case 'changed': this.smChanged(msg); break;
       case 'closed':  this.smClosed(msg); break;
-      case 'opened': this.smOpened(msg); break;
-      default: assert(false); break;
+      default: assert(false, `Client notebook received unexpected '${msg.operation}' message.`); break;
     }
   }
 
   // Instance Properties
-
-  public path: NotebookPath;
 
   // Instance Property Functions
 
@@ -92,9 +82,9 @@ export class ClientNotebook extends Notebook {
 
   // Instance Methods
 
-  public connect(screen: NotebookBasedScreen): void {
-    this.screen = screen;
-  }
+  // public connect(screen: NotebookBasedScreen): void {
+  //   this.screen = screen;
+  // }
 
   public export(): void {
     // NOTE: Notebook path starts with a slash.
@@ -140,37 +130,31 @@ export class ClientNotebook extends Notebook {
 
   // Private Class Properties
 
-  private static instanceMap: Map<NotebookPath, InstanceInfo> = new Map();
-
   // Private Class Methods
 
+  protected static getInstance(path: NotebookPath): ClientNotebook {
+    return <ClientNotebook>super.getInstance(path);
+  }
+
+  // Private Class Event Handlers
+
   private static smChanged(msg: ServerNotebookChangedMessage): void {
-    const info = this.instanceMap.get(msg.path);
-    assert(info && info.instance && !info.resolver);
-    info!.instance!.onChanged(msg);
+    // Message from the server that the notebook has changed.
+    const instance = this.getInstance(msg.path);
+    instance.smChanged(msg);
   }
 
   private static smClosed(msg: ServerNotebookClosedMessage): void {
-    const info = this.instanceMap.get(msg.path);
-    assert(info && info.instance && !info.resolver);
-    this.instanceMap.delete(msg.path);
-    info!.instance!.onClosed(msg);
-  }
-
-  private static smOpened(msg: ServerNotebookOpenedMessage): void {
-    // TODO: Handle if there is an error opening the folder.
-    const info = this.instanceMap.get(msg.path);
-    assert(info && !info.instance && info.resolver);
-    const instance = info!.instance = new this(msg.path, msg.obj);
-    info!.resolver!.resolve(instance);
-    delete info!.resolver;
+    // Message from the server that the notebook has been closed by the server.
+    // For example, if the notebook was deleted or moved.
+    const had = this.close(msg.path, msg.reason);
+    assert(had);
   }
 
   // Private Constructor
 
-  private constructor(path: NotebookPath, obj: NotebookObject) {
-    super(obj);
-    this.path = path;
+  private constructor(path: NotebookPath, _options: OpenNotebookOptions) {
+    super(path);
     this.trackedChangeRequests = new Map();
     this.trackedChangeResponses = new Map();
   }
@@ -178,17 +162,25 @@ export class ClientNotebook extends Notebook {
   // Private Instance Properties
 
   // REVIEW: Could there be more than one screen attached to this openNotebook?
-  private screen?: NotebookBasedScreen;
   private trackedChangeRequests: Map<RequestId, { resolve: (results: TrackedChangesResults)=>void, reject: (reason: any)=>void }>;
   private trackedChangeResponses: Map<RequestId, TrackedChangesResults>;
 
   // Private Instance Methods
 
-  // Private Event Handlers
+  protected async initialize(_options: OpenNotebookOptions): Promise<void> {
+    const message: ClientNotebookOpenMessage = { type: 'notebook', operation: 'open', path: this.path };
+    const response = await appInstance.socket.sendRequest<ServerNotebookOpenedMessage>(message);
+    Notebook.validateObject(response.obj);
+    this.initializeFromObject(response.obj);
+  }
+
+  protected terminate(): void {
+    // TODO: ???
+  }
 
   // Private Event Handlers
 
-  private onChanged(msg: ServerNotebookChangedMessage): void {
+  private smChanged(msg: ServerNotebookChangedMessage): void {
     // Message from the server indicating this notebook has changed.
 
     // Apply changes to the notebook data structure, and notify the view of the change.
@@ -198,16 +190,12 @@ export class ClientNotebook extends Notebook {
     //  determine what cell to update. If the style has been deleted from the notebook already
     //  then it cannot do that.)
     for (const change of msg.changes) {
-      const isDelete = (change.type == 'relationshipDeleted' || change.type == 'styleDeleted');
-      if (!isDelete) { this.applyChange(change); }
-      if (this.screen) { this.screen.smChange(change); }
-      if (isDelete) { this.applyChange(change); }
+      this.applyChange(change);
     }
 
-    // Update the notebooks view
-    // REVIEW: Might we want to postpone updating the view until the tracker promises are resolved?
-    // TODO: convert to "Watcher" like ClientFolder
-    //       if (this.screen) { this.screen.updateView(); }
+    for (const watcher of this.watchers) {
+      watcher.onChangesFinished();
+    }
 
     // If the changes were tracked then accumulate the changes
     // and resolve the tracking promise if complete.
@@ -227,10 +215,6 @@ export class ClientNotebook extends Notebook {
         fns.resolve(previousResults);
       }
     }
-  }
-
-  public onClosed(_msg: ServerNotebookClosedMessage): void {
-    // TODO: Notify our screen client that we are closing?
   }
 
 }

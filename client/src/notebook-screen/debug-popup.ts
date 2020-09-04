@@ -19,7 +19,9 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 // Requirements
 
-import { $, Html, $new, CLOSE_X_ENTITY } from "./dom"
+import { $, Html, CLOSE_X_ENTITY } from "../dom"
+import { HtmlElement } from "../html-element";
+import { NotebookScreen } from ".";
 
 // Types
 
@@ -29,21 +31,17 @@ import { $, Html, $new, CLOSE_X_ENTITY } from "./dom"
 
 // Class
 
-export class DebugPopup {
+export class DebugPopup extends HtmlElement<'div'>{
 
   // Class Methods
 
-  public static create($parent: HTMLElement): DebugPopup {
-    return new this($parent);
+  public static create(screen: NotebookScreen): DebugPopup {
+    return new this(screen);
   }
 
   // Instance Methods
 
-  public hide(): void {
-    this.$elt.style.display = 'none';
-  }
-
-  public show(html: Html): void {
+  public showContents(html: Html): void {
     const $content = $(this.$elt, '.content');
     $content.innerHTML = html;
     this.$elt.style.display = 'block';
@@ -53,10 +51,10 @@ export class DebugPopup {
 
   // Constructor
 
-  private constructor($parent: HTMLElement) {
-    this.$elt = $new({
+  private constructor(screen: NotebookScreen) {
+    super({
       tag: 'div',
-      appendTo: $parent,
+      appendTo: screen.$elt,
       class: 'debugPopup',
       children: [
         {
@@ -66,7 +64,6 @@ export class DebugPopup {
           listeners: { click: e=> this.onCloseClick(e), }
         }, {
           tag: 'div',
-          appendTo: $parent,
           class: 'content',
           listeners: { click: e=>this.onContentClick(e) , }
         }
@@ -76,8 +73,6 @@ export class DebugPopup {
   }
 
   // Private Instance Properties
-
-  private $elt: HTMLDivElement;
 
   // Private Instance Property Functions
 

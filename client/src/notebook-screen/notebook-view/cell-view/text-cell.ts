@@ -19,48 +19,43 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 // Requirements
 
-import { ButtonBar } from "./button-bar"
-import { ClientNotebook } from "./client-notebook"
-import { $new } from "./dom"
-import { PageView } from "./page-view"
+import { StyleObject } from "../../../shared/notebook"
+import { NotebookView } from "../../../notebook-screen/notebook-view"
+import { getRenderer } from "../../../renderers"
+
+import { CellView } from "./index"
 
 // Types
 
 // Constants
 
-// Global Variables
+// Class
 
-// Exported Class
-
-export class PageSidebar extends ButtonBar {
+export class TextCellView extends CellView {
 
   // Class Methods
 
-  public static create($parent: HTMLElement, notebook: ClientNotebook): PageSidebar {
-    return new this($parent, notebook);
+  public static create(notebookView: NotebookView, style: StyleObject): TextCellView {
+    const instance = new this(notebookView, style);
+    instance.render(style);
+    return instance;
   }
-
-  // Instance Properties
-
 
   // Instance Methods
 
-  public connect(_notebook: ClientNotebook, _pageView: PageView): void { }
+  public render(style: StyleObject): void {
+    const renderer = getRenderer(style.type);
+    const { html, errorHtml } = renderer(style.data);
+    // TODO: Error formatting.
+    if (html) { this.$elt.innerHTML = html; }
+    else { this.$elt.innerHTML = errorHtml!; }
+  }
 
   // -- PRIVATE --
 
   // Constructor
 
-  private constructor($parent: HTMLElement, _notebook: ClientNotebook) {
-    const $elt = $new({ tag: 'div', appendTo: $parent, class: 'sidebar' });
-    super($elt);
+  private constructor(notebookView: NotebookView, style: StyleObject) {
+    super(notebookView, style, 'textCell');
   }
-
-  // Private Instance Properties
-
-  // Private Instance Methods
-
-  // Private Event Handlers
-
-
 }

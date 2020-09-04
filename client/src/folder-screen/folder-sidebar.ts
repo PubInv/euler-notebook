@@ -21,7 +21,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 import { $new, svgIconReference } from "../dom";
 import { FolderScreen } from ".";
-import { HtmlElement } from "../html-element";
+import { ButtonBar } from "../button-bar"
 
 // Types
 
@@ -31,7 +31,7 @@ import { HtmlElement } from "../html-element";
 
 // Exported Class
 
-export class FolderSidebar extends HtmlElement<'div'>  {
+export class FolderSidebar extends ButtonBar {
 
   // Public Class Methods
 
@@ -51,6 +51,7 @@ export class FolderSidebar extends HtmlElement<'div'>  {
 
     const $newFolderButton = $new({
       tag: 'button',
+      class: 'iconButton',
       html: svgIconReference('iconMonstrFolder5'),
       asyncListeners: {
         click: (e: MouseEvent)=>this.onNewFolderClicked(e)
@@ -60,6 +61,7 @@ export class FolderSidebar extends HtmlElement<'div'>  {
 
     const $newNotebookButton = $new({
       tag: 'button',
+      class: 'iconButton',
       html: svgIconReference('iconMonstrFile15'),
       asyncListeners: {
         click: (e: MouseEvent)=>this.onNewNotebookClicked(e)

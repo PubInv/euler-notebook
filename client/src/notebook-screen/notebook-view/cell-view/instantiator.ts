@@ -19,8 +19,8 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 // Requirements
 
-import { StyleObject } from "../shared/notebook"
-import { NotebookView } from "../notebook-view"
+import { StyleObject } from "../../../shared/notebook"
+import { NotebookView } from "../../../notebook-screen/notebook-view"
 
 import { CellView } from "./index"
 import { FormulaCellView } from "./formula-cell"

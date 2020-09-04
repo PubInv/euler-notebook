@@ -25,28 +25,6 @@ include iconmonstr
 //-     button.close &#x2715;
 //-     .content
 
-mixin header
-  #header
-    span
-      button#homeButton(title="Math Tablet home")
-        +svgIconHome6
-      +keyboardInputSelector
-    div#title
-    span
-      button#refreshButton(title="Refresh page")
-        +svgIconRefresh2
-      button#fullscreenButton(title="Full screen")
-        +svgIconFullscreen7
-      button#userButton(title="User settings")
-        +svgIconUser1
-
-mixin keyboardInputSelector
-  select#keyboardInputType()
-    option(value='TEX-EXPRESSION') LaTeX
-    option(value='MATHML-XML') MathML
-    option(value='PLAIN-TEXT') Text
-    option(value='WOLFRAM-EXPRESSION', selected=true) Wolfram
-
 block styles
   link(rel='stylesheet', href='/stylesheets/katex-0.10.1.css')
   link(rel='stylesheet', href='/stylesheets/index.css')
@@ -57,11 +35,3 @@ block scripts
 
 block content
   +svgIcons
-  +header
-  //- #notebookScreen.screen
-  //-   +debugPopup
-  //-   +notebookSidebar
-  //-   +tools
-  //- #pageScreen.screen
-  //-   +pageSidebar
-  //-   +pageView

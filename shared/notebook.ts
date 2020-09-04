@@ -20,7 +20,8 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 // Requirements
 
-import { NOTEBOOK_NAME_RE, NotebookName } from "./folder";
+import { WatchedResource, Watcher } from './watched-resource';
+import { NOTEBOOK_NAME_RE, NotebookName, NotebookPath } from "./folder";
 
 // Types
 
@@ -39,6 +40,10 @@ export interface DrawingData {
   strokeGroups: StrokeGroup[];
 }
 
+export interface NotebookWatcher extends Watcher {
+  onChange(change: NotebookChange): void;
+}
+
 export interface Stroke {
   // id?: string;
   // p?: number[];
@@ -54,7 +59,6 @@ export interface StrokeGroup {
   // penStyleClasses?: string;
   strokes: Stroke[];
 }
-
 
 export interface FindRelationshipOptions {
   // NOTE: toId and fromId are mutually "or". The ids and all other fields are "and".
@@ -356,7 +360,7 @@ export const VERSION = "0.0.15";
 
 // Exported Class
 
-export class Notebook {
+export abstract class Notebook<W extends NotebookWatcher> extends WatchedResource<NotebookPath, W> {
 
   // Public Class Property Functions
 
@@ -364,32 +368,22 @@ export class Notebook {
     return NOTEBOOK_NAME_RE.test(name);
   }
 
-  // Constructor
+  // Public Class Methods
 
-  public constructor(obj?: NotebookObject) {
-    if (!obj) {
-      this.nextId = 1;
-      this.relationshipMap = {};
-      this.styleMap = {};
-      this.styleOrder = [];
-    } else {
-      // LATER: More thorough validation of the object.
-      if (!obj.nextId) { throw new Error("Invalid notebook object JSON."); }
-      if (obj.version != VERSION) {
-        throw new Error(`Invalid notebook version ${obj.version}. Expect version ${VERSION}`);
-      }
-      this.nextId = obj.nextId;
-      this.relationshipMap = obj.relationshipMap;
-      this.styleMap = obj.styleMap;
-      this.styleOrder = obj.styleOrder;
+  public static validateObject(obj: NotebookObject): void {
+    // Throws an exception with a descriptive message if the object is not a valid notebook object.
+    // LATER: More thorough validation of the object.
+    if (!obj.nextId) { throw new Error("Invalid notebook object JSON."); }
+    if (obj.version != VERSION) {
+      throw new Error(`Invalid notebook version ${obj.version}. Expect version ${VERSION}`);
     }
   }
 
-  // Instance Properties
+  // Public Instance Properties
 
   public nextId: StyleId; // TODO: Move nextId to server-notebook because it is not needed on the client.
 
-  // Instance Property Functions
+  // Public Instance Property Functions
 
   public allRelationships(): RelationshipObject[] {
     // REVIEW: Return an iterator?
@@ -515,11 +509,19 @@ export class Notebook {
     .join('');
   }
 
-  // Instance Methods
+  // Public Instance Methods
 
   public applyChange(change: NotebookChange): void {
     // TODO: Don't let changes be null.
     if (change == null) { return; }
+
+    // Send deletion change notifications.
+    // Deletion change notifications are sent before the change happens so the watcher can
+    // examine the style or relationship being deleted before it disappears from the notebook.
+    const notifyBefore = (change.type == 'relationshipDeleted' || change.type == 'styleDeleted');
+    if (notifyBefore) {
+      for (const watcher of this.watchers) { watcher.onChange(change); }
+    }
 
     switch(change.type) {
       case 'relationshipDeleted':   this.deleteRelationship(change.relationship); break;
@@ -531,6 +533,11 @@ export class Notebook {
       case 'styleMoved':            this.moveStyle(change); break;
       default:
         throw new Error(`Applying unexpected change type: ${(<any>change).type}`);
+    }
+
+    // Send non-deletion change notification.
+    if (!notifyBefore) {
+      for (const watcher of this.watchers) { watcher.onChange(change); }
     }
   }
 
@@ -620,6 +627,16 @@ export class Notebook {
   // Private Class Properties
 
   // Private Class Methods
+
+  // Private Constructor
+
+  protected constructor(path: NotebookPath) {
+    super(path);
+    this.nextId = 1;
+    this.relationshipMap = {};
+    this.styleMap = {};
+    this.styleOrder = [];
+  }
 
   // Private Instance Properties
 
@@ -730,6 +747,13 @@ export class Notebook {
     }
     if (!this.styleMap[style.id]) { throw new Error(`Deleting unknown style ${style.id}`); }
     delete this.styleMap[style.id];
+  }
+
+  protected initializeFromObject(obj: NotebookObject): void {
+    this.nextId = obj.nextId;
+    this.relationshipMap = obj.relationshipMap;
+    this.styleMap = obj.styleMap;
+    this.styleOrder = obj.styleOrder;
   }
 
   private insertRelationship(relationship: RelationshipObject): void {

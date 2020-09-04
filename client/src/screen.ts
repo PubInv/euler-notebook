@@ -17,15 +17,17 @@ You should have received a copy of the GNU Affero General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-import { NotebookChange } from "./shared/notebook";
 import { assert } from "./shared/common";
+
+import { $new, Html, HtmlElementSpecification } from "./dom";
+import { HtmlElement } from "./html-element";
 
 // Requirements
 
 
 // Exported Class
 
-export abstract class Screen {
+export abstract class Screen extends HtmlElement<'div'>{
 
   // Public Class Methods
 
@@ -37,11 +39,20 @@ export abstract class Screen {
     screen.show();
   }
 
+  // Public Class Event Handlers
+
+  public static onResize(window: Window, event: UIEvent): void {
+    // REVIEW: Notify all screens of resize?
+    this.visibleScreen?.onResize(window, event);
+  }
+
   // Public Instance Properties
 
-  public $elt: HTMLDivElement;  // REVIEW: Make read-only?
-
   // Public Instance Methods
+
+  // Public Event Handlers
+
+  public abstract onResize(window: Window, event: UIEvent): void;
 
   // --- PRIVATE ---
 
@@ -51,26 +62,23 @@ export abstract class Screen {
 
   // Private Constructor
 
-  protected constructor($elt: HTMLDivElement) {
-    this.$elt = $elt;
+  protected constructor(options: HtmlElementSpecification<'div'>) {
+    super(options);
   }
 
   // Private Properties
 
   // Private Instance Methods
 
-  protected hide(): void {
-    // Do not call directly. Call Screen.show to show another screen instead.
-    this.$elt.style.display = 'none';
+  protected displayErrorMessage(html: Html) {
+    // LATER: Better way to display to display a closed message.
+    // LATER: Give user helpful instructions, e.g. "refresh the page, go to the parent folder, or go to the home folder."
+    $new({
+      tag: 'div',
+      class: 'error',
+      html,
+      replaceInner: this.$elt,
+    });
   }
 
-  protected show(): void {
-    // Do not call directly. Call Screen.show to show a screen.
-    this.$elt.style.display = 'block';
-  }
-
-}
-
-export abstract class NotebookBasedScreen extends Screen {
-  public abstract smChange(_change: NotebookChange): void;
 }

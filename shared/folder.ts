@@ -20,6 +20,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 // Requirements
 
 import { assert } from "./common"
+import { Watcher, WatchedResource } from "./watched-resource";
 
 // Types
 
@@ -76,10 +77,13 @@ export interface NotebookRenamed {
 }
 
 export interface FolderObject {
-  name: FolderName;
   path: FolderPath;
   notebooks: NotebookEntry[];
   folders: FolderEntry[];
+}
+
+export interface FolderWatcher extends Watcher {
+  onChange(change: FolderChange): void;
 }
 
 // An entry in a list of notebooks.
@@ -98,7 +102,7 @@ export const NOTEBOOK_PATH_RE = /^\/((\w+\/)*)(\w+)\.mtnb$/;
 
 // Exported Class
 
-export class Folder implements FolderObject {
+export abstract class Folder<W extends FolderWatcher> extends WatchedResource<FolderPath, W> implements FolderObject {
 
   // Public Class Property Functions
 
@@ -106,10 +110,15 @@ export class Folder implements FolderObject {
     return FOLDER_NAME_RE.test(name);
   }
 
+  // Public Class Methods
+
+  public static validateObject(_obj: FolderObject): void {
+    // Throws an exception with a descriptive message if the object is not a valid folder object.
+    // TODO:
+  }
+
   // Public Instance Properties
 
-  public name: FolderName;
-  public path: FolderPath;
   public notebooks: NotebookEntry[];
   public folders: FolderEntry[];
 
@@ -117,6 +126,10 @@ export class Folder implements FolderObject {
 
   public get isEmpty(): boolean {
     return (this.folders.length + this.notebooks.length == 0);
+  }
+
+  public get name(): FolderName {
+    throw new Error("Not implemented.");
   }
 
   public hasFolderNamed(
@@ -148,6 +161,14 @@ export class Folder implements FolderObject {
   // Public Instance Methods
 
   public applyChange(change: FolderChange): void {
+    // Send deletion change notifications.
+    // Deletion change notifications are sent before the change happens so the watcher can
+    // examine the style or relationship being deleted before it disappears from the notebook.
+    const notifyBefore = (change.type == 'folderDeleted' || change.type == 'notebookDeleted');
+    if (notifyBefore) {
+      for (const watcher of this.watchers) { watcher.onChange(change); }
+    }
+
     switch(change.type) {
       case 'folderCreated': {
         this.folders.push(change.entry);
@@ -184,22 +205,25 @@ export class Folder implements FolderObject {
       default:
         throw new Error(`Applying unexpected change type: ${(<any>change).type}`);
     }
+
+    // Send non-deletion change notification.
+    if (!notifyBefore) {
+      for (const watcher of this.watchers) { watcher.onChange(change); }
+    }
   }
 
   public toJSON(): FolderObject {
-    return { name: this.name, path: this.path, folders: this.folders, notebooks: this.notebooks };
+    return { path: this.path, folders: this.folders, notebooks: this.notebooks };
   }
 
   // --- PRIVATE ---
 
   // Private Constructor
 
-  public constructor(obj: FolderObject) {
-    this.name = obj.name;
-    this.path = obj.path;
-    // REVIEW: Should we make a copy of these arrays? No guarantee the caller won't modify them.
-    this.notebooks = obj.notebooks;
-    this.folders = obj.folders;
+  public constructor(path: FolderPath) {
+    super(path);
+    this.folders = [];
+    this.notebooks = [];
   }
 
   // Private Instance Properties
@@ -215,5 +239,10 @@ export class Folder implements FolderObject {
   }
 
   // Private Instance Methods
+
+  protected initializeFromObject(obj: FolderObject): void {
+    this.folders = obj.folders;
+    this.notebooks = obj.notebooks;
+  }
 
 }

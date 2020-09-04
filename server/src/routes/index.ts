@@ -68,7 +68,7 @@ async function onDashboard(req: Request, res: Response) {
       case 'closeNotebook': {
         for (const path of <NotebookPath[]>Object.keys(req.body.notebooks)) {
           debug(`Closing client ${path}`);
-          await ServerNotebook.close(path);
+          ServerNotebook.close(path, "Notebook closed by administrator.");
         }
         break;
       }

@@ -19,15 +19,15 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 // Requirements
 
-import { StyleObject, FindRelationshipOptions, FindStyleOptions } from "../shared/notebook"
+import { StyleObject, FindRelationshipOptions, FindStyleOptions } from "../../../shared/notebook"
 
-import { $new, escapeHtml, Html } from "../dom"
-import { NotebookView } from "../notebook-view"
-import { getRenderer } from "../renderers"
-import { FORMULA_SUBROLE_PREFIX } from "../role-selectors"
+import { $new, escapeHtml, Html } from "../../../dom"
+import { NotebookView } from "../../../notebook-screen/notebook-view"
+import { getRenderer } from "../../../renderers"
+import { FORMULA_SUBROLE_PREFIX } from "../../../role-selectors"
 
 import { CellView } from "./index"
-import { NotebookTools } from "../notebook-tools"
+import { NotebookTools } from "../../../notebook-screen/notebook-tools"
 
 // Types
 
@@ -51,7 +51,7 @@ export class FormulaCellView extends CellView {
     this.$prefix.innerHTML = style.subrole ? FORMULA_SUBROLE_PREFIX.get(style.subrole!)! : '';
 
     // Look for a LATEX REPRESENTATION.
-    const repStyles = this.notebookView.notebook.findStyles({ role: 'REPRESENTATION', type: 'TEX-EXPRESSION' }, style.id);
+    const repStyles = this.view.screen.notebook.findStyles({ role: 'REPRESENTATION', type: 'TEX-EXPRESSION' }, style.id);
     let repStyle: StyleObject|undefined;
     if (repStyles.length > 0) {
       if (repStyles.length > 1) { console.warn("More than one REPRESENTATION/TEX-EXPRESSION styles found."); }
@@ -79,7 +79,7 @@ export class FormulaCellView extends CellView {
     //         to the end of the formula.
     {
       const findOptions: FindStyleOptions = { role: 'EVALUATION', recursive: true };
-      const evaluationStyles = this.notebookView.notebook.findStyles(findOptions, style.id);
+      const evaluationStyles = this.view.screen.notebook.findStyles(findOptions, style.id);
       for (const evaluationStyle of evaluationStyles) {
         // HACK ALERT: We only take evaluations that are numbers:
         const evalStr = evaluationStyle.data.toString();
@@ -97,7 +97,7 @@ export class FormulaCellView extends CellView {
     //         to the end of the formula.
     {
       const findOptions: FindRelationshipOptions = { fromId: style.id, toId: style.id, role: 'EQUIVALENCE' };
-      const relationships = this.notebookView.notebook.findRelationships(findOptions);
+      const relationships = this.view.screen.notebook.findRelationships(findOptions);
       const equivalentStyleIds = relationships.map(r=>(r.toId!=style.id ? r.toId : r.fromId)).sort();
       if (equivalentStyleIds.length>0) {
         html += ` {${equivalentStyleIds.join(', ')}}`;

@@ -19,16 +19,11 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 // Requirements
 
-import { notImplemented } from "./shared/common"
+import { notImplemented } from "../shared/common"
 
-import { ButtonBar } from "./button-bar"
-import { DebugPopup } from "./debug-popup"
-import { $new, $, svgIconReference } from "./dom"
-import {
-  ICON_BUG12, ICON_CLOTHING18, ICON_FILE12, ICON_IDEA10, ICON_KEYBOARD2, ICON_LOGOUT18,
-  ICON_PENCIL9, ICON_REDO4, ICON_TRASHCAN2, ICON_UNDO4
-} from "./iconmonstr-icons"
-import { NotebookView } from "./notebook-view"
+import { ButtonBar } from "../button-bar"
+import { svgIconReference, $new } from "../dom"
+import { NotebookScreen } from "."
 
 // Types
 
@@ -42,18 +37,13 @@ export class NotebookSidebar extends ButtonBar {
 
   // Public Class Methods
 
-  public static create($parent: HTMLElement): NotebookSidebar {
-    return new this($parent);
+  public static create(screen: NotebookScreen): NotebookSidebar {
+    return new this(screen);
   }
 
   // Public Instance Properties
 
   // Public Instance Methods
-
-  public connect(notebookView: NotebookView, debugPopup: DebugPopup): void {
-    this.debugPopup = debugPopup;
-    this.view = notebookView;
-  }
 
   public enableDebugButton(enable: boolean): void { this.$debugButton.disabled = !enable; }
   public enableRedoButton(enable: boolean): void { this.$redoButton.disabled = !enable; }
@@ -64,19 +54,54 @@ export class NotebookSidebar extends ButtonBar {
 
   // Constructor
 
-  private constructor($parent: HTMLElement) {
-    const $elt = $new({
+  private constructor(screen: NotebookScreen) {
+
+    const $debugButton = $new({
+      tag: 'button',
+      class: 'iconButton',
+      html: svgIconReference('iconMonstrBug12'),
+      listeners: { click: e=>this.onDebugButtonClicked(e) },
+      title: "Debug window",
+    });
+
+    const $redoButton = $new({ // TODO: Start out disabled?
+      tag: 'button',
+      class: 'iconButton',
+      html: svgIconReference('iconMonstrRedo4'),
+      listeners: { click: (e: MouseEvent)=>this.onRedoButtonClicked(e) },
+      title: "Redo",
+    });
+
+    const $trashButton = $new({
+      tag: 'button',
+      class: 'iconButton',
+      html: svgIconReference('iconMonstrTrashcan2'),
+      listeners: { click: (e: MouseEvent)=>this.onTrashButtonClicked(e) },
+      title: "Trash",
+    });
+
+    const $undoButton = $new({
+      tag: 'button',
+      class: 'iconButton',
+      html: svgIconReference('iconMonstrUndo4'),
+      listeners: { click: (e: MouseEvent)=>this.onUndoButtonClicked(e) },
+      title: "Undo",
+    });
+
+    super({
       tag: 'div',
-      appendTo: $parent,
+      appendTo: screen.$elt,
       class: 'sidebar',
       children: [
         { // #thumbnailViewButton
           tag: 'button',
-          html: ICON_FILE12,
+          class: 'iconButton',
+          html: svgIconReference('iconMonstrFile12'),
           listeners: { click: (_e: MouseEvent)=>{ notImplemented(); }},
           title: "Page thumbnail view",
         }, { // #pageViewButton
           tag: 'button',
+          class: 'iconButton',
           html: svgIconReference('iconMonstrFile15'),
           listeners: { click: (_e: MouseEvent)=>{ notImplemented(); }},
           title: "Reading view",
@@ -84,69 +109,56 @@ export class NotebookSidebar extends ButtonBar {
           tag: 'div', class: 'separator'
         }, { // #inputKeyboardButton
           tag: 'button',
-          html: ICON_KEYBOARD2,
+          class: 'iconButton',
+          html: svgIconReference('iconMonstrKeyboard2'),
           listeners: { click: (e: MouseEvent)=>this.onKeyboardButtonClicked(e) },
           title: "Insert keyboard cell",
         }, { // #insertDrawingButton
           tag: 'button',
-          html: ICON_PENCIL9,
+          class: 'iconButton',
+          html: svgIconReference('iconMonstrPencil9'),
           listeners: { click: (e: MouseEvent)=>this.onInsertDrawingButtonClicked(e) },
           title: "Insert drawing cell",
         }, { // #insertHintButton
           tag: 'button',
-          html: ICON_IDEA10,
+          class: 'iconButton',
+          html: svgIconReference('iconMonstrIdea10'),
           listeners: { click: (e: MouseEvent)=>this.onInsertHintButtonClicked(e) },
           title: "Insert hint cell",
         }, {
           tag: 'div', class: 'separator'
-        }, { // #undoButton // TODO: Start out disabled?
-          tag: 'button',
-          class: 'undoButton',
-          html: ICON_UNDO4,
-          listeners: { click: (e: MouseEvent)=>this.onUndoButtonClicked(e) },
-          title: "Undo",
-        }, { // #redoButton // TODO: Start out disabled?
-          tag: 'button',
-          class: 'redoButton',
-          html: ICON_REDO4,
-          listeners: { click: (e: MouseEvent)=>this.onRedoButtonClicked(e) },
-          title: "Redo",
-        }, {
+        },
+        $undoButton,
+        $redoButton
+        , {
           tag: 'div', class: 'separator'
         }, { // #exportButton
           tag: 'button',
-          html: ICON_LOGOUT18,
+          class: 'iconButton',
+          html: svgIconReference('iconMonstrLogout18'),
           listeners: { click: e=>this.onExportButtonClicked(e) },
           title: "Export notebook",
-        }, { // #debugButton
-          tag: 'button',
-          class: 'debugButton',
-          html: ICON_BUG12,
-          listeners: { click: e=>this.onDebugButtonClicked(e) },
-          title: "Debug window",
-        }, {
+        },
+        $debugButton,
+        {
           tag: 'div', class: 'separator'
         }, { // #developmentButton
           tag: 'button',
-          html: ICON_CLOTHING18,
+          class: 'iconButton',
+          html: svgIconReference('iconMonstrClothing18'),
           listeners: { click: (e: MouseEvent)=>this.onDevelopmentButtonClicked(e) },
           title: "For development use only",
-        }, { // #trashButton
-          tag: 'button',
-          class: 'trashButton',
-          html: ICON_TRASHCAN2,
-          listeners: { click: (e: MouseEvent)=>this.onTrashButtonClicked(e) },
-          title: "Trash",
         },
+        $trashButton,
       ],
     });
-    super($elt);
+    this.screen = screen;
 
     // Sidebar button events
-    this.$debugButton = $<'button'>($elt, '.debugButton');
-    this.$redoButton = $<'button'>($elt, '.redoButton');
-    this.$trashButton = $<'button'>($elt, '.trashButton');
-    this.$undoButton = $<'button'>($elt, '.undoButton');
+    this.$debugButton = $debugButton;
+    this.$redoButton = $redoButton;
+    this.$trashButton = $trashButton;
+    this.$undoButton = $undoButton;
   }
 
   // Private Instance Properties
@@ -155,8 +167,7 @@ export class NotebookSidebar extends ButtonBar {
   private $redoButton: HTMLButtonElement;
   private $trashButton: HTMLButtonElement;
   private $undoButton: HTMLButtonElement;
-  private debugPopup!: DebugPopup;  // Set in 'connect'
-  private view!: NotebookView;      // Set in 'connect'
+  private screen: NotebookScreen;
 
   // Private Instance Methods
 
@@ -172,39 +183,39 @@ export class NotebookSidebar extends ButtonBar {
 
   private onDebugButtonClicked(_event: MouseEvent): void {
     this.enableDebugButton(false);
-    this.debugPopup.show("<b>TODO: get HTML from notebook.</b>");
+    this.screen.debugPopup.showContents("<b>TODO: get HTML from notebook.</b>");
   }
 
   private onDevelopmentButtonClicked(_e: MouseEvent): void {
-    this.asyncCommand("Development-Button", this.view.developmentButtonClicked());
+    this.asyncCommand("Development-Button", this.screen.view.developmentButtonClicked());
   }
 
   private onExportButtonClicked(_event: MouseEvent): void {
-    this.view.notebook.export();
+    this.screen.notebook.export();
   }
 
   private onInsertDrawingButtonClicked(_e: MouseEvent): void {
-    this.asyncCommand("Insert-Drawing", this.view.insertInkCellBelow());
+    this.asyncCommand("Insert-Drawing", this.screen.view.insertInkCellBelow());
   }
 
   private onInsertHintButtonClicked(_e: MouseEvent): void {
-    this.asyncCommand("Insert-Hint", this.view.insertHintCellBelow());
+    this.asyncCommand("Insert-Hint", this.screen.view.insertHintCellBelow());
   }
 
   private onKeyboardButtonClicked(_e: MouseEvent): void {
-    this.asyncCommand("Insert-Keyboard", this.view.insertKeyboardCellBelow());
+    this.asyncCommand("Insert-Keyboard", this.screen.view.insertKeyboardCellBelow());
   }
 
   private onRedoButtonClicked(_e: MouseEvent): void {
-    this.asyncCommand("Redo", this.view.redo());
+    this.asyncCommand("Redo", this.screen.view.redo());
   }
 
   private onTrashButtonClicked(_e: MouseEvent): void {
-    this.asyncCommand("Trash", this.view.deleteSelectedCells());
+    this.asyncCommand("Trash", this.screen.view.deleteSelectedCells());
   }
 
   private onUndoButtonClicked(_e: MouseEvent): void {
-    this.asyncCommand("Undo", this.view.undo());
+    this.asyncCommand("Undo", this.screen.view.undo());
   }
 
 }

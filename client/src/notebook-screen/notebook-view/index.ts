@@ -22,23 +22,23 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 // Requirements
 
-import { CellView } from "./cell-view/index"
-import { createCellView } from "./cell-view/instantiator"
-import { assert } from "./shared/common"
-import { $, $new } from "./dom"
+import { assert } from "../../shared/common"
+import { $ } from "../../dom"
 import {
   DrawingData, StyleId, StyleObject, NotebookChange,
   StyleType, StyleRelativePosition,
   StylePosition, HintData, HintStatus, HintRelationship, FormulaData,
-} from "./shared/notebook"
+} from "../../shared/notebook"
 import {
   DebugParams, DebugResults, StyleDeleteRequest, StyleInsertRequest, StylePropertiesWithSubprops,
   StyleMoveRequest, NotebookChangeRequest,
-} from "./shared/math-tablet-api"
-import { ClientNotebook, TrackedChangesResults } from "./client-notebook"
-import { DebugPopup } from "./debug-popup"
-import { NotebookSidebar } from "./notebook-sidebar"
-import { NotebookTools } from "./notebook-tools"
+} from "../../shared/math-tablet-api"
+import { TrackedChangesResults } from "../../client-notebook"
+
+import { CellView } from "./cell-view/index"
+import { createCellView } from "./cell-view/instantiator"
+import { HtmlElement } from "../../html-element"
+import { NotebookScreen } from ".."
 
 // Types
 
@@ -87,45 +87,33 @@ const KEY_BINDINGS = new Map<KeyCombo, CommandName>(KEY_MAP.map(([ keyName, keyM
 
 // Exported Class
 
-export class NotebookView {
+export class NotebookView extends HtmlElement<'div'>{
 
-  // Class Methods
+  // Public Class Methods
 
-  public static create($parent: HTMLElement): NotebookView {
-    return new this($parent);
+  public static create(screen: NotebookScreen): NotebookView {
+    return new this(screen);
   }
 
-  // Instance Properties
+  // Public Instance Properties
 
-  public notebook!: ClientNotebook;
+  public screen: NotebookScreen;
 
-  // Instance Property Functions
+  // Public Instance Property Functions
 
   public topLevelCellOf(style: StyleObject): CellView {
-    for (; style.parentId; style = this.notebook.getStyle(style.parentId));
+    for (; style.parentId; style = this.screen.notebook.getStyle(style.parentId));
     const cell = this.cellViews.get(style.id);
     assert(cell);
     return cell!;
   }
 
-  // Instance Methods
+  // Public Instance Methods
 
   public async deleteTopLevelStyle(styleId: StyleId): Promise<void> {
     await this.unselectAll();
     const changeRequest: StyleDeleteRequest = { type: 'deleteStyle', styleId: styleId };
     await this.sendUndoableChangeRequests([changeRequest]);
-  }
-
-  public connect(clientNotebook: ClientNotebook, sidebar: NotebookSidebar, tools: NotebookTools, debugPopup: DebugPopup): void {
-    this.notebook = clientNotebook;
-    this.sidebar = sidebar;
-    this.tools = tools;
-    this.debugPopup = debugPopup;
-
-    for (const styleId of this.notebook.topLevelStyleOrder()) {
-      const style = this.notebook.getStyle(styleId);
-      this.createCell(style, -1);
-    }
   }
 
   // public scrollPageIntoView(pageId: PageId): void {
@@ -159,7 +147,7 @@ export class NotebookView {
     // This code is executed when the user presses the underwear button in the sidebar.
     // For when a developer needs a button to initiate a test action.
     console.log('Development Button Clicked!');
-    const notebookPath = this.notebook.path;
+    const notebookPath = this.screen.notebook.path;
     const styleId = this.lastCellSelected?.styleId;
     const params: DebugParams = { notebookPath, styleId };
 
@@ -173,7 +161,7 @@ export class NotebookView {
     }
     // REVIEW: Check results headers for content type?
     const results = <DebugResults>await response.json();
-    this.debugPopup.show(results.html);
+    this.screen.debugPopup.showContents(results.html);
   }
 
   public async editSelectedCell(): Promise<void> {
@@ -191,15 +179,15 @@ export class NotebookView {
       throw new Error("Must select a FORMULA cell to insert a hint.");
     }
     const fromId = this.lastCellSelected.styleId;
-    const fromStyle = this.notebook.getStyle(fromId);
+    const fromStyle = this.screen.notebook.getStyle(fromId);
     if (fromStyle.role != 'FORMULA') {
       throw new Error("Must select a FORMULA cell to insert a hint.");
     }
-    const toId = this.notebook.followingStyleId(fromId);
+    const toId = this.screen.notebook.followingStyleId(fromId);
     if (!toId) {
       throw new Error("Can't insert a hint after last formula.");
     }
-    const toStyle = this.notebook.getStyle(toId);
+    const toStyle = this.screen.notebook.getStyle(toId);
     if (toStyle.role != 'FORMULA') {
       throw new Error("Can only insert a hint between two FORMULA cells.");
     }
@@ -318,8 +306,8 @@ export class NotebookView {
 
   public async redo(): Promise<void> {
     // Disable undo and redo buttons during the operation.
-    this.sidebar.enableRedoButton(false);
-    this.sidebar.enableUndoButton(false);
+    this.screen.sidebar.enableRedoButton(false);
+    this.screen.sidebar.enableUndoButton(false);
 
     // Resubmit the change requests.
     assert(this.topOfUndoStack < this.undoStack.length);
@@ -327,8 +315,8 @@ export class NotebookView {
     await this.sendTrackedChangeRequests(entry.changeRequests);
 
     // Enable undo and redo buttons as appropriate.
-    this.sidebar.enableRedoButton(this.topOfUndoStack < this.undoStack.length);
-    this.sidebar.enableUndoButton(true);
+    this.screen.sidebar.enableRedoButton(this.topOfUndoStack < this.undoStack.length);
+    this.screen.sidebar.enableUndoButton(true);
   }
 
   public async selectDown(extend?: boolean): Promise<void> {
@@ -360,8 +348,8 @@ export class NotebookView {
 
   public async undo(): Promise<void> {
     // Disable undo and redo during the operation
-    this.sidebar.enableRedoButton(false);
-    this.sidebar.enableUndoButton(false);
+    this.screen.sidebar.enableRedoButton(false);
+    this.screen.sidebar.enableUndoButton(false);
 
     // Undo the changes by making a set of counteracting changes.
     assert(this.topOfUndoStack > 0);
@@ -369,8 +357,8 @@ export class NotebookView {
     await this.sendTrackedChangeRequests(entry.undoChangeRequests);
 
     // Enable undo and redo as appropriate
-    this.sidebar.enableRedoButton(true);
-    this.sidebar.enableUndoButton(this.topOfUndoStack > 0);
+    this.screen.sidebar.enableRedoButton(true);
+    this.screen.sidebar.enableUndoButton(this.topOfUndoStack > 0);
   }
 
   // REVIEW: Not actually asynchronous. Have synchronous alternative for internal use?
@@ -380,7 +368,7 @@ export class NotebookView {
     }
     delete this.lastCellSelected;
     if (!noEmit) {
-      this.sidebar.enableTrashButton(false);
+      this.screen.sidebar.enableTrashButton(false);
     }
   }
 
@@ -455,23 +443,26 @@ export class NotebookView {
     indivExtending?: boolean, // Extending selection by an individual cell, possibly non-contiguous.
   ): void {
     // Erase tools panel. Newly selected cell will populate, if it is the only cell selected.
-    this.tools.clear();
+    this.screen.tools.clear();
 
     const solo = !rangeExtending && !indivExtending;
     if (solo) {
       this.unselectAll(true);
     }
     cellView.select();
-    cellView.renderTools(this.tools);
+    cellView.renderTools(this.screen.tools);
     this.lastCellSelected = cellView;
-    this.sidebar.enableTrashButton(true);
+    this.screen.sidebar.enableTrashButton(true);
   }
 
-  // Called by openNotebook when changes come in from the server.
-  // Called *before* any delete changes have been made to the notebook,
-  // and *after* any other changes have been made to the notebook,
-  // and *before* any promises for tracked change requests are resolved.
-  public smChange(change: NotebookChange): void {
+  public useTool(id: StyleId): void {
+    this.screen.notebook.useTool(id);
+    this.setFocus();
+  }
+
+  // ClientNotebookWatcher Methods
+
+  public onChange(change: NotebookChange): void {
 
     // If a change would (or might) modify the display of a cell,
     // then mark add the cell to a list of cells to be redrawn.
@@ -481,32 +472,32 @@ export class NotebookView {
         // REVIEW: Is there a way to tell what relationships affect display?
         // REVIEW: This assumes both incoming and outgoing relationships can affect display.
         //         Is that too conservative?
-        this.dirtyCells.add(this.notebook.topLevelStyleOf(change.relationship.fromId).id);
-        this.dirtyCells.add(this.notebook.topLevelStyleOf(change.relationship.toId).id);
+        this.dirtyCells.add(this.screen.notebook.topLevelStyleOf(change.relationship.fromId).id);
+        this.dirtyCells.add(this.screen.notebook.topLevelStyleOf(change.relationship.toId).id);
         break;
       }
       case 'relationshipInserted': {
         // REVIEW: Is there a way to tell what relationships affect display?
         // REVIEW: This assumes both incoming and outgoing relationships can affect display.
         //         Is that too conservative?
-        this.dirtyCells.add(this.notebook.topLevelStyleOf(change.relationship.fromId).id);
-        this.dirtyCells.add(this.notebook.topLevelStyleOf(change.relationship.toId).id);
+        this.dirtyCells.add(this.screen.notebook.topLevelStyleOf(change.relationship.fromId).id);
+        this.dirtyCells.add(this.screen.notebook.topLevelStyleOf(change.relationship.toId).id);
         break;
       }
       case 'styleChanged': {
         // REVIEW: Is there a way to tell what styles affect display?
-        this.dirtyCells.add(this.notebook.topLevelStyleOf(change.style.id).id);
+        this.dirtyCells.add(this.screen.notebook.topLevelStyleOf(change.style.id).id);
         break;
       }
       case 'styleConverted': {
-        this.dirtyCells.add(this.notebook.topLevelStyleOf(change.styleId).id);
+        this.dirtyCells.add(this.screen.notebook.topLevelStyleOf(change.styleId).id);
         break;
       }
       case 'styleDeleted': {
         // If a substyle is deleted then mark the cell as dirty.
         // If a top-level style is deleted then remove the cell.
-        const style = this.notebook.getStyle(change.style.id);
-        const topLevelStyle = this.notebook.topLevelStyleOf(style.id);
+        const style = this.screen.notebook.getStyle(change.style.id);
+        const topLevelStyle = this.screen.notebook.topLevelStyleOf(style.id);
         if (style.id != topLevelStyle.id) {
           // REVIEW: Is there a way to tell what styles affect display?
           this.dirtyCells.add(topLevelStyle.id);
@@ -523,13 +514,13 @@ export class NotebookView {
           this.createCell(change.style, change.afterId!);
         } else {
           // REVIEW: Is there a way to tell what styles affect display?
-          const topLevelStyle = this.notebook.topLevelStyleOf(change.style.id);
+          const topLevelStyle = this.screen.notebook.topLevelStyleOf(change.style.id);
           this.dirtyCells.add(topLevelStyle.id);
         }
         break;
       }
       case 'styleMoved': {
-        const style = this.notebook.getStyle(change.styleId);
+        const style = this.screen.notebook.getStyle(change.styleId);
         if (style.parentId) {
           console.warn(`Non top-level style moved: ${style.id}`);
           break;
@@ -545,33 +536,28 @@ export class NotebookView {
     }
   }
 
-  public updateView(): void {
+  public onChangesFinished(): void {
     // Redraw all of the cells that (may) have changed.
     for (const styleId of this.dirtyCells) {
-      const style = this.notebook.getStyle(styleId);
+      const style = this.screen.notebook.getStyle(styleId);
       const cellView = this.cellViewFromStyleId(styleId);
       if (!cellView) { throw new Error(`Can't find dirty Change style message for style without top-level element`); }
       cellView.render(style);
     }
     if (this.lastCellSelected) {
-      this.lastCellSelected.renderTools(this.tools);
+      this.lastCellSelected.renderTools(this.screen.tools);
     }
     this.dirtyCells.clear();
-  }
-
-  public useTool(id: StyleId): void {
-    this.notebook.useTool(id);
-    this.setFocus();
   }
 
   // -- PRIVATE --
 
   // Private Constructor
 
-  private constructor($parent: HTMLElement) {
-    this.$elt = $new({
+  private constructor(screen: NotebookScreen) {
+    super({
       tag: 'div',
-      appendTo: $parent,
+      appendTo: screen.$elt,
       class: 'view',
       listeners: {
         blur: e=>this.onBlur(e),
@@ -579,22 +565,25 @@ export class NotebookView {
         keyup: e=>this.onKeyUp(e),
       }
     });
+    this.screen = screen;
 
     this.cellViews = new Map();
     this.dirtyCells = new Set();
     this.topOfUndoStack = 0;
     this.undoStack = [];
+
+    for (const styleId of this.screen.notebook.topLevelStyleOrder()) {
+      const style = this.screen.notebook.getStyle(styleId);
+      this.createCell(style, -1);
+    }
+
   }
 
   // Private Instance Properties
 
-  private $elt: HTMLElement;
   private cellViews: Map<StyleId, CellView>;
-  private debugPopup!: DebugPopup;      // Initialized in connect method.
   private dirtyCells: Set<StyleId>;     // Style ids of top-level styles that need to be redrawn.
   private lastCellSelected?: CellView;
-  private sidebar!: NotebookSidebar;    // Initialized in connect method.
-  private tools!: NotebookTools;        // Initialized in connect method.
   private topOfUndoStack: number;       // Index of the top of the stack. May not be the length of the undoStack array if there have been some undos.
   private undoStack: UndoEntry[];
 
@@ -611,7 +600,7 @@ export class NotebookView {
   }
 
   private firstCell(): CellView | undefined {
-    const styleOrder = this.notebook.topLevelStyleOrder();
+    const styleOrder = this.screen.notebook.topLevelStyleOrder();
     if (styleOrder.length==0) { return undefined; }
     const styleId = styleOrder[0];
     const cellView = this.cellViewFromStyleId(styleId);
@@ -656,7 +645,7 @@ export class NotebookView {
   // Private Event Handlers
 
   private async sendTrackedChangeRequests(changeRequests: NotebookChangeRequest[]): Promise<TrackedChangesResults> {
-    return await this.notebook.sendTrackedChangeRequests(changeRequests);
+    return await this.screen.notebook.sendTrackedChangeRequests(changeRequests);
   }
 
   private async sendUndoableChangeRequest(changeRequest: NotebookChangeRequest): Promise<NotebookChangeRequest> {
@@ -667,8 +656,8 @@ export class NotebookView {
 
   private async sendUndoableChangeRequests(changeRequests: NotebookChangeRequest[]): Promise<NotebookChangeRequest[]> {
     // Disable the undo and redo buttons
-    this.sidebar.enableRedoButton(false);
-    this.sidebar.enableUndoButton(false);
+    this.screen.sidebar.enableRedoButton(false);
+    this.screen.sidebar.enableUndoButton(false);
 
     const { undoChangeRequests } = await this.sendTrackedChangeRequests(changeRequests);
     if (!undoChangeRequests) { throw new Error("Did not get undo change requests when wantUndo is true."); }
@@ -678,8 +667,8 @@ export class NotebookView {
     this.topOfUndoStack = this.undoStack.length;
 
     // Enable the undo button and disable the redo button.
-    this.sidebar.enableRedoButton(false);
-    this.sidebar.enableUndoButton(true);
+    this.screen.sidebar.enableRedoButton(false);
+    this.screen.sidebar.enableUndoButton(true);
 
     return undoChangeRequests;
   }

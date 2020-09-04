@@ -21,8 +21,11 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 :root
   --cell-left-margin 60px
+  --header-button-padding 2px
+  --header-height 30px
   --page-aspect-ratio calc(8.5 / 11)
   --sidebar-button-padding 4px
+  --sidebar-width 60px
   --svg-left-offset 6px
   --svg-top-offset 0px
   --tools-height 20%
@@ -52,18 +55,13 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
   top 0
 
   button
-    // background none!important
-    background none
-    border none
-    height 30px
-    padding 2px
-    width 30px
-    // color blue
-    // cursor pointer
-    // font inherit
-    // padding-right 0!important
-    // padding-left 2
-    // text-decoration underline
+    height var(--header-height)
+    padding var(--header-button-padding)
+    width var(--header-height)
+
+    .icon
+      height 26px // why not?: calc(var(--header-height)-2*var(--header-button-padding))
+      width 26px // why not?: calc(var(--header-height)-2*var(--header-button-padding))
 
   button:disabled
     svg
@@ -130,9 +128,6 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 .iconButton
   background none
   border none
-  // height 30px
-  // padding 2px
-  // width 30px
 
 .inputPanel
 
@@ -318,8 +313,6 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
   button
     // background none!important
-    background none
-    border none
     height var(--sidebar-width)
     padding var(--sidebar-button-padding)
     width var(--sidebar-width)

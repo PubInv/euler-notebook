@@ -19,9 +19,9 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 // Requirements
 
-import { $new, $newSvg, $allSvg } from "./dom"
+import { $new, $newSvg, $allSvg } from "../dom"
 import { PageSidebar } from "./page-sidebar"
-import { ClientNotebook } from "./client-notebook"
+import { ClientNotebook } from "../client-notebook"
 
 // Types
 

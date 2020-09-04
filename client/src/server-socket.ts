@@ -143,8 +143,8 @@ export class ServerSocket {
         // console.dir(msg);
         switch(msg.type) {
           // TODO: case 'error': errors should only come back from 'requests'
-          case 'folder': ClientFolder.onMessage(msg); break;
-          case 'notebook': ClientNotebook.onMessage(msg); break;
+          case 'folder': ClientFolder.smMessage(msg); break;
+          case 'notebook': ClientNotebook.smMessage(msg); break;
           default:
             console.error(`Unexpected server message type '${(<any>msg).type}' in WebSocket message`);
             break;

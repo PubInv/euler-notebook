@@ -21,12 +21,12 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 // Requirements
 
-import { notImplemented } from "./shared/common"
-import { Path } from "./shared/folder"
+import { notImplemented } from "./shared/common";
+import { Path } from "./shared/folder";
 
-import { ButtonBar } from "./button-bar"
-import { escapeHtml, $attach, $ } from "./dom"
-import { monitorPromise } from "./error-handler"
+import { ButtonBar } from "./button-bar";
+import { escapeHtml, $, $new, svgIconReference } from "./dom";
+import { monitorPromise } from "./error-handler";
 
 // Types
 
@@ -40,8 +40,8 @@ export class Header extends ButtonBar {
 
   // Public Class Methods
 
-  public static attach($elt: HTMLDivElement): Header {
-    return new this($elt);
+  public static create($parent: HTMLBodyElement): Header {
+    return new this($parent);
   }
 
   // Public Instance Methods
@@ -63,14 +63,68 @@ export class Header extends ButtonBar {
 
   // Constructor
 
-  private constructor($elt: HTMLDivElement) {
-    super($elt)
-    $attach($elt, '#homeButton', { listeners: { click: _e=>{ window.location.href = '/#/'; }}});
-    $attach($elt, '#refreshButton', { listeners: { click: _e=>{ window.location.reload(); }}});
-    $attach($elt, '#userButton', { listeners: { click: _e=>{ notImplemented(); }}});
+  private constructor($parent: HTMLBodyElement) {
 
-    const $fullscreenButton = $attach<'button'>($elt, '#fullscreenButton', { listeners: { click: e=>this.onFullscreenButtonClicked(e) }});
-    $fullscreenButton.disabled = !document.fullscreenEnabled;
+    const $fullscreenButton = $new({
+      tag: 'button',
+      class: 'iconButton',
+      title: "Full screen",
+      html: svgIconReference('iconMonstrFullScreen7'),
+      disabled: !document.fullscreenEnabled,
+      listeners: { click: e=>this.onFullscreenButtonClicked(e) },
+    });
+
+    super({
+      tag: 'div',
+      id: 'header',
+      appendTo: $parent,
+      children: [
+        {
+          tag: 'span',
+          children: [
+            {
+              tag: 'button',
+              class: 'iconButton',
+              title: "Math Tablet home",
+              html: svgIconReference('iconMonstrHome6'),
+              listeners: { click: _e=>{ window.location.href = '/#/'; }},
+            }, {
+              tag: 'select',
+              id: 'keyboardInputType',
+              children: [
+                { tag: 'option', value: 'TEX-EXPRESSION', html: "LaTeX" },
+                { tag: 'option', value: 'MATHML-XML', html: "MathML" },
+                { tag: 'option', value: 'PLAIN-TEXT', html: "Text" },
+                { tag: 'option', value: 'WOLFRAM-EXPRESSION', html: "Wolfram", selected: true },
+              ]
+            }
+          ],
+        }, {
+          tag: 'div',
+          id: 'title',
+        }, {
+          tag: 'span',
+          children: [
+            {
+              tag: 'button',
+              class: 'iconButton',
+              title: "Refresh page",
+              html: svgIconReference('iconMonstrRefresh2'),
+              listeners: { click: _e=>window.location.reload() },
+            },
+            $fullscreenButton,
+            {
+              tag: 'button',
+              class: 'iconButton',
+              title: "User settings",
+              html: svgIconReference('iconMonstrUser1'),
+              listeners: { click: _e=>notImplemented() },
+            },
+          ],
+        }
+      ],
+    });
+
 
   }
 

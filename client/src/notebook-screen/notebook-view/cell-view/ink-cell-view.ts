@@ -19,22 +19,22 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 // Requirements
 
-import { assert } from "../shared/common"
-import { DrawingData, StyleId, StyleObject } from "../shared/notebook"
-import { StyleChangeRequest, StyleMoveRequest } from "../shared/math-tablet-api"
+import { assert } from "../../../shared/common"
+import { DrawingData, StyleId, StyleObject } from "../../../shared/notebook"
+import { StyleChangeRequest, StyleMoveRequest } from "../../../shared/math-tablet-api"
 
-import { $configure, $newSvg, $, $svg, CLOSE_X_ENTITY } from "../dom"
-import { deepCopy } from "../common"
+import { $configure, $newSvg, $, $svg, CLOSE_X_ENTITY } from "../../../dom"
+import { deepCopy } from "../../../common"
 
-import { NotebookView } from "../notebook-view"
-import { ResizerBar } from "../resizer-bar"
-import { SvgStroke } from "../svg-stroke"
-import { StylusDrawingPanel } from "../stylus-drawing-panel"
+import { NotebookView } from "../../../notebook-screen/notebook-view"
+import { ResizerBar } from "../../../resizer-bar"
+import { SvgStroke } from "../../../svg-stroke"
+import { StylusDrawingPanel } from "../../../stylus-drawing-panel"
 
 // import { getRenderer } from "../renderers"
 
 import { CellView } from "./index"
-import { $new } from "../dom"
+import { $new } from "../../../dom"
 
 // Types
 
@@ -52,14 +52,14 @@ export class InkCellView extends CellView {
 
   // Class Methods
 
-  public static create(notebookView: NotebookView, style: StyleObject): InkCellView {
-    return new this(notebookView, style);
+  public static create(view: NotebookView, style: StyleObject): InkCellView {
+    return new this(view, style);
   }
 
   // Instance Methods
 
   public render(style: StyleObject): void {
-    const svgRepStyle = this.notebookView.notebook.findStyle({ role: 'REPRESENTATION', type: 'SVG-MARKUP' }, style.id);
+    const svgRepStyle = this.view.screen.notebook.findStyle({ role: 'REPRESENTATION', type: 'SVG-MARKUP' }, style.id);
     if (!svgRepStyle) {
       // TODO: What to do in this case? Put an error message in the cell?
       console.warn("No SVG-MARKUP substyle for UNINTERPRETED-INK style.");
@@ -79,8 +79,8 @@ export class InkCellView extends CellView {
 
   // Private Constructor
 
-  private constructor(notebookView: NotebookView, style: StyleObject) {
-    super(notebookView, style, 'inkCell');
+  private constructor(view: NotebookView, style: StyleObject) {
+    super(view, style, 'inkCell');
 
     // LATER: These button be on *all* cells, not just ink cells.
     $configure(this.$elt, {
@@ -130,7 +130,7 @@ export class InkCellView extends CellView {
     // TODO: This assumes we have the same input style for the lifetime of this cell.
     //       But our API doesn't prevent the input style from getting deleted or replaced with a different one.
     //       Some plugin may do that in the future.
-    const inputStyle = this.notebookView.notebook.findStyle({ role: 'INPUT', type: 'STROKE-DATA' }, style.id);
+    const inputStyle = this.view.screen.notebook.findStyle({ role: 'INPUT', type: 'STROKE-DATA' }, style.id);
     if (!inputStyle) {
       // TODO: Better way to handle this error.
       // throw new Error("No INPUT substyle for UNINTERPRETED-INK style.");
@@ -152,7 +152,7 @@ export class InkCellView extends CellView {
   // Private Event Handlers
 
   private onDeleteCellButtonClicked(_event: MouseEvent): void {
-    this.notebookView.deleteTopLevelStyle(this.styleId).catch(err=>{
+    this.view.deleteTopLevelStyle(this.styleId).catch(err=>{
       // TODO: Better handling of this error.
       console.error(`Error deleting cell:\n${err.stack}`);
     });
@@ -210,18 +210,18 @@ export class InkCellView extends CellView {
     if (!cellDragData) { return; }
     // console.log(`Dropped style ${cellDragData.styleId} onto style ${this.styleId}`);
 
-    const c = this.notebookView.notebook.compareStylePositions(cellDragData.styleId, this.styleId);
+    const c = this.view.screen.notebook.compareStylePositions(cellDragData.styleId, this.styleId);
     if (c==0) { /* Dropped onto self */ return; }
 
     // If dragging down, then put dragged cell below the cell that was dropped on.
     // If dragging up, then put dragged cell above the cell that was dropped on.
-    const afterId = c<0 ? this.styleId : this.notebookView.notebook.precedingStyleId(this.styleId);
+    const afterId = c<0 ? this.styleId : this.view.screen.notebook.precedingStyleId(this.styleId);
     const moveRequest: StyleMoveRequest = {
       type: 'moveStyle',
       styleId: cellDragData.styleId,
       afterId,
     }
-    this.notebookView.editStyle([ moveRequest ])
+    this.view.editStyle([ moveRequest ])
     .catch((err: Error)=>{
       // TODO: What to do here?
       console.error(`Error moving style for drag/drop: ${err.message}`);
@@ -229,7 +229,7 @@ export class InkCellView extends CellView {
   }
 
   private onInsertCellBelow(): void {
-    this.notebookView.insertInkCellBelow(this.styleId).catch(err=>{
+    this.view.insertInkCellBelow(this.styleId).catch(err=>{
       // TODO: Better handling of this error.
       console.error(`Error inserting cell below:\n${err.stack}`);
     });
@@ -248,7 +248,7 @@ export class InkCellView extends CellView {
       // TODO: Incremental change request?
       this.drawingData.size.height = newHeightStr;
       const changeRequest: StyleChangeRequest = { type: 'changeStyle', styleId: this.inputStyleId, data: this.drawingData };
-      this.notebookView.editStyle([ changeRequest ])
+      this.view.editStyle([ changeRequest ])
       .catch((err: Error)=>{
         // TODO: What to do here?
         console.error(`Error submitting resize: ${err.message}`);
@@ -262,7 +262,7 @@ export class InkCellView extends CellView {
     // TODO: Incremental change request.
     this.drawingData.strokeGroups[0].strokes.push(stroke.data);
     const changeRequest: StyleChangeRequest = { type: 'changeStyle', styleId: this.inputStyleId, data: this.drawingData };
-    return this.notebookView.editStyle([ changeRequest ]);
+    return this.view.editStyle([ changeRequest ]);
   }
 }
 

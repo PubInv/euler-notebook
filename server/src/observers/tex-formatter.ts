@@ -65,7 +65,7 @@ export class TeXFormatterObserver implements ObserverInstance {
     return [];
   }
 
-  public async onClose(): Promise<void> {
+  public  onClose(): void {
     debug(`onClose ${this.notebook.path}`);
     delete this.notebook;
   }

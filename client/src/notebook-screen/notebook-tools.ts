@@ -19,12 +19,13 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 // Requirements
 
-import { StyleId, FindStyleOptions } from "./shared/notebook"
-import { SymbolTable, ToolData } from "./shared/math-tablet-api"
+import { StyleId, FindStyleOptions } from "../shared/notebook"
+import { SymbolTable, ToolData } from "../shared/math-tablet-api"
 
-import { $new, escapeHtml, Html } from "./dom"
-import { NotebookView } from "./notebook-view"
-import { getRenderer } from "./renderers"
+import { $new, escapeHtml, Html } from "../dom"
+import { getRenderer } from "../renderers"
+import { HtmlElement } from "../html-element"
+import { NotebookScreen } from "."
 
 // Types
 
@@ -34,12 +35,12 @@ import { getRenderer } from "./renderers"
 
 // Class
 
-export class NotebookTools {
+export class NotebookTools extends HtmlElement<'div'>{
 
   // Class Methods
 
-  public static create($parent: HTMLElement): NotebookTools {
-    return new this($parent);
+  public static create(screen: NotebookScreen): NotebookTools {
+    return new this(screen);
   }
 
   // Instance Methods
@@ -48,17 +49,13 @@ export class NotebookTools {
     this.$elt.innerHTML = '';
   }
 
-  public connect(view: NotebookView): void {
-    this.view = view;
-  }
-
   public render(styleId: StyleId): void {
-    const style = this.view.notebook.getStyle(styleId);
+    const style = this.screen.notebook.getStyle(styleId);
 
 
     // Render the symbol table
     const findOptions: FindStyleOptions = { role: 'SYMBOL-TABLE', /* recursive: true */ };
-    const symbolTableStyle = this.view.notebook.findStyle(findOptions, style.id);
+    const symbolTableStyle = this.screen.notebook.findStyle(findOptions, style.id);
     if (symbolTableStyle) {
       const symbolTableData = <SymbolTable>symbolTableStyle.data;
       let html = '<tr><td colspan="2">Symbols</td></tr>';
@@ -72,7 +69,7 @@ export class NotebookTools {
     // REVIEW: If we attached tool styles to the top-level style,
     //         then we would not need to do a recursive search.
     const findOptions2: FindStyleOptions = { type: 'TOOL-DATA', recursive: true };
-    const toolStyles = this.view.notebook.findStyles(findOptions2, style.id);
+    const toolStyles = this.screen.notebook.findStyles(findOptions2, style.id);
     for (const toolStyle of toolStyles) {
       const toolData: ToolData = toolStyle.data;
       let html: Html;
@@ -88,7 +85,7 @@ export class NotebookTools {
         tag: 'button',
         class: 'tool',
         html,
-        listeners: { 'click': _e=>this.view.useTool(toolStyle.id) }
+        listeners: { 'click': _e=>this.screen.view.useTool(toolStyle.id) }
       });
       this.$elt.appendChild($button);
     }
@@ -98,18 +95,18 @@ export class NotebookTools {
 
   // Constructor
 
-  private constructor($parent: HTMLElement) {
-    this.$elt = $new({
+  private constructor(screen: NotebookScreen) {
+    super({
       tag: 'div',
-      appendTo: $parent,
+      appendTo: screen.$elt,
       class: 'tools',
     });
+    this.screen = screen;
   }
 
   // Private Instance Properties
 
-  private $elt: HTMLDivElement;
-  private view!: NotebookView;    // Initialized in connect.
+  private screen: NotebookScreen;
 
   // Private Instance Property Functions
 

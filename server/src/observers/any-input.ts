@@ -60,7 +60,7 @@ export class AnyInputObserver implements ObserverInstance {
   }
 
   // TODO: can't these be inherited?
-  public async onClose(): Promise<void> {
+  public onClose(): void {
     debug(`onClose ${this.notebook.path}`);
     delete this.notebook;
   }

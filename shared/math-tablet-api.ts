@@ -196,10 +196,7 @@ export interface ServerFolderChangedMessage extends ServerFolderMessageBase {
 }
 export interface ServerFolderClosedMessage extends ServerFolderMessageBase {
   operation: 'closed';
-}
-export interface ServerFolderMovedMessage extends ServerFolderMessageBase {
-  operation: 'moved';
-  newPath: FolderPath;
+  reason: string;
 }
 export interface ServerFolderOpenedMessage extends ServerFolderMessageBase {
   operation: 'opened';
@@ -218,18 +215,15 @@ export interface ServerNotebookChangedMessage extends ServerNotebookMessageBase 
 }
 export interface ServerNotebookClosedMessage extends ServerNotebookMessageBase {
   operation: 'closed';
-}
-export interface ServerNotebookMovedMessage extends ServerNotebookMessageBase {
-  operation: 'moved';
-  newPath: NotebookPath;
+  reason: string;
 }
 export interface ServerNotebookOpenedMessage extends ServerNotebookMessageBase {
   operation: 'opened';
   obj: NotebookObject;
 }
 
-export type ServerFolderMessage = ServerFolderChangedMessage|ServerFolderClosedMessage|ServerFolderMovedMessage|ServerFolderOpenedMessage;
-export type ServerNotebookMessage = ServerNotebookChangedMessage|ServerNotebookClosedMessage|ServerNotebookMovedMessage|ServerNotebookOpenedMessage;
+export type ServerFolderMessage = ServerFolderChangedMessage|ServerFolderClosedMessage|ServerFolderOpenedMessage;
+export type ServerNotebookMessage = ServerNotebookChangedMessage|ServerNotebookClosedMessage|ServerNotebookOpenedMessage;
 export type ServerMessage = ServerErrorMessage|ServerFolderMessage|ServerNotebookMessage;
 
 // Messages from the client

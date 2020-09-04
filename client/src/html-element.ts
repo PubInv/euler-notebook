@@ -35,11 +35,22 @@ export class HtmlElement<K extends keyof HTMLElementTagNameMap> {
 
   // Public Instance Properties
 
+  public $elt: HTMLElementTagNameMap[K];
+
   // Public Instance Methods
 
   public destroy(): void {
     this.$elt.remove();
     this.destroyed = true;
+  }
+
+  public hide(): void {
+    this.$elt.style.display = 'none';
+  }
+
+  public show(): void {
+    // TODO: display style could be 'inline' or something else.
+    this.$elt.style.display = 'block';
   }
 
   // -- PRIVATE --
@@ -52,7 +63,6 @@ export class HtmlElement<K extends keyof HTMLElementTagNameMap> {
 
   // Private Instance Properties
 
-  protected $elt: HTMLElementTagNameMap[K];
   protected destroyed?: boolean;
 
   // Private Instance Methods

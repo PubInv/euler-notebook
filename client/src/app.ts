@@ -23,7 +23,6 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 import { FOLDER_PATH_RE, NOTEBOOK_PATH_RE, Path, FolderPath, NotebookPath } from "./shared/folder"
 
-import { $ } from "./dom"
 import { addAsyncEventListener, addSyncEventListener } from "./error-handler"
 import { FolderScreen } from "./folder-screen"
 import { Header } from "./header"
@@ -74,8 +73,9 @@ class App {
   private constructor() {
     this.$body = <HTMLBodyElement>window.document.body;
     this.screens = new Map();
-    addAsyncEventListener(window, 'DOMContentLoaded', e=>this.onDomReady(e), "App initialization error.");
-    addSyncEventListener<HashChangeEvent>(window, 'hashchange', e=>this.onHashChange(e), "App navigation error.");
+    addAsyncEventListener(window, 'DOMContentLoaded', e=>this.onDomReady(e), "App initialization error");
+    addSyncEventListener<HashChangeEvent>(window, 'hashchange', e=>this.onHashChange(e), "App navigation error");
+    addSyncEventListener<UIEvent>(window, 'resize', e=>Screen.onResize(window, e), "Window resize event");
   }
 
   // Private Instance Properties
@@ -118,7 +118,7 @@ class App {
 
   private async onDomReady(_event: Event): Promise<void> {
     // TODO: this.banner = Banner.attach($(document, '#banner'));
-    this.header = Header.attach($<'div'>(document, '#header'));
+    this.header = Header.create(this.$body);
     // TODO: Show a "connecting..." spinner.
     this.socket = await ServerSocket.connect(`ws://${window.location.host}/`);
     this.navigateTo(this.currentPath);

@@ -22,11 +22,10 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 // Requirements
 
 import { FolderPath, FolderChange } from "../shared/folder"
-import { $new } from "../dom";
 import { FolderView } from "./folder-view"
 import { FolderSidebar } from "./folder-sidebar"
 import { Screen } from "../screen"
-import { ClientFolder, Watcher as ClientFolderWatcher } from "../client-folder"
+import { ClientFolder, ClientFolderWatcher, OpenFolderOptions } from "../client-folder"
 import { reportError } from "../error-handler"
 
 // Types
@@ -45,32 +44,28 @@ export class FolderScreen extends Screen implements ClientFolderWatcher {
     return new this($parent, path);
   }
 
+  // Public Instance Event Handlers
+
+  public onResize(_window: Window, _event: UIEvent): void { /* Nothing to do. */ }
+
   // Public Instance Properties
 
   public folder!: ClientFolder;     // Instantiated asynchronously in the constructor.
   public sidebar!: FolderSidebar;   // Instantiated asynchronously in the constructor.
   public view!: FolderView;         // Instantiated asynchronously in the constructor.
 
-  // ClientFolder Watcher Methods
+  // ClientFolderWatcher Methods
 
   public onChange(change: FolderChange): void {
     this.view.onChange(change);
   }
 
-  public onChangesComplete(): void { }
+  public onChangesFinished(): void { }
 
-  public onClosed(): void {
+  public onClosed(reason?: string): void {
     this.sidebar.destroy();
     this.view.destroy();
-
-    // LATER: Better way to display to display a closed message.
-    // LATER: Give user helpful instructions, e.g. "refresh the page, go to the parent folder, or go to the home folder."
-    $new({
-      tag: 'div',
-      class: 'error',
-      html: `Folder ${this.folder.path} closed by server.`,
-      replaceInner: this.$elt,
-    });
+    this.displayErrorMessage(`Folder ${this.folder.path} closed by server: ${reason}`);
   }
 
   // --- PRIVATE ---
@@ -78,17 +73,16 @@ export class FolderScreen extends Screen implements ClientFolderWatcher {
   // Private Constructor
 
   private constructor($parent: HTMLElement, path: FolderPath) {
-    const $elt = $new({
+    super({
       tag: 'div',
       appendTo: $parent,
       classes: ['screen', 'folderScreen'],
       id: path,
       style: 'display: none',
     });
-    super($elt);
 
-    // LATER: Show loading gif
-    ClientFolder.watch(path, this)
+    const options: OpenFolderOptions = { mustExist: true, watcher: this };
+    ClientFolder.open(path, options)
     .then(
       (folder: ClientFolder)=>{
         this.folder = folder;
@@ -96,11 +90,17 @@ export class FolderScreen extends Screen implements ClientFolderWatcher {
         this.view = FolderView.create(this);
           },
       (err)=>{
-        // TODO: How to display folder open error?
         reportError(err, `Error opening folder '${path}'`);
+        this.displayErrorMessage(`Error opening folder '${path}'`);
       }
     );
 
   }
+
+  // Private Instance Properties
+
+  // Private Instance Methods
+
+  // Private Event Handlers
 
 }

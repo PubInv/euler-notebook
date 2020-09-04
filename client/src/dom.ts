@@ -73,11 +73,14 @@ interface NewCommonOptions {
   attrs?: Attributes;
   class?: ElementClass;
   classes?: ElementClass[];
+  disabled?: boolean;
   id?: ElementId;
   hidden?: boolean;
   listeners?: SyncListeners;
   style?: string;
-  title?: string; // TODO: Implement
+  title?: string;
+  value?: string;
+  selected?: boolean;
 
   // TYPESCRIPT: Allow only one of the following to be used at a time.
   appendTo?: Element;
@@ -149,14 +152,22 @@ export function $configure($elt: HTMLElement|SVGElement, options: NewCommonOptio
   if (options.classes) {
     for (const cls of options.classes) { $elt.classList.add(cls); }
   }
-  if (options.attrs) { attachAttributes($elt, options.attrs); }
+
+  const attributes: Attributes = { ...options.attrs };
+  if (options.disabled) { attributes.disabled = true; }
+  if (options.selected) { attributes.selected = true; }
+  if (options.value) { attributes.value = options.value }
+  attachAttributes($elt, attributes);
+
   if (options.style) { $elt.setAttribute('style', options.style); }
   if (options.hidden) { $elt.style.display = 'none'; }
+
+  if (options.listeners) { attachSyncListeners($elt, options.listeners); }
+  if (options.asyncListeners) { attachAsyncListeners($elt, options.asyncListeners); }
+
   if (options.appendTo) { options.appendTo.appendChild($elt); }
   // else if (options.prependTo) { options.prependTo.insertBefore($elt, options.prependTo.firstChild); }
   else if (options.replaceInner) { options.replaceInner.innerHTML = ''; options.replaceInner.appendChild($elt); }
-  if (options.listeners) { attachSyncListeners($elt, options.listeners); }
-  if (options.asyncListeners) { attachAsyncListeners($elt, options.asyncListeners); }
 }
 
 export function $configureAll($elts: NodeListOf<HTMLElement|SVGElement>, options: NewCommonOptions): void {

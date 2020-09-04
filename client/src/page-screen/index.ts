@@ -19,14 +19,13 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 // Requirements
 
-import { NotebookChange } from "./shared/notebook"
-import { Path, NotebookPath } from "./shared/folder"
+import { NotebookChange } from "../shared/notebook"
+import { Path, NotebookPath } from "../shared/folder"
 
-import { ClientNotebook } from "./client-notebook"
-import { $new } from "./dom"
-import { reportError } from "./error-handler"
+import { ClientNotebook, OpenNotebookOptions } from "../client-notebook"
+import { reportError } from "../error-handler"
 import { PageView, PageViewType } from "./page-view"
-import { NotebookBasedScreen } from "./screen"
+import { Screen } from "../screen"
 import { PageSidebar } from "./page-sidebar"
 
 // Types
@@ -37,7 +36,7 @@ import { PageSidebar } from "./page-sidebar"
 
 // Exported Class
 
-export class PageScreen extends NotebookBasedScreen {
+export class PageScreen extends Screen {
 
   // Public Class Methods
 
@@ -47,27 +46,40 @@ export class PageScreen extends NotebookBasedScreen {
     return instance;
   }
 
-  public smChange(_change: NotebookChange): void { /* TODO: */ };
+  // Public Instance Event Handlers
 
-  public updateView(): void { /* TODO: */ };
+  public onResize(_window: Window, _event: UIEvent): void {
+    // const bodyViewRect = $('#content').getBoundingClientRect();
+    // REVIEW: Could this.pageView be undefined?
+    this.pageView!.resize(/* bodyViewRect.width */);
+  }
+
+  // Notebook Watcher Methods
+
+  public onChange(_change: NotebookChange): void {
+    // TODO:
+  }
+
+  public onChangesFinished(): void {
+    // TODO:
+  }
+
+  public onClosed(_reason?: string): void {
+    // TODO:
+  }
 
   // --- PRIVATE ---
 
   // Private Constructor
 
   private constructor($parent: HTMLElement, path: Path) {
-    const $elt = $new({
+    super({
       tag: 'div',
       appendTo: $parent,
       classes: ['screen', 'pageScreen'],
       id: path,
       style: 'display: none',
     });
-    super($elt);
-
-    // Window events
-    const that = this;
-    window.addEventListener<'resize'>('resize', function(this: Window, e: UIEvent) { that.onResize(this, e); });
   }
 
   // Instance Properties
@@ -75,7 +87,8 @@ export class PageScreen extends NotebookBasedScreen {
   // Instance Methods
 
   public async connect(path: NotebookPath): Promise<void> {
-    const notebook = await ClientNotebook.open(path);
+    const options: OpenNotebookOptions = { mustExist: true, watcher: this };
+    const notebook = await ClientNotebook.open(path, options);
     this.pageView = PageView.create(this.$elt, notebook, PageViewType.Single);
     /* this.sidebar = */ PageSidebar.create(this.$elt, notebook);
   }
@@ -92,13 +105,4 @@ export class PageScreen extends NotebookBasedScreen {
 
   // Private Event Handlers
 
-  private onResize(_window: Window, _event: UIEvent): void {
-    try {
-      // const bodyViewRect = $('#content').getBoundingClientRect();
-      // REVIEW: Could this.pageView be undefined?
-      this.pageView!.resize(/* bodyViewRect.width */);
-    } catch(err) {
-      reportError(err, "Error handling resize event.");
-    }
-  }
 }

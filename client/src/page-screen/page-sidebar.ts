@@ -19,43 +19,50 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 // Requirements
 
-import { StyleObject } from "../shared/notebook"
-import { NotebookView } from "../notebook-view"
-import { getRenderer } from "../renderers"
-
-import { CellView } from "./index"
+import { ButtonBar } from "../button-bar"
+import { ClientNotebook } from "../client-notebook"
+import { PageView } from "./page-view"
 
 // Types
 
 // Constants
 
-// Class
+// Global Variables
 
-export class TextCellView extends CellView {
+// Exported Class
+
+export class PageSidebar extends ButtonBar {
 
   // Class Methods
 
-  public static create(notebookView: NotebookView, style: StyleObject): TextCellView {
-    const instance = new this(notebookView, style);
-    instance.render(style);
-    return instance;
+  public static create($parent: HTMLElement, notebook: ClientNotebook): PageSidebar {
+    return new this($parent, notebook);
   }
+
+  // Instance Properties
+
 
   // Instance Methods
 
-  public render(style: StyleObject): void {
-    const renderer = getRenderer(style.type);
-    const { html, errorHtml } = renderer(style.data);
-    // TODO: Error formatting.
-    if (html) { this.$elt.innerHTML = html; }
-    else { this.$elt.innerHTML = errorHtml!; }
-  }
+  public connect(_notebook: ClientNotebook, _pageView: PageView): void { }
 
   // -- PRIVATE --
 
   // Constructor
 
-  private constructor(notebookView: NotebookView, style: StyleObject) {
-    super(notebookView, style, 'textCell');
+  private constructor($parent: HTMLElement, _notebook: ClientNotebook) {
+    super({
+      tag: 'div',
+      appendTo: $parent,
+      class: 'sidebar',
+     });
   }
+
+  // Private Instance Properties
+
+  // Private Instance Methods
+
+  // Private Event Handlers
+
+
 }

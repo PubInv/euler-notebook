@@ -57,7 +57,7 @@ export class SymbolTableObserver implements ObserverInstance {
     return new this(notebook);
   }
 
-  // Instance Methods
+  // Observer Instance Methods
 
   public async onChangesAsync(changes: NotebookChange[]): Promise<NotebookChangeRequest[]> {
     debug(`onChanges ${changes.length}`);
@@ -73,17 +73,15 @@ export class SymbolTableObserver implements ObserverInstance {
     return [];
   }
 
-  public async onClose(): Promise<void> {
-    debug(`onClose ${this.notebook._path}`);
+  public onClose(): void {
+    debug(`onClose ${this.notebook.path}`);
     delete this.notebook;
   }
 
-
   public async useTool(toolStyle: StyleObject): Promise<NotebookChangeRequest[]> {
-    debug(`useTool ${this.notebook._path} ${toolStyle.id}`);
+    debug(`useTool ${this.notebook.path} ${toolStyle.id}`);
     return [];
   }
-
 
   // --- PRIVATE ---
 
