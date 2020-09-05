@@ -44,6 +44,7 @@ import { ClientId } from "./client-socket"
 import { AbsDirectoryPath, ROOT_DIR_PATH, mkDir, readFile, rename, rmRaf, writeFile } from "./file-system"
 import { constructSubstitution } from "./wolframscript"
 import { OpenOptions } from "./shared/watched-resource"
+import { ExpectedError } from "./error-handler"
 
 
 // LATER: Convert these to imports.
@@ -1114,10 +1115,11 @@ export class ServerNotebook extends Notebook<ServerNotebookWatcher> {
       assert(typeof obj == 'object');
       Notebook.validateObject(obj);
       this.initializeFromObject(obj);
-    }
-    if (options.mustNotExist) {
-      // TODO: Verify that file does not exist.
-      await this.save();
+    } else if (options.mustNotExist) {
+      await this.saveNew();
+    } else {
+      // LATER: Neither mustExist or mustNotExist specified. Open if it exists, or create if it doesn't exist.
+      //        Currently this is an illegal option configuration.
     }
 
     // TODO: Use watcher interface for observers instead of separate observer interface?
@@ -1232,32 +1234,45 @@ export class ServerNotebook extends Notebook<ServerNotebookWatcher> {
     // "Ephemeral" notebooks are not persisted in the filesystem.
     if (this.ephemeral) { return; }
 
-    // TODO: Handle this in a more robust way. Maybe a "saving" promise that we wait on?
-    if (this.saving) { throw new Error(`Trying to save while save already in progress.`); }
+    assert(!this.saving); // LATER: Saving promise?
     debug(`saving ${this.path}`);
     this.saving = true;
-
-    // Create the directory if it does not exists.
-    // LATER: Don't attempt to create the directory every time we save. Only the first time.
-    try {
-      const dirPath = absDirPathFromNotebookPath(this.path);
-      await mkDir(dirPath);
-    } catch(err) {
-      console.dir(err);
-    }
 
     const json = JSON.stringify(this);
     await writeNotebookFile(this.path, json);
     this.saving = false;
   }
 
-  protected terminate(): void {
+  protected terminate(reason: string): void {
     // TODO: Ensure notebook is not in the middle of processing change requests or saving.
     for (const observer of this.observers.values()) {
       observer.onClose();
     }
+    super.terminate(reason);
   }
 
+  private async saveNew(): Promise<void> {
+    // "Ephemeral" notebooks are not persisted in the filesystem.
+    if (this.ephemeral) { return; }
+    assert(!this.saving);
+
+    // Create the directory if it does not exists.
+    // LATER: Don't attempt to create the directory every time we save. Only the first time.
+    this.saving = true;
+    try {
+      const dirPath = absDirPathFromNotebookPath(this.path);
+      await mkDir(dirPath);
+    } catch(err) {
+      if (err.code == 'EEXIST') {
+        err = new ExpectedError(`Notebook '${this.path}' already exists.`);
+      }
+      throw err;
+    } finally {
+      this.saving = false;
+    }
+
+    await this.save();
+  }
 }
 
 // Exported Functions

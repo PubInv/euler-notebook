@@ -174,8 +174,8 @@ export class ClientNotebook extends Notebook<ClientNotebookWatcher> {
     this.initializeFromObject(response.obj);
   }
 
-  protected terminate(): void {
-    // TODO: ???
+  protected terminate(reason: string): void {
+    super.terminate(reason);
   }
 
   // Private Event Handlers

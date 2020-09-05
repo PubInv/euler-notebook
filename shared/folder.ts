@@ -193,7 +193,7 @@ export abstract class Folder<W extends FolderWatcher> extends WatchedResource<Fo
       case 'notebookDeleted': {
         const i = this.notebookIndex(change.entry.name);
         assert(i>=0);
-        this.folders.splice(i,1);
+        this.notebooks.splice(i,1);
         break;
       }
       case 'notebookRenamed': {

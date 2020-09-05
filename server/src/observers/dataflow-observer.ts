@@ -162,7 +162,7 @@ export abstract class DataflowObserver implements ObserverInstance {
 
   public onClose(): void {
     debug(`onClose ${this.notebook.path}`);
-    delete this.notebook;
+    // REVIEW: Set a closed flag so this observer isn't used any more?
   }
 
   public async useTool(_style: StyleObject): Promise<NotebookChangeRequest[]> {
@@ -174,6 +174,7 @@ export abstract class DataflowObserver implements ObserverInstance {
   // Private Constructor
 
   protected constructor(notebook: ServerNotebook) {
+    debug(`Constructor: ${notebook.path}`);
     this.notebook = notebook;
   }
 

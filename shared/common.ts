@@ -54,3 +54,10 @@ export function notImplemented(): never {
 export function sleep(ms: Milliseconds): Promise<void> {
   return new Promise<void>(resolve=>setTimeout(resolve, ms));
 }
+
+export function stackTrace(): string {
+  let rval: string;
+  try { throw new Error('StackTrace'); }
+  catch(err) { rval = err.stack; }
+  return rval;
+}

@@ -265,8 +265,8 @@ export class ServerFolder extends Folder<ServerFolderWatcher> {
     }
   }
 
-  protected terminate(): void {
-    // REVIEW: Anything?
+  protected terminate(reason: string): void {
+    super.terminate(reason);
   }
 
 }

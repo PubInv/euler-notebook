@@ -244,8 +244,8 @@ export class ClientFolder extends Folder<ClientFolderWatcher> {
     return response.changes;
   }
 
-  protected terminate(): void {
-    // TODO: ???
+  protected terminate(reason: string): void {
+    super.terminate(reason);
   }
 
   // Private Event Handlers
@@ -266,6 +266,7 @@ export class ClientFolder extends Folder<ClientFolderWatcher> {
     for (const watcher of this.watchers) {
       watcher.onChangesFinished();
     }
+
   }
 
 }

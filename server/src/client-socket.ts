@@ -40,7 +40,7 @@ import {
 import { NotebookChange, NotebookObject, NotebookWatcher as ServerNotebookWatcher } from "./shared/notebook"
 
 // REVIEW: This file should not be dependent on any specific observers.
-import { reportError } from "./error-handler"
+import { ExpectedError, reportError } from "./error-handler"
 import { ServerFolder, ServerFolderWatcher } from "./server-folder"
 import { ServerNotebook } from "./server-notebook"
 
@@ -185,9 +185,9 @@ export class ClientSocket {
     this.socket = ws;
     this.folderWatchers = new Map();
     this.notebookWatchers = new Map();
-    ws.on('close', (code: number, reason: string) => this.onWsClose(ws, code, reason))
-    ws.on('error', (err: Error) => this.onWsError(ws, err))
-    ws.on('message', (message: string) => this.onWsMessage(ws, message));
+    ws.on('close', (code: number, reason: string) => this.wsClose(ws, code, reason))
+    ws.on('error', (err: Error) => this.wsError(ws, err))
+    ws.on('message', (message: string) => this.wsMessage(ws, message));
   }
 
   // Private Instance Properties
@@ -218,59 +218,45 @@ export class ClientSocket {
 
   // Private Instance Event Handlers
 
-  private async onFolderChangeMessage(msg: ClientFolderChangeMessage): Promise<void> {
-    try {
-      const watcher = this.folderWatchers.get(msg.path)!;
-      assert(watcher);
-      const replyMsg = await watcher.onFolderChangeMessage(msg);
-      replyMsg.requestId = msg.requestId;
-      this.sendMessage(replyMsg);
-    } catch(err) {
-      reportError(err, `Error on folder change message.`);
-      const response: ServerErrorMessage = { requestId: msg.requestId, type: 'error', message: err.message };
-      this.sendMessage(response);
-      return;
-    }
+  private async cmFolderChangeMessage(msg: ClientFolderChangeMessage): Promise<void> {
+    const watcher = this.folderWatchers.get(msg.path)!;
+    assert(watcher);
+    const replyMsg = await watcher.onFolderChangeMessage(msg);
+    replyMsg.requestId = msg.requestId;
+    this.sendMessage(replyMsg);
   }
 
-  private onFolderCloseMessage(msg: ClientFolderCloseMessage): void {
+  private cmFolderCloseMessage(msg: ClientFolderCloseMessage): void {
     this.closeFolder(msg.path, false);
   }
 
-  private async onFolderOpenMessage(msg: ClientFolderOpenMessage): Promise<void> {
+  private async cmFolderOpenMessage(msg: ClientFolderOpenMessage): Promise<void> {
     // REVIEW: Check that the open folder message is not a duplicate?
     const path = msg.path;
     assert(!this.folderWatchers.get(path));
-    try {
-      const { watcher, obj } = await FolderWatcher.open(this, msg);
-      this.folderWatchers.set(path, watcher);
-      const response: ServerFolderOpenedMessage = { requestId: msg.requestId, type: 'folder', operation: 'opened', path, obj };
-      this.sendMessage(response);
-    } catch(err) {
-      reportError(err, `Error on folder open message.`);
-      const response: ServerErrorMessage = { requestId: msg.requestId, type: 'error', message: err.message };
-      this.sendMessage(response);
-      return;
-    }
+    const { watcher, obj } = await FolderWatcher.open(this, msg);
+    this.folderWatchers.set(path, watcher);
+    const response: ServerFolderOpenedMessage = { requestId: msg.requestId, type: 'folder', operation: 'opened', path, obj };
+    this.sendMessage(response);
   }
 
-  private async onMessage(msg: ClientMessage): Promise<void> {
+  private async cmMessage(msg: ClientMessage): Promise<void> {
     debug(`Received socket message: ${msg.type}/${msg.operation}`);
     switch(msg.type) {
       case 'folder':
         switch(msg.operation) {
-          case 'change': await this.onFolderChangeMessage(msg); break;
-          case 'close':  this.onFolderCloseMessage(msg); break;
-          case 'open': await this.onFolderOpenMessage(msg); break;
+          case 'change': await this.cmFolderChangeMessage(msg); break;
+          case 'close':  this.cmFolderCloseMessage(msg); break;
+          case 'open': await this.cmFolderOpenMessage(msg); break;
           default: assert(false); break;
         }
         break;
       case 'notebook':
         switch(msg.operation) {
-          case 'change': this.onNotebookChangeMessage(msg); break;
-          case 'close':  this.onNotebookCloseMessage(msg); break;
-          case 'open': await this.onNotebookOpenMessage(msg); break;
-          case 'useTool': this.onNotebookUseToolMessage(msg); break;
+          case 'change': this.cmNotebookChangeMessage(msg); break;
+          case 'close':  this.cmNotebookCloseMessage(msg); break;
+          case 'open': await this.cmNotebookOpenMessage(msg); break;
+          case 'useTool': this.cmNotebookUseToolMessage(msg); break;
           default: assert(false); break;
         }
         break;
@@ -278,40 +264,33 @@ export class ClientSocket {
     }
   }
 
-  private onNotebookChangeMessage(msg: ClientNotebookChangeMessage): void {
+  private cmNotebookChangeMessage(msg: ClientNotebookChangeMessage): void {
     const watcher = this.notebookWatchers.get(msg.path)!;
     assert(watcher);
     watcher.onNotebookChangeMessage(msg);
   }
 
-  private onNotebookCloseMessage(msg: ClientNotebookCloseMessage): void {
+  private cmNotebookCloseMessage(msg: ClientNotebookCloseMessage): void {
     this.closeNotebook(msg.path, false);
   }
 
-  private async onNotebookOpenMessage(msg: ClientNotebookOpenMessage): Promise<void> {
+  private async cmNotebookOpenMessage(msg: ClientNotebookOpenMessage): Promise<void> {
     // REVIEW: Check that the open folder message is not a duplicate?
     const path = msg.path;
     assert(!this.notebookWatchers.get(path));
-    try {
-      const { watcher, obj } = await NotebookWatcher.open(this, msg);
-      this.notebookWatchers.set(path, watcher);
-      const response: ServerNotebookOpenedMessage = { requestId: msg.requestId, type: 'notebook', operation: 'opened', path, obj };
-      this.sendMessage(response);
-    } catch(err) {
-      reportError(err, `Error on notebook open message.`);
-      const response: ServerErrorMessage = { requestId: msg.requestId, type: 'error', message: err.message };
-      this.sendMessage(response);
-      return;
-    }
+    const { watcher, obj } = await NotebookWatcher.open(this, msg);
+    this.notebookWatchers.set(path, watcher);
+    const response: ServerNotebookOpenedMessage = { requestId: msg.requestId, type: 'notebook', operation: 'opened', path, obj };
+    this.sendMessage(response);
   }
 
-  private onNotebookUseToolMessage(msg: ClientNotebookUseToolMessage): void {
+  private cmNotebookUseToolMessage(msg: ClientNotebookUseToolMessage): void {
     const watcher = this.notebookWatchers.get(msg.path)!;
     assert(watcher);
     watcher.onNotebookUseToolMessage(msg);
   }
 
-  private onWsClose(_ws: WebSocket, code: number, reason: string): void {
+  private wsClose(_ws: WebSocket, code: number, reason: string): void {
     try {
       // Normal close appears to be code 1001, reason empty string.
       if (this.closeResolver) {
@@ -328,8 +307,9 @@ export class ClientSocket {
     }
   }
 
-  private onWsError(_ws: WebSocket, err: Error): void {
+  private wsError(_ws: WebSocket, err: Error): void {
     try {
+      // TODO: What to do in this case? Close the connection?
       reportError(err, "Client Socket: web socket error: ${this.id}.");
       // REVIEW: is the error recoverable? is the websocket closed? will we get a closed event?
     } catch(err) {
@@ -337,17 +317,25 @@ export class ClientSocket {
     }
   }
 
-  private onWsMessage(_ws: WebSocket, message: WebSocket.Data): void {
+  private wsMessage(_ws: WebSocket, message: WebSocket.Data): void {
+    let msg: ClientMessage;
     try {
-      const msg: ClientMessage = JSON.parse(message.toString());
-      this.onMessage(msg).catch(err=>{
-        // REVIEW: How to handle this error?
-        reportError(err, "Client Socket: unexpected asynchronous error handling web-socket message.");
-      });
+      msg = JSON.parse(message.toString());
     } catch(err) {
-      // REVIEW: How to handle this error?
-      reportError(err, "Client Socket: unexpected synchronous error handling web-socket message.");
+      reportError(err, `Client Socket: invalid JSON in message received from client.`);
+      return;
     }
+    this.cmMessage(msg).catch(err=>{
+      const expected = err instanceof ExpectedError;
+      if (!expected) {
+        reportError(err, `Client Socket: unexpected error processing client ${msg.type}/${msg.operation} message.`);
+      }
+      if (msg.requestId) {
+        const message = expected ? err.message : "An unexpected error occurred.";
+        const response: ServerErrorMessage = { requestId: msg.requestId, type: 'error', message };
+        this.sendMessage(response);
+      }
+    });
   }
 
 }
