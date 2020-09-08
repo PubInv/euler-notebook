@@ -22,29 +22,29 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 // Requirements
 
-import { assert } from "../../shared/common"
-import { $ } from "../../dom"
+import { assert } from "../../../shared/common"
+import { $ } from "../../../dom"
 import {
   DrawingData, StyleId, StyleObject, NotebookChange,
   StyleType, StyleRelativePosition,
   StylePosition, HintData, HintStatus, HintRelationship, FormulaData,
-} from "../../shared/notebook"
+} from "../../../shared/notebook"
 import {
   DebugParams, DebugResults, StyleDeleteRequest, StyleInsertRequest, StylePropertiesWithSubprops,
   StyleMoveRequest, NotebookChangeRequest,
-} from "../../shared/math-tablet-api"
-import { TrackedChangesResults } from "../../client-notebook"
+} from "../../../shared/math-tablet-api"
+import { TrackedChangesResults } from "../../../client-notebook"
 
 import { CellView } from "./cell-view/index"
 import { createCellView } from "./cell-view/instantiator"
-import { HtmlElement } from "../../html-element"
-import { NotebookScreen } from ".."
+import { HtmlElement } from "../../../html-element"
+import { NotebookEditScreen } from ".."
 
 // Types
 
 type CommandName = string;
 
-type CommandFunction = (this: NotebookView)=>Promise<void>;
+type CommandFunction = (this: Content)=>Promise<void>;
 
 enum KeyMod {
   None = 0,
@@ -87,17 +87,40 @@ const KEY_BINDINGS = new Map<KeyCombo, CommandName>(KEY_MAP.map(([ keyName, keyM
 
 // Exported Class
 
-export class NotebookView extends HtmlElement<'div'>{
+export class Content extends HtmlElement<'div'>{
 
   // Public Class Methods
 
-  public static create(screen: NotebookScreen): NotebookView {
-    return new this(screen);
+  // Public Constructor
+
+  public constructor(screen: NotebookEditScreen) {
+    super({
+      tag: 'div',
+      appendTo: screen.$elt,
+      class: 'content',
+      listeners: {
+        blur: e=>this.onBlur(e),
+        focus: e=>this.onFocus(e),
+        keyup: e=>this.onKeyUp(e),
+      }
+    });
+    this.screen = screen;
+
+    this.cellViews = new Map();
+    this.dirtyCells = new Set();
+    this.topOfUndoStack = 0;
+    this.undoStack = [];
+
+    for (const styleId of this.screen.notebook.topLevelStyleOrder()) {
+      const style = this.screen.notebook.getStyle(styleId);
+      this.createCell(style, -1);
+    }
+
   }
 
   // Public Instance Properties
 
-  public screen: NotebookScreen;
+  public screen: NotebookEditScreen;
 
   // Public Instance Property Functions
 
@@ -551,33 +574,6 @@ export class NotebookView extends HtmlElement<'div'>{
   }
 
   // -- PRIVATE --
-
-  // Private Constructor
-
-  private constructor(screen: NotebookScreen) {
-    super({
-      tag: 'div',
-      appendTo: screen.$elt,
-      class: 'view',
-      listeners: {
-        blur: e=>this.onBlur(e),
-        focus: e=>this.onFocus(e),
-        keyup: e=>this.onKeyUp(e),
-      }
-    });
-    this.screen = screen;
-
-    this.cellViews = new Map();
-    this.dirtyCells = new Set();
-    this.topOfUndoStack = 0;
-    this.undoStack = [];
-
-    for (const styleId of this.screen.notebook.topLevelStyleOrder()) {
-      const style = this.screen.notebook.getStyle(styleId);
-      this.createCell(style, -1);
-    }
-
-  }
 
   // Private Instance Properties
 

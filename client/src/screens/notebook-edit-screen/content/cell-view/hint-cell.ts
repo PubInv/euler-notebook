@@ -19,9 +19,9 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 // Requirements
 
-import { escapeHtml } from "../../../dom"
-import { StyleObject, HintData, HintStatus, HintRelationship } from "../../../shared/notebook"
-import { NotebookView } from "../../../notebook-screen/notebook-view"
+import { escapeHtml } from "../../../../dom"
+import { StyleObject, HintData, HintStatus, HintRelationship } from "../../../../shared/notebook"
+import { Content } from ".."
 // import { getRenderer } from "../renderers"
 
 import { CellView } from "./index"
@@ -36,7 +36,7 @@ export class HintCellView extends CellView {
 
   // Class Methods
 
-  public static create(notebookView: NotebookView, style: StyleObject): HintCellView {
+  public static create(notebookView: Content, style: StyleObject): HintCellView {
     const instance = new this(notebookView, style);
     instance.render(style);
     return instance;
@@ -102,7 +102,7 @@ export class HintCellView extends CellView {
 
   // Constructor
 
-  private constructor(notebookView: NotebookView, style: StyleObject) {
+  private constructor(notebookView: Content, style: StyleObject) {
     super(notebookView, style, 'hintCell');
   }
 }

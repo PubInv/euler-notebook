@@ -19,9 +19,9 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 // Requirements
 
-import { $, Html, CLOSE_X_ENTITY } from "../dom"
-import { HtmlElement } from "../html-element";
-import { NotebookScreen } from ".";
+import { $, Html, CLOSE_X_ENTITY } from "../../dom"
+import { HtmlElement } from "../../html-element";
+import { NotebookEditScreen } from ".";
 
 // Types
 
@@ -35,23 +35,9 @@ export class DebugPopup extends HtmlElement<'div'>{
 
   // Class Methods
 
-  public static create(screen: NotebookScreen): DebugPopup {
-    return new this(screen);
-  }
+  // Public Constructor
 
-  // Instance Methods
-
-  public showContents(html: Html): void {
-    const $content = $(this.$elt, '.content');
-    $content.innerHTML = html;
-    this.$elt.style.display = 'block';
-  }
-
-  // -- PRIVATE --
-
-  // Constructor
-
-  private constructor(screen: NotebookScreen) {
+  public constructor(screen: NotebookEditScreen) {
     super({
       tag: 'div',
       appendTo: screen.$elt,
@@ -71,6 +57,16 @@ export class DebugPopup extends HtmlElement<'div'>{
       hidden: true,
     });
   }
+
+  // Instance Methods
+
+  public showContents(html: Html): void {
+    const $content = $(this.$elt, '.content');
+    $content.innerHTML = html;
+    this.$elt.style.display = 'block';
+  }
+
+  // -- PRIVATE --
 
   // Private Instance Properties
 

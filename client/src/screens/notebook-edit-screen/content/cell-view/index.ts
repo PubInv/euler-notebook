@@ -21,13 +21,13 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 // Requirements
 
-import { assert } from "../../../shared/common"
-import { $new } from "../../../dom"
-import { NotebookView } from "../../../notebook-screen/notebook-view"
-import { KeyboardInputPanel } from "../../../keyboard-input-panel"
-import { StyleObject, StyleId } from "../../../shared/notebook"
-import { NotebookChangeRequest } from "../../../shared/math-tablet-api"
-import { NotebookTools } from "../../../notebook-screen/notebook-tools"
+import { assert } from "../../../../shared/common"
+import { $new } from "../../../../dom"
+import { Content } from ".."
+import { KeyboardInputPanel } from "../../../../keyboard-input-panel"
+import { StyleObject, StyleId } from "../../../../shared/notebook"
+import { NotebookChangeRequest } from "../../../../shared/math-tablet-api"
+import { Tools } from "../../tools"
 
 // Exported Class
 
@@ -112,7 +112,7 @@ export abstract class CellView {
     }
   };
 
-  public renderTools(tools: NotebookTools): void {
+  public renderTools(tools: Tools): void {
     tools.clear();
   }
 
@@ -137,7 +137,7 @@ export abstract class CellView {
 
   // Private Constructor
 
-  protected constructor(notebookView: NotebookView, style: StyleObject, subclass: /* TYPESCRIPT: CssClass */string) {
+  protected constructor(notebookView: Content, style: StyleObject, subclass: /* TYPESCRIPT: CssClass */string) {
     this.view = notebookView;
     this.styleId = style.id;
 
@@ -157,7 +157,7 @@ export abstract class CellView {
   // Private Instance Properties
 
   protected inputPanel?: KeyboardInputPanel;
-  protected view: NotebookView;
+  protected view: Content;
 
   // Private Instance Methods
 

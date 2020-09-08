@@ -19,22 +19,22 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 // Requirements
 
-import { assert } from "../../../shared/common"
-import { DrawingData, StyleId, StyleObject } from "../../../shared/notebook"
-import { StyleChangeRequest, StyleMoveRequest } from "../../../shared/math-tablet-api"
+import { assert } from "../../../../shared/common"
+import { DrawingData, StyleId, StyleObject } from "../../../../shared/notebook"
+import { StyleChangeRequest, StyleMoveRequest } from "../../../../shared/math-tablet-api"
 
-import { $configure, $newSvg, $, $svg, CLOSE_X_ENTITY } from "../../../dom"
-import { deepCopy } from "../../../common"
+import { $configure, $newSvg, $, $svg, CLOSE_X_ENTITY } from "../../../../dom"
+import { deepCopy } from "../../../../common"
 
-import { NotebookView } from "../../../notebook-screen/notebook-view"
-import { ResizerBar } from "../../../resizer-bar"
-import { SvgStroke } from "../../../svg-stroke"
-import { StylusDrawingPanel } from "../../../stylus-drawing-panel"
+import { Content } from ".."
+import { ResizerBar } from "../../../../resizer-bar"
+import { SvgStroke } from "../../../../svg-stroke"
+import { StylusDrawingPanel } from "../../../../stylus-drawing-panel"
 
 // import { getRenderer } from "../renderers"
 
 import { CellView } from "./index"
-import { $new } from "../../../dom"
+import { $new } from "../../../../dom"
 
 // Types
 
@@ -52,7 +52,7 @@ export class InkCellView extends CellView {
 
   // Class Methods
 
-  public static create(view: NotebookView, style: StyleObject): InkCellView {
+  public static create(view: Content, style: StyleObject): InkCellView {
     return new this(view, style);
   }
 
@@ -79,7 +79,7 @@ export class InkCellView extends CellView {
 
   // Private Constructor
 
-  private constructor(view: NotebookView, style: StyleObject) {
+  private constructor(view: Content, style: StyleObject) {
     super(view, style, 'inkCell');
 
     // LATER: These button be on *all* cells, not just ink cells.

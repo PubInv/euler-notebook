@@ -21,11 +21,11 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 // TODO: Animate the when adding or removing folders and notebooks
 // TODO: When another user makes a change show an indicator of what user made the change.
 
-import { assert } from "../../shared/common";
-import { FolderChange, FolderName, NotebookName } from "../../shared/folder";
+import { assertFalse } from "../../../shared/common";
+import { FolderChange, FolderName, NotebookName } from "../../../shared/folder";
 
 import { FolderScreen } from "..";
-import { HtmlElement } from "../../html-element";
+import { HtmlElement } from "../../../html-element";
 
 import { EntryList } from "./entry-list"
 import { EntryType } from "./entry-row"
@@ -34,12 +34,17 @@ import { EntryType } from "./entry-row"
 
 // Exported Class
 
-export class FolderView extends HtmlElement<'div'> {
+export class Content extends HtmlElement<'div'> {
 
   // Public Class Methods
 
-  public static create(screen: FolderScreen): FolderView {
-    return new this(screen);
+  // Public Constructor
+
+  public constructor(screen: FolderScreen) {
+    super({ tag: 'div', appendTo: screen.$elt, class: 'content' });
+    this.screen = screen;
+    this.foldersList = new EntryList(this.$elt, screen.folder, EntryType.Folder, screen.folder.folders);
+    this.notebooksList = new EntryList(this.$elt, screen.folder, EntryType.Notebook, screen.folder.notebooks);
   }
 
   // Public Instance Properties
@@ -60,20 +65,11 @@ export class FolderView extends HtmlElement<'div'> {
       case 'notebookCreated': this.notebooksList.addEntry(this.screen.folder, change.entry);   break;
       case 'notebookDeleted': this.notebooksList.removeEntry(change.entry);                    break;
       case 'notebookRenamed': this.notebooksList.renameEntry(change.oldName, change.entry);    break;
-      default: assert(false); break;
+      default: assertFalse(); break;
     }
   }
 
   // -- PRIVATE --
-
-  // Private Constructor
-
-  private constructor(screen: FolderScreen) {
-    super({ tag: 'div', appendTo: screen.$elt, class: 'view' });
-    this.screen = screen;
-    this.foldersList = new EntryList(this.$elt, screen.folder, EntryType.Folder, screen.folder.folders);
-    this.notebooksList = new EntryList(this.$elt, screen.folder, EntryType.Notebook, screen.folder.notebooks);
-  }
 
   // Private Instance Properties
 

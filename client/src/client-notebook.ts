@@ -25,7 +25,7 @@ import { ServerNotebookChangedMessage, NotebookChangeRequest, ClientNotebookChan
 
 import { appInstance } from "./app"
 import { NotebookName, NotebookPath } from "./shared/folder"
-import { assert } from "./shared/common"
+import { assert, assertFalse } from "./shared/common"
 
 // Types
 
@@ -67,7 +67,7 @@ export class ClientNotebook extends Notebook<ClientNotebookWatcher> {
     switch(msg.operation) {
       case 'changed': this.smChanged(msg); break;
       case 'closed':  this.smClosed(msg); break;
-      default: assert(false, `Client notebook received unexpected '${msg.operation}' message.`); break;
+      default: assertFalse(`Client notebook received unexpected '${msg.operation}' message.`); break;
     }
   }
 

@@ -19,9 +19,9 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 // Requirements
 
-// import { $new, escapeHtml, Html } from "../dom"
-import { StyleObject } from "../../../shared/notebook"
-import { NotebookView } from "../../../notebook-screen/notebook-view"
+import { StyleObject } from "../../../../shared/notebook"
+import { Content } from ".."
+import { getRenderer } from "../../../../renderers"
 
 import { CellView } from "./index"
 
@@ -31,11 +31,11 @@ import { CellView } from "./index"
 
 // Class
 
-export class PlotCellView extends CellView {
+export class TextCellView extends CellView {
 
   // Class Methods
 
-  public static create(notebookView: NotebookView, style: StyleObject): PlotCellView {
+  public static create(notebookView: Content, style: StyleObject): TextCellView {
     const instance = new this(notebookView, style);
     instance.render(style);
     return instance;
@@ -43,13 +43,19 @@ export class PlotCellView extends CellView {
 
   // Instance Methods
 
+  public render(style: StyleObject): void {
+    const renderer = getRenderer(style.type);
+    const { html, errorHtml } = renderer(style.data);
+    // TODO: Error formatting.
+    if (html) { this.$elt.innerHTML = html; }
+    else { this.$elt.innerHTML = errorHtml!; }
+  }
+
   // -- PRIVATE --
 
   // Constructor
 
-  private constructor(notebookView: NotebookView, style: StyleObject) {
-    super(notebookView, style, 'plotCell');
+  private constructor(notebookView: Content, style: StyleObject) {
+    super(notebookView, style, 'textCell');
   }
-
-
 }

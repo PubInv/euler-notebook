@@ -19,12 +19,12 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 // Requirements
 
-import { Folder, FolderEntry, FolderName, NotebookEntry, NotebookName } from "../../shared/folder";
-import { Notebook } from "../../shared/notebook";
+import { Folder, FolderEntry, FolderName, NotebookEntry, NotebookName } from "../../../shared/folder";
+import { Notebook } from "../../../shared/notebook";
 
-import { svgIconReference, CLOSE_X_ENTITY, PENCIL_ENTITY, escapeHtml, CHECKMARK_ENTITY, $new, DOTTED_CIRCLE_ENTITY } from "../../dom";
-import { ClientFolder } from "../../client-folder"
-import { HtmlElement } from "../../html-element";
+import { svgIconReference, CLOSE_X_ENTITY, PENCIL_ENTITY, escapeHtml, CHECKMARK_ENTITY, $new, DOTTED_CIRCLE_ENTITY } from "../../../dom";
+import { ClientFolder } from "../../../client-folder"
+import { HtmlElement } from "../../../html-element";
 
 // Types
 

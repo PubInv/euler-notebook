@@ -19,14 +19,15 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 // Requirements
 
-import { NotebookChange } from "../shared/notebook"
-import { Path, NotebookPath } from "../shared/folder"
+import { NotebookChange } from "../../shared/notebook";
+import { NotebookPath } from "../../shared/folder";
 
-import { ClientNotebook, OpenNotebookOptions } from "../client-notebook"
-import { reportError } from "../error-handler"
-import { PageView, PageViewType } from "./page-view"
-import { Screen } from "../screen"
-import { PageSidebar } from "./page-sidebar"
+import { ClientNotebook, OpenNotebookOptions } from "../../client-notebook";
+import { reportError } from "../../error-handler";
+import { ScreenBase } from "../screen-base";
+
+import { Content } from "./content";
+import { Sidebar } from "./sidebar";
 
 // Types
 
@@ -36,22 +37,47 @@ import { PageSidebar } from "./page-sidebar"
 
 // Exported Class
 
-export class PageScreen extends Screen {
+export class NotebookThumbnailsScreen extends ScreenBase {
 
   // Public Class Methods
 
-  public static create($parent: HTMLElement, path: NotebookPath): PageScreen {
-    const instance = new this($parent, path);
-    instance.connect(path).catch(err=>reportError(err, `Error opening folder ${path}.`));
-    return instance;
+  // Public Constructor
+
+  public constructor($parent: HTMLElement, path: NotebookPath) {
+    super({
+      tag: 'div',
+      appendTo: $parent,
+      classes: ['screen', 'notebookThumbnailsScreen'],
+      id: path,
+      style: 'display: none',
+    });
+
+    const options: OpenNotebookOptions = { mustExist: true, watcher: this };
+    ClientNotebook.open(path, options)
+    .then(
+      (notebook: ClientNotebook)=>{
+        this.notebook = notebook;
+        /* this.sidebar = */ new Sidebar(this);
+        this.content = new Content(this);
+      },
+      (err)=>{
+        reportError(err, `Error opening notebook '${path} for thumbnails`);
+        this.displayErrorMessage(`Error opening notebook '${path}'`);
+      }
+    );
+
   }
+
+  // Public Instance Properties
+
+  public notebook!: ClientNotebook;
 
   // Public Instance Event Handlers
 
   public onResize(_window: Window, _event: UIEvent): void {
     // const bodyViewRect = $('#content').getBoundingClientRect();
     // REVIEW: Could this.pageView be undefined?
-    this.pageView!.resize(/* bodyViewRect.width */);
+    this.content!.resize(/* bodyViewRect.width */);
   }
 
   // Notebook Watcher Methods
@@ -70,34 +96,15 @@ export class PageScreen extends Screen {
 
   // --- PRIVATE ---
 
-  // Private Constructor
-
-  private constructor($parent: HTMLElement, path: Path) {
-    super({
-      tag: 'div',
-      appendTo: $parent,
-      classes: ['screen', 'pageScreen'],
-      id: path,
-      style: 'display: none',
-    });
-  }
-
   // Instance Properties
 
   // Instance Methods
 
-  public async connect(path: NotebookPath): Promise<void> {
-    const options: OpenNotebookOptions = { mustExist: true, watcher: this };
-    const notebook = await ClientNotebook.open(path, options);
-    this.pageView = PageView.create(this.$elt, notebook, PageViewType.Single);
-    /* this.sidebar = */ PageSidebar.create(this.$elt, notebook);
-  }
-
   // Private Instance Properties
 
-  private pageView?: PageView;
+  private content?: Content;
 
-  // private sidebar: PageSidebar;
+  // private sidebar: Sidebar;
 
   // Private Property Functions
 

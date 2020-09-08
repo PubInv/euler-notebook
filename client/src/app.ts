@@ -21,14 +21,9 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 // Requirements
 
-import { FOLDER_PATH_RE, NOTEBOOK_PATH_RE, Path, FolderPath, NotebookPath } from "./shared/folder"
-
 import { addAsyncEventListener, addSyncEventListener } from "./error-handler"
-import { FolderScreen } from "./folder-screen"
 import { Header } from "./header"
-import { NotebookScreen } from "./notebook-screen"
-import { PageScreen } from "./page-screen"
-import { Screen } from "./screen"
+import { Pathname, Screens } from "./screens"
 import { ServerSocket } from "./server-socket"
 
 // Types
@@ -43,92 +38,54 @@ class App {
 
   // Class Methods
 
-  public static create(): App {
-    return new this();
+  // Public Constructor
+
+  public constructor() {
+    // DO NOT CALL. Just use appInstance singleton.
+    addAsyncEventListener(window, 'DOMContentLoaded', e=>this.onDomContentLoaded(e), "App initialization error");
+    addSyncEventListener<HashChangeEvent>(window, 'hashchange', e=>this.onHashChange(e), "App navigation error");
+
+    Screens.initialize();
   }
 
   // Public Instance Properties
 
-  // REVIEW: Ensure read-only?
+  // REVIEW: Ensure these are read-only?
+  public header?: Header;
   public socket!: ServerSocket;  // Connection initiated at DOM ready.
 
   // Public Instance Methods
 
-  public navigateTo(path: Path): void {
-    console.log(`Navigating to ${this.currentPath}`);
-
-    let nextScreen = this.screens.get(path);
-    if (!nextScreen) {
-      nextScreen = this.createScreenForPath(path);
-      this.screens.set(path, nextScreen);
-    }
-    this.header!.setPathTitle(path);
-    Screen.show(nextScreen);
-  }
-
   // --- PRIVATE ---
-
-  // Private Constructor
-
-  private constructor() {
-    this.$body = <HTMLBodyElement>window.document.body;
-    this.screens = new Map();
-    addAsyncEventListener(window, 'DOMContentLoaded', e=>this.onDomReady(e), "App initialization error");
-    addSyncEventListener<HashChangeEvent>(window, 'hashchange', e=>this.onHashChange(e), "App navigation error");
-    addSyncEventListener<UIEvent>(window, 'resize', e=>Screen.onResize(window, e), "Window resize event");
-  }
 
   // Private Instance Properties
 
-  private $body: HTMLBodyElement;
-  private header?: Header;
-  private screens: Map<Path, Screen>;
 
   // Private Property Functions
 
-  private get currentPath(): Path {
+  private get currentPath(): Pathname {
     const hash = window.location.hash;
-    return <Path>(hash.length <= 1 ? '/' : hash.slice(1));
+    return <Pathname>(hash.length <= 1 ? '/' : hash.slice(1));
   }
 
   // Private Instance Methods
 
-  private createScreenForPath(path: Path): Screen {
-    // Check if the path is to a folder or a notebook.
-    if (NOTEBOOK_PATH_RE.test(path)) {
-      // const clientNotebook = await this.socket.openNotebook(path);
-      const isPageView = false;
-      if (!isPageView) {
-        return NotebookScreen.create(this.$body, <NotebookPath>path);
-        // await this.notebookScreen.connect(this.socket, clientNotebook);
-        // clientNotebook.connect(this.notebookScreen);
-      } else {
-        return PageScreen.create(this.$body, <NotebookPath>path);
-        // await this.pageScreen.connect(this.socket, clientNotebook);
-        // clientNotebook.connect(this.pageScreen);
-      }
-    } else if (FOLDER_PATH_RE.test(path)) {
-      return FolderScreen.create(this.$body, <FolderPath>path);
-    } else {
-      throw new Error("Invalid path.");
-    }
-  }
-
   // Private Event Handlers
 
-  private async onDomReady(_event: Event): Promise<void> {
+  private async onDomContentLoaded(_event: Event): Promise<void> {
     // TODO: this.banner = Banner.attach($(document, '#banner'));
-    this.header = Header.create(this.$body);
+    const $body = <HTMLBodyElement>window.document.body;
+    this.header = Header.create($body);
     // TODO: Show a "connecting..." spinner.
     this.socket = await ServerSocket.connect(`ws://${window.location.host}/`);
-    this.navigateTo(this.currentPath);
+    Screens.navigateTo(this.currentPath);
   }
 
   private onHashChange(_event: HashChangeEvent): void {
-    this.navigateTo(this.currentPath);
+    Screens.navigateTo(this.currentPath);
   }
 }
 
 // Exported singleton instance
 
-export const appInstance = App.create();
+export const appInstance = new App();

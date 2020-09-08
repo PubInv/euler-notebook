@@ -22,16 +22,16 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 // Requirements
 
-import { NotebookPath } from "../shared/folder"
-import { NotebookChange, NotebookWatcher } from "../shared/notebook"
+import { NotebookPath } from "../../shared/folder"
+import { NotebookChange, NotebookWatcher } from "../../shared/notebook"
 
 import { DebugPopup } from "./debug-popup"
-import { reportError } from "../error-handler"
-import { NotebookView } from "./notebook-view"
-import { NotebookSidebar } from "./notebook-sidebar"
-import { NotebookTools } from "./notebook-tools"
-import { ClientNotebook, OpenNotebookOptions } from "../client-notebook"
-import { Screen } from "../screen"
+import { reportError } from "../../error-handler"
+import { Content } from "./content"
+import { Sidebar } from "./sidebar"
+import { Tools } from "./tools"
+import { ClientNotebook, OpenNotebookOptions } from "../../client-notebook"
+import { ScreenBase } from "../screen-base"
 
 // Types
 
@@ -41,11 +41,11 @@ import { Screen } from "../screen"
 
 // Exported Class
 
-export class NotebookScreen extends Screen implements NotebookWatcher {
+export class NotebookEditScreen extends ScreenBase implements NotebookWatcher {
 
   // Public Class Methods
 
-  public static create($parent: HTMLElement, path: NotebookPath): NotebookScreen {
+  public static create($parent: HTMLElement, path: NotebookPath): NotebookEditScreen {
     return new this($parent, path);
   }
 
@@ -57,9 +57,9 @@ export class NotebookScreen extends Screen implements NotebookWatcher {
 
   public debugPopup!: DebugPopup;
   public notebook!: ClientNotebook;
-  public sidebar!: NotebookSidebar;
-  public tools!: NotebookTools;
-  public view!: NotebookView;
+  public sidebar!: Sidebar;
+  public tools!: Tools;
+  public view!: Content;
 
   // Public Instance Methods
 
@@ -89,7 +89,7 @@ export class NotebookScreen extends Screen implements NotebookWatcher {
     super({
       tag: 'div',
       appendTo: $parent,
-      classes: ['screen', 'notebookScreen'],
+      classes: ['screen', 'notebookEditScreen'],
       id: path,
       style: 'display: none',
     });
@@ -99,13 +99,13 @@ export class NotebookScreen extends Screen implements NotebookWatcher {
     .then(
       (notebook: ClientNotebook)=>{
         this.notebook = notebook;
-        this.sidebar = NotebookSidebar.create(this);
-        this.view = NotebookView.create(this);
-        this.tools = NotebookTools.create(this);
-        this.debugPopup = DebugPopup.create(this);
+        this.sidebar = new Sidebar(this);
+        this.view = new Content(this);
+        this.tools = new Tools(this);
+        this.debugPopup = new DebugPopup(this);
       },
       (err)=>{
-        reportError(err, `Error opening folder '${path}`);
+        reportError(err, `Error opening notebook '${path} for editing`);
         this.displayErrorMessage(`Error opening notebook '${path}'`);
       }
     );

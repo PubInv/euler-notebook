@@ -19,13 +19,13 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 // Requirements
 
-import { StyleId, FindStyleOptions } from "../shared/notebook"
-import { SymbolTable, ToolData } from "../shared/math-tablet-api"
+import { StyleId, FindStyleOptions } from "../../shared/notebook"
+import { SymbolTable, ToolData } from "../../shared/math-tablet-api"
 
-import { $new, escapeHtml, Html } from "../dom"
-import { getRenderer } from "../renderers"
-import { HtmlElement } from "../html-element"
-import { NotebookScreen } from "."
+import { $new, escapeHtml, Html } from "../../dom"
+import { getRenderer } from "../../renderers"
+import { HtmlElement } from "../../html-element"
+import { NotebookEditScreen } from "."
 
 // Types
 
@@ -35,12 +35,19 @@ import { NotebookScreen } from "."
 
 // Class
 
-export class NotebookTools extends HtmlElement<'div'>{
+export class Tools extends HtmlElement<'div'>{
 
   // Class Methods
 
-  public static create(screen: NotebookScreen): NotebookTools {
-    return new this(screen);
+  // Public Constructor
+
+  public constructor(screen: NotebookEditScreen) {
+    super({
+      tag: 'div',
+      appendTo: screen.$elt,
+      class: 'tools',
+    });
+    this.screen = screen;
   }
 
   // Instance Methods
@@ -93,20 +100,9 @@ export class NotebookTools extends HtmlElement<'div'>{
 
   // -- PRIVATE --
 
-  // Constructor
-
-  private constructor(screen: NotebookScreen) {
-    super({
-      tag: 'div',
-      appendTo: screen.$elt,
-      class: 'tools',
-    });
-    this.screen = screen;
-  }
-
   // Private Instance Properties
 
-  private screen: NotebookScreen;
+  private screen: NotebookEditScreen;
 
   // Private Instance Property Functions
 

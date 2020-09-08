@@ -40,6 +40,10 @@ export function assert(value: any, message?: string): void {
   if (!value) { throw new Error(message || ASSERTION_FAILED_MSG); }
 }
 
+export function assertFalse( message?: string): never {
+  throw new Error(message || ASSERTION_FAILED_MSG);
+}
+
 export function newPromiseResolver<T>(): { promise: Promise<T>, resolver: PromiseResolver<T> } {
   let resolver: PromiseResolver<T>;
   const promise = new Promise<T>((resolve, reject)=>{ resolver = { resolve, reject }; });

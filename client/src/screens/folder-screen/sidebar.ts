@@ -19,9 +19,9 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 // Requirements
 
-import { $new, svgIconReference } from "../dom";
+import { $new, svgIconReference } from "../../dom";
 import { FolderScreen } from ".";
-import { ButtonBar } from "../button-bar"
+import { ButtonBar } from "../../button-bar"
 
 // Types
 
@@ -31,23 +31,13 @@ import { ButtonBar } from "../button-bar"
 
 // Exported Class
 
-export class FolderSidebar extends ButtonBar {
+export class Sidebar extends ButtonBar {
 
   // Public Class Methods
 
-  public static create(screen: FolderScreen): FolderSidebar {
-    return new this(screen);
-  }
+  // Public Constructor
 
-  // Public Instance Properties
-
-  // Public Instance Methods
-
-  // -- PRIVATE --
-
-  // Constructor
-
-  private constructor(screen: FolderScreen) {
+  public constructor(screen: FolderScreen) {
 
     const $newFolderButton = $new({
       tag: 'button',
@@ -77,9 +67,15 @@ export class FolderSidebar extends ButtonBar {
     });
 
     this.screen = screen;
-
-
   }
+
+  // Public Instance Properties
+
+  // Public Instance Methods
+
+  // -- PRIVATE --
+
+  // Public Constructor
 
   // Private Instance Properties
 

@@ -19,8 +19,8 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 // Requirements
 
-import { StyleObject } from "../../../shared/notebook"
-import { NotebookView } from "../../../notebook-screen/notebook-view"
+import { StyleObject } from "../../../../shared/notebook"
+import { Content } from ".."
 
 import { CellView } from "./index"
 import { FormulaCellView } from "./formula-cell"
@@ -33,7 +33,7 @@ import { TextCellView } from "./text-cell"
 
 // Exports
 
-export function createCellView(notebookView: NotebookView, style: StyleObject): CellView {
+export function createCellView(notebookView: Content, style: StyleObject): CellView {
 
   // If a style has a child of REPRESENTATION|INPUT/STROKES then use a stylus cell.
   let rval: CellView;

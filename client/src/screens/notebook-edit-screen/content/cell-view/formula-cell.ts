@@ -19,15 +19,15 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 // Requirements
 
-import { StyleObject, FindRelationshipOptions, FindStyleOptions } from "../../../shared/notebook"
+import { StyleObject, FindRelationshipOptions, FindStyleOptions } from "../../../../shared/notebook"
 
-import { $new, escapeHtml, Html } from "../../../dom"
-import { NotebookView } from "../../../notebook-screen/notebook-view"
-import { getRenderer } from "../../../renderers"
-import { FORMULA_SUBROLE_PREFIX } from "../../../role-selectors"
+import { $new, escapeHtml, Html } from "../../../../dom"
+import { Content } from ".."
+import { getRenderer } from "../../../../renderers"
+import { FORMULA_SUBROLE_PREFIX } from "../../../../role-selectors"
 
 import { CellView } from "./index"
-import { NotebookTools } from "../../../notebook-screen/notebook-tools"
+import { Tools } from "../../tools"
 
 // Types
 
@@ -39,7 +39,7 @@ export class FormulaCellView extends CellView {
 
   // Class Methods
 
-  public static create(notebookView: NotebookView, style: StyleObject): FormulaCellView {
+  public static create(notebookView: Content, style: StyleObject): FormulaCellView {
     const instance = new this(notebookView, style);
     instance.render(style);
     return instance;
@@ -107,7 +107,7 @@ export class FormulaCellView extends CellView {
     this.$formula.innerHTML = html!;
   }
 
-  public renderTools(tools: NotebookTools): void {
+  public renderTools(tools: Tools): void {
     super.renderTools(tools);
     tools.render(this.styleId);
   }
@@ -116,7 +116,7 @@ export class FormulaCellView extends CellView {
 
   // Constructor
 
-  private constructor(notebookView: NotebookView, style: StyleObject) {
+  private constructor(notebookView: Content, style: StyleObject) {
     super(notebookView, style, 'formulaCell');
 
     // Create our child elements: handle, status, formula, tools, and delete button.

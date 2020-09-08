@@ -19,11 +19,9 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 // Requirements
 
-import { notImplemented } from "../shared/common"
-
-import { ButtonBar } from "../button-bar"
-import { svgIconReference, $new } from "../dom"
-import { NotebookScreen } from "."
+import { ButtonBar } from "../../button-bar"
+import { svgIconReference, $new } from "../../dom"
+import { NotebookEditScreen } from "."
 
 // Types
 
@@ -33,28 +31,13 @@ import { NotebookScreen } from "."
 
 // Exported Class
 
-export class NotebookSidebar extends ButtonBar {
+export class Sidebar extends ButtonBar {
 
   // Public Class Methods
 
-  public static create(screen: NotebookScreen): NotebookSidebar {
-    return new this(screen);
-  }
+  // Public Constructor
 
-  // Public Instance Properties
-
-  // Public Instance Methods
-
-  public enableDebugButton(enable: boolean): void { this.$debugButton.disabled = !enable; }
-  public enableRedoButton(enable: boolean): void { this.$redoButton.disabled = !enable; }
-  public enableTrashButton(enable: boolean): void { this.$trashButton.disabled = !enable; }
-  public enableUndoButton(enable: boolean): void { this.$undoButton.disabled = !enable; }
-
-  // -- PRIVATE --
-
-  // Constructor
-
-  private constructor(screen: NotebookScreen) {
+  public constructor(screen: NotebookEditScreen) {
 
     const $debugButton = $new({
       tag: 'button',
@@ -97,14 +80,22 @@ export class NotebookSidebar extends ButtonBar {
           tag: 'button',
           class: 'iconButton',
           html: svgIconReference('iconMonstrFile12'),
-          listeners: { click: (_e: MouseEvent)=>{ notImplemented(); }},
+          listeners: { click: (_e: MouseEvent)=>{ window.location.href = `/#${screen.notebook.path}`; }},
           title: "Page thumbnail view",
-        }, { // #pageViewButton
+        }, { // reading view
           tag: 'button',
           class: 'iconButton',
-          html: svgIconReference('iconMonstrFile15'),
-          listeners: { click: (_e: MouseEvent)=>{ notImplemented(); }},
+          html: svgIconReference('iconMonstrFile5'),
+          listeners: { click: (_e: MouseEvent)=>{ window.location.href = `/#${screen.notebook.path}?view=read`; }},
           title: "Reading view",
+        },{
+          // edit view
+          tag: 'button',
+          class: 'iconButton',
+          html: svgIconReference('iconMonstrNote23'),
+          // listeners: { click: (_e: MouseEvent)=>{ window.location.href = `/#${screen.notebook.path}?view=edit`; }},
+          title: "Editing view",
+          disabled: true,
         }, {
           tag: 'div', class: 'separator'
         }, { // #inputKeyboardButton
@@ -161,13 +152,24 @@ export class NotebookSidebar extends ButtonBar {
     this.$undoButton = $undoButton;
   }
 
+  // Public Instance Properties
+
+  // Public Instance Methods
+
+  public enableDebugButton(enable: boolean): void { this.$debugButton.disabled = !enable; }
+  public enableRedoButton(enable: boolean): void { this.$redoButton.disabled = !enable; }
+  public enableTrashButton(enable: boolean): void { this.$trashButton.disabled = !enable; }
+  public enableUndoButton(enable: boolean): void { this.$undoButton.disabled = !enable; }
+
+  // -- PRIVATE --
+
   // Private Instance Properties
 
   private $debugButton: HTMLButtonElement;
   private $redoButton: HTMLButtonElement;
   private $trashButton: HTMLButtonElement;
   private $undoButton: HTMLButtonElement;
-  private screen: NotebookScreen;
+  private screen: NotebookEditScreen;
 
   // Private Instance Methods
 

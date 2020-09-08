@@ -33,6 +33,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 // Specific elements
 
 #cellView
+  // REVIEW: Is this used?
   border-left 1px solid pink
   display flex
   flex-flow column nowrap
@@ -115,7 +116,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 .folderScreen
 
-  .view
+  .content
     padding 24px 0px 0px 24px
 
     #folderList
@@ -167,7 +168,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
     padding 8px
     width calc(100% - 8px)
 
-.notebookScreen
+.notebookEditScreen
 
   .tools
     background-color transparent
@@ -188,8 +189,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
       padding-left 2px
       text-decoration underline
 
-  .view
-    min-height 100%
+  .content
 
     .cell
 
@@ -281,20 +281,19 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
           display block
           padding 3px 3px 3px 6px
 
-.pageScreen
-  .view
+.notebookThumbnailsScreen
+.notebookReadScreen
+  .content
     background-color lightgray
     display flex
     flex-flow row wrap
-    min-height 100%
-    width 100%
 
-.page
-  background-color white
-  outline 1px solid black
+  .page
+    background-color white
+    outline 1px solid black
 
-.page.selected
-    outline 2px solid blue
+  .page.selected
+      outline 2px solid blue
 
 .screen
   display none
@@ -324,7 +323,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
     svg
       fill #808080
 
-.view
+.content
   height calc(100% - var(--header-height))
   left var(--sidebar-width)
   overflow scroll

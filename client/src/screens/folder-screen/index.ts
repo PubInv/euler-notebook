@@ -21,12 +21,12 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 // Requirements
 
-import { FolderPath, FolderChange } from "../shared/folder"
-import { FolderView } from "./folder-view"
-import { FolderSidebar } from "./folder-sidebar"
-import { Screen } from "../screen"
-import { ClientFolder, ClientFolderWatcher, OpenFolderOptions } from "../client-folder"
-import { reportError } from "../error-handler"
+import { FolderPath, FolderChange } from "../../shared/folder"
+import { Content } from "./content"
+import { Sidebar } from "./sidebar"
+import { ScreenBase } from "../screen-base"
+import { ClientFolder, ClientFolderWatcher, OpenFolderOptions } from "../../client-folder"
+import { reportError } from "../../error-handler"
 
 // Types
 
@@ -36,7 +36,7 @@ import { reportError } from "../error-handler"
 
 // Exported Class
 
-export class FolderScreen extends Screen implements ClientFolderWatcher {
+export class FolderScreen extends ScreenBase implements ClientFolderWatcher {
 
   // Public Class Methods
 
@@ -51,8 +51,8 @@ export class FolderScreen extends Screen implements ClientFolderWatcher {
   // Public Instance Properties
 
   public folder!: ClientFolder;     // Instantiated asynchronously in the constructor.
-  public sidebar!: FolderSidebar;   // Instantiated asynchronously in the constructor.
-  public view!: FolderView;         // Instantiated asynchronously in the constructor.
+  public sidebar!: Sidebar;   // Instantiated asynchronously in the constructor.
+  public view!: Content;         // Instantiated asynchronously in the constructor.
 
   // ClientFolderWatcher Methods
 
@@ -86,8 +86,8 @@ export class FolderScreen extends Screen implements ClientFolderWatcher {
     .then(
       (folder: ClientFolder)=>{
         this.folder = folder;
-        this.sidebar = FolderSidebar.create(this);
-        this.view = FolderView.create(this);
+        this.sidebar = new Sidebar(this);
+        this.view = new Content(this);
           },
       (err)=>{
         reportError(err, `Error opening folder '${path}'`);

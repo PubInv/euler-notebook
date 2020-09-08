@@ -19,27 +19,15 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 // Requirements
 
-import { $new, $newSvg, $allSvg } from "../dom"
-import { PageSidebar } from "./page-sidebar"
-import { ClientNotebook } from "../client-notebook"
+import { $newSvg, $allSvg } from "../../dom"
+import { NotebookThumbnailsScreen } from ".";
+import { HtmlElement } from "../../html-element";
 
 // Types
-
-export enum PageViewType { Single, Thumbnail }
-
-interface PageTypeData {
-  marginPercent: number,
-  pagesPerRow: number,
-}
 
 // Constants
 
 const PIXELS_PER_INCH = 96;
-
-const PAGE_TYPE_DATA = new Map<PageViewType, PageTypeData>([
-  [ PageViewType.Single, { marginPercent: 0.025, pagesPerRow: 1 }],
-  [ PageViewType.Thumbnail, { marginPercent: 0.10, pagesPerRow: 4 }],
-]);
 
 // TEMPORARY page data until our Notebooks are paginated:
 
@@ -143,27 +131,32 @@ const DOCUMENT: Document = {
 
 // Class
 
-export class PageView {
+export class Content extends HtmlElement<'div'>{
 
   // Class Methods
 
-  public static create($parent: HTMLElement, notebook: ClientNotebook, type: PageViewType): PageView {
-    return new this($parent, notebook, type);
-  }
+  // Public Constructor
 
-  // Instance Methods
+  public constructor(screen: NotebookThumbnailsScreen) {
 
-  public connect(_clientNotebook: ClientNotebook, _sidebar: PageSidebar): void {
+    super({ tag: 'div', appendTo: screen.$elt, class: 'content' });
+
+    this.marginPercent = 0.1;
+    this.pagesPerRow = 4;
+
     this.render();
     this.resize();
   }
+
+
+  // Instance Methods
 
   public resize(): void {
 
     // NOTE: Can't use our own bounding rect when we are hidden.
     //       This assumes our parent element is not hidden.
     // TODO: assert parent element not hidden.
-    const viewWidth = this.$elt.parentElement!.getBoundingClientRect().width;
+    const viewWidth = this.$elt.getBoundingClientRect().width;
 
     // Calculate the size of the page thumbnails
     const pageAspectRatio = parseInt(DOCUMENT.pageConfig.size.width) / parseInt(DOCUMENT.pageConfig.size.height);
@@ -190,20 +183,8 @@ export class PageView {
 
   // -- PRIVATE --
 
-  // Constructor
-
-  private constructor($parent: HTMLElement, _notebook: ClientNotebook, type: PageViewType) {
-
-    this.$elt = $new({ tag: 'div', appendTo: $parent, class: 'view' });
-
-    const ptd = PAGE_TYPE_DATA.get(type)!;
-    this.marginPercent = ptd.marginPercent;
-    this.pagesPerRow = ptd.pagesPerRow;
-  }
-
   // Private Instance Properties
 
-  private $elt: HTMLDivElement;
   private marginPercent: number;
   private pagesPerRow: number;
 

@@ -17,34 +17,17 @@ You should have received a copy of the GNU Affero General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-import { assert } from "./shared/common";
+// Requirements
 
-import { $new, Html, HtmlElementSpecification } from "./dom";
-import { HtmlElement } from "./html-element";
+import { $new, Html, HtmlElementSpecification } from "../dom";
+import { HtmlElement } from "../html-element";
 
 // Requirements
 
-
 // Exported Class
 
-export abstract class Screen extends HtmlElement<'div'>{
+export abstract class ScreenBase extends HtmlElement<'div'>{
 
-  // Public Class Methods
-
-  public static show(screen: Screen): void {
-    // console.log(`Showing ${screen.$elt.id}`);
-    assert(screen !== this.visibleScreen);
-    if (this.visibleScreen) { this.visibleScreen.hide(); }
-    this.visibleScreen = screen;
-    screen.show();
-  }
-
-  // Public Class Event Handlers
-
-  public static onResize(window: Window, event: UIEvent): void {
-    // REVIEW: Notify all screens of resize?
-    this.visibleScreen?.onResize(window, event);
-  }
 
   // Public Instance Properties
 
@@ -55,12 +38,6 @@ export abstract class Screen extends HtmlElement<'div'>{
   public abstract onResize(window: Window, event: UIEvent): void;
 
   // --- PRIVATE ---
-
-  // Private Class Properties
-
-  private static visibleScreen: Screen|undefined;
-
-  // Private Constructor
 
   protected constructor(options: HtmlElementSpecification<'div'>) {
     super(options);

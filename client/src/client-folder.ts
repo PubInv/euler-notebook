@@ -26,7 +26,7 @@ import {
 } from "./shared/math-tablet-api"
 
 import { appInstance } from "./app"
-import { assert } from "./shared/common"
+import { assert, assertFalse } from "./shared/common"
 import { OpenOptions } from "./shared/watched-resource";
 
 // Types
@@ -65,7 +65,7 @@ export class ClientFolder extends Folder<ClientFolderWatcher> {
     switch(msg.operation) {
       case 'changed': this.smChanged(msg); break;
       case 'closed':  this.smClosed(msg); break;
-      default: assert(false); break;
+      default: assertFalse(); break;
     }
   }
 
