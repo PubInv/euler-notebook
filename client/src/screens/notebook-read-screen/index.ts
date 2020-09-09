@@ -45,11 +45,10 @@ export class NotebookReadScreen extends ScreenBase {
 
   public constructor($parent: HTMLElement, path: NotebookPath) {
     super({
-      tag: 'div',
       appendTo: $parent,
       classes: ['screen', 'notebookThumbnailsScreen'],
-      id: path,
-      style: 'display: none',
+      data: { path },
+      tag: 'div',
     });
 
     const options: OpenNotebookOptions = { mustExist: true, watcher: this };

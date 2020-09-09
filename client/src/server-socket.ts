@@ -25,7 +25,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 import { assert, PromiseResolver, Timestamp, newPromiseResolver } from "./shared/common"
 import { ClientMessage, ServerMessage, ServerMessageBase, RequestId } from "./shared/math-tablet-api"
 
-import { addErrorMessageToHeader } from "./global"
+import { messageDisplayInstance } from "./message-display"
 import { ClientFolder } from "./client-folder"
 import { ClientNotebook } from "./client-notebook"
 import { reportError } from "./error-handler"
@@ -112,7 +112,7 @@ export class ServerSocket {
     // For terminating server: code = 1006, reason = "";
     console.log(`Notebook Conn: socket closed: ${event.code} ${event.reason}`);
     // console.dir(event);
-    addErrorMessageToHeader(`Socket closed by server. Refresh this page in your browser to reconnect.`);
+    messageDisplayInstance.addErrorMessage(`Socket closed by server. Refresh this page in your browser to reconnect.`);
     // LATER: Attempt to reconnect after a few seconds with exponential backoff.
   }
 
@@ -123,7 +123,7 @@ export class ServerSocket {
     this.connectPromise.reject(new Error(`Cannot connect to server.`));
 
     // REVIEW: Is the socket stull usable? Is the socket closed? Will we also get a close event?
-    addErrorMessageToHeader(`Socket error. Refresh this page in your browser to reconnect.`);
+    messageDisplayInstance.addErrorMessage(`Socket error. Refresh this page in your browser to reconnect.`);
   }
 
   private onWsMessage(event: MessageEvent): void {

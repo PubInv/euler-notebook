@@ -64,6 +64,8 @@ export class Sidebar extends ButtonBar {
         html: svgIconReference('iconMonstrNote23'),
         listeners: { click: (_e: MouseEvent)=>{ window.location.href = `/#${screen.notebook.path}?view=edit`; }},
         title: "Editing view",
+      }, {
+        tag: 'div', class: 'separator'
       }]
      });
   }

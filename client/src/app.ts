@@ -25,6 +25,7 @@ import { addAsyncEventListener, addSyncEventListener } from "./error-handler"
 import { Header } from "./header"
 import { Pathname, Screens } from "./screens"
 import { ServerSocket } from "./server-socket"
+import { MessageDisplay } from "./message-display";
 
 // Types
 
@@ -44,14 +45,11 @@ class App {
     // DO NOT CALL. Just use appInstance singleton.
     addAsyncEventListener(window, 'DOMContentLoaded', e=>this.onDomContentLoaded(e), "App initialization error");
     addSyncEventListener<HashChangeEvent>(window, 'hashchange', e=>this.onHashChange(e), "App navigation error");
-
-    Screens.initialize();
   }
 
   // Public Instance Properties
 
   // REVIEW: Ensure these are read-only?
-  public header?: Header;
   public socket!: ServerSocket;  // Connection initiated at DOM ready.
 
   // Public Instance Methods
@@ -75,7 +73,10 @@ class App {
   private async onDomContentLoaded(_event: Event): Promise<void> {
     // TODO: this.banner = Banner.attach($(document, '#banner'));
     const $body = <HTMLBodyElement>window.document.body;
-    this.header = Header.create($body);
+    MessageDisplay.initialize($body);
+    Header.initialize($body);
+    Screens.initialize();
+
     // TODO: Show a "connecting..." spinner.
     this.socket = await ServerSocket.connect(`ws://${window.location.host}/`);
     Screens.navigateTo(this.currentPath);

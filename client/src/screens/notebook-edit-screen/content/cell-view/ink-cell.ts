@@ -33,7 +33,7 @@ import { StylusDrawingPanel } from "../../../../stylus-drawing-panel"
 
 // import { getRenderer } from "../renderers"
 
-import { CellView } from "./index"
+import { CellBase } from "./cell-base"
 import { $new } from "../../../../dom"
 
 // Types
@@ -48,38 +48,13 @@ const CELL_MIME_TYPE = 'application/vnd.mathtablet.cell';
 
 // Exported Class
 
-export class InkCellView extends CellView {
+export class InkCell extends CellBase {
 
-  // Class Methods
+  // Public Class Methods
 
-  public static create(view: Content, style: StyleObject): InkCellView {
-    return new this(view, style);
-  }
+  // Public Constructor
 
-  // Instance Methods
-
-  public render(style: StyleObject): void {
-    const svgRepStyle = this.view.screen.notebook.findStyle({ role: 'REPRESENTATION', type: 'SVG-MARKUP' }, style.id);
-    if (!svgRepStyle) {
-      // TODO: What to do in this case? Put an error message in the cell?
-      console.warn("No SVG-MARKUP substyle for UNINTERPRETED-INK style.");
-      return;
-    }
-
-    // Replace the existing SVG panel with the new one from the server.
-    const $oldSvgPanel = $(this.$elt, '.svgPanel');
-    $oldSvgPanel.outerHTML = svgRepStyle.data;
-
-    // If the SVG panel has changed size, resize the drawing panel overlay to match.
-    const $newSvgPanel = $svg<'svg'>(this.$elt, '.svgPanel');
-    this.stylusDrawingPanel.matchSizeOfUnderlyingPanel($newSvgPanel);
-  }
-
-  // -- PRIVATE --
-
-  // Private Constructor
-
-  private constructor(view: Content, style: StyleObject) {
+  public constructor(view: Content, style: StyleObject) {
     super(view, style, 'inkCell');
 
     // LATER: These button be on *all* cells, not just ink cells.
@@ -142,6 +117,27 @@ export class InkCellView extends CellView {
 
     this.render(style);
   }
+
+  // Public Instance Methods
+
+  public render(style: StyleObject): void {
+    const svgRepStyle = this.view.screen.notebook.findStyle({ role: 'REPRESENTATION', type: 'SVG-MARKUP' }, style.id);
+    if (!svgRepStyle) {
+      // TODO: What to do in this case? Put an error message in the cell?
+      console.warn("No SVG-MARKUP substyle for UNINTERPRETED-INK style.");
+      return;
+    }
+
+    // Replace the existing SVG panel with the new one from the server.
+    const $oldSvgPanel = $(this.$elt, '.svgPanel');
+    $oldSvgPanel.outerHTML = svgRepStyle.data;
+
+    // If the SVG panel has changed size, resize the drawing panel overlay to match.
+    const $newSvgPanel = $svg<'svg'>(this.$elt, '.svgPanel');
+    this.stylusDrawingPanel.matchSizeOfUnderlyingPanel($newSvgPanel);
+  }
+
+  // -- PRIVATE --
 
   // Private Instance Properties
 

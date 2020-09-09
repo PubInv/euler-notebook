@@ -23,7 +23,7 @@ import { StyleObject } from "../../../../shared/notebook"
 import { Content } from ".."
 import { getRenderer } from "../../../../renderers"
 
-import { CellView } from "./index"
+import { CellBase } from "./cell-base"
 
 // Types
 
@@ -31,17 +31,18 @@ import { CellView } from "./index"
 
 // Class
 
-export class TextCellView extends CellView {
+export class TextCell extends CellBase {
 
-  // Class Methods
+  // Public Class Methods
 
-  public static create(notebookView: Content, style: StyleObject): TextCellView {
-    const instance = new this(notebookView, style);
-    instance.render(style);
-    return instance;
+  // Public Constructor
+
+  public constructor(notebookView: Content, style: StyleObject) {
+    super(notebookView, style, 'textCell');
+    this.render(style);
   }
 
-  // Instance Methods
+  // Public Instance Methods
 
   public render(style: StyleObject): void {
     const renderer = getRenderer(style.type);
@@ -53,9 +54,4 @@ export class TextCellView extends CellView {
 
   // -- PRIVATE --
 
-  // Constructor
-
-  private constructor(notebookView: Content, style: StyleObject) {
-    super(notebookView, style, 'textCell');
-  }
 }

@@ -30,19 +30,19 @@ html(lang='en')
     block styles
     block scripts
   body
-    #banner
-      if messages
-        each html in messages.banner || []
-          .banner!= html
-            button.close &#x2715;
-        each html in messages.error || []
-          .error!= html
-            button.close &#x2715;
-        each html in messages.warning || []
-          .warning!= html
-            button.close &#x2715;
-        each html in messages.success || []
-          .success!= html
-            button.close &#x2715;
+    //- #banner
+    //-   if messages
+    //-     each html in messages.banner || []
+    //-       .banner!= html
+    //-         button.close &#x2715;
+    //-     each html in messages.error || []
+    //-       .error!= html
+    //-         button.close &#x2715;
+    //-     each html in messages.warning || []
+    //-       .warning!= html
+    //-         button.close &#x2715;
+    //-     each html in messages.success || []
+    //-       .success!= html
+    //-         button.close &#x2715;
 
     block content

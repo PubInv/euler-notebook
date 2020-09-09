@@ -19,7 +19,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 // Requirements
 
-import { $, Html, CLOSE_X_ENTITY } from "../../dom"
+import { $, CLOSE_X_ENTITY } from "../../dom"
 import { HtmlElement } from "../../html-element";
 import { NotebookEditScreen } from ".";
 
@@ -56,19 +56,22 @@ export class DebugPopup extends HtmlElement<'div'>{
       ],
       hidden: true,
     });
+    this.screen = screen;
   }
 
   // Instance Methods
 
-  public showContents(html: Html): void {
+  public show(): void {
     const $content = $(this.$elt, '.content');
-    $content.innerHTML = html;
-    this.$elt.style.display = 'block';
+    $content.innerHTML = this.screen.notebook.toHtml();
+    super.show();
   }
 
   // -- PRIVATE --
 
   // Private Instance Properties
+
+  private screen: NotebookEditScreen;
 
   // Private Instance Property Functions
 
@@ -78,7 +81,7 @@ export class DebugPopup extends HtmlElement<'div'>{
 
   private onCloseClick(_event: MouseEvent): void {
     this.hide();
-    // LATER: this.header.enableDebugButton(true);
+    this.screen.sidebar.$bugButton.disabled = false;
   }
 
   private onContentClick(event: MouseEvent): void {

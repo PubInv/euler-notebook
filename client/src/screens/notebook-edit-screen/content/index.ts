@@ -35,8 +35,8 @@ import {
 } from "../../../shared/math-tablet-api"
 import { TrackedChangesResults } from "../../../client-notebook"
 
-import { CellView } from "./cell-view/index"
-import { createCellView } from "./cell-view/instantiator"
+import { CellBase } from "./cell-view/cell-base"
+import { createCell } from "./cell-view"
 import { HtmlElement } from "../../../html-element"
 import { NotebookEditScreen } from ".."
 
@@ -124,7 +124,7 @@ export class Content extends HtmlElement<'div'>{
 
   // Public Instance Property Functions
 
-  public topLevelCellOf(style: StyleObject): CellView {
+  public topLevelCellOf(style: StyleObject): CellBase {
     for (; style.parentId; style = this.screen.notebook.getStyle(style.parentId));
     const cell = this.cellViews.get(style.id);
     assert(cell);
@@ -183,8 +183,9 @@ export class Content extends HtmlElement<'div'>{
       console.error(`Error ${response.status} returned from ${api}`);
     }
     // REVIEW: Check results headers for content type?
-    const results = <DebugResults>await response.json();
-    this.screen.debugPopup.showContents(results.html);
+    /* const results = */<DebugResults>await response.json();
+    throw new Error("Not implemented!");
+    // WAS: this.screen.debugPopup.showContents(results.html);
   }
 
   public async editSelectedCell(): Promise<void> {
@@ -329,8 +330,8 @@ export class Content extends HtmlElement<'div'>{
 
   public async redo(): Promise<void> {
     // Disable undo and redo buttons during the operation.
-    this.screen.sidebar.enableRedoButton(false);
-    this.screen.sidebar.enableUndoButton(false);
+    this.screen.sidebar.$redoButton.disabled = true;
+    this.screen.sidebar.$undoButton.disabled = true;
 
     // Resubmit the change requests.
     assert(this.topOfUndoStack < this.undoStack.length);
@@ -338,8 +339,8 @@ export class Content extends HtmlElement<'div'>{
     await this.sendTrackedChangeRequests(entry.changeRequests);
 
     // Enable undo and redo buttons as appropriate.
-    this.screen.sidebar.enableRedoButton(this.topOfUndoStack < this.undoStack.length);
-    this.screen.sidebar.enableUndoButton(true);
+    this.screen.sidebar.$redoButton.disabled = (this.topOfUndoStack >= this.undoStack.length);
+    this.screen.sidebar.$undoButton.disabled = false;
   }
 
   public async selectDown(extend?: boolean): Promise<void> {
@@ -371,8 +372,8 @@ export class Content extends HtmlElement<'div'>{
 
   public async undo(): Promise<void> {
     // Disable undo and redo during the operation
-    this.screen.sidebar.enableRedoButton(false);
-    this.screen.sidebar.enableUndoButton(false);
+    this.screen.sidebar.$redoButton.disabled = true;
+    this.screen.sidebar.$undoButton.disabled = true;
 
     // Undo the changes by making a set of counteracting changes.
     assert(this.topOfUndoStack > 0);
@@ -380,8 +381,8 @@ export class Content extends HtmlElement<'div'>{
     await this.sendTrackedChangeRequests(entry.undoChangeRequests);
 
     // Enable undo and redo as appropriate
-    this.screen.sidebar.enableRedoButton(true);
-    this.screen.sidebar.enableUndoButton(this.topOfUndoStack > 0);
+    this.screen.sidebar.$redoButton.disabled = false;
+    this.screen.sidebar.$undoButton.disabled = (this.topOfUndoStack == 0);
   }
 
   // REVIEW: Not actually asynchronous. Have synchronous alternative for internal use?
@@ -391,20 +392,20 @@ export class Content extends HtmlElement<'div'>{
     }
     delete this.lastCellSelected;
     if (!noEmit) {
-      this.screen.sidebar.enableTrashButton(false);
+      this.screen.sidebar.$trashButton.disabled = true;
     }
   }
 
   // Instance Methods
 
-  public createCell(style: StyleObject, afterId: StyleRelativePosition): CellView {
-    const cellView = createCellView(this, style);
+  public createCell(style: StyleObject, afterId: StyleRelativePosition): CellBase {
+    const cellView = createCell(this, style);
     this.cellViews.set(style.id, cellView);
     this.insertCell(cellView, afterId);
     return cellView;
   }
 
-  public deleteCell(cellView: CellView): void {
+  public deleteCell(cellView: CellBase): void {
     if (cellView == this.lastCellSelected) {
       delete this.lastCellSelected;
     }
@@ -418,7 +419,7 @@ export class Content extends HtmlElement<'div'>{
     await this.sendUndoableChangeRequests(changeRequests);
   }
 
-  public insertCell(cellView: CellView, afterId: StyleRelativePosition): void {
+  public insertCell(cellView: CellBase, afterId: StyleRelativePosition): void {
     if (afterId == StylePosition.Top) {
       this.$elt.prepend(cellView.$elt);
     } else if (afterId == StylePosition.Bottom) {
@@ -461,7 +462,7 @@ export class Content extends HtmlElement<'div'>{
   }
 
   public selectCell(
-    cellView: CellView,
+    cellView: CellBase,
     rangeExtending?: boolean, // Extending selection by a contiguous range.
     indivExtending?: boolean, // Extending selection by an individual cell, possibly non-contiguous.
   ): void {
@@ -475,7 +476,7 @@ export class Content extends HtmlElement<'div'>{
     cellView.select();
     cellView.renderTools(this.screen.tools);
     this.lastCellSelected = cellView;
-    this.screen.sidebar.enableTrashButton(true);
+    this.screen.sidebar.$trashButton.disabled = false;
   }
 
   public useTool(id: StyleId): void {
@@ -577,25 +578,25 @@ export class Content extends HtmlElement<'div'>{
 
   // Private Instance Properties
 
-  private cellViews: Map<StyleId, CellView>;
+  private cellViews: Map<StyleId, CellBase>;
   private dirtyCells: Set<StyleId>;     // Style ids of top-level styles that need to be redrawn.
-  private lastCellSelected?: CellView;
+  private lastCellSelected?: CellBase;
   private topOfUndoStack: number;       // Index of the top of the stack. May not be the length of the undoStack array if there have been some undos.
   private undoStack: UndoEntry[];
 
   // Private Instance Property Functions
 
-  private cellViewFromStyleId(styleId: StyleId): CellView {
+  private cellViewFromStyleId(styleId: StyleId): CellBase {
     return this.cellViews.get(styleId)!;
   }
 
-  private cellViewFromElement($elt: HTMLDivElement): CellView {
+  private cellViewFromElement($elt: HTMLDivElement): CellBase {
     // Strip 'C' prefix from cell ID to get the style id.
     const styleId: StyleId = parseInt($elt.id.slice(1), 10);
     return this.cellViewFromStyleId(styleId);
   }
 
-  private firstCell(): CellView | undefined {
+  private firstCell(): CellBase | undefined {
     const styleOrder = this.screen.notebook.topLevelStyleOrder();
     if (styleOrder.length==0) { return undefined; }
     const styleId = styleOrder[0];
@@ -604,23 +605,23 @@ export class Content extends HtmlElement<'div'>{
     return cellView;
   }
 
-  private lastCell(): CellView | undefined {
+  private lastCell(): CellBase | undefined {
     const $elt = <HTMLDivElement|null>this.$elt.lastElementChild;
     return $elt ? this.cellViewFromElement($elt) : undefined;
   }
 
-  private nextCell(cellView: CellView): CellView | undefined {
+  private nextCell(cellView: CellBase): CellBase | undefined {
     const $elt = <HTMLDivElement|null>cellView.$elt.nextElementSibling;
     return $elt ? this.cellViewFromElement($elt) : undefined;
   }
 
-  private previousCell(cellView: CellView): CellView | undefined {
+  private previousCell(cellView: CellBase): CellBase | undefined {
     const $elt = <HTMLDivElement|null>cellView.$elt.previousElementSibling;
     return $elt ? this.cellViewFromElement($elt) : undefined;
   }
 
-  private selectedCells(): CellView[] {
-    const rval: CellView[] = [];
+  private selectedCells(): CellBase[] {
+    const rval: CellBase[] = [];
     for (const cellView of this.cellViews.values()) {
       if (cellView.isSelected()) { rval.push(cellView); }
     }
@@ -652,8 +653,8 @@ export class Content extends HtmlElement<'div'>{
 
   private async sendUndoableChangeRequests(changeRequests: NotebookChangeRequest[]): Promise<NotebookChangeRequest[]> {
     // Disable the undo and redo buttons
-    this.screen.sidebar.enableRedoButton(false);
-    this.screen.sidebar.enableUndoButton(false);
+    this.screen.sidebar.$redoButton.disabled = true;
+    this.screen.sidebar.$undoButton.disabled = true;
 
     const { undoChangeRequests } = await this.sendTrackedChangeRequests(changeRequests);
     if (!undoChangeRequests) { throw new Error("Did not get undo change requests when wantUndo is true."); }
@@ -663,8 +664,8 @@ export class Content extends HtmlElement<'div'>{
     this.topOfUndoStack = this.undoStack.length;
 
     // Enable the undo button and disable the redo button.
-    this.screen.sidebar.enableRedoButton(false);
-    this.screen.sidebar.enableUndoButton(true);
+    this.screen.sidebar.$redoButton.disabled = true;
+    this.screen.sidebar.$undoButton.disabled = false;
 
     return undoChangeRequests;
   }

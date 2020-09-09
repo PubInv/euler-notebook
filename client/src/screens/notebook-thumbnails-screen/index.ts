@@ -49,7 +49,6 @@ export class NotebookThumbnailsScreen extends ScreenBase {
       appendTo: $parent,
       classes: ['screen', 'notebookThumbnailsScreen'],
       id: path,
-      style: 'display: none',
     });
 
     const options: OpenNotebookOptions = { mustExist: true, watcher: this };

@@ -68,6 +68,37 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
     svg
       fill #808080
 
+#messageDisplay
+  bottom 20px
+  right 20px
+  position fixed
+  width 40%
+  z-index 10
+
+  .message
+    padding 4px
+    border-radius 4px
+    margin-bottom 4px
+
+  .close
+    color inherit
+    background-color transparent
+    border none
+    padding 0
+    float right
+
+  .error
+    background-color red
+    color white
+
+  .success
+    background-color green
+    color white
+
+  .warning
+    background-color yellow
+    color black
+
 // Element classes
 
 .debugPopup
@@ -296,7 +327,19 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
       outline 2px solid blue
 
 .screen
-  display none
+  height: calc(100% - var(--header-height))
+  left: 0
+  position: fixed
+  top var(--header-height)
+  width: 100%
+
+  >.content
+    height calc(100% - var(--header-height))
+    left var(--sidebar-width)
+    overflow scroll
+    position fixed
+    top var(--header-height)
+    width calc(100% - var(--sidebar-width))
 
 .sidebar
   border-right 1px solid gray
@@ -307,7 +350,8 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
   width var(--sidebar-width)
 
   .separator
-    height 4px
+    margin 2px 0 2px 0
+    border-top 1px solid gray
 
   button
     // background none!important
@@ -322,14 +366,6 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
   button:disabled
     svg
       fill #808080
-
-.content
-  height calc(100% - var(--header-height))
-  left var(--sidebar-width)
-  overflow scroll
-  position fixed
-  top var(--header-height)
-  width calc(100% - var(--sidebar-width))
 
 
 // Element types

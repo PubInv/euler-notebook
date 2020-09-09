@@ -17,186 +17,38 @@ You should have received a copy of the GNU Affero General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-// REVIEW: Files exporting a class should be named after the class exported. Rename this to cell-view.ts?
-
 // Requirements
 
-import { assert } from "../../../../shared/common"
-import { $new } from "../../../../dom"
+import { StyleObject } from "../../../../shared/notebook"
 import { Content } from ".."
-import { KeyboardInputPanel } from "../../../../keyboard-input-panel"
-import { StyleObject, StyleId } from "../../../../shared/notebook"
-import { NotebookChangeRequest } from "../../../../shared/math-tablet-api"
-import { Tools } from "../../tools"
 
-// Exported Class
+import { CellBase } from "./cell-base"
+import { FormulaCell } from "./formula-cell"
+import { HintCell } from "./hint-cell"
+import { InkCell } from "./ink-cell"
+import { PlotCell } from "./plot-cell"
+import { TextCell } from "./text-cell"
 
-export abstract class CellView {
+// Constants
 
-  // Class Constants
+// Exports
 
-  static MISSING_ERROR = "<i>No primary representation.</i>";
+export function createCell(notebookView: Content, style: StyleObject): CellBase {
 
-  // Class Methods
-
-  // Instance Properties
-
-  public $elt: HTMLDivElement;
-  public styleId: StyleId;
-
-  // Instance Property Functions
-
-  public isSelected(): boolean {
-    return this.$elt.classList.contains('selected');
+  // If a style has a child of REPRESENTATION|INPUT/STROKES then use a stylus cell.
+  let rval: CellBase;
+  switch(style.role) {
+    case 'FIGURE':  // TODO: rval = FiguireCellView.create(notebookView, style); break;
+    case 'FORMULA':           rval = new FormulaCell(notebookView, style); break;
+    case 'HINT':              rval = new HintCell(notebookView, style); break;
+    case 'TEXT':              rval = new TextCell(notebookView, style); break;
+    case 'PLOT':              rval = new PlotCell(notebookView, style); break;
+    case 'UNINTERPRETED-INK': rval = new InkCell(notebookView, style); break;
+    // HACK: We don't actually know an 'UNKNOWN' cell will end up being a stylus cell until
+    // the REPRESENTATION|INPUT/STROKES style is attached, but this prevents us from needing
+    // the extra machinery to defer creating the cell until the substyles have been attached.
+    // LATER?: case 'UNKNOWN': rval = UnknownCellView.create(notebookView, style); break;
+    default: throw new Error(`Unknown top-level cell role: ${style.role}`);
   }
-
-  // Instance Methods
-
-  public editMode(): boolean {
-    // Returns true iff cell was put into edit mode.
-
-    // REVIEW: Not completely sure we will not get double-clicks.
-    //         We may need to stopPropagation or preventDefault
-    //         in the right places.
-    assert(!this.inputPanel);
-
-    // Only allow editing of user input cells, which have a data type
-    // that is string-based, with a renderer.
-    const style = this.view.screen.notebook.getStyle(this.styleId);
-    const repStyle = this.view.screen.notebook.findStyle({ role: 'INPUT' }, this.styleId);
-    if (!repStyle) { return false; }
-
-    if (typeof repStyle.data=='string') {
-      this.inputPanel = KeyboardInputPanel.create(
-        style,
-        repStyle,
-        (changes)=>this.onInputPanelDismissed(changes)
-      );
-    } else {
-      // Not a cell we can edit.
-    }
-
-    if (this.inputPanel) {
-      this.view.screen.tools.hide();
-      this.$elt.parentElement!.insertBefore(this.inputPanel.$elt, this.$elt.nextSibling);
-      this.inputPanel.focus();
-      this.hide();
-      return true;
-    } else {
-      return false;
-    }
-  }
-
-  public render(style: StyleObject): void {
-    // get the primary representation
-    let repStyle = this.view.screen.notebook.findStyle({ role: 'REPRESENTATION', subrole: 'PRIMARY' }, style.id);
-    if (!repStyle) {
-      // TODO: Look for renderable alternate representations
-      this.$elt.innerHTML = CellView.MISSING_ERROR;
-      return;
-    }
-
-    switch(repStyle.type) {
-      case 'IMAGE-URL': {
-        const url: string = style.data;
-        this.$elt.innerHTML = `<image src="${url}"/>`
-        break;
-      }
-      case 'SVG-MARKUP': {
-        this.$elt.innerHTML = repStyle.data;
-        break;
-      }
-      default:
-        assert(false, "TODO: Unrecognized representation type.");
-        break;
-    }
-  };
-
-  public renderTools(tools: Tools): void {
-    tools.clear();
-  }
-
-  public scrollIntoView(): void {
-    this.$elt.scrollIntoView();
-  }
-
-  public select(): void {
-    this.$elt.classList.add('selected');
-  }
-
-  public unselect(): void {
-    if (this.inputPanel) {
-      // 'dismiss' will call the callback function, onKeyboardInputPanelDismissed,
-      // which will delete the keyboard input panel and show ourself.
-      this.inputPanel.dismiss(false);
-    }
-    this.$elt.classList.remove('selected');
-  }
-
-  // PRIVATE
-
-  // Private Constructor
-
-  protected constructor(notebookView: Content, style: StyleObject, subclass: /* TYPESCRIPT: CssClass */string) {
-    this.view = notebookView;
-    this.styleId = style.id;
-
-    this.$elt = $new({
-      tag: 'div',
-      attrs: { tabindex: 0 },
-      classes: [ 'cell', subclass ],
-      id: `C${style.id}`,
-      listeners: {
-        'click': e=>this.onClicked(e),
-        'dblclick': e=>this.onDoubleClicked(e),
-      },
-    });
-
-  }
-
-  // Private Instance Properties
-
-  protected inputPanel?: KeyboardInputPanel;
-  protected view: Content;
-
-  // Private Instance Methods
-
-  private hide(): void {
-    this.$elt.style.display = 'none';
-  }
-
-  private show(): void {
-    this.$elt.style.display = 'flex';
-  }
-
-  // Private Event Handlers
-
-  private onClicked(event: MouseEvent): void {
-    // Note: Shift-click or ctrl-click will extend the current selection.
-    this.view.selectCell(this, event.shiftKey, event.metaKey);
-  }
-
-  private onDoubleClicked(_event: MouseEvent): void {
-    if (!this.editMode()) {
-      // REVIEW: Beep or something?
-      console.log(`Keyboard input panel not available for cell: ${this.styleId}`)
-    }
-  }
-
-  private onInputPanelDismissed(changeRequests: NotebookChangeRequest[]): void {
-    if (changeRequests.length>0) {
-      this.view.editStyle(changeRequests)
-      .catch((err: Error)=>{
-        // TODO: Display error to user?
-        console.error(`Error submitting input changes: ${err.message}`);
-      });
-    }
-    this.$elt.parentElement!.removeChild(this.inputPanel!.$elt);
-    delete this.inputPanel;
-
-    this.show();
-    this.view.screen.tools.show();
-    this.view.setFocus();
-  }
-
+  return rval;
 }

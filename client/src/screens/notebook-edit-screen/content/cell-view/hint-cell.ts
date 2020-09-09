@@ -24,7 +24,7 @@ import { StyleObject, HintData, HintStatus, HintRelationship } from "../../../..
 import { Content } from ".."
 // import { getRenderer } from "../renderers"
 
-import { CellView } from "./index"
+import { CellBase } from "./cell-base"
 
 // Types
 
@@ -32,17 +32,18 @@ import { CellView } from "./index"
 
 // Class
 
-export class HintCellView extends CellView {
+export class HintCell extends CellBase {
 
-  // Class Methods
+  // Public Class Methods
 
-  public static create(notebookView: Content, style: StyleObject): HintCellView {
-    const instance = new this(notebookView, style);
-    instance.render(style);
-    return instance;
+  // Public Constructor
+
+  public constructor(notebookView: Content, style: StyleObject) {
+    super(notebookView, style, 'hintCell');
+    this.render(style);
   }
 
-  // Instance Methods
+  // Public Instance Methods
 
   public render(style: StyleObject): void {
     // TODO: If hint cell is moved then it needs to be re-rendered.
@@ -100,9 +101,4 @@ export class HintCellView extends CellView {
 
   // -- PRIVATE --
 
-  // Constructor
-
-  private constructor(notebookView: Content, style: StyleObject) {
-    super(notebookView, style, 'hintCell');
-  }
 }

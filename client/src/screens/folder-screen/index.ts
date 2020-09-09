@@ -74,11 +74,10 @@ export class FolderScreen extends ScreenBase implements ClientFolderWatcher {
 
   private constructor($parent: HTMLElement, path: FolderPath) {
     super({
-      tag: 'div',
       appendTo: $parent,
       classes: ['screen', 'folderScreen'],
-      id: path,
-      style: 'display: none',
+      data: { path },
+      tag: 'div',
     });
 
     const options: OpenFolderOptions = { mustExist: true, watcher: this };

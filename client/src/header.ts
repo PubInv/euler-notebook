@@ -34,14 +34,18 @@ import { monitorPromise } from "./error-handler";
 
 // Global Variables
 
-// Exported Class
+// Exported singleton instance
+
+export let headerInstance: Header;
+
+// Class
 
 export class Header extends ButtonBar {
 
   // Public Class Methods
 
-  public static create($parent: HTMLBodyElement): Header {
-    return new this($parent);
+  public static initialize($body: HTMLBodyElement): void {
+    headerInstance = new this($body);
   }
 
   // Public Instance Methods

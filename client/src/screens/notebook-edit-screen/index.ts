@@ -87,11 +87,10 @@ export class NotebookEditScreen extends ScreenBase implements NotebookWatcher {
 
   private constructor($parent: HTMLElement, path: NotebookPath) {
     super({
-      tag: 'div',
       appendTo: $parent,
       classes: ['screen', 'notebookEditScreen'],
-      id: path,
-      style: 'display: none',
+      data: { path },
+      tag: 'div',
     });
 
     const options: OpenNotebookOptions = { mustExist: true, watcher: this };

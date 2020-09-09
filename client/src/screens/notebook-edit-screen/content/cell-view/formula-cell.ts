@@ -26,7 +26,7 @@ import { Content } from ".."
 import { getRenderer } from "../../../../renderers"
 import { FORMULA_SUBROLE_PREFIX } from "../../../../role-selectors"
 
-import { CellView } from "./index"
+import { CellBase } from "./cell-base"
 import { Tools } from "../../tools"
 
 // Types
@@ -35,17 +35,26 @@ import { Tools } from "../../tools"
 
 // Class
 
-export class FormulaCellView extends CellView {
+export class FormulaCell extends CellBase {
 
-  // Class Methods
+  // Public Class Methods
 
-  public static create(notebookView: Content, style: StyleObject): FormulaCellView {
-    const instance = new this(notebookView, style);
-    instance.render(style);
-    return instance;
+  // Public Constructor
+
+  public constructor(notebookView: Content, style: StyleObject) {
+    super(notebookView, style, 'formulaCell');
+
+    // Create our child elements: handle, status, formula, tools, and delete button.
+    // REVIEW: Use $new above to create children declaratively.
+    this.$prefix = $new({ tag: 'div', class: 'prefix', appendTo: this.$elt });
+    this.$formula = $new({ tag: 'div', class: 'formula', appendTo: this.$elt });
+    $new({ tag: 'div', class: 'handle', html: `(${style.id})`, appendTo: this.$elt });
+    $new({ tag: 'div', class: 'status', html: "&nbsp;", appendTo: this.$elt });
+
+    this.render(style);
   }
 
-  // Instance Methods
+  // Public Instance Methods
 
   public render(style: StyleObject): void {
     this.$prefix.innerHTML = style.subrole ? FORMULA_SUBROLE_PREFIX.get(style.subrole!)! : '';
@@ -113,19 +122,6 @@ export class FormulaCellView extends CellView {
   }
 
   // -- PRIVATE --
-
-  // Constructor
-
-  private constructor(notebookView: Content, style: StyleObject) {
-    super(notebookView, style, 'formulaCell');
-
-    // Create our child elements: handle, status, formula, tools, and delete button.
-    // REVIEW: Use $new above to create children declaratively.
-    this.$prefix = $new({ tag: 'div', class: 'prefix', appendTo: this.$elt });
-    this.$formula = $new({ tag: 'div', class: 'formula', appendTo: this.$elt });
-    $new({ tag: 'div', class: 'handle', html: `(${style.id})`, appendTo: this.$elt });
-    $new({ tag: 'div', class: 'status', html: "&nbsp;", appendTo: this.$elt });
-  }
 
   // Private Instance Properties
 

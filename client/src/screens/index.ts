@@ -19,10 +19,10 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 // Requirements
 
-import { assert, assertFalse } from "../shared/common";
+import { assertFalse } from "../shared/common";
 import { FOLDER_PATH_RE, NOTEBOOK_PATH_RE, FolderPath, NotebookPath } from "../shared/folder";
 
-import { appInstance } from "../app";
+import { headerInstance } from "../header";
 
 import { ScreenBase } from "./screen-base";
 import { addSyncEventListener } from "../error-handler"
@@ -53,13 +53,19 @@ export abstract class Screens {
   public static navigateTo(pathname: Pathname): void {
     console.log(`Navigating to ${pathname}`);
 
+    if (this.currentScreen) { this.currentScreen.hide(); }
+
+    headerInstance.setPathTitle(</* BUGBUG */NotebookPath>pathname);
+
     let nextScreen = this.instanceMap.get(pathname);
     if (!nextScreen) {
       nextScreen = this.createScreenForPathname(pathname);
       this.instanceMap.set(pathname, nextScreen);
+    } else {
+      if (nextScreen == this.currentScreen) { assertFalse(); }
+      nextScreen.show();
     }
-    appInstance.header!.setPathTitle(</* BUGBUG */NotebookPath>pathname);
-    this.show(nextScreen);
+    this.currentScreen = nextScreen;
   }
 
   // --- PRIVATE ---
@@ -76,7 +82,6 @@ export abstract class Screens {
 
     const match = NOTEBOOK_PATH_WITH_VIEW_RE.exec(pathname);
     if (match) {
-      console.dir(match);
       const path = <NotebookPath>match[1];
       const view = match[5];
       switch(view) {
@@ -95,14 +100,6 @@ export abstract class Screens {
     } else  {
       throw new Error("Invalid path.");
     }
-  }
-
-  private static show(screen: ScreenBase): void {
-    // console.log(`Showing ${screen.$elt.id}`);
-    assert(screen !== this.currentScreen);
-    if (this.currentScreen) { this.currentScreen.hide(); }
-    this.currentScreen = screen;
-    screen.show();
   }
 
   // Private Class Event Handlers

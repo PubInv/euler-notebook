@@ -23,7 +23,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 import { StyleObject } from "../../../../shared/notebook"
 import { Content } from ".."
 
-import { CellView } from "./index"
+import { CellBase } from "./cell-base"
 
 // Types
 
@@ -31,25 +31,20 @@ import { CellView } from "./index"
 
 // Class
 
-export class PlotCellView extends CellView {
+export class PlotCell extends CellBase {
 
-  // Class Methods
+  // Public Class Methods
 
-  public static create(notebookView: Content, style: StyleObject): PlotCellView {
-    const instance = new this(notebookView, style);
-    instance.render(style);
-    return instance;
+  // Public Constructor
+
+  public  constructor(notebookView: Content, style: StyleObject) {
+    super(notebookView, style, 'plotCell');
+    this.render(style);
   }
 
-  // Instance Methods
+  // Public Instance Methods
 
   // -- PRIVATE --
-
-  // Constructor
-
-  private constructor(notebookView: Content, style: StyleObject) {
-    super(notebookView, style, 'plotCell');
-  }
 
 
 }

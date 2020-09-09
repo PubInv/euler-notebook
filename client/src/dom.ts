@@ -40,7 +40,6 @@ interface AsyncListeners {
   input?: AsyncListener<InputEvent>;
   keypress?: AsyncListener<KeyboardEvent>;
 }
-
 interface SyncListeners {
   // REVIEW: Can we populate this declaratively from the standard DOM types?
   blur?: SyncListener<FocusEvent>;
@@ -68,11 +67,16 @@ interface SyncListeners {
   pointerup?: SyncListener<PointerEvent>;
 }
 
+interface DataAttributes {
+  [name: string]: string,
+}
+
 interface NewCommonOptions {
   asyncListeners?: AsyncListeners;
   attrs?: Attributes;
   class?: ElementClass;
   classes?: ElementClass[];
+  data?: DataAttributes;
   disabled?: boolean;
   id?: ElementId;
   hidden?: boolean;
@@ -154,6 +158,11 @@ export function $configure($elt: HTMLElement|SVGElement, options: NewCommonOptio
   }
 
   const attributes: Attributes = { ...options.attrs };
+  if (options.data) {
+    for (const [key, value] of Object.entries(options.data)) {
+      attributes[`data-${key}`] = value;
+    }
+  }
   if (options.disabled) { attributes.disabled = true; }
   if (options.selected) { attributes.selected = true; }
   if (options.value) { attributes.value = options.value }
@@ -216,8 +225,7 @@ export function svgIconReference(id: string): string {
 // HELPER FUNCTIONS
 
 function attachAttributes($elt: Element, attrs: Attributes): void {
-  for (const key of Object.keys(attrs)) {
-    const value = attrs[key];
+  for (const [key, value] of Object.entries(attrs)) {
     if (typeof value !== 'boolean') {
       $elt.setAttribute(key, value.toString());
     } else {

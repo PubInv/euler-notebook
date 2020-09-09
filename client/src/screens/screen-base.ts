@@ -28,7 +28,6 @@ import { HtmlElement } from "../html-element";
 
 export abstract class ScreenBase extends HtmlElement<'div'>{
 
-
   // Public Instance Properties
 
   // Public Instance Methods

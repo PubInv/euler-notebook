@@ -25,7 +25,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 // Requirements
 
 import { Html } from "./dom"
-import { showErrorMessage } from "./global"
+import { messageDisplayInstance } from "./message-display"
 
 // Types
 
@@ -70,6 +70,6 @@ export function reportError(err: Error, message: Html): void {
   console.error(message);
   // console.dir(err);
   // TODO: Report error to server.
-  showErrorMessage(message, err);
+  messageDisplayInstance.addErrorMessage(message, err);
 }
 

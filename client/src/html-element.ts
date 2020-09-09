@@ -48,9 +48,17 @@ export class HtmlElement<K extends keyof HTMLElementTagNameMap> {
     this.$elt.style.display = 'none';
   }
 
+  public remove(): void {
+    this.$elt.remove();
+  }
+
   public show(): void {
-    // TODO: display style could be 'inline' or something else.
-    this.$elt.style.display = 'block';
+    // rather than style attribute display:none on the element itself.
+    // Per MDN: "A style declaration is reset by setting it to null or an empty string, ....
+    //           Internet Explorer requires setting it to an empty string,..."
+    // https://developer.mozilla.org/en-US/docs/Web/API/ElementCSSInlineStyle/style
+    // Note that this will not work if the element is hidden by a declaration in a stylesheet,
+    this.$elt.style.display = '';
   }
 
   // -- PRIVATE --
