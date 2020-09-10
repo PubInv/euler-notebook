@@ -55,6 +55,9 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
   right 0
   top 0
 
+  #title
+    user-select text
+
   button
     height var(--header-height)
     padding var(--header-button-padding)
@@ -73,19 +76,21 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
   right 20px
   position fixed
   width 40%
+  user-select text
   z-index 10
 
   .message
-    padding 4px
-    border-radius 4px
+    border-radius 6px
+    display flex
+    justify-content space-between
     margin-bottom 4px
+    padding 6px
 
-  .close
-    color inherit
-    background-color transparent
-    border none
-    padding 0
-    float right
+    .close
+      user-select none
+
+    pre
+      margin 0
 
   .error
     background-color red
@@ -98,6 +103,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
   .warning
     background-color yellow
     color black
+
 
 // Element classes
 
@@ -160,6 +166,8 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 .iconButton
   background none
   border none
+  color inherit
+  padding 0
 
 .inputPanel
 

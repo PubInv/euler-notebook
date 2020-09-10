@@ -94,7 +94,7 @@ class Message extends HtmlElement<'div'> {
         html,
       },{
         tag: 'button',
-        class: 'close',
+        classes: ['close', 'iconButton'],
         html: CLOSE_X_ENTITY,
         listeners: {
           click: (e)=>this.onCloseClick(e),
