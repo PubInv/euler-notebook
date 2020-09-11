@@ -18,7 +18,7 @@
     "http-errors": "~1.6.2",
     "morgan": "~1.9.0",
     "multer": "^1.4.2",
-    "node-fetch": "^2.6.0",
+    "node-fetch": "^2.6.1",
     "node-latex": "^2.6.2",
     "pug": "^2.0.3",
     "rimraf": "^2.7.1",
