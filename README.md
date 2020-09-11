@@ -108,6 +108,26 @@ To rebuild the client every time there are changes: `~/math-tablet/client$ npx w
 
 To restart the server every time there are changes: `~/math-tablet/server$ npx nodemon`
 
+## Debugging
+
+We use the [debug](https://www.npmjs.com/package/debug) library for emitting debugging information.
+
+For server debug information, set the DEBUG environment variable to turn on debugging information:
+
+```bash
+DEBUG="server:*" npx nodemon
+```
+
+For client debug information, use the console to set localStorage.debug:
+
+```
+localStorage.debug="client:*"
+```
+
+To get debugging information from a specific file, specify the filename instead of the asterisk wildcard, e.g.
+`DEBUG="server:client-socket`. You can specify multiple files by comma-separating them, and exclude debug
+messages from a specific file by prefixing it with a minus sign. See the documentation for [debug](https://www.npmjs.com/package/debug).
+
 ## Credits
 
 * Various icons, [IconMonster](https://iconmonstr.com/).
