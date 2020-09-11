@@ -7,9 +7,11 @@
     "check-types": "tsc -p tsconfig.no-output.json"
   },
   "dependencies": {
+    "debug": "^4.1.1",
     "svg.js": "^2.7.1"
   },
   "devDependencies": {
+    "@types/debug": "^4.1.5",
     "ts-loader": "^7.0.5",
     "typescript": "^3.5.3",
     "webpack": "^4.43.0",

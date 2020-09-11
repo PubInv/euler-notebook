@@ -49,13 +49,13 @@ block content
             ul
               each watcher, path in clientSocket.allFolderWatchers
                 li
-                  a(href=`/#${path}`)= path
+                  a(href=`/#${path}`, target='_blank')= path
 
           td
             ul
               each watcher, path in clientSocket.allNotebookWatchers
                 li
-                  a(href=`/#${path}`)= path
+                  a(href=`/#${path}`, target='_blank')= path
       tr
         td(colspan=3)
           button(type='submit', name='action', value='closeClient') Close
@@ -75,7 +75,7 @@ block content
           td
             input(type='checkbox', name=`folders[${folder.path}]`)
           td
-            a(href=`/#${folder.path}`)= folder.path
+            a(href=`/#${folder.path}`, target='_blank')= folder.path
       tr
         td(colspan=2)
           button(type='submit', name='action', value='closeFolder') Close
@@ -95,7 +95,7 @@ block content
           td
             input(type='checkbox', name=`notebooks[${notebook.path}]`)
           td
-            a(href=`/#${notebook.path}`)= notebook.path
+            a(href=`/#${notebook.path}`, target='_blank')= notebook.path
       tr
         td(colspan=2)
           button(type='submit', name='action', value='closeNotebook') Close

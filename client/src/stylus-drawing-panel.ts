@@ -19,9 +19,13 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 // Requirements
 
+import * as debug1 from "debug"
+
 import { $newSvg } from "./dom"
 
 import { SvgStroke } from "./svg-stroke"
+
+const debug = debug1('client:stylus-drawing-panel');
 
 // Types
 
@@ -109,15 +113,15 @@ export class StylusDrawingPanel  {
 
   // Private Instance Event Handlers
 
-  private onPointerCancel(_event: PointerEvent): void {
-    // console.log(`${event.pointerType} ${event.pointerId} ${event.type}`);
+  private onPointerCancel(event: PointerEvent): void {
+    debug(`${event.pointerType} ${event.pointerId} ${event.type}`);
     // console.dir(event);
 
     // TODO: Cancel stroke?
   }
 
   private onPointerDown(event: PointerEvent): void {
-    // console.log(`${event.pointerType} ${event.pointerId} ${event.type}`);
+    debug(`${event.pointerType} ${event.pointerId} ${event.type}`);
     // console.dir(event);
     this.$elt.setPointerCapture(event.pointerId);
     const pi = this.pointerInfo(event);
@@ -133,12 +137,12 @@ export class StylusDrawingPanel  {
   }
 
   // private onPointerEnter(_event: PointerEvent): void {
-  //   // console.log(`${event.pointerType} ${event.pointerId} ${event.type}`);
+  //   debug(`${event.pointerType} ${event.pointerId} ${event.type}`);
   //   // console.dir(event);
   // }
 
   // private onPointerLeave(_event: PointerEvent): void {
-  //   // console.log(`${event.pointerType} ${event.pointerId} ${event.type}`);
+  //   debug(`${event.pointerType} ${event.pointerId} ${event.type}`);
   //   // console.dir(event);
   // }
 
@@ -152,18 +156,18 @@ export class StylusDrawingPanel  {
   }
 
   // private onPointerOut(_event: PointerEvent): void {
-  //   // console.log(`${event.pointerType} ${event.pointerId} ${event.type}`);
+  //   debug(`${event.pointerType} ${event.pointerId} ${event.type}`);
   //   // console.dir(event);
   // }
 
   // private onPointerOver(_event: PointerEvent): void {
-  //   // console.log(`${event.pointerType} ${event.pointerId} ${event.type}`);
+  //   debug(`${event.pointerType} ${event.pointerId} ${event.type}`);
   //   // console.dir(event);
   // }
 
   private onPointerUp(event: PointerEvent): void {
     // REVIEW: Remove pointer info from pointer map??
-    // console.log(`${event.pointerType} ${event.pointerId} ${event.type}`);
+    debug(`${event.pointerType} ${event.pointerId} ${event.type}`);
     // console.dir(event);
     const pi = this.pointerInfo(event);
     const stroke = pi.stroke;

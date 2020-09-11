@@ -102,19 +102,6 @@ export class InkCell extends CellBase {
 
     /* this.resizerBar = */ ResizerBar.create(this.$elt, (deltaY: number, final: boolean)=>this.onResize(deltaY, final), ()=>this.onInsertCellBelow());
 
-    // TODO: This assumes we have the same input style for the lifetime of this cell.
-    //       But our API doesn't prevent the input style from getting deleted or replaced with a different one.
-    //       Some plugin may do that in the future.
-    const inputStyle = this.view.screen.notebook.findStyle({ role: 'INPUT', type: 'STROKE-DATA' }, style.id);
-    if (!inputStyle) {
-      // TODO: Better way to handle this error.
-      // throw new Error("No INPUT substyle for UNINTERPRETED-INK style.");
-      console.warn("No INPUT substyle for UNINTERPRETED-INK style.");
-      return;
-    }
-    this.drawingData = deepCopy(inputStyle.data);
-    this.inputStyleId = inputStyle.id;
-
     this.render(style);
   }
 
@@ -141,9 +128,19 @@ export class InkCell extends CellBase {
 
   // Private Instance Properties
 
-  private drawingData!: DrawingData;
-  private inputStyleId!: StyleId;  // REVIEW: What if the input style id changes?
+  private _inputStyleCopy?: StyleObject;
   private stylusDrawingPanel: StylusDrawingPanel;
+
+  // Private Instance Property Functions
+
+  private get inputStyleCopy(): StyleObject|undefined {
+    // REVIEW: What if the input style changes?
+    if (!this._inputStyleCopy) {
+      const style = this.view.screen.notebook.findStyle({ role: 'INPUT', type: 'STROKE-DATA' }, this.styleId);
+      this._inputStyleCopy = style ? deepCopy(style) : undefined;
+    }
+    return this._inputStyleCopy;
+  }
 
   // Private Event Handlers
 
@@ -242,8 +239,12 @@ export class InkCell extends CellBase {
 
     if (final) {
       // TODO: Incremental change request?
-      this.drawingData.size.height = newHeightStr;
-      const changeRequest: StyleChangeRequest = { type: 'changeStyle', styleId: this.inputStyleId, data: this.drawingData };
+      const inputStyle = this.inputStyleCopy!;
+      assert(inputStyle);
+      const data = <DrawingData>inputStyle.data;
+      data.size.height = newHeightStr;
+      // REVIEW: what if size is unchanged?
+      const changeRequest: StyleChangeRequest = { type: 'changeStyle', styleId: inputStyle.id, data };
       this.view.editStyle([ changeRequest ])
       .catch((err: Error)=>{
         // TODO: What to do here?
@@ -256,8 +257,11 @@ export class InkCell extends CellBase {
     // TODO: What if socket to server is closed? We'll just accumulate strokes that will never get saved.
     //       How do we handle offline operation?
     // TODO: Incremental change request.
-    this.drawingData.strokeGroups[0].strokes.push(stroke.data);
-    const changeRequest: StyleChangeRequest = { type: 'changeStyle', styleId: this.inputStyleId, data: this.drawingData };
+    const inputStyle = this.inputStyleCopy!;
+    assert(inputStyle);
+    const data = <DrawingData>inputStyle.data;
+    data.strokeGroups[0].strokes.push(stroke.data);
+    const changeRequest: StyleChangeRequest = { type: 'changeStyle', styleId: inputStyle.id, data };
     return this.view.editStyle([ changeRequest ]);
   }
 }
