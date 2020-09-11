@@ -97,7 +97,6 @@ export class Header extends ButtonBar {
               id: 'keyboardInputType',
               children: [
                 { tag: 'option', value: 'TEX-EXPRESSION', html: "LaTeX" },
-                { tag: 'option', value: 'MATHML-XML', html: "MathML" },
                 { tag: 'option', value: 'PLAIN-TEXT', html: "Text" },
                 { tag: 'option', value: 'WOLFRAM-EXPRESSION', html: "Wolfram", selected: true },
               ]

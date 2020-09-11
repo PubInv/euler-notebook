@@ -32,7 +32,6 @@ import {
 
 export type ImageData = string;
 export type LatexData = string; // TODO: Rename TexExpression
-export type MathMlData = string;
 export type MthMtcaData = string;
 export type RequestId = '{RequestId}';
 export type SvgData = string; // TODO: Rename SvgMarkup

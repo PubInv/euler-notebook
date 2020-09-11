@@ -85,7 +85,6 @@ const FIGURE_TYPE_OPTIONS = new Map<StyleType,string>();
 const FORMULA_TYPE_OPTIONS = new Map<StyleType,string>([
   [ 'WOLFRAM-EXPRESSION', "Wolfram" ],
   [ 'TEX-EXPRESSION', "LaTeX" ],
-  [ 'MATHML-XML', "MathML" ],
 ]);
 
 const HINT_TYPE_OPTIONS = new Map<StyleType,string>([

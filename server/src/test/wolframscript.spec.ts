@@ -54,10 +54,6 @@ const TEST_CASES = [
   ['With[{v = Variables[#]}, Exponent[#, v[[1]]] == 2 && Length[v] == 1] &[x^2 + x]',
    'True'],
 
-  // Converting MathML to Wolfram expression.
-  ['InputForm[ToExpression[ImportString["<math xmlns=\'http://www.w3.org/1998/Math/MathML\'><msup><mrow><mi>x</mi></mrow><mrow><mn>2</mn></mrow></msup><mo>+</mo><mn>3</mn><mi>x</mi><mo>+</mo><mn>5</mn></math>", "MathML"]]]',
-   '5 + 3*x + x^2'],
-
   ['InputForm[x^3 + 3]',
    '3 + x^3'],
 
@@ -80,17 +76,6 @@ const TEST_CASES = [
    'False'],
   ['runPrivate[With[{v = Variables[#]},If[(Length[v] == 1) && (Exponent[#, v[[1]]] == 2), v[[1]], False]] &[x^2 + 3*y /.  { y -> 4} ]]',
    'x']
-];
-
-const MATHML_TEST_CASES = [
-  ["<math xmlns='http://www.w3.org/1998/Math/MathML'>  <mi> x </mi>  <mo> = </mo>  <mn> 4 </mn></math>",
-   'HoldComplete[x = 4]'],
-
-  ["<math xmlns='http://www.w3.org/1998/Math/MathML'>  <mi> a </mi>  <mo> = </mo>  <mi> b </mi>  <mo> + </mo>  <mi> c </mi></math>",
-   'HoldComplete[a = b + c]'],
-
-   ["<math xmlns='http://www.w3.org/1998/Math/MathML'>  <mi> a </mi>  <mo> = </mo>  <msup>    <mrow>      <mi> x </mi>    </mrow>    <mrow>      <mn> 2 </mn>    </mrow>  </msup></math>",
-    'HoldComplete[a = x^2]']
 ];
 
 // This is an attempt to make a simple boolean test
@@ -157,23 +142,11 @@ describe("wolframscript", function(){
 });
 
 
-describe("wolframscriptmathml", function(){
+describe("wolframscript other", function(){
   this.timeout(10*1000);
 
-    for (const [expr, expected] of MATHML_TEST_CASES) {
-      const label = (expr.length<=20 ?
-        `evaluates ${expr}` :
-        `evaluates ${expr.slice(0,20)}...`
-      )
-      it(label, async function(){
-        const wrapped = `InputForm[MakeExpression[ImportString["${expr}"], StandardForm]]`;
-        const results = await execute(wrapped);
-//        const processed = postProcessMathMLResult(results);
-        assert.equal(results, expected);
-      });
-    }
-
     it("serializes execution", async function(){
+      // REVIEW: What exactly is this testing?
       const p1 = await execute('Pause[2]; "Hello,"');
       const p2 = await execute('Pause[2]; "World!"');
       const [ r1, r2 ] = await Promise.all([p1, p2]);

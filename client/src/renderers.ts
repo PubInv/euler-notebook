@@ -40,7 +40,6 @@ export interface RenderResult {
 const RENDERERS = new Map<StyleType, Renderer>([
   [ 'HTML',               htmlRenderer ],
   [ 'TEX-EXPRESSION',     latexRenderer ],
-  [ 'MATHML-XML',         /* TODO: */ textRenderer ],
   [ 'PLAIN-TEXT',         textRenderer ],
   [ 'WOLFRAM-EXPRESSION', /* TODO: */ textRenderer ],
 ]);

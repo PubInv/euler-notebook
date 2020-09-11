@@ -312,7 +312,6 @@ export const STYLE_TYPES = [
   'HINT-DATA',       // Type of data for top-level 'HINT' styles
   'HTML',            // Html: HTML-formatted text
   'IMAGE-URL',       // ImageData: URL of image relative to notebook folder.
-  'MATHML-XML',      // MathMlData: MathML Presentation XML
   'MYSCRIPT-DATA',   // Jiix: MyScript JIIX export from 'MATH' editor.
   'NONE',            // No data. Data field is null.
   'PLAIN-TEXT',      // TextData: Plain text  // REVIEW: Encoding? UTF-8?

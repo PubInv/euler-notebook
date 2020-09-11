@@ -22,9 +22,9 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 import * as debug1 from "debug";
 // import { MthMtcaText } from "./shared/math-tablet-api";
 import { StyleObject, NotebookChange, StyleId, RelationshipProperties } from "../shared/notebook";
-import { NotebookChangeRequest, StyleInsertRequest, StyleDeleteRequest, StylePropertiesWithSubprops, RelationshipInsertRequest, isEmptyOrSpaces } from "../shared/math-tablet-api";
+import { NotebookChangeRequest, RelationshipInsertRequest, isEmptyOrSpaces } from "../shared/math-tablet-api";
 import { ServerNotebook, ObserverInstance } from "../server-notebook";
-import { execute, constructSubstitution, checkEquiv, NVPair } from "../wolframscript";
+import { constructSubstitution, checkEquiv, NVPair } from "../wolframscript";
 // import * as fs from "fs";
 import { Config } from "../config";
 
@@ -238,7 +238,6 @@ export class MathematicaObserver implements ObserverInstance {
         case 'styleChanged':
           debug("styleInserted : style",change.style);
           rval = rval.concat(
-            await this.convertMathMlToWolframRule(change.style),
             await this.checkEquivalenceRule(change.style),
           );
           break;
@@ -248,69 +247,4 @@ export class MathematicaObserver implements ObserverInstance {
     return rval;
   }
 
-  private async convertMathMlToWolframRule(style: StyleObject): Promise<NotebookChangeRequest[]> {
-
-    const rval: NotebookChangeRequest[] = [];
-
-    if (style.type != 'MATHML-XML') { return []; }
-    if (style.role != 'REPRESENTATION') { return []; }
-
-    const mathMl = style.data.split('\n').join('').replace(/"/g, '\\"');
-    debug("mathML",mathMl);
-    const cmd = `InputForm[MakeExpression[ImportString["${mathMl}", "MathML"]]]`;
-    debug(cmd);
-    try {
-      const data = await execute(cmd);
-      // In our current style, the result comes back as
-      // HoldComplete[result].
-      const regex = /HoldComplete\[(.*)\]/;
-      const results = regex.exec(data);
-      debug("regex results",results);
-      if (results == null) throw new Error("could not match pattern:"+data);
-      if (results[1] == null) throw new Error("could not match pattern:"+data);
-      const wolframexpr = results[1];
-
-      // TODO: Try to replace this witht he "ExcludeChild" rule
-      // I believe that we should delete a type of of the same if it exists.
-      // In fact this is a meta-rule --- for some styles, there is only one style
-      // of a type allowed. It will be best to add that into the metaframework.
-      // REVIEW: Does this search need to be recursive?
-      let kids = this.notebook.findStyles({ type: 'WOLFRAM-EXPRESSION', recursive: true }, style.id);
-      for(const k of kids) {
-        const changeReq: StyleDeleteRequest = {
-          type: 'deleteStyle',
-          styleId: k.id
-        };
-        rval.push(changeReq);
-      }
-
-      const styleProps: StylePropertiesWithSubprops = {
-        type: 'WOLFRAM-EXPRESSION',
-        role: 'REPRESENTATION',
-        data: wolframexpr,
-      };
-      const cr: StyleInsertRequest = {
-        type: 'insertStyle',
-        parentId: style.id,
-        styleProps,
-      };
-      rval.push(cr);
-
-    } catch(err) {
-      const styleProps: StylePropertiesWithSubprops = {
-        type: 'PLAIN-TEXT',
-        role: 'EVALUATION-ERROR',
-        data: `Cannot convert to Wolfram expression: ${err.message}`,
-        exclusiveChildTypeAndRole: true,
-      };
-      const cr: StyleInsertRequest = {
-        type: 'insertStyle',
-        parentId: style.id,
-        styleProps,
-      };
-      rval.push(cr);
-    }
-
-    return rval;
-  }
 }
