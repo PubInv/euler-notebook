@@ -27,8 +27,8 @@ import { FolderChange, FolderName, NotebookName } from "../../../shared/folder";
 import { FolderScreen } from "..";
 import { HtmlElement } from "../../../html-element";
 
-import { EntryList } from "./entry-list"
-import { EntryType } from "./entry-row"
+import { EntryList } from "./entry-list";
+import { EntryType } from "./entry-row";
 
 // Requirements
 

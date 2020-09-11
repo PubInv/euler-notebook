@@ -19,13 +19,13 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 // Requirements
 
-import { OpenOptions } from "./shared/watched-resource"
-import { Notebook, NotebookChange, StyleId, NotebookWatcher } from "./shared/notebook"
-import { ServerNotebookChangedMessage, NotebookChangeRequest, ClientNotebookChangeMessage, ClientNotebookUseToolMessage, RequestId, ClientNotebookOpenMessage, ServerNotebookOpenedMessage, ServerNotebookMessage, ServerNotebookClosedMessage } from "./shared/math-tablet-api"
+import { OpenOptions } from "./shared/watched-resource";
+import { Notebook, NotebookChange, StyleId, NotebookWatcher } from "./shared/notebook";
+import { ServerNotebookChangedMessage, NotebookChangeRequest, ClientNotebookChangeMessage, ClientNotebookUseToolMessage, RequestId, ClientNotebookOpenMessage, ServerNotebookOpenedMessage, ServerNotebookMessage, ServerNotebookClosedMessage } from "./shared/math-tablet-api";
 
-import { appInstance } from "./app"
-import { NotebookName, NotebookPath } from "./shared/folder"
-import { assert, assertFalse } from "./shared/common"
+import { appInstance } from "./app";
+import { NotebookName, NotebookPath } from "./shared/folder";
+import { assert, assertFalse } from "./shared/common";
 
 // Types
 

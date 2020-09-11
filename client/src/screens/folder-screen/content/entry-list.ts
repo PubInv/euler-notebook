@@ -25,7 +25,7 @@ import { assert } from "../../../shared/common";
 import { NotebookName, FolderName } from "../../../shared/folder";
 
 // import { $new, svgIconReference, $, CLOSE_X_ENTITY, PENCIL_ENTITY, Html, escapeHtml } from "../../dom";
-import { ClientFolder } from "../../../client-folder"
+import { ClientFolder } from "../../../client-folder";
 import { HtmlElement } from "../../../html-element";
 
 import { EntryRow, EntryType, EntryTypeMap } from "./entry-row";

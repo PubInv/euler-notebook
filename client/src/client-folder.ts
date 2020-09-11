@@ -19,14 +19,14 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 // Requirements
 
-import { Folder, FolderPath, NotebookName, FolderName, FolderChange, FolderCreated, NotebookCreated, FolderEntry, NotebookEntry, FolderRenamed, NotebookRenamed, FolderDeleted, NotebookDeleted, FolderWatcher } from "./shared/folder"
+import { Folder, FolderPath, NotebookName, FolderName, FolderChange, FolderCreated, NotebookCreated, FolderEntry, NotebookEntry, FolderRenamed, NotebookRenamed, FolderDeleted, NotebookDeleted, FolderWatcher } from "./shared/folder";
 import {
   FolderChangeRequest, ClientFolderChangeMessage, ServerFolderChangedMessage, ClientFolderOpenMessage,
   ServerFolderMessage, ServerFolderOpenedMessage, ServerFolderClosedMessage, FolderCreateRequest, NotebookCreateRequest, FolderDeleteRequest, NotebookDeleteRequest, FolderRenameRequest, NotebookRenameRequest
-} from "./shared/math-tablet-api"
+} from "./shared/math-tablet-api";
 
-import { appInstance } from "./app"
-import { assert, assertFalse } from "./shared/common"
+import { appInstance } from "./app";
+import { assert, assertFalse } from "./shared/common";
 import { OpenOptions } from "./shared/watched-resource";
 
 // Types

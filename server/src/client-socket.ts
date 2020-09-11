@@ -19,30 +19,30 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 // TODO: use error-handler/reportError
 
-import { Server } from "http"
+import { Server } from "http";
 
-import * as debug1 from "debug"
+import * as debug1 from "debug";
 const MODULE = __filename.split(/[/\\]/).slice(-1)[0].slice(0,-3);
 const debug = debug1(`server:${MODULE}`);
-import { Request } from "express"
-import * as WebSocket from "ws"
+import { Request } from "express";
+import * as WebSocket from "ws";
 
 // TODO: Handle websocket lifecycle: closing, unexpected disconnects, errors, etc.
-import { assert, PromiseResolver } from "./shared/common"
-import { NotebookPath, FolderPath, FolderObject, FolderChange } from "./shared/folder"
+import { assert, PromiseResolver } from "./shared/common";
+import { NotebookPath, FolderPath, FolderObject, FolderChange } from "./shared/folder";
 import {
   ClientMessage, ServerMessage, ServerErrorMessage, ClientFolderChangeMessage, ClientFolderOpenMessage,
   ClientNotebookChangeMessage, ClientNotebookOpenMessage, ClientNotebookUseToolMessage,
   ServerNotebookChangedMessage, NotebookChangeRequest, RequestId, ServerFolderChangedMessage,
   ClientFolderCloseMessage, ServerFolderClosedMessage, ServerFolderOpenedMessage,
   ServerNotebookClosedMessage, ClientNotebookCloseMessage, ServerNotebookOpenedMessage
-} from "./shared/math-tablet-api"
-import { NotebookChange, NotebookObject, NotebookWatcher as ServerNotebookWatcher } from "./shared/notebook"
+} from "./shared/math-tablet-api";
+import { NotebookChange, NotebookObject, NotebookWatcher as ServerNotebookWatcher } from "./shared/notebook";
 
 // REVIEW: This file should not be dependent on any specific observers.
-import { ExpectedError, reportError } from "./error-handler"
-import { ServerFolder, ServerFolderWatcher } from "./server-folder"
-import { ServerNotebook } from "./server-notebook"
+import { ExpectedError, reportError } from "./error-handler";
+import { ServerFolder, ServerFolderWatcher } from "./server-folder";
+import { ServerNotebook } from "./server-notebook";
 
 // Types
 

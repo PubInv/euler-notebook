@@ -19,13 +19,13 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 // Requirements
 
-import { StyleId, FindStyleOptions } from "../../shared/notebook"
-import { SymbolTable, ToolData } from "../../shared/math-tablet-api"
+import { StyleId, FindStyleOptions } from "../../shared/notebook";
+import { SymbolTable, ToolData } from "../../shared/math-tablet-api";
 
-import { $new, escapeHtml, Html } from "../../dom"
-import { getRenderer } from "../../renderers"
-import { HtmlElement } from "../../html-element"
-import { NotebookEditScreen } from "."
+import { $new, escapeHtml, Html } from "../../dom";
+import { getRenderer } from "../../renderers";
+import { HtmlElement } from "../../html-element";
+import { NotebookEditScreen } from ".";
 
 // Types
 

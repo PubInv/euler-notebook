@@ -19,11 +19,11 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 // Requirements
 
-import { StyleObject } from "../../../../shared/notebook"
-import { Content } from ".."
-import { getRenderer } from "../../../../renderers"
+import { StyleObject } from "../../../../shared/notebook";
+import { Content } from "..";
+import { getRenderer } from "../../../../renderers";
 
-import { CellBase } from "./cell-base"
+import { CellBase } from "./cell-base";
 
 // Types
 

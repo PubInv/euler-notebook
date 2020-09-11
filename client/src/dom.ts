@@ -19,8 +19,8 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 // Requirements
 
-import { assert } from "./shared/common"
-import { SyncListener, addSyncEventListener, addAsyncEventListener, AsyncListener } from "./error-handler"
+import { assert } from "./shared/common";
+import { SyncListener, addSyncEventListener, addAsyncEventListener, AsyncListener } from "./error-handler";
 
 // Types
 

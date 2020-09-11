@@ -19,15 +19,15 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 // Requirements
 
-import { StyleObject, FindRelationshipOptions, FindStyleOptions } from "../../../../shared/notebook"
+import { StyleObject, FindRelationshipOptions, FindStyleOptions } from "../../../../shared/notebook";
 
-import { $new, escapeHtml, Html } from "../../../../dom"
-import { Content } from ".."
-import { getRenderer } from "../../../../renderers"
-import { FORMULA_SUBROLE_PREFIX } from "../../../../role-selectors"
+import { $new, escapeHtml, Html } from "../../../../dom";
+import { Content } from "..";
+import { getRenderer } from "../../../../renderers";
+import { FORMULA_SUBROLE_PREFIX } from "../../../../role-selectors";
 
-import { CellBase } from "./cell-base"
-import { Tools } from "../../tools"
+import { CellBase } from "./cell-base";
+import { Tools } from "../../tools";
 
 // Types
 

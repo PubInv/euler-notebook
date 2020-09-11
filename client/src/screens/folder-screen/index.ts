@@ -21,12 +21,12 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 // Requirements
 
-import { FolderPath, FolderChange } from "../../shared/folder"
-import { Content } from "./content"
-import { Sidebar } from "./sidebar"
-import { ScreenBase } from "../screen-base"
-import { ClientFolder, ClientFolderWatcher, OpenFolderOptions } from "../../client-folder"
-import { reportError } from "../../error-handler"
+import { FolderPath, FolderChange } from "../../shared/folder";
+import { Content } from "./content";
+import { Sidebar } from "./sidebar";
+import { ScreenBase } from "../screen-base";
+import { ClientFolder, ClientFolderWatcher, OpenFolderOptions } from "../../client-folder";
+import { reportError } from "../../error-handler";
 
 // Types
 

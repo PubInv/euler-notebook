@@ -25,7 +25,7 @@ import { FOLDER_PATH_RE, NOTEBOOK_PATH_RE, FolderPath, NotebookPath } from "../s
 import { headerInstance } from "../header";
 
 import { ScreenBase } from "./screen-base";
-import { addSyncEventListener } from "../error-handler"
+import { addSyncEventListener } from "../error-handler";
 import { FolderScreen } from "./folder-screen";
 import { NotebookEditScreen } from "./notebook-edit-screen";
 import { NotebookReadScreen } from "./notebook-read-screen";

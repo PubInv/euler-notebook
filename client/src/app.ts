@@ -21,10 +21,10 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 // Requirements
 
-import { addAsyncEventListener, addSyncEventListener } from "./error-handler"
-import { Header } from "./header"
-import { Pathname, Screens } from "./screens"
-import { ServerSocket } from "./server-socket"
+import { addAsyncEventListener, addSyncEventListener } from "./error-handler";
+import { Header } from "./header";
+import { Pathname, Screens } from "./screens";
+import { ServerSocket } from "./server-socket";
 import { MessageDisplay } from "./message-display";
 
 // Types

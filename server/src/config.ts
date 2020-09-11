@@ -19,11 +19,11 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 // Requirements
 
-import { readFile } from "fs"
-import { join } from "path"
-import { promisify } from "util"
+import { readFile } from "fs";
+import { join } from "path";
+import { promisify } from "util";
 
-import { ServerKeys } from "./myscript-batch-api"
+import { ServerKeys } from "./myscript-batch-api";
 
 const readFile2 = promisify(readFile);
 

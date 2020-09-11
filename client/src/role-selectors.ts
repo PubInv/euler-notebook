@@ -19,8 +19,8 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 // Requirements
 
-import { Html } from "./dom"
-import { StyleRole, StyleSubrole, StyleType } from "./shared/notebook"
+import { Html } from "./dom";
+import { StyleRole, StyleSubrole, StyleType } from "./shared/notebook";
 
 // Constants
 

@@ -19,7 +19,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 // Requirements
 
-import { $newSvg, $allSvg } from "../../dom"
+import { $newSvg, $allSvg } from "../../dom";
 import { NotebookThumbnailsScreen } from ".";
 import { HtmlElement } from "../../html-element";
 

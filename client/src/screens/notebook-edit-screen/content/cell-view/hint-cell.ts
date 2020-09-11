@@ -19,12 +19,12 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 // Requirements
 
-import { escapeHtml } from "../../../../dom"
-import { StyleObject, HintData, HintStatus, HintRelationship } from "../../../../shared/notebook"
-import { Content } from ".."
-// import { getRenderer } from "../renderers"
+import { escapeHtml } from "../../../../dom";
+import { StyleObject, HintData, HintStatus, HintRelationship } from "../../../../shared/notebook";
+import { Content } from "..";
+// import { getRenderer } from "../renderers";
 
-import { CellBase } from "./cell-base"
+import { CellBase } from "./cell-base";
 
 // Types
 

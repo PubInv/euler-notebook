@@ -19,13 +19,13 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 // Requirements
 
-import * as debug1 from "debug"
-
-import { $newSvg } from "./dom"
-
-import { SvgStroke } from "./svg-stroke"
-
+import * as debug1 from "debug";
 const debug = debug1('client:stylus-drawing-panel');
+
+import { $newSvg } from "./dom";
+
+import { SvgStroke } from "./svg-stroke";
+
 
 // Types
 

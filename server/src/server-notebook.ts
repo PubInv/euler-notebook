@@ -23,28 +23,28 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 // Requirements
 
-import * as debug1 from "debug"
-import { readdirSync, writeFileSync } from "fs" // LATER: Eliminate synchronous file operations.
-import { join } from "path"
+import * as debug1 from "debug";
+import { readdirSync, writeFileSync } from "fs"; // LATER: Eliminate synchronous file operations.
+import { join } from "path";
 
-import { assert, Timestamp } from "./shared/common"
-import { NotebookPath, NOTEBOOK_PATH_RE, NotebookName, FolderPath, NotebookEntry } from "./shared/folder"
+import { assert, Timestamp } from "./shared/common";
+import { NotebookPath, NOTEBOOK_PATH_RE, NotebookName, FolderPath, NotebookEntry } from "./shared/folder";
 import {
   Notebook, NotebookObject, NotebookChange, StyleObject, StyleRole, StyleType, StyleSource, StyleId,
   RelationshipObject, StyleMoved, StylePosition, VERSION, StyleChanged, RelationshipDeleted,
   RelationshipInserted, StyleIdDoesNotExistError, StyleInserted, StyleDeleted, StyleConverted, NotebookWatcher
-} from "./shared/notebook"
+} from "./shared/notebook";
 import {
   NotebookChangeRequest, StyleMoveRequest, StyleInsertRequest, StyleChangeRequest,
   RelationshipDeleteRequest, StyleDeleteRequest, RelationshipInsertRequest,
   StylePropertiesWithSubprops, LatexData, StyleConvertRequest, ServerNotebookChangedMessage, ClientNotebookChangeMessage, ClientNotebookUseToolMessage,
-} from "./shared/math-tablet-api"
+} from "./shared/math-tablet-api";
 
-import { ClientId } from "./client-socket"
-import { AbsDirectoryPath, ROOT_DIR_PATH, mkDir, readFile, rename, rmRaf, writeFile } from "./file-system"
-import { constructSubstitution } from "./wolframscript"
-import { OpenOptions } from "./shared/watched-resource"
-import { ExpectedError } from "./error-handler"
+import { ClientId } from "./client-socket";
+import { AbsDirectoryPath, ROOT_DIR_PATH, mkDir, readFile, rename, rmRaf, writeFile } from "./file-system";
+import { constructSubstitution } from "./wolframscript";
+import { OpenOptions } from "./shared/watched-resource";
+import { ExpectedError } from "./error-handler";
 
 
 // LATER: Convert these to imports.

@@ -19,22 +19,22 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 // Requirements
 
-import { Config, Credentials } from "../config"
-import { ServerNotebook } from "../server-notebook"
+import { Config, Credentials } from "../config";
+import { ServerNotebook } from "../server-notebook";
 
-import { AlgebraicDataflowObserver } from "./algebraic-dataflow-observer"
-import { MathematicaObserver } from "./mathematica-cas"
-import { MyScriptObserver } from "./myscript-observer"
-import { SandboxObserver } from "./sandbox"
-import { SubtrivClassifierObserver } from "./subtriv-classifier"
-import { AlgebraicToolsObserver } from "./algebraic-tools"
-import { EquationSolverObserver } from "./equation-solver"
-import { FormulaObserver } from "./formula-observer"
-import { TeXFormatterObserver } from "./tex-formatter"
-import { SymbolClassifierObserver } from "./symbol-classifier"
-// import { SymbolTableObserver } from "./symbol-table"
-import { SvgObserver } from "./svg-observer"
-import { WolframObserver } from "./wolfram-cas"
+import { AlgebraicDataflowObserver } from "./algebraic-dataflow-observer";
+import { MathematicaObserver } from "./mathematica-cas";
+import { MyScriptObserver } from "./myscript-observer";
+import { SandboxObserver } from "./sandbox";
+import { SubtrivClassifierObserver } from "./subtriv-classifier";
+import { AlgebraicToolsObserver } from "./algebraic-tools";
+import { EquationSolverObserver } from "./equation-solver";
+import { FormulaObserver } from "./formula-observer";
+import { TeXFormatterObserver } from "./tex-formatter";
+import { SymbolClassifierObserver } from "./symbol-classifier";
+// import { SymbolTableObserver } from "./symbol-table";
+import { SvgObserver } from "./svg-observer";
+import { WolframObserver } from "./wolfram-cas";
 
 
 // Globals

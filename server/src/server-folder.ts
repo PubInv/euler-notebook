@@ -22,19 +22,19 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 // Requirements
 
-import * as debug1 from "debug"
-import { join } from "path"
+import * as debug1 from "debug";
+import { join } from "path";
 
-import { assert } from "./shared/common"
+import { assert } from "./shared/common";
 import {
   Folder, FolderEntry, FolderName, FolderObject, FolderPath, FOLDER_PATH_RE, NotebookEntry,
   NotebookName, NotebookPath, FolderChange, FolderWatcher,
-} from "./shared/folder"
-import { ClientFolderChangeMessage, ServerFolderChangedMessage } from "./shared/math-tablet-api"
+} from "./shared/folder";
+import { ClientFolderChangeMessage, ServerFolderChangedMessage } from "./shared/math-tablet-api";
 
-import { AbsDirectoryPath, ROOT_DIR_PATH, dirStat, mkDir, readDir, rename, rmDir } from "./file-system"
-import { ServerNotebook, notebookPath } from "./server-notebook"
-import { OpenOptions } from "./shared/watched-resource"
+import { AbsDirectoryPath, ROOT_DIR_PATH, dirStat, mkDir, readDir, rename, rmDir } from "./file-system";
+import { ServerNotebook, notebookPath } from "./server-notebook";
+import { OpenOptions } from "./shared/watched-resource";
 
 const MODULE = __filename.split(/[/\\]/).slice(-1)[0].slice(0,-3);
 const debug = debug1(`server:${MODULE}`);

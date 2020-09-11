@@ -19,7 +19,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 // Requirements
 
-import { assert } from "./common"
+import { assert } from "./common";
 import { Watcher, WatchedResource } from "./watched-resource";
 
 // Types

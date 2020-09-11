@@ -19,11 +19,11 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 // Requirements
 
-// import { $new, escapeHtml, Html } from "../dom"
-import { StyleObject } from "../../../../shared/notebook"
-import { Content } from ".."
+// import { $new, escapeHtml, Html } from "../dom";
+import { StyleObject } from "../../../../shared/notebook";
+import { Content } from "..";
 
-import { CellBase } from "./cell-base"
+import { CellBase } from "./cell-base";
 
 // Types
 

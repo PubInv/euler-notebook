@@ -19,27 +19,27 @@
 
 // Requirements
 
-import * as debug1 from "debug"
+import * as debug1 from "debug";
 const MODULE = __filename.split(/[/\\]/).slice(-1)[0].slice(0,-3);
 const debug = debug1(`server:${MODULE}`);
 
 import {
   StyleType,NotebookChange, StyleObject, RelationshipProperties, HintData, HintRelationship,
   HintStatus, FormulaData, WolframExpression
-} from "../shared/notebook"
+} from "../shared/notebook";
 import {
   ToolData, NotebookChangeRequest, StyleInsertRequest, StyleDeleteRequest, StylePropertiesWithSubprops,
   TransformationToolData,RelationshipInsertRequest,
-} from "../shared/math-tablet-api"
+} from "../shared/math-tablet-api";
 
 // import {
 //   DataflowStatus,
 //   DataflowValue
-// } from "../../server/observers/dataflow-observer"
+// } from "../../server/observers/dataflow-observer";
 
-import { ServerNotebook, ObserverInstance } from "../server-notebook"
-import { execute,  convertWolframToTeX} from "../wolframscript"
-import { Config } from "../config"
+import { ServerNotebook, ObserverInstance } from "../server-notebook";
+import { execute,  convertWolframToTeX} from "../wolframscript";
+import { Config } from "../config";
 
 // Types
 

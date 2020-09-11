@@ -19,14 +19,14 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 // Requirements
 
-import * as debug1 from "debug"
-// import { MthMtcaText } from "./shared/math-tablet-api"
-import { StyleObject, NotebookChange, StyleId, RelationshipProperties } from "../shared/notebook"
-import { NotebookChangeRequest, StyleInsertRequest, StyleDeleteRequest, StylePropertiesWithSubprops, RelationshipInsertRequest, isEmptyOrSpaces } from "../shared/math-tablet-api"
-import { ServerNotebook, ObserverInstance } from "../server-notebook"
-import { execute, constructSubstitution, checkEquiv, NVPair } from "../wolframscript"
-// import * as fs from "fs"
-import { Config } from "../config"
+import * as debug1 from "debug";
+// import { MthMtcaText } from "./shared/math-tablet-api";
+import { StyleObject, NotebookChange, StyleId, RelationshipProperties } from "../shared/notebook";
+import { NotebookChangeRequest, StyleInsertRequest, StyleDeleteRequest, StylePropertiesWithSubprops, RelationshipInsertRequest, isEmptyOrSpaces } from "../shared/math-tablet-api";
+import { ServerNotebook, ObserverInstance } from "../server-notebook";
+import { execute, constructSubstitution, checkEquiv, NVPair } from "../wolframscript";
+// import * as fs from "fs";
+import { Config } from "../config";
 
 const MODULE = __filename.split(/[/\\]/).slice(-1)[0].slice(0,-3);
 const debug = debug1(`server:${MODULE}`);

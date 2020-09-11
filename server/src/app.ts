@@ -19,28 +19,28 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 // Requirements
 
-import { createServer } from "http"
-import { join } from "path"
+import { createServer } from "http";
+import { join } from "path";
 
-import * as  createError from "http-errors"
-import * as express from "express"
-import * as cookieParser from "cookie-parser"
-import * as debug1 from "debug"
+import * as  createError from "http-errors";
+import * as express from "express";
+import * as cookieParser from "cookie-parser";
+import * as debug1 from "debug";
 const MODULE = __filename.split(/[/\\]/).slice(-1)[0].slice(0,-3);
 const debug = debug1(`server:${MODULE}`);
-import * as morgan from "morgan"
-import { middleware as stylusMiddleware } from "stylus"
+import * as morgan from "morgan";
+import { middleware as stylusMiddleware } from "stylus";
 
-import { initialize as initializeObservers } from "./observers"
-import { start as startWolframscript } from "./wolframscript"
-import { ClientSocket } from "./client-socket"
-import { rootDir as notebookRootDir } from "./server-folder"
-import { loadConfig, loadCredentials} from "./config"
+import { initialize as initializeObservers } from "./observers";
+import { start as startWolframscript } from "./wolframscript";
+import { ClientSocket } from "./client-socket";
+import { rootDir as notebookRootDir } from "./server-folder";
+import { loadConfig, loadCredentials} from "./config";
 
-import { router as apiRouter } from "./routes/api"
-import { router as xrayRouter } from "./routes/xray"
-import { router as exportRouter } from "./routes/export"
-import { router as indexRouter } from "./routes/index"
+import { router as apiRouter } from "./routes/api";
+import { router as xrayRouter } from "./routes/xray";
+import { router as exportRouter } from "./routes/export";
+import { router as indexRouter } from "./routes/index";
 
 // Helper Functions
 

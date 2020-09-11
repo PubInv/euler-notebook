@@ -19,22 +19,22 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 // Requirements
 
-import { assert } from "../../../../shared/common"
-import { DrawingData, StyleId, StyleObject } from "../../../../shared/notebook"
-import { StyleChangeRequest, StyleMoveRequest } from "../../../../shared/math-tablet-api"
+import { assert } from "../../../../shared/common";
+import { DrawingData, StyleId, StyleObject } from "../../../../shared/notebook";
+import { StyleChangeRequest, StyleMoveRequest } from "../../../../shared/math-tablet-api";
 
-import { $configure, $newSvg, $, $svg, CLOSE_X_ENTITY } from "../../../../dom"
-import { deepCopy } from "../../../../common"
+import { $configure, $newSvg, $, $svg, CLOSE_X_ENTITY } from "../../../../dom";
+import { deepCopy } from "../../../../common";
 
-import { Content } from ".."
-import { ResizerBar } from "../../../../resizer-bar"
-import { SvgStroke } from "../../../../svg-stroke"
-import { StylusDrawingPanel } from "../../../../stylus-drawing-panel"
+import { Content } from "..";
+import { ResizerBar } from "../../../../resizer-bar";
+import { SvgStroke } from "../../../../svg-stroke";
+import { StylusDrawingPanel } from "../../../../stylus-drawing-panel";
 
-// import { getRenderer } from "../renderers"
+// import { getRenderer } from "../renderers";
 
-import { CellBase } from "./cell-base"
-import { $new } from "../../../../dom"
+import { CellBase } from "./cell-base";
+import { $new } from "../../../../dom";
 
 // Types
 

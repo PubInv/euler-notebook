@@ -19,9 +19,9 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 // Requirements
 
-import { ButtonBar } from "../../button-bar"
-import { svgIconReference, $new } from "../../dom"
-import { NotebookEditScreen } from "."
+import { ButtonBar } from "../../button-bar";
+import { svgIconReference, $new } from "../../dom";
+import { NotebookEditScreen } from ".";
 
 // Types
 

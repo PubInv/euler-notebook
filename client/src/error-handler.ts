@@ -24,8 +24,8 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 // Requirements
 
-import { Html } from "./dom"
-import { messageDisplayInstance } from "./message-display"
+import { Html } from "./dom";
+import { messageDisplayInstance } from "./message-display";
 
 // Types
 

@@ -19,8 +19,8 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 // Requirements
 
-import { svgIconReference } from "../../dom"
-import { ButtonBar } from "../../button-bar"
+import { svgIconReference } from "../../dom";
+import { ButtonBar } from "../../button-bar";
 import { NotebookThumbnailsScreen } from "./index";
 
 // Types

@@ -23,7 +23,7 @@ import { Folder, FolderEntry, FolderName, NotebookEntry, NotebookName } from "..
 import { Notebook } from "../../../shared/notebook";
 
 import { svgIconReference, CLOSE_X_ENTITY, PENCIL_ENTITY, escapeHtml, CHECKMARK_ENTITY, $new, DOTTED_CIRCLE_ENTITY } from "../../../dom";
-import { ClientFolder } from "../../../client-folder"
+import { ClientFolder } from "../../../client-folder";
 import { HtmlElement } from "../../../html-element";
 
 // Types

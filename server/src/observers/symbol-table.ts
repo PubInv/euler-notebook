@@ -19,28 +19,28 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 // Requirements
 
-import * as debug1 from 'debug';
+import * as debug1 from "debug";
 const MODULE = __filename.split(/[/\\]/).slice(-1)[0].slice(0,-3);
 const debug = debug1(`server:${MODULE}`);
 
-import { NotebookChange, StyleObject, RelationshipObject } from '../shared/notebook';
+import { NotebookChange, StyleObject, RelationshipObject } from "../shared/notebook";
 import { NotebookChangeRequest, StyleInsertRequest, StylePropertiesWithSubprops,
 //         StyleDeleteRequest,
          SymbolTable,
 //         SymbolContraint, SymbolConstraints
-       } from '../shared/math-tablet-api';
+       } from "../shared/math-tablet-api";
 
-// import { absDirPathFromNotebookPath } from '../files-and-folders';
-import { ServerNotebook, ObserverInstance } from '../server-notebook';
+// import { absDirPathFromNotebookPath } from "../files-and-folders";
+import { ServerNotebook, ObserverInstance } from "../server-notebook";
 import { execute,
 //         constructSubstitution
-       } from '../wolframscript';
-import { Config } from '../config';
-// import * as uuid from 'uuid-js';
+       } from "../wolframscript";
+import { Config } from "../config";
+// import * as uuid from "uuid-js";
 // import uuid = require('uuid');
-// import { v4 as uuid } from 'uuid';
-// import fs from 'fs';
-// import * as fs from 'fs';
+// import { v4 as uuid } from "uuid";
+// import fs from "fs";
+// import * as fs from "fs";
 
 
 

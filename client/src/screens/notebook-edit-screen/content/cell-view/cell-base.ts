@@ -21,13 +21,13 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 // Requirements
 
-import { assert } from "../../../../shared/common"
-import { Content } from ".."
-import { KeyboardInputPanel } from "../../../../keyboard-input-panel"
-import { StyleObject, StyleId } from "../../../../shared/notebook"
-import { NotebookChangeRequest } from "../../../../shared/math-tablet-api"
-import { Tools } from "../../tools"
-import { HtmlElement } from "../../../../html-element"
+import { assert } from "../../../../shared/common";
+import { Content } from "..";
+import { KeyboardInputPanel } from "../../../../keyboard-input-panel";
+import { StyleObject, StyleId } from "../../../../shared/notebook";
+import { NotebookChangeRequest } from "../../../../shared/math-tablet-api";
+import { Tools } from "../../tools";
+import { HtmlElement } from "../../../../html-element";
 
 // Exported Class
 
