@@ -28,6 +28,7 @@ import { NotebookPath } from "../shared/folder"
 
 import { ClientSocket } from "../client-socket"
 import { ServerNotebook } from "../server-notebook"
+import { ServerFolder } from "../server-folder"
 
 const MODULE = __filename.split(/[/\\]/).slice(-1)[0].slice(0,-3);
 const debug = debug1(`server:${MODULE}`);
@@ -80,10 +81,11 @@ async function onDashboard(req: Request, res: Response) {
 
     // REVIEW: Does Pug support iteration over iterables? If so, then we don't need to convert to an array.
     //         Pug issue 2559 (https://github.com/pugjs/pug/issues/2559), last updated Mar 2017, says no.
-    const clientSockets: ClientSocket[] = Array.from(ClientSocket.allSockets());
-    const notebooks: ServerNotebook[] = []; // TODO:
+    const clientSockets: ClientSocket[] = Array.from(ClientSocket.allInstances);
+    const folders: ServerFolder[] = Array.from(ServerFolder.allInstances);
+    const notebooks: ServerNotebook[] = Array.from(ServerNotebook.allInstances);
 
-    res.render('dashboard', { clientSockets, notebooks });
+    res.render('dashboard', { clientSockets, folders, notebooks });
   } catch(err) {
     console.error(err.message);
     debug(err.stack);

@@ -19,30 +19,25 @@ doctype html
 html(lang='en')
   head
     meta(charset="UTF-8")
-    //- These meta tags are copied from MyScript samples.
-    meta(name="viewport", content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no")
-    meta(name="apple-mobile-web-app-capable", content="yes")
-    meta(name="mobile-web-app-capable", content="yes")
-    meta(name="HandheldFriendly", content="true")
     block metatags
     title Math Tablet
     link(rel='stylesheet', href='/stylesheets/global.css')
     block styles
     block scripts
   body
-    //- #banner
-    //-   if messages
-    //-     each html in messages.banner || []
-    //-       .banner!= html
-    //-         button.close &#x2715;
-    //-     each html in messages.error || []
-    //-       .error!= html
-    //-         button.close &#x2715;
-    //-     each html in messages.warning || []
-    //-       .warning!= html
-    //-         button.close &#x2715;
-    //-     each html in messages.success || []
-    //-       .success!= html
-    //-         button.close &#x2715;
+    #banner
+      if messages
+        each html in messages.banner || []
+          .banner!= html
+            button.close &#x2715;
+        each html in messages.error || []
+          .error!= html
+            button.close &#x2715;
+        each html in messages.warning || []
+          .warning!= html
+            button.close &#x2715;
+        each html in messages.success || []
+          .success!= html
+            button.close &#x2715;
 
     block content

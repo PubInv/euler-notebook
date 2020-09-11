@@ -117,6 +117,13 @@ export class ServerNotebook extends Notebook<ServerNotebookWatcher> {
     if (!this.isValidNotebookName(name)) { throw new Error(`Invalid notebook name: ${name}`); }
   }
 
+  // Public Class Property Functions
+
+  public static get allInstances(): ServerNotebook[]/* LATER: IterableIterator<ServerNotebook> */ {
+    // LATER: ServerNotebook.instanceMap should only have notebooks, not notebooks and folders.
+    return <ServerNotebook[]>Array.from(this.instanceMap.values()).filter(r=>r instanceof ServerNotebook);
+  }
+
   // Public Class Methods
 
   public static async delete(path: NotebookPath): Promise<void> {

@@ -16,22 +16,20 @@
   You should have received a copy of the GNU Affero General Public License
   along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-extends layout
-
 include iconmonstr
 
-//- mixin debugPopup
-//-   #debugPopup(style='display:none')
-//-     button.close &#x2715;
-//-     .content
-
-block styles
-  link(rel='stylesheet', href='/stylesheets/katex-0.10.1.css')
-  link(rel='stylesheet', href='/stylesheets/index.css')
-
-block scripts
-  script(src='/javascripts/katex-0.10.1.js')
-  script(type='module', src='/javascripts/app.js')
-
-block content
-  +svgIcons
+html(lang='en')
+  head
+    meta(charset="UTF-8")
+    //- These meta tags are copied from MyScript samples.
+    meta(name="viewport", content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no")
+    meta(name="apple-mobile-web-app-capable", content="yes")
+    meta(name="mobile-web-app-capable", content="yes")
+    meta(name="HandheldFriendly", content="true")
+    title Math Tablet
+    link(rel='stylesheet', href='/stylesheets/katex-0.10.1.css')
+    link(rel='stylesheet', href='/stylesheets/index.css')
+    script(src='/javascripts/katex-0.10.1.js')
+    script(type='module', src='/javascripts/app.js')
+  body
+    +svgIcons

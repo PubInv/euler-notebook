@@ -48,6 +48,14 @@ import { ServerNotebook } from "./server-notebook"
 
 export type ClientId = string;
 
+interface FolderWatchersObject {
+  [ path: /* TYPESCRIPT: FolderPath */string ]: FolderWatcher;
+}
+
+interface NotebookWatchersObject {
+  [ path: /* TYPESCRIPT: FolderPath */string ]: NotebookWatcher;
+}
+
 // Constants
 
 // const CLOSE_TIMEOUT_IN_MS = 5000;
@@ -56,13 +64,13 @@ export type ClientId = string;
 
 export class ClientSocket {
 
-  // Class Properties
+  // Public Class Properties
 
-  public static allSockets(): IterableIterator<ClientSocket> {
+  public static get allInstances(): IterableIterator<ClientSocket> {
     return this.instanceMap.values();
   }
 
-  // Class Methods
+  // Public Class Methods
 
   public static close(id: ClientId, code?: number, reason?: string): Promise<void> {
     const instance = this.instanceMap.get(id);
@@ -76,13 +84,25 @@ export class ClientSocket {
     wss.on('connection', (ws: WebSocket, req: Request)=>{ this.onConnection(ws, req); });
   }
 
-  // Instance Properties
+  // Public Instance Properties
 
   public id: ClientId;
 
-  // Instance Property Functions
+  // Public Instance Property Functions
 
-  // Instance Methods
+  // Public Instance Methods
+
+  public get allFolderWatchers(): FolderWatchersObject {
+    const rval: FolderWatchersObject = {};
+    for (const [key, val] of this.folderWatchers.entries()) { rval[key] = val; }
+    return rval;
+  }
+
+  public get allNotebookWatchers(): NotebookWatchersObject {
+    const rval: NotebookWatchersObject = {};
+    for (const [key, val] of this.notebookWatchers.entries()) { rval[key] = val; }
+    return rval;
+  }
 
   public close(code?: number, reason?: string): Promise<void> {
     // See https://github.com/Luka967/websocket-close-codes.
@@ -356,6 +376,11 @@ class FolderWatcher implements ServerFolderWatcher {
     return { watcher, obj };
   }
 
+  // Public Instance Properties
+
+  public folder!: ServerFolder;
+  public socket: ClientSocket;
+
   // Public Instance Methods
 
   public close(): void {
@@ -396,9 +421,6 @@ class FolderWatcher implements ServerFolderWatcher {
 
   // Private Instance Properties
 
-  private folder!: ServerFolder;
-  private socket: ClientSocket;
-
 }
 
 class NotebookWatcher implements ServerNotebookWatcher {
@@ -414,6 +436,11 @@ class NotebookWatcher implements ServerNotebookWatcher {
     const obj = notebook.toJSON();
     return { watcher, obj };
   }
+
+  // Public Instance Properties
+
+  public notebook!: ServerNotebook;
+  public socket: ClientSocket;
 
   // Public Instance Methods
 
@@ -460,9 +487,6 @@ class NotebookWatcher implements ServerNotebookWatcher {
   }
 
   // Private Instance Properties
-
-  private notebook!: ServerNotebook;
-  private socket: ClientSocket;
 
 }
 

@@ -90,7 +90,7 @@ export abstract class WatchedResource<P extends Path, W extends Watcher> {
 
   // Private Class Properties
 
-  private static instanceMap: Map<Path, WatchedResource<Path, Watcher>> = new Map();
+  protected static instanceMap: Map<Path, WatchedResource<Path, Watcher>> = new Map();
 
   // Private Class Property Functions
 

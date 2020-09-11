@@ -17,7 +17,9 @@ You should have received a copy of the GNU Affero General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-// TODO: Rename this to banner.ts, export a Banner class, and have these as methods on a global banner instance.
+// LATER: If more than one message appears, then a "Close all" button should appear.
+// LATER: Multiple identical messages should be coalesced with a number showing the number of copies. (Like browser console.)
+// LATER: Animate the appearance of new messages.
 
 // Requirements
 

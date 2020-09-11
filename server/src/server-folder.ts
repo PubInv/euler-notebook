@@ -66,6 +66,13 @@ export class ServerFolder extends Folder<ServerFolderWatcher> {
 
   // Public Class Methods
 
+  // Public Class Properties
+
+  public static get allInstances(): ServerFolder[] /* LATER: IterableIterator<ServerFolder> */{
+    // LATER: ServerFolder.instanceMap should only have folders, not notebooks and folders.
+    return <ServerFolder[]>Array.from(this.instanceMap.values()).filter(r=>r instanceof ServerFolder);
+  }
+
   public static async delete(path: FolderPath): Promise<void> {
     this.close(path, "Folder is deleted"); // no-op if the folder is not open.
     const absPath = absDirPathFromFolderPath(path);

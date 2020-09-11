@@ -228,7 +228,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
       padding-left 2px
       text-decoration underline
 
-  .content
+  >.content
 
     .cell
 
@@ -269,7 +269,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
       padding var(--svg-top-offset) 0px 0px var(--svg-left-offset)
       position relative
 
-      .content
+      >.content
 
         .deleteCellButton
           background transparent
@@ -322,17 +322,17 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 .notebookThumbnailsScreen
 .notebookReadScreen
-  .content
+  >.content
     background-color lightgray
     display flex
     flex-flow row wrap
 
-  .page
-    background-color white
-    outline 1px solid black
+    .page
+      background-color white
+      outline 1px solid black
 
-  .page.selected
-      outline 2px solid blue
+    .page.selected
+        outline 2px solid blue
 
 .screen
   height: calc(100% - var(--header-height))
@@ -377,3 +377,12 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 
 // Element types
+
+body
+  font-family Arial, Helvetica, sans-serif
+  height 100%
+  margin 0
+  user-select none
+
+html
+  height 100%
