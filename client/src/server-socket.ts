@@ -22,7 +22,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 // Requirements
 
-import { assert, PromiseResolver, Timestamp, newPromiseResolver } from "./shared/common";
+import { assert, Html, PromiseResolver, Timestamp, newPromiseResolver } from "./shared/common";
 import { ClientMessage, ServerMessage, ServerMessageBase, RequestId } from "./shared/math-tablet-api";
 
 import { messageDisplayInstance } from "./message-display";
@@ -112,7 +112,7 @@ export class ServerSocket {
     // For terminating server: code = 1006, reason = "";
     console.log(`Notebook Conn: socket closed: ${event.code} ${event.reason}`);
     // console.dir(event);
-    messageDisplayInstance.addErrorMessage(`Socket closed by server. Refresh this page in your browser to reconnect.`);
+    messageDisplayInstance.addErrorMessage(<Html>`Socket closed by server. Refresh this page in your browser to reconnect.`);
     // LATER: Attempt to reconnect after a few seconds with exponential backoff.
   }
 
@@ -123,7 +123,7 @@ export class ServerSocket {
     this.connectPromise.reject(new Error(`Cannot connect to server.`));
 
     // REVIEW: Is the socket stull usable? Is the socket closed? Will we also get a close event?
-    messageDisplayInstance.addErrorMessage(`Socket error. Refresh this page in your browser to reconnect.`);
+    messageDisplayInstance.addErrorMessage(<Html>`Socket error. Refresh this page in your browser to reconnect.`);
   }
 
   private onWsMessage(event: MessageEvent): void {
@@ -151,7 +151,7 @@ export class ServerSocket {
         }
       }
     } catch(err) {
-      reportError(err, "Unexpected client error handling `WebSocket message event.");
+      reportError(err, <Html>"Unexpected client error handling `WebSocket message event.");
     }
   }
 

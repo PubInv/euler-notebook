@@ -21,7 +21,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 // Requirements
 
-import { notImplemented } from "./shared/common";
+import { Html, notImplemented } from "./shared/common";
 import { Path } from "./shared/folder";
 
 import { ButtonBar } from "./button-bar";
@@ -96,9 +96,9 @@ export class Header extends ButtonBar {
               tag: 'select',
               id: 'keyboardInputType',
               children: [
-                { tag: 'option', value: 'TEX-EXPRESSION', html: "LaTeX" },
-                { tag: 'option', value: 'PLAIN-TEXT', html: "Text" },
-                { tag: 'option', value: 'WOLFRAM-EXPRESSION', html: "Wolfram", selected: true },
+                { tag: 'option', value: 'TEX-EXPRESSION', html: <Html>"LaTeX" },
+                { tag: 'option', value: 'PLAIN-TEXT', html: <Html>"Text" },
+                { tag: 'option', value: 'WOLFRAM-EXPRESSION', html: <Html>"Wolfram", selected: true },
               ]
             }
           ],
@@ -142,7 +142,7 @@ export class Header extends ButtonBar {
     // REVIEW: Saw it mentioned somewhere that not all implementations return a promise.
     // See https://developer.mozilla.org/en-US/docs/Web/API/Fullscreen_API/Guide.
     if (!document.fullscreenElement) {
-      monitorPromise(document.documentElement.requestFullscreen(), `Browser error switching to full-screen mode.`);
+      monitorPromise(document.documentElement.requestFullscreen(), <Html>`Browser error switching to full-screen mode.`);
     } else {
       document.exitFullscreen();
     }

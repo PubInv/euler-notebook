@@ -19,57 +19,57 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 // Requirements
 
-import { Html } from "./dom";
+import { Html } from "./shared/common";
 import { StyleRole, StyleSubrole, StyleType } from "./shared/notebook";
 
 // Constants
 
 export const ROLE_OPTIONS = new Map<StyleRole,Html>([
-  [ 'UNKNOWN', "Choose..." ],
-  [ 'FORMULA', "Formula" ],
-  [ 'HINT', "Hint" ],
-  [ 'TEXT', "Text" ],
-  //[ 'FIGURE', "Figure" ],
+  [ 'UNKNOWN', <Html>"Choose&hellip;" ],
+  [ 'FORMULA', <Html>"Formula" ],
+  [ 'HINT', <Html>"Hint" ],
+  [ 'TEXT', <Html>"Text" ],
+  //[ 'FIGURE', <Html>"Figure" ],
 ]);
 
-const FIGURE_SUBROLE_OPTIONS = new Map([
-  [ 'UNKNOWN', "Choose..." ],
-  [ 'SKETCH', "Sketch" ],
-  [ 'DRAWING', "Drawing" ],
+const FIGURE_SUBROLE_OPTIONS = new Map<StyleSubrole,Html>([
+  [ 'UNKNOWN', <Html>"Choose&hellip;" ],
+  [ 'SKETCH', <Html>"Sketch" ],
+  [ 'DRAWING', <Html>"Drawing" ],
 ]);
 
-const FORMULA_SUBROLE_OPTIONS = new Map<StyleSubrole,string>([
+const FORMULA_SUBROLE_OPTIONS = new Map<StyleSubrole,Html>([
   // IMPORTANT: Keep in sync with FORMULA_SUBROLE_PREFIX
-  [ 'UNKNOWN', "Choose..." ],
-  [ 'ASSUME', "Assume" ],
-  [ 'DEFINITION', "Definition" ],
-  [ 'PROVE', "Prove" ],
-  [ 'OTHER', "Other" ],
+  [ 'UNKNOWN', <Html>"Choose&hellip;" ],
+  [ 'ASSUME', <Html>"Assume" ],
+  [ 'DEFINITION', <Html>"Definition" ],
+  [ 'PROVE', <Html>"Prove" ],
+  [ 'OTHER', <Html>"Other" ],
 ]);
 
-export const FORMULA_SUBROLE_PREFIX = new Map<StyleSubrole,string>([
+export const FORMULA_SUBROLE_PREFIX = new Map<StyleSubrole,Html>([
   // IMPORTANT: Keep in sync with FORMULA_SUBROLE_OPTIONS
-  [ 'UNKNOWN', "<i>Unknown</i>&nbsp;" ],
-  [ 'ASSUME', "<i>Assume</i>&nbsp;" ],
-  [ 'DEFINITION', "<i>Definition</i>&nbsp;" ],
-  [ 'PROVE', "<i>Prove </i>&nbsp;" ],
-  [ 'OTHER', "<i>Other </i>&nbsp;" ],
+  [ 'UNKNOWN', <Html>"<i>Unknown</i>&nbsp;" ],
+  [ 'ASSUME', <Html>"<i>Assume</i>&nbsp;" ],
+  [ 'DEFINITION', <Html>"<i>Definition</i>&nbsp;" ],
+  [ 'PROVE', <Html>"<i>Prove </i>&nbsp;" ],
+  [ 'OTHER', <Html>"<i>Other </i>&nbsp;" ],
 ]);
 
-const HINT_SUBROLE_OPTIONS = new Map();
+const HINT_SUBROLE_OPTIONS = new Map<StyleSubrole,Html>();
 
-const PLOT_SUBROLE_OPTIONS = new Map();
+const PLOT_SUBROLE_OPTIONS = new Map<StyleSubrole,Html>();
 
-const TEXT_SUBROLE_OPTIONS = new Map([
-  [ 'UNKNOWN', "Choose..." ],
-  [ 'HEADING1', "Heading 1" ],
-  [ 'HEADING2', "Heading 2" ],
-  [ 'NORMAL', "Normal" ],
+const TEXT_SUBROLE_OPTIONS = new Map<StyleSubrole,Html>([
+  [ 'UNKNOWN', <Html>"Choose&hellip;" ],
+  [ 'HEADING1', <Html>"Heading 1" ],
+  [ 'HEADING2', <Html>"Heading 2" ],
+  [ 'NORMAL', <Html>"Normal" ],
 ]);
 
-const UNKNOWN_SUBROLE_OPTIONS = new Map();
+const UNKNOWN_SUBROLE_OPTIONS = new Map<StyleSubrole,Html>();
 
-export const SUBROLE_OPTIONS = new Map<StyleRole,Map<StyleSubrole,string>>([
+export const SUBROLE_OPTIONS = new Map<StyleRole,Map<StyleSubrole,Html>>([
   [ 'FIGURE', FIGURE_SUBROLE_OPTIONS ],
   [ 'FORMULA', FORMULA_SUBROLE_OPTIONS ],
   [ 'HINT', HINT_SUBROLE_OPTIONS ],
@@ -78,27 +78,27 @@ export const SUBROLE_OPTIONS = new Map<StyleRole,Map<StyleSubrole,string>>([
   [ 'UNKNOWN', UNKNOWN_SUBROLE_OPTIONS ],
 ]);
 
-const UNKNOWN_TYPE_OPTIONS = new Map<StyleType,string>();
+const UNKNOWN_TYPE_OPTIONS = new Map<StyleType,Html>();
 
-const FIGURE_TYPE_OPTIONS = new Map<StyleType,string>();
+const FIGURE_TYPE_OPTIONS = new Map<StyleType,Html>();
 
-const FORMULA_TYPE_OPTIONS = new Map<StyleType,string>([
-  [ 'WOLFRAM-EXPRESSION', "Wolfram" ],
-  [ 'TEX-EXPRESSION', "LaTeX" ],
+const FORMULA_TYPE_OPTIONS = new Map<StyleType,Html>([
+  [ 'WOLFRAM-EXPRESSION', <Html>"Wolfram" ],
+  [ 'TEX-EXPRESSION', <Html>"LaTeX" ],
 ]);
 
-const HINT_TYPE_OPTIONS = new Map<StyleType,string>([
-  [ 'PLAIN-TEXT', "Plain Text" ],
+const HINT_TYPE_OPTIONS = new Map<StyleType,Html>([
+  [ 'PLAIN-TEXT', <Html>"Plain Text" ],
 ]);
 
-const PLOT_TYPE_OPTIONS = new Map<StyleType,string>();
+const PLOT_TYPE_OPTIONS = new Map<StyleType,Html>();
 
-const TEXT_TYPE_OPTIONS = new Map<StyleType,string>([
-  [ 'PLAIN-TEXT', "Plain Text" ],
-  [ 'HTML', "HTML" ],
+const TEXT_TYPE_OPTIONS = new Map<StyleType,Html>([
+  [ 'PLAIN-TEXT', <Html>"Plain Text" ],
+  [ 'HTML', <Html>"HTML" ],
 ]);
 
-export const TYPE_OPTIONS = new Map<StyleRole,Map<StyleType,string>>([
+export const TYPE_OPTIONS = new Map<StyleRole,Map<StyleType,Html>>([
   [ 'FIGURE', FIGURE_TYPE_OPTIONS ],
   [ 'FORMULA', FORMULA_TYPE_OPTIONS ],
   [ 'HINT', HINT_TYPE_OPTIONS ],

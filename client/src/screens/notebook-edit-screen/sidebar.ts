@@ -19,9 +19,13 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 // Requirements
 
+import { Html } from "../../shared/common";
+
 import { ButtonBar } from "../../button-bar";
 import { svgIconReference, $new } from "../../dom";
-import { NotebookEditScreen } from ".";
+import { reportError } from "../../error-handler";
+
+import { NotebookEditScreen } from "./index";
 
 // Types
 
@@ -179,9 +183,7 @@ export class Sidebar extends ButtonBar {
 
   private asyncCommand(command: string, promise: Promise<void>): void {
     promise.catch(err=>{
-      // TODO: Display error message to user.
-      console.error(`Error executing async ${command} command: ${err.message}`);
-      // TODO: Dump stack trace
+      reportError(err, <Html>`Error executing async ${command}`);
     });
   }
 

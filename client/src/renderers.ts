@@ -19,11 +19,12 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 // Requirements
 
-import { escapeHtml, Html } from "./dom";
-import { getKatex } from "./katex-types";
+import { Html, assert } from "./shared/common";
 import { LatexData, } from "./shared/math-tablet-api";
 import { StyleType } from "./shared/notebook";
-import { assert } from "./shared/common";
+
+import { escapeHtml } from "./dom";
+import { getKatex } from "./katex-types";
 
 // Types
 
@@ -61,7 +62,7 @@ function htmlRenderer(html: Html): RenderResult {
 
 function latexRenderer(latexData: LatexData): RenderResult {
   try {
-    return { html: getKatex().renderToString(latexData, {}) };
+    return { html: <Html>getKatex().renderToString(latexData, {}) };
   } catch(err) {
     return { errorHtml: escapeHtml(err.message) };
   }

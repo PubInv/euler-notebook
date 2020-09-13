@@ -19,6 +19,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 // Requirements
 
+import { Html } from "../../shared/common";
 import { NotebookChange } from "../../shared/notebook";
 import { NotebookPath } from "../../shared/folder";
 
@@ -60,8 +61,8 @@ export class NotebookReadScreen extends ScreenBase {
         this.content = new Content(this);
       },
       (err)=>{
-        reportError(err, `Error opening notebook '${path} for thumbnails`);
-        this.displayErrorMessage(`Error opening notebook '${path}'`);
+        reportError(err, <Html>`Error opening notebook '${path} for thumbnails`);
+        this.displayErrorMessage(<Html>`Error opening notebook '${path}'`);
       }
     );
 

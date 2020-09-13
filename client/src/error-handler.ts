@@ -24,7 +24,8 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 // Requirements
 
-import { Html } from "./dom";
+import { ExpectedError, Html } from "./shared/common";
+
 import { messageDisplayInstance } from "./message-display";
 
 // Types
@@ -62,14 +63,19 @@ export function addSyncEventListener<E extends Event>(target: EventTarget, type:
   return wrappedListener;
 }
 
+export function logError(err: Error, message?: Html): void {
+  // LATER: Report error to server.
+  if (err instanceof ExpectedError) { return; }
+  if (message) { console.error(message); }
+  console.dir(err);
+}
+
 export function monitorPromise(promise: Promise<any>, message: Html): void {
   promise.catch(err=>reportError(err, message));
 }
 
-export function reportError(err: Error, message: Html): void {
-  console.error(message);
-  console.dir(err);
-  // TODO: Report error to server.
-  messageDisplayInstance.addErrorMessage(message, err);
+export function reportError(err: Error, message?: Html): void {
+  logError(err, message);
+  messageDisplayInstance.addError(err, message);
 }
 

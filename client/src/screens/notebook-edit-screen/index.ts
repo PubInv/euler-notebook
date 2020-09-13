@@ -22,6 +22,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 // Requirements
 
+import { Html } from "../../shared/common";
 import { NotebookPath } from "../../shared/folder";
 import { NotebookChange, NotebookWatcher } from "../../shared/notebook";
 
@@ -78,7 +79,7 @@ export class NotebookEditScreen extends ScreenBase implements NotebookWatcher {
     this.view.destroy();
     this.tools.destroy();
     this.debugPopup.destroy();
-    this.displayErrorMessage(`Notebook ${this.notebook.path} closed by server: ${reason}`);
+    this.displayErrorMessage(<Html>`Notebook ${this.notebook.path} closed by server: ${reason}`);
   }
 
   // --- PRIVATE ---
@@ -104,8 +105,8 @@ export class NotebookEditScreen extends ScreenBase implements NotebookWatcher {
         this.debugPopup = new DebugPopup(this);
       },
       (err)=>{
-        reportError(err, `Error opening notebook '${path} for editing`);
-        this.displayErrorMessage(`Error opening notebook '${path}'`);
+        reportError(err, <Html>`Error opening notebook '${path} for editing`);
+        this.displayErrorMessage(<Html>`Error opening notebook '${path}'`);
       }
     );
 

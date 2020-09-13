@@ -21,6 +21,8 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 // Requirements
 
+import { Html } from "./shared/common";
+
 import { addAsyncEventListener, addSyncEventListener } from "./error-handler";
 import { Header } from "./header";
 import { Pathname, Screens } from "./screens";
@@ -43,8 +45,8 @@ class App {
 
   public constructor() {
     // DO NOT CALL. Just use appInstance singleton.
-    addAsyncEventListener(window, 'DOMContentLoaded', e=>this.onDomContentLoaded(e), "App initialization error");
-    addSyncEventListener<HashChangeEvent>(window, 'hashchange', e=>this.onHashChange(e), "App navigation error");
+    addAsyncEventListener(window, 'DOMContentLoaded', e=>this.onDomContentLoaded(e), <Html>"App initialization error");
+    addSyncEventListener<HashChangeEvent>(window, 'hashchange', e=>this.onHashChange(e), <Html>"App navigation error");
   }
 
   // Public Instance Properties

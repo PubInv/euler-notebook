@@ -23,6 +23,7 @@ import * as debug1 from "debug";
 const MODULE = __filename.split(/[/\\]/).slice(-1)[0].slice(0,-3);
 const debug = debug1(`server:${MODULE}`);
 
+import { Html } from "../shared/common";
 import {
   NotebookChange, StyleObject, StyleId, RelationshipObject, RelationshipId, RelationshipProperties,
   StyleDeleted, StyleMoved, FindRelationshipOptions, StyleInserted, StyleChanged, HintData,
@@ -307,7 +308,7 @@ export class SymbolClassifierObserver implements ObserverInstance {
       const substituted = await execute(isolated);
       debug("substituted",substituted);
       const toolData: ToolData = { name: "substitute",
-                                   html: sub_expr,
+                                   html: <Html>/* REVIEW: safe cast? */sub_expr,
                                    tex: substituted,
                                    //                                        html: html_fun(f),
                                    //                                        tex: tex_fun(tex_f),

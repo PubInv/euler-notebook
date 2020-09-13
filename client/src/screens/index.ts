@@ -19,7 +19,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 // Requirements
 
-import { assertFalse } from "../shared/common";
+import { Html, assertFalse } from "../shared/common";
 import { FOLDER_PATH_RE, NOTEBOOK_PATH_RE, FolderPath, NotebookPath } from "../shared/folder";
 
 import { headerInstance } from "../header";
@@ -47,7 +47,7 @@ export abstract class Screens {
 
   public static initialize(): void {
     // REVIEW: Could resize come before DOMContentLoaded?
-    addSyncEventListener<UIEvent>(window, 'resize', e=>this.onResize(window, e), "Window resize event");
+    addSyncEventListener<UIEvent>(window, 'resize', e=>this.onResize(window, e), <Html>"Window resize event");
   }
 
   public static navigateTo(pathname: Pathname): void {

@@ -22,6 +22,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 // Requirements
 
+import { Html } from "./common";
 import { FolderObject, FolderPath, NotebookPath, FolderName, NotebookName, FolderChange } from "./folder";
 import {
   RelationshipProperties, StyleProperties, StyleId, NotebookChange, NotebookObject, StyleRelativePosition,
@@ -59,7 +60,7 @@ export interface ToolData {
   name: ToolName;
   // REVIEW: This is a sum type, not a product type.
   //         i.e. we use either the html field or the tex field but never both.
-  html?: /* TYPESCRIPT: Html? */ string;
+  html?: Html;
   tex?: LatexData;
   data?: any; // Black-box info that gets passed back to tool creator when tool is used.
   origin_id?: number;

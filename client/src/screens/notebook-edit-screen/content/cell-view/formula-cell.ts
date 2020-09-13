@@ -19,9 +19,10 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 // Requirements
 
+import { Html } from "../../../../shared/common";
 import { StyleObject, FindRelationshipOptions, FindStyleOptions } from "../../../../shared/notebook";
 
-import { $new, escapeHtml, Html } from "../../../../dom";
+import { $new, escapeHtml } from "../../../../dom";
 import { Content } from "..";
 import { getRenderer } from "../../../../renderers";
 import { FORMULA_SUBROLE_PREFIX } from "../../../../role-selectors";
@@ -48,8 +49,8 @@ export class FormulaCell extends CellBase {
     // REVIEW: Use $new above to create children declaratively.
     this.$prefix = $new({ tag: 'div', class: 'prefix', appendTo: this.$elt });
     this.$formula = $new({ tag: 'div', class: 'formula', appendTo: this.$elt });
-    $new({ tag: 'div', class: 'handle', html: `(${style.id})`, appendTo: this.$elt });
-    $new({ tag: 'div', class: 'status', html: "&nbsp;", appendTo: this.$elt });
+    $new({ tag: 'div', class: 'handle', html: <Html>`(${style.id})`, appendTo: this.$elt });
+    $new({ tag: 'div', class: 'status', html: <Html>"&nbsp;", appendTo: this.$elt });
 
     this.render(style);
   }
@@ -74,10 +75,10 @@ export class FormulaCell extends CellBase {
       const renderer = getRenderer(repStyle.type);
       ({ html, errorHtml } = renderer(repStyle.data));
       if (errorHtml) {
-        html = `<div class="error">${errorHtml}</div><tt>${escapeHtml(style.data.toString())}</tt>`;
+        html = <Html>`<div class="error">${errorHtml}</div><tt>${escapeHtml(style.data.toString())}</tt>`;
       }
     } else {
-      html = "<i>No TeX representations for formula</i>";
+      html = <Html>"<i>No TeX representations for formula</i>";
     }
 
     // Render Wolfram evaluation if it exists.

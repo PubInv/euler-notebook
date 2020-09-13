@@ -26,6 +26,7 @@ import { assert } from "chai";
 import 'mocha';
 import * as sinon from "sinon";
 
+import { Html } from "../shared/common";
 import { NotebookChange, StyleInserted, StyleObject, FormulaData } from "../shared/notebook";
 import { NotebookChangeRequest, StyleInsertRequest, StylePropertiesWithSubprops, ToolData } from "../shared/math-tablet-api";
 import { ServerNotebook, ObserverInstance }  from "../server-notebook";
@@ -119,7 +120,7 @@ describe("server notebook", function() {
     it("useTool is called when tool is used", async function(){
 
       // Insert a top-level style with a tool style attached.
-      const toolData: ToolData = { name: 'test-tool', html: "Check Equivalences", data: "tool-data" };
+      const toolData: ToolData = { name: 'test-tool', html: <Html>"Check Equivalences", data: "tool-data" };
       const formulaData: FormulaData = { wolframData: '' };
       const styleProps: StylePropertiesWithSubprops = {
         role: 'FORMULA',

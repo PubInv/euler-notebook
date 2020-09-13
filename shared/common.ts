@@ -21,6 +21,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 // Types
 
+export type Html = '{Html}';
 export type Milliseconds = number;  // Time interval in milliseconds.
 export type Timestamp = number;     // Number of milliseconds since Jan 1, 1970 as returned by Date.now().
 
@@ -44,6 +45,10 @@ export function assertFalse( message?: string): never {
   throw new Error(message || ASSERTION_FAILED_MSG);
 }
 
+export function errorMessageForUser(err: Error): Html {
+  return <Html>(err instanceof ExpectedError ? err.message : "An unexpected error occurred.");
+}
+
 export function newPromiseResolver<T>(): { promise: Promise<T>, resolver: PromiseResolver<T> } {
   let resolver: PromiseResolver<T>;
   const promise = new Promise<T>((resolve, reject)=>{ resolver = { resolve, reject }; });
@@ -64,4 +69,16 @@ export function stackTrace(): string {
   try { throw new Error('StackTrace'); }
   catch(err) { rval = err.stack; }
   return rval;
+}
+
+// Exported Classes
+
+export class ExpectedError extends Error {
+  // An "expected error" is one that we anticipated could occur, and has a
+  // useful error message for the user.
+  // Also, if you catch an expected error you can assume that it has already
+  // been reported to the error logging system or does not need to be logged.
+  constructor(message: string) {
+    super(message);
+  }
 }

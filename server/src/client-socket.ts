@@ -28,7 +28,7 @@ import { Request } from "express";
 import * as WebSocket from "ws";
 
 // TODO: Handle websocket lifecycle: closing, unexpected disconnects, errors, etc.
-import { assert, PromiseResolver } from "./shared/common";
+import { assert, PromiseResolver, errorMessageForUser } from "./shared/common";
 import { NotebookPath, FolderPath, FolderObject, FolderChange } from "./shared/folder";
 import {
   ClientMessage, ServerMessage, ServerErrorMessage, ClientFolderChangeMessage, ClientFolderOpenMessage,
@@ -40,7 +40,7 @@ import {
 import { NotebookChange, NotebookObject, NotebookWatcher as ServerNotebookWatcher } from "./shared/notebook";
 
 // REVIEW: This file should not be dependent on any specific observers.
-import { ExpectedError, reportError } from "./error-handler";
+import { logError } from "./error-handler";
 import { ServerFolder, ServerFolderWatcher } from "./server-folder";
 import { ServerNotebook } from "./server-notebook";
 
@@ -173,7 +173,7 @@ export class ClientSocket {
       // REVIEW: Should we use the callback to see if the message went through?
       this.socket.send(json);
     } catch(err) {
-      reportError(err, "Error sending websocket message: ReadyState ${this.socket.readyState}");
+      logError(err, "Error sending websocket message: ReadyState ${this.socket.readyState}");
     }
   }
 
@@ -193,7 +193,7 @@ export class ClientSocket {
       const instance = new this(id, ws);
       this.instanceMap.set(id, instance);
     } catch(err) {
-      reportError(err, "Web Socket: unexpected error handling web-socket connection event.");
+      logError(err, "Web Socket: unexpected error handling web-socket connection event.");
     }
   }
 
@@ -323,17 +323,17 @@ export class ClientSocket {
       }
       ClientSocket.instanceMap.delete(this.id);
     } catch(err) {
-      reportError(err, "Client Socket: Unexpected error handling web-socket close.");
+      logError(err, "Client Socket: Unexpected error handling web-socket close.");
     }
   }
 
   private wsError(_ws: WebSocket, err: Error): void {
     try {
       // TODO: What to do in this case? Close the connection?
-      reportError(err, "Client Socket: web socket error: ${this.id}.");
+      logError(err, "Client Socket: web socket error: ${this.id}.");
       // REVIEW: is the error recoverable? is the websocket closed? will we get a closed event?
     } catch(err) {
-      reportError(err, "Client Socket: Unexpected error handling web-socket error.");
+      logError(err, "Client Socket: Unexpected error handling web-socket error.");
     }
   }
 
@@ -342,17 +342,17 @@ export class ClientSocket {
     try {
       msg = JSON.parse(message.toString());
     } catch(err) {
-      reportError(err, `Client Socket: invalid JSON in message received from client.`);
+      logError(err, `Client Socket: invalid JSON in message received from client.`);
       return;
     }
     this.cmMessage(msg).catch(err=>{
-      const expected = err instanceof ExpectedError;
-      if (!expected) {
-        reportError(err, `Client Socket: unexpected error processing client ${msg.type}/${msg.operation} message.`);
-      }
+      logError(err, `Client Socket: unexpected error processing client ${msg.type}/${msg.operation} message.`);
       if (msg.requestId) {
-        const message = expected ? err.message : "An unexpected error occurred.";
-        const response: ServerErrorMessage = { requestId: msg.requestId, type: 'error', message };
+        const response: ServerErrorMessage = {
+          requestId: msg.requestId,
+          type: 'error',
+          message: errorMessageForUser(err),
+        };
         this.sendMessage(response);
       }
     });

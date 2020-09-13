@@ -23,6 +23,7 @@ import * as debug1 from "debug";
 const MODULE = __filename.split(/[/\\]/).slice(-1)[0].slice(0,-3);
 const debug = debug1(`server:${MODULE}`);
 
+import { Html } from "../shared/common";
 import { NotebookChange, StyleObject, RelationshipObject } from "../shared/notebook";
 import { ToolData, NotebookChangeRequest, StyleInsertRequest, StylePropertiesWithSubprops, StyleDeleteRequest } from "../shared/math-tablet-api";
 
@@ -195,7 +196,7 @@ export class SubtrivClassifierObserver implements ObserverInstance {
       rval.push(changeReq);
 
       debug("STYLE ADDED XXX", style.id);
-      const toolData: ToolData = { name: 'plot', html: "Plot" };
+      const toolData: ToolData = { name: 'plot', html: <Html>"Plot" };
       const styleProps2: StylePropertiesWithSubprops = {
         type: 'TOOL-DATA',
         role: 'ATTRIBUTE',

@@ -23,7 +23,9 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 // Requirements
 
-import { Html, CLOSE_X_ENTITY } from "./dom";
+import { Html, errorMessageForUser } from "./shared/common";
+
+import { CLOSE_X_ENTITY } from "./dom";
 import { HtmlElement } from "./html-element";
 
 // Types
@@ -64,9 +66,14 @@ export class MessageDisplay extends HtmlElement<'div'> {
 
   // Public Instance Methods
 
-  public addErrorMessage(html: Html, err?: Error): void {
-    if (err) { html += `<pre>${err.message}</pre>`; }
-    new Message(this, 'error', html);
+  public addError(err: Error, message?: Html): void {
+    let html = errorMessageForUser(err);
+    if (message) { html = <Html>`${message}: ${html}`; }
+    this.addErrorMessage(html);
+  }
+
+  public addErrorMessage(message: Html): void {
+    new Message(this, 'error', message);
   }
 
   public addSuccessMessage(html: Html): void { new Message(this, 'success', html, { autoDismiss: true }); }

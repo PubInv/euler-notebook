@@ -21,21 +21,12 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 // Requirements
 
+import { ExpectedError } from "./shared/common";
+
 // Exported Functions
 
-export function reportError(err: Error, message: string /* TYPESCRIPT: Html type? */): void {
+export function logError(err: Error, message: string /* TYPESCRIPT: Html type? */): void {
+  if (err instanceof ExpectedError) { return; }
   console.error(message);
   console.dir(err);
-}
-
-// ExpectedError Class
-
-export class ExpectedError extends Error {
-  // An "expected error" is one that we anticipated could occur, and has a
-  // useful error message for the user.
-  // Also, if you catch an expected error you can assume that it has already
-  // been reported to the error logging system or does not need to be logged.
-  constructor(message: string) {
-    super(message);
-  }
 }

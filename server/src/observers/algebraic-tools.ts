@@ -23,6 +23,7 @@ import * as debug1 from "debug";
 const MODULE = __filename.split(/[/\\]/).slice(-1)[0].slice(0,-3);
 const debug = debug1(`server:${MODULE}`);
 
+import { Html } from "../shared/common";
 import {
   StyleType,NotebookChange, StyleObject, RelationshipProperties, HintData, HintRelationship,
   HintStatus, FormulaData, WolframExpression
@@ -227,7 +228,7 @@ export class AlgebraicToolsObserver implements ObserverInstance {
                         rval: NotebookChangeRequest[],
                         transformation: WolframExpression,
                         name: string,
-                        html_fun: (s: string) => string,
+                        html_fun: (s: string) => Html,
                         tex_fun: (s: string) => string) :
   Promise<void> {
     //    const f = await this.factor(style.data);
@@ -327,37 +328,37 @@ export class AlgebraicToolsObserver implements ObserverInstance {
     await this.addTool(style,rval,
                        "InputForm[Factor[${expr}]]",
                        "factor",
-                       (s : string) => `Factor: ${s}`,
+                       (s : string) => <Html>`Factor: ${s}`,
                        (s : string) => `\\text{Expand: } ${s}`);
     await this.addTool(style,rval,
                        "InputForm[Expand[${expr}]]",
                        "expand",
-                       (s : string) => `Expand: ${s}`,
+                       (s : string) => <Html>`Expand: ${s}`,
                        (s : string) => `\\text{Expand: } ${s}`);
     await this.addTool(style,rval,
                        "InputForm[ExpandAll[${expr}]]",
                        "expand all",
-                       (s : string) => `ExpandAll: ${s}`,
+                       (s : string) => <Html>`ExpandAll: ${s}`,
                        (s : string) => `\\text{ExpandAll: } ${s}`);
     await this.addTool(style,rval,
                        "InputForm[Simplify[${expr}]]",
                        "simplify",
-                       (s : string) => `Simplify: ${s}`,
+                       (s : string) => <Html>`Simplify: ${s}`,
                        (s : string) => `\\text{Simplify: } ${s}`);
     await this.addTool(style,rval,
                        "InputForm[Cancel[${expr}]]",
                        "cancel",
-                       (s : string) => `Cancel: ${s}`,
+                       (s : string) => <Html>`Cancel: ${s}`,
                        (s : string) => `\\text{Cancel: } ${s}`);
     await this.addTool(style,rval,
                        "InputForm[Together[${expr}]]",
                        "together",
-                       (s : string) => `Together: ${s}`,
+                       (s : string) => <Html>`Together: ${s}`,
                        (s : string) => `\\text{Together: } ${s}`);
     await this.addTool(style,rval,
                        "InputForm[Apart[${expr}]]",
                        "apart",
-                       (s : string) => `Apart: ${s}`,
+                       (s : string) => <Html>`Apart: ${s}`,
                        (s : string) => `\\text{Apart: } ${s}`);
   }
 

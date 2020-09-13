@@ -19,10 +19,11 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 // Requirements
 
+import { Html } from "../../shared/common";
 import { StyleId, FindStyleOptions } from "../../shared/notebook";
 import { SymbolTable, ToolData } from "../../shared/math-tablet-api";
 
-import { $new, escapeHtml, Html } from "../../dom";
+import { $new, escapeHtml } from "../../dom";
 import { getRenderer } from "../../renderers";
 import { HtmlElement } from "../../html-element";
 import { NotebookEditScreen } from ".";
@@ -65,7 +66,7 @@ export class Tools extends HtmlElement<'div'>{
     const symbolTableStyle = this.screen.notebook.findStyle(findOptions, style.id);
     if (symbolTableStyle) {
       const symbolTableData = <SymbolTable>symbolTableStyle.data;
-      let html = '<tr><td colspan="2">Symbols</td></tr>';
+      let html = <Html>'<tr><td colspan="2">Symbols</td></tr>';
       for (const [symbol, constraints] of Object.entries(symbolTableData)) {
         html += `<tr><td>${escapeHtml(symbol)}</td><td>${constraints.map(c=>escapeHtml(c)).join('; ')}</td></tr>`
       }

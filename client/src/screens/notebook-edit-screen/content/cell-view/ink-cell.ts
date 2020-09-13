@@ -19,7 +19,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 // Requirements
 
-import { assert } from "../../../../shared/common";
+import { Html, assert } from "../../../../shared/common";
 import { DrawingData, StyleId, StyleObject } from "../../../../shared/notebook";
 import { StyleChangeRequest, StyleMoveRequest } from "../../../../shared/math-tablet-api";
 
@@ -92,7 +92,7 @@ export class InkCell extends CellBase {
       appendTo: $content,
       attrs: { draggable: true },
       class: 'dragIcon',
-      html: "&equiv;",
+      html: <Html>"&equiv;",
       listeners: {
         dragend: e=>this.onDragEnd(e),
         dragstart: e=>this.onDragStart(e),

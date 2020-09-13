@@ -19,7 +19,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 // Requirements
 
-import { assert } from "./shared/common";
+import { assert, Html } from "./shared/common";
 import { SyncListener, addSyncEventListener, addAsyncEventListener, AsyncListener } from "./error-handler";
 
 // Types
@@ -27,7 +27,6 @@ import { SyncListener, addSyncEventListener, addAsyncEventListener, AsyncListene
 type CssSelector = string;
 type ElementId = string;
 export type ElementClass = string;
-export type Html = string;
 
 interface Attributes {
   [name: string]: boolean|number|string,
@@ -111,12 +110,12 @@ const SVG_NS = 'http://www.w3.org/2000/svg';
 
 const ENUMERATED_ATTRIBUTES = new Set<string>([ 'draggable']);
 
-export const CHECKMARK_ENTITY = '&#x2713;'
-export const CLOSE_X_ENTITY = '&#x2715;'
-export const DOTTED_CIRCLE_ENTITY = '&#x25CC;';
-export const PENCIL_ENTITY = '&#x270E;';
-export const RIGHT_TRIANGLE_ENTITY = '&#x25B6;';
-export const RIGHT_ARROW_ENTITY = '&#x27A1;';
+export const CHECKMARK_ENTITY = <Html>'&#x2713;'
+export const CLOSE_X_ENTITY = <Html>'&#x2715;'
+export const DOTTED_CIRCLE_ENTITY = <Html>'&#x25CC;';
+export const PENCIL_ENTITY = <Html>'&#x270E;';
+export const RIGHT_TRIANGLE_ENTITY = <Html>'&#x25B6;';
+export const RIGHT_ARROW_ENTITY = <Html>'&#x27A1;';
 
 // Exported Functions
 
@@ -215,11 +214,11 @@ export function escapeHtml(str: string): Html {
   // From: http://shebang.brandonmintern.com/foolproof-html-escaping-in-javascript/
   var $div = document.createElement('div');
   $div.appendChild(document.createTextNode(str));
-  return $div.innerHTML;
+  return <Html>$div.innerHTML;
 }
 
-export function svgIconReference(id: string): string {
-  return `<svg class="icon"><use xlink:href="#${id}"/></svg>`
+export function svgIconReference(id: string): Html {
+  return <Html>`<svg class="icon"><use xlink:href="#${id}"/></svg>`
 }
 
 // HELPER FUNCTIONS
@@ -245,7 +244,7 @@ function attachAsyncListeners($elt: Element, listeners: AsyncListeners): void {
   //         so we don't have to do the work of generating the "specifier" unless an error actually occurs.
   const specifier = elementSpecifier($elt);
   for (const [ eventName, listener ] of Object.entries(listeners)) {
-    addAsyncEventListener($elt, eventName, listener, `Internal error processing ${specifier} ${eventName} event.`);
+    addAsyncEventListener($elt, eventName, listener, <Html>`Internal error processing ${specifier} ${eventName} event.`);
   }
 }
 
@@ -254,7 +253,7 @@ function attachSyncListeners($elt: Element, listeners: SyncListeners): void {
   //         so we don't have to do the work of generating the "specifier" unless an error actually occurs.
   const specifier = elementSpecifier($elt);
   for (const [ eventName, listener ] of Object.entries(listeners)) {
-    addSyncEventListener($elt, eventName, listener, `Internal error processing ${specifier} ${eventName} event.`);
+    addSyncEventListener($elt, eventName, listener, <Html>`Internal error processing ${specifier} ${eventName} event.`);
   }
 }
 

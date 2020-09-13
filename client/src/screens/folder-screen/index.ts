@@ -21,6 +21,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 // Requirements
 
+import { Html } from "../../shared/common";
 import { FolderPath, FolderChange } from "../../shared/folder";
 import { Content } from "./content";
 import { Sidebar } from "./sidebar";
@@ -65,7 +66,7 @@ export class FolderScreen extends ScreenBase implements ClientFolderWatcher {
   public onClosed(reason?: string): void {
     this.sidebar.destroy();
     this.view.destroy();
-    this.displayErrorMessage(`Folder ${this.folder.path} closed by server: ${reason}`);
+    this.displayErrorMessage(<Html>`Folder ${this.folder.path} closed by server: ${reason}`);
   }
 
   // --- PRIVATE ---
@@ -89,8 +90,8 @@ export class FolderScreen extends ScreenBase implements ClientFolderWatcher {
         this.view = new Content(this);
           },
       (err)=>{
-        reportError(err, `Error opening folder '${path}'`);
-        this.displayErrorMessage(`Error opening folder '${path}'`);
+        reportError(err, <Html>`Error opening folder '${path}'`);
+        this.displayErrorMessage(<Html>`Error opening folder '${path}'`);
       }
     );
 

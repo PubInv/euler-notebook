@@ -19,7 +19,8 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 // Requirements
 
-import { $new, Html, HtmlElementSpecification } from "../dom";
+import { Html } from "../shared/common";
+import { $new, HtmlElementSpecification } from "../dom";
 import { HtmlElement } from "../html-element";
 
 // Requirements
