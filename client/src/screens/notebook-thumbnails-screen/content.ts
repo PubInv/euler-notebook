@@ -22,6 +22,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 import { $newSvg, $allSvg } from "../../dom";
 import { NotebookThumbnailsScreen } from ".";
 import { HtmlElement } from "../../html-element";
+import { notImplemented } from "../../shared/common";
 
 // Types
 
@@ -248,7 +249,7 @@ export class Content extends HtmlElement<'div'>{
 
   private onPageDoubleClicked(_event: MouseEvent): void {
     // TODO: double-click on thumbnail should go to page, not cells.
-    console.error("Page double clicked not yet implemented.")
+    notImplemented();
   }
 
 }

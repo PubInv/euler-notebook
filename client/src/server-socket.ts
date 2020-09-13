@@ -22,7 +22,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 // Requirements
 
-import { assert, Html, PromiseResolver, Timestamp, newPromiseResolver } from "./shared/common";
+import { assert, Html, PromiseResolver, Timestamp, newPromiseResolver, assertFalse } from "./shared/common";
 import { ClientMessage, ServerMessage, ServerMessageBase, RequestId } from "./shared/math-tablet-api";
 
 import { messageDisplayInstance } from "./message-display";
@@ -65,7 +65,7 @@ export class ServerSocket {
       this.ws.send(json);
     } catch(err) {
       // REVIEW: What to do?
-      console.error(`Server Socket: Error sending websocket message: ${this.ws.readyState} ${(<any>err).code} ${err.message}`)
+      reportError(err, <Html>"Error sending websocket message");
     }
   }
 
@@ -145,9 +145,7 @@ export class ServerSocket {
           // TODO: case 'error': errors should only come back from 'requests'
           case 'folder': ClientFolder.smMessage(msg); break;
           case 'notebook': ClientNotebook.smMessage(msg); break;
-          default:
-            console.error(`Unexpected server message type '${(<any>msg).type}' in WebSocket message`);
-            break;
+          default: assertFalse();
         }
       }
     } catch(err) {
@@ -160,7 +158,7 @@ export class ServerSocket {
       console.log("Notebook Conn: socket opened.");
       this.connectPromise.resolve(this);
     } catch(err) {
-      console.error("Unexpected client error handling WebSocket open event.");
+      reportError(err, <Html>"Unexpected error handling WebSocket open");
     }
   }
 }

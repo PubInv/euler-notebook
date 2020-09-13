@@ -17,6 +17,9 @@ You should have received a copy of the GNU Affero General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
+import { reportError } from "./error-handler";
+import { Html } from "./shared/common";
+
 // TODO: Undo needs to scroll the changed region into view.
 
 // Requirements
@@ -92,7 +95,7 @@ export class UndoStack {
     const change = this.stack[this.top];
     change.do().then(
       ()=>{ this.top += 1; },
-      err=>{ console.error(`Error doing ${change.type}: ${err.message}`); },
+      err=>{ reportError(err, <Html>`Error doing '${change.type}'`); },
     )
     .finally(()=>{ this.enableButtons(); })
   }
@@ -105,7 +108,7 @@ export class UndoStack {
     change.undo()
     .then(
       ()=>{ this.top -= 1; },
-      err=>{ console.error(`Error undoing ${change.type}: ${err.message}`); },
+      err=>{ reportError(err, <Html>`Error undoing '${change.type}'`); },
     )
     .finally(()=>{ this.enableButtons(); })
   }

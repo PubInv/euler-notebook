@@ -35,6 +35,7 @@ import { StylusDrawingPanel } from "../../../../stylus-drawing-panel";
 
 import { CellBase } from "./cell-base";
 import { $new } from "../../../../dom";
+import { reportError } from "../../../../error-handler";
 
 // Types
 
@@ -147,7 +148,7 @@ export class InkCell extends CellBase {
   private onDeleteCellButtonClicked(_event: MouseEvent): void {
     this.view.deleteTopLevelStyle(this.styleId).catch(err=>{
       // TODO: Better handling of this error.
-      console.error(`Error deleting cell:\n${err.stack}`);
+      reportError(err, <Html>"Error deleting cell");
     });
   }
 
@@ -217,14 +218,14 @@ export class InkCell extends CellBase {
     this.view.editStyle([ moveRequest ])
     .catch((err: Error)=>{
       // TODO: What to do here?
-      console.error(`Error moving style for drag/drop: ${err.message}`);
+      reportError(err, <Html>"Error moving style for drag/drop");
     });
   }
 
   private onInsertCellBelow(): void {
     this.view.insertInkCellBelow(this.styleId).catch(err=>{
       // TODO: Better handling of this error.
-      console.error(`Error inserting cell below:\n${err.stack}`);
+      reportError(err, <Html>"Error inserting cell below");
     });
   }
 
@@ -248,7 +249,7 @@ export class InkCell extends CellBase {
       this.view.editStyle([ changeRequest ])
       .catch((err: Error)=>{
         // TODO: What to do here?
-        console.error(`Error submitting resize: ${err.message}`);
+        reportError(err, <Html>"Error submitting resize");
       });
     }
   }

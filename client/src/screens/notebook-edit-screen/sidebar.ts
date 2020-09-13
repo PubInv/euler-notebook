@@ -183,7 +183,7 @@ export class Sidebar extends ButtonBar {
 
   private asyncCommand(command: string, promise: Promise<void>): void {
     promise.catch(err=>{
-      reportError(err, <Html>`Error executing async ${command}`);
+      reportError(err, <Html>`Error in '${command}'`);
     });
   }
 

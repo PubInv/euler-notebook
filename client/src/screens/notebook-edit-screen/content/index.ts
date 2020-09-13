@@ -22,7 +22,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 // Requirements
 
-import { assert } from "../../../shared/common";
+import { assert, ExpectedError, Html } from "../../../shared/common";
 import { $ } from "../../../dom";
 import {
   DrawingData, StyleId, StyleObject, NotebookChange,
@@ -39,6 +39,7 @@ import { CellBase } from "./cell-view/cell-base";
 import { createCell } from "./cell-view";
 import { HtmlElement } from "../../../html-element";
 import { NotebookEditScreen } from "..";
+import { reportError } from "../../../error-handler";
 
 // Types
 
@@ -200,20 +201,20 @@ export class Content extends HtmlElement<'div'>{
   public async insertHintCellBelow(): Promise<void> {
     // TODO: InsertHintButton should only be enabled when first of two consecutive formula cells is selected.
     if (!this.lastCellSelected) {
-      throw new Error("Must select a FORMULA cell to insert a hint.");
+      throw new ExpectedError("You must select a FORMULA cell to insert a hint.");
     }
     const fromId = this.lastCellSelected.styleId;
     const fromStyle = this.screen.notebook.getStyle(fromId);
     if (fromStyle.role != 'FORMULA') {
-      throw new Error("Must select a FORMULA cell to insert a hint.");
+      throw new ExpectedError("You must select a FORMULA cell to insert a hint.");
     }
     const toId = this.screen.notebook.followingStyleId(fromId);
     if (!toId) {
-      throw new Error("Can't insert a hint after last formula.");
+      throw new ExpectedError("You can't insert a hint after last formula.");
     }
     const toStyle = this.screen.notebook.getStyle(toId);
     if (toStyle.role != 'FORMULA') {
-      throw new Error("Can only insert a hint between two FORMULA cells.");
+      throw new ExpectedError("You can only insert a hint between two FORMULA cells.");
     }
 
     const data: HintData = {
@@ -701,10 +702,7 @@ export class Content extends HtmlElement<'div'>{
       console.log(`Command: ${commandName}`);
       commandFn.call(this)
       .catch(err=>{
-        // REVIEW: Duplicated code in sidebar.ts/asyncCommand.
-        // TODO: Display error message to user.
-        console.error(`Error executing async ${commandName} command: ${err.message}`);
-        // TODO: Dump stack trace
+        reportError(err, <Html>`Error in '${commandName}'`);
       });
     } else {
       if (IGNORED_KEYUPS.indexOf(keyName)<0) {

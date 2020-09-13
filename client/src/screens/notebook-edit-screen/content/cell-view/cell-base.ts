@@ -21,13 +21,14 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 // Requirements
 
-import { assert } from "../../../../shared/common";
+import { assert, Html } from "../../../../shared/common";
 import { Content } from "..";
 import { KeyboardInputPanel } from "../../../../keyboard-input-panel";
 import { StyleObject, StyleId } from "../../../../shared/notebook";
 import { NotebookChangeRequest } from "../../../../shared/math-tablet-api";
 import { Tools } from "../../tools";
 import { HtmlElement } from "../../../../html-element";
+import { reportError } from "../../../../error-handler";
 
 // Exported Class
 
@@ -178,8 +179,7 @@ export abstract class CellBase extends HtmlElement<'div'>{
     if (changeRequests.length>0) {
       this.view.editStyle(changeRequests)
       .catch((err: Error)=>{
-        // TODO: Display error to user?
-        console.error(`Error submitting input changes: ${err.message}`);
+        reportError(err, <Html>"Error submitting input changes");
       });
     }
     this.$elt.parentElement!.removeChild(this.inputPanel!.$elt);
