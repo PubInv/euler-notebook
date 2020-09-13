@@ -23,20 +23,13 @@ import * as debug1 from "debug";
 const MODULE = __filename.split(/[/\\]/).slice(-1)[0].slice(0,-3);
 const debug = debug1(`server:${MODULE}`);
 
-import { NotebookChange, StyleObject,
-         RelationshipObject,
-         StyleId,
-         FormulaData
-       } from "../shared/notebook";
-import { ToolData, NotebookChangeRequest, StyleInsertRequest, StylePropertiesWithSubprops,
-         StyleDeleteRequest,
-         RelationshipPropertiesMap,
-         NameValuePair
-       } from "../shared/math-tablet-api";
+import { NotebookChange, StyleObject, RelationshipObject, StyleId, FormulaData } from "../shared/notebook";
+import {
+  ToolData, NotebookChangeRequest, StyleInsertRequest, StylePropertiesWithSubprops,
+  StyleDeleteRequest, TexExpression, RelationshipPropertiesMap, NameValuePair
+} from "../shared/math-tablet-api";
 import { ServerNotebook, ObserverInstance } from "../server-notebook";
-import { execute,
-         convertWolframToTeX
-       } from "../wolframscript";
+import { execute, convertWolframToTeX } from "../wolframscript";
 import { Config } from "../config";
 
 
@@ -229,10 +222,10 @@ export class EquationSolverObserver implements ObserverInstance {
     // the official solution is....though it remains unparsed
     // Although it make some time, I want the "Tex" format for the tool tip here, and
     // I have no recourse but to go get it...
-    const lhs : string = await convertWolframToTeX(sol.name);
-    const rhs : string = await convertWolframToTeX(sol.value);
+    const lhs = await convertWolframToTeX(sol.name);
+    const rhs = await convertWolframToTeX(sol.value);
     debug("Equation Solver Tex", lhs,rhs);
-    const tex_def = lhs + " = " + rhs;
+    const tex_def = <TexExpression>(lhs + " = " + rhs);
 
     const toolData: ToolData = { name: 'promote',
                                  tex: tex_def,

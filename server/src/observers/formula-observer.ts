@@ -22,7 +22,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 import debug1 from "debug";
 
 import { FormulaData, WolframExpression } from "../shared/notebook";
-import { LatexData } from "../shared/math-tablet-api";
+import { TexExpression } from "../shared/math-tablet-api";
 
 import { ServerNotebook } from "../server-notebook";
 import { convertTeXtoWolfram, convertWolframToTeX } from "../wolframscript";
@@ -97,13 +97,13 @@ export class FormulaObserver extends BaseObserver {
     return formulaData.wolframData;
   }
 
-  private static async parseTexInput(data: LatexData): Promise<FormulaData|undefined> {
+  private static async parseTexInput(data: TexExpression): Promise<FormulaData|undefined> {
     // REVIEW: If conversion fails?
     const wolframData = await convertTeXtoWolfram(data);
     return { wolframData };
   }
 
-  private static async renderFormulaToTexRepresentation(formulaData: FormulaData): Promise<LatexData|undefined> {
+  private static async renderFormulaToTexRepresentation(formulaData: FormulaData): Promise<TexExpression|undefined> {
     // REVIEW: If conversion fails?
     return await convertWolframToTeX(formulaData.wolframData);
   }

@@ -32,7 +32,7 @@ import {
 import {
   SymbolData, NotebookChangeRequest, StyleInsertRequest, ToolData, StyleDeleteRequest,
   StylePropertiesWithSubprops, RelationshipPropertiesMap, RelationshipInsertRequest,
-  isEmptyOrSpaces, TransformationToolData
+  isEmptyOrSpaces, TransformationToolData, TexExpression
 } from "../shared/math-tablet-api";
 import { ServerNotebook, ObserverInstance } from "../server-notebook";
 import { execute as executeWolframscript, constructSubstitution, draftChangeContextName } from "../wolframscript";
@@ -305,7 +305,7 @@ export class SymbolClassifierObserver implements ObserverInstance {
                               [{ name: fromS.data.name,
                                  value: fromS.data.value}]);
       const isolated = `InputForm[runPrivate[FullSimplify[${sub_expr}]]]`;
-      const substituted = await execute(isolated);
+      const substituted = <TexExpression>(await execute(isolated));
       debug("substituted",substituted);
       const toolData: ToolData = { name: "substitute",
                                    html: <Html>/* REVIEW: safe cast? */sub_expr,

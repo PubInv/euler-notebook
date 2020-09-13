@@ -20,7 +20,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 // Requirements
 
 import { Html, assert } from "./shared/common";
-import { LatexData, } from "./shared/math-tablet-api";
+import { TexExpression, } from "./shared/math-tablet-api";
 import { StyleType } from "./shared/notebook";
 
 import { escapeHtml } from "./dom";
@@ -60,7 +60,7 @@ function htmlRenderer(html: Html): RenderResult {
   return { html };
 }
 
-function latexRenderer(latexData: LatexData): RenderResult {
+function latexRenderer(latexData: TexExpression): RenderResult {
   try {
     return { html: <Html>getKatex().renderToString(latexData, {}) };
   } catch(err) {

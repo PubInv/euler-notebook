@@ -26,7 +26,7 @@ const debug = debug1(`server:${MODULE}`);
 import { spawn, ChildProcess } from "child_process";
 
 import { WolframExpression } from "./shared/notebook";
-import { LatexData } from "./shared/math-tablet-api";
+import { TexExpression } from "./shared/math-tablet-api";
 
 import { WolframScriptConfig } from "./config";
 
@@ -268,24 +268,24 @@ export async function checkEquiv(a:string, b:string) : Promise<boolean> {
 // Note: As often happens, this does not handle the input
 // being an assignment properly...it is best to texify
 // both sides of an assignment and handle that way.
-export async function convertWolframToTeX(text: WolframExpression): Promise<LatexData> {
-    if (text == '') { return ''; }
+export async function convertWolframToTeX(text: WolframExpression): Promise<TexExpression> {
+    if (text == '') { return <TexExpression>''; }
     const getTex = `TeXForm[HoldForm[${text}]]`;
     try {
-      const tex = await execute(getTex);
+      const tex = <TexExpression>(await execute(getTex));
       return tex;
     }  catch (e) {
-      return "";
+      return <TexExpression>'';
     }
 }
 
-export async function convertEvaluatedWolframToTeX(text: WolframExpression): Promise<LatexData> {
-    if (text == '') { return ''; }
+export async function convertEvaluatedWolframToTeX(text: WolframExpression): Promise<TexExpression> {
+    if (text == '') { return <TexExpression>''; }
     const getTex = `TeXForm[HoldForm[Evaluate[${text}]]]`;
     try {
-      const tex = await execute(getTex);
+      const tex = <TexExpression>(await execute(getTex));
       return tex;
     }  catch (e) {
-      return "";
+      return <TexExpression>'';
     }
   }

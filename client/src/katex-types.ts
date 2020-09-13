@@ -22,13 +22,13 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 // TYPESCRIPT: Can we get this from the katex library?
 
-import { LatexData } from "./shared/math-tablet-api";
+import { TexExpression } from "./shared/math-tablet-api";
 
 // Types
 
 interface KatexGlobal {
-  render(latex: LatexData, $elt: HTMLElement, options: KatexOptions): void;
-  renderToString(latex: LatexData, options: KatexOptions): /* TYPESCRIPT: Html */ string;
+  render(latex: TexExpression, $elt: HTMLElement, options: KatexOptions): void;
+  renderToString(latex: TexExpression, options: KatexOptions): /* TYPESCRIPT: Html */ string;
 }
 
 interface KatexOptions {

@@ -22,7 +22,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 import * as debug1 from "debug";
 
 import { DrawingData } from "../shared/notebook";
-import { LatexData } from "../shared/math-tablet-api";
+import { TexExpression } from "../shared/math-tablet-api";
 
 import { Config } from "../config";
 import { ServerKeys, postLatexRequest } from "../myscript-batch-api";
@@ -75,7 +75,7 @@ export class MyScriptObserver extends BaseObserver {
 
   // Private Class Methods
 
-  private static async ruleConvertStrokesToLatex(data: DrawingData): Promise<LatexData|undefined> {
+  private static async ruleConvertStrokesToLatex(data: DrawingData): Promise<TexExpression|undefined> {
     // TODO: Prevent multiple calls to MyScript at the same time. "serialze" flag on rule?
     // TODO: Gather up multiple changes that occur with a series of strokes, rather than stroke by stroke.
     debug(`Convert strokes to LaTeX`);

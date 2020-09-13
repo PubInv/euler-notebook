@@ -32,7 +32,7 @@ import {
 // Types
 
 export type ImageData = string;
-export type LatexData = string; // TODO: Rename TexExpression
+export type TexExpression = '{TexExpression}';
 export type MthMtcaData = string;
 export type RequestId = '{RequestId}';
 export type SvgData = string; // TODO: Rename SvgMarkup
@@ -61,7 +61,7 @@ export interface ToolData {
   // REVIEW: This is a sum type, not a product type.
   //         i.e. we use either the html field or the tex field but never both.
   html?: Html;
-  tex?: LatexData;
+  tex?: TexExpression;
   data?: any; // Black-box info that gets passed back to tool creator when tool is used.
   origin_id?: number;
 }

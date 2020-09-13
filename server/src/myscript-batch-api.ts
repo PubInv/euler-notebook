@@ -31,7 +31,7 @@ import * as debug1 from "debug";
 import fetch, { Response } from "node-fetch";
 
 import { StrokeGroup } from "./shared/notebook";
-import { LatexData } from "./shared/math-tablet-api";
+import { TexExpression } from "./shared/math-tablet-api";
 
 const MODULE = __filename.split(/[/\\]/).slice(-1)[0].slice(0,-3);
 const debug = debug1(`server:${MODULE}`);
@@ -151,7 +151,7 @@ export async function postJiixRequest(keys: ServerKeys, strokeGroups: StrokeGrou
   return <Jiix>jiix;
 }
 
-export async function postLatexRequest(keys: ServerKeys, strokeGroups: StrokeGroup[]): Promise</* TYPESCRIPT: LatexString */string> {
+export async function postLatexRequest(keys: ServerKeys, strokeGroups: StrokeGroup[]): Promise<TexExpression> {
   debug(`Calling MyScript batch API for LaTeX.`);
   const batchRequest = batchRequestFromStrokes(strokeGroups);
   const bodyText = await postRequest(keys, LATEX_MIME_TYPE, batchRequest);
@@ -164,7 +164,7 @@ export async function postLatexRequest(keys: ServerKeys, strokeGroups: StrokeGro
       // Don't do anything. It could be LaTeX starting with a curly brace.
     }
   }
-  const rval = cleanLatex(bodyText);
+  const rval = cleanLatex(<TexExpression>bodyText);
   debug(`MyScript batch API recognized LaTeX: ${rval}`);
   return rval;
 }
@@ -212,16 +212,16 @@ function batchRequestFromStrokes(strokeGroups: StrokeGroup[]): BatchRequest {
   return rval;
 }
 
-function cleanLatex(latexExport: number|LatexData): LatexData {
+function cleanLatex(latexExport: number|TexExpression): TexExpression {
   // Function from MyScript provided examples.
   // Not sure what is wrong with their LaTeX output, but they feel the need to clean it up.
   // Might be because their output is not compatible with KaTeX or something like that.
-  if(typeof latexExport === 'number') {
-    latexExport = latexExport.toString();
+  if (typeof latexExport === 'number') {
+    latexExport = <TexExpression>latexExport.toString();
   }
   if (latexExport.includes('\\\\')) {
     const steps = '\\begin{align*}' + latexExport + '\\end{align*}';
-    return steps.replace("\\overrightarrow", "\\vec")
+    return <TexExpression>steps.replace("\\overrightarrow", "\\vec")
       .replace("\\begin{aligned}", "")
       .replace("\\end{aligned}", "")
       .replace("\\llbracket", "\\lbracket")
@@ -229,7 +229,7 @@ function cleanLatex(latexExport: number|LatexData): LatexData {
       .replace("\\widehat", "\\hat")
       .replace(new RegExp("(align.{1})", "g"), "aligned");
   }
-  return latexExport
+  return <TexExpression>latexExport
     .replace("\\overrightarrow", "\\vec")
     .replace("\\llbracket", "\\lbracket")
     .replace("\\rrbracket", "\\rbracket")

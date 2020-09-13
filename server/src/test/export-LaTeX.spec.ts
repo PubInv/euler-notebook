@@ -30,7 +30,7 @@ import 'mocha';
 // import * as sinon from "sinon";
 
 import { FormulaData } from "../shared/notebook";
-import { StyleInsertRequest, LatexData } from "../shared/math-tablet-api";
+import { StyleInsertRequest, TexExpression } from "../shared/math-tablet-api";
 import { ServerNotebook }  from "../server-notebook";
 
 import { ensureGlobalLoaded } from "./global";
@@ -89,7 +89,7 @@ function generateInsertRequests(inputs :string[]) : StyleInsertRequest[] {
 
 // Supply path with no extension; we will use .tex
 // for the LaTeX and .pdf for pdf by convention!
-function writeLaTeX(latex : LatexData,path: string) {
+function writeLaTeX(latex : TexExpression,path: string) {
   // @ts-ignore
   fs.writeFile(path+".tex", latex, (err) => {
     // throws an error, you could also catch it here
@@ -121,7 +121,7 @@ function writePDFfromStream(input,path: string) {
 // Supply path with no extension; we will use .tex
 // for the LaTeX and .pdf for pdf by convention!
 // @ts-ignore
-function writePDFfromString(latex : LatexData,path: string) {
+function writePDFfromString(latex : TexExpression,path: string) {
   writeLaTeX(latex,path);
   const input = fs.createReadStream(path+".tex");
   writePDFfromStream(input,path);

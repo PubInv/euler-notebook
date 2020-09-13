@@ -37,7 +37,7 @@ import {
 import {
   NotebookChangeRequest, StyleMoveRequest, StyleInsertRequest, StyleChangeRequest,
   RelationshipDeleteRequest, StyleDeleteRequest, RelationshipInsertRequest,
-  StylePropertiesWithSubprops, LatexData, StyleConvertRequest, ServerNotebookChangedMessage, ClientNotebookChangeMessage, ClientNotebookUseToolMessage,
+  StylePropertiesWithSubprops, TexExpression, StyleConvertRequest, ServerNotebookChangedMessage, ClientNotebookChangeMessage, ClientNotebookUseToolMessage,
 } from "./shared/math-tablet-api";
 
 import { ClientId } from "./client-socket";
@@ -180,8 +180,8 @@ export class ServerNotebook extends Notebook<ServerNotebookWatcher> {
     return absDirPathFromNotebookPath(this.path);
   }
 
-  public async exportLatex(): Promise<LatexData> {
-    const ourPreamble = `\\documentclass[12pt]{article}
+  public async exportLatex(): Promise<TexExpression> {
+    const ourPreamble = <TexExpression>`\\documentclass[12pt]{article}
 \\usepackage{amsmath}
 \\usepackage{amssymb}
 \\usepackage[normalem]{ulem}
@@ -194,7 +194,7 @@ export class ServerNotebook extends Notebook<ServerNotebookWatcher> {
 \\author{me}
 \\maketitle
 `;
-    const close = `\\end{document}`;
+    const close = <TexExpression>`\\end{document}`;
 
     // Our basic approach is to apply a function to each
     // top level style in order. This function will preferentially
@@ -375,9 +375,7 @@ export class ServerNotebook extends Notebook<ServerNotebookWatcher> {
       cells.push(retLaTeX);
     }
 
-    const finalTeX = ourPreamble +
-      cells.join('\n') +
-      close;
+    const finalTeX = <TexExpression>(ourPreamble + cells.join('\n') + close);
     debug("finalTeX", finalTeX);
     return finalTeX;
   }
