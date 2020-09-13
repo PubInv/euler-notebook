@@ -24,7 +24,7 @@ const MODULE = __filename.split(/[/\\]/).slice(-1)[0].slice(0,-3);
 const debug = debug1(`server:${MODULE}`);
 
 import { Html } from "../shared/common";
-import { NotebookChange, StyleObject, RelationshipObject } from "../shared/notebook";
+import { NotebookChange, StyleObject, RelationshipObject, WolframExpression } from "../shared/notebook";
 import { ToolData, NotebookChangeRequest, StyleInsertRequest, StylePropertiesWithSubprops, StyleDeleteRequest } from "../shared/math-tablet-api";
 
 import { ServerNotebook, ObserverInstance, absDirPathFromNotebookPath } from "../server-notebook";
@@ -300,7 +300,7 @@ export class SubtrivClassifierObserver implements ObserverInstance {
 
 // Return "null" if it does not seem to be an expression , and the name
 // of the variable (which must be unique to pass this test) if it is.
-async function isExpressionSubTrivariate(expr: string, usedSymbols: StyleObject[]): Promise<string[]|null> {
+async function isExpressionSubTrivariate(expr: WolframExpression, usedSymbols: StyleObject[]): Promise<string[]|null> {
   const subtrivariate_function_script = `With[{v = Variables[#]},If[(Length[v] == 1) || (Length[v] == 2), v, False]]`;
   const sub_expr =
         constructSubstitution(expr,
@@ -309,7 +309,7 @@ async function isExpressionSubTrivariate(expr: string, usedSymbols: StyleObject[
                                         value: s.data.value})));
 
   const unwrapped_script = subtrivariate_function_script+" &[" + sub_expr + "]";
-  const script = "runPrivate[" + unwrapped_script + "]";
+  const script = <WolframExpression>("runPrivate[" + unwrapped_script + "]");
   debug("EXPRESSION FOR CLASSIFIFYING: ",script );
   let result : string = await execute(script);
   if (result == "False") {
@@ -326,9 +326,8 @@ async function plotSubtrivariate(expr : string, variables: string[], filename : 
   debug("VARIABLES",variables);
   let plot_script =
     (variables.length == 1) ?
-    `Export["${filename}",Plot[${expr},{${variables[0]},0,6 Pi},PlotTheme->"Monochrome"],"SVG"]`
-    :
-    `Export["${filename}",Plot3D[${expr},{${variables[0]},0,6 Pi},{${variables[1]},0,6 Pi}],"SVG"]`;
+    <WolframExpression>`Export["${filename}",Plot[${expr},{${variables[0]},0,6 Pi},PlotTheme->"Monochrome"],"SVG"]` :
+    <WolframExpression>`Export["${filename}",Plot3D[${expr},{${variables[0]},0,6 Pi},{${variables[1]},0,6 Pi}],"SVG"]`;
   debug("PLOT COMMAND SENT TO WOLFRAM",plot_script);
   var changeRequest: StyleInsertRequest;
   await execute(plot_script);

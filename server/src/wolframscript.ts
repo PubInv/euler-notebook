@@ -59,7 +59,7 @@ const OUR_PRIVATE_CTX_NAME = "runPrv`";
 let gChildProcess: ChildProcess;
 
 // This promise is used to serialize sending commands to WolframScript.
-let gExecutingPromise: Promise<WolframExpression> = Promise.resolve('');
+let gExecutingPromise: Promise<WolframExpression> = Promise.resolve(<WolframExpression>'');
 
 let gServerStartingPromise: Promise<void>|undefined = undefined;
 let gServerStoppingPromise: Promise<void>|undefined = undefined;
@@ -87,8 +87,8 @@ export async function execute(command: WolframExpression): Promise<WolframExpres
 }
 
 export async function convertTeXtoWolfram(tex: string) : Promise<WolframExpression> {
-  const wrapped = `InputForm[ToExpression["${tex}", TeXForm]]`;
-  const escaped = wrapped.replace(/\\/g,"\\\\");
+  const wrapped = <WolframExpression>`InputForm[ToExpression["${tex}", TeXForm]]`;
+  const escaped = <WolframExpression>wrapped.replace(/\\/g,"\\\\");
   return execute(escaped);
 }
 
@@ -125,11 +125,11 @@ async function defineRunPrivate() : Promise<void> {
   // Also, our execute codes expects something to be returned, so I addded
   // a dummy return value
   debug(`defining runPrivate`);
-  var defRunPrivateScript = 'SetAttributes[runPrivate, HoldAllComplete]; runPrivate[code_] := With[{body = MakeBoxes@code},  Block[{$ContextPath = {"System`"}, $Context = "runPrv`"}, Global`xxx = ToExpression@body;  Clear["runPrv`*"]; Global`xxx]]; 4+5';
+  var defRunPrivateScript = <WolframExpression>'SetAttributes[runPrivate, HoldAllComplete]; runPrivate[code_] := With[{body = MakeBoxes@code},  Block[{$ContextPath = {"System`"}, $Context = "runPrv`"}, Global`xxx = ToExpression@body;  Clear["runPrv`*"]; Global`xxx]]; 4+5';
   await execute(defRunPrivateScript);
 }
 
-export function constructSubstitution(expr: string,usedVariables: NVPair[]) {
+export function constructSubstitution(expr: WolframExpression, usedVariables: NVPair[]): WolframExpression {
   // now we construct the expr to include known
   // substitutions of symbols....
   const rules = usedVariables.map(s => {
@@ -137,11 +137,11 @@ export function constructSubstitution(expr: string,usedVariables: NVPair[]) {
     return (` ${q.name} -> ${q.value}`);
   });
   debug("SUBSTITUIONS RULES",rules);
-  var sub_expr;
+  var sub_expr: WolframExpression;
   if (rules.length > 0) {
     const rulestring = rules.join(",");
     debug("RULESTRING",rulestring);
-    sub_expr = "(" + expr + " /. " + "{ " + rulestring + " }" + ")";
+    sub_expr = <WolframExpression>("(" + expr + " /. " + "{ " + rulestring + " }" + ")");
   } else {
     sub_expr = expr;
   }
@@ -152,9 +152,9 @@ export function convertMathTabletLanguageToWolfram(expr: string) : string {
   return expr.replace("=","==");
 }
 
-function executeNow(command: WolframExpression, resolve: (data: string)=>void, reject: (reason: any)=>void): void {
+function executeNow(command: WolframExpression, resolve: (data: WolframExpression)=>void, reject: (reason: any)=>void): void {
   debug(`Executing: "${command}".`)
-  let results = '';
+  let results = <WolframExpression>'';
   const stdoutListener = (data: Buffer)=>{
     let dataString: string = data.toString();
     debug(`data: ${showInvisible(dataString)}`);
@@ -172,7 +172,7 @@ function executeNow(command: WolframExpression, resolve: (data: string)=>void, r
       if (outputPromptMatch) {
 
         // ... then fulfill with whatever came between the prompts.
-        results = results.substring(outputPromptMatch![0].length, inputPromptMatch.index);
+        results = <WolframExpression>results.substring(outputPromptMatch![0].length, inputPromptMatch.index);
         results = draftChangeContextName(results);
         debug(`Execution results: "${results}".`);
         resolve(results);
@@ -254,23 +254,23 @@ async function startProcess(config?: WolframScriptConfig): Promise<void> {
   return gServerStartingPromise;
 }
 
-export function draftChangeContextName(expr: string,_ctx = OUR_PRIVATE_CTX_NAME) {
+export function draftChangeContextName(expr: WolframExpression,_ctx = OUR_PRIVATE_CTX_NAME): WolframExpression {
   // figure out how to make this a variable
-  return expr.replace(/runPrv`/g,'');
+  return <WolframExpression>expr.replace(/runPrv`/g,'');
 }
 
 export async function checkEquiv(a:string, b:string) : Promise<boolean> {
-  const wrapped = `InputForm[runPrivate[FullSimplify[(${a}) == (${b})]]]`;
+  const wrapped = <WolframExpression>`InputForm[runPrivate[FullSimplify[(${a}) == (${b})]]]`;
   const result = await execute(wrapped);
-  return (result == 'True');
+  return (<unknown>result == 'True');
 }
 
 // Note: As often happens, this does not handle the input
 // being an assignment properly...it is best to texify
 // both sides of an assignment and handle that way.
 export async function convertWolframToTeX(text: WolframExpression): Promise<TexExpression> {
-    if (text == '') { return <TexExpression>''; }
-    const getTex = `TeXForm[HoldForm[${text}]]`;
+    if (<unknown>text == '') { return <TexExpression>''; }
+    const getTex = <WolframExpression>`TeXForm[HoldForm[${text}]]`;
     try {
       const tex = <TexExpression>(await execute(getTex));
       return tex;
@@ -280,8 +280,8 @@ export async function convertWolframToTeX(text: WolframExpression): Promise<TexE
 }
 
 export async function convertEvaluatedWolframToTeX(text: WolframExpression): Promise<TexExpression> {
-    if (text == '') { return <TexExpression>''; }
-    const getTex = `TeXForm[HoldForm[Evaluate[${text}]]]`;
+    if (<unknown>text == '') { return <TexExpression>''; }
+    const getTex = <WolframExpression>`TeXForm[HoldForm[Evaluate[${text}]]]`;
     try {
       const tex = <TexExpression>(await execute(getTex));
       return tex;

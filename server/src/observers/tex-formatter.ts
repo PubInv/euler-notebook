@@ -229,12 +229,12 @@ export class TeXFormatterObserver implements ObserverInstance {
     } else {
       throw new Error("internal error");
     }
-    const sub_expr_lhs : string =
+    const sub_expr_lhs =
       constructSubstitution(lhs,
                             usedSymbols.map(
                               s => ({ name: s.data.name,
                                       value: s.data.value})));
-    const sub_expr_rhs : string =
+    const sub_expr_rhs =
       constructSubstitution(rhs,
                             usedSymbols.map(
                               s => ({ name: s.data.name,

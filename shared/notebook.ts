@@ -349,7 +349,7 @@ export const STYLE_SOURCES = [
 ] as const;
 export type StyleSource = typeof STYLE_SOURCES[number];
 
-export type WolframExpression = string;
+export type WolframExpression = '{WolframExpression}';
 
 // Constants
 

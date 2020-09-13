@@ -232,7 +232,7 @@ export class AlgebraicToolsObserver implements ObserverInstance {
                         tex_fun: (s: string) => TexExpression) :
   Promise<void> {
     //    const f = await this.factor(style.data);
-    const input = transformation.replace('${expr}', style.data);
+    const input = <WolframExpression>transformation.replace('${expr}', style.data);
     const output = await execute(input);
     if (this.effectiveEqual(output,style.data)) { // nothing interesting to do!
       return;
@@ -326,37 +326,37 @@ export class AlgebraicToolsObserver implements ObserverInstance {
     // if they are duplicates (which happens often), we add only
     // one tool for them.
     await this.addTool(style,rval,
-                       "InputForm[Factor[${expr}]]",
+                       <WolframExpression>"InputForm[Factor[${expr}]]",
                        "factor",
                        (s : string) => <Html>`Factor: ${s}`,
                        (s : string) => <TexExpression>`\\text{Expand: } ${s}`);
     await this.addTool(style,rval,
-                       "InputForm[Expand[${expr}]]",
+                       <WolframExpression>"InputForm[Expand[${expr}]]",
                        "expand",
                        (s : string) => <Html>`Expand: ${s}`,
                        (s : string) => <TexExpression>`\\text{Expand: } ${s}`);
     await this.addTool(style,rval,
-                       "InputForm[ExpandAll[${expr}]]",
+                       <WolframExpression>"InputForm[ExpandAll[${expr}]]",
                        "expand all",
                        (s : string) => <Html>`ExpandAll: ${s}`,
                        (s : string) => <TexExpression>`\\text{ExpandAll: } ${s}`);
     await this.addTool(style,rval,
-                       "InputForm[Simplify[${expr}]]",
+                       <WolframExpression>"InputForm[Simplify[${expr}]]",
                        "simplify",
                        (s : string) => <Html>`Simplify: ${s}`,
                        (s : string) => <TexExpression>`\\text{Simplify: } ${s}`);
     await this.addTool(style,rval,
-                       "InputForm[Cancel[${expr}]]",
+                       <WolframExpression>"InputForm[Cancel[${expr}]]",
                        "cancel",
                        (s : string) => <Html>`Cancel: ${s}`,
                        (s : string) => <TexExpression>`\\text{Cancel: } ${s}`);
     await this.addTool(style,rval,
-                       "InputForm[Together[${expr}]]",
+                       <WolframExpression>"InputForm[Together[${expr}]]",
                        "together",
                        (s : string) => <Html>`Together: ${s}`,
                        (s : string) => <TexExpression>`\\text{Together: } ${s}`);
     await this.addTool(style,rval,
-                       "InputForm[Apart[${expr}]]",
+                       <WolframExpression>"InputForm[Apart[${expr}]]",
                        "apart",
                        (s : string) => <Html>`Apart: ${s}`,
                        (s : string) => <TexExpression>`\\text{Apart: } ${s}`);

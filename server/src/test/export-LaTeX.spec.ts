@@ -29,7 +29,7 @@ const latex = require('node-latex'); // REVIEW: why not import?
 import 'mocha';
 // import * as sinon from "sinon";
 
-import { FormulaData } from "../shared/notebook";
+import { FormulaData, WolframExpression } from "../shared/notebook";
 import { StyleInsertRequest, TexExpression } from "../shared/math-tablet-api";
 import { ServerNotebook }  from "../server-notebook";
 
@@ -45,12 +45,13 @@ describe("LaTeX export tests", function() {
   afterEach(function(){ notebook.close(); });
 
   it("export LaTeX is actually generated", async function(){
-    const data:string[] = [
-      "X = 4",
-      "X + Y",
-      "X = 5",
-      "X = 6",
-      "Y = X^2"];
+    const data:WolframExpression[] = [
+      <WolframExpression>"X = 4",
+      <WolframExpression>"X + Y",
+      <WolframExpression>"X = 5",
+      <WolframExpression>"X = 6",
+      <WolframExpression>"Y = X^2",
+    ];
     const changeRequests = generateInsertRequests(data);
     await notebook.requestChange('TEST', changeRequests[0]);
     const latexInput = await notebook.exportLatex();
@@ -71,7 +72,7 @@ describe("LaTeX export tests", function() {
 
 // Helper Functions
 
-function generateInsertRequests(inputs :string[]) : StyleInsertRequest[] {
+function generateInsertRequests(inputs: WolframExpression[]) : StyleInsertRequest[] {
   var reqs : StyleInsertRequest[] = [];
   for(const wolframData of inputs) {
     const formulaData: FormulaData = { wolframData };

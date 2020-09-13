@@ -58,10 +58,10 @@ describe("test relationships", function() {
 
     it("Can derive formulae then propagate a change", async function(){
 
-      const OLD_F1 = "x + x^2";
-      const NEW_F1 = "2*x + 2*x^2";
-      const NEW_F2 = "2*x*(1 + x)";
-      const NEW_F3 = "2*x + 2*x^2";
+      const OLD_F1 = <WolframExpression>"x + x^2";
+      const NEW_F1 = <WolframExpression>"2*x + 2*x^2";
+      const NEW_F2 = <WolframExpression>"2*x*(1 + x)";
+      const NEW_F3 = <WolframExpression>"2*x + 2*x^2";
 
       // Insert "old" formula 1
       const changes = await notebook.requestChange('TEST', wolframFormulaInsertRequest(OLD_F1));

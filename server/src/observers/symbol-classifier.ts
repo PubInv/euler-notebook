@@ -304,7 +304,7 @@ export class SymbolClassifierObserver implements ObserverInstance {
         constructSubstitution(expr,
                               [{ name: fromS.data.name,
                                  value: fromS.data.value}]);
-      const isolated = `InputForm[runPrivate[FullSimplify[${sub_expr}]]]`;
+      const isolated = <WolframExpression>`InputForm[runPrivate[FullSimplify[${sub_expr}]]]`;
       const substituted = <TexExpression>(await execute(isolated));
       debug("substituted",substituted);
       const toolData: ToolData = { name: "substitute",
@@ -649,7 +649,7 @@ export class SymbolClassifierObserver implements ObserverInstance {
     return rval;
   }
   private async addSymbolDefStyles(style: StyleObject, rval: NotebookChangeRequest[]): Promise<void> {
-    const script = `FullForm[Hold[${style.data}]]`;
+    const script = <WolframExpression>`FullForm[Hold[${style.data}]]`;
     const result = await execute(script);
     if (!result) { return; }
     if (result.startsWith("Hold[Set[")) {
@@ -726,9 +726,9 @@ export class SymbolClassifierObserver implements ObserverInstance {
           debug('lhs,rhs',lhs,rhs);
 
           // But we use the Wolfram interpretation for out other work...
-          const script_lhs = `FullForm[Hold[${lhs}]]`;
+          const script_lhs = <WolframExpression>`FullForm[Hold[${lhs}]]`;
           const result_lhs = await execute(script_lhs);
-          const script_rhs = `FullForm[Hold[${rhs}]]`;
+          const script_rhs = <WolframExpression>`FullForm[Hold[${rhs}]]`;
           const result_rhs = await execute(script_rhs);
 
           if (result_lhs && result_rhs) {
@@ -790,7 +790,7 @@ export class SymbolClassifierObserver implements ObserverInstance {
     if (isEmptyOrSpaces(math)) {
       return [];
     } else {
-      const script = `runPrivate[Variables[` + math + `]]`;
+      const script = <WolframExpression>(`runPrivate[Variables[` + math + `]]`);
       const oresult = await execute(script);
       if (!oresult) { return []; }
       const result = draftChangeContextName(oresult);

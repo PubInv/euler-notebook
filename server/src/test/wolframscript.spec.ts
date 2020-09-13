@@ -39,43 +39,44 @@ import { assert } from "chai";
 import 'mocha';
 
 import { ensureGlobalLoaded } from "./global";
+import { WolframExpression } from "../shared/notebook";
 ensureGlobalLoaded();
 
 // Constants
 
-const TEST_CASES = [
-  ['FullForm[Hold[y = 13]]',
-   'Hold[Set[y, 13]]'],
+const TEST_CASES: [WolframExpression,WolframExpression][] = [
+  [<WolframExpression>'FullForm[Hold[y = 13]]',
+  <WolframExpression>'Hold[Set[y, 13]]'],
 
-  ['N[Sqrt[3]]',
-   '1.73205'],
+  [<WolframExpression>'N[Sqrt[3]]',
+  <WolframExpression>'1.73205'],
 
   // Determining if an expression is a quadratic
-  ['With[{v = Variables[#]}, Exponent[#, v[[1]]] == 2 && Length[v] == 1] &[x^2 + x]',
-   'True'],
+  [<WolframExpression>'With[{v = Variables[#]}, Exponent[#, v[[1]]] == 2 && Length[v] == 1] &[x^2 + x]',
+  <WolframExpression>'True'],
 
-  ['InputForm[x^3 + 3]',
-   '3 + x^3'],
+  [<WolframExpression>'InputForm[x^3 + 3]',
+  <WolframExpression>'3 + x^3'],
 
 //  Here Rob attempts to test some of the runPrivate functionality
 // EXPECTED TO FAIL: ['runPrivate[InputForm[x^3 + 3]]',
 //  '3 + x^3'],
-  ['15 + 13',
-   '28'],
-  ['runPrivate[15 + 13]',
-   '28'],
-  ['InputForm[runPrivate[x^3 + x]]',
-   'x + x^3'],
-  ['runPrivate[With[{ v = Variables[#]},If[(Length[v] == 1) && (Exponent[#,v[[1]]] ==2),v[[1]],False]]]  &[x^2 + 5]',
-   'x'],
-  ['runPrivate[With[{ v = Variables[#]},If[(Length[v] == 1) && (Exponent[#,v[[1]]] ==2),v[[1]],False]]]  &[x^2 + y + 5]',
-   'False'],
-  ['runPrivate[With[{ v = Variables[#]},If[(Length[v] == 1) && (Exponent[#,v[[1]]] ==2),v[[1]],False]]]  &[x^2 + y * 3]',
-   'False'],
-  ['runPrivate[With[{v = Variables[#]},If[(Length[v] == 1) && (Exponent[#, v[[1]]] == 2), v[[1]], False]] &[y /. { { y -> 4} }]]',
-   'False'],
-  ['runPrivate[With[{v = Variables[#]},If[(Length[v] == 1) && (Exponent[#, v[[1]]] == 2), v[[1]], False]] &[x^2 + 3*y /.  { y -> 4} ]]',
-   'x']
+  [<WolframExpression>'15 + 13',
+  <WolframExpression>'28'],
+  [<WolframExpression>'runPrivate[15 + 13]',
+  <WolframExpression>'28'],
+  [<WolframExpression>'InputForm[runPrivate[x^3 + x]]',
+  <WolframExpression>'x + x^3'],
+  [<WolframExpression>'runPrivate[With[{ v = Variables[#]},If[(Length[v] == 1) && (Exponent[#,v[[1]]] ==2),v[[1]],False]]]  &[x^2 + 5]',
+  <WolframExpression>'x'],
+  [<WolframExpression>'runPrivate[With[{ v = Variables[#]},If[(Length[v] == 1) && (Exponent[#,v[[1]]] ==2),v[[1]],False]]]  &[x^2 + y + 5]',
+  <WolframExpression>'False'],
+  [<WolframExpression>'runPrivate[With[{ v = Variables[#]},If[(Length[v] == 1) && (Exponent[#,v[[1]]] ==2),v[[1]],False]]]  &[x^2 + y * 3]',
+  <WolframExpression>'False'],
+  [<WolframExpression>'runPrivate[With[{v = Variables[#]},If[(Length[v] == 1) && (Exponent[#, v[[1]]] == 2), v[[1]], False]] &[y /. { { y -> 4} }]]',
+  <WolframExpression>'False'],
+  [<WolframExpression>'runPrivate[With[{v = Variables[#]},If[(Length[v] == 1) && (Exponent[#, v[[1]]] == 2), v[[1]], False]] &[x^2 + 3*y /.  { y -> 4} ]]',
+  <WolframExpression>'x']
 ];
 
 // This is an attempt to make a simple boolean test
@@ -132,8 +133,8 @@ describe("wolframscript", function(){
   }
 
   it("serializes execution", async function(){
-    const p1 = await execute('Pause[2]; "Hello,"');
-    const p2 = await execute('Pause[2]; "World!"');
+    const p1 = await execute(<WolframExpression>'Pause[2]; "Hello,"');
+    const p2 = await execute(<WolframExpression>'Pause[2]; "World!"');
     const [ r1, r2 ] = await Promise.all([p1, p2]);
     assert.equal(r1, 'Hello,');
     assert.equal(r2, 'World!');
@@ -147,8 +148,8 @@ describe("wolframscript other", function(){
 
     it("serializes execution", async function(){
       // REVIEW: What exactly is this testing?
-      const p1 = await execute('Pause[2]; "Hello,"');
-      const p2 = await execute('Pause[2]; "World!"');
+      const p1 = await execute(<WolframExpression>'Pause[2]; "Hello,"');
+      const p2 = await execute(<WolframExpression>'Pause[2]; "World!"');
       const [ r1, r2 ] = await Promise.all([p1, p2]);
       assert.equal(r1, 'Hello,');
       assert.equal(r2, 'World!');

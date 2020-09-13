@@ -32,7 +32,7 @@ import { NotebookPath, NOTEBOOK_PATH_RE, NotebookName, FolderPath, NotebookEntry
 import {
   Notebook, NotebookObject, NotebookChange, StyleObject, StyleRole, StyleType, StyleSource, StyleId,
   RelationshipObject, StyleMoved, StylePosition, VERSION, StyleChanged, RelationshipDeleted,
-  RelationshipInserted, StyleIdDoesNotExistError, StyleInserted, StyleDeleted, StyleConverted, NotebookWatcher
+  RelationshipInserted, StyleIdDoesNotExistError, StyleInserted, StyleDeleted, StyleConverted, NotebookWatcher, WolframExpression
 } from "./shared/notebook";
 import {
   NotebookChangeRequest, StyleMoveRequest, StyleInsertRequest, StyleChangeRequest,
@@ -666,7 +666,7 @@ export class ServerNotebook extends Notebook<ServerNotebookWatcher> {
     return styleId;
   }
 
-  public substitutionExpression(text: string,variables : string[],style: StyleObject) : [string[],string] {
+  public substitutionExpression(text: WolframExpression, variables: string[], style: StyleObject) : [string[],string] {
     // I think "variables" should be a parameter...
     // That parameter will be different when used by
     // SUBTRIVARIATE, and when used by EQUATION

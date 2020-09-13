@@ -27,7 +27,7 @@ import { $ } from "../../../dom";
 import {
   DrawingData, StyleId, StyleObject, NotebookChange,
   StyleType, StyleRelativePosition,
-  StylePosition, HintData, HintStatus, HintRelationship, FormulaData,
+  StylePosition, HintData, HintStatus, HintRelationship, FormulaData, WolframExpression,
 } from "../../../shared/notebook";
 import {
   DebugParams, DebugResults, StyleDeleteRequest, StyleInsertRequest, StylePropertiesWithSubprops,
@@ -439,7 +439,7 @@ export class Content extends HtmlElement<'div'>{
     // REVIEW: We shouldn't be assuming a specific HTML control on the page.
     const $typeSelector = $<'select'>(document, '#keyboardInputType');
 
-    const data: FormulaData = { wolframData: '' };
+    const data: FormulaData = { wolframData: <WolframExpression>'' };
     const styleProps: StylePropertiesWithSubprops = {
       role: 'FORMULA',
       type: 'FORMULA-DATA',

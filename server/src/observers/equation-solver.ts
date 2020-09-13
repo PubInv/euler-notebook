@@ -23,7 +23,7 @@ import * as debug1 from "debug";
 const MODULE = __filename.split(/[/\\]/).slice(-1)[0].slice(0,-3);
 const debug = debug1(`server:${MODULE}`);
 
-import { NotebookChange, StyleObject, RelationshipObject, StyleId, FormulaData } from "../shared/notebook";
+import { NotebookChange, StyleObject, RelationshipObject, StyleId, FormulaData, WolframExpression } from "../shared/notebook";
 import {
   ToolData, NotebookChangeRequest, StyleInsertRequest, StylePropertiesWithSubprops,
   StyleDeleteRequest, TexExpression, RelationshipPropertiesMap, NameValuePair
@@ -84,7 +84,7 @@ export class EquationSolverObserver implements ObserverInstance {
     //   relationsTo,
     // };
     debug("npv.value",nvp.value);
-    const wolframData = nvp.name + ' = ' + nvp.value;
+    const wolframData = <WolframExpression>(nvp.name + ' = ' + nvp.value);
     const formulaData: FormulaData = { wolframData };
     const styleProps: StylePropertiesWithSubprops = {
       role: 'FORMULA',
@@ -154,8 +154,8 @@ export class EquationSolverObserver implements ObserverInstance {
       // We need to compute the variables from the two halves of the
       // equation, then filter on uses if we have them.
       let variables: string[] = [];
-      const lhsScript = `InputForm[Variables[${equationStyle.data.lhs}]]`;
-      const rhsScript = `InputForm[Variables[${equationStyle.data.rhs}]]`;
+      const lhsScript = <WolframExpression>`InputForm[Variables[${equationStyle.data.lhs}]]`;
+      const rhsScript = <WolframExpression>`InputForm[Variables[${equationStyle.data.rhs}]]`;
       let lhsvarstr = await execute(lhsScript);
       let rhsvarstr = await execute(rhsScript);
 
@@ -169,7 +169,7 @@ export class EquationSolverObserver implements ObserverInstance {
 
 
       const [rvars,sub_expr] = this.notebook.substitutionExpression(
-        `${equationStyle.data.lhs} == ${equationStyle.data.rhs}`,
+        <WolframExpression>`${equationStyle.data.lhs} == ${equationStyle.data.rhs}`,
         variables,
         style);
       // We actually need to know which variables still remain!
@@ -188,7 +188,7 @@ export class EquationSolverObserver implements ObserverInstance {
 
 
       for (const varname of rvars) {
-        const script = `InputForm[Solve[${sub_expr},${varname}]]`;
+        const script = <WolframExpression>`InputForm[Solve[${sub_expr},${varname}]]`;
         let result = await execute(script);
         debug("result",result);
         // Solutions look like this: {{ a -> 4 }}; this syntax
@@ -216,14 +216,14 @@ export class EquationSolverObserver implements ObserverInstance {
     }
   }
 
-  private async solutionInsert(sol : NameValuePair, styleId: StyleId): Promise<StyleInsertRequest> {
+  private async solutionInsert(sol: NameValuePair, styleId: StyleId): Promise<StyleInsertRequest> {
     debug("Adding promotion of solution", sol);
     // I'm adding data here to make it more obvious that is where
     // the official solution is....though it remains unparsed
     // Although it make some time, I want the "Tex" format for the tool tip here, and
     // I have no recourse but to go get it...
-    const lhs = await convertWolframToTeX(sol.name);
-    const rhs = await convertWolframToTeX(sol.value);
+    const lhs = await convertWolframToTeX(<WolframExpression>sol.name);
+    const rhs = await convertWolframToTeX(<WolframExpression>sol.value);
     debug("Equation Solver Tex", lhs,rhs);
     const tex_def = <TexExpression>(lhs + " = " + rhs);
 

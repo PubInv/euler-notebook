@@ -76,7 +76,7 @@ export class WolframObserver extends BaseObserver {
       rval = undefined;
     } else {
       const converted = convertMathTabletLanguageToWolfram(expr);
-      rval = await execute(`InputForm[runPrivate[${converted}]]`);
+      rval = await execute(<WolframExpression>`InputForm[runPrivate[${converted}]]`);
     }
     debug("Evaluated to: ", rval);
     return rval;

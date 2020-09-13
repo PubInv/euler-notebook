@@ -25,7 +25,7 @@ const debug = debug1(`server:${MODULE}`);
 
 import { NextFunction, Request, Response, Router } from "express";
 
-import { escapeHtml, StyleId, StyleObject } from "../shared/notebook";
+import { escapeHtml, StyleId, StyleObject, WolframExpression } from "../shared/notebook";
 import { DebugParams, DebugResults, SymbolTable } from "../shared/math-tablet-api";
 
 import { ServerNotebook } from "../server-notebook";
@@ -127,7 +127,7 @@ async function obtainFormulaeInContext(notebook: ServerNotebook, style: StyleObj
     exprs = exprs.filter(x => x.includes("=="));
 
     var formulae_anded = exprs.join(' && ');
-    var code = `ExportString[InputForm[Solve[${formulae_anded}, {${symbols_in_curlies}}]],"ExpressionJSON"]`;
+    var code = <WolframExpression>`ExportString[InputForm[Solve[${formulae_anded}, {${symbols_in_curlies}}]],"ExpressionJSON"]`;
     debug("code = ",code);
     var results = await execute(code);
     debug("results = ",results,typeof(results));

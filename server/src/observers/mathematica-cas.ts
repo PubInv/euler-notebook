@@ -21,7 +21,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 import * as debug1 from "debug";
 // import { MthMtcaText } from "./shared/math-tablet-api";
-import { StyleObject, NotebookChange, StyleId, RelationshipProperties } from "../shared/notebook";
+import { StyleObject, NotebookChange, StyleId, RelationshipProperties, WolframExpression } from "../shared/notebook";
 import { NotebookChangeRequest, RelationshipInsertRequest, isEmptyOrSpaces } from "../shared/math-tablet-api";
 import { ServerNotebook, ObserverInstance } from "../server-notebook";
 import { constructSubstitution, checkEquiv, NVPair } from "../wolframscript";
@@ -128,12 +128,7 @@ export class MathematicaObserver implements ObserverInstance {
 
     debug("style in check equivalence rule",style);
 
-
-    // TODO: Does this server any purpose??
-    const data_s : string =
-      ((style.role == 'FORMULA') ||
-       (style.role == 'REPRESENTATION' && style.type == 'WOLFRAM-EXPRESSION'))
-    ? style.data : style.data;
+    const data_s = <WolframExpression>style.data;
 
     debug("data_s",data_s);
     if (isEmptyOrSpaces(data_s)) { return []; }
