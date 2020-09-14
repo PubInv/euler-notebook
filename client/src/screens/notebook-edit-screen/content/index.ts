@@ -42,6 +42,7 @@ import { HtmlElement } from "../../../html-element";
 import { NotebookEditScreen } from "..";
 import { reportError } from "../../../error-handler";
 import { userSettingsInstance } from "../../../user-settings";
+import { deepCopy } from "../../../common";
 
 // Types
 
@@ -87,6 +88,13 @@ const KEY_MAP: [ KeyName, KeyMods, CommandName][] = [
 ];
 
 const KEY_BINDINGS = new Map<KeyCombo, CommandName>(KEY_MAP.map(([ keyName, keyMods, commandName])=>[ `${keyName}${keyMods}`, commandName ]));
+
+const EMPTY_STROKE_DATA: DrawingData = {
+  size: { height: '96px', width: '624px' }, // 1in x 6.5in = 96px
+  strokeGroups: [
+    { strokes: [] }
+  ],
+};
 
 // Exported Class
 
@@ -247,21 +255,44 @@ export class Content extends HtmlElement<'div'>{
       else { afterId = StylePosition.Bottom; }
     }
 
-    const strokeData: DrawingData = {
-      size: { height: '96px', width: '624px' }, // 1in x 6.5in = 96px
-      strokeGroups: [
-        { strokes: [] }
-      ],
-    };
     const styleProps: StylePropertiesWithSubprops = {
       role: 'UNINTERPRETED-INK', subrole: 'OTHER', type: 'NONE', data: null,
       subprops: [
-        { role: 'INPUT', type: 'STROKE-DATA', data: strokeData }
+        { role: 'INPUT', type: 'STROKE-DATA', data: deepCopy(EMPTY_STROKE_DATA) }
       ]
     };
     const changeRequest: StyleInsertRequest = { type: 'insertStyle', afterId, styleProps };
     /* const undoChangeRequest = */ await this.sendUndoableChangeRequest(changeRequest);
     // const styleId = (<StyleDeleteRequest>undoChangeRequest).styleId
+  }
+
+  public async insertFormulaCellBelow(): Promise<void> {
+    debug("Insert Formula Cell Below");
+
+    // If cells are selected then in insert a keyboard input cell below the last cell selected.
+    // Otherwise, insert at the end of the notebook.
+    let afterId: StyleRelativePosition;
+    if (this.lastCellSelected) { afterId = this.lastCellSelected.styleId; }
+    else { afterId = StylePosition.Bottom; }
+
+    const inputMode = userSettingsInstance.defaultInputMode;
+    const inputStyle: StylePropertiesWithSubprops = (inputMode=='keyboard' ?
+      { role: 'INPUT', type: userSettingsInstance.defaultMathKeyboardInputFormat, data: '' } :
+      { role: 'INPUT', type: 'STROKE-DATA', data: deepCopy(EMPTY_STROKE_DATA) });
+
+    const data: FormulaData = { wolframData: <WolframExpression>'' };
+    const styleProps: StylePropertiesWithSubprops = {
+      role: 'FORMULA',
+      type: 'FORMULA-DATA',
+      data,
+      subprops: [ inputStyle ],
+    };
+
+    // Insert top-level style and wait for it to be inserted.
+    const changeRequest: StyleInsertRequest = { type: 'insertStyle', afterId, styleProps };
+    const undoChangeRequest = await this.sendUndoableChangeRequest(changeRequest);
+    /* const styleId = */(<StyleDeleteRequest>undoChangeRequest).styleId;
+    // this.startEditingCell(styleId);
   }
 
   public async insertKeyboardCellAbove(): Promise<void> {
@@ -452,11 +483,8 @@ export class Content extends HtmlElement<'div'>{
 
     // Insert top-level style and wait for it to be inserted.
     const changeRequest: StyleInsertRequest = { type: 'insertStyle', afterId, styleProps };
-    debug("Sending request");
     const undoChangeRequest = await this.sendUndoableChangeRequest(changeRequest);
-    debug("Request completed");
     const styleId = (<StyleDeleteRequest>undoChangeRequest).styleId;
-    debug("Style inserted.")
     this.startEditingCell(styleId);
   }
 

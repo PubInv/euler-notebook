@@ -83,6 +83,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
   .message
     border-radius 6px
     display flex
+    font-size x-small
     justify-content space-between
     margin-bottom 4px
     padding 6px
@@ -148,9 +149,11 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
     .leaf::before
       content "\0025cf "
 
-.error
-  color red
-  font-size x-small
+.entityButton
+  background none
+  border none
+  color inherit
+  padding 0
 
 .folderScreen
 
@@ -357,6 +360,9 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
   position fixed
   top var(--header-height)
   width var(--sidebar-width)
+
+  .entityButton
+    font-size 50px
 
   .separator
     margin 2px 0 2px 0

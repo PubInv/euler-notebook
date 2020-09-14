@@ -18,6 +18,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
 // TODO: Full-screen button should be like a toggle and look depressed when in full-screen mode.
+// LATER: If input mode user setting changes elsewhere then update the selected option.
 
 // Requirements
 

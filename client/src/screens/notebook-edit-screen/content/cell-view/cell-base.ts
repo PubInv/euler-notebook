@@ -29,6 +29,7 @@ import { NotebookChangeRequest } from "../../../../shared/math-tablet-api";
 import { Tools } from "../../tools";
 import { HtmlElement } from "../../../../html-element";
 import { reportError } from "../../../../error-handler";
+import { messageDisplayInstance } from "../../../../message-display";
 
 // Exported Class
 
@@ -170,8 +171,8 @@ export abstract class CellBase extends HtmlElement<'div'>{
 
   private onDoubleClicked(_event: MouseEvent): void {
     if (!this.editMode()) {
-      // REVIEW: Beep or something?
-      console.log(`Keyboard input panel not available for cell: ${this.styleId}`)
+      // LATER: Beep?
+      messageDisplayInstance.addWarningMessage(<Html>`Keyboard input panel not available for cell: ${this.styleId}`);
     }
   }
 

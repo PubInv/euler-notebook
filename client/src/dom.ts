@@ -116,6 +116,7 @@ export const DOTTED_CIRCLE_ENTITY = <Html>'&#x25CC;';
 export const PENCIL_ENTITY = <Html>'&#x270E;';
 export const RIGHT_TRIANGLE_ENTITY = <Html>'&#x25B6;';
 export const RIGHT_ARROW_ENTITY = <Html>'&#x27A1;';
+export const SIGMA_ENTITY = <Html>'&#x3A3;';
 
 // Exported Functions
 

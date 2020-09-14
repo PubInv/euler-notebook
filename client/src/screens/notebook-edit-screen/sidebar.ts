@@ -19,11 +19,8 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 // Requirements
 
-import { Html } from "../../shared/common";
-
 import { ButtonBar } from "../../button-bar";
-import { svgIconReference, $new } from "../../dom";
-import { reportError } from "../../error-handler";
+import { svgIconReference, $new, SIGMA_ENTITY } from "../../dom";
 
 import { NotebookEditScreen } from "./index";
 
@@ -55,7 +52,7 @@ export class Sidebar extends ButtonBar {
       tag: 'button',
       class: 'iconButton',
       html: svgIconReference('iconMonstrRedo4'),
-      listeners: { click: (e: MouseEvent)=>this.onRedoButtonClicked(e) },
+      asyncListeners: { click: (e: MouseEvent)=>this.onRedoButtonClicked(e) },
       title: "Redo",
     });
 
@@ -63,7 +60,7 @@ export class Sidebar extends ButtonBar {
       tag: 'button',
       class: 'iconButton',
       html: svgIconReference('iconMonstrTrashcan2'),
-      listeners: { click: (e: MouseEvent)=>this.onTrashButtonClicked(e) },
+      asyncListeners: { click: (e: MouseEvent)=>this.onTrashButtonClicked(e) },
       title: "Trash",
     });
 
@@ -71,7 +68,7 @@ export class Sidebar extends ButtonBar {
       tag: 'button',
       class: 'iconButton',
       html: svgIconReference('iconMonstrUndo4'),
-      listeners: { click: (e: MouseEvent)=>this.onUndoButtonClicked(e) },
+      asyncListeners: { click: (e: MouseEvent)=>this.onUndoButtonClicked(e) },
       title: "Undo",
     });
 
@@ -105,25 +102,32 @@ export class Sidebar extends ButtonBar {
         }, {
           tag: 'div', class: 'separator'
         }, {
+          // insert formula (sigma)
+          tag: 'button',
+          class: 'entityButton',
+          html: SIGMA_ENTITY,
+          asyncListeners: { click: (e: MouseEvent)=>this.onFormulaButtonClicked(e) },
+          title: "Insert formula",
+        }, {
           // insert keyboard cell
           tag: 'button',
           class: 'iconButton',
           html: svgIconReference('iconMonstrKeyboard2'),
-          listeners: { click: (e: MouseEvent)=>this.onKeyboardButtonClicked(e) },
+          asyncListeners: { click: (e: MouseEvent)=>this.onKeyboardButtonClicked(e) },
           title: "Insert keyboard cell",
         }, {
           // insert ink cell
           tag: 'button',
           class: 'iconButton',
           html: svgIconReference('iconMonstrPencil9'),
-          listeners: { click: (e: MouseEvent)=>this.onStylusButtonClicked(e) },
+          asyncListeners: { click: (e: MouseEvent)=>this.onStylusButtonClicked(e) },
           title: "Insert drawing cell",
         }, {
           // insert hint
           tag: 'button',
           class: 'iconButton',
           html: svgIconReference('iconMonstrIdea10'),
-          listeners: { click: (e: MouseEvent)=>this.onHintButtonClicked(e) },
+          asyncListeners: { click: (e: MouseEvent)=>this.onHintButtonClicked(e) },
           title: "Insert hint cell",
         }, {
           tag: 'div', class: 'separator'
@@ -148,7 +152,7 @@ export class Sidebar extends ButtonBar {
           tag: 'button',
           class: 'iconButton',
           html: svgIconReference('iconMonstrClothing18'),
-          listeners: { click: (e: MouseEvent)=>this.onUnderwearButtonClicked(e) },
+          asyncListeners: { click: (e: MouseEvent)=>this.onUnderwearButtonClicked(e) },
           title: "For development use only",
         },
         $trashButton,
@@ -181,12 +185,6 @@ export class Sidebar extends ButtonBar {
 
   // Private Instance Methods
 
-  private asyncCommand(command: string, promise: Promise<void>): void {
-    promise.catch(err=>{
-      reportError(err, <Html>`Error in '${command}'`);
-    });
-  }
-
   // Private Event Handlers
 
   private onBugButtonClicked(_event: MouseEvent): void {
@@ -194,36 +192,40 @@ export class Sidebar extends ButtonBar {
     this.screen.debugPopup.show();
   }
 
-  private onUnderwearButtonClicked(_e: MouseEvent): void {
-    this.asyncCommand("Development-Button", this.screen.view.developmentButtonClicked());
+  private async onUnderwearButtonClicked(_e: MouseEvent): Promise<void> {
+    await this.screen.view.developmentButtonClicked();
   }
 
   private onExportButtonClicked(_event: MouseEvent): void {
     this.screen.notebook.export();
   }
 
-  private onStylusButtonClicked(_e: MouseEvent): void {
-    this.asyncCommand("Insert-Drawing", this.screen.view.insertInkCellBelow());
+  private async onFormulaButtonClicked(_event: MouseEvent): Promise<void> {
+    await this.screen.view.insertFormulaCellBelow();
   }
 
-  private onHintButtonClicked(_e: MouseEvent): void {
-    this.asyncCommand("Insert-Hint", this.screen.view.insertHintCellBelow());
+  private async onStylusButtonClicked(_e: MouseEvent): Promise<void> {
+    await this.screen.view.insertInkCellBelow();
   }
 
-  private onKeyboardButtonClicked(_e: MouseEvent): void {
-    this.asyncCommand("Insert-Keyboard", this.screen.view.insertKeyboardCellBelow());
+  private async onHintButtonClicked(_e: MouseEvent): Promise<void> {
+    await this.screen.view.insertHintCellBelow();
   }
 
-  private onRedoButtonClicked(_e: MouseEvent): void {
-    this.asyncCommand("Redo", this.screen.view.redo());
+  private async onKeyboardButtonClicked(_e: MouseEvent): Promise<void> {
+    await this.screen.view.insertKeyboardCellBelow();
   }
 
-  private onTrashButtonClicked(_e: MouseEvent): void {
-    this.asyncCommand("Trash", this.screen.view.deleteSelectedCells());
+  private async onRedoButtonClicked(_e: MouseEvent): Promise<void> {
+    await this.screen.view.redo();
   }
 
-  private onUndoButtonClicked(_e: MouseEvent): void {
-    this.asyncCommand("Undo", this.screen.view.undo());
+  private async onTrashButtonClicked(_e: MouseEvent): Promise<void> {
+    await this.screen.view.deleteSelectedCells();
+  }
+
+  private async onUndoButtonClicked(_e: MouseEvent): Promise<void> {
+    await this.screen.view.undo();
   }
 
 }
