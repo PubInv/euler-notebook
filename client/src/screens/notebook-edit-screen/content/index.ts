@@ -22,6 +22,9 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 // Requirements
 
+import * as debug1 from "debug";
+const debug = debug1('client:notebook-edit-screen-content');
+
 import { assert, ExpectedError, Html } from "../../../shared/common";
 import { $ } from "../../../dom";
 import {
@@ -33,7 +36,6 @@ import {
   DebugParams, DebugResults, StyleDeleteRequest, StyleInsertRequest, StylePropertiesWithSubprops,
   StyleMoveRequest, NotebookChangeRequest,
 } from "../../../shared/math-tablet-api";
-import { TrackedChangesResults } from "../../../client-notebook";
 
 import { CellBase } from "./cell-view/cell-base";
 import { createCell } from "./cell-view";
@@ -275,6 +277,7 @@ export class Content extends HtmlElement<'div'>{
   }
 
   public async insertKeyboardCellBelow(): Promise<void> {
+    debug("Insert Keyboard Cell Below");
     // If cells are selected then in insert a keyboard input cell below the last cell selected.
     // Otherwise, insert at the end of the notebook.
     let afterId: StyleRelativePosition;
@@ -337,7 +340,7 @@ export class Content extends HtmlElement<'div'>{
     // Resubmit the change requests.
     assert(this.topOfUndoStack < this.undoStack.length);
     const entry = this.undoStack[this.topOfUndoStack++];
-    await this.sendTrackedChangeRequests(entry.changeRequests);
+    await this.sendUndoableChangeRequests(entry.changeRequests);
 
     // Enable undo and redo buttons as appropriate.
     this.screen.sidebar.$redoButton.disabled = (this.topOfUndoStack >= this.undoStack.length);
@@ -379,7 +382,7 @@ export class Content extends HtmlElement<'div'>{
     // Undo the changes by making a set of counteracting changes.
     assert(this.topOfUndoStack > 0);
     const entry = this.undoStack[--this.topOfUndoStack];
-    await this.sendTrackedChangeRequests(entry.undoChangeRequests);
+    await this.screen.notebook.sendChangeRequests(entry.undoChangeRequests);
 
     // Enable undo and redo as appropriate
     this.screen.sidebar.$redoButton.disabled = false;
@@ -452,8 +455,11 @@ export class Content extends HtmlElement<'div'>{
 
     // Insert top-level style and wait for it to be inserted.
     const changeRequest: StyleInsertRequest = { type: 'insertStyle', afterId, styleProps };
+    debug("Sending request");
     const undoChangeRequest = await this.sendUndoableChangeRequest(changeRequest);
+    debug("Request completed");
     const styleId = (<StyleDeleteRequest>undoChangeRequest).styleId;
+    debug("Style inserted.")
     this.startEditingCell(styleId);
   }
 
@@ -635,6 +641,7 @@ export class Content extends HtmlElement<'div'>{
     const cellView = this.cellViewFromStyleId(styleId);
     cellView.scrollIntoView();
     this.selectCell(cellView);
+    debug("Entering cell view edit mode");
     cellView.editMode();
   }
 
@@ -642,12 +649,10 @@ export class Content extends HtmlElement<'div'>{
 
   // Private Event Handlers
 
-  private async sendTrackedChangeRequests(changeRequests: NotebookChangeRequest[]): Promise<TrackedChangesResults> {
-    return await this.screen.notebook.sendTrackedChangeRequests(changeRequests);
-  }
-
   private async sendUndoableChangeRequest(changeRequest: NotebookChangeRequest): Promise<NotebookChangeRequest> {
     const undoChangeRequests = await this.sendUndoableChangeRequests([changeRequest]);
+    console.log("UNDO CHANGE REQUESTS");
+    console.dir(undoChangeRequests);
     assert(undoChangeRequests.length==1);
     return undoChangeRequests[0];
   }
@@ -657,8 +662,12 @@ export class Content extends HtmlElement<'div'>{
     this.screen.sidebar.$redoButton.disabled = true;
     this.screen.sidebar.$undoButton.disabled = true;
 
-    const { undoChangeRequests } = await this.sendTrackedChangeRequests(changeRequests);
-    if (!undoChangeRequests) { throw new Error("Did not get undo change requests when wantUndo is true."); }
+    // const { undoChangeRequests } = await this.sendTrackedChangeRequests(changeRequests);
+
+    const results = await this.screen.notebook.sendChangeRequests(changeRequests);
+
+    const undoChangeRequests = results.undoChangeRequests!;
+    assert(undoChangeRequests && undoChangeRequests.length>0);
     const entry: UndoEntry = { changeRequests, undoChangeRequests };
     while(this.undoStack.length > this.topOfUndoStack) { this.undoStack.pop(); }
     this.undoStack.push(entry);

@@ -37,7 +37,7 @@ import {
 import {
   NotebookChangeRequest, StyleMoveRequest, StyleInsertRequest, StyleChangeRequest,
   RelationshipDeleteRequest, StyleDeleteRequest, RelationshipInsertRequest,
-  StylePropertiesWithSubprops, TexExpression, StyleConvertRequest, ServerNotebookChangedMessage, ClientNotebookChangeMessage, ClientNotebookUseToolMessage,
+  StylePropertiesWithSubprops, TexExpression, StyleConvertRequest, ServerNotebookChangedMessage, ClientNotebookChangeMessage, ClientNotebookUseToolMessage, RequestId,
 } from "./shared/math-tablet-api";
 
 import { ClientId } from "./client-socket";
@@ -637,6 +637,8 @@ export class ServerNotebook extends Notebook<ServerNotebookWatcher> {
   public async requestChanges(
     source: StyleSource,
     changeRequests: NotebookChangeRequest[],
+    originatingWatcher?: NotebookWatcher,
+    requestId?: RequestId,
   ): Promise<NotebookChange[]> {
     // Applies the change requests to the notebook,
     // then runs the resulting changes through all of the
@@ -651,9 +653,9 @@ export class ServerNotebook extends Notebook<ServerNotebookWatcher> {
     const undoChangeRequests = this.applyRequestedChanges(source, changeRequests, changes);
     const newSyncChanges = this.processChangesSync(changes);
     const allSyncChanges = changes.concat(newSyncChanges);
-    this.notifyWatchersOfChanges(allSyncChanges, undoChangeRequests, false);
+    this.notifyWatchersOfChanges(allSyncChanges, undoChangeRequests, false, originatingWatcher, requestId);
     const asyncChanges = await this.processChangesAsync(allSyncChanges);
-    this.notifyWatchersOfChanges(asyncChanges, undefined, true);
+    this.notifyWatchersOfChanges(asyncChanges, undefined, true, originatingWatcher, requestId);
 
     await this.save();
 
@@ -709,12 +711,12 @@ export class ServerNotebook extends Notebook<ServerNotebookWatcher> {
   // Public Event Handlers
 
   public onNotebookChangeMessage(
-    _originatingWatcher: NotebookWatcher,
+    originatingWatcher: NotebookWatcher,
     msg: ClientNotebookChangeMessage,
   ): void {
     // TODO: pass request ID on responses to originatingWatcher.
     // TODO: options.client ID
-    this.requestChanges('USER', msg.changeRequests);
+    this.requestChanges('USER', msg.changeRequests, originatingWatcher, msg.requestId);
   }
 
   public onNotebookUseToolMessage(
@@ -1138,6 +1140,8 @@ export class ServerNotebook extends Notebook<ServerNotebookWatcher> {
     changes: NotebookChange[],
     undoChangeRequests: NotebookChangeRequest[]|undefined,
     complete?: boolean,
+    originatingWatcher?: NotebookWatcher,
+    requestId?: RequestId,
   ): void {
     for (const watcher of this.watchers) {
       // TODO: Include request ID for message to initiating client.
@@ -1149,8 +1153,13 @@ export class ServerNotebook extends Notebook<ServerNotebookWatcher> {
         path: this.path,
         operation: 'changed',
         changes,
-        complete,
         undoChangeRequests, // TODO: Only undo for initiating client.
+      }
+      if (complete) {
+        msg.complete = true;
+      }
+      if (watcher == originatingWatcher && requestId) {
+        msg.requestId = requestId;
       }
       watcher.onChanged(msg);
     };

@@ -200,7 +200,9 @@ export abstract class BaseObserver implements ObserverInstance {
         // Only change the target style if the data actually changed.
         if (!deepEqual(data, targetStyle.data)) {
           changeRequest = { type: 'changeStyle', styleId: targetStyle.id, data };
-        } else { console.log("DATA IS DEEPLY EQUAL, IGNORING."); }
+        } else {
+          debug("DATA IS DEEPLY EQUAL, IGNORING.");
+        }
       } else {
         changeRequest = { type: 'insertStyle', parentId, styleProps: { ...rule.props, data, exclusiveChildTypeAndRole: rule.exclusiveChildTypeAndRole } };
       }

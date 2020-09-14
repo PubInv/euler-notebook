@@ -166,7 +166,9 @@ export class ClientSocket {
   }
 
   public sendMessage(msg: ServerMessage): void {
-    // Should only be used by our watchers.
+    debug(`Socket sent message: ${this.id} ${msg.type}`);
+    console.dir(msg, { depth: null });
+  // Should only be used by our watchers.
     const json = JSON.stringify(msg);
     try {
       // REVIEW: Should we check ws.readyState
@@ -256,12 +258,13 @@ export class ClientSocket {
     assert(!this.folderWatchers.get(path));
     const { watcher, obj } = await FolderWatcher.open(this, msg);
     this.folderWatchers.set(path, watcher);
-    const response: ServerFolderOpenedMessage = { requestId: msg.requestId, type: 'folder', operation: 'opened', path, obj };
+    const response: ServerFolderOpenedMessage = { requestId: msg.requestId, type: 'folder', operation: 'opened', path, obj, complete: true };
     this.sendMessage(response);
   }
 
   private async cmMessage(msg: ClientMessage): Promise<void> {
-    debug(`Received socket message: ${msg.type}/${msg.operation}`);
+    debug(`Socket received message: ${this.id} ${msg.type}/${msg.operation}`);
+    console.dir(msg, { depth: null });
     switch(msg.type) {
       case 'folder':
         switch(msg.operation) {
@@ -300,7 +303,7 @@ export class ClientSocket {
     assert(!this.notebookWatchers.get(path));
     const { watcher, obj } = await NotebookWatcher.open(this, msg);
     this.notebookWatchers.set(path, watcher);
-    const response: ServerNotebookOpenedMessage = { requestId: msg.requestId, type: 'notebook', operation: 'opened', path, obj };
+    const response: ServerNotebookOpenedMessage = { requestId: msg.requestId, type: 'notebook', operation: 'opened', path, obj, complete: true };
     this.sendMessage(response);
   }
 
@@ -352,6 +355,7 @@ export class ClientSocket {
           requestId: msg.requestId,
           type: 'error',
           message: errorMessageForUser(err),
+          complete: true,
         };
         this.sendMessage(response);
       }
@@ -398,7 +402,7 @@ class FolderWatcher implements ServerFolderWatcher {
 
   public onClosed(reason: string): void {
     // ServerFolder is notifying us that the folder is being closed on the server end.
-    const msg: ServerFolderClosedMessage = { type: 'folder', operation: 'closed', path: this.folder.path, reason };
+    const msg: ServerFolderClosedMessage = { type: 'folder', operation: 'closed', path: this.folder.path, reason, complete: true };
     this.socket.sendMessage(msg);
     this.socket.removeFolderWatcher(this.folder.path);
     // TODO: Remove from folderWatchers?
@@ -459,7 +463,7 @@ class NotebookWatcher implements ServerNotebookWatcher {
 
   public onClosed(reason: string): void {
     // ServerNotebook is notifying us that the folder is being closed on the server end.
-    const msg: ServerNotebookClosedMessage = { type: 'notebook', operation: 'closed', path: this.notebook.path, reason };
+    const msg: ServerNotebookClosedMessage = { type: 'notebook', operation: 'closed', path: this.notebook.path, reason, complete: true };
     this.socket.sendMessage(msg);
     this.socket.removeNotebookWatcher(this.notebook.path);
     // TODO: Remove from folderWatchers?

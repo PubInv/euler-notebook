@@ -21,7 +21,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 import { OpenOptions } from "./shared/watched-resource";
 import { Notebook, NotebookChange, StyleId, NotebookWatcher } from "./shared/notebook";
-import { ServerNotebookChangedMessage, NotebookChangeRequest, ClientNotebookChangeMessage, ClientNotebookUseToolMessage, RequestId, ClientNotebookOpenMessage, ServerNotebookOpenedMessage, ServerNotebookMessage, ServerNotebookClosedMessage } from "./shared/math-tablet-api";
+import { ServerNotebookChangedMessage, NotebookChangeRequest, ClientNotebookChangeMessage, ClientNotebookUseToolMessage, ClientNotebookOpenMessage, ServerNotebookOpenedMessage, ServerNotebookMessage, ServerNotebookClosedMessage } from "./shared/math-tablet-api";
 
 import { appInstance } from "./app";
 import { NotebookName, NotebookPath } from "./shared/folder";
@@ -29,17 +29,16 @@ import { assert, assertFalse } from "./shared/common";
 
 // Types
 
-export interface TrackedChangesResults {
-  changes: NotebookChange[];
-  undoChangeRequests: NotebookChangeRequest[];
-}
-
 export interface ClientNotebookWatcher extends NotebookWatcher {
   onChangesFinished(): void;
 }
 
-
 export type OpenNotebookOptions = OpenOptions<ClientNotebookWatcher>;
+
+interface ChangeRequestResults {
+  changes: NotebookChange[];
+  undoChangeRequests?: NotebookChangeRequest[];
+}
 
 // Constants
 
@@ -93,32 +92,39 @@ export class ClientNotebook extends Notebook<ClientNotebookWatcher> {
     window.open(url, "_blank")
   }
 
-  public sendChangeRequest(changeRequest: NotebookChangeRequest): void {
-    this.sendChangeRequests([ changeRequest ]);
+  public async sendChangeRequest(changeRequest: NotebookChangeRequest): Promise<ChangeRequestResults> {
+    return this.sendChangeRequests([ changeRequest ]);
   }
 
-  public sendChangeRequests(changeRequests: NotebookChangeRequest[]): void {
-    if (changeRequests.length == 0) { return; }
+  public async sendChangeRequests(changeRequests: NotebookChangeRequest[]): Promise<ChangeRequestResults> {
+    // TODO: assert(!this.closed);
+    assert(changeRequests.length>0);
     const msg: ClientNotebookChangeMessage = {
       type: 'notebook',
       operation: 'change',
       path: this.path,
       changeRequests,
     }
-    appInstance.socket.sendMessage(msg);
-  }
-
-  public sendTrackedChangeRequest(changeRequest: NotebookChangeRequest): Promise<TrackedChangesResults> {
-    return this.sendTrackedChangeRequests([ changeRequest ]);
-  }
-
-  public sendTrackedChangeRequests(changeRequests: NotebookChangeRequest[]): Promise<TrackedChangesResults> {
-    return new Promise((resolve, reject)=>{
-      const tracker: RequestId = appInstance.socket.generateRequestId();
-      this.trackedChangeRequests.set(tracker, { resolve, reject });
-      this.trackedChangeResponses.set(tracker, { changes: [], undoChangeRequests: [] });
-      this.sendChangeRequests(changeRequests);
-    });
+    const responseMessages = await appInstance.socket.sendRequest<ServerNotebookChangedMessage>(msg);
+    assert(responseMessages.length>=1);
+    if (responseMessages.length == 1) {
+      const responseMessage = responseMessages[0];
+      this.smChanged(responseMessage);
+      return { changes: responseMessage.changes, undoChangeRequests: responseMessage.undoChangeRequests };
+    } else {
+      const rval: ChangeRequestResults = {
+        changes: [],
+        undoChangeRequests: [],
+      };
+      for (const responseMessage of responseMessages) {
+        this.smChanged(responseMessage);
+        rval.changes.push(...responseMessage.changes);
+        if (responseMessage.undoChangeRequests) {
+          rval.undoChangeRequests!.push(...responseMessage.undoChangeRequests);
+        }
+      }
+      return rval;
+    }
   }
 
   public useTool(id: StyleId): void {
@@ -155,23 +161,18 @@ export class ClientNotebook extends Notebook<ClientNotebookWatcher> {
 
   private constructor(path: NotebookPath, _options: OpenNotebookOptions) {
     super(path);
-    this.trackedChangeRequests = new Map();
-    this.trackedChangeResponses = new Map();
   }
 
   // Private Instance Properties
-
-  // REVIEW: Could there be more than one screen attached to this openNotebook?
-  private trackedChangeRequests: Map<RequestId, { resolve: (results: TrackedChangesResults)=>void, reject: (reason: any)=>void }>;
-  private trackedChangeResponses: Map<RequestId, TrackedChangesResults>;
 
   // Private Instance Methods
 
   protected async initialize(_options: OpenNotebookOptions): Promise<void> {
     const message: ClientNotebookOpenMessage = { type: 'notebook', operation: 'open', path: this.path };
-    const response = await appInstance.socket.sendRequest<ServerNotebookOpenedMessage>(message);
-    Notebook.validateObject(response.obj);
-    this.initializeFromObject(response.obj);
+    const responseMessages = await appInstance.socket.sendRequest<ServerNotebookOpenedMessage>(message);
+    assert(responseMessages.length == 1);
+    Notebook.validateObject(responseMessages[0].obj);
+    this.initializeFromObject(responseMessages[0].obj);
   }
 
   protected terminate(reason: string): void {
@@ -195,25 +196,6 @@ export class ClientNotebook extends Notebook<ClientNotebookWatcher> {
 
     for (const watcher of this.watchers) {
       watcher.onChangesFinished();
-    }
-
-    // If the changes were tracked then accumulate the changes
-    // and resolve the tracking promise if complete.
-    if (msg.requestId) {
-      const previousResults = this.trackedChangeResponses.get(msg.requestId);
-      if (!previousResults) { throw new Error("No previous results for tracker."); }
-      previousResults.changes = previousResults.changes.concat(msg.changes);
-      if (msg.undoChangeRequests) {
-        previousResults.undoChangeRequests = previousResults.undoChangeRequests.concat(msg.undoChangeRequests);
-      }
-      if (msg.complete) {
-        this.trackedChangeResponses.delete(msg.requestId);
-        const fns = this.trackedChangeRequests.get(msg.requestId);
-        this.trackedChangeRequests.delete(msg.requestId);
-        if (!fns) { throw new Error(`Missing tracker promise functions for ${msg.requestId}`); }
-        // REVIEW: Is there any way the promise could be rejected?
-        fns.resolve(previousResults);
-      }
     }
   }
 

@@ -184,7 +184,7 @@ export class ServerFolder extends Folder<ServerFolderWatcher> {
       this.applyChange(change);
       changes.push(change);
     }
-    const response: ServerFolderChangedMessage = { type: 'folder', operation: 'changed', path: this.path, changes };
+    const response: ServerFolderChangedMessage = { type: 'folder', operation: 'changed', path: this.path, changes, complete: true };
 
     // Notify other watchers
     for (const watcher of this.watchers) {

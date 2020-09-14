@@ -33,7 +33,12 @@ import { reportError } from "./error-handler";
 // Types
 
 type ConnectResolver = PromiseResolver<ServerSocket>;
-type RequestResolver = PromiseResolver<ServerMessage>;
+type RequestResolver = PromiseResolver<ServerMessage[]>;
+
+interface RequestInfo {
+  resolver: RequestResolver;
+  intermediateResults?: ServerMessage[];
+}
 
 // Class
 
@@ -69,14 +74,17 @@ export class ServerSocket {
     }
   }
 
-  public sendRequest<T extends ServerMessageBase>(msg: ClientMessage): Promise<T> {
-    // Review: ServerMessage subtype that has the messages that could be the response to a request?
+  public sendRequest<T extends ServerMessageBase>(msg: ClientMessage): Promise<T[]> {
+    // REVIEW: ServerMessage subtype that has the messages that could be the response to a request?
     const requestId = msg.requestId = this.generateRequestId();
-    const { promise, resolver } = newPromiseResolver<ServerMessage>();
-    assert(!this.requestMap.has(requestId))
-    this.requestMap.set(requestId, resolver);
+    const { promise, resolver } = newPromiseResolver<T[]>();
+    assert(!this.requestMap.has(requestId));
+    const info: RequestInfo = {
+      resolver: <RequestResolver></* TYPESCRIPT: */unknown>resolver
+    };
+    this.requestMap.set(requestId, info);
     this.sendMessage(msg);
-    return </* TYPESCRIPT: */Promise<T>><unknown>promise;
+    return promise;
   }
 
   // -- PRIVATE --
@@ -100,7 +108,7 @@ export class ServerSocket {
 
   private connectPromise: ConnectResolver;
   private lastRequestTimestamp: Timestamp;
-  private requestMap: Map<RequestId, RequestResolver>;
+  private requestMap: Map<RequestId, RequestInfo>;
   private ws: WebSocket;
 
   // Private Instance Methods
@@ -127,16 +135,31 @@ export class ServerSocket {
   }
 
   private onWsMessage(event: MessageEvent): void {
+    // REVIEW: Other clients will not get message if one client set a request ID.
     try {
       const msg: ServerMessage = JSON.parse(event.data);
       const requestId = msg.requestId;
       if (requestId && this.requestMap.has(requestId)) {
-        const resolver = this.requestMap.get(requestId)!;
-        this.requestMap.delete(requestId);
+        const info = this.requestMap.get(requestId)!;
         if (msg.type != 'error') {
-          resolver.resolve(msg);
+          if (msg.complete) {
+            if (!info.intermediateResults) {
+              info.resolver.resolve([msg]);
+            } else {
+              info.intermediateResults.push(msg);
+              info.resolver.resolve(info.intermediateResults);
+            }
+            this.requestMap.delete(requestId);
+          } else {
+            if (!info.intermediateResults) {
+              info.intermediateResults = [ msg ];
+            } else {
+              info.intermediateResults.push(msg);
+            }
+          }
         } else {
-          resolver.reject(new Error(msg.message));
+          info.resolver.reject(new Error(msg.message));
+          this.requestMap.delete(requestId);
         }
       } else {
         // console.log(`Message from server: ${msg.type}`);

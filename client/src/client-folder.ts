@@ -76,46 +76,20 @@ export class ClientFolder extends Folder<ClientFolderWatcher> {
   // Public Instance Methods
 
   public async newFolder(): Promise<FolderEntry> {
-    assert(!this.closed);
-
     const name = this.getUntitledFolderName();
     const changeRequest: FolderCreateRequest = { type: 'createFolder', name };
-    const msg: ClientFolderChangeMessage = {
-      type: 'folder',
-      operation: 'change',
-      path: this.path,
-      changeRequests: [ changeRequest ],
-    };
-    const response = await appInstance.socket.sendRequest<ServerFolderChangedMessage>(msg);
-    // REVIEW: Change notification should not go out to watcher that requested the change.
-    this.smChanged(response);
-    assert(response.changes.length == 1);
-    assert(response.changes[0].type == 'folderCreated');
-    const change = <FolderCreated>response.changes[0];
+    const change = await this.sendChangeRequest<FolderCreated>(changeRequest);
     return change.entry;
   }
 
   public async newNotebook(): Promise<NotebookEntry> {
-    assert(!this.closed);
     const name = this.getUntitledNotebookName();
     const changeRequest: NotebookCreateRequest = { type: 'createNotebook', name };
-    const msg: ClientFolderChangeMessage = {
-      type: 'folder',
-      operation: 'change',
-      path: this.path,
-      changeRequests: [ changeRequest ],
-    };
-    const response = await appInstance.socket.sendRequest<ServerFolderChangedMessage>(msg);
-    // REVIEW: Change notification should not go out to watcher that requested the change.
-    this.smChanged(response);
-    assert(response.changes.length == 1);
-    assert(response.changes[0].type == 'notebookCreated');
-    const change = <NotebookCreated>response.changes[0];
+    const change = await this.sendChangeRequest<NotebookCreated>(changeRequest);
     return change.entry;
   }
 
   public async removeFolder(name: FolderName): Promise<void> {
-    assert(!this.closed);
     assert(this.hasFolderNamed(name, true));
     const changeRequest: FolderDeleteRequest = { type: 'deleteFolder', name };
     const change = await this.sendChangeRequest<FolderDeleted>(changeRequest);
@@ -123,7 +97,6 @@ export class ClientFolder extends Folder<ClientFolderWatcher> {
   }
 
   public async removeNotebook(name: NotebookName): Promise<void> {
-    assert(!this.closed);
     assert(this.hasNotebookNamed(name, true));
     const changeRequest: NotebookDeleteRequest = { type: 'deleteNotebook', name };
     const change = await this.sendChangeRequest<NotebookDeleted>(changeRequest);
@@ -131,7 +104,6 @@ export class ClientFolder extends Folder<ClientFolderWatcher> {
   }
 
   public async renameFolder(name: FolderName, newName: FolderName): Promise<FolderRenamed> {
-    assert(!this.closed);
     assert(this.hasFolderNamed(name, true));
     const changeRequest: FolderRenameRequest = { type: 'renameFolder', name, newName };
     const change = await this.sendChangeRequest<FolderRenamed>(changeRequest);
@@ -140,7 +112,6 @@ export class ClientFolder extends Folder<ClientFolderWatcher> {
   }
 
   public async renameNotebook(name: NotebookName, newName: NotebookName): Promise<NotebookRenamed> {
-    assert(!this.closed);
     assert(this.hasNotebookNamed(name, true));
     const changeRequest: NotebookRenameRequest = { type: 'renameNotebook', name, newName };
     const change = await this.sendChangeRequest<NotebookRenamed>(changeRequest);
@@ -219,9 +190,10 @@ export class ClientFolder extends Folder<ClientFolderWatcher> {
 
   protected async initialize(_options: OpenFolderOptions): Promise<void> {
     const message: ClientFolderOpenMessage = { type: 'folder', operation: 'open', path: this.path };
-    const response = await appInstance.socket.sendRequest<ServerFolderOpenedMessage>(message);
-    Folder.validateObject(response.obj);
-    this.initializeFromObject(response.obj);
+    const responseMessages = await appInstance.socket.sendRequest<ServerFolderOpenedMessage>(message);
+    assert(responseMessages.length == 1);
+    Folder.validateObject(responseMessages[0].obj);
+    this.initializeFromObject(responseMessages[0].obj);
   }
 
   private async sendChangeRequest<T extends FolderChange>(changeRequest: FolderChangeRequest): Promise<T> {
@@ -232,16 +204,19 @@ export class ClientFolder extends Folder<ClientFolderWatcher> {
 
   private async sendChangeRequests(changeRequests: FolderChangeRequest[]): Promise<FolderChange[]> {
     assert(!this.closed);
-    assert(changeRequests.length>0); // was: if (changeRequests.length == 0) { return; }
+    assert(changeRequests.length>0);
     const msg: ClientFolderChangeMessage = {
       type: 'folder',
       operation: 'change',
       path: this.path,
       changeRequests,
     }
-    const response = await appInstance.socket.sendRequest<ServerFolderChangedMessage>(msg);
-    this.smChanged(response);
-    return response.changes;
+    const responseMessages = await appInstance.socket.sendRequest<ServerFolderChangedMessage>(msg);
+    for (const responseMessage of responseMessages) {
+      this.smChanged(responseMessage);
+    }
+    assert(responseMessages.length == 1);
+    return responseMessages[0].changes;
   }
 
   protected terminate(reason: string): void {

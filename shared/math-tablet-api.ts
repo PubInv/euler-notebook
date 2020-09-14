@@ -178,6 +178,7 @@ export interface StyleMoveRequest {
 // Messages from the server
 
 export interface ServerMessageBase {
+  complete?: boolean;
   requestId?: RequestId; // REVIEW: Just 'id'?
 }
 
@@ -210,7 +211,6 @@ interface ServerNotebookMessageBase extends ServerMessageBase {
 export interface ServerNotebookChangedMessage extends ServerNotebookMessageBase {
   operation: 'changed';
   changes: NotebookChange[];
-  complete?: boolean;
   undoChangeRequests?: NotebookChangeRequest[];
 }
 export interface ServerNotebookClosedMessage extends ServerNotebookMessageBase {
