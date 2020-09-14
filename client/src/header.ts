@@ -21,12 +21,16 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 // Requirements
 
+import * as debug1 from "debug";
+const debug = debug1('client:header');
+
 import { Html, notImplemented } from "./shared/common";
 import { Path } from "./shared/folder";
 
 import { ButtonBar } from "./button-bar";
 import { escapeHtml, $, $new, svgIconReference } from "./dom";
 import { monitorPromise } from "./error-handler";
+import { userSettingsInstance, InputMode } from "./user-settings";
 
 // Types
 
@@ -78,6 +82,8 @@ export class Header extends ButtonBar {
       listeners: { click: e=>this.onFullscreenButtonClicked(e) },
     });
 
+    const inputMode = userSettingsInstance.defaultInputMode;
+
     super({
       tag: 'div',
       id: 'header',
@@ -92,6 +98,18 @@ export class Header extends ButtonBar {
               title: "Math Tablet home",
               html: svgIconReference('iconMonstrHome6'),
               listeners: { click: _e=>{ window.location.href = '/#/'; }},
+            }, {
+              tag: 'select',
+              id: 'inputMode',
+              children: [
+                { tag: 'option', value: 'keyboard', html: <Html>"Keyboard", selected: inputMode=='keyboard' },
+                { tag: 'option', value: 'stylus', html: <Html>"Stylus", selected: inputMode=='stylus' },
+              ],
+              listeners: { input: e=>{
+                const inputMode = <InputMode>(<HTMLSelectElement>e.target).value;
+                debug(`Default input mode changing to '${inputMode}'`);
+                userSettingsInstance.defaultInputMode = inputMode;
+              }}
             },
           ],
         }, {

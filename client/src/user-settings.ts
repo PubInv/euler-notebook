@@ -21,11 +21,21 @@ import { assert } from "./shared/common";
 
 // Types
 
+export type InputMode = 'keyboard'|'stylus';
 export type MathKeyboardInputFormat = 'TEX-EXPRESSION'|'WOLFRAM-EXPRESSION'; // Subset of StyleType.
 
 // Class
 
 class UserSettings {
+
+  public get defaultInputMode(): InputMode {
+    return <InputMode|undefined>window.localStorage.getItem('inputMode') || 'stylus';
+  }
+
+  public set defaultInputMode(value: InputMode) {
+    assert(value == 'keyboard' || value == 'stylus');
+    window.localStorage.setItem('inputMode', value);
+  }
 
   public get defaultMathKeyboardInputFormat(): MathKeyboardInputFormat {
     return <MathKeyboardInputFormat|undefined>window.localStorage.getItem('mathKeyboardInputFormat') || 'WOLFRAM-EXPRESSION';
