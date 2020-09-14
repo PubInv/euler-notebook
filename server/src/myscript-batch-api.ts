@@ -152,6 +152,12 @@ export async function postJiixRequest(keys: ServerKeys, strokeGroups: StrokeGrou
 }
 
 export async function postLatexRequest(keys: ServerKeys, strokeGroups: StrokeGroup[]): Promise<TexExpression> {
+
+  // If there aren't any strokes yet, return an empty TeX expression.
+  if (strokeGroups.length == 1 && strokeGroups[0].strokes.length == 0) {
+    return <TexExpression>'';
+  }
+
   debug(`Calling MyScript batch API for LaTeX.`);
   const batchRequest = batchRequestFromStrokes(strokeGroups);
   const bodyText = await postRequest(keys, LATEX_MIME_TYPE, batchRequest);

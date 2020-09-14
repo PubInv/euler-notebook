@@ -19,7 +19,8 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 // TODO: Watch folder on disk. Generate change notifications if things are created, deleted, or renamed.
 // TODO: Folder lifecycle. When and how are folders that are no longer used cleaned up?
-
+// REVIEW: Where should we be checking if this.terminated is set?
+``
 // Requirements
 
 import * as debug1 from "debug";
@@ -119,7 +120,7 @@ export class ServerFolder extends Folder<ServerFolderWatcher> {
     msg: ClientFolderChangeMessage
   ): Promise<ServerFolderChangedMessage> {
     // TODO: Undo?
-    assert(!this.destroyed);
+    assert(!this.terminated);
 
     const changes: FolderChange[] = [];
     assert(msg.changeRequests.length>0);
@@ -216,8 +217,6 @@ export class ServerFolder extends Folder<ServerFolderWatcher> {
   }
 
   // Private Instance Properties
-
-  private destroyed?: boolean;
 
   // Private Instance Property Functions
 

@@ -61,8 +61,9 @@ export class MyScriptObserver extends BaseObserver {
 
   private static RULES: Rules = [
     {
+      // TODO: Only recognize input on "formula" ink cells.
       name: "strokes-to-latex",
-      styleTest: { role: 'REPRESENTATION', type: 'STROKE-DATA' },
+      styleTest: { role: 'INPUT', type: 'STROKE-DATA' },
       styleRelation: StyleRelation.PeerToPeer,
       props: { role: 'REPRESENTATION', type: 'TEX-EXPRESSION' },
       computeAsync: MyScriptObserver.ruleConvertStrokesToLatex,

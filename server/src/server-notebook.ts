@@ -17,6 +17,7 @@ You should have received a copy of the GNU Affero General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
+// REVIEW: Where should we be checking if this.terminated is set?
 // REVIEW: Have a "read-only" notebook that only lets you read but not make any changes?
 //         This would enforce all changes being made through the observer interfaces
 //         rather than directly on the notebook.
@@ -714,6 +715,7 @@ export class ServerNotebook extends Notebook<ServerNotebookWatcher> {
     originatingWatcher: NotebookWatcher,
     msg: ClientNotebookChangeMessage,
   ): void {
+    assert(!this.terminated);
     // TODO: pass request ID on responses to originatingWatcher.
     // TODO: options.client ID
     this.requestChanges('USER', msg.changeRequests, originatingWatcher, msg.requestId);

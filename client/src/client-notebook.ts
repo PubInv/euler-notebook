@@ -17,6 +17,8 @@ You should have received a copy of the GNU Affero General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
+// REVIEW: Where should we be checking if this.terminated is set?
+
 // Requirements
 
 import { OpenOptions } from "./shared/watched-resource";
@@ -97,7 +99,7 @@ export class ClientNotebook extends Notebook<ClientNotebookWatcher> {
   }
 
   public async sendChangeRequests(changeRequests: NotebookChangeRequest[]): Promise<ChangeRequestResults> {
-    // TODO: assert(!this.closed);
+    assert(!this.terminated);
     assert(changeRequests.length>0);
     const msg: ClientNotebookChangeMessage = {
       type: 'notebook',

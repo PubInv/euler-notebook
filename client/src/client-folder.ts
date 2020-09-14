@@ -17,6 +17,8 @@ You should have received a copy of the GNU Affero General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
+// REVIEW: Where should we be checking if this.terminated is set?
+
 // Requirements
 
 import { Folder, FolderPath, NotebookName, FolderName, FolderChange, FolderCreated, NotebookCreated, FolderEntry, NotebookEntry, FolderRenamed, NotebookRenamed, FolderDeleted, NotebookDeleted, FolderWatcher } from "./shared/folder";
@@ -152,8 +154,6 @@ export class ClientFolder extends Folder<ClientFolderWatcher> {
 
   // Private Instance Properties
 
-  private closed?: boolean;
-
   // Private Instance Property Functions
 
   // Private Instance Methods
@@ -203,7 +203,7 @@ export class ClientFolder extends Folder<ClientFolderWatcher> {
   }
 
   private async sendChangeRequests(changeRequests: FolderChangeRequest[]): Promise<FolderChange[]> {
-    assert(!this.closed);
+    assert(!this.terminated);
     assert(changeRequests.length>0);
     const msg: ClientFolderChangeMessage = {
       type: 'folder',

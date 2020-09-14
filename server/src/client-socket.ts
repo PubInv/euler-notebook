@@ -166,9 +166,10 @@ export class ClientSocket {
   }
 
   public sendMessage(msg: ServerMessage): void {
+    // Should only be called by our watchers.
+
     debug(`Socket sent message: ${this.id} ${msg.type}`);
-    console.dir(msg, { depth: null });
-  // Should only be used by our watchers.
+    // console.dir(msg, { depth: null });
     const json = JSON.stringify(msg);
     try {
       // REVIEW: Should we check ws.readyState
@@ -264,7 +265,7 @@ export class ClientSocket {
 
   private async cmMessage(msg: ClientMessage): Promise<void> {
     debug(`Socket received message: ${this.id} ${msg.type}/${msg.operation}`);
-    console.dir(msg, { depth: null });
+    // console.dir(msg, { depth: null });
     switch(msg.type) {
       case 'folder':
         switch(msg.operation) {
