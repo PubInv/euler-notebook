@@ -134,22 +134,22 @@ interface SolverConfiguration {
 
 // Constants
 
-const JIIX_MIME_TYPE = 'application/vnd.myscript.jiix';
+// const JIIX_MIME_TYPE = 'application/vnd.myscript.jiix';
 const LATEX_MIME_TYPE = 'application/x-latex';
 const MYSCRIPT_BATCH_API_URL = 'https://webdemoapi.myscript.com/api/v4.0/iink/batch';
 
 // Exported Functions
 
-export async function postJiixRequest(keys: ServerKeys, strokeGroups: StrokeGroup[]): Promise<Jiix> {
-  debug(`Calling MyScript batch API for JIIX.`);
-  const batchRequest = batchRequestFromStrokes(strokeGroups);
-  const bodyText = await postRequest(keys, JIIX_MIME_TYPE, batchRequest);
-  const jiix: Jiix|ErrorResponse = JSON.parse(bodyText);
-  if (isErrorResponse(jiix)) { throwRequestError(jiix); }
-  debug(`MyScript batch API recognized JIIX.`);
-  // TYPESCRIPT: Why is this cast necessary?
-  return <Jiix>jiix;
-}
+// export async function postJiixRequest(keys: ServerKeys, strokeGroups: StrokeGroup[]): Promise<Jiix> {
+//   debug(`Calling MyScript batch API for JIIX.`);
+//   const batchRequest = batchRequestFromStrokes(strokeGroups);
+//   const bodyText = await postRequest(keys, JIIX_MIME_TYPE, batchRequest);
+//   const jiix: Jiix|ErrorResponse = JSON.parse(bodyText);
+//   if (isErrorResponse(jiix)) { throwRequestError(jiix); }
+//   debug(`MyScript batch API recognized JIIX.`);
+//   // TYPESCRIPT: Why is this cast necessary?
+//   return <Jiix>jiix;
+// }
 
 export async function postLatexRequest(keys: ServerKeys, strokeGroups: StrokeGroup[]): Promise<TexExpression> {
 

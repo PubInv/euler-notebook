@@ -24,6 +24,7 @@ import { getRenderer, Renderer } from "./renderers";
 import { ROLE_OPTIONS, SUBROLE_OPTIONS, TYPE_OPTIONS } from "./role-selectors";
 import { StyleObject, StyleRole, StyleSubrole, StyleType } from "./shared/notebook";
 import { NotebookChangeRequest, StyleChangeRequest, StyleConvertRequest } from "./shared/math-tablet-api";
+import { userSettingsInstance, MathKeyboardInputFormat } from "./user-settings";
 
 // Types
 
@@ -71,6 +72,10 @@ export class KeyboardInputPanel {
     if (styleType != this.repStyle.type) {
       const changeRequest: StyleConvertRequest = { type: 'convertStyle', styleId: this.style.id, styleType, data };
       changeRequests.push(changeRequest);
+
+      if (this.style.role == 'FORMULA') {
+        userSettingsInstance.defaultMathKeyboardInputFormat = <MathKeyboardInputFormat>styleType;
+      }
     } else if (data != this.repStyle.data) {
       const changeRequest: StyleChangeRequest = { type: 'changeStyle', styleId: this.repStyle.id, data };
       changeRequests.push(changeRequest);

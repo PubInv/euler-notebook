@@ -92,15 +92,7 @@ export class Header extends ButtonBar {
               title: "Math Tablet home",
               html: svgIconReference('iconMonstrHome6'),
               listeners: { click: _e=>{ window.location.href = '/#/'; }},
-            }, {
-              tag: 'select',
-              id: 'keyboardInputType',
-              children: [
-                { tag: 'option', value: 'TEX-EXPRESSION', html: <Html>"LaTeX" },
-                { tag: 'option', value: 'PLAIN-TEXT', html: <Html>"Text" },
-                { tag: 'option', value: 'WOLFRAM-EXPRESSION', html: <Html>"Wolfram", selected: true },
-              ]
-            }
+            },
           ],
         }, {
           tag: 'div',

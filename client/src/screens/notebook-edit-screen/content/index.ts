@@ -26,10 +26,9 @@ import * as debug1 from "debug";
 const debug = debug1('client:notebook-edit-screen-content');
 
 import { assert, ExpectedError, Html } from "../../../shared/common";
-import { $ } from "../../../dom";
 import {
   DrawingData, StyleId, StyleObject, NotebookChange,
-  StyleType, StyleRelativePosition,
+  StyleRelativePosition,
   StylePosition, HintData, HintStatus, HintRelationship, FormulaData, WolframExpression,
 } from "../../../shared/notebook";
 import {
@@ -42,6 +41,7 @@ import { createCell } from "./cell-view";
 import { HtmlElement } from "../../../html-element";
 import { NotebookEditScreen } from "..";
 import { reportError } from "../../../error-handler";
+import { userSettingsInstance } from "../../../user-settings";
 
 // Types
 
@@ -440,16 +440,13 @@ export class Content extends HtmlElement<'div'>{
     // Inserts a cell into the notebook, and opens it for editing.
     // TODO: Inserting text cells, not just formula cells.
 
-    // REVIEW: We shouldn't be assuming a specific HTML control on the page.
-    const $typeSelector = $<'select'>(document, '#keyboardInputType');
-
     const data: FormulaData = { wolframData: <WolframExpression>'' };
     const styleProps: StylePropertiesWithSubprops = {
       role: 'FORMULA',
       type: 'FORMULA-DATA',
       data,
       subprops: [
-        { role: 'INPUT', type: <StyleType>$typeSelector.value, data: '' },
+        { role: 'INPUT', type: userSettingsInstance.defaultMathKeyboardInputFormat, data: '' },
       ]
     };
 
