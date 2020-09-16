@@ -22,11 +22,13 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 import debug1 from "debug";
 
 
-import { WolframExpression } from "../shared/notebook";
+import { WolframExpression,MTLExpression } from "../shared/notebook";
 import { isEmptyOrSpaces } from "../shared/math-tablet-api";
 
 import { BaseObserver, Rules, StyleRelation } from "./base-observer";
-import { convertMathTabletLanguageToWolfram, execute } from "../wolframscript";
+import {
+  convertMathTabletLanguageToWolfram,
+  execute } from "../wolframscript";
 import { ServerNotebook } from "../server-notebook";
 
 const MODULE = __filename.split(/[/\\]/).slice(-1)[0].slice(0,-3);
@@ -68,7 +70,7 @@ export class WolframObserver extends BaseObserver {
 
   // One problem here is that we are not rewriting the single equal, which is the "math-tablet input" language,
   // to the double equal, which is essentially the wolfram language (thought not a one-to-one correspondence.)
-  private static async ruleEvaluateWolframExpr(expr: WolframExpression) : Promise<WolframExpression|undefined> {
+  private static async ruleEvaluateWolframExpr(expr: MTLExpression) : Promise<WolframExpression|undefined> {
     // REVIEW: If evaluation fails?
     debug(`Evaluating: "${expr}".`);
     let rval: WolframExpression|undefined;

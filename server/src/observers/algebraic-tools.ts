@@ -33,13 +33,12 @@ import {
   TransformationToolData,RelationshipInsertRequest, TexExpression,
 } from "../shared/math-tablet-api";
 
-// import {
-//   DataflowStatus,
-//   DataflowValue
-// } from "../../server/observers/dataflow-observer";
 
 import { ServerNotebook, ObserverInstance } from "../server-notebook";
-import { execute,  convertWolframToTeX} from "../wolframscript";
+import { execute,
+         convertWolframLanguageToMathTablet,
+         convertMTLToTeX
+       } from "../wolframscript";
 import { Config } from "../config";
 
 // Types
@@ -231,8 +230,10 @@ export class AlgebraicToolsObserver implements ObserverInstance {
                         html_fun: (s: string) => Html,
                         tex_fun: (s: string) => TexExpression) :
   Promise<void> {
-    //    const f = await this.factor(style.data);
+
     const input = <WolframExpression>transformation.replace('${expr}', style.data);
+    debug("TOOL EXPR",input);
+
     const output = await execute(input);
     if (this.effectiveEqual(output,style.data)) { // nothing interesting to do!
       return;
@@ -244,12 +245,17 @@ export class AlgebraicToolsObserver implements ObserverInstance {
     // some rendering work on the tool side immediately. I will have to
     // come back in and handle this more complete later. - rlr
 
-    const tex_f : string = await convertWolframToTeX(output);
+    const output_mtl = convertWolframLanguageToMathTablet(output);
+    const tex_f : string = await convertMTLToTeX(output_mtl);
+
+        debug("output_mtl",output_mtl);
 
     // (Actually we want to put the LaTeX in here, but that is a separate step!
-    const data = { output, transformation, transformationName: name };
+    const data = { output: output_mtl,
+                   transformation: transformation,
+                   transformationName: name };
     const toolData: ToolData = { name: name,
-                                 html: html_fun(output),
+                                 html: html_fun(output_mtl),
                                  tex: tex_fun(tex_f),
                                  data,
                                  origin_id: style.id};
@@ -281,42 +287,6 @@ export class AlgebraicToolsObserver implements ObserverInstance {
     });
 
   }
-
-  // private checkUserInputChangeRule(style: StyleObject, rval: NotebookChangeRequest[]) : void {
-  //   if (style.role == 'REPRESENTATION') {
-  //     debug("found Representation change!");
-  //     // This means the user changed it, I am not sure the
-  //     // GUI is correctly updateing types in this case!
-  //     // It seems that the SOURCE should change to USER-DATA
-
-  //     const relOp : FindRelationshipOptions = {
-  //       toId: style.id,
-  //       role: 'TRANSFORMATION' };
-
-  //     const relsInPlace : RelationshipObject[] = this.notebook.findRelationships(relOp);
-  //     relsInPlace.forEach( r => {
-  //       const rdr : RelationshipDeleteRequest = {
-  //         type: 'deleteRelationship',
-  //         id: r.id,
-  //       };
-  //       rval.push(rdr);
-  //       // Now the Hint associated with these must be invalidated.
-  //       const kids : StyleObject[] =
-  //         this.notebook.findStyles({ role: 'HINT', type: 'HINT-DATA', source: 'ALGEBRAIC-TOOLS', recursive: true });
-  //       kids.forEach(k => {
-  //         if (k. == r.id) {
-  //           const changeReq: StyleDeleteRequest = {
-  //             type: 'deleteStyle',
-  //             styleId: k.id
-  //           };
-  //           console.log("deleting: ",k);
-  //           rval.push(changeReq);
-  //         }
-  //       });
-
-  //     });
-  //   }
-  // }
 
   private async algebraicToolsStyleInsertRule(style: StyleObject, rval: NotebookChangeRequest[]): Promise<void> {
 
@@ -397,135 +367,6 @@ export class AlgebraicToolsObserver implements ObserverInstance {
 
       await this.algebraicToolsStyleInsertRule(style, rval);
 
-      // var fromId : number;
-      // if (origin_top.role == 'FORMULA' && origin_top.type == 'FORMULA-DATA') {
-      //   fromId = origin_top.id;
-      // } else {
-      //   fromId = this.notebook.findStyle({role: 'FORMULA', type: 'FORMULA-DATA',recursive: true },
-      //                                    origin_top!.id)!.id;
-      // }
-      // const relOp : FindRelationshipOptions = {
-      //   fromId: fromId,
-      //   role: 'TRANSFORMATION' };
-
-
-      // const relsInPlace : RelationshipObject[] = this.notebook.findRelationships(relOp);
-
-      // for(var i = 0; i < relsInPlace.length; i++) {
-      //   var r = relsInPlace[i];
-      //   // We have a bug unrelated to this code (I think) where by old
-      //   // relationships are not being removed. I therefore check validity here;
-      //   // but we must track down how this is coming about.
-      //   if (!this.notebook.hasStyle({},r.toId)
-      //       ||
-      //       !this.notebook.hasStyle({},r.fromId)
-      //      ) {
-      //     debug("Discarding relation: ", r);
-      //     console.error("Found invalid relation: ",r);
-      //     continue;
-      //   }
-
-
-      //   // We will call dependentChangeRule once for each
-      //   // relation r. We artificially now construct input values.
-      //   // Using special knowledge of this transform, this is easy enough.
-      //   var dfv : DataflowValue[] = [];
-      //   // First is the formula
-      //   debug("DATA DATA DATA",style);
-      //   dfv.push({ status: DataflowStatus.Changed,
-      //              message: 'CHANGED',
-      //              value: style.data });
-
-      //   // Second is the Tool/Transform
-      //   dfv.push({ status: DataflowStatus.Changed,
-      //              message: 'UNCHANGED',
-      //              value: r.data });
-
-      //   const result = await this.dependentChangeRule(r,dfv);
-      //   // We now may enter a request change for the second formula and hint
-
-      //   const cr: StyleChangeRequest = {
-      //     type: 'changeStyle',
-      //     styleId: r.toId,
-      //     data: result[0].value,
-      //   };
-      //   rval.push(cr);
-
-      //   const data: HintData = {
-      //     relationship: HintRelationship.Equivalent,
-      //     status: HintStatus.Correct,
-      //     idOfRelationshipDecorated: r.id
-      //   };
-
-      //   // In order to load this, we must find the HINT matching this relation
-      //   const hintStyles = this.notebook.findStyles(
-      //     { role: 'HINT', recursive: true}
-      //   );
-
-      //   var hintStyle = hintStyles.find( f => f.data.idOfRelationshipDecorated == r.id);
-
-      //   const hintReq: StyleChangeRequest = {
-      //     styleId: hintStyle!.id,
-      //     type: 'changeStyle',
-      //     data,
-      //   };
-      //   rval.push(hintReq);
-      //      }
     }
-}
-
-
-  // RLR attempts here to create a change function
-  // to be used by the high-level API...
-  // @ts-ignore
-  // private async dependentChangeRule(relationship: RelationshipObject,
-  //                                   inputValues: DataflowValue[]) : Promise<DataflowValue[]> {
-
-  //   var dfvs: DataflowValue[] = [];
-  //   if (relationship.role != 'TRANSFORMATION') return dfvs;
-  //   // In this case (that of ALGEBRAIC-TOOLS),
-  //   // The outputs are only FORMULA and HINT in that order
-
-  //   // TODO: When LEGACY is removed, this shall be
-  //   // 0, not 1.
-  //   const changedData = inputValues[0].value;
-
-  //   var substituted = relationship.data.replace('${expr}', changedData);
-
-  //   var hdata : HintData = {
-  //     relationship: HintRelationship.Equivalent,
-  //     status: HintStatus.Correct,
-  //     idOfRelationshipDecorated: relationship.id,
-  //   };
-
-  //   try {
-  //     const transformed = await execute(substituted);
-
-  //     dfvs.push({
-  //       status: DataflowStatus.Changed,
-  //       message: 'CHANGED',
-  //       value: transformed
-  //     });
-  //     dfvs.push({
-  //       status: DataflowStatus.Changed,
-  //       message: 'CHANGED',
-  //       value: hdata,
-  //     });
-  //   } catch (e) {
-  //     debug("error in wolfram execution: "+substituted);
-  //     console.error("error in wolfram execution: "+substituted);
-  //     dfvs[0] = {
-  //       status: DataflowStatus.Invalid,
-  //       message: 'UNCHANGED',
-  //       value: changedData
-  //     }
-  //     dfvs[1] = {
-  //       status: DataflowStatus.Invalid,
-  //       message: 'UNCHANGED',
-  //       value: hdata,
-  //     }
-  //   }
-
-  //   return dfvs;
-  // }
+  }
 }

@@ -27,7 +27,7 @@ import { Html } from "../shared/common";
 import {
   NotebookChange, StyleObject, StyleId, RelationshipObject, RelationshipId, RelationshipProperties,
   StyleDeleted, StyleMoved, FindRelationshipOptions, StyleInserted, StyleChanged, HintData,
-  HintRelationship, HintStatus, FormulaData, WolframExpression
+  HintRelationship, HintStatus, FormulaData, WolframExpression, MTLExpression
 } from "../shared/notebook";
 import {
   SymbolData, NotebookChangeRequest, StyleInsertRequest, ToolData, StyleDeleteRequest,
@@ -35,7 +35,7 @@ import {
   isEmptyOrSpaces, TransformationToolData, TexExpression
 } from "../shared/math-tablet-api";
 import { ServerNotebook, ObserverInstance } from "../server-notebook";
-import { execute as executeWolframscript, constructSubstitution, draftChangeContextName } from "../wolframscript";
+import { execute as executeWolframscript, constructSubstitution, draftChangeContextName, convertWolframLanguageToMathTablet } from "../wolframscript";
 import { Config } from "../config";
 
 export class SymbolClassifierObserver implements ObserverInstance {
@@ -195,8 +195,12 @@ export class SymbolClassifierObserver implements ObserverInstance {
   //    if (style.source == 'SYMBOL-CLASSIFIER') {
         const did = style.id;
 
+    // RLR ALERT: This is returning null values from fromId and toId!!! It appears that
+    // the HINT change to mention a relationship, and this code never changed to match it.
+    // The impact is that nothing gets deleted based on relationship dependencies, which is weird.
         const hints = this.notebook.findStyles({ type: 'HINT-DATA', role: 'HINT', recursive: true });
-        hints.forEach(h => {
+    hints.forEach(h => {
+      debug("hint",h);
           const fromId = h.data.fromId;
           const toId = h.data.toId;
           debug("=================== ",fromId,toId,did);
@@ -289,32 +293,59 @@ export class SymbolClassifierObserver implements ObserverInstance {
   : Promise<NotebookChangeRequest[]> {
     debug("BEGINNING TOOL ADD");
 
+    debug("relId",relId);
     const fromS = this.notebook.getStyle(fromId);
     const toTopS = this.notebook.topLevelStyleOf(toId);
     debug("To Top",toTopS.id);
     const toEval = this.notebook.findStyle({role: 'EVALUATION', type: 'WOLFRAM-EXPRESSION',recursive: true },
                                            toTopS.id);
     debug("fromId",fromId);
+    // If the fromID is greater than the TopId, then the relationship goes away from us, and we need not recompute tools
+    // on the basis of it..
+    // I'm afraid I'm just guessing here....
+    if (fromId > toTopS.id) return rval;
+    /// otherwise the relationship may precede us and have to be considered...
+
     if (!toEval) {
       console.error("Could not find an EVALUATION WOLFRAM style");
     } else {
       debug("toEval",toEval.id);
-      const expr = toEval.data;
-      const sub_expr =
-        constructSubstitution(expr,
+      // Note: To use Simplify from Wolfram below, we use a Wolfram == operator.
+      // However, we do NOT allow that in MTL 0.1, which uses a single =.
+      // Variables ending in _w are in the Wolfram langauge, variables ending in _mtl are in the MTL 0.1
+      const expr_w = toEval.data;
+      debug("fromS.data",fromS.data);
+      const sub_expr_w =
+        constructSubstitution(expr_w,
                               [{ name: fromS.data.name,
                                  value: fromS.data.value}]);
-      const isolated = <WolframExpression>`InputForm[runPrivate[FullSimplify[${sub_expr}]]]`;
-      const substituted = <TexExpression>(await execute(isolated));
+      const isolated = <WolframExpression>`InputForm[runPrivate[FullSimplify[${sub_expr_w}]]]`;
+      const substituted = <WolframExpression>await execute(isolated);
+
+      // TODO -- we can do back substitutions that just produce "TRUE"
+      // Maybe this acceptable? But True is not a part of the MTL right now!
+      debug("SUBSTITUTED",substituted);
+      if (substituted === <WolframExpression>"True") { // Should we not also do False?
+        return rval;
+      }
+      const substituted_mtl = <MTLExpression>convertWolframLanguageToMathTablet(substituted);
+      const sub_expr_mtl =convertWolframLanguageToMathTablet(sub_expr_w);
       debug("substituted",substituted);
+
+      // Note: Create TeX is actually more complicated, and will require a
+      // conversion procedure. However, this cast below works on simple
+      // expressions from MTL into TeX
       const toolData: ToolData = { name: "substitute",
-                                   html: <Html>/* REVIEW: safe cast? */sub_expr,
-                                   tex: substituted,
+                                   html: <Html>/* REVIEW: safe cast? */sub_expr_mtl,
+                                   // WARNING: Invalid cast (MTL is not TeX)
+                                   tex: <TexExpression>substituted_mtl,
                                    //                                        html: html_fun(f),
                                    //                                        tex: tex_fun(tex_f),
-                                   data: { output: substituted,
+                                   // WARNING: Invalid cast (MTL is not TeX)
+                                   data: { output: <TexExpression>substituted_mtl,
+                                           // This is a pure Wolfram transform that does not include the conversion back to MTL
                                            transformation: isolated,
-                                           trabsformationName: "substitute"
+                                           transformationName: "substitute"
                                          },
                                    origin_id: relId};
       const styleProps2: StylePropertiesWithSubprops = {
@@ -344,7 +375,6 @@ export class SymbolClassifierObserver implements ObserverInstance {
 
   private async insertFromStyleRule(style: StyleObject, rval: NotebookChangeRequest[]) : Promise<NotebookChangeRequest[]>  {
 
-    debug("style insertFromStyleRule",style);
     var tlStyle;
     try {
       tlStyle = this.notebook.topLevelStyleOf(style.id);
@@ -359,12 +389,13 @@ export class SymbolClassifierObserver implements ObserverInstance {
     // a serialization that we don't want to support. We also must
     // listen for definition and use and handle them separately...
     if (style.role == 'REPRESENTATION' && style.type == 'WOLFRAM-EXPRESSION') {
+      debug("WOLFRAM_REPRESENTATION");
       // at this point, we are doing a complete "recomputation" based the use.
       // TODO: We should remove all Substitution tools here
       await this.removeAllCurrentSymbols(style,rval);
-      await this.addSymbolUseStyles(style, rval);
       await this.addSymbolDefStyles(style, rval);
     } else if (style.type == 'SYMBOL-DATA') {
+      debug("recomputeInsertRelationship");
       await this.recomputeInsertRelationships(tlid,style,rval);
     }
     return rval;
@@ -621,7 +652,7 @@ export class SymbolClassifierObserver implements ObserverInstance {
     const children = this.notebook.findStyles({ type: 'TOOL-DATA',
                                                 source: 'SYMBOL-CLASSIFIER',
                                                 recursive: true }
-                                              );
+                                             );
     children.forEach( kid => {
       if ((kid.data.origin_id == relationship.id)) {
         const deleteReq : StyleDeleteRequest = { type: 'deleteStyle',
@@ -634,8 +665,8 @@ export class SymbolClassifierObserver implements ObserverInstance {
 
 
   private async relationshipInsertedRule(relationship: RelationshipObject, rval: NotebookChangeRequest[]): Promise<NotebookChangeRequest[]> {
-
     if (relationship.role == 'SYMBOL-DEPENDENCY') {
+      debug("relationshipInsertRule",relationship);
       await this.recomputeTools(relationship.id,relationship.fromId,
                               relationship.toId,
                               rval);
@@ -668,29 +699,32 @@ export class SymbolClassifierObserver implements ObserverInstance {
 
         const value = value_matches[1];
 
-      const relationsTo: RelationshipPropertiesMap =
-        this.getAllMatchingNameAndType(name,'SYMBOL-USE');
+        const relationsTo: RelationshipPropertiesMap =
+          this.getAllMatchingNameAndType(name,'SYMBOL-USE');
 
         var styleProps: StylePropertiesWithSubprops;
 
-        if (name.match(/^[a-z]+$/i)) {
-          debug('defining symbol',name);
-          const data = { name, value };
-          styleProps = {
-            type: 'SYMBOL-DATA',
-            data,
-            role: 'SYMBOL-DEFINITION',
-            exclusiveChildTypeAndRole: true,
-            relationsTo,
-          }
-        } else {
-          // treat this as an equation
-          debug('defining equation');
-          // In math, "lval" and "rval" are conventions, without
-          // the force of meaning they have in programming langues.
-          const lhs = name_matches[1];
-          const rhs = value_matches[1];
-          debug(`lhs,rhs ${lhs} ${rhs}`);
+
+        // In math, "lval" and "rval" are conventions, without
+        // the force of meaning they have in programming langues.
+        const lhs = name_matches[1];
+        const rhs = value_matches[1];
+        debug(`lhs,rhs ${lhs} ${rhs}`);
+
+        // Note: If we happen to be a "constant definition", that is a simple symbol on lhs and constant on the rhs,
+        // Then even though technically that is an equation with a trivial solution, we will not create an equation
+        // style for it. Eventually the MTL should support such a definition as a distinguished type, but for now
+        // I (rlr) am merely attempting to reduce confusiong with tools.
+
+        // from: https://www.mediacollege.com/internet/javascript/text/count-words.html
+        function countWords(s:string) : number {
+          s = s.replace(/(^\s*)|(\s*$)/gi,"");//exclude  start and end white-space
+          s = s.replace(/[ ]{2,}/gi," ");//2 or more space to 1
+          s = s.replace(/\n /,"\n"); // exclude newline with a start spacing
+          return s.split(' ').filter(function(str){return str!="";}).length;
+          //return s.split(' ').filter(String).length; - this can also be used
+        }
+        if (!((countWords(lhs) === 1) && (countWords(rhs) === 1))) {
           const data = { lhs, rhs };
           styleProps = {
             type: 'EQUATION-DATA',
@@ -702,11 +736,29 @@ export class SymbolClassifierObserver implements ObserverInstance {
           // In this case, we need to treat lval and rvals as expressions which may produce their own uses....
           await this.addSymbolUseStylesFromString(lhs, style, rval);
           await this.addSymbolUseStylesFromString(rhs, style, rval);
-          // Now let's try to add a tool tip to solve:
+          const changeReq: StyleInsertRequest = { type: 'insertStyle', parentId: style.id, styleProps };
+          rval.push(changeReq);
+        } else {
+          // This is a constant defintion, so we don't treat as an equation!
+          debug("Treating as constant definition");
+          debug("lhs",lhs,countWords(lhs));
+          debug("hrs",rhs,countWords(rhs));
         }
 
-        const changeReq: StyleInsertRequest = { type: 'insertStyle', parentId: style.id, styleProps };
-        rval.push(changeReq);
+        if (name.match(/^[a-z]+$/i)) {
+          debug('defining symbol',name);
+          const data = { name, value };
+          styleProps = {
+            type: 'SYMBOL-DATA',
+            data,
+            role: 'SYMBOL-DEFINITION',
+            exclusiveChildTypeAndRole: true,
+            //           relationsTo,
+          }
+          const changeReq1: StyleInsertRequest = { type: 'insertStyle', parentId: style.id, styleProps };
+          rval.push(changeReq1);
+        }
+
 
         debug(`Inserting def style.`);
 
@@ -855,24 +907,7 @@ export class SymbolClassifierObserver implements ObserverInstance {
     }
     return relationsFrom;
   }
-  // There is only one "def", so we can handle that by exclusivity of the children, but in the case
-  // of the uses, there may be more than one use. We therefore have little choice but to delete all
-  // SYMBOL-USE / SYMBOL children before add these in.
-  private async removeAllCurrentUses(style: StyleObject, rval: NotebookChangeRequest[]): Promise<void> {
-    // REVIEW: Does this search need to be recursive?
-    const children = this.notebook.findStyles({ type: 'SYMBOL-DATA', recursive: true }, style.id);
 
-    children.forEach( kid => {
-      if ((kid.parentId == style.id) &&
-          (kid.type == 'SYMBOL-DATA') &&
-          (kid.role == 'SYMBOL-USE')) {
-        const deleteReq : StyleDeleteRequest = { type: 'deleteStyle',
-                                                 styleId: kid.id };
-        rval.push(deleteReq);
-      };
-    });
-
-  }
   private async removeAllCurrentSymbols(style: StyleObject, rval: NotebookChangeRequest[]): Promise<void> {
     // REVIEW: Does this search need to be recursive?
     const children = this.notebook.findStyles({ type: 'SYMBOL-DATA',
@@ -888,11 +923,6 @@ export class SymbolClassifierObserver implements ObserverInstance {
       };
     });
 
-  }
-  private async  addSymbolUseStyles(style: StyleObject, rval: NotebookChangeRequest[]): Promise<void> {
-    await this.removeAllCurrentUses(style,rval);
-    const data : string = (style.data.wolframData) ? style.data.wolframData : style.data;
-    await this.addSymbolUseStylesFromString(data, style, rval);
   }
 
   private async  addSymbolUseStylesFromString(data: string,style: StyleObject, rval: NotebookChangeRequest[]): Promise<void> {

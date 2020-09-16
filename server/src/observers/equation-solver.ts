@@ -24,6 +24,7 @@ const MODULE = __filename.split(/[/\\]/).slice(-1)[0].slice(0,-3);
 const debug = debug1(`server:${MODULE}`);
 
 import { NotebookChange, StyleObject, RelationshipObject, StyleId, FormulaData, WolframExpression } from "../shared/notebook";
+import { assert } from "../shared/common";
 import {
   ToolData, NotebookChangeRequest, StyleInsertRequest, StylePropertiesWithSubprops,
   StyleDeleteRequest, TexExpression, RelationshipPropertiesMap, NameValuePair
@@ -200,13 +201,17 @@ export class EquationSolverObserver implements ObserverInstance {
         debug("solutions",solutions);
         const allsols = solutions.map((x:string) => x.trim().slice(1,-1));
         debug("allsols",allsols);
+        // Note: Sometimes we get [ '' ] as the solutions, so we
+        // test for the truthyness of the solution below.
         allsols.map((s:string) => {
-          const ss = s.split("->");
-          // console.log("ss[0],ss[1]",ss[0],"=",ss[1]);
-          const nvp : NameValuePair =
-            { name: ss[0],
-              value: ss[1] };
-          newsolutions.push(nvp);
+          if (s) {
+            const ss = s.split("->");
+            assert(ss[1]);
+            const nvp : NameValuePair =
+              { name: ss[0],
+                value: ss[1] };
+            newsolutions.push(nvp);
+          }
         });
       }
 

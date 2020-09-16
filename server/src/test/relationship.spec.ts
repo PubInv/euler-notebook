@@ -107,7 +107,7 @@ describe("test relationships", function() {
 });
 
 // Helper Functions
-
+// TODO: This should probably be extended to respect the MTLExpression type
 function wolframFormulaInsertRequest(wolframData: WolframExpression): StyleInsertRequest {
   const data: FormulaData = { wolframData };
   const request: StyleInsertRequest = {

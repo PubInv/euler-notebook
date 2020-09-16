@@ -78,7 +78,7 @@ export interface FindStyleOptions {
   type?: StyleType;
   recursive?: boolean;
 }
-
+// RLR ALERT: This needs to include MTLang
 export interface FormulaData {
   wolframData: WolframExpression;
 }
@@ -350,6 +350,8 @@ export const STYLE_SOURCES = [
 export type StyleSource = typeof STYLE_SOURCES[number];
 
 export type WolframExpression = '{WolframExpression}';
+// The is a type for "Math Tablet Languge" Expression
+export type MTLExpression = '{MTLExpression}';
 
 // Constants
 
