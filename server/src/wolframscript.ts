@@ -148,14 +148,6 @@ export function constructSubstitution(expr: WolframExpression, usedVariables: NV
   return sub_expr;
 }
 
-// This is to simple an explanation, but generally the Math Table Langauge used the equality (=) sign
-// to mean universal equality. Wolfram uses it to mean assignment, and == for boolean relations, which can at least be simplified.
-export function convertMathTabletLanguageToWolfram(expr: MTLExpression) : WolframExpression {
-  return <WolframExpression>expr.replace("=","==");
-}
-export function convertWolframLanguageToMathTablet(expr: WolframExpression) : MTLExpression {
-  return <MTLExpression>expr.replace("==","=");
-}
 
 function executeNow(command: WolframExpression, resolve: (data: WolframExpression)=>void, reject: (reason: any)=>void): void {
   debug(`Executing: "${command}".`)
@@ -304,4 +296,13 @@ export async function convertMTLToTeX(text: MTLExpression): Promise<TexExpressio
     }  catch (e) {
       return <TexExpression>'';
     }
+}
+
+// This is to simple an explanation, but generally the Math Table Langauge used the equality (=) sign
+// to mean universal equality. Wolfram uses it to mean assignment, and == for boolean relations, which can at least be simplified.
+export function convertMTLToWolfram(expr: MTLExpression) : WolframExpression {
+  return <WolframExpression>expr.replace("=","==");
+}
+export function convertWolframToMTL(expr: WolframExpression) : MTLExpression {
+  return <MTLExpression>expr.replace("==","=");
 }

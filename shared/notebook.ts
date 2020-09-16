@@ -78,9 +78,8 @@ export interface FindStyleOptions {
   type?: StyleType;
   recursive?: boolean;
 }
-// RLR ALERT: This needs to include MTLang
 export interface FormulaData {
-  wolframData: WolframExpression;
+  wolframData: MTLExpression;
 }
 
 export interface HintData {

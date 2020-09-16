@@ -27,7 +27,7 @@ import { isEmptyOrSpaces } from "../shared/math-tablet-api";
 
 import { BaseObserver, Rules, StyleRelation } from "./base-observer";
 import {
-  convertMathTabletLanguageToWolfram,
+  convertMTLToWolfram,
   execute } from "../wolframscript";
 import { ServerNotebook } from "../server-notebook";
 
@@ -77,7 +77,7 @@ export class WolframObserver extends BaseObserver {
     if (isEmptyOrSpaces(expr)) {
       rval = undefined;
     } else {
-      const converted = convertMathTabletLanguageToWolfram(expr);
+      const converted = convertMTLToWolfram(expr);
       rval = await execute(<WolframExpression>`InputForm[runPrivate[${converted}]]`);
     }
     debug("Evaluated to: ", rval);

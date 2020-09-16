@@ -21,11 +21,11 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 import debug1 from "debug";
 
-import { FormulaData, WolframExpression } from "../shared/notebook";
+import { FormulaData, MTLExpression } from "../shared/notebook";
 import { TexExpression } from "../shared/math-tablet-api";
 
 import { ServerNotebook } from "../server-notebook";
-import { convertTeXtoWolfram, convertWolframToTeX } from "../wolframscript";
+import { convertTeXtoWolfram, convertWolframToTeX, convertMTLToWolfram, convertWolframToMTL } from "../wolframscript";
 
 import { BaseObserver, Rules, StyleRelation } from "./base-observer";
 
@@ -88,24 +88,24 @@ export class FormulaObserver extends BaseObserver {
 
   // Private Class Methods
 
-  private static parseWolframInput(wolframData: WolframExpression): FormulaData|undefined {
+  private static parseWolframInput(wolframData: MTLExpression): FormulaData|undefined {
     // TODO: Make this async, pass the string to WolframScript to normalize.
     return { wolframData };
   }
 
-  private static renderFormulaToWolframRepresentation(formulaData: FormulaData): WolframExpression|undefined {
+  private static renderFormulaToWolframRepresentation(formulaData: FormulaData): MTLExpression|undefined {
     return formulaData.wolframData;
   }
 
   private static async parseTexInput(data: TexExpression): Promise<FormulaData|undefined> {
     // REVIEW: If conversion fails?
-    const wolframData = await convertTeXtoWolfram(data);
+    const wolframData = convertWolframToMTL(await convertTeXtoWolfram(data));
     return { wolframData };
   }
 
   private static async renderFormulaToTexRepresentation(formulaData: FormulaData): Promise<TexExpression|undefined> {
     // REVIEW: If conversion fails?
-    return await convertWolframToTeX(formulaData.wolframData);
+    return await convertWolframToTeX(convertMTLToWolfram(formulaData.wolframData));
   }
 
 

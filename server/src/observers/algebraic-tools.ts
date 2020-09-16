@@ -26,7 +26,7 @@ const debug = debug1(`server:${MODULE}`);
 import { Html } from "../shared/common";
 import {
   StyleType,NotebookChange, StyleObject, RelationshipProperties, HintData, HintRelationship,
-  HintStatus, FormulaData, WolframExpression
+  HintStatus, FormulaData, WolframExpression, MTLExpression
 } from "../shared/notebook";
 import {
   ToolData, NotebookChangeRequest, StyleInsertRequest, StyleDeleteRequest, StylePropertiesWithSubprops,
@@ -36,7 +36,7 @@ import {
 
 import { ServerNotebook, ObserverInstance } from "../server-notebook";
 import { execute,
-         convertWolframLanguageToMathTablet,
+         convertWolframToMTL,
          convertMTLToTeX
        } from "../wolframscript";
 import { Config } from "../config";
@@ -143,7 +143,7 @@ export class AlgebraicToolsObserver implements ObserverInstance {
 
     debug("toolData.output", transformationData.output);
 
-    const formulaData: FormulaData = { wolframData: transformationData.output };
+    const formulaData: FormulaData = { wolframData: <MTLExpression>transformationData.output };
     const styleProps: StylePropertiesWithSubprops = {
       id: toId,
       role: 'FORMULA',
@@ -245,7 +245,7 @@ export class AlgebraicToolsObserver implements ObserverInstance {
     // some rendering work on the tool side immediately. I will have to
     // come back in and handle this more complete later. - rlr
 
-    const output_mtl = convertWolframLanguageToMathTablet(output);
+    const output_mtl = convertWolframToMTL(output);
     const tex_f : string = await convertMTLToTeX(output_mtl);
 
         debug("output_mtl",output_mtl);

@@ -27,7 +27,7 @@ import { Html } from "../shared/common";
 import {
   NotebookChange, StyleObject, StyleId, RelationshipObject, RelationshipId, RelationshipProperties,
   StyleDeleted, StyleMoved, FindRelationshipOptions, StyleInserted, StyleChanged, HintData,
-  HintRelationship, HintStatus, FormulaData, WolframExpression, MTLExpression
+  HintRelationship, HintStatus, FormulaData, WolframExpression
 } from "../shared/notebook";
 import {
   SymbolData, NotebookChangeRequest, StyleInsertRequest, ToolData, StyleDeleteRequest,
@@ -35,7 +35,8 @@ import {
   isEmptyOrSpaces, TransformationToolData, TexExpression
 } from "../shared/math-tablet-api";
 import { ServerNotebook, ObserverInstance } from "../server-notebook";
-import { execute as executeWolframscript, constructSubstitution, draftChangeContextName, convertWolframLanguageToMathTablet } from "../wolframscript";
+import { execute as executeWolframscript, constructSubstitution, draftChangeContextName,
+         convertWolframToMTL } from "../wolframscript";
 import { Config } from "../config";
 
 export class SymbolClassifierObserver implements ObserverInstance {
@@ -328,8 +329,8 @@ export class SymbolClassifierObserver implements ObserverInstance {
       if (substituted === <WolframExpression>"True") { // Should we not also do False?
         return rval;
       }
-      const substituted_mtl = <MTLExpression>convertWolframLanguageToMathTablet(substituted);
-      const sub_expr_mtl =convertWolframLanguageToMathTablet(sub_expr_w);
+      const substituted_mtl = convertWolframToMTL(substituted);
+      const sub_expr_mtl = convertWolframToMTL(sub_expr_w);
       debug("substituted",substituted);
 
       // Note: Create TeX is actually more complicated, and will require a
