@@ -19,7 +19,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 // Requirements
 
-import { assert } from "./common";
+import { assert, notImplemented, assertFalse } from "./common";
 import { Watcher, WatchedResource } from "./watched-resource";
 
 // Types
@@ -129,7 +129,7 @@ export abstract class Folder<W extends FolderWatcher> extends WatchedResource<Fo
   }
 
   public get name(): FolderName {
-    throw new Error("Not implemented.");
+    return notImplemented();
   }
 
   public hasFolderNamed(
@@ -202,8 +202,7 @@ export abstract class Folder<W extends FolderWatcher> extends WatchedResource<Fo
         this.notebooks[i] = change.entry;
         break;
       }
-      default:
-        throw new Error(`Applying unexpected change type: ${(<any>change).type}`);
+      default: assertFalse();
     }
 
     // Send non-deletion change notification.

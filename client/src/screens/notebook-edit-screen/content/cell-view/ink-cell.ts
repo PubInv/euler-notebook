@@ -19,11 +19,11 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 // Requirements
 
-import { Html, assert } from "../../../../shared/common";
-import { DrawingData, StyleId, StyleObject } from "../../../../shared/notebook";
+import { Html, assert, notImplemented } from "../../../../shared/common";
+import { StrokeData, StyleId, StyleObject, NotebookChange } from "../../../../shared/notebook";
 import { StyleChangeRequest, StyleMoveRequest } from "../../../../shared/math-tablet-api";
 
-import { $configure, $newSvg, $, $svg, CLOSE_X_ENTITY } from "../../../../dom";
+import { $configure, $newSvg, $, $svg, CLOSE_X_ENTITY, HtmlElementOrSpecification, CssLengthProperty } from "../../../../dom";
 import { deepCopy } from "../../../../common";
 
 import { Content } from "..";
@@ -56,7 +56,39 @@ export class InkCell extends CellBase {
   // Public Constructor
 
   public constructor(view: Content, style: StyleObject) {
-    super(view, style, 'inkCell');
+
+    const stylusDrawingPanel = new StylusDrawingPanel(<CssLengthProperty>"0px", <CssLengthProperty>"0px", (stroke)=>this.onStrokeComplete(stroke));
+    const $content = $new({
+      tag: 'div',
+      class: 'content',
+      children: [
+        stylusDrawingPanel.$elt,
+        {
+          tag: 'button',
+          attrs: { tabindex: -1 },
+          class: 'deleteCellButton',
+          html: CLOSE_X_ENTITY,
+          listeners: {
+            click: e=>this.onDeleteCellButtonClicked(e),
+          },
+        },{
+          tag: 'div',
+          attrs: { draggable: true },
+          class: 'dragIcon',
+          html: <Html>"&equiv;",
+          listeners: {
+            dragend: e=>this.onDragEnd(e),
+            dragstart: e=>this.onDragStart(e),
+          },
+          style: "width:16px;height:16px",
+        }
+      ]
+    });
+
+    const children: HtmlElementOrSpecification[] = [
+      $content,
+    ];
+    super(view, style, 'inkCell', children);
 
     // LATER: These button be on *all* cells, not just ink cells.
     $configure(this.$elt, {
@@ -67,39 +99,13 @@ export class InkCell extends CellBase {
       }
     });
 
-    const $content = $new({ tag: 'div', appendTo: this.$elt, class: 'content' });
-
     // Create placeholder SVG panel. Will be replaced in this.render().
     $newSvg({ tag: 'svg', appendTo: $content, class: 'svgPanel' });
 
     // Create an overlay SVG for accepting drawing input.
     // TODO: Get dimensions from svgPanel?
     // TODO: Resize drawing panel if underlying SVG panel changes size.
-    this.stylusDrawingPanel = StylusDrawingPanel.create($content, (stroke)=>this.onStrokeComplete(stroke));
-
-    $new({
-      tag: 'button',
-      appendTo: $content,
-      attrs: { tabindex: -1 },
-      class: 'deleteCellButton',
-      html: CLOSE_X_ENTITY,
-      listeners: {
-        click: e=>this.onDeleteCellButtonClicked(e),
-      },
-    });
-
-    $new({
-      tag: 'div',
-      appendTo: $content,
-      attrs: { draggable: true },
-      class: 'dragIcon',
-      html: <Html>"&equiv;",
-      listeners: {
-        dragend: e=>this.onDragEnd(e),
-        dragstart: e=>this.onDragStart(e),
-      },
-      style: "width:16px;height:16px",
-    });
+    // this.stylusDrawingPanel = stylusDrawingPanel
 
     /* this.resizerBar = */ ResizerBar.create(this.$elt, (deltaY: number, final: boolean)=>this.onResize(deltaY, final), ()=>this.onInsertCellBelow());
 
@@ -108,8 +114,38 @@ export class InkCell extends CellBase {
 
   // Public Instance Methods
 
-  public render(style: StyleObject): void {
-    const svgRepStyle = this.view.screen.notebook.findStyle({ role: 'REPRESENTATION', type: 'SVG-MARKUP' }, style.id);
+  // ClientNotebookWatcher Methods
+
+  public onChange(_change: NotebookChange): void {
+    notImplemented();
+  }
+
+  public onChangesFinished(): void {
+    notImplemented();
+  }
+
+  // -- PRIVATE --
+
+  // Private Instance Properties
+
+  private _inputStyleCopy?: StyleObject;
+  // private stylusDrawingPanel: StylusDrawingPanel;
+
+  // Private Instance Property Functions
+
+  private get inputStyleCopy(): StyleObject|undefined {
+    // REVIEW: What if the input style changes?
+    if (!this._inputStyleCopy) {
+      const style = this.content.screen.notebook.findStyle({ role: 'INPUT', type: 'STROKE-DATA' }, this.styleId);
+      this._inputStyleCopy = style ? deepCopy(style) : undefined;
+    }
+    return this._inputStyleCopy;
+  }
+
+  // Private Instance Methods
+
+  private render(style: StyleObject): void {
+    const svgRepStyle = this.content.screen.notebook.findStyle({ role: 'REPRESENTATION', type: 'SVG-MARKUP' }, style.id);
     if (!svgRepStyle) {
       // TODO: What to do in this case? Put an error message in the cell?
       console.warn("No SVG-MARKUP substyle for UNINTERPRETED-INK style.");
@@ -121,32 +157,14 @@ export class InkCell extends CellBase {
     $oldSvgPanel.outerHTML = svgRepStyle.data;
 
     // If the SVG panel has changed size, resize the drawing panel overlay to match.
-    const $newSvgPanel = $svg<'svg'>(this.$elt, '.svgPanel');
-    this.stylusDrawingPanel.matchSizeOfUnderlyingPanel($newSvgPanel);
+    /* const $newSvgPanel = */$svg<'svg'>(this.$elt, '.svgPanel');
+    // this.stylusDrawingPanel.matchSizeOfUnderlyingPanel($newSvgPanel);
   }
 
-  // -- PRIVATE --
-
-  // Private Instance Properties
-
-  private _inputStyleCopy?: StyleObject;
-  private stylusDrawingPanel: StylusDrawingPanel;
-
-  // Private Instance Property Functions
-
-  private get inputStyleCopy(): StyleObject|undefined {
-    // REVIEW: What if the input style changes?
-    if (!this._inputStyleCopy) {
-      const style = this.view.screen.notebook.findStyle({ role: 'INPUT', type: 'STROKE-DATA' }, this.styleId);
-      this._inputStyleCopy = style ? deepCopy(style) : undefined;
-    }
-    return this._inputStyleCopy;
-  }
-
-  // Private Event Handlers
+  // Private Instance Event Handlers
 
   private onDeleteCellButtonClicked(_event: MouseEvent): void {
-    this.view.deleteTopLevelStyle(this.styleId).catch(err=>{
+    this.content.deleteTopLevelStyle(this.styleId).catch(err=>{
       // TODO: Better handling of this error.
       reportError(err, <Html>"Error deleting cell");
     });
@@ -204,18 +222,18 @@ export class InkCell extends CellBase {
     if (!cellDragData) { return; }
     // console.log(`Dropped style ${cellDragData.styleId} onto style ${this.styleId}`);
 
-    const c = this.view.screen.notebook.compareStylePositions(cellDragData.styleId, this.styleId);
+    const c = this.content.screen.notebook.compareStylePositions(cellDragData.styleId, this.styleId);
     if (c==0) { /* Dropped onto self */ return; }
 
     // If dragging down, then put dragged cell below the cell that was dropped on.
     // If dragging up, then put dragged cell above the cell that was dropped on.
-    const afterId = c<0 ? this.styleId : this.view.screen.notebook.precedingStyleId(this.styleId);
+    const afterId = c<0 ? this.styleId : this.content.screen.notebook.precedingStyleId(this.styleId);
     const moveRequest: StyleMoveRequest = {
       type: 'moveStyle',
       styleId: cellDragData.styleId,
       afterId,
     }
-    this.view.editStyle([ moveRequest ])
+    this.content.editStyle([ moveRequest ])
     .catch((err: Error)=>{
       // TODO: What to do here?
       reportError(err, <Html>"Error moving style for drag/drop");
@@ -223,7 +241,7 @@ export class InkCell extends CellBase {
   }
 
   private onInsertCellBelow(): void {
-    this.view.insertInkCellBelow(this.styleId).catch(err=>{
+    this.content.insertInkCellBelow(this.styleId).catch(err=>{
       // TODO: Better handling of this error.
       reportError(err, <Html>"Error inserting cell below");
     });
@@ -242,11 +260,11 @@ export class InkCell extends CellBase {
       // TODO: Incremental change request?
       const inputStyle = this.inputStyleCopy!;
       assert(inputStyle);
-      const data = <DrawingData>inputStyle.data;
+      const data = <StrokeData>inputStyle.data;
       data.size.height = newHeightStr;
       // REVIEW: what if size is unchanged?
       const changeRequest: StyleChangeRequest = { type: 'changeStyle', styleId: inputStyle.id, data };
-      this.view.editStyle([ changeRequest ])
+      this.content.editStyle([ changeRequest ])
       .catch((err: Error)=>{
         // TODO: What to do here?
         reportError(err, <Html>"Error submitting resize");
@@ -260,10 +278,10 @@ export class InkCell extends CellBase {
     // TODO: Incremental change request.
     const inputStyle = this.inputStyleCopy!;
     assert(inputStyle);
-    const data = <DrawingData>inputStyle.data;
+    const data = <StrokeData>inputStyle.data;
     data.strokeGroups[0].strokes.push(stroke.data);
     const changeRequest: StyleChangeRequest = { type: 'changeStyle', styleId: inputStyle.id, data };
-    return this.view.editStyle([ changeRequest ]);
+    return this.content.editStyle([ changeRequest ]);
   }
 }
 

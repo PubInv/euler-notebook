@@ -24,12 +24,13 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 import { assert, Html } from "../../../../shared/common";
 import { Content } from "..";
 import { KeyboardInputPanel } from "../../../../keyboard-input-panel";
-import { StyleObject, StyleId } from "../../../../shared/notebook";
+import { StyleObject, StyleId, NotebookChange } from "../../../../shared/notebook";
 import { NotebookChangeRequest } from "../../../../shared/math-tablet-api";
 import { Tools } from "../../tools";
 import { HtmlElement } from "../../../../html-element";
 import { reportError } from "../../../../error-handler";
 import { messageDisplayInstance } from "../../../../message-display";
+import { HtmlElementOrSpecification } from "../../../../dom";
 
 // Exported Class
 
@@ -63,8 +64,8 @@ export abstract class CellBase extends HtmlElement<'div'>{
 
     // Only allow editing of user input cells, which have a data type
     // that is string-based, with a renderer.
-    const style = this.view.screen.notebook.getStyle(this.styleId);
-    const repStyle = this.view.screen.notebook.findStyle({ role: 'INPUT' }, this.styleId);
+    const style = this.content.screen.notebook.getStyle(this.styleId);
+    const repStyle = this.content.screen.notebook.findStyle({ role: 'INPUT' }, this.styleId);
     if (!repStyle) { return false; }
 
     if (typeof repStyle.data=='string') {
@@ -78,7 +79,7 @@ export abstract class CellBase extends HtmlElement<'div'>{
     }
 
     if (this.inputPanel) {
-      this.view.screen.tools.hide();
+      this.content.screen.tools.hide();
       this.$elt.parentElement!.insertBefore(this.inputPanel.$elt, this.$elt.nextSibling);
       this.inputPanel.focus();
       this.hide();
@@ -88,33 +89,35 @@ export abstract class CellBase extends HtmlElement<'div'>{
     }
   }
 
-  public render(style: StyleObject): void {
-    // get the primary representation
-    let repStyle = this.view.screen.notebook.findStyle({ role: 'REPRESENTATION', subrole: 'PRIMARY' }, style.id);
-    if (!repStyle) {
-      // TODO: Look for renderable alternate representations
-      this.$elt.innerHTML = CellBase.MISSING_ERROR;
-      return;
-    }
+  // public abstract render(style: StyleObject): void;
+  // {
+  //   // get the primary representation
+  //   let repStyle = this.view.screen.notebook.findStyle({ role: 'REPRESENTATION', subrole: 'PRIMARY' }, style.id);
+  //   if (!repStyle) {
+  //     // TODO: Look for renderable alternate representations
+  //     this.$elt.innerHTML = CellBase.MISSING_ERROR;
+  //     return;
+  //   }
 
-    switch(repStyle.type) {
-      case 'IMAGE-URL': {
-        const url: string = style.data;
-        this.$elt.innerHTML = `<image src="${url}"/>`
-        break;
-      }
-      case 'SVG-MARKUP': {
-        this.$elt.innerHTML = repStyle.data;
-        break;
-      }
-      default:
-        assert(false, "TODO: Unrecognized representation type.");
-        break;
-    }
-  };
+  //   switch(repStyle.type) {
+  //     case 'IMAGE-URL': {
+  //       const url: string = style.data;
+  //       this.$elt.innerHTML = `<image src="${url}"/>`
+  //       break;
+  //     }
+  //     case 'SVG-MARKUP': {
+  //       this.$elt.innerHTML = repStyle.data;
+  //       break;
+  //     }
+  //     default:
+  //       assert(false, "TODO: Unrecognized representation type.");
+  //       break;
+  //   }
+  // }
 
   public renderTools(tools: Tools): void {
     tools.clear();
+    tools.render(this.styleId);
   }
 
   public scrollIntoView(): void {
@@ -134,31 +137,43 @@ export abstract class CellBase extends HtmlElement<'div'>{
     this.$elt.classList.remove('selected');
   }
 
+  // ClientNotebookWatcher Methods
+
+  public abstract onChange(change: NotebookChange): void;
+
+  public abstract onChangesFinished(): void;
+
   // PRIVATE
 
   // Private Constructor
 
-  protected constructor(notebookView: Content, style: StyleObject, subclass: /* TYPESCRIPT: CssClass */string) {
+  protected constructor(
+    content: Content,
+    style: StyleObject,
+    subclass: /* TYPESCRIPT: CssClass */string,
+    children: HtmlElementOrSpecification[],
+  ) {
 
     super({
       tag: 'div',
       attrs: { tabindex: 0 },
       classes: [ 'cell', subclass ],
       id: `C${style.id}`,
+      children,
       listeners: {
         'click': e=>this.onClicked(e),
         'dblclick': e=>this.onDoubleClicked(e),
       },
     });
 
-    this.view = notebookView;
+    this.content = content;
     this.styleId = style.id;
   }
 
   // Private Instance Properties
 
   protected inputPanel?: KeyboardInputPanel;
-  protected view: Content;
+  protected content: Content;
 
   // Private Instance Methods
 
@@ -166,7 +181,7 @@ export abstract class CellBase extends HtmlElement<'div'>{
 
   private onClicked(event: MouseEvent): void {
     // Note: Shift-click or ctrl-click will extend the current selection.
-    this.view.selectCell(this, event.shiftKey, event.metaKey);
+    this.content.selectCell(this, event.shiftKey, event.metaKey);
   }
 
   private onDoubleClicked(_event: MouseEvent): void {
@@ -178,7 +193,7 @@ export abstract class CellBase extends HtmlElement<'div'>{
 
   private onInputPanelDismissed(changeRequests: NotebookChangeRequest[]): void {
     if (changeRequests.length>0) {
-      this.view.editStyle(changeRequests)
+      this.content.editStyle(changeRequests)
       .catch((err: Error)=>{
         reportError(err, <Html>"Error submitting input changes");
       });
@@ -187,8 +202,8 @@ export abstract class CellBase extends HtmlElement<'div'>{
     delete this.inputPanel;
 
     this.show();
-    this.view.screen.tools.show();
-    this.view.setFocus();
+    this.content.screen.tools.show();
+    this.content.setFocus();
   }
 
 }

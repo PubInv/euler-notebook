@@ -25,11 +25,11 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 import * as debug1 from "debug";
 const debug = debug1('client:notebook-edit-screen-content');
 
-import { assert, ExpectedError, Html } from "../../../shared/common";
+import { assert, ExpectedError, Html, assertFalse, notImplemented } from "../../../shared/common";
 import {
-  DrawingData, StyleId, StyleObject, NotebookChange,
+  StrokeData, StyleId, StyleObject, NotebookChange,
   StyleRelativePosition,
-  StylePosition, HintData, HintStatus, HintRelationship, FormulaData, WolframExpression,
+  StylePosition, HintData, HintStatus, HintRelationship, FormulaData, MTLExpression
 } from "../../../shared/notebook";
 import {
   DebugParams, DebugResults, StyleDeleteRequest, StyleInsertRequest, StylePropertiesWithSubprops,
@@ -89,7 +89,7 @@ const KEY_MAP: [ KeyName, KeyMods, CommandName][] = [
 
 const KEY_BINDINGS = new Map<KeyCombo, CommandName>(KEY_MAP.map(([ keyName, keyMods, commandName])=>[ `${keyName}${keyMods}`, commandName ]));
 
-const EMPTY_STROKE_DATA: DrawingData = {
+const EMPTY_STROKE_DATA: StrokeData = {
   size: { height: '96px', width: '624px' }, // 1in x 6.5in = 96px
   strokeGroups: [
     { strokes: [] }
@@ -195,7 +195,7 @@ export class Content extends HtmlElement<'div'>{
     }
     // REVIEW: Check results headers for content type?
     /* const results = */<DebugResults>await response.json();
-    throw new Error("Not implemented!");
+    notImplemented();
     // WAS: this.screen.debugPopup.showContents(results.html);
   }
 
@@ -280,7 +280,7 @@ export class Content extends HtmlElement<'div'>{
       { role: 'INPUT', type: userSettingsInstance.defaultMathKeyboardInputFormat, data: '' } :
       { role: 'INPUT', type: 'STROKE-DATA', data: deepCopy(EMPTY_STROKE_DATA) });
 
-    const data: FormulaData = { wolframData: <WolframExpression>'' };
+    const data: FormulaData = { wolframData: <MTLExpression>'' };
     const styleProps: StylePropertiesWithSubprops = {
       role: 'FORMULA',
       type: 'FORMULA-DATA',
@@ -471,7 +471,7 @@ export class Content extends HtmlElement<'div'>{
     // Inserts a cell into the notebook, and opens it for editing.
     // TODO: Inserting text cells, not just formula cells.
 
-    const data: FormulaData = { wolframData: <WolframExpression>'' };
+    const data: FormulaData = { wolframData: <MTLExpression>'' };
     const styleProps: StylePropertiesWithSubprops = {
       role: 'FORMULA',
       type: 'FORMULA-DATA',
@@ -519,44 +519,48 @@ export class Content extends HtmlElement<'div'>{
   // ClientNotebookWatcher Methods
 
   public onChange(change: NotebookChange): void {
-
+    const notebook = this.screen.notebook;
     // If a change would (or might) modify the display of a cell,
     // then mark add the cell to a list of cells to be redrawn.
     // If a cell is deleted or moved, then make that change immediately.
     switch (change.type) {
-      case 'relationshipDeleted': {
-        // REVIEW: Is there a way to tell what relationships affect display?
-        // REVIEW: This assumes both incoming and outgoing relationships can affect display.
-        //         Is that too conservative?
-        this.dirtyCells.add(this.screen.notebook.topLevelStyleOf(change.relationship.fromId).id);
-        this.dirtyCells.add(this.screen.notebook.topLevelStyleOf(change.relationship.toId).id);
-        break;
-      }
+      case 'relationshipDeleted':
       case 'relationshipInserted': {
         // REVIEW: Is there a way to tell what relationships affect display?
         // REVIEW: This assumes both incoming and outgoing relationships can affect display.
         //         Is that too conservative?
-        this.dirtyCells.add(this.screen.notebook.topLevelStyleOf(change.relationship.fromId).id);
-        this.dirtyCells.add(this.screen.notebook.topLevelStyleOf(change.relationship.toId).id);
+        const fromTopLevelStyleId = notebook.topLevelStyleOf(change.relationship.fromId).id;
+        this.dirtyCells.add(fromTopLevelStyleId);
+        this.cellViewFromStyleId(fromTopLevelStyleId).onChange(change);
+
+        const toTopLevelStyleId = notebook.topLevelStyleOf(change.relationship.toId).id;
+        this.dirtyCells.add(toTopLevelStyleId);
+        this.cellViewFromStyleId(toTopLevelStyleId).onChange(change);
+
         break;
       }
       case 'styleChanged': {
         // REVIEW: Is there a way to tell what styles affect display?
-        this.dirtyCells.add(this.screen.notebook.topLevelStyleOf(change.style.id).id);
+        const topLevelStyleId = notebook.topLevelStyleOf(change.style.id).id;
+        this.dirtyCells.add(topLevelStyleId);
+        this.cellViewFromStyleId(topLevelStyleId).onChange(change);
         break;
       }
       case 'styleConverted': {
-        this.dirtyCells.add(this.screen.notebook.topLevelStyleOf(change.styleId).id);
+        const topLevelStyleId = notebook.topLevelStyleOf(change.styleId).id;
+        this.dirtyCells.add(topLevelStyleId);
+        this.cellViewFromStyleId(topLevelStyleId).onChange(change);
         break;
       }
       case 'styleDeleted': {
         // If a substyle is deleted then mark the cell as dirty.
         // If a top-level style is deleted then remove the cell.
-        const style = this.screen.notebook.getStyle(change.style.id);
-        const topLevelStyle = this.screen.notebook.topLevelStyleOf(style.id);
+        const style = notebook.getStyle(change.style.id);
+        const topLevelStyle = notebook.topLevelStyleOf(style.id);
         if (style.id != topLevelStyle.id) {
           // REVIEW: Is there a way to tell what styles affect display?
           this.dirtyCells.add(topLevelStyle.id);
+          this.cellViewFromStyleId(topLevelStyle.id).onChange(change);
         } else {
           const cellView = this.cellViews.get(style.id);
           assert(cellView);
@@ -570,35 +574,32 @@ export class Content extends HtmlElement<'div'>{
           this.createCell(change.style, change.afterId!);
         } else {
           // REVIEW: Is there a way to tell what styles affect display?
-          const topLevelStyle = this.screen.notebook.topLevelStyleOf(change.style.id);
+          const topLevelStyle = notebook.topLevelStyleOf(change.style.id);
           this.dirtyCells.add(topLevelStyle.id);
+          this.cellViewFromStyleId(topLevelStyle.id).onChange(change);
         }
         break;
       }
       case 'styleMoved': {
-        const style = this.screen.notebook.getStyle(change.styleId);
-        if (style.parentId) {
-          console.warn(`Non top-level style moved: ${style.id}`);
-          break;
-        }
+        const style = notebook.getStyle(change.styleId);
+        assert(!style.parentId);
         const movedCell = this.cellViews.get(style.id);
         assert(movedCell);
         // Note: DOM methods ensure the element will be removed from
         //       its current parent.
         this.insertCell(movedCell!, change.afterId);
+        // REVIEW: We do not pass the changed event to the moved cell, assuming it does not change. Safe assumption?
         break;
       }
-      default: throw new Error(`Unexpected change type ${(<any>change).type}`);
+      default: assertFalse();
     }
   }
 
   public onChangesFinished(): void {
     // Redraw all of the cells that (may) have changed.
     for (const styleId of this.dirtyCells) {
-      const style = this.screen.notebook.getStyle(styleId);
       const cellView = this.cellViewFromStyleId(styleId);
-      if (!cellView) { throw new Error(`Can't find dirty Change style message for style without top-level element`); }
-      cellView.render(style);
+      cellView.onChangesFinished();
     }
     if (this.lastCellSelected) {
       this.lastCellSelected.renderTools(this.screen.tools);
@@ -619,7 +620,9 @@ export class Content extends HtmlElement<'div'>{
   // Private Instance Property Functions
 
   private cellViewFromStyleId(styleId: StyleId): CellBase {
-    return this.cellViews.get(styleId)!;
+    const rval = this.cellViews.get(styleId)!;
+    assert(rval);
+    return rval;
   }
 
   private cellViewFromElement($elt: HTMLDivElement): CellBase {
@@ -676,8 +679,6 @@ export class Content extends HtmlElement<'div'>{
 
   private async sendUndoableChangeRequest(changeRequest: NotebookChangeRequest): Promise<NotebookChangeRequest> {
     const undoChangeRequests = await this.sendUndoableChangeRequests([changeRequest]);
-    console.log("UNDO CHANGE REQUESTS");
-    console.dir(undoChangeRequests);
     assert(undoChangeRequests.length==1);
     return undoChangeRequests[0];
   }

@@ -68,7 +68,7 @@ export class SymbolClassifierObserver implements ObserverInstance {
 
   public  onClose(): void {
     debug(`onClose ${this.notebook.path}`);
-    delete this.notebook;
+    // TODO: Mark closed somehow?
   }
 
 

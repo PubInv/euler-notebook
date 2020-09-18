@@ -22,11 +22,11 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 import * as debug1 from "debug";
 const debug = debug1('client:stylus-drawing-panel');
 
-import { $newSvg } from "./dom";
-
 import { SvgStroke } from "./svg-stroke";
 import { reportError } from "./error-handler";
 import { Html } from "./shared/common";
+import { SvgElement } from "./svg-element";
+import { CssLengthProperty } from "./dom";
 
 
 // Types
@@ -47,39 +47,21 @@ interface PointerInfo {
 
 // Exported Class
 
-export class StylusDrawingPanel  {
+export class StylusDrawingPanel extends SvgElement<'svg'> {
 
-  // Class Methods
+  // Public Class Methods
 
-  public static create($parentElt: Element, strokeCallbackFn: StrokeCallbackFn): StylusDrawingPanel {
-    return new this($parentElt, strokeCallbackFn);
-  }
+  // Public Constructor
 
-  // Public Instance Methods
-
-  public matchSizeOfUnderlyingPanel($svg: SVGSVGElement): void {
-    for (const attr of ['height', 'width']) {
-      const currentValue = this.$elt.getAttribute(attr);
-      const expectedValue = $svg.getAttribute(attr)!;
-      if (currentValue != expectedValue) {
-        this.$elt.setAttribute(attr, expectedValue);
-      }
-    }
-  }
-
-  // -- PRIVATE --
-
-  // Private Constructor
-
-  private constructor($parentElt: Element, strokeCallbackFn: StrokeCallbackFn) {
-
-    this.pointerMap = new Map();
-    this.strokeCallbackFn = strokeCallbackFn;
-
-    this.$elt = $newSvg({
+  public constructor(
+    width: CssLengthProperty,
+    height: CssLengthProperty,
+    strokeCallbackFn: StrokeCallbackFn,
+  ) {
+    debug(`Creating instance`)
+    super({
       tag: 'svg',
-      appendTo: $parentElt,
-      attrs: { height: '0px', width: '0px',  }, // Will be resized in matchSizeOfUnderlyingPanel,
+      attrs: { height, width },
       class: 'stylusDrawingPanel',
       listeners: {
         pointercancel:  e=>this.onPointerCancel(e),
@@ -93,11 +75,16 @@ export class StylusDrawingPanel  {
       }
     });
 
+    this.pointerMap = new Map();
+    this.strokeCallbackFn = strokeCallbackFn;
   }
+
+  // Public Instance Methods
+
+  // --- PRIVATE ---
 
   // Private Instance Properties
 
-  private $elt: SVGSVGElement;
   private pointerMap: PointerMap;
   private strokeCallbackFn: StrokeCallbackFn;
 
@@ -183,6 +170,7 @@ export class StylusDrawingPanel  {
 
     // Notify the container that the stroke is finished.
     // Once the container has updated the underlying drawing, we can remove the stroke.
+    debug(`Calling stroke callback function: ${JSON.stringify(stroke)}`);
     this.strokeCallbackFn(stroke)
     .then(
       ()=>{ stroke.remove(); },

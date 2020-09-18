@@ -26,7 +26,7 @@ import { assert } from "chai";
 import 'mocha';
 // import * as sinon from "sinon";
 
-import { FormulaData, StyleId, StyleInserted, WolframExpression } from "../shared/notebook";
+import { FormulaData, MTLExpression, StyleId, StyleInserted, WolframExpression } from "../shared/notebook";
 import { StyleInsertRequest, StyleChangeRequest } from "../shared/math-tablet-api";
 import { ServerNotebook }  from "../server-notebook";
 
@@ -58,9 +58,9 @@ describe("test relationships", function() {
 
     it("Can derive formulae then propagate a change", async function(){
 
-      const OLD_F1 = <WolframExpression>"x + x^2";
+      const OLD_F1 = <MTLExpression>"x + x^2";
       const NEW_F1 = <WolframExpression>"2*x + 2*x^2";
-      const NEW_F2 = <WolframExpression>"2*x*(1 + x)";
+      const NEW_F2 = <MTLExpression>"2*x*(1 + x)";
       const NEW_F3 = <WolframExpression>"2*x + 2*x^2";
 
       // Insert "old" formula 1
@@ -108,7 +108,7 @@ describe("test relationships", function() {
 
 // Helper Functions
 // TODO: This should probably be extended to respect the MTLExpression type
-function wolframFormulaInsertRequest(wolframData: WolframExpression): StyleInsertRequest {
+function wolframFormulaInsertRequest(wolframData: MTLExpression): StyleInsertRequest {
   const data: FormulaData = { wolframData };
   const request: StyleInsertRequest = {
     type: 'insertStyle',

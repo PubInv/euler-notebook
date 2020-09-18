@@ -35,7 +35,6 @@ export type ImageData = string;
 export type TexExpression = '{TexExpression}';
 export type MthMtcaData = string;
 export type RequestId = '{RequestId}';
-export type SvgData = string; // TODO: Rename SvgMarkup
 export type Symbol = string;
 export type TextData = string; // TODO: Rename PlainText
 

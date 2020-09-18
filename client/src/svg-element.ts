@@ -19,7 +19,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 // Requirements
 
-import { $new, HtmlElementSpecification } from "./dom";
+import { $newSvg, SvgElementSpecification } from "./dom";
 
 // Types
 
@@ -29,20 +29,15 @@ import { $new, HtmlElementSpecification } from "./dom";
 
 // Exported Class
 
-export class HtmlElement<K extends keyof HTMLElementTagNameMap> {
+export class SvgElement<K extends keyof SVGElementTagNameMap> {
 
   // Public Class Methods
 
   // Public Instance Properties
 
-  public $elt: HTMLElementTagNameMap[K];
+  public $elt: SVGElementTagNameMap[K];
 
   // Public Instance Methods
-
-  public appendTo(parent: HTMLElement|HtmlElement<any>): void {
-    const $parent: HTMLElement = (parent instanceof HtmlElement ? parent.$elt : parent);
-    $parent.appendChild(this.$elt);
-  }
 
   public destroy(): void {
     this.$elt.remove();
@@ -51,11 +46,6 @@ export class HtmlElement<K extends keyof HTMLElementTagNameMap> {
 
   public hide(): void {
     this.$elt.style.display = 'none';
-  }
-
-  public remove(): void {
-    // REVIEW: Both 'remove' and 'destroy'?
-    this.$elt.remove();
   }
 
   public show(): void {
@@ -71,8 +61,8 @@ export class HtmlElement<K extends keyof HTMLElementTagNameMap> {
 
   // Constructor
 
-  protected constructor(options: HtmlElementSpecification<K>) {
-    this.$elt = $new(options);
+  protected constructor(options: SvgElementSpecification<K>) {
+    this.$elt = $newSvg(options);
   }
 
   // Private Instance Properties

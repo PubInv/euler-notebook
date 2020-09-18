@@ -23,6 +23,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 export type Html = '{Html}';
 export type Milliseconds = number;  // Time interval in milliseconds.
+export type SvgMarkup = '{SvgMarkup}';
 export type Timestamp = number;     // Number of milliseconds since Jan 1, 1970 as returned by Date.now().
 
 // REVIEW: This is also defined in server/common.ts.

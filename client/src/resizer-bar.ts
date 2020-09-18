@@ -21,7 +21,8 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 // Requirements
 
-import { $new, RIGHT_TRIANGLE_ENTITY } from "./dom";
+import { RIGHT_TRIANGLE_ENTITY } from "./dom";
+import { HtmlElement } from "./html-element";
 
 // Types
 
@@ -43,7 +44,7 @@ interface PointerInfo {
 
 // Exported Class
 
-export class ResizerBar  {
+export class ResizerBar extends HtmlElement<'div'>  {
 
   // Class Methods
 
@@ -64,11 +65,8 @@ export class ResizerBar  {
     resizeCallbackFn: ResizeCallbackFn,
     insertCallbackFn: InsertCallbackFn,
   ) {
-    this.resizeCallbackFn = resizeCallbackFn;
 
-    this.pointerMap = new Map();
-
-    this.$elt = $new({
+    super({
       tag: 'div',
       appendTo: $parentElt,
       class: 'resizeBar',
@@ -81,23 +79,24 @@ export class ResizerBar  {
         // pointerout:     e=>this.onPointerOut(e),
         // pointerover:    e=>this.onPointerOver(e),
         pointerup:      e=>this.onPointerUp(e),
-      }
+      },
+      children: [
+        {
+          tag: 'button',
+          attrs: { tabindex: -1 },
+          class: 'insertCellBelowButton',
+          html: RIGHT_TRIANGLE_ENTITY,
+          listeners: { click: _e=>insertCallbackFn() },
+        }
+      ],
     });
 
-    $new( {
-      tag: 'button',
-      appendTo: this.$elt,
-      attrs: { tabindex: -1 },
-      class: 'insertCellBelowButton',
-      html: RIGHT_TRIANGLE_ENTITY,
-      listeners: { click: _e=>insertCallbackFn() },
-    });
-
+    this.resizeCallbackFn = resizeCallbackFn;
+    this.pointerMap = new Map();
   }
 
   // Private Instance Properties
 
-  private $elt: HTMLDivElement;
   private pointerMap: PointerMap;
   private resizeCallbackFn: ResizeCallbackFn;
 

@@ -29,7 +29,7 @@ import 'mocha';
 import { StyleObject, RelationshipObject,
          StyleId,
          FormulaData,
-         WolframExpression
+         MTLExpression
        } from "../shared/notebook";
 import { NotebookChangeRequest, StyleInsertRequest,
          StyleChangeRequest,
@@ -50,12 +50,12 @@ interface RelationshipStringObject {
 
 // Constants
 
-const data = [
-  <WolframExpression>"X = 4",
-  <WolframExpression>"X + Y",
-  <WolframExpression>"X = 5",
-  <WolframExpression>"X = 6",
-  <WolframExpression>"Y = X^2"
+const data: MTLExpression[] = [
+  <MTLExpression>"X = 4",
+  <MTLExpression>"X + Y",
+  <MTLExpression>"X = 5",
+  <MTLExpression>"X = 6",
+  <MTLExpression>"Y = X^2"
 ];
 
 const insertRequest:StyleInsertRequest[] = insertWolframFormulas(data);
@@ -72,7 +72,7 @@ describe("test symbol observer", function() {
     // Note: Doing this for WOLFRAM / INPUT is not really
     // the intended use case for our "exclusivity", but it will serve.
     it("two insert requests, if marked exclusive, only produce one child", async function(){
-      const data = [ <WolframExpression>"X = 4" ];
+      const data = [ <MTLExpression>"X = 4" ];
       const changeRequests = insertWolframFormulas(data);
 
       await notebook.requestChange('TEST', changeRequests[0]);
@@ -205,8 +205,8 @@ describe("test symbol observer", function() {
     });
     it("An input and change does produces only one relationhsip",async function(){
       const data = [
-        <WolframExpression>"X = 4",
-        <WolframExpression>"X^2 + Y",
+        <MTLExpression>"X = 4",
+        <MTLExpression>"X^2 + Y",
       ];
       const changeRequests = insertWolframFormulas(data);
 
@@ -230,8 +230,8 @@ describe("test symbol observer", function() {
     });
     it("An input and change does produces only one relationhsip",async function(){
       const data = [
-        <WolframExpression>"X = 4",
-        <WolframExpression> "X^2 + Y",
+        <MTLExpression>"X = 4",
+        <MTLExpression> "X^2 + Y",
       ];
       const changeRequests = insertWolframFormulas(data);
 
@@ -256,7 +256,7 @@ describe("test symbol observer", function() {
 
     it("Can hanlde 3x - 10 = 11",async function(){
       const data0 = [
-        <WolframExpression>"3x - 10 = 11",
+        <MTLExpression>"3x - 10 = 11",
       ];
       const changeRequests = insertWolframFormulas(data0);
       await serializeChangeRequests(notebook,changeRequests);
@@ -271,8 +271,8 @@ describe("test symbol observer", function() {
 
     it("Deleting a use correctly deletes relationships.",async function(){
       const data = [
-        <WolframExpression>"X = 4",
-        <WolframExpression> "X^2 + Y",
+        <MTLExpression>"X = 4",
+        <MTLExpression> "X^2 + Y",
       ];
       const changeRequests = insertWolframFormulas(data);
 
@@ -293,9 +293,9 @@ describe("test symbol observer", function() {
     });
     it("Relationships can be completely recomputed",async function(){
       const data = [
-        <WolframExpression>"X = 3",
-        <WolframExpression>"X = 4",
-        <WolframExpression>"X^2"];
+        <MTLExpression>"X = 3",
+        <MTLExpression>"X = 4",
+        <MTLExpression>"X^2"];
       const changeRequests = insertWolframFormulas(data);
 
       await serializeChangeRequests(notebook,changeRequests);
@@ -305,10 +305,10 @@ describe("test symbol observer", function() {
 
     it("three defs cause the final one to be used",async function(){
       const data = [
-        <WolframExpression>"X = 4",
-        <WolframExpression>"X = 5",
-        <WolframExpression>"X = 6",
-        <WolframExpression>"Y = X^2",
+        <MTLExpression>"X = 4",
+        <MTLExpression>"X = 5",
+        <MTLExpression>"X = 6",
+        <MTLExpression>"Y = X^2",
       ];
       const changeRequests = insertWolframFormulas(data);
 
@@ -339,8 +339,8 @@ describe("test symbol observer", function() {
     });
     it("getSymbolStylesThatDependOnMe works",async function(){
       const data = [
-        <WolframExpression>"X = 6",
-        <WolframExpression>"Y = X^2",
+        <MTLExpression>"X = 6",
+        <MTLExpression>"Y = X^2",
       ];
       const insertRequests = insertWolframFormulas(data);
       await serializeChangeRequests(notebook,insertRequests);
@@ -355,9 +355,9 @@ describe("test symbol observer", function() {
     });
     it("two defs and a delete cause the final one to be used",async function(){
       const data = [
-        <WolframExpression>"X = 4",
-        <WolframExpression>"X = 6",
-        <WolframExpression>"Y = X^2",
+        <MTLExpression>"X = 4",
+        <MTLExpression>"X = 6",
+        <MTLExpression>"Y = X^2",
       ];
       const insertRequests = insertWolframFormulas(data);
       await serializeChangeRequests(notebook,insertRequests);
@@ -391,12 +391,12 @@ describe("test symbol observer", function() {
     });
     it("multiples defs and a deletes are handled",async function(){
       const NUM = 8;
-      let data = <WolframExpression[]>[];
+      let data: MTLExpression[] = [];
 
       for(var i = 0; i < NUM; i++) {
-        data[i] = <WolframExpression>("X = "+(i+3));
+        data[i] = <MTLExpression>("X = "+(i+3));
       }
-      data.push(<WolframExpression>"Y = X^2");
+      data.push(<MTLExpression>"Y = X^2");
       const insertRequests = insertWolframFormulas(data);
       await serializeChangeRequests(notebook,insertRequests);
 
@@ -431,10 +431,10 @@ describe("test symbol observer", function() {
 
     it("reorderings are supported in simplest possible case",async function(){
       // REVIEW: Just use a static array.
-      let data = <WolframExpression[]>[];
-      data.push(<WolframExpression>"X = 3");
-      data.push(<WolframExpression>"X = 4");
-      data.push(<WolframExpression>"Y = X^2");
+      let data: MTLExpression[] = [];
+      data.push(<MTLExpression>"X = 3");
+      data.push(<MTLExpression>"X = 4");
+      data.push(<MTLExpression>"Y = X^2");
       const insertRequests = insertWolframFormulas(data);
       await serializeChangeRequests(notebook,insertRequests);
 
@@ -455,11 +455,11 @@ describe("test symbol observer", function() {
     it("multiple formulae are handled correctly", async function(){
 
       const data = [
-        <WolframExpression>"X = 3",
-        <WolframExpression>"A = 4",
-        <WolframExpression>"X = 5",
-        <WolframExpression>"Y = X^2",
-        <WolframExpression>"B = A^2",
+        <MTLExpression>"X = 3",
+        <MTLExpression>"A = 4",
+        <MTLExpression>"X = 5",
+        <MTLExpression>"Y = X^2",
+        <MTLExpression>"B = A^2",
       ];
       const insertRequests = insertWolframFormulas(data);
       await serializeChangeRequests(notebook, insertRequests);
@@ -472,11 +472,11 @@ describe("test symbol observer", function() {
     it("reorderings are supported across symbols", async function(){
 
       const data = [
-        <WolframExpression>"X = 3",
-        <WolframExpression>"A = 4",
-        <WolframExpression>"X = 5",
-        <WolframExpression>"Y = X^2",
-        <WolframExpression>"B = A^2",
+        <MTLExpression>"X = 3",
+        <MTLExpression>"A = 4",
+        <MTLExpression>"X = 5",
+        <MTLExpression>"Y = X^2",
+        <MTLExpression>"B = A^2",
       ];
       const insertRequests = insertWolframFormulas(data);
       await serializeChangeRequests(notebook, insertRequests);
@@ -504,11 +504,11 @@ describe("test symbol observer", function() {
 
     it("A change correctly updates all relationships",async function(){
       const data0 = [
-        <WolframExpression>"x = 2",
-        <WolframExpression>"x^2",
+        <MTLExpression>"x = 2",
+        <MTLExpression>"x^2",
         ];
       const data1 = [
-        <WolframExpression>"x = 3",
+        <MTLExpression>"x = 3",
         ];
       const changeRequests = insertWolframFormulas(data0);
       await serializeChangeRequests(notebook,changeRequests);
@@ -534,8 +534,8 @@ describe("test symbol observer", function() {
     });
 
     it("A change of an equation produces only one equation, not two",async function(){
-       const data0 = [ <WolframExpression>"3x - 10 = 11" ];
-      const data1 = [ <WolframExpression>"3x - 10 = 14" ];
+       const data0 = [ <MTLExpression>"3x - 10 = 11" ];
+      const data1 = [ <MTLExpression>"3x - 10 = 14" ];
       const changeRequests = insertWolframFormulas(data0);
       await serializeChangeRequests(notebook,changeRequests);
 
@@ -562,10 +562,10 @@ describe("test symbol observer", function() {
     // TODO: Move this to a wolfram-cas.spec.ts file later...
     it.skip("Changing correctly recomputes representation",async function(){
       const data = [
-        <WolframExpression>"x = 2",
-        <WolframExpression>"x^2",
-        <WolframExpression>"x = 3",
-        <WolframExpression>"x = 4"
+        <MTLExpression>"x = 2",
+        <MTLExpression>"x^2",
+        <MTLExpression>"x = 3",
+        <MTLExpression>"x = 4"
       ];
 
       const changeRequests = insertWolframFormulas([data[0],data[1]]);
@@ -604,7 +604,7 @@ async function serializeChangeRequests(notebook: ServerNotebook,
   }
 }
 
-function insertWolframFormulas(wolframDatas: WolframExpression[]) : StyleInsertRequest[] {
+function insertWolframFormulas(wolframDatas: MTLExpression[]) : StyleInsertRequest[] {
   var reqs : StyleInsertRequest[] = [];
   for(const wolframData of wolframDatas) {
     const data: FormulaData = { wolframData };

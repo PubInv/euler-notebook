@@ -21,10 +21,11 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 import debug1 from "debug";
 
+import { SvgMarkup } from "../shared/common";
+import { Stroke, StrokeData } from "../shared/notebook";
+
 import { BaseObserver, Rules, StyleRelation } from "./base-observer";
 import { ServerNotebook } from "../server-notebook";
-import { SvgData } from "../shared/math-tablet-api";
-import { Stroke, DrawingData } from "../shared/notebook";
 
 const MODULE = __filename.split(/[/\\]/).slice(-1)[0].slice(0,-3);
 const debug = debug1(`server:${MODULE}`);
@@ -54,7 +55,7 @@ export class SvgObserver extends BaseObserver {
     {
       name: "strokes-to-svg",
       styleTest: { role: 'INPUT', type: 'STROKE-DATA' },
-      styleRelation: StyleRelation.PeerToPeer,
+      styleRelation: StyleRelation.ParentToChild,
       props: { role: 'REPRESENTATION', type: 'SVG-MARKUP' },
       computeSync: SvgObserver.convertDrawingToSvgRule,
     },
@@ -62,7 +63,7 @@ export class SvgObserver extends BaseObserver {
 
   // Private Class Methods
 
-  private static convertDrawingToSvgRule(data: DrawingData): SvgData|undefined {
+  private static convertDrawingToSvgRule(data: StrokeData): SvgMarkup|undefined {
     debug(`convertDrawingToSvg rule on ${JSON.stringify(data)}`);
     const paths: string[] = [];
     for (const strokeGroup of data.strokeGroups) {
@@ -71,7 +72,7 @@ export class SvgObserver extends BaseObserver {
         paths.push(path);
       }
     }
-    const svgMarkup = `<svg class="svgPanel" height="${data.size.height}" width="${data.size.width}"  fill="none" stroke="black">${paths.join('')}</svg>`;
+    const svgMarkup = <SvgMarkup>`<svg class="svgPanel" height="${data.size.height}" width="${data.size.width}"  fill="none" stroke="black">${paths.join('')}</svg>`;
     debug(`convertDrawingToSvg rule returns '${svgMarkup}'`);
     return svgMarkup;
   }

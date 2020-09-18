@@ -60,23 +60,23 @@ export class NotebookEditScreen extends ScreenBase implements NotebookWatcher {
   public notebook!: ClientNotebook;
   public sidebar!: Sidebar;
   public tools!: Tools;
-  public view!: Content;
+  public content!: Content;
 
   // Public Instance Methods
 
   // ClientNotebookWatcher Methods
 
   public onChange(change: NotebookChange): void {
-    this.view.onChange(change);
+    this.content.onChange(change);
   }
 
   public onChangesFinished(): void {
-    this.view.onChangesFinished();
+    this.content.onChangesFinished();
   }
 
   public onClosed(reason?: string): void {
     this.sidebar.destroy();
-    this.view.destroy();
+    this.content.destroy();
     this.tools.destroy();
     this.debugPopup.destroy();
     this.displayErrorMessage(<Html>`Notebook ${this.notebook.path} closed by server: ${reason}`);
@@ -100,7 +100,7 @@ export class NotebookEditScreen extends ScreenBase implements NotebookWatcher {
       (notebook: ClientNotebook)=>{
         this.notebook = notebook;
         this.sidebar = new Sidebar(this);
-        this.view = new Content(this);
+        this.content = new Content(this);
         this.tools = new Tools(this);
         this.debugPopup = new DebugPopup(this);
       },

@@ -20,6 +20,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 // Requirements
 
+import { Html, assert } from "./common";
 import { WatchedResource, Watcher } from "./watched-resource";
 import { NOTEBOOK_NAME_RE, NotebookName, NotebookPath } from "./folder";
 
@@ -27,15 +28,12 @@ import { NOTEBOOK_NAME_RE, NotebookName, NotebookPath } from "./folder";
 
 type CssLength = string; // TODO: Duplicated in stroke.ts
 
-type Html = string; // REVIEW: Duplicated in dom.ts but that is only client-side.
-
 export interface CssSize {
   height: CssLength;
   width: CssLength;
 }
 
-export interface DrawingData {
-  // TODO: Rename this interface to StrokeData.
+export interface StrokeData {
   size: CssSize;
   strokeGroups: StrokeGroup[];
 }
@@ -264,7 +262,6 @@ export interface StyleProperties {
   data: any;
   role: StyleRole;
   subrole?: StyleSubrole;
-  timestamp?: number;   // REVIEW: Do we really need this property?
   type: StyleType;
 }
 
@@ -317,7 +314,7 @@ export const STYLE_TYPES = [
   'PLOT-DATA',       // Generic type to handle unspecified plot data
   'SOLUTION-DATA',   // The result of a "solve" operation
   'STROKE-DATA',     // Strokes of user sketch in our own format.
-  'SVG-MARKUP',      // SvgData: SVG markup
+  'SVG-MARKUP',      // SvgMarkup: SVG markup
   'SYMBOL-DATA',     // SymbolData: symbol in a definition or expression.
   'SYMBOL-TABLE',     // SymbolTable // REVIEW: Rename SYMBOL-TABLE-DATA?
   'TEX-EXPRESSION',  // LatexData: LaTeX string // TODO: rename 'TEX'
@@ -413,28 +410,32 @@ export abstract class Notebook<W extends NotebookWatcher> extends WatchedResourc
     // or a positive number if style1 is after style2.
     const p1 = this.styleOrder.indexOf(id1);
     const p2 = this.styleOrder.indexOf(id2);
-    if (p1<0 || p2<0) { throw new Error("Comparing position of non-existent or non-top-level styles."); }
+    assert(p1>=0 && p2>=0);
     return p1 - p2;
   }
 
   public followingStyleId(id: StyleId): StyleId {
     // Returns the id of the style immediately after the top-level style specified.
     const i = this.styleOrder.indexOf(id);
-    if (i<0) { throw new Error(`Style ${id} not found for followingStyleId.`); }
+    assert(i>=0);
     if (i+1>=this.styleOrder.length) { return 0; }
     return this.styleOrder[i+1];
   }
 
   public getRelationship(id: RelationshipId): RelationshipObject {
     const rval = this.relationshipMap[id];
-    if (!rval) { throw new RelationshipIdDoesNotExistError(`Relationship ${id} doesn't exist.`); }
+    assert(rval, `Relationship ${id} doesn't exist.`);
     return rval;
   }
 
   public getStyle(id: StyleId): StyleObject {
     const rval = this.styleMap[id];
-    if (!rval) { throw new StyleIdDoesNotExistError(`Style ${id} doesn't exist.`); }
+    assert(rval, `Style ${id} doesn't exist.`);
     return rval;
+  }
+
+  public getStyleThatMayNotExist(id: StyleId): StyleObject|undefined {
+    return this.styleMap[id];
   }
 
   public isEmpty(): boolean {
@@ -449,7 +450,7 @@ export abstract class Notebook<W extends NotebookWatcher> extends WatchedResourc
   public precedingStyleId(id: StyleId): StyleId {
     // Returns the id of the style immediately before the top-level style specified.
     const i = this.styleOrder.indexOf(id);
-    if (i<0) { throw new Error(`Style ${id} not found for precedingStyleId.`); }
+    assert(i>=0);
     if (i<1) { return 0; }
     return this.styleOrder[i-1];
   }
@@ -459,9 +460,9 @@ export abstract class Notebook<W extends NotebookWatcher> extends WatchedResourc
   }
 
   public toHtml(): Html {
-    if (this.isEmpty()) { return "<i>Notebook is empty.</i>"; }
+    if (this.isEmpty()) { return <Html>"<i>Notebook is empty.</i>"; }
     else {
-      return this.topLevelStyleOrder()
+      return <Html>this.topLevelStyleOrder()
       .map(styleId=>{
         const style = this.getStyle(styleId);
         return this.styleToHtml(style);
@@ -515,10 +516,11 @@ export abstract class Notebook<W extends NotebookWatcher> extends WatchedResourc
     // TODO: Don't let changes be null.
     if (change == null) { return; }
 
-    // Send deletion change notifications.
-    // Deletion change notifications are sent before the change happens so the watcher can
-    // examine the style or relationship being deleted before it disappears from the notebook.
-    const notifyBefore = (change.type == 'relationshipDeleted' || change.type == 'styleDeleted');
+    // REVEIW: Maybe all change notification should go out prior?
+    //         Then the styleChanged would not have to include "previousData"
+    // Some change notifications are sent before the change is applied to the notebook so the watcher can
+    // examine the style or relationship before it is modified.
+    const notifyBefore = (change.type == 'relationshipDeleted' || change.type == 'styleConverted' || change.type == 'styleDeleted');
     if (notifyBefore) {
       for (const watcher of this.watchers) { watcher.onChange(change); }
     }
@@ -535,7 +537,7 @@ export abstract class Notebook<W extends NotebookWatcher> extends WatchedResourc
         throw new Error(`Applying unexpected change type: ${(<any>change).type}`);
     }
 
-    // Send non-deletion change notification.
+    // Send change notifications that are supposed to go out *after* the change has been applied.
     if (!notifyBefore) {
       for (const watcher of this.watchers) { watcher.onChange(change); }
     }
@@ -652,7 +654,7 @@ export abstract class Notebook<W extends NotebookWatcher> extends WatchedResourc
     const status = relationship.status;
     const inStylesHtml = relationship.inStyles.map(rs=>`${rs.role} ${rs.id}`).join(", ");
     const outStylesHtml = relationship.outStyles.map(rs=>`${rs.role} ${rs.id}`).join(", ");
-    return `<div><span class="leaf">R${relationship.id} ${relationship.role} [${inStylesHtml} ${RIGHT_ARROW_ENTITY} ${outStylesHtml}] (${relationship.fromId} ${RIGHT_ARROW_ENTITY} ${relationship.toId}) ${dataJson} logic: ${logic} status: ${status}</span></div>`;
+    return <Html>`<div><span class="leaf">R${relationship.id} ${relationship.role} [${inStylesHtml} ${RIGHT_ARROW_ENTITY} ${outStylesHtml}] (${relationship.fromId} ${RIGHT_ARROW_ENTITY} ${relationship.toId}) ${dataJson} logic: ${logic} status: ${status}</span></div>`;
   }
 
   private relationshipToText(relationship: RelationshipObject, indentationLevel: number): string {
@@ -673,12 +675,12 @@ export abstract class Notebook<W extends NotebookWatcher> extends WatchedResourc
     const roleSubrole = (style.subrole ? `${style.role}|${style.subrole}` : style.role);
     const styleInfo = `S${style.id} ${roleSubrole} ${style.type} ${style.source}`
     if (childStyleObjects.length == 0 && relationshipObjects.length == 0 && dataJson.length<30) {
-      return `<div><span class="leaf">${styleInfo} <tt>${dataJson}</tt></span></div>`;
+      return <Html>`<div><span class="leaf">${styleInfo} <tt>${dataJson}</tt></span></div>`;
     } else {
       const stylesHtml = childStyleObjects.map(s=>this.styleToHtml(s)).join('');
       const relationshipsHtml = relationshipObjects.map(r=>this.relationshipToHtml(r)).join('');
       const [ shortJsonTt, longJsonTt ] = dataJson.length<30 ? [` <tt>${dataJson}</tt>`, ''] : [ '', `<tt>${dataJson}</tt>` ];
-      return `<div>
+      return <Html>`<div>
   <span class="collapsed">${styleInfo}${shortJsonTt}</span>
   <div class="nested" style="display:none">${longJsonTt}
     ${stylesHtml}
@@ -722,11 +724,6 @@ export abstract class Notebook<W extends NotebookWatcher> extends WatchedResourc
     const style = this.getStyle(styleId);
     // console.log(`Changing style ${styleId} data to ${JSON.stringify(change.style.data)}`); // BUGBUG
     style.data = change.style.data;
-    // This is experimental; for SVG, we need a timestamp for
-    // cleaning up the .PNG files
-    if (style.type == 'SVG-MARKUP') {
-      style.timestamp = Date.now();
-    }
   }
 
   private convertStyle(change: StyleConverted): void {
@@ -790,33 +787,13 @@ export abstract class Notebook<W extends NotebookWatcher> extends WatchedResourc
 
 // Helper Classes
 
-export class StyleIdDoesNotExistError extends Error {
-  // REVIEW: Is this class necessary?
-  constructor(m: string) {
-    super(m);
-    // Set the prototype explicitly to make work
-    Object.setPrototypeOf(this, StyleIdDoesNotExistError.prototype);
-    this.name = "StyleIdDoesNotExistError";
-  }
-}
-
-export class RelationshipIdDoesNotExistError extends Error {
-  // REVIEW: Is this class necessary?
-  constructor(m: string) {
-    super(m);
-    // Set the prototype explicitly to make work
-    Object.setPrototypeOf(this, RelationshipIdDoesNotExistError.prototype);
-    this.name = "RelationshipIdDoesNotExistError";
-  }
-}
-
 // Helper Functions
 
 export function escapeHtml(str: string): Html {
   // REVIEW: This function also exists in dom.ts, but that only works in the browser.
   // From http://jehiah.cz/a/guide-to-escape-sequences. Note that has a bug in that it only replaces the first occurrence.
   // REVIEW: Is this sufficient?
-  return str.replace(/&/g, "&amp;")
+  return <Html>str.replace(/&/g, "&amp;")
             .replace(/"/g, "&quot;")
             .replace(/'/g, "&#39;")
             .replace(/>/g, "&gt;")

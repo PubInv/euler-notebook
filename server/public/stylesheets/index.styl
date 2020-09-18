@@ -236,21 +236,6 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
     .cell
 
-      .formula
-        flex-grow 1
-
-      .handle
-        padding 4px 0 4px 0
-        text-align right
-        width 36px
-
-      .prefix
-        padding-left 40px
-
-      .status
-        text-align left
-        width 36px
-
     .cell:focus
       outline none
 
@@ -265,6 +250,50 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
       display flex
       flex-direction row
       padding 9px 0 9px 0
+
+      >.editPanel
+        outline 1px solid gray
+        position relative
+
+      >.keyboardPanel
+
+        >textarea
+          border none
+          height 1in
+          padding 0px
+          resize none
+          width 6.5in
+
+      >.strokePanel
+        .stylusDrawingPanel
+          background-color transparent
+          display block
+          fill none
+          pen-action none
+          position absolute
+          stroke gray
+          touch-action none
+
+        .svgPanel
+          // background-color white
+          display block
+          fill none
+          stroke black
+
+      >.formulaPanel
+        flex-grow 1
+
+      >.handlePanel
+        padding 4px 0 4px 0
+        text-align right
+        width 36px
+
+      >.prefixPanel
+        padding-left 40px
+
+      >.statusPanel
+        text-align left
+        width 36px
 
     .hintCell
       padding-left 20px
@@ -290,23 +319,6 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
           position absolute
           right 0
           top 30px
-
-        .stylusDrawingPanel
-          background-color transparent
-          display block
-          fill none
-          left var(--svg-left-offset)
-          pen-action none
-          position absolute
-          stroke gray
-          top var(--svg-top-offset)
-          touch-action none
-
-        .svgPanel
-          background-color white
-          display block
-          fill none
-          stroke black
 
       .resizeBar
         cursor row-resize

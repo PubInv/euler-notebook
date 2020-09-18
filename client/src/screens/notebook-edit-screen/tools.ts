@@ -93,7 +93,7 @@ export class Tools extends HtmlElement<'div'>{
         tag: 'button',
         class: 'tool',
         html,
-        listeners: { 'click': _e=>this.screen.view.useTool(toolStyle.id) }
+        listeners: { 'click': _e=>this.screen.content.useTool(toolStyle.id) }
       });
       this.$elt.appendChild($button);
     }

@@ -19,12 +19,16 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 // Requirements
 
+import * as debug1 from "debug";
+const debug = debug1('client:hint-cell');
+
 import { escapeHtml } from "../../../../dom";
-import { StyleObject, HintData, HintStatus, HintRelationship } from "../../../../shared/notebook";
+import { StyleObject, HintData, HintStatus, HintRelationship, NotebookChange } from "../../../../shared/notebook";
 import { Content } from "..";
 // import { getRenderer } from "../renderers";
 
 import { CellBase } from "./cell-base";
+import { assertFalse } from "../../../../shared/common";
 
 // Types
 
@@ -39,15 +43,29 @@ export class HintCell extends CellBase {
   // Public Constructor
 
   public constructor(notebookView: Content, style: StyleObject) {
-    super(notebookView, style, 'hintCell');
+    super(notebookView, style, 'hintCell', []);
     this.render(style);
   }
 
   // Public Instance Methods
 
-  public render(style: StyleObject): void {
+
+  // ClientNotebookWatcher Methods
+
+  public onChange(change: NotebookChange): void {
+    debug(`Hint cell received change: ${this.styleId} ${JSON.stringify(change)}`);
+    // TODO: update rendering?
+  }
+
+  public onChangesFinished(): void {}
+
+  // -- PRIVATE --
+
+  // Private Instance Methods
+
+  private render(style: StyleObject): void {
     // TODO: If hint cell is moved then it needs to be re-rendered.
-    const repStyle = this.view.screen.notebook.findStyle({ role: 'INPUT' }, style.id);
+    const repStyle = this.content.screen.notebook.findStyle({ role: 'INPUT' }, style.id);
     if (!repStyle) {
       // TODO: Better way to handle this error.
       this.$elt.innerHTML = "ERROR: No REPRESENTATION/INPUT substyle.";
@@ -63,33 +81,35 @@ export class HintCell extends CellBase {
       statusMark = '<b style="color:blue"><i>?</i></b> ';
     } else {
 
+      // TODO: Use ..._ENTITY constants from dom.ts.
       switch(hintData.relationship) {
         case HintRelationship.Unknown: relationshipMark = ""; break;
         case HintRelationship.Equivalent: relationshipMark = "&#x2261 "; break;
         case HintRelationship.NotEquivalent: relationshipMark = "&#x2262 "; break;
         case HintRelationship.Implies: relationshipMark = "&#x221D2 "; break;
         case HintRelationship.ImpliedBy: relationshipMark = "&#x21D0 "; break;
-        default: throw new Error('Unexpected relationship:'+ hintData.relationship);
+        default: assertFalse();
       }
 
       if (hintData.relationship == HintRelationship.Unknown) {
         statusMark = '';
       } else {
+        // TODO: Use ..._ENTITY constants from dom.ts.
         switch(hintData.status) {
           case HintStatus.Unknown: statusMark = '<b style="color:blue"><i>?</i></b> '; break;
           case HintStatus.Correct: statusMark = '<span style="color:green">&#x2714;</span> '; break;
           case HintStatus.Incorrect: statusMark = '<span style="color:red">&#x2718;</span> '; break;
-          default: throw new Error('Unexpected status:'+hintData.status);
+          default: assertFalse();
         }
       }
     }
     let innerHtml = `${relationshipMark}${statusMark}<i>${escapeHtml(repStyle.data||'blank')}</i> `;
-    const precedingStyleId = this.view.screen.notebook.precedingStyleId(style.id);
+    const precedingStyleId = this.content.screen.notebook.precedingStyleId(style.id);
     const hintedRelId : number | undefined = hintData.idOfRelationshipDecorated;
     if (hintedRelId) {
-      const hintedRel = this.view.screen.notebook.getRelationship(hintedRelId);
+      const hintedRel = this.content.screen.notebook.getRelationship(hintedRelId);
       const afterFrom = (precedingStyleId == hintedRel.fromId);
-      const followingStyleId = this.view.screen.notebook.followingStyleId(style.id);
+      const followingStyleId = this.content.screen.notebook.followingStyleId(style.id);
       const beforeTo = (followingStyleId == hintedRel.toId);
       const inBetween =  afterFrom && beforeTo;
       if (!inBetween) {
@@ -98,7 +118,5 @@ export class HintCell extends CellBase {
     }
     this.$elt.innerHTML = innerHtml;
   }
-
-  // -- PRIVATE --
 
 }

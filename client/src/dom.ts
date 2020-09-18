@@ -19,12 +19,13 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 // Requirements
 
-import { assert, Html } from "./shared/common";
+import { assert, Html, SvgMarkup } from "./shared/common";
 import { SyncListener, addSyncEventListener, addAsyncEventListener, AsyncListener } from "./error-handler";
 
 // Types
 
 type CssSelector = string;
+export type CssLengthProperty = '{CssLengthProperty}';
 type ElementId = string;
 export type ElementClass = string;
 
@@ -91,18 +92,19 @@ interface NewCommonOptions {
   replaceInner?: Element;
 }
 
-type ElementOrSpecification = HtmlElementSpecification<any>|HTMLElement;
 export interface HtmlElementSpecification<K extends keyof HTMLElementTagNameMap> extends NewCommonOptions {
   tag: K;
-  children?: ElementOrSpecification[];
+  children?: HtmlElementOrSpecification[];
   html?: Html;
 }
 
-interface SvgElementSpecification<K extends keyof SVGElementTagNameMap> extends NewCommonOptions {
+export interface SvgElementSpecification<K extends keyof SVGElementTagNameMap> extends NewCommonOptions {
   tag: K;
   children?: SvgElementSpecification<any>[];
   html?: Html;
 }
+
+export type HtmlElementOrSpecification = HtmlElementSpecification<any>|HTMLElement|SVGElement;
 
 // Constants
 
@@ -189,10 +191,10 @@ export function $new<K extends keyof HTMLElementTagNameMap>(options: HtmlElement
   if (options.html) { $elt.innerHTML = options.html; }
   if (options.children) {
     for (const childOptions of options.children) {
-      if (!(childOptions instanceof HTMLElement)) {
-        $new({ ...childOptions, appendTo: $elt});
-      } else {
+      if (childOptions instanceof HTMLElement || childOptions instanceof SVGElement) {
         $elt.append(childOptions);
+      } else {
+        $new({ ...childOptions, appendTo: $elt});
       }
     }
   }
@@ -203,6 +205,15 @@ export function $newSvg<K extends keyof SVGElementTagNameMap>(options: SvgElemen
   const $elt = document.createElementNS(SVG_NS, options.tag);
   $configure($elt, options);
   return $elt;
+}
+
+export function $outerSvg<K extends keyof SVGElementTagNameMap>(markup: SvgMarkup): SVGElementTagNameMap[K] {
+  const $parent = document.createElement('div');
+  $parent.innerHTML = markup;
+  const $elt: SVGElement = <SVGElement>$parent.firstElementChild!;
+  assert($elt);
+  assert($elt instanceof SVGElement);
+  return <SVGElementTagNameMap[K]>$elt;
 }
 
 export function $svg<K extends keyof SVGElementTagNameMap>(root: Element|Document, selector: string): SVGElementTagNameMap[K] {

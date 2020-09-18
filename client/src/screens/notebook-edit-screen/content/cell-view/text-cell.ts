@@ -19,11 +19,15 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 // Requirements
 
-import { StyleObject } from "../../../../shared/notebook";
+import * as debug1 from "debug";
+const debug = debug1('client:text-cell');
+
+import { StyleObject, NotebookChange } from "../../../../shared/notebook";
 import { Content } from "..";
 import { getRenderer } from "../../../../renderers";
 
 import { CellBase } from "./cell-base";
+import { notImplemented } from "../../../../shared/common";
 
 // Types
 
@@ -38,20 +42,31 @@ export class TextCell extends CellBase {
   // Public Constructor
 
   public constructor(notebookView: Content, style: StyleObject) {
-    super(notebookView, style, 'textCell');
+    super(notebookView, style, 'textCell', []);
     this.render(style);
   }
 
-  // Public Instance Methods
+  // ClientNotebookWatcher Methods
 
-  public render(style: StyleObject): void {
+  public onChange(change: NotebookChange): void {
+    debug(`Received change: ${this.styleId} ${JSON.stringify(change)}`);
+    notImplemented();
+  }
+
+  public onChangesFinished(): void {
+    notImplemented();
+  }
+
+  // -- PRIVATE --
+
+  // Private Instance Methods
+
+  private render(style: StyleObject): void {
     const renderer = getRenderer(style.type);
     const { html, errorHtml } = renderer(style.data);
     // TODO: Error formatting.
     if (html) { this.$elt.innerHTML = html; }
     else { this.$elt.innerHTML = errorHtml!; }
   }
-
-  // -- PRIVATE --
 
 }

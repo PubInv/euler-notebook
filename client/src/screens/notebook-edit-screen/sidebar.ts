@@ -44,7 +44,10 @@ export class Sidebar extends ButtonBar {
       tag: 'button',
       class: 'iconButton',
       html: svgIconReference('iconMonstrBug12'),
-      listeners: { click: e=>this.onBugButtonClicked(e) },
+      listeners: { click: (_e)=>{
+        this.$bugButton.disabled = true;
+        this.screen.debugPopup.show();
+      }},
       title: "Debug window",
     });
 
@@ -52,7 +55,9 @@ export class Sidebar extends ButtonBar {
       tag: 'button',
       class: 'iconButton',
       html: svgIconReference('iconMonstrRedo4'),
-      asyncListeners: { click: (e: MouseEvent)=>this.onRedoButtonClicked(e) },
+      asyncListeners: { click: async (_e: MouseEvent)=>{
+        await this.screen.content.redo();
+      }},
       title: "Redo",
     });
 
@@ -60,7 +65,9 @@ export class Sidebar extends ButtonBar {
       tag: 'button',
       class: 'iconButton',
       html: svgIconReference('iconMonstrTrashcan2'),
-      asyncListeners: { click: (e: MouseEvent)=>this.onTrashButtonClicked(e) },
+      asyncListeners: { click: async (_e: MouseEvent)=>{
+        await this.screen.content.deleteSelectedCells();
+      }},
       title: "Trash",
     });
 
@@ -68,7 +75,9 @@ export class Sidebar extends ButtonBar {
       tag: 'button',
       class: 'iconButton',
       html: svgIconReference('iconMonstrUndo4'),
-      asyncListeners: { click: (e: MouseEvent)=>this.onUndoButtonClicked(e) },
+      asyncListeners: { click: async (_e: MouseEvent)=>{
+        await this.screen.content.undo();
+      }},
       title: "Undo",
     });
 
@@ -106,28 +115,36 @@ export class Sidebar extends ButtonBar {
           tag: 'button',
           class: 'entityButton',
           html: SIGMA_ENTITY,
-          asyncListeners: { click: (e: MouseEvent)=>this.onFormulaButtonClicked(e) },
+          asyncListeners: { click: async (_e: MouseEvent)=>{
+            await this.screen.content.insertFormulaCellBelow();
+          }},
           title: "Insert formula",
         }, {
           // insert keyboard cell
           tag: 'button',
           class: 'iconButton',
           html: svgIconReference('iconMonstrKeyboard2'),
-          asyncListeners: { click: (e: MouseEvent)=>this.onKeyboardButtonClicked(e) },
+          asyncListeners: { click: async (_e: MouseEvent)=>{
+            await this.screen.content.insertKeyboardCellBelow();
+          }},
           title: "Insert keyboard cell",
         }, {
           // insert ink cell
           tag: 'button',
           class: 'iconButton',
           html: svgIconReference('iconMonstrPencil9'),
-          asyncListeners: { click: (e: MouseEvent)=>this.onStylusButtonClicked(e) },
+          asyncListeners: { click: async (_e: MouseEvent)=>{
+            await this.screen.content.insertInkCellBelow();
+          }},
           title: "Insert drawing cell",
         }, {
           // insert hint
           tag: 'button',
           class: 'iconButton',
           html: svgIconReference('iconMonstrIdea10'),
-          asyncListeners: { click: (e: MouseEvent)=>this.onHintButtonClicked(e) },
+          asyncListeners: { click: async (_e: MouseEvent)=>{
+            await this.screen.content.insertHintCellBelow();
+          }},
           title: "Insert hint cell",
         }, {
           tag: 'div', class: 'separator'
@@ -141,7 +158,9 @@ export class Sidebar extends ButtonBar {
           tag: 'button',
           class: 'iconButton',
           html: svgIconReference('iconMonstrLogout18'),
-          listeners: { click: e=>this.onExportButtonClicked(e) },
+          listeners: { click: _e=>{
+            this.screen.notebook.export();
+          }},
           title: "Export notebook",
         },
         $debugButton,
@@ -152,7 +171,9 @@ export class Sidebar extends ButtonBar {
           tag: 'button',
           class: 'iconButton',
           html: svgIconReference('iconMonstrClothing18'),
-          asyncListeners: { click: (e: MouseEvent)=>this.onUnderwearButtonClicked(e) },
+          asyncListeners: { click: async (_e: MouseEvent)=>{
+            await this.screen.content.developmentButtonClicked();
+          }},
           title: "For development use only",
         },
         $trashButton,
@@ -186,46 +207,5 @@ export class Sidebar extends ButtonBar {
   // Private Instance Methods
 
   // Private Event Handlers
-
-  private onBugButtonClicked(_event: MouseEvent): void {
-    this.$bugButton.disabled = true;
-    this.screen.debugPopup.show();
-  }
-
-  private async onUnderwearButtonClicked(_e: MouseEvent): Promise<void> {
-    await this.screen.view.developmentButtonClicked();
-  }
-
-  private onExportButtonClicked(_event: MouseEvent): void {
-    this.screen.notebook.export();
-  }
-
-  private async onFormulaButtonClicked(_event: MouseEvent): Promise<void> {
-    await this.screen.view.insertFormulaCellBelow();
-  }
-
-  private async onStylusButtonClicked(_e: MouseEvent): Promise<void> {
-    await this.screen.view.insertInkCellBelow();
-  }
-
-  private async onHintButtonClicked(_e: MouseEvent): Promise<void> {
-    await this.screen.view.insertHintCellBelow();
-  }
-
-  private async onKeyboardButtonClicked(_e: MouseEvent): Promise<void> {
-    await this.screen.view.insertKeyboardCellBelow();
-  }
-
-  private async onRedoButtonClicked(_e: MouseEvent): Promise<void> {
-    await this.screen.view.redo();
-  }
-
-  private async onTrashButtonClicked(_e: MouseEvent): Promise<void> {
-    await this.screen.view.deleteSelectedCells();
-  }
-
-  private async onUndoButtonClicked(_e: MouseEvent): Promise<void> {
-    await this.screen.view.undo();
-  }
 
 }

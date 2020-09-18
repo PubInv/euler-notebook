@@ -19,11 +19,14 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 // Requirements
 
-// import { $new, escapeHtml, Html } from "../dom";
-import { StyleObject } from "../../../../shared/notebook";
+import * as debug1 from "debug";
+const debug = debug1('client:formula-cell');
+
+import { StyleObject, NotebookChange } from "../../../../shared/notebook";
 import { Content } from "..";
 
 import { CellBase } from "./cell-base";
+import { notImplemented } from "../../../../shared/common";
 
 // Types
 
@@ -38,13 +41,29 @@ export class PlotCell extends CellBase {
   // Public Constructor
 
   public  constructor(notebookView: Content, style: StyleObject) {
-    super(notebookView, style, 'plotCell');
+    super(notebookView, style, 'plotCell', []);
     this.render(style);
   }
 
-  // Public Instance Methods
+  // ClientNotebookWatcher Methods
+
+  public onChange(_change: NotebookChange): void {
+    notImplemented();
+  }
+
+  public onChangesFinished(): void {
+    notImplemented();
+  }
+
 
   // -- PRIVATE --
+
+  // Private Instance Methods
+
+  private render(style: StyleObject): void {
+    debug(`Rendering plot cell: style ${style.id}`);
+    notImplemented();
+  }
 
 
 }

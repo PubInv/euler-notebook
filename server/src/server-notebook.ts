@@ -33,7 +33,7 @@ import { NotebookPath, NOTEBOOK_PATH_RE, NotebookName, FolderPath, NotebookEntry
 import {
   Notebook, NotebookObject, NotebookChange, StyleObject, StyleRole, StyleType, StyleSource, StyleId,
   RelationshipObject, StyleMoved, StylePosition, VERSION, StyleChanged, RelationshipDeleted,
-  RelationshipInserted, StyleIdDoesNotExistError, StyleInserted, StyleDeleted, StyleConverted, NotebookWatcher, WolframExpression
+  RelationshipInserted, StyleInserted, StyleDeleted, StyleConverted, NotebookWatcher, WolframExpression
 } from "./shared/notebook";
 import {
   NotebookChangeRequest, StyleMoveRequest, StyleInsertRequest, StyleChangeRequest,
@@ -322,11 +322,11 @@ export class ServerNotebook extends Notebook<ServerNotebookWatcher> {
               return !!filets && ts>filets;
             }
 
-            function fileIsLaterVersionThan(id:number, ts: number|undefined, name: string) : boolean {
-              if (!ts) return false;
-              const filets = getTimeStampOfCompatibleFileName(id, name);
-              return !!filets && ts<filets;
-            }
+            // function fileIsLaterVersionThan(id:number, ts: number|undefined, name: string) : boolean {
+            //   if (!ts) return false;
+            //   const filets = getTimeStampOfCompatibleFileName(id, name);
+            //   return !!filets && ts<filets;
+            // }
 
             const b: Buffer = await apiFunctionWrapper(s.data);
             const ts = Date.now();
@@ -343,12 +343,13 @@ export class ServerNotebook extends Notebook<ServerNotebookWatcher> {
             // @ts-ignore
             var files = fs.readdirSync(directory);
             debug("files", files);
-            for (const file of files) {
-              // I don't know why this is needed!
-              if (fileIsLaterVersionThan(s.id, s.timestamp, file)) {
-                foundfile = file;
-              }
-            }
+            // TODO: We removed timestamp from the style, so we need to make whatever changes are necessary here.
+            // for (const file of files) {
+            //   // I don't know why this is needed!
+            //   if (fileIsLaterVersionThan(s.id, s.timestamp, file)) {
+            //     foundfile = file;
+            //   }
+            // }
             debug("END");
             if (foundfile) {
               abs_filename = `${apath}/${foundfile}`;
@@ -450,14 +451,9 @@ export class ServerNotebook extends Notebook<ServerNotebookWatcher> {
     var symbolStyles: StyleObject[] = [];
     rs.forEach(r => {
       if (r.fromId == style.id) {
-        try {
-          symbolStyles.push(this.getStyle(r.toId));
-        } catch (e) {
-          if (e instanceof StyleIdDoesNotExistError) {
-          } else {
-            throw new Error("Internal Error"+e.name);
-          }
-        }
+        // REVIEW: The should not be any relationships that point to non-existent styles.
+        const toStyle = this.getStyleThatMayNotExist(r.toId);
+        if (toStyle) { symbolStyles.push(toStyle); }
       }
     });
     return symbolStyles;
@@ -784,7 +780,7 @@ export class ServerNotebook extends Notebook<ServerNotebookWatcher> {
     change: NotebookChange,
     rval: NotebookChange[],
   ): void {
-    debug(`Applying change from ${source}: ${JSON.stringify(change)}`);
+    debug(`Applying change: source ${source}, type ${change.type}.`);
     this.applyChange(change);
     rval.push(change);
   }
@@ -928,23 +924,17 @@ export class ServerNotebook extends Notebook<ServerNotebookWatcher> {
     rval: NotebookChange[],
   ): StyleInsertRequest|undefined {
 
-    var style: StyleObject;
-    try {
-      style = this.getStyle(request.styleId);
-    } catch(e) {
-      if(e instanceof StyleIdDoesNotExistError) {
-        // This may be sloppy thought, but it is the best I can do.
-        // I don't know if concurrency makes this an inevitable happenstance,
-        // or if a coding error has produced this. The way this arose
-        // makes me think the latter---our code is probably creating a
-        // "double delete" somewhere. This is the best I can do for now,
-        // and I have created a test that covers the bug that led me
-        // here. - rlr
-        debug("requested to delete unknown style",request.styleId);
-        return undefined;
-      } else {
-        throw e;
-      }
+    var style = this.getStyleThatMayNotExist(request.styleId);
+    if (!style) {
+      // This may be sloppy thought, but it is the best I can do.
+      // I don't know if concurrency makes this an inevitable happenstance,
+      // or if a coding error has produced this. The way this arose
+      // makes me think the latter---our code is probably creating a
+      // "double delete" somewhere. This is the best I can do for now,
+      // and I have created a test that covers the bug that led me
+      // here. - rlr
+      debug("requested to delete unknown style",request.styleId);
+      return undefined;
     }
 
     // Assemble the undo change request before we delete anything
