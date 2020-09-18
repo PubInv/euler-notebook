@@ -68,7 +68,8 @@ export class ClientNotebook extends Notebook<ClientNotebookWatcher> {
     switch(msg.operation) {
       case 'changed': this.smChanged(msg); break;
       case 'closed':  this.smClosed(msg); break;
-      default: assertFalse(`Client notebook received unexpected '${msg.operation}' message.`); break;
+      case 'opened':  break; // Nothing to do. Opened response is handled when request promise is resolved.
+      default: assertFalse();
     }
   }
 
@@ -111,7 +112,6 @@ export class ClientNotebook extends Notebook<ClientNotebookWatcher> {
     assert(responseMessages.length>=1);
     if (responseMessages.length == 1) {
       const responseMessage = responseMessages[0];
-      this.smChanged(responseMessage);
       return { changes: responseMessage.changes, undoChangeRequests: responseMessage.undoChangeRequests };
     } else {
       const rval: ChangeRequestResults = {
@@ -119,7 +119,6 @@ export class ClientNotebook extends Notebook<ClientNotebookWatcher> {
         undoChangeRequests: [],
       };
       for (const responseMessage of responseMessages) {
-        this.smChanged(responseMessage);
         rval.changes.push(...responseMessage.changes);
         if (responseMessage.undoChangeRequests) {
           rval.undoChangeRequests!.push(...responseMessage.undoChangeRequests);

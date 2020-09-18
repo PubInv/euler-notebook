@@ -67,7 +67,8 @@ export class ClientFolder extends Folder<ClientFolderWatcher> {
     switch(msg.operation) {
       case 'changed': this.smChanged(msg); break;
       case 'closed':  this.smClosed(msg); break;
-      default: assertFalse(); break;
+      case 'opened':  break; // Nothing to do. Opened response is handled when request promise is resolved.
+      default: assertFalse();
     }
   }
 
@@ -212,10 +213,7 @@ export class ClientFolder extends Folder<ClientFolderWatcher> {
       changeRequests,
     }
     const responseMessages = await appInstance.socket.sendRequest<ServerFolderChangedMessage>(msg);
-    for (const responseMessage of responseMessages) {
-      this.smChanged(responseMessage);
-    }
-    assert(responseMessages.length == 1);
+    assert(responseMessages.length == 1); // If
     return responseMessages[0].changes;
   }
 

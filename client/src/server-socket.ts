@@ -22,6 +22,9 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 // Requirements
 
+import * as debug1 from "debug";
+const debug = debug1('client:server-socket');
+
 import { assert, Html, PromiseResolver, Timestamp, newPromiseResolver, assertFalse } from "./shared/common";
 import { ClientMessage, ServerMessage, ServerMessageBase, RequestId } from "./shared/math-tablet-api";
 
@@ -101,7 +104,7 @@ export class ServerSocket {
     ws.addEventListener('close', (event: CloseEvent)=>this.onWsClose(event));
     ws.addEventListener('error', (event: Event)=>this.onWsError(event));
     ws.addEventListener('message', (event: MessageEvent)=>this.onWsMessage(event));
-    ws.addEventListener('open', ()=>{ this.onWsOpen(); });
+    ws.addEventListener('open', (event)=>{ this.onWsOpen(event); });
   }
 
   // Private Instance Properties
@@ -118,14 +121,16 @@ export class ServerSocket {
   // See https://github.com/Luka967/websocket-close-codes.
   private onWsClose(event: CloseEvent): void {
     // For terminating server: code = 1006, reason = "";
-    console.log(`Notebook Conn: socket closed: ${event.code} ${event.reason}`);
+    debug(`Socket closed: ${event.code} ${event.reason}`);
     // console.dir(event);
     messageDisplayInstance.addErrorMessage(<Html>`Socket closed by server. Refresh this page in your browser to reconnect.`);
     // LATER: Attempt to reconnect after a few seconds with exponential backoff.
   }
 
-  private onWsError(_event: Event): void {
-    console.error(`Notebook Conn: socket error.`);
+  private onWsError(event: Event): void {
+    debug(`Socket error`);
+    console.error("Socket error:");
+    console.dir(event);
     // console.dir(event);
     // REVIEW: Error info?
     this.connectPromise.reject(new Error(`Cannot connect to server.`));
@@ -138,47 +143,71 @@ export class ServerSocket {
     // REVIEW: Other clients will not get message if one client set a request ID.
     try {
       const msg: ServerMessage = JSON.parse(event.data);
+
       const requestId = msg.requestId;
-      if (requestId && this.requestMap.has(requestId)) {
-        const info = this.requestMap.get(requestId)!;
-        if (msg.type != 'error') {
-          if (msg.complete) {
-            if (!info.intermediateResults) {
-              info.resolver.resolve([msg]);
-            } else {
-              info.intermediateResults.push(msg);
-              info.resolver.resolve(info.intermediateResults);
-            }
-            this.requestMap.delete(requestId);
+      const requestInfo = requestId && this.requestMap.get(requestId)!;
+
+      // Dispatch the messages.
+      debug(`Message from server: ${msg.type}`);
+      // console.dir(msg);
+      switch(msg.type) {
+        // TODO: case 'error': errors should only come back from 'requests'
+        case 'folder': ClientFolder.smMessage(msg); break;
+        case 'notebook': ClientNotebook.smMessage(msg); break;
+        case 'error': {
+          if (requestInfo) {
+            // Do nothing.
+            // The request promise will be rejected below and the requestor will handle the error.
           } else {
-            if (!info.intermediateResults) {
-              info.intermediateResults = [ msg ];
+            // An error from the server that we were not expecting.
+            // Display it to the user.
+            messageDisplayInstance.addErrorMessage(<Html>`Server error: ${msg.message}`);
+          }
+          break;
+        }
+        default: assertFalse();
+      }
+
+      // If this is a response to one of our requests, then accumulate the results,
+      // and resolve the request promise if the results are complete.
+      if (requestInfo) {
+        if (msg.type != 'error') {
+          // Message is not an error.
+          if (msg.complete) {
+            // Response is complete.
+            // Resolve the request promise.
+            if (!requestInfo.intermediateResults) {
+              requestInfo.resolver.resolve([msg]);
             } else {
-              info.intermediateResults.push(msg);
+              requestInfo.intermediateResults.push(msg);
+              requestInfo.resolver.resolve(requestInfo.intermediateResults);
+            }
+            this.requestMap.delete(requestId!);
+          } else {
+            // Response is incomplete.
+            // Accumulate the results.
+            if (!requestInfo.intermediateResults) {
+              requestInfo.intermediateResults = [ msg ];
+            } else {
+              requestInfo.intermediateResults.push(msg);
             }
           }
         } else {
-          info.resolver.reject(new Error(msg.message));
-          this.requestMap.delete(requestId);
-        }
-      } else {
-        // console.log(`Message from server: ${msg.type}`);
-        // console.dir(msg);
-        switch(msg.type) {
-          // TODO: case 'error': errors should only come back from 'requests'
-          case 'folder': ClientFolder.smMessage(msg); break;
-          case 'notebook': ClientNotebook.smMessage(msg); break;
-          default: assertFalse();
+          // Message is an error.
+          // Reject the request promise.
+          requestInfo.resolver.reject(new Error(msg.message));
+          this.requestMap.delete(requestId!);
         }
       }
+
     } catch(err) {
       reportError(err, <Html>"Unexpected client error handling `WebSocket message event.");
     }
   }
 
-  private onWsOpen(): void {
+  private onWsOpen(_event: Event): void {
+    debug(`Socket opened.`);
     try {
-      console.log("Notebook Conn: socket opened.");
       this.connectPromise.resolve(this);
     } catch(err) {
       reportError(err, <Html>"Unexpected error handling WebSocket open");
