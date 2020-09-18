@@ -47,6 +47,8 @@ export class KeyboardPanel extends HtmlElement<'div'> {
       tag: 'textarea',
       listeners: {
         input: (e: InputEvent)=>this.onTextAreaInput(e),
+      },
+      asyncListeners: {
         keyup: (e: KeyboardEvent)=>this.onTextAreaKeyUp(e),
       }
     });
@@ -60,6 +62,7 @@ export class KeyboardPanel extends HtmlElement<'div'> {
 
     this.$textArea = $textArea;
     this.keyboardCallbackFn = keyboardCallbackFn;
+    this.lastText = text;
   }
 
   // Public Instance Methods
@@ -71,6 +74,7 @@ export class KeyboardPanel extends HtmlElement<'div'> {
 
     private $textArea: HTMLTextAreaElement;
     private keyboardCallbackFn: KeyboardCallbackFn;
+    private lastText: string;
 
 
   // Private Instance Methods
@@ -88,18 +92,21 @@ export class KeyboardPanel extends HtmlElement<'div'> {
     // TODO: Incremental change
   }
 
-  private onTextAreaKeyUp(event: KeyboardEvent): void {
+  private async onTextAreaKeyUp(event: KeyboardEvent): Promise<void> {
     debug(`TextArea key-up event`);
     switch(event.key) {
       case 'Enter':
         // TODO: Do not allow submission if there is an error.
         if (event.ctrlKey) {
+          const text = this.$textArea.value;
           event.stopPropagation();
-          this.keyboardCallbackFn(this.$textArea.value);
+          this.lastText = text;
+          await this.keyboardCallbackFn(text);
         }
         break;
       case 'Escape':
           event.stopPropagation();
+          this.$textArea.value = this.lastText;
           // TODO: restore previous value?
         break;
     }

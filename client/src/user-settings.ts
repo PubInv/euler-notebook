@@ -29,7 +29,9 @@ export type MathKeyboardInputFormat = 'TEX-EXPRESSION'|'WOLFRAM-EXPRESSION'; // 
 class UserSettings {
 
   public get defaultInputMode(): InputMode {
-    return <InputMode|undefined>window.localStorage.getItem('inputMode') || 'stylus';
+    // LATER: Detect whether device has stylus or physical keyboard to determine
+    //        appropriate default.
+    return <InputMode|undefined>window.localStorage.getItem('inputMode') || 'keyboard';
   }
 
   public set defaultInputMode(value: InputMode) {

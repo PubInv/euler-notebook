@@ -39,6 +39,7 @@ interface AsyncListeners {
   click?: AsyncListener<MouseEvent>;
   input?: AsyncListener<InputEvent>;
   keypress?: AsyncListener<KeyboardEvent>;
+  keyup?: AsyncListener<KeyboardEvent>;
 }
 interface SyncListeners {
   // REVIEW: Can we populate this declaratively from the standard DOM types?
