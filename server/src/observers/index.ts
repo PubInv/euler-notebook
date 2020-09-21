@@ -23,19 +23,19 @@ import { Config, Credentials } from "../config";
 import { ServerNotebook } from "../server-notebook";
 
 import { AlgebraicDataflowObserver } from "./algebraic-dataflow-observer";
-import { MathematicaObserver } from "./mathematica-cas";
-import { MyScriptObserver } from "./myscript-observer";
-import { SandboxObserver } from "./sandbox";
-import { SubtrivClassifierObserver } from "./subtriv-classifier";
 import { AlgebraicToolsObserver } from "./algebraic-tools";
 import { EquationSolverObserver } from "./equation-solver";
 import { FormulaObserver } from "./formula-observer";
-import { TeXFormatterObserver } from "./tex-formatter";
-import { SymbolClassifierObserver } from "./symbol-classifier";
-// import { SymbolTableObserver } from "./symbol-table";
+import { MathematicaObserver } from "./mathematica-cas";
+import { MathJaxObserver } from "./mathjax-observer";
+import { MyScriptObserver } from "./myscript-observer";
+import { SandboxObserver } from "./sandbox";
+// BUGBUG import { SubtrivClassifierObserver } from "./subtriv-classifier";
 import { SvgObserver } from "./svg-observer";
+// BUGBUG import { SymbolClassifierObserver } from "./symbol-classifier";
+// import { SymbolTableObserver } from "./symbol-table";
+import { TeXFormatterObserver } from "./tex-formatter";
 import { WolframObserver } from "./wolfram-cas";
-
 
 // Globals
 
@@ -62,11 +62,12 @@ export async function initialize(config: Config, credentials: Credentials): Prom
     await MathematicaObserver.initialize(config);
     ServerNotebook.registerObserver('ALGEBRAIC-DATAFLOW-OBSERVER', AlgebraicDataflowObserver);
     ServerNotebook.registerObserver('MATHEMATICA', MathematicaObserver);
-    ServerNotebook.registerObserver('SUBTRIV-CLASSIFIER', SubtrivClassifierObserver);
-    ServerNotebook.registerObserver('SYMBOL-CLASSIFIER', SymbolClassifierObserver);
-//    ServerNotebook.registerObserver('SYMBOL-TABLE', SymbolTableObserver);
+    // BUGBUG ServerNotebook.registerObserver('SUBTRIV-CLASSIFIER', SubtrivClassifierObserver);
+    // BUGBUG ServerNotebook.registerObserver('SYMBOL-CLASSIFIER', SymbolClassifierObserver);
+    // ServerNotebook.registerObserver('SYMBOL-TABLE', SymbolTableObserver);
     ServerNotebook.registerObserver('EQUATION-SOLVER', EquationSolverObserver);
     ServerNotebook.registerObserver('TEX-FORMATTER', TeXFormatterObserver);
+    ServerNotebook.registerObserver('MATHJAX-OBSERVER', MathJaxObserver);
     ServerNotebook.registerObserver('WOLFRAM-OBSERVER', WolframObserver);
     ServerNotebook.registerObserver('ALGEBRAIC-TOOLS', AlgebraicToolsObserver);
   }
@@ -97,6 +98,7 @@ export function terminate(): void {
 //    ServerNotebook.deregisterObserver('SYMBOL-TABLE');
     ServerNotebook.deregisterObserver('EQUATION-SOLVER');
     ServerNotebook.deregisterObserver('TEX-FORMATTER');
+    ServerNotebook.deregisterObserver('MATHJAX-OBSERVER');
     ServerNotebook.deregisterObserver('WOLFRAM-OBSERVER');
     ServerNotebook.deregisterObserver('ALGEBRAIC-TOOLS');
   }

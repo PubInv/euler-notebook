@@ -325,21 +325,22 @@ export const STYLE_TYPES = [
 export type StyleType = typeof STYLE_TYPES[number];
 
 export const STYLE_SOURCES = [
+  'ALGEBRAIC-DATAFLOW-OBSERVER',
+  'ALGEBRAIC-TOOLS',  // Algebraic tools provided by Wolfram
+  'ANY-INPUT',        // This represents ANY input, no matter the type enterred.
+  'EQUATION-SOLVER',  // Attempt to expose Wolfram solutions
+  'FORMULA-OBSERVER',
   'MATHEMATICA',      // Mathematica C.A.S.
+  'MATHJAX-OBSERVER',
   'MYSCRIPT',         // MyScript handwriting recognition`
   'SANDBOX',          // Sandbox for temporary experiments
   'SUBTRIV-CLASSIFIER',
-  'ALGEBRAIC-TOOLS',  // Algebraic tools provided by Wolfram
-  'EQUATION-SOLVER',  // Attempt to expose Wolfram solutions
   'SVG',              // SVG observer
   'SYMBOL-CLASSIFIER',
   'SYMBOL-TABLE',
-  'TEX-FORMATTER',
-  'ANY-INPUT',        // This represents ANY input, no matter the type enterred.
-  'ALGEBRAIC-DATAFLOW-OBSERVER',
-  'FORMULA-OBSERVER',
   'SYSTEM',           // The Math-Tablet app itself, not the user or an observer.
   'TEST',             // An example source used only by our test system
+  'TEX-FORMATTER',
   'USER',             // Directly entered by user
   'WOLFRAM-OBSERVER', // Wolfram C.A.S.
 ] as const;

@@ -23,11 +23,10 @@ import * as debug1 from "debug";
 const debug = debug1('client:formula-cell');
 
 import { Html, assertFalse, assert } from "../../../../shared/common";
-import { StyleId, StyleObject, FindRelationshipOptions, FindStyleOptions, NotebookChange, StrokeData } from "../../../../shared/notebook";
+import { StyleId, StyleObject, NotebookChange, StrokeData } from "../../../../shared/notebook";
 
-import { $new, escapeHtml } from "../../../../dom";
+import { $new, $newSvg, $outerSvg } from "../../../../dom";
 import { Content } from "..";
-import { getRenderer } from "../../../../renderers";
 import { FORMULA_SUBROLE_PREFIX } from "../../../../role-selectors";
 
 import { CellBase } from "./cell-base";
@@ -57,8 +56,8 @@ export class FormulaCell extends CellBase {
     this.$elt.appendChild(this.$prefixPanel);
 
     const notebook = view.screen.notebook;
-    const texRepStyle = notebook.findStyle({ role: 'REPRESENTATION', type: 'TEX-EXPRESSION' }, rootStyle.id);
-    this.$formulaPanel = this.createFormulaPanel(texRepStyle);
+    const svgRepStyle = notebook.findStyle({ role: 'REPRESENTATION', type: 'SVG-MARKUP' }, rootStyle.id);
+    this.$formulaPanel = this.createFormulaPanel(svgRepStyle);
     this.$elt.appendChild(this.$formulaPanel);
 
     const inputStyle = notebook.findStyle({ role: 'INPUT' }, rootStyle.id);
@@ -92,7 +91,7 @@ export class FormulaCell extends CellBase {
       case 'styleInserted':
       case 'styleChanged': {
         const changedStyle = change.style;
-        if (isTexStyle(changedStyle, this.styleId)) {
+        if (isSvgStyle(changedStyle, this.styleId)) {
           // TeX representation changed. Update the rendering of the formula.
           this.updateFormulaPanel(change.type, changedStyle);
         } else if (isInputStyle(changedStyle, this.styleId)) {
@@ -106,7 +105,7 @@ export class FormulaCell extends CellBase {
         // Currently the styles that we use to update our display are never converted, so we
         // do not handle that case.
         const style = this.content.screen.notebook.getStyle(change.styleId);
-        assert(!isTexStyle(style, this.styleId));
+        assert(!isSvgStyle(style, this.styleId));
         assert(!isInputStyle(style, this.styleId));
         assert(!isStrokeSvgStyle(style, this.styleId, this.content.screen.notebook));
         break;
@@ -115,7 +114,7 @@ export class FormulaCell extends CellBase {
         // Currently the styles that we use to update our display are never deleted, so we
         // do not handle that case.
         const style = change.style;
-        assert(!isTexStyle(style, this.styleId));
+        assert(!isSvgStyle(style, this.styleId));
         assert(!isInputStyle(style, this.styleId));
         assert(!isStrokeSvgStyle(style, this.styleId, this.content.screen.notebook));
         break;
@@ -132,7 +131,7 @@ export class FormulaCell extends CellBase {
   // Private Instance Properties
 
   private $editPanel: HTMLDivElement;
-  private $formulaPanel: HTMLDivElement;
+  private $formulaPanel: SVGSVGElement;
   private $prefixPanel: HTMLDivElement;
   private keyboardPanel?: KeyboardPanel;
   private strokePanel?: StrokePanel;
@@ -161,14 +160,14 @@ export class FormulaCell extends CellBase {
     return $new({ tag: 'div', class: 'editPanel', html: errorHtml || <Html>"Placeholder", appendTo: this.$elt });
   }
 
-  private createFormulaPanel(texRepStyle: StyleObject|undefined): HTMLDivElement {
-    let html: Html;
-    if (texRepStyle) {
-      html = this.formulaPanelHtml(this.content.screen.notebook, this.styleId, texRepStyle);
+  private createFormulaPanel(svgRepStyle: StyleObject|undefined): SVGSVGElement {
+    let $svg: SVGSVGElement;
+    if (svgRepStyle) {
+      $svg = $outerSvg<'svg'>(svgRepStyle.data);
     } else {
-      html = <Html>"Placeholder";
+      $svg = $newSvg<'svg'>({ tag: 'svg', class: 'formulaPanel', attrs: { height: '1in', width: '1in' }});
     }
-    return $new({ tag: 'div', class: 'formulaPanel', html });
+    return $svg;
   }
 
   private createHandlePanel(style: StyleObject): HTMLDivElement {
@@ -204,52 +203,52 @@ export class FormulaCell extends CellBase {
     return strokePanel;
   }
 
-  private formulaPanelHtml(notebook: ClientNotebook, rootStyleId: StyleId, texRepStyle: StyleObject): Html {
-    let html: Html;
-    // Render the formula data.
-    const renderer = getRenderer(texRepStyle.type);
-    const { html: contentHtml, errorHtml } = renderer(texRepStyle.data);
-    if (!errorHtml) {
-      html = contentHtml!;
-    } else {
-      html = <Html>`<div class="error">${errorHtml}</div><tt>${escapeHtml(texRepStyle.data.toString())}</tt>`;
-    }
+  // private formulaPanelHtml(notebook: ClientNotebook, rootStyleId: StyleId, texRepStyle: StyleObject): Html {
+  //   let html: Html;
+  //   // Render the formula data.
+  //   const renderer = getRenderer(texRepStyle.type);
+  //   const { html: contentHtml, errorHtml } = renderer(texRepStyle.data);
+  //   if (!errorHtml) {
+  //     html = contentHtml!;
+  //   } else {
+  //     html = <Html>`<div class="error">${errorHtml}</div><tt>${escapeHtml(texRepStyle.data.toString())}</tt>`;
+  //   }
 
-    // Render Wolfram evaluation if it exists.
-    // REVIEW: Rendering evaluation annotations should probably be
-    //         done separately from rendering the formula,
-    //         but for now, for lack of a better place to put them,
-    //         we are just appending the evaluation
-    //         to the end of the formula.
-    {
-      const findOptions: FindStyleOptions = { role: 'EVALUATION', recursive: true };
-      const evaluationStyles = notebook.findStyles(findOptions, rootStyleId);
-      for (const evaluationStyle of evaluationStyles) {
-        // HACK ALERT: We only take evaluations that are numbers:
-        const evalStr = evaluationStyle.data.toString();
-        if (/^\d+$/.test(evalStr)) {
-          html = <Html>(html + ` [=${evalStr}]`);
-        }
-      }
-    }
+  //   // Render Wolfram evaluation if it exists.
+  //   // REVIEW: Rendering evaluation annotations should probably be
+  //   //         done separately from rendering the formula,
+  //   //         but for now, for lack of a better place to put them,
+  //   //         we are just appending the evaluation
+  //   //         to the end of the formula.
+  //   {
+  //     const findOptions: FindStyleOptions = { role: 'EVALUATION', recursive: true };
+  //     const evaluationStyles = notebook.findStyles(findOptions, rootStyleId);
+  //     for (const evaluationStyle of evaluationStyles) {
+  //       // HACK ALERT: We only take evaluations that are numbers:
+  //       const evalStr = evaluationStyle.data.toString();
+  //       if (/^\d+$/.test(evalStr)) {
+  //         html = <Html>(html + ` [=${evalStr}]`);
+  //       }
+  //     }
+  //   }
 
-    // Render list of equivalent styles, if there are any.
-    // REVIEW: Rendering equivalency annotations should probably be
-    //         done separately from rendering the formula,
-    //         but for now, for lack of a better place to put them,
-    //         we are just appending the list of equivalent formulas
-    //         to the end of the formula.
-    {
-      const findOptions: FindRelationshipOptions = { fromId: rootStyleId, toId: rootStyleId, role: 'EQUIVALENCE' };
-      const relationships = notebook.findRelationships(findOptions);
-      const equivalentStyleIds = relationships.map(r=>(r.toId!=rootStyleId ? r.toId : r.fromId)).sort();
-      if (equivalentStyleIds.length>0) {
-        html = <Html>(html + ` {${equivalentStyleIds.join(', ')}}`);
-      }
-    }
+  //   // Render list of equivalent styles, if there are any.
+  //   // REVIEW: Rendering equivalency annotations should probably be
+  //   //         done separately from rendering the formula,
+  //   //         but for now, for lack of a better place to put them,
+  //   //         we are just appending the list of equivalent formulas
+  //   //         to the end of the formula.
+  //   {
+  //     const findOptions: FindRelationshipOptions = { fromId: rootStyleId, toId: rootStyleId, role: 'EQUIVALENCE' };
+  //     const relationships = notebook.findRelationships(findOptions);
+  //     const equivalentStyleIds = relationships.map(r=>(r.toId!=rootStyleId ? r.toId : r.fromId)).sort();
+  //     if (equivalentStyleIds.length>0) {
+  //       html = <Html>(html + ` {${equivalentStyleIds.join(', ')}}`);
+  //     }
+  //   }
 
-    return html;
-  }
+  //   return html;
+  // }
 
   private updateEditPanelData(changeType: 'styleChanged'|'styleInserted', inputStyle: StyleObject): void {
     if (changeType == 'styleInserted') {
@@ -280,10 +279,10 @@ export class FormulaCell extends CellBase {
     this.strokePanel!.updateSvgMarkup(svgRepStyle.data);
   }
 
-  private updateFormulaPanel(_changeType: 'styleChanged'|'styleInserted', texRepStyle: StyleObject): void {
-    const notebook: ClientNotebook = this.content.screen.notebook;
-    const html = this.formulaPanelHtml(notebook, this.styleId, texRepStyle);
-    this.$formulaPanel.innerHTML = html;
+  private updateFormulaPanel(_changeType: 'styleChanged'|'styleInserted', svgRepStyle: StyleObject): void {
+    const $newFormulaPanel = this.createFormulaPanel(svgRepStyle);
+    this.$formulaPanel.replaceWith($newFormulaPanel);
+    this.$formulaPanel = $newFormulaPanel;
   }
 
   // Private Event Handlers
@@ -292,8 +291,8 @@ export class FormulaCell extends CellBase {
 
 // HELPER FUNCTIONS
 
-function isTexStyle(style: StyleObject, parentId: StyleId): boolean {
-  return style.role == 'REPRESENTATION' && style.type == 'TEX-EXPRESSION' && style.parentId == parentId;
+function isSvgStyle(style: StyleObject, parentId: StyleId): boolean {
+  return style.role == 'REPRESENTATION' && style.type == 'SVG-MARKUP' && style.parentId == parentId;
 }
 
 function isInputStyle(style: StyleObject, parentId: StyleId): boolean {

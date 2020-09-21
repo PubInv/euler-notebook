@@ -31,16 +31,17 @@ const debug = debug1(`server:${MODULE}`);
 import * as morgan from "morgan";
 import { middleware as stylusMiddleware } from "stylus";
 
-import { initialize as initializeObservers } from "./observers";
-import { start as startWolframscript } from "./wolframscript";
 import { ClientSocket } from "./client-socket";
-import { rootDir as notebookRootDir } from "./server-folder";
 import { loadConfig, loadCredentials} from "./config";
+import { initialize as initializeMathJax } from "./mathjax";
+import { initialize as initializeObservers } from "./observers";
+import { rootDir as notebookRootDir } from "./server-folder";
+import { start as startWolframscript } from "./wolframscript";
 
 import { router as apiRouter } from "./routes/api";
-import { router as xrayRouter } from "./routes/xray";
 import { router as exportRouter } from "./routes/export";
 import { router as indexRouter } from "./routes/index";
+import { router as xrayRouter } from "./routes/xray";
 
 // Helper Functions
 
@@ -60,6 +61,7 @@ async function main() {
 
   // TODO: stopWolframscript before exiting.
   if (config.mathematica) { await startWolframscript(config.wolframscript); }
+  initializeMathJax();
 
   // TODO: We should terminateObservers when shutting down.
   await initializeObservers(config, credentials);

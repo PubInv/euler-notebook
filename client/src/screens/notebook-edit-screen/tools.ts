@@ -19,12 +19,11 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 // Requirements
 
-import { Html } from "../../shared/common";
+import { assert, Html } from "../../shared/common";
 import { StyleId, FindStyleOptions } from "../../shared/notebook";
 import { SymbolTable, ToolData } from "../../shared/math-tablet-api";
 
 import { $new, escapeHtml } from "../../dom";
-import { getRenderer } from "../../renderers";
 import { HtmlElement } from "../../html-element";
 import { NotebookEditScreen } from ".";
 
@@ -80,15 +79,12 @@ export class Tools extends HtmlElement<'div'>{
     const toolStyles = this.screen.notebook.findStyles(findOptions2, style.id);
     for (const toolStyle of toolStyles) {
       const toolData: ToolData = toolStyle.data;
-      let html: Html;
+      const html: Html = toolData.html!;
+      assert(html);
       if (toolData.tex) {
-        const latexRenderer = getRenderer('TEX-EXPRESSION');
-        const results = latexRenderer!(toolData.tex);
-        if (results.html) { html = results.html; }
-        else { html = results.errorHtml!; }
-      } else {
-        html = toolData.html!;
+        console.warn(`Tool TeX rendering not implemented: ${toolData.tex}`);
       }
+
       const $button = $new({
         tag: 'button',
         class: 'tool',

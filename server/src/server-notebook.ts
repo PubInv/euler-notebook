@@ -45,6 +45,7 @@ import { ClientId } from "./client-socket";
 import { AbsDirectoryPath, ROOT_DIR_PATH, mkDir, readFile, rename, rmRaf, writeFile } from "./file-system";
 import { constructSubstitution } from "./wolframscript";
 import { OpenOptions } from "./shared/watched-resource";
+import { logError } from "./error-handler";
 
 
 // LATER: Convert these to imports.
@@ -58,8 +59,8 @@ const debug = debug1(`server:${MODULE}`);
 type AbsFilePath = string; // Absolute path to a file in the file system.
 
 export interface ObserverInstance {
-  onChangesAsync: (changes: NotebookChange[]) => Promise<NotebookChangeRequest[]>;
-  onChangesSync: (changes: NotebookChange[]) => NotebookChangeRequest[];
+  onChangesAsync: (changes: NotebookChange[], startIndex: number, endIndex: number) => Promise<NotebookChangeRequest[]>;
+  onChangesSync: (changes: NotebookChange[], startIndex: number, endIndex: number) => NotebookChangeRequest[];
   onClose: () => void;
   useTool: (styleObject: StyleObject) => Promise<NotebookChangeRequest[]>;
 }
@@ -87,7 +88,8 @@ interface StyleOrderMapping {
 
 // Constants
 
-const MAX_CHANGE_ROUNDS = 10;
+const MAX_ASYNC_ROUNDS = 10;
+const MAX_SYNC_ROUNDS = 10;
 const NOTEBOOK_ENCODING = 'utf8';
 const NOTEBOOK_FILE_NAME = 'notebook.json';
 
@@ -648,15 +650,32 @@ export class ServerNotebook extends Notebook<ServerNotebookWatcher> {
     // Make the requested changes to the notebook.
     const changes: NotebookChange[] = [];
     const undoChangeRequests = this.applyRequestedChanges(source, changeRequests, changes);
-    const newSyncChanges = this.processChangesSync(changes);
-    const allSyncChanges = changes.concat(newSyncChanges);
-    this.notifyWatchersOfChanges(allSyncChanges, undoChangeRequests, false, originatingWatcher, requestId);
-    const asyncChanges = await this.processChangesAsync(allSyncChanges);
-    this.notifyWatchersOfChanges(asyncChanges, undefined, true, originatingWatcher, requestId);
+
+    let asyncStartIndex = 0;
+    let syncStartIndex = 0;
+    syncStartIndex = this.processChangesSync(changes, syncStartIndex);
+
+    this.notifyWatchersOfChanges(changes, undoChangeRequests, false, originatingWatcher, requestId);
+    let notifyStartIndex = changes.length;
+
+    for (let round = 0; asyncStartIndex<changes.length && round<MAX_ASYNC_ROUNDS; round++) {
+      debug(`Async round ${round}.`);
+      asyncStartIndex = await this.processChangesAsync(changes, asyncStartIndex);
+      syncStartIndex = this.processChangesSync(changes, syncStartIndex);
+
+      this.notifyWatchersOfChanges(changes.slice(notifyStartIndex), undefined, true, originatingWatcher, requestId);
+      notifyStartIndex = changes.length;
+    }
+
+    if (asyncStartIndex<changes.length) {
+      // TODO: What do we do? Just drop the changes on the floor?
+      logError(new Error("Dropping async changes due to running out of rounds"));
+    }
+
 
     await this.save();
 
-    return allSyncChanges.concat(asyncChanges);
+    return changes;
   }
 
   public reserveId(): StyleId {
@@ -1157,78 +1176,63 @@ export class ServerNotebook extends Notebook<ServerNotebookWatcher> {
     };
   }
 
-  private async processChangesAsync(changes: NotebookChange[]): Promise<NotebookChange[]> {
-    // TODO: run resulting async changes through sync observers.
-    // TODO: submit changes to asynchronous observers simultaneously.
+  private async processChangesAsync(changes: NotebookChange[], startIndex: number): Promise<number> {
+
     // TODO: timeout on observer processing of changes.
-    // TODO: Don't allow multiple asynchronous requestChanges to be operating at the same time.
-    let allChanges: NotebookChange[] = [];
-    for (let round = 0; changes.length>0 && round<MAX_CHANGE_ROUNDS; round++) {
-      debug(`Async round ${round}.`);
+    // TODO: Don't allow multiple asynchronous requestChanges to be operating at the same time per observer.
 
-      // Pass the changes to each observer to determine if it wants to make
-      // additional changes as the result of the previous changes.
-      // LATER: Submit to all observers in parallel.
-      // IMPORTANT: We don't actually make the changes to the notebook
-      // until *after* all observers have submitted their change requests for this round.
-      const observerChangeRequests: Map<StyleSource, NotebookChangeRequest[]> = new Map();
-      for (const [source, observer] of this.observers) {
-        const changeRequests = await observer.onChangesAsync(changes);
-        observerChangeRequests.set(source, changeRequests);
-      };
-
-      // Apply the changes requested by the observers.
-      const newChanges: NotebookChange[] = [];
-      for (const [source, changeRequests] of observerChangeRequests) {
-        this.applyRequestedChanges(source, changeRequests, newChanges);
-      }
-
-      // Get the changes made in this round for the next round of processing.
-      changes = newChanges;
-      allChanges = allChanges.concat(newChanges);
-    }
-
-    if (changes.length>0) {
-      // TODO: What do we do? Just drop the changes on the floor?
-      console.error(`Dropping async changes due to running out of rounds: ${changes.length}`);
-    }
-
-    return allChanges;
+    // Submit the changes to each observer in parallel to determine if they want to make
+    // additional changes as the result of the previous changes.
+    // Make apply the changes to the notebook as they come back,
+    // and accumulate all of the changes in the newChanges array.
+    // REVIEW: What if a requested change fails? (e.g. modify a style that another observer already deleted.)
+    const endIndex = changes.length;
+    assert(startIndex<endIndex);
+    const promises: Promise<void>[] = [];
+    for (const [source, observer] of this.observers) {
+      promises.push(
+        observer.onChangesAsync(changes, startIndex, endIndex)
+        .then(
+          (changeRequests)=>{ this.applyRequestedChanges(source, changeRequests, changes); },
+          // TODO: (err)=>
+        )
+      );
+    };
+    await Promise.all(promises);
+    return endIndex;
   }
 
-  private processChangesSync(changes: NotebookChange[]): NotebookChange[] {
-    let allChanges: NotebookChange[] = [];
-    for (let round = 0; changes.length>0 && round<MAX_CHANGE_ROUNDS; round++) {
+  private processChangesSync(changes: NotebookChange[], startIndex: number): number {
+    let round: number;
+    for (round = 0; startIndex<changes.length && round<MAX_SYNC_ROUNDS; round++) {
       debug(`Sync round ${round}.`);
 
-      // Pass the changes to each observer synchronously to determine if
-      // the observer wants to make additional changes as the result of
-      // the previous changes.
-      // IMPORTANT: We don't actually make the changes to the notebook
-      // until *after* all observers have submitted their change requests for this round.
+      // Pass the new changes to each observer synchronously to determine if
+      // the observer wants to make additional change requests as the result of
+      // the changes.
+      const endIndex = changes.length;
       const observerChangeRequests: Map<StyleSource, NotebookChangeRequest[]> = new Map();
       for (const [source, observer] of this.observers) {
-        const changeRequests = observer.onChangesSync(changes);
+        assert(startIndex<endIndex);
+        const changeRequests = observer.onChangesSync(changes, startIndex, endIndex);
         observerChangeRequests.set(source, changeRequests);
       };
 
-      // Apply the changes requested by the observers.
-      const newChanges: NotebookChange[] = [];
+      // Apply the change requests from the observers, if there are any.
+      // The changes resulting from the change requests will be appended
+      // to the changes array, and processed in the next round.
+      startIndex = endIndex;
       for (const [source, changeRequests] of observerChangeRequests) {
-        this.applyRequestedChanges(source, changeRequests, newChanges);
+        this.applyRequestedChanges(source, changeRequests, changes);
       }
-
-      // Get the changes made in this round for the next round of processing.
-      changes = newChanges;
-      allChanges = allChanges.concat(newChanges);
     }
 
-    if (changes.length>0) {
+    if (startIndex<changes.length) {
       // TODO: What do we do? Just drop the changes on the floor?
-      console.error(`Dropping sync changes due to running out of rounds: ${changes.length}`);
+      logError(new Error("Dropping sync changes due to running out of rounds"));
     }
 
-    return allChanges;
+    return startIndex;
   }
 
   // Do not call this directly.

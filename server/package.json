@@ -16,6 +16,7 @@
     "deep-equal": "^2.0.3",
     "express": "~4.16.0",
     "http-errors": "~1.6.2",
+    "mathjax-full": "^3.1.2",
     "morgan": "~1.9.0",
     "multer": "^1.4.2",
     "node-fetch": "^2.6.1",

@@ -29,6 +29,7 @@ import { NotebookChangeRequest } from "../shared/math-tablet-api";
 import { ObserverInstance, ServerNotebook }  from "../server-notebook";
 import { Config } from "../config";
 import { ServerKeys } from "../myscript-batch-api";
+import { assert } from "console";
 
 const MODULE = __filename.split(/[/\\]/).slice(-1)[0].slice(0,-3);
 const debug = debug1(`server:${MODULE}`);
@@ -77,7 +78,7 @@ export abstract class BaseObserver implements ObserverInstance {
   // Class Methods
 
   public static async initialize(_config: Config, _keys: ServerKeys): Promise<void> {
-    debug(`initialize`);
+    debug(`initialize.`);
   }
 
   // Instance Methods
@@ -86,11 +87,13 @@ export abstract class BaseObserver implements ObserverInstance {
     // IMPORTANT: This code is identical to onChangesSync, except this code has awaits and that code doesn't.
     const rval: NotebookChangeRequest[] = [];
     for (const change of changes) {
-      if (!change) { /* REVIEW: Don't allow falsy changes */ continue; }
+      assert(change);
+      console.log(`CONSIDERING ASYNC CHANGE: ${JSON.stringify(change)}`);
       for (const rule of this.rules) {
         // If the rule is asynchronous, then don't bother.
         // TODO: separate list of sync rules from async rules.
         if (!isAsyncRule(rule)) { continue; }
+        console.log(`  CONSIDERING RULE: ${rule.name}`);
         const changeRequest = await this.onChangeAsync(rule, change);
         if (changeRequest) { rval.push(changeRequest); }
       }
@@ -102,10 +105,12 @@ export abstract class BaseObserver implements ObserverInstance {
     // IMPORTANT: This code is identical to onChangesAsync, except that code has awaits and this code doesn't.
     const rval: NotebookChangeRequest[] = [];
     for (const change of changes) {
-      if (!change) { /* REVIEW: Don't allow falsy changes */ continue; }
+      assert(change);
+      console.log(`CONSIDERING SYNC CHANGE: ${JSON.stringify(change)}`);
       for (const rule of this.rules) {
         // If the rule is asynchronous, then don't bother.
         if (isAsyncRule(rule)) { continue; }
+        console.log(`  CONSIDERING RULE: ${rule.name}`);
         const changeRequest = this.onChangeSync(rule, change);
         if (changeRequest) { rval.push(changeRequest); }
       }
@@ -116,7 +121,7 @@ export abstract class BaseObserver implements ObserverInstance {
   // TODO: can't these be inherited?
   public onClose(): void {
     debug(`onClose ${this.notebook.path}`);
-    delete this.notebook;
+    // REVIEW: Mark closed?
   }
 
   // REVIEW: abstract?
@@ -161,8 +166,13 @@ export abstract class BaseObserver implements ObserverInstance {
     switch(change.type) {
       case 'styleChanged':
       case 'styleInserted':
-        if (styleMatchesRuleTest(this.notebook, change.style, rule.styleTest)) { return change.style.data; }
-        else { return undefined; }
+        if (styleMatchesRuleTest(this.notebook, change.style, rule.styleTest)) {
+          console.log("    MATCHES");
+          return change.style.data;
+        } else {
+          console.log("    DOESN'T MATCH");
+          return undefined;
+        }
       default:
         // TODO: 'styleDeleted': if styleInserted resulted in creating a peer style, then styleDeleted should delete that style.
         // TODO: 'styleConverted': should be treated like a style deleted followed by a style inserted.

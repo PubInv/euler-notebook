@@ -20,11 +20,9 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 // Requirements
 
 import { Html, assert } from "./shared/common";
-import { TexExpression, } from "./shared/math-tablet-api";
 import { StyleType } from "./shared/notebook";
 
 import { escapeHtml } from "./dom";
-import { getKatex } from "./katex-types";
 
 // Types
 
@@ -40,7 +38,6 @@ export interface RenderResult {
 
 const RENDERERS = new Map<StyleType, Renderer>([
   [ 'HTML',               htmlRenderer ],
-  [ 'TEX-EXPRESSION',     latexRenderer ],
   [ 'PLAIN-TEXT',         textRenderer ],
   [ 'WOLFRAM-EXPRESSION', /* TODO: */ textRenderer ],
 ]);
@@ -58,14 +55,6 @@ export function getRenderer(type: StyleType): Renderer {
 function htmlRenderer(html: Html): RenderResult {
   // REVIEW: Validate?
   return { html };
-}
-
-function latexRenderer(latexData: TexExpression): RenderResult {
-  try {
-    return { html: <Html>getKatex().renderToString(latexData, {}) };
-  } catch(err) {
-    return { errorHtml: escapeHtml(err.message) };
-  }
 }
 
 function textRenderer(text: string): RenderResult {

@@ -25,7 +25,6 @@ const debug = debug1('client:hint-cell');
 import { escapeHtml } from "../../../../dom";
 import { StyleObject, HintData, HintStatus, HintRelationship, NotebookChange } from "../../../../shared/notebook";
 import { Content } from "..";
-// import { getRenderer } from "../renderers";
 
 import { CellBase } from "./cell-base";
 import { assertFalse } from "../../../../shared/common";

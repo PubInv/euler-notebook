@@ -25,8 +25,8 @@ import { ExpectedError } from "./shared/common";
 
 // Exported Functions
 
-export function logError(err: Error, message: string /* TYPESCRIPT: Html type? */): void {
+export function logError(err: Error, message?: string /* TYPESCRIPT: Html type? */): void {
   if (err instanceof ExpectedError) { return; }
-  console.error(message);
+  console.error(message || err.message);
   console.dir(err);
 }

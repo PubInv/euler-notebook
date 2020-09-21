@@ -31,8 +31,6 @@ import { ResizerBar } from "../../../../resizer-bar";
 import { SvgStroke } from "../../../../svg-stroke";
 import { StylusDrawingPanel } from "../../../../stylus-drawing-panel";
 
-// import { getRenderer } from "../renderers";
-
 import { CellBase } from "./cell-base";
 import { $new } from "../../../../dom";
 import { reportError } from "../../../../error-handler";
