@@ -28,7 +28,7 @@ import { isEmptyOrSpaces } from "../shared/math-tablet-api";
 import { BaseObserver, Rules, StyleRelation } from "./base-observer";
 import {
   convertMTLToWolfram,
-  execute } from "../wolframscript";
+  execute } from "../adapters/wolframscript";
 import { ServerNotebook } from "../server-notebook";
 
 const MODULE = __filename.split(/[/\\]/).slice(-1)[0].slice(0,-3);

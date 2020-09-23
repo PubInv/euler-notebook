@@ -31,7 +31,7 @@ import {  NotebookChangeRequest, StyleInsertRequest,
        } from "../shared/math-tablet-api";
 import { ServerNotebook, ObserverInstance } from "../server-notebook";
 import { convertWolframToTeX, convertEvaluatedWolframToTeX, constructSubstitution
-       } from "../wolframscript";
+       } from "../adapters/wolframscript";
 import { Config } from "../config";
 
 // Exported Class

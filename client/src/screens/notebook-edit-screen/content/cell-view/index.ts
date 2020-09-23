@@ -25,7 +25,7 @@ import { Content } from "..";
 import { CellBase } from "./cell-base";
 import { FormulaCell } from "./formula-cell";
 import { HintCell } from "./hint-cell";
-import { InkCell } from "./ink-cell";
+import { FigureCell } from "./figure-cell";
 import { PlotCell } from "./plot-cell";
 import { TextCell } from "./text-cell";
 
@@ -43,7 +43,7 @@ export function createCell(notebookView: Content, style: StyleObject): CellBase 
     case 'HINT':              rval = new HintCell(notebookView, style); break;
     case 'TEXT':              rval = new TextCell(notebookView, style); break;
     case 'PLOT':              rval = new PlotCell(notebookView, style); break;
-    case 'UNINTERPRETED-INK': rval = new InkCell(notebookView, style); break;
+    case 'FIGURE': rval = new FigureCell(notebookView, style); break;
     // HACK: We don't actually know an 'UNKNOWN' cell will end up being a stylus cell until
     // the REPRESENTATION|INPUT/STROKES style is attached, but this prevents us from needing
     // the extra machinery to defer creating the cell until the substyles have been attached.

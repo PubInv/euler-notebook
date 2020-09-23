@@ -21,11 +21,15 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 import debug1 from "debug";
 
-import { SvgMarkup } from "../shared/common";
-import { Stroke, StrokeData } from "../shared/notebook";
+import { CssClass, PlainText, SvgMarkup } from "../shared/common";
+import { escapeHtml, Stroke, StrokeData } from "../shared/notebook";
+import { TexExpression } from "../shared/math-tablet-api";
+
+import { convertTexToSvg } from "../adapters/mathjax";
+
+import { ServerNotebook } from "../server-notebook";
 
 import { BaseObserver, Rules, StyleRelation } from "./base-observer";
-import { ServerNotebook } from "../server-notebook";
 
 const MODULE = __filename.split(/[/\\]/).slice(-1)[0].slice(0,-3);
 const debug = debug1(`server:${MODULE}`);
@@ -34,15 +38,15 @@ const debug = debug1(`server:${MODULE}`);
 
 // Exported Class
 
-export class SvgObserver extends BaseObserver {
+export class RepresentationObserver extends BaseObserver {
 
   // --- OVERRIDES ---
 
-  protected get rules(): Rules { return SvgObserver.RULES; }
+  protected get rules(): Rules { return RepresentationObserver.RULES; }
 
   // --- PUBLIC ---
 
-  public static async onOpen(notebook: ServerNotebook): Promise<SvgObserver> {
+  public static async onOpen(notebook: ServerNotebook): Promise<RepresentationObserver> {
     debug(`Opening SvgObserver for ${notebook.path}.`);
     return new this(notebook);
   }
@@ -57,13 +61,35 @@ export class SvgObserver extends BaseObserver {
       styleTest: { role: 'INPUT', type: 'STROKE-DATA' },
       styleRelation: StyleRelation.ParentToChild,
       props: { role: 'REPRESENTATION', type: 'SVG-MARKUP' },
-      computeSync: SvgObserver.convertDrawingToSvgRule,
+      computeSync: RepresentationObserver.convertStrokesToSvg,
+    },
+    {
+      name: "plain-text-to-svg",
+      styleTest: { role: 'INPUT', type: 'PLAIN-TEXT' },
+      styleRelation: StyleRelation.PeerToPeer,
+      props: { role: 'REPRESENTATION', type: 'SVG-MARKUP' },
+      computeSync: RepresentationObserver.convertPlainTextToSvg,
+    },
+    {
+      name: "tex-to-svg",
+      styleTest: { role: 'REPRESENTATION', type: 'TEX-EXPRESSION' },
+      styleRelation: StyleRelation.PeerToPeer,
+      props: { role: 'REPRESENTATION', type: 'SVG-MARKUP' },
+      computeSync: RepresentationObserver.convertTexToSvg,
     },
   ];
 
   // Private Class Methods
 
-  private static convertDrawingToSvgRule(data: StrokeData): SvgMarkup|undefined {
+  private static convertPlainTextToSvg(text: PlainText): SvgMarkup {
+    // TODO: Proper font
+    // TODO: Wrap text
+    // TODO: Line breaks matching those put into the input textarea
+    debug(`convertPlainTextToSvg rule on: "${text.length>30 ? `${text.slice(0,30)}...`: text}".`);
+    return <SvgMarkup>`<svg class="displayPanel" height="1in" width="6.5in" fill="none" stroke="black"><text x="20" y="20">${escapeHtml(text)}</text></svg>`;
+  }
+
+  private static convertStrokesToSvg(data: StrokeData): SvgMarkup|undefined {
     debug(`convertDrawingToSvg rule on ${JSON.stringify(data)}`);
     const paths: string[] = [];
     for (const strokeGroup of data.strokeGroups) {
@@ -72,10 +98,16 @@ export class SvgObserver extends BaseObserver {
         paths.push(path);
       }
     }
-    const svgMarkup = <SvgMarkup>`<svg class="svgPanel" height="${data.size.height}" width="${data.size.width}"  fill="none" stroke="black">${paths.join('')}</svg>`;
+    const svgMarkup = <SvgMarkup>`<svg class="svgPanel" height="${data.size.height}" width="${data.size.width}" fill="none" stroke="black">${paths.join('')}</svg>`;
     debug(`convertDrawingToSvg rule returns '${svgMarkup}'`);
     return svgMarkup;
   }
+
+  private static convertTexToSvg(tex: TexExpression): SvgMarkup {
+    debug(`convertTexToSvg rule on: ${tex}`);
+    return convertTexToSvg(tex, <CssClass>'displayPanel');
+  }
+
 
   // Private Constructor
 

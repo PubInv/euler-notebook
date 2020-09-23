@@ -30,7 +30,7 @@ import { DebugParams, DebugResults, SymbolTable } from "../shared/math-tablet-ap
 
 import { ServerNotebook } from "../server-notebook";
 
-import { execute } from "../wolframscript";
+import { execute } from "../adapters/wolframscript";
 
 // Types
 

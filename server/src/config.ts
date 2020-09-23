@@ -23,7 +23,7 @@ import { readFile } from "fs";
 import { join } from "path";
 import { promisify } from "util";
 
-import { ServerKeys } from "./myscript-batch-api";
+import { ServerKeys } from "./adapters/myscript";
 
 const readFile2 = promisify(readFile);
 

@@ -1,4 +1,4 @@
-import { Html, SvgMarkup } from "./shared/common";
+import { CssClass, Html, SvgMarkup } from "../shared/common";
 /*
 Math Tablet
 Copyright (C) 2019 Public Invention
@@ -32,8 +32,8 @@ import { AllPackages } from "mathjax-full/js/input/tex/AllPackages.js";
 import { LiteAdaptor, liteAdaptor } from "mathjax-full/js/adaptors/liteAdaptor.js";
 import { RegisterHTMLHandler } from "mathjax-full/js/handlers/html.js";
 
-import { assert } from "./shared/common";
-import { TexExpression } from "./shared/math-tablet-api";
+import { assert } from "../shared/common";
+import { TexExpression } from "../shared/math-tablet-api";
 
 const MODULE = __filename.split(/[/\\]/).slice(-1)[0].slice(0,-3);
 const debug = debug1(`server:${MODULE}`);
@@ -55,21 +55,21 @@ export function initialize(): void {
   gHtml = mathjax.document('', {InputJax: tex, OutputJax: svg});
 }
 
-export function convertTexToSvg(tex: TexExpression): SvgMarkup {
+export function convertTexToSvg(tex: TexExpression, cssClass: CssClass): SvgMarkup {
   const node = gHtml.convert(tex, { display: false, em: 16, ex: 8, containerWidth: 80*16 });
   // Returns HTML of a 'mjx-container' element enclosing an "svg" element.
   const html = <Html>gAdaptor.outerHTML(node);
   // Remove "<mjx-container class="MathJax" jax="SVG">" from the beginning and "</mjx-container>" from the end.
   const svg = <SvgMarkup>html.slice(41,-16);
-  return fixupSvgMarkup(svg);
+  return fixupSvgMarkup(svg, cssClass);
 }
 
 // Helper Functions
 
-function fixupSvgMarkup(markup: SvgMarkup): SvgMarkup {
+function fixupSvgMarkup(markup: SvgMarkup, cssClass: CssClass): SvgMarkup {
   assert(markup.startsWith('<svg '));
   assert(markup.endsWith('</svg>'));
-  markup = <SvgMarkup>markup.replace(/^<svg /, '<svg class="formulaPanel" ');
+  markup = <SvgMarkup>markup.replace(/^<svg /, `<svg class="${cssClass}" `);
   console.dir(markup);
   return <SvgMarkup>markup;
 }

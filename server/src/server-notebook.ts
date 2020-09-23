@@ -42,8 +42,8 @@ import {
 } from "./shared/math-tablet-api";
 
 import { ClientId } from "./client-socket";
-import { AbsDirectoryPath, ROOT_DIR_PATH, mkDir, readFile, rename, rmRaf, writeFile } from "./file-system";
-import { constructSubstitution } from "./wolframscript";
+import { AbsDirectoryPath, ROOT_DIR_PATH, mkDir, readFile, rename, rmRaf, writeFile } from "./adapters/file-system";
+import { constructSubstitution } from "./adapters/wolframscript";
 import { OpenOptions } from "./shared/watched-resource";
 import { logError } from "./error-handler";
 

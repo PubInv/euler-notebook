@@ -24,7 +24,7 @@ import * as debug1 from "debug";
 import { StyleObject, NotebookChange, StyleId, RelationshipProperties, WolframExpression } from "../shared/notebook";
 import { NotebookChangeRequest, RelationshipInsertRequest, isEmptyOrSpaces } from "../shared/math-tablet-api";
 import { ServerNotebook, ObserverInstance } from "../server-notebook";
-import { constructSubstitution, checkEquiv, NVPair } from "../wolframscript";
+import { constructSubstitution, checkEquiv, NVPair } from "../adapters/wolframscript";
 // import * as fs from "fs";
 import { Config } from "../config";
 

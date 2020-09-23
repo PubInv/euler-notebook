@@ -33,7 +33,7 @@ import {
 } from "./shared/folder";
 import { ClientFolderChangeMessage, ServerFolderChangedMessage } from "./shared/math-tablet-api";
 
-import { AbsDirectoryPath, ROOT_DIR_PATH, dirStat, mkDir, readDir, rename, rmDir } from "./file-system";
+import { AbsDirectoryPath, ROOT_DIR_PATH, dirStat, mkDir, readDir, rename, rmDir } from "./adapters/file-system";
 import { ServerNotebook, notebookPath } from "./server-notebook";
 import { OpenOptions } from "./shared/watched-resource";
 

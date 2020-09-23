@@ -17,13 +17,15 @@ You should have received a copy of the GNU Affero General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
+// TODO: Merge into wolfram-observer (however this extends DataflowObserver and that extends BaseObserver).
+
 // Requirements
 
 import debug1 from "debug";
 
 import { DataflowObserver, Rules, DataflowValue, DataflowStatus } from "./dataflow-observer";
 import { ServerNotebook } from "../server-notebook";
-import { execute } from "../wolframscript";
+import { execute } from "../adapters/wolframscript";
 
 import { RelationshipObject, HintData, HintRelationship, HintStatus } from "../shared/notebook";
 

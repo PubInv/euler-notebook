@@ -23,11 +23,10 @@ import * as debug1 from "debug";
 const debug = debug1('client:formula-cell');
 
 import { Html, assertFalse, assert } from "../../../../shared/common";
-import { StyleId, StyleObject, NotebookChange, StrokeData } from "../../../../shared/notebook";
+import { StyleId, StyleObject, NotebookChange, StrokeData, StyleSubrole } from "../../../../shared/notebook";
 
 import { $new, $newSvg, $outerSvg } from "../../../../dom";
 import { Content } from "..";
-import { FORMULA_SUBROLE_PREFIX } from "../../../../role-selectors";
 
 import { CellBase } from "./cell-base";
 import { ClientNotebook } from "../../../../client-notebook";
@@ -38,6 +37,15 @@ import { StyleChangeRequest } from "../../../../shared/math-tablet-api";
 // Types
 
 // Constants
+
+const FORMULA_SUBROLE_PREFIX = new Map<StyleSubrole,Html>([
+  // IMPORTANT: Keep in sync with FORMULA_SUBROLE_OPTIONS
+  [ 'UNKNOWN', <Html>"<i>Unknown</i>&nbsp;" ],
+  [ 'ASSUME', <Html>"<i>Assume</i>&nbsp;" ],
+  [ 'DEFINITION', <Html>"<i>Definition</i>&nbsp;" ],
+  [ 'PROVE', <Html>"<i>Prove </i>&nbsp;" ],
+  [ 'OTHER', <Html>"<i>Other </i>&nbsp;" ],
+]);
 
 // Class
 
@@ -57,10 +65,11 @@ export class FormulaCell extends CellBase {
 
     const notebook = view.screen.notebook;
     const svgRepStyle = notebook.findStyle({ role: 'REPRESENTATION', type: 'SVG-MARKUP' }, rootStyle.id);
-    this.$formulaPanel = this.createFormulaPanel(svgRepStyle);
-    this.$elt.appendChild(this.$formulaPanel);
-
     const inputStyle = notebook.findStyle({ role: 'INPUT' }, rootStyle.id);
+
+    this.$displayPanel = this.createDisplayPanel(svgRepStyle);
+    this.$elt.appendChild(this.$displayPanel);
+
     this.$editPanel = this.createEditPanel(inputStyle);
     this.$elt.appendChild(this.$editPanel);
 
@@ -76,7 +85,7 @@ export class FormulaCell extends CellBase {
   // ClientNotebookWatcher Methods
 
   public onChange(change: NotebookChange): void {
-    debug(`Formula cell received change: cell ${this.styleId}, type ${change.type}`);
+    debug(`onChange: cell ${this.styleId}, type ${change.type}`);
     // TODO: Changes that affect the prefix panel.
 
     // TODO: Do we deal with showing the Wolfram Evaluation values in the formula,
@@ -91,13 +100,14 @@ export class FormulaCell extends CellBase {
       case 'styleInserted':
       case 'styleChanged': {
         const changedStyle = change.style;
-        if (isSvgStyle(changedStyle, this.styleId)) {
-          // TeX representation changed. Update the rendering of the formula.
-          this.updateFormulaPanel(change.type, changedStyle);
+        if (isDisplayStyle(changedStyle, this.styleId)) {
+          this.updateDisplayPanel(change.type, changedStyle);
         } else if (isInputStyle(changedStyle, this.styleId)) {
           this.updateEditPanelData(change.type, changedStyle);
         } else if (isStrokeSvgStyle(changedStyle, this.styleId, this.content.screen.notebook)) {
           this.updateEditPanelDrawing(change.type, changedStyle);
+        } else {
+          // Ignore. Not something we are interested in.
         }
         break;
       }
@@ -105,7 +115,7 @@ export class FormulaCell extends CellBase {
         // Currently the styles that we use to update our display are never converted, so we
         // do not handle that case.
         const style = this.content.screen.notebook.getStyle(change.styleId);
-        assert(!isSvgStyle(style, this.styleId));
+        assert(!isDisplayStyle(style, this.styleId));
         assert(!isInputStyle(style, this.styleId));
         assert(!isStrokeSvgStyle(style, this.styleId, this.content.screen.notebook));
         break;
@@ -114,7 +124,7 @@ export class FormulaCell extends CellBase {
         // Currently the styles that we use to update our display are never deleted, so we
         // do not handle that case.
         const style = change.style;
-        assert(!isSvgStyle(style, this.styleId));
+        assert(!isDisplayStyle(style, this.styleId));
         assert(!isInputStyle(style, this.styleId));
         assert(!isStrokeSvgStyle(style, this.styleId, this.content.screen.notebook));
         break;
@@ -131,22 +141,32 @@ export class FormulaCell extends CellBase {
   // Private Instance Properties
 
   private $editPanel: HTMLDivElement;
-  private $formulaPanel: SVGSVGElement;
+  private $displayPanel: SVGSVGElement;
   private $prefixPanel: HTMLDivElement;
   private keyboardPanel?: KeyboardPanel;
   private strokePanel?: StrokePanel;
 
   // Private Instance Methods
 
+  private createDisplayPanel(svgRepStyle: StyleObject|undefined): SVGSVGElement {
+    let $svg: SVGSVGElement;
+    if (svgRepStyle) {
+      $svg = $outerSvg<'svg'>(svgRepStyle.data);
+    } else {
+      $svg = $newSvg<'svg'>({ tag: 'svg', class: 'displayPanel', attrs: { height: '1in', width: '6.5in' }});
+    }
+    return $svg;
+  }
+
   private createEditPanel(inputStyle: StyleObject|undefined): HTMLDivElement {
     let errorHtml: Html|undefined;
     if (inputStyle) {
       switch(inputStyle.type) {
         case 'WOLFRAM-EXPRESSION':
-          this.keyboardPanel = this.createKeyboardPanel(inputStyle);
+          this.keyboardPanel = this.createKeyboardSubpanel(inputStyle);
           return this.keyboardPanel.$elt;
         case 'STROKE-DATA': {
-          this.strokePanel = this.createStrokePanel(inputStyle);
+          this.strokePanel = this.createStrokeSubpanel(inputStyle);
           return this.strokePanel.$elt;
         }
         default:
@@ -160,22 +180,12 @@ export class FormulaCell extends CellBase {
     return $new({ tag: 'div', class: 'editPanel', html: errorHtml || <Html>"Placeholder", appendTo: this.$elt });
   }
 
-  private createFormulaPanel(svgRepStyle: StyleObject|undefined): SVGSVGElement {
-    let $svg: SVGSVGElement;
-    if (svgRepStyle) {
-      $svg = $outerSvg<'svg'>(svgRepStyle.data);
-    } else {
-      $svg = $newSvg<'svg'>({ tag: 'svg', class: 'formulaPanel', attrs: { height: '1in', width: '1in' }});
-    }
-    return $svg;
-  }
-
   private createHandlePanel(style: StyleObject): HTMLDivElement {
     const html = <Html>`(${style.id})`;
     return $new({ tag: 'div', class: 'handlePanel', html });
   }
 
-  private createKeyboardPanel(inputStyle: StyleObject): KeyboardPanel {
+  private createKeyboardSubpanel(inputStyle: StyleObject): KeyboardPanel {
     return new KeyboardPanel(inputStyle.data, async (text: string)=>{
       const changeRequest: StyleChangeRequest = { type: 'changeStyle', styleId: inputStyle.id, data: text };
       await this.content.screen.notebook.sendChangeRequest(changeRequest);
@@ -192,7 +202,7 @@ export class FormulaCell extends CellBase {
     return $new({ tag: 'div', class: 'statusPanel', html, appendTo: this.$elt });
   }
 
-  private createStrokePanel(inputStyle: StyleObject): StrokePanel {
+  private createStrokeSubpanel(inputStyle: StyleObject): StrokePanel {
     const svgRepStyle = this.content.screen.notebook.findStyle({ role: 'REPRESENTATION', type: 'SVG-MARKUP' }, inputStyle.id);
     const strokePanel = new StrokePanel(inputStyle.data, svgRepStyle?.data, async (strokeData: StrokeData)=>{
       const changeRequest: StyleChangeRequest = { type: 'changeStyle', styleId: inputStyle.id, data: strokeData };
@@ -279,10 +289,10 @@ export class FormulaCell extends CellBase {
     this.strokePanel!.updateSvgMarkup(svgRepStyle.data);
   }
 
-  private updateFormulaPanel(_changeType: 'styleChanged'|'styleInserted', svgRepStyle: StyleObject): void {
-    const $newFormulaPanel = this.createFormulaPanel(svgRepStyle);
-    this.$formulaPanel.replaceWith($newFormulaPanel);
-    this.$formulaPanel = $newFormulaPanel;
+  private updateDisplayPanel(_changeType: 'styleChanged'|'styleInserted', svgRepStyle: StyleObject): void {
+    const $newFormulaPanel = this.createDisplayPanel(svgRepStyle);
+    this.$displayPanel.replaceWith($newFormulaPanel);
+    this.$displayPanel = $newFormulaPanel;
   }
 
   // Private Event Handlers
@@ -291,7 +301,7 @@ export class FormulaCell extends CellBase {
 
 // HELPER FUNCTIONS
 
-function isSvgStyle(style: StyleObject, parentId: StyleId): boolean {
+function isDisplayStyle(style: StyleObject, parentId: StyleId): boolean {
   return style.role == 'REPRESENTATION' && style.type == 'SVG-MARKUP' && style.parentId == parentId;
 }
 

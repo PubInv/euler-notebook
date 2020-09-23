@@ -21,15 +21,10 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 // Requirements
 
-import { assert, Html } from "../../../../shared/common";
 import { Content } from "..";
-import { KeyboardInputPanel } from "../../../../keyboard-input-panel";
 import { StyleObject, StyleId, NotebookChange } from "../../../../shared/notebook";
-import { NotebookChangeRequest } from "../../../../shared/math-tablet-api";
 import { Tools } from "../../tools";
 import { HtmlElement } from "../../../../html-element";
-import { reportError } from "../../../../error-handler";
-import { messageDisplayInstance } from "../../../../message-display";
 import { HtmlElementOrSpecification } from "../../../../dom";
 
 // Exported Class
@@ -53,41 +48,6 @@ export abstract class CellBase extends HtmlElement<'div'>{
   }
 
   // Instance Methods
-
-  public editMode(): boolean {
-    // Returns true iff cell was put into edit mode.
-
-    // REVIEW: Not completely sure we will not get double-clicks.
-    //         We may need to stopPropagation or preventDefault
-    //         in the right places.
-    assert(!this.inputPanel);
-
-    // Only allow editing of user input cells, which have a data type
-    // that is string-based, with a renderer.
-    const style = this.content.screen.notebook.getStyle(this.styleId);
-    const repStyle = this.content.screen.notebook.findStyle({ role: 'INPUT' }, this.styleId);
-    if (!repStyle) { return false; }
-
-    if (typeof repStyle.data=='string') {
-      this.inputPanel = KeyboardInputPanel.create(
-        style,
-        repStyle,
-        (changes)=>this.onInputPanelDismissed(changes)
-      );
-    } else {
-      // Not a cell we can edit.
-    }
-
-    if (this.inputPanel) {
-      this.content.screen.tools.hide();
-      this.$elt.parentElement!.insertBefore(this.inputPanel.$elt, this.$elt.nextSibling);
-      this.inputPanel.focus();
-      this.hide();
-      return true;
-    } else {
-      return false;
-    }
-  }
 
   // public abstract render(style: StyleObject): void;
   // {
@@ -129,11 +89,6 @@ export abstract class CellBase extends HtmlElement<'div'>{
   }
 
   public unselect(): void {
-    if (this.inputPanel) {
-      // 'dismiss' will call the callback function, onKeyboardInputPanelDismissed,
-      // which will delete the keyboard input panel and show ourself.
-      this.inputPanel.dismiss(false);
-    }
     this.$elt.classList.remove('selected');
   }
 
@@ -162,7 +117,6 @@ export abstract class CellBase extends HtmlElement<'div'>{
       children,
       listeners: {
         'click': e=>this.onClicked(e),
-        'dblclick': e=>this.onDoubleClicked(e),
       },
     });
 
@@ -172,7 +126,6 @@ export abstract class CellBase extends HtmlElement<'div'>{
 
   // Private Instance Properties
 
-  protected inputPanel?: KeyboardInputPanel;
   protected content: Content;
 
   // Private Instance Methods
@@ -182,28 +135,6 @@ export abstract class CellBase extends HtmlElement<'div'>{
   private onClicked(event: MouseEvent): void {
     // Note: Shift-click or ctrl-click will extend the current selection.
     this.content.selectCell(this, event.shiftKey, event.metaKey);
-  }
-
-  private onDoubleClicked(_event: MouseEvent): void {
-    if (!this.editMode()) {
-      // LATER: Beep?
-      messageDisplayInstance.addWarningMessage(<Html>`Keyboard input panel not available for cell: ${this.styleId}`);
-    }
-  }
-
-  private onInputPanelDismissed(changeRequests: NotebookChangeRequest[]): void {
-    if (changeRequests.length>0) {
-      this.content.editStyle(changeRequests)
-      .catch((err: Error)=>{
-        reportError(err, <Html>"Error submitting input changes");
-      });
-    }
-    this.$elt.parentElement!.removeChild(this.inputPanel!.$elt);
-    delete this.inputPanel;
-
-    this.show();
-    this.content.screen.tools.show();
-    this.content.setFocus();
   }
 
 }

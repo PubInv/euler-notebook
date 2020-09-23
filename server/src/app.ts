@@ -33,10 +33,10 @@ import { middleware as stylusMiddleware } from "stylus";
 
 import { ClientSocket } from "./client-socket";
 import { loadConfig, loadCredentials} from "./config";
-import { initialize as initializeMathJax } from "./mathjax";
+import { initialize as initializeMathJax } from "./adapters/mathjax";
 import { initialize as initializeObservers } from "./observers";
 import { rootDir as notebookRootDir } from "./server-folder";
-import { start as startWolframscript } from "./wolframscript";
+import { start as startWolframscript } from "./adapters/wolframscript";
 
 import { router as apiRouter } from "./routes/api";
 import { router as exportRouter } from "./routes/export";

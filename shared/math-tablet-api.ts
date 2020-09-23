@@ -36,7 +36,6 @@ export type TexExpression = '{TexExpression}';
 export type MthMtcaData = string;
 export type RequestId = '{RequestId}';
 export type Symbol = string;
-export type TextData = string; // TODO: Rename PlainText
 
 export interface SymbolData {
   name: string;

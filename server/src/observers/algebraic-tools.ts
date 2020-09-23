@@ -38,7 +38,7 @@ import { ServerNotebook, ObserverInstance } from "../server-notebook";
 import { execute,
          convertWolframToMTL,
          convertMTLToTeX
-       } from "../wolframscript";
+       } from "../adapters/wolframscript";
 import { Config } from "../config";
 
 // Types

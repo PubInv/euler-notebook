@@ -27,15 +27,14 @@ import { AlgebraicToolsObserver } from "./algebraic-tools";
 import { EquationSolverObserver } from "./equation-solver";
 import { FormulaObserver } from "./formula-observer";
 import { MathematicaObserver } from "./mathematica-cas";
-import { MathJaxObserver } from "./mathjax-observer";
 import { MyScriptObserver } from "./myscript-observer";
+import { RepresentationObserver } from "./system-observer";
 import { SandboxObserver } from "./sandbox";
 // BUGBUG import { SubtrivClassifierObserver } from "./subtriv-classifier";
-import { SvgObserver } from "./svg-observer";
 // BUGBUG import { SymbolClassifierObserver } from "./symbol-classifier";
 // import { SymbolTableObserver } from "./symbol-table";
 import { TeXFormatterObserver } from "./tex-formatter";
-import { WolframObserver } from "./wolfram-cas";
+import { WolframObserver } from "./wolfram-observer";
 
 // Globals
 
@@ -57,6 +56,7 @@ export async function initialize(config: Config, credentials: Credentials): Prom
   initializing = true;
 
   // IMPORTANT: Keep in sync with 'terminate'
+  ServerNotebook.registerObserver('SYSTEM', RepresentationObserver);
   useMathematica = !!config.mathematica;
   if (useMathematica) {
     await MathematicaObserver.initialize(config);
@@ -67,7 +67,6 @@ export async function initialize(config: Config, credentials: Credentials): Prom
     // ServerNotebook.registerObserver('SYMBOL-TABLE', SymbolTableObserver);
     ServerNotebook.registerObserver('EQUATION-SOLVER', EquationSolverObserver);
     ServerNotebook.registerObserver('TEX-FORMATTER', TeXFormatterObserver);
-    ServerNotebook.registerObserver('MATHJAX-OBSERVER', MathJaxObserver);
     ServerNotebook.registerObserver('WOLFRAM-OBSERVER', WolframObserver);
     ServerNotebook.registerObserver('ALGEBRAIC-TOOLS', AlgebraicToolsObserver);
   }
@@ -79,7 +78,6 @@ export async function initialize(config: Config, credentials: Credentials): Prom
   ServerNotebook.registerObserver('FORMULA-OBSERVER', FormulaObserver);
   await SandboxObserver.initialize(config);
   ServerNotebook.registerObserver('SANDBOX', SandboxObserver);
-  ServerNotebook.registerObserver('SVG', SvgObserver);
 
   initializing = false;
   initialized = true;
@@ -90,6 +88,7 @@ export function terminate(): void {
   if (!initialized) { throw new Error("Observer terminate called when not initialized."); }
 
   // IMPORTANT: Keep in sync with 'initialize'
+  ServerNotebook.deregisterObserver('SYSTEM');
   if (useMathematica) {
     ServerNotebook.deregisterObserver('ALGEBRAIC-DATAFLOW-OBSERVER');
     ServerNotebook.deregisterObserver('MATHEMATICA');
@@ -107,7 +106,6 @@ export function terminate(): void {
   }
   ServerNotebook.deregisterObserver('FORMULA-OBSERVER');
   ServerNotebook.deregisterObserver('SANDBOX');
-  ServerNotebook.deregisterObserver('SVG');
 
   initialized = false;
 }

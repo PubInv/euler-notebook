@@ -245,6 +245,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
     .cell.selected
       outline #E0E0FF solid 1px
 
+    .textCell
     .formulaCell
       align-items center
       display flex
@@ -280,7 +281,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
           fill none
           stroke black
 
-      >.formulaPanel
+      >.displayPanel
         flex-grow 1
 
       >.handlePanel
@@ -295,10 +296,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
         text-align left
         width 36px
 
-    .hintCell
-      padding-left 20px
-
-    .inkCell
+    .figureCell
       padding var(--svg-top-offset) 0px 0px var(--svg-left-offset)
       position relative
 
@@ -335,6 +333,9 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
           color gray
           display block
           padding 3px 3px 3px 6px
+
+    .hintCell
+      padding-left 20px
 
 .notebookThumbnailsScreen
 .notebookReadScreen

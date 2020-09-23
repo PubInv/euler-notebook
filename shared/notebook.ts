@@ -215,11 +215,11 @@ export interface StyleMap {
 export const STYLE_ROLES = [
   // Top level (cell) roles
   'FIGURE',
-  'FORMULA',
+  'FORMULA',              // Hold FormulaData
   'HINT',                 // Explanation of why two formula are related
   'PLOT',
-  'TEXT',
-  'UNINTERPRETED-INK',
+  'TEXT',                 // Data is null.
+  'FIGURE',               // Data is null.
   'UNKNOWN',              // Type of the cell hasn't been determined.
 
   'ATTRIBUTE',            // Generic attribute. Meaning implied by type.
@@ -293,7 +293,7 @@ export const STYLE_SUBROLES = [
   'HEADING2',
   'NORMAL',
 
-  // 'UNINTERPRETED-INK' subroles
+  // 'FIGURE' subroles
   // 'OTHER'
 
   // 'UNKNOWN' subroles
@@ -306,11 +306,10 @@ export const STYLE_TYPES = [
   'EQUATION-DATA',   // An equation (ambiguously assertion or relation)
   'FORMULA-DATA',    // Type of data for top-level 'FORMULA' styles
   'HINT-DATA',       // Type of data for top-level 'HINT' styles
-  'HTML',            // Html: HTML-formatted text
   'IMAGE-URL',       // ImageData: URL of image relative to notebook folder.
   'MYSCRIPT-DATA',   // Jiix: MyScript JIIX export from 'MATH' editor.
   'NONE',            // No data. Data field is null.
-  'PLAIN-TEXT',      // TextData: Plain text  // REVIEW: Encoding? UTF-8?
+  'PLAIN-TEXT',      // PlainText:  // REVIEW: Specify encoding? UTF-8?
   'PLOT-DATA',       // Generic type to handle unspecified plot data
   'SOLUTION-DATA',   // The result of a "solve" operation
   'STROKE-DATA',     // Strokes of user sketch in our own format.
@@ -327,7 +326,6 @@ export type StyleType = typeof STYLE_TYPES[number];
 export const STYLE_SOURCES = [
   'ALGEBRAIC-DATAFLOW-OBSERVER',
   'ALGEBRAIC-TOOLS',  // Algebraic tools provided by Wolfram
-  'ANY-INPUT',        // This represents ANY input, no matter the type enterred.
   'EQUATION-SOLVER',  // Attempt to expose Wolfram solutions
   'FORMULA-OBSERVER',
   'MATHEMATICA',      // Mathematica C.A.S.
@@ -335,10 +333,9 @@ export const STYLE_SOURCES = [
   'MYSCRIPT',         // MyScript handwriting recognition`
   'SANDBOX',          // Sandbox for temporary experiments
   'SUBTRIV-CLASSIFIER',
-  'SVG',              // SVG observer
   'SYMBOL-CLASSIFIER',
   'SYMBOL-TABLE',
-  'SYSTEM',           // The Math-Tablet app itself, not the user or an observer.
+  'SYSTEM',           // Primary observer of Math Tablet, itself.
   'TEST',             // An example source used only by our test system
   'TEX-FORMATTER',
   'USER',             // Directly entered by user

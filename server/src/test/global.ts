@@ -22,7 +22,7 @@ const MODULE = __filename.split(/[/\\]/).slice(-1)[0].slice(0,-3);
 const debug = debug1(`tests:${MODULE}`);
 
 import { initialize as initializeObservers, terminate as terminateObservers } from "../observers";
-import { start as startWolframscript, stop as stopWolframscript } from "../wolframscript";
+import { start as startWolframscript, stop as stopWolframscript } from "../adapters/wolframscript";
 import { loadConfig, loadCredentials } from "../config";
 
 // Exported functions

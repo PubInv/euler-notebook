@@ -36,7 +36,7 @@ import {
 } from "../shared/math-tablet-api";
 import { ServerNotebook, ObserverInstance } from "../server-notebook";
 import { execute as executeWolframscript, constructSubstitution, draftChangeContextName,
-         convertWolframToMTL } from "../wolframscript";
+         convertWolframToMTL } from "../adapters/wolframscript";
 import { Config } from "../config";
 
 export class SymbolClassifierObserver implements ObserverInstance {

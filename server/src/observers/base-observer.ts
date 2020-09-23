@@ -20,7 +20,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 // Requirements
 
 import * as debug1 from "debug";
-const deepEqual = require('deep-equal');
+const deepEqual = require('deep-equal');  // LATER: Use import instead of require
 
 import {
   NotebookChange, StyleObject, FindStyleOptions, styleMatchesPattern, StyleProperties, StyleId
@@ -28,7 +28,7 @@ import {
 import { NotebookChangeRequest } from "../shared/math-tablet-api";
 import { ObserverInstance, ServerNotebook }  from "../server-notebook";
 import { Config } from "../config";
-import { ServerKeys } from "../myscript-batch-api";
+import { ServerKeys } from "../adapters/myscript";
 import { assert } from "console";
 
 const MODULE = __filename.split(/[/\\]/).slice(-1)[0].slice(0,-3);
@@ -88,12 +88,12 @@ export abstract class BaseObserver implements ObserverInstance {
     const rval: NotebookChangeRequest[] = [];
     for (const change of changes) {
       assert(change);
-      console.log(`CONSIDERING ASYNC CHANGE: ${JSON.stringify(change)}`);
+      // console.log(`CONSIDERING ASYNC CHANGE: ${JSON.stringify(change)}`);
       for (const rule of this.rules) {
         // If the rule is asynchronous, then don't bother.
         // TODO: separate list of sync rules from async rules.
         if (!isAsyncRule(rule)) { continue; }
-        console.log(`  CONSIDERING RULE: ${rule.name}`);
+        // console.log(`  CONSIDERING RULE: ${rule.name}`);
         const changeRequest = await this.onChangeAsync(rule, change);
         if (changeRequest) { rval.push(changeRequest); }
       }
@@ -106,11 +106,11 @@ export abstract class BaseObserver implements ObserverInstance {
     const rval: NotebookChangeRequest[] = [];
     for (const change of changes) {
       assert(change);
-      console.log(`CONSIDERING SYNC CHANGE: ${JSON.stringify(change)}`);
+      // console.log(`CONSIDERING SYNC CHANGE: ${JSON.stringify(change)}`);
       for (const rule of this.rules) {
         // If the rule is asynchronous, then don't bother.
         if (isAsyncRule(rule)) { continue; }
-        console.log(`  CONSIDERING RULE: ${rule.name}`);
+        // console.log(`  CONSIDERING RULE: ${rule.name}`);
         const changeRequest = this.onChangeSync(rule, change);
         if (changeRequest) { rval.push(changeRequest); }
       }
@@ -167,10 +167,10 @@ export abstract class BaseObserver implements ObserverInstance {
       case 'styleChanged':
       case 'styleInserted':
         if (styleMatchesRuleTest(this.notebook, change.style, rule.styleTest)) {
-          console.log("    MATCHES");
+          // console.log("    MATCHES");
           return change.style.data;
         } else {
-          console.log("    DOESN'T MATCH");
+          // console.log("    DOESN'T MATCH");
           return undefined;
         }
       default:

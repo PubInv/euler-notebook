@@ -21,8 +21,10 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 // Types
 
+export type CssClass = '{CssClass}';
 export type Html = '{Html}';
 export type Milliseconds = number;  // Time interval in milliseconds.
+export type PlainText = '{PlainText}';
 export type SvgMarkup = '{SvgMarkup}';
 export type Timestamp = number;     // Number of milliseconds since Jan 1, 1970 as returned by Date.now().
 

@@ -34,7 +34,7 @@ import { NotebookChangeRequest, StyleInsertRequest, StylePropertiesWithSubprops,
 import { ServerNotebook, ObserverInstance } from "../server-notebook";
 import { execute,
 //         constructSubstitution
-       } from "../wolframscript";
+       } from "../adapters/wolframscript";
 import { Config } from "../config";
 // import * as uuid from "uuid-js";
 // import uuid = require('uuid');

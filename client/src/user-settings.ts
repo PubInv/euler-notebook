@@ -23,6 +23,7 @@ import { assert } from "./shared/common";
 
 export type InputMode = 'keyboard'|'stylus';
 export type MathKeyboardInputFormat = 'TEX-EXPRESSION'|'WOLFRAM-EXPRESSION'; // Subset of StyleType.
+export type TextKeyboardInputFormat = 'PLAIN-TEXT'; // Subset of StyleType.
 
 // Class
 
@@ -47,6 +48,16 @@ class UserSettings {
     assert(value == 'TEX-EXPRESSION' || value == 'WOLFRAM-EXPRESSION');
     window.localStorage.setItem('mathKeyboardInputFormat', value);
   }
+
+  public get defaultTextKeyboardInputFormat(): TextKeyboardInputFormat {
+    return <TextKeyboardInputFormat|undefined>window.localStorage.getItem('textKeyboardInputFormat') || 'PLAIN-TEXT';
+  }
+
+  public set defaultTextKeyboardInputFormat(value: TextKeyboardInputFormat) {
+    assert(value == 'PLAIN-TEXT');
+    window.localStorage.setItem('textKeyboardInputFormat', value);
+  }
+
 
 }
 

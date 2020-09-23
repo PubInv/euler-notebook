@@ -47,7 +47,7 @@ const CELL_MIME_TYPE = 'application/vnd.mathtablet.cell';
 
 // Exported Class
 
-export class InkCell extends CellBase {
+export class FigureCell extends CellBase {
 
   // Public Class Methods
 
@@ -86,7 +86,7 @@ export class InkCell extends CellBase {
     const children: HtmlElementOrSpecification[] = [
       $content,
     ];
-    super(view, style, 'inkCell', children);
+    super(view, style, 'figureCell', children);
 
     // LATER: These button be on *all* cells, not just ink cells.
     $configure(this.$elt, {
@@ -146,7 +146,7 @@ export class InkCell extends CellBase {
     const svgRepStyle = this.content.screen.notebook.findStyle({ role: 'REPRESENTATION', type: 'SVG-MARKUP' }, style.id);
     if (!svgRepStyle) {
       // TODO: What to do in this case? Put an error message in the cell?
-      console.warn("No SVG-MARKUP substyle for UNINTERPRETED-INK style.");
+      console.warn("No SVG-MARKUP substyle for FIGURE style.");
       return;
     }
 
@@ -239,7 +239,7 @@ export class InkCell extends CellBase {
   }
 
   private onInsertCellBelow(): void {
-    this.content.insertInkCellBelow(this.styleId).catch(err=>{
+    this.content.insertDrawingCellBelow(this.styleId).catch(err=>{
       // TODO: Better handling of this error.
       reportError(err, <Html>"Error inserting cell below");
     });

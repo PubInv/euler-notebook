@@ -25,7 +25,7 @@ import { StrokeData } from "../shared/notebook";
 import { TexExpression } from "../shared/math-tablet-api";
 
 import { Config } from "../config";
-import { ServerKeys, postLatexRequest } from "../myscript-batch-api";
+import { ServerKeys, postLatexRequest } from "../adapters/myscript";
 import { ServerNotebook }  from "../server-notebook";
 
 import { BaseObserver, Rules, StyleRelation } from "./base-observer";

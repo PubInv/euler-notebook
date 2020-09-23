@@ -199,15 +199,6 @@ export class Content extends HtmlElement<'div'>{
     // WAS: this.screen.debugPopup.showContents(results.html);
   }
 
-  public async editSelectedCell(): Promise<void> {
-    if (!this.lastCellSelected) {
-      // Nothing selected to move.
-      // REVIEW: Beep or something?
-      return;
-    }
-    this.lastCellSelected.editMode();
-  }
-
   public async insertHintCellBelow(): Promise<void> {
     // TODO: InsertHintButton should only be enabled when first of two consecutive formula cells is selected.
     if (!this.lastCellSelected) {
@@ -241,12 +232,11 @@ export class Content extends HtmlElement<'div'>{
     };
 
     const changeRequest: StyleInsertRequest = { type: 'insertStyle', afterId: fromId, styleProps };
-    const undoChangeRequest = await this.sendUndoableChangeRequest(changeRequest);
-    const styleId = (<StyleDeleteRequest>undoChangeRequest).styleId;
-    this.startEditingCell(styleId);
+    /* const undoChangeRequest = */await this.sendUndoableChangeRequest(changeRequest);
+    // const styleId = (<StyleDeleteRequest>undoChangeRequest).styleId;
   }
 
-  public async insertInkCellBelow(afterId?: StyleRelativePosition): Promise<void> {
+  public async insertDrawingCellBelow(afterId?: StyleRelativePosition): Promise<void> {
     if (afterId === undefined) {
       // Cell to insert after is not specified.
       // If cells are selected then in insert a keyboard input cell below the last cell selected.
@@ -256,7 +246,7 @@ export class Content extends HtmlElement<'div'>{
     }
 
     const styleProps: StylePropertiesWithSubprops = {
-      role: 'UNINTERPRETED-INK', subrole: 'OTHER', type: 'NONE', data: null,
+      role: 'FIGURE', subrole: 'OTHER', type: 'NONE', data: null,
       subprops: [
         { role: 'INPUT', type: 'STROKE-DATA', data: deepCopy(EMPTY_STROKE_DATA) }
       ]
@@ -292,30 +282,61 @@ export class Content extends HtmlElement<'div'>{
     const changeRequest: StyleInsertRequest = { type: 'insertStyle', afterId, styleProps };
     const undoChangeRequest = await this.sendUndoableChangeRequest(changeRequest);
     /* const styleId = */(<StyleDeleteRequest>undoChangeRequest).styleId;
-    // this.startEditingCell(styleId);
+
+    // TODO: Set focus?
   }
 
-  public async insertKeyboardCellAbove(): Promise<void> {
-    // If cells are selected then in insert a keyboard input cell
-    // above the last cell selected.
-    // Otherwise, insert at the beginning of the notebook.
-    let afterId: StyleRelativePosition;
-    if (this.lastCellSelected) {
-      const previousCell = this.previousCell(this.lastCellSelected);
-      afterId = previousCell ? previousCell.styleId : StylePosition.Top;
-    } else { afterId = StylePosition.Top; }
-    await this.insertKeyboardCellAndEdit(afterId);
-  }
+  public async insertTextCellBelow(): Promise<void> {
+    debug("Insert Text Cell Below");
 
-  public async insertKeyboardCellBelow(): Promise<void> {
-    debug("Insert Keyboard Cell Below");
     // If cells are selected then in insert a keyboard input cell below the last cell selected.
     // Otherwise, insert at the end of the notebook.
     let afterId: StyleRelativePosition;
     if (this.lastCellSelected) { afterId = this.lastCellSelected.styleId; }
     else { afterId = StylePosition.Bottom; }
-    await this.insertKeyboardCellAndEdit(afterId);
+
+    const inputMode = userSettingsInstance.defaultInputMode;
+    const inputStyle: StylePropertiesWithSubprops = (inputMode=='keyboard' ?
+      { role: 'INPUT', type: userSettingsInstance.defaultTextKeyboardInputFormat, data: '' } :
+      { role: 'INPUT', type: 'STROKE-DATA', data: deepCopy(EMPTY_STROKE_DATA) });
+
+    // const data: PlainText = { ... };
+    const styleProps: StylePropertiesWithSubprops = {
+      role: 'TEXT',
+      type: 'NONE',
+      data: null,
+      subprops: [ inputStyle ],
+    };
+
+    // Insert top-level style and wait for it to be inserted.
+    const changeRequest: StyleInsertRequest = { type: 'insertStyle', afterId, styleProps };
+    const undoChangeRequest = await this.sendUndoableChangeRequest(changeRequest);
+    /* const styleId = */(<StyleDeleteRequest>undoChangeRequest).styleId;
+
+    // TODO: Set focus?
   }
+
+  // public async insertKeyboardCellAbove(): Promise<void> {
+  //   // If cells are selected then in insert a keyboard input cell
+  //   // above the last cell selected.
+  //   // Otherwise, insert at the beginning of the notebook.
+  //   let afterId: StyleRelativePosition;
+  //   if (this.lastCellSelected) {
+  //     const previousCell = this.previousCell(this.lastCellSelected);
+  //     afterId = previousCell ? previousCell.styleId : StylePosition.Top;
+  //   } else { afterId = StylePosition.Top; }
+  //   await this.insertKeyboardCellAndEdit(afterId);
+  // }
+
+  // public async insertKeyboardCellBelow(): Promise<void> {
+  //   debug("Insert Keyboard Cell Below");
+  //   // If cells are selected then in insert a keyboard input cell below the last cell selected.
+  //   // Otherwise, insert at the end of the notebook.
+  //   let afterId: StyleRelativePosition;
+  //   if (this.lastCellSelected) { afterId = this.lastCellSelected.styleId; }
+  //   else { afterId = StylePosition.Bottom; }
+  //   await this.insertKeyboardCellAndEdit(afterId);
+  // }
 
   public async moveSelectionDown(): Promise<void> {
     // TODO: contiguous multiple selection
@@ -466,27 +487,27 @@ export class Content extends HtmlElement<'div'>{
     }
   }
 
-  public async insertKeyboardCellAndEdit(afterId: StyleRelativePosition): Promise<void> {
-    // Shared implementation of 'insertKeyboardCellAbove' and 'insertKeyboardCellBelow'
-    // Inserts a cell into the notebook, and opens it for editing.
-    // TODO: Inserting text cells, not just formula cells.
+  // public async insertKeyboardCellAndEdit(afterId: StyleRelativePosition): Promise<void> {
+  //   // Shared implementation of 'insertKeyboardCellAbove' and 'insertKeyboardCellBelow'
+  //   // Inserts a cell into the notebook, and opens it for editing.
+  //   // TODO: Inserting text cells, not just formula cells.
 
-    const data: FormulaData = { wolframData: <MTLExpression>'' };
-    const styleProps: StylePropertiesWithSubprops = {
-      role: 'FORMULA',
-      type: 'FORMULA-DATA',
-      data,
-      subprops: [
-        { role: 'INPUT', type: userSettingsInstance.defaultMathKeyboardInputFormat, data: '' },
-      ]
-    };
+  //   const data: FormulaData = { wolframData: <MTLExpression>'' };
+  //   const styleProps: StylePropertiesWithSubprops = {
+  //     role: 'FORMULA',
+  //     type: 'FORMULA-DATA',
+  //     data,
+  //     subprops: [
+  //       { role: 'INPUT', type: userSettingsInstance.defaultMathKeyboardInputFormat, data: '' },
+  //     ]
+  //   };
 
-    // Insert top-level style and wait for it to be inserted.
-    const changeRequest: StyleInsertRequest = { type: 'insertStyle', afterId, styleProps };
-    const undoChangeRequest = await this.sendUndoableChangeRequest(changeRequest);
-    const styleId = (<StyleDeleteRequest>undoChangeRequest).styleId;
-    this.startEditingCell(styleId);
-  }
+  //   // Insert top-level style and wait for it to be inserted.
+  //   const changeRequest: StyleInsertRequest = { type: 'insertStyle', afterId, styleProps };
+  //   const undoChangeRequest = await this.sendUndoableChangeRequest(changeRequest);
+  //   const styleId = (<StyleDeleteRequest>undoChangeRequest).styleId;
+  //   this.startEditingCell(styleId);
+  // }
 
   public async insertStyle(styleProps: StylePropertiesWithSubprops, afterId: StyleRelativePosition = StylePosition.Bottom): Promise<void> {
     const changeRequest: StyleInsertRequest = { type: 'insertStyle', afterId, styleProps };
@@ -664,14 +685,6 @@ export class Content extends HtmlElement<'div'>{
   }
 
   // Private Instance Methods
-
-  private startEditingCell(styleId: StyleId): void {
-    const cellView = this.cellViewFromStyleId(styleId);
-    cellView.scrollIntoView();
-    this.selectCell(cellView);
-    debug("Entering cell view edit mode");
-    cellView.editMode();
-  }
 
   // Private Notebook Change Handlers
 

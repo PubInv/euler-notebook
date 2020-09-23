@@ -28,7 +28,7 @@ import { NotebookChange, StyleObject, RelationshipObject, WolframExpression } fr
 import { ToolData, NotebookChangeRequest, StyleInsertRequest, StylePropertiesWithSubprops, StyleDeleteRequest } from "../shared/math-tablet-api";
 
 import { ServerNotebook, ObserverInstance, absDirPathFromNotebookPath } from "../server-notebook";
-import { execute, constructSubstitution} from "../wolframscript";
+import { execute, constructSubstitution} from "../adapters/wolframscript";
 import { Config } from "../config";
 // import * as uuid from "uuid-js";
 // import uuid = require('uuid');

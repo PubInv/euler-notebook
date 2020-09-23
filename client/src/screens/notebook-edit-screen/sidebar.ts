@@ -120,21 +120,21 @@ export class Sidebar extends ButtonBar {
           }},
           title: "Insert formula",
         }, {
-          // insert keyboard cell
+          // insert text cell
           tag: 'button',
           class: 'iconButton',
-          html: svgIconReference('iconMonstrKeyboard2'),
+          html: svgIconReference('iconMonstrText1'),
           asyncListeners: { click: async (_e: MouseEvent)=>{
-            await this.screen.content.insertKeyboardCellBelow();
+            await this.screen.content.insertTextCellBelow();
           }},
-          title: "Insert keyboard cell",
+          title: "Insert text",
         }, {
-          // insert ink cell
+          // insert drawing cell
           tag: 'button',
           class: 'iconButton',
           html: svgIconReference('iconMonstrPencil9'),
           asyncListeners: { click: async (_e: MouseEvent)=>{
-            await this.screen.content.insertInkCellBelow();
+            await this.screen.content.insertDrawingCellBelow();
           }},
           title: "Insert drawing cell",
         }, {

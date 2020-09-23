@@ -25,10 +25,10 @@ const debug = debug1(`server:${MODULE}`);
 
 import { spawn, ChildProcess } from "child_process";
 
-import { WolframExpression,MTLExpression } from "./shared/notebook";
-import { TexExpression } from "./shared/math-tablet-api";
+import { WolframExpression,MTLExpression } from "../shared/notebook";
+import { TexExpression } from "../shared/math-tablet-api";
 
-import { WolframScriptConfig } from "./config";
+import { WolframScriptConfig } from "../config";
 
 // Types
 

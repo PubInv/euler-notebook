@@ -25,7 +25,7 @@ import { FormulaData, MTLExpression } from "../shared/notebook";
 import { TexExpression } from "../shared/math-tablet-api";
 
 import { ServerNotebook } from "../server-notebook";
-import { convertTeXtoWolfram, convertWolframToTeX, convertMTLToWolfram, convertWolframToMTL } from "../wolframscript";
+import { convertTeXtoWolfram, convertWolframToTeX, convertMTLToWolfram, convertWolframToMTL } from "../adapters/wolframscript";
 
 import { BaseObserver, Rules, StyleRelation } from "./base-observer";
 
@@ -94,6 +94,7 @@ export class FormulaObserver extends BaseObserver {
   }
 
   private static renderFormulaToWolframRepresentation(formulaData: FormulaData): MTLExpression|undefined {
+    // REVIEW: Convert single equal sign to double equal sign?
     return formulaData.wolframData;
   }
 

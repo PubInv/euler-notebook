@@ -32,7 +32,7 @@ import {
   StyleDeleteRequest, TexExpression, RelationshipPropertiesMap, NameValuePair
 } from "../shared/math-tablet-api";
 import { ServerNotebook, ObserverInstance } from "../server-notebook";
-import { execute, convertWolframToTeX } from "../wolframscript";
+import { execute, convertWolframToTeX } from "../adapters/wolframscript";
 import { Config } from "../config";
 
 
