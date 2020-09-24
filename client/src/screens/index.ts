@@ -28,8 +28,7 @@ import { ScreenBase } from "./screen-base";
 import { addSyncEventListener } from "../error-handler";
 import { FolderScreen } from "./folder-screen";
 import { NotebookEditScreen } from "./notebook-edit-screen";
-import { NotebookReadScreen } from "./notebook-read-screen";
-import { NotebookThumbnailsScreen } from "./notebook-thumbnails-screen";
+import { Mode, NotebookReadScreen } from "./notebook-read-screen";
 
 // Types
 
@@ -88,13 +87,13 @@ export abstract class Screens {
         case 'edit':
           return new NotebookEditScreen(this.$body, path);
         case 'read':
-          return new NotebookReadScreen(this.$body, path);
+          return new NotebookReadScreen(this.$body, path, Mode.Reading);
         default:
           assertFalse();
           break;
       }
     } else if (NOTEBOOK_PATH_RE.test(pathname)) {
-      return new NotebookThumbnailsScreen(this.$body, <NotebookPath>pathname);
+      return new NotebookReadScreen(this.$body, <NotebookPath>pathname, Mode.Thumbnails);
     } else if (FOLDER_PATH_RE.test(pathname)) {
       return new FolderScreen(this.$body, <FolderPath>pathname);
     } else  {

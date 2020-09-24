@@ -21,7 +21,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 import { ElementClass, svgIconReference } from "../../dom";
 import { ButtonBar } from "../../button-bar";
-import { NotebookReadScreen } from ".";
+import { Mode, NotebookReadScreen } from "./index";
 
 // Types
 
@@ -37,7 +37,7 @@ export class Sidebar extends ButtonBar {
 
   // Public Constructor
 
-  public constructor(screen: NotebookReadScreen) {
+  public constructor(screen: NotebookReadScreen, mode: Mode) {
     super({
       tag: 'div',
       appendTo: screen.$elt,
@@ -49,14 +49,15 @@ export class Sidebar extends ButtonBar {
         html: svgIconReference('iconMonstrFile12'),
         listeners: { click: (_e: MouseEvent)=>{ window.location.href = `/#${screen.notebook.path}`; }},
         title: "Reading view",
+        disabled: mode == Mode.Thumbnails,
       },{
         // reading view
         tag: 'button',
         class: <ElementClass>'iconButton',
         html: svgIconReference('iconMonstrFile5'),
-        // listeners: { click: (_e: MouseEvent)=>{ window.location.href = `/#${screen.notebook.path}?view=read`; }},
+        listeners: { click: (_e: MouseEvent)=>{ window.location.href = `/#${screen.notebook.path}?view=read`; }},
         title: "Reading view",
-        disabled: true,
+        disabled: mode == Mode.Reading,
       },{
         // edit view
         tag: 'button',

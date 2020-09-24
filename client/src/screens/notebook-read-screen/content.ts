@@ -20,7 +20,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 // Requirements
 
 import { $newSvg, $allSvg, ElementClass, $outerSvg } from "../../dom";
-import { NotebookReadScreen } from "./index";
+import { Mode, NotebookReadScreen } from "./index";
 import { HtmlElement } from "../../html-element";
 import { assert, notImplemented } from "../../shared/common";
 
@@ -43,14 +43,20 @@ export class Content extends HtmlElement<'div'>{
 
   // Public Constructor
 
-  public constructor(screen: NotebookReadScreen) {
+  public constructor(screen: NotebookReadScreen, mode: Mode) {
 
     super({ tag: 'div', appendTo: screen.$elt, class: <ElementClass>'content' });
 
     this.screen = screen;
-    this.marginPercent = 0.025;
-    this.pagesPerRow = 1;
 
+    if (mode == Mode.Reading) {
+      this.marginPercent = 0.025;
+      this.pagesPerRow = 1;
+    } else {
+      assert(mode == Mode.Thumbnails);
+      this.marginPercent = 0.1;
+      this.pagesPerRow = 4;
+    }
     this.render();
     this.resize();
   }

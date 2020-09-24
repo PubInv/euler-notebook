@@ -33,6 +33,11 @@ import { ElementClass } from "../../dom";
 
 // Types
 
+export enum Mode {
+  Reading,
+  Thumbnails,
+}
+
 // Constants
 
 // Global Variables
@@ -45,10 +50,10 @@ export class NotebookReadScreen extends ScreenBase {
 
   // Public Constructor
 
-  public constructor($parent: HTMLElement, path: NotebookPath) {
+  public constructor($parent: HTMLElement, path: NotebookPath, mode: Mode) {
     super({
       appendTo: $parent,
-      classes: [<ElementClass>'screen', <ElementClass>'notebookThumbnailsScreen'],
+      classes: [<ElementClass>'screen', <ElementClass>'notebookReadScreen'],
       data: { path },
       tag: 'div',
     });
@@ -58,8 +63,8 @@ export class NotebookReadScreen extends ScreenBase {
     .then(
       (notebook: ClientNotebook)=>{
         this.notebook = notebook;
-        /* this.sidebar = */ new Sidebar(this);
-        this.content = new Content(this);
+        /* this.sidebar = */ new Sidebar(this, mode);
+        this.content = new Content(this, mode);
       },
       (err)=>{
         const message = <Html>`Error opening notebook '${path}'`;
