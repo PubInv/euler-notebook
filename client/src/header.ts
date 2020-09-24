@@ -25,11 +25,11 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 import * as debug1 from "debug";
 const debug = debug1('client:header');
 
-import { Html, notImplemented } from "./shared/common";
+import { Html, escapeHtml, notImplemented } from "./shared/common";
 import { Path } from "./shared/folder";
 
 import { ButtonBar } from "./button-bar";
-import { escapeHtml, $, $new, svgIconReference } from "./dom";
+import { $, $new, svgIconReference, ElementClass, ElementId } from "./dom";
 import { monitorPromise } from "./error-handler";
 import { userSettingsInstance, InputMode } from "./user-settings";
 
@@ -76,7 +76,7 @@ export class Header extends ButtonBar {
 
     const $fullscreenButton = $new({
       tag: 'button',
-      class: 'iconButton',
+      class: <ElementClass>'iconButton',
       title: "Full screen",
       html: svgIconReference('iconMonstrFullScreen7'),
       disabled: !document.fullscreenEnabled,
@@ -87,7 +87,7 @@ export class Header extends ButtonBar {
 
     super({
       tag: 'div',
-      id: 'header',
+      id: <ElementId>'header',
       appendTo: $parent,
       children: [
         {
@@ -95,13 +95,13 @@ export class Header extends ButtonBar {
           children: [
             {
               tag: 'button',
-              class: 'iconButton',
+              class: <ElementClass>'iconButton',
               title: "Math Tablet home",
               html: svgIconReference('iconMonstrHome6'),
               listeners: { click: _e=>{ window.location.href = '/#/'; }},
             }, {
               tag: 'select',
-              id: 'inputMode',
+              id: <ElementId>'inputMode',
               children: [
                 { tag: 'option', value: 'keyboard', html: <Html>"Keyboard", selected: inputMode=='keyboard' },
                 { tag: 'option', value: 'stylus', html: <Html>"Stylus", selected: inputMode=='stylus' },
@@ -115,13 +115,13 @@ export class Header extends ButtonBar {
           ],
         }, {
           tag: 'div',
-          id: 'title',
+          id: <ElementId>'title',
         }, {
           tag: 'span',
           children: [
             {
               tag: 'button',
-              class: 'iconButton',
+              class: <ElementClass>'iconButton',
               title: "Refresh page",
               html: svgIconReference('iconMonstrRefresh2'),
               listeners: { click: _e=>window.location.reload() },
@@ -129,7 +129,7 @@ export class Header extends ButtonBar {
             $fullscreenButton,
             {
               tag: 'button',
-              class: 'iconButton',
+              class: <ElementClass>'iconButton',
               title: "User settings",
               html: svgIconReference('iconMonstrUser1'),
               listeners: { click: _e=>notImplemented() },

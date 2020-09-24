@@ -19,7 +19,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 // Requirements
 
-import { Html } from "../../shared/common";
+import { Html, escapeHtml } from "../../shared/common";
 import { NotebookChange } from "../../shared/notebook";
 import { NotebookPath } from "../../shared/folder";
 
@@ -29,6 +29,7 @@ import { ScreenBase } from "../screen-base";
 
 import { Content } from "./content";
 import { Sidebar } from "./sidebar";
+import { ElementClass, ElementId } from "../../dom";
 
 // Types
 
@@ -48,8 +49,8 @@ export class NotebookThumbnailsScreen extends ScreenBase {
     super({
       tag: 'div',
       appendTo: $parent,
-      classes: ['screen', 'notebookThumbnailsScreen'],
-      id: path,
+      classes: [<ElementClass>'screen', <ElementClass>'notebookThumbnailsScreen'],
+      id: <ElementId>path,
     });
 
     const options: OpenNotebookOptions = { mustExist: true, watcher: this };
@@ -61,8 +62,9 @@ export class NotebookThumbnailsScreen extends ScreenBase {
         this.content = new Content(this);
       },
       (err)=>{
-        reportError(err, <Html>`Error opening notebook '${path} for thumbnails`);
-        this.displayErrorMessage(<Html>`Error opening notebook '${path}'`);
+        const message = <Html>`Error opening notebook '${path}'`;
+        reportError(err, message);
+        this.displayErrorMessage(<Html>`${message}: ${escapeHtml(err.message)}`);
       }
     );
 

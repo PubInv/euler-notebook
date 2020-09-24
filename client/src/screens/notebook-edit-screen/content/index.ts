@@ -25,7 +25,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 import * as debug1 from "debug";
 const debug = debug1('client:notebook-edit-screen-content');
 
-import { assert, ExpectedError, Html, assertFalse, notImplemented } from "../../../shared/common";
+import { assert, deepCopy, ExpectedError, Html, assertFalse, notImplemented, CssLength } from "../../../shared/common";
 import {
   StrokeData, StyleId, StyleObject, NotebookChange,
   StyleRelativePosition,
@@ -36,13 +36,13 @@ import {
   StyleMoveRequest, NotebookChangeRequest,
 } from "../../../shared/math-tablet-api";
 
-import { CellBase } from "./cell-view/cell-base";
-import { createCell } from "./cell-view";
+import { CellBase } from "./cells/cell-base";
+import { createCell } from "./cells/index";
 import { HtmlElement } from "../../../html-element";
 import { NotebookEditScreen } from "..";
 import { reportError } from "../../../error-handler";
 import { userSettingsInstance } from "../../../user-settings";
-import { deepCopy } from "../../../common";
+import { ElementClass } from "../../../dom";
 
 // Types
 
@@ -90,7 +90,7 @@ const KEY_MAP: [ KeyName, KeyMods, CommandName][] = [
 const KEY_BINDINGS = new Map<KeyCombo, CommandName>(KEY_MAP.map(([ keyName, keyMods, commandName])=>[ `${keyName}${keyMods}`, commandName ]));
 
 const EMPTY_STROKE_DATA: StrokeData = {
-  size: { height: '96px', width: '624px' }, // 1in x 6.5in = 96px
+  size: { height: <CssLength>'96px', width: <CssLength>'624px' }, // 1in x 6.5in = 96px
   strokeGroups: [
     { strokes: [] }
   ],
@@ -108,7 +108,7 @@ export class Content extends HtmlElement<'div'>{
     super({
       tag: 'div',
       appendTo: screen.$elt,
-      class: 'content',
+      class: <ElementClass>'content',
       listeners: {
         blur: e=>this.onBlur(e),
         focus: e=>this.onFocus(e),

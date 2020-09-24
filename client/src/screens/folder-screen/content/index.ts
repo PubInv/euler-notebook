@@ -29,6 +29,7 @@ import { HtmlElement } from "../../../html-element";
 
 import { EntryList } from "./entry-list";
 import { EntryType } from "./entry-row";
+import { ElementClass } from "../../../dom";
 
 // Requirements
 
@@ -41,7 +42,7 @@ export class Content extends HtmlElement<'div'> {
   // Public Constructor
 
   public constructor(screen: FolderScreen) {
-    super({ tag: 'div', appendTo: screen.$elt, class: 'content' });
+    super({ tag: 'div', appendTo: screen.$elt, class: <ElementClass>'content' });
     this.screen = screen;
     this.foldersList = new EntryList(this.$elt, screen.folder, EntryType.Folder, screen.folder.folders);
     this.notebooksList = new EntryList(this.$elt, screen.folder, EntryType.Notebook, screen.folder.notebooks);

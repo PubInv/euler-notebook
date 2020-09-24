@@ -28,6 +28,7 @@ import { Sidebar } from "./sidebar";
 import { ScreenBase } from "../screen-base";
 import { ClientFolder, ClientFolderWatcher, OpenFolderOptions } from "../../client-folder";
 import { reportError } from "../../error-handler";
+import { ElementClass } from "../../dom";
 
 // Types
 
@@ -41,8 +42,29 @@ export class FolderScreen extends ScreenBase implements ClientFolderWatcher {
 
   // Public Class Methods
 
-  public static create($parent: HTMLElement, path: FolderPath): FolderScreen {
-    return new this($parent, path);
+  // Public Constructor
+
+  public constructor($parent: HTMLElement, path: FolderPath) {
+    super({
+      appendTo: $parent,
+      classes: [<ElementClass>'screen', <ElementClass>'folderScreen'],
+      data: { path },
+      tag: 'div',
+    });
+
+    const options: OpenFolderOptions = { mustExist: true, watcher: this };
+    ClientFolder.open(path, options)
+    .then(
+      (folder: ClientFolder)=>{
+        this.folder = folder;
+        this.sidebar = new Sidebar(this);
+        this.view = new Content(this);
+          },
+      (err)=>{
+        reportError(err, <Html>`Error opening folder '${path}'`);
+        this.displayErrorMessage(<Html>`Error opening folder '${path}'`);
+      }
+    );
   }
 
   // Public Instance Event Handlers
@@ -70,32 +92,6 @@ export class FolderScreen extends ScreenBase implements ClientFolderWatcher {
   }
 
   // --- PRIVATE ---
-
-  // Private Constructor
-
-  private constructor($parent: HTMLElement, path: FolderPath) {
-    super({
-      appendTo: $parent,
-      classes: ['screen', 'folderScreen'],
-      data: { path },
-      tag: 'div',
-    });
-
-    const options: OpenFolderOptions = { mustExist: true, watcher: this };
-    ClientFolder.open(path, options)
-    .then(
-      (folder: ClientFolder)=>{
-        this.folder = folder;
-        this.sidebar = new Sidebar(this);
-        this.view = new Content(this);
-          },
-      (err)=>{
-        reportError(err, <Html>`Error opening folder '${path}'`);
-        this.displayErrorMessage(<Html>`Error opening folder '${path}'`);
-      }
-    );
-
-  }
 
   // Private Instance Properties
 

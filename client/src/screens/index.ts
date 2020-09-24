@@ -86,7 +86,7 @@ export abstract class Screens {
       const view = match[5];
       switch(view) {
         case 'edit':
-          return NotebookEditScreen.create(this.$body, path);
+          return new NotebookEditScreen(this.$body, path);
         case 'read':
           return new NotebookReadScreen(this.$body, path);
         default:
@@ -96,7 +96,7 @@ export abstract class Screens {
     } else if (NOTEBOOK_PATH_RE.test(pathname)) {
       return new NotebookThumbnailsScreen(this.$body, <NotebookPath>pathname);
     } else if (FOLDER_PATH_RE.test(pathname)) {
-      return FolderScreen.create(this.$body, <FolderPath>pathname);
+      return new FolderScreen(this.$body, <FolderPath>pathname);
     } else  {
       throw new Error("Invalid path.");
     }

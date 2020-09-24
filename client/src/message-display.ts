@@ -25,7 +25,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 import { Html, errorMessageForUser } from "./shared/common";
 
-import { CLOSE_X_ENTITY } from "./dom";
+import { CLOSE_X_ENTITY, ElementClass, ElementId } from "./dom";
 import { HtmlElement } from "./html-element";
 
 // Types
@@ -59,7 +59,7 @@ export class MessageDisplay extends HtmlElement<'div'> {
   public constructor($body: HTMLBodyElement) {
     super({
       tag: 'div',
-      id: 'messageDisplay',
+      id: <ElementId>'messageDisplay',
       appendTo: $body,
     });
   }
@@ -97,13 +97,13 @@ class Message extends HtmlElement<'div'> {
 
     super({
       tag: 'div',
-      classes: [ 'message', type ],
+      classes: [ <ElementClass>'message', <ElementClass>type ],
       children: [{
         tag: 'span',
         html,
       },{
         tag: 'button',
-        classes: ['close', 'iconButton'],
+        classes: [<ElementClass>'close', <ElementClass>'iconButton'],
         html: CLOSE_X_ENTITY,
         listeners: {
           click: (e)=>this.onCloseClick(e),

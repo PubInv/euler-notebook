@@ -464,9 +464,10 @@ export class ServerNotebook extends Notebook<ServerNotebookWatcher> {
   public toJSON(): NotebookObject {
     const rval: NotebookObject = {
       nextId: this.nextId,
+      pageConfig: this.pageConfig,
+      pages: this.pages,
       relationshipMap: this.relationshipMap,
       styleMap: this.styleMap,
-      styleOrder: this.styleOrder,
       version: VERSION,
     }
     return rval;
@@ -1097,19 +1098,19 @@ export class ServerNotebook extends Notebook<ServerNotebookWatcher> {
       return undefined;
     }
 
-    const oldPosition: StylePosition = this.styleOrder.indexOf(style.id);
+    const oldPosition: StylePosition = this.pages[0].styleIds.indexOf(style.id);
     if (oldPosition < 0) { throw new Error(`Style ${styleId} can't be moved: not found in styleOrder array.`); }
 
     let oldAfterId: number;
     if (oldPosition == 0) { oldAfterId = 0; }
-    else if (oldPosition == this.styleOrder.length-1) { oldAfterId = -1; }
-    else { oldAfterId = this.styleOrder[oldPosition-1]; }
+    else if (oldPosition == this.pages[0].styleIds.length-1) { oldAfterId = -1; }
+    else { oldAfterId = this.pages[0].styleIds[oldPosition-1]; }
 
     let newPosition: StylePosition;
     if (afterId == 0) { newPosition = 0; }
-    else if (afterId == -1) { newPosition = this.styleOrder.length  - 1; }
+    else if (afterId == -1) { newPosition = this.pages[0].styleIds.length  - 1; }
     else {
-      newPosition = this.styleOrder.indexOf(afterId);
+      newPosition = this.pages[0].styleIds.indexOf(afterId);
       if (newPosition < 0) { throw new Error(`Style ${styleId} can't be moved: other style ${afterId} not found in styleOrder array.`); }
       if (oldPosition > newPosition) { newPosition++; }
     }
@@ -1127,7 +1128,10 @@ export class ServerNotebook extends Notebook<ServerNotebookWatcher> {
 
   protected async initialize(options: OpenNotebookOptions): Promise<void> {
     if (options.mustExist) {
-      const json = await readNotebookFile(this.path);
+      assert(ServerNotebook.isValidNotebookPath(this.path));
+      const absPath = absFilePathFromNotebookPath(this.path);
+      // REVIEW: Create file-system readJsonFile function?
+      const json = await readFile(absPath, NOTEBOOK_ENCODING);
       const obj = JSON.parse(json);
       assert(typeof obj == 'object');
       Notebook.validateObject(obj);
@@ -1244,11 +1248,13 @@ export class ServerNotebook extends Notebook<ServerNotebookWatcher> {
     if (this.ephemeral) { return; }
 
     assert(!this.saving); // LATER: Saving promise?
+    assert(ServerNotebook.isValidNotebookPath(this.path));
     debug(`saving ${this.path}`);
     this.saving = true;
 
     const json = JSON.stringify(this);
-    await writeNotebookFile(this.path, json);
+    const filePath = absFilePathFromNotebookPath(this.path);
+    await writeFile(filePath, json, NOTEBOOK_ENCODING)
     this.saving = false;
   }
 
@@ -1300,23 +1306,6 @@ export function assertHasStyle(styles: StyleObject[], type: StyleType, role: Sty
 
 export function notebookPath(path: FolderPath, name: NotebookName): NotebookPath {
   return <NotebookPath>`${path}${name}${ServerNotebook.NOTEBOOK_DIR_SUFFIX}`;
-}
-
-export async function readNotebookFile(path: NotebookPath): Promise<string> {
-  if (!ServerNotebook.isValidNotebookPath(path)) {
-    throw new Error(`Invalid notebook path: ${path}`);
-  }
-  const absPath = absFilePathFromNotebookPath(path);
-  const json = await readFile(absPath, NOTEBOOK_ENCODING);
-  return json;
-}
-
-export async function writeNotebookFile(path: NotebookPath, json: string): Promise<void> {
-  if (!ServerNotebook.isValidNotebookPath(path)) {
-    throw new Error(`Invalid notebook path: ${path}`);
-  }
-  const filePath = absFilePathFromNotebookPath(path);
-  await writeFile(filePath, json, NOTEBOOK_ENCODING)
 }
 
 // Helper Functions

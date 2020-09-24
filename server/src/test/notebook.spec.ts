@@ -31,6 +31,7 @@ import { NotebookChangeRequest, StyleInsertRequest, StylePropertiesWithSubprops 
 import { ServerNotebook }  from "../server-notebook";
 
 import { ensureGlobalLoaded } from "./global";
+import { CssLength } from "../shared/common";
 ensureGlobalLoaded();
 
 // Unit Tests
@@ -50,15 +51,29 @@ describe("notebook", function() {
     it("Converts to and from a JSON object", async function() {
       const obj = notebook.toJSON();
       assert.deepEqual(obj, {
-        "nextId": 4,
-        "relationshipMap": {},
-        "styleMap": {
-          "1": { "data": "a", "id": 1, "role": "TEXT", "parentId": 0, "source": "TEST", "type": "PLAIN-TEXT", },
-          "2": { "data": "b", "id": 2, "role": "TEXT", "parentId": 0, "source": "TEST", "type": "PLAIN-TEXT", },
-          "3": { "data": "c", "id": 3, "role": "TEXT", "parentId": 0, "source": "TEST", "type": "PLAIN-TEXT", }
+        nextId: 4,
+        pageConfig: {
+          size: {
+            height: <CssLength>"11in",
+            width: <CssLength>"8.5in",
+          },
+          margins: {
+            top: <CssLength>"1in",
+            right: <CssLength>"1in",
+            bottom: <CssLength>"1in",
+            left: <CssLength>"1in",
+          }
         },
-        "styleOrder": [ 1, 2, 3 ],
-        "version": VERSION,
+        relationshipMap: {},
+        styleMap: {
+          1: { data: "a", id: 1, role: "TEXT", parentId: 0, source: "TEST", type: "PLAIN-TEXT", },
+          2: { data: "b", id: 2, role: "TEXT", parentId: 0, source: "TEST", type: "PLAIN-TEXT", },
+          3: { data: "c", id: 3, role: "TEXT", parentId: 0, source: "TEST", type: "PLAIN-TEXT", }
+        },
+        pages: [
+          { styleIds: [ 1, 2, 3 ] },
+        ],
+        version: VERSION,
       });
       // TODO: create td from obj.
     });

@@ -24,10 +24,9 @@ import { SyncListener, addSyncEventListener, addAsyncEventListener, AsyncListene
 
 // Types
 
-type CssSelector = string;
-export type CssLengthProperty = '{CssLengthProperty}';
-type ElementId = string;
-export type ElementClass = string;
+export type CssSelector = '{CssSelector}';
+export type ElementId = '{ElementId}';
+export type ElementClass = '{ElementClass}';
 
 interface Attributes {
   [name: string]: boolean|number|string,
@@ -223,12 +222,12 @@ export function $svg<K extends keyof SVGElementTagNameMap>(root: Element|Documen
   return $elts[0];
 }
 
-export function escapeHtml(str: string): Html {
-  // From: http://shebang.brandonmintern.com/foolproof-html-escaping-in-javascript/
-  var $div = document.createElement('div');
-  $div.appendChild(document.createTextNode(str));
-  return <Html>$div.innerHTML;
-}
+// export function escapeHtml(str: string): Html {
+//   // From: http://shebang.brandonmintern.com/foolproof-html-escaping-in-javascript/
+//   var $div = document.createElement('div');
+//   $div.appendChild(document.createTextNode(str));
+//   return <Html>$div.innerHTML;
+// }
 
 export function svgIconReference(id: string): Html {
   return <Html>`<svg class="icon"><use xlink:href="#${id}"/></svg>`

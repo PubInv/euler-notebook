@@ -27,6 +27,7 @@ import { Content } from "..";
 
 import { CellBase } from "./cell-base";
 import { notImplemented } from "../../../../shared/common";
+import { ElementClass } from "../../../../dom";
 
 // Types
 
@@ -41,7 +42,7 @@ export class PlotCell extends CellBase {
   // Public Constructor
 
   public  constructor(notebookView: Content, style: StyleObject) {
-    super(notebookView, style, 'plotCell', []);
+    super(notebookView, style, <ElementClass>'plotCell', []);
     this.render(style);
   }
 

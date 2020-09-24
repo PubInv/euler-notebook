@@ -24,7 +24,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 import { assert } from "../../../shared/common";
 import { NotebookName, FolderName } from "../../../shared/folder";
 
-// import { $new, svgIconReference, $, CLOSE_X_ENTITY, PENCIL_ENTITY, Html, escapeHtml } from "../../dom";
+import { ElementId } from "../../../dom";
 import { ClientFolder } from "../../../client-folder";
 import { HtmlElement } from "../../../html-element";
 
@@ -40,7 +40,7 @@ export class EntryList<K extends keyof EntryTypeMap> extends HtmlElement<'table'
   // Public Constructor
 
   public constructor($parentElt: HTMLDivElement, folder: ClientFolder, type: EntryType, entries: EntryTypeMap[K][]) {
-    super({ tag: 'table', id: 'folderList', appendTo: $parentElt });
+    super({ tag: 'table', id: <ElementId>'folderList', appendTo: $parentElt });
     this.type = type;
     this.entries = new Map();
     for (const entry of entries) { this.addEntry(folder, entry); }

@@ -22,7 +22,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 // Requirements
 
-import { Html } from "../../shared/common";
+import { Html, escapeHtml } from "../../shared/common";
 import { NotebookPath } from "../../shared/folder";
 import { NotebookChange, NotebookWatcher } from "../../shared/notebook";
 
@@ -33,6 +33,7 @@ import { Sidebar } from "./sidebar";
 import { Tools } from "./tools";
 import { ClientNotebook, OpenNotebookOptions } from "../../client-notebook";
 import { ScreenBase } from "../screen-base";
+import { ElementClass } from "../../dom";
 
 // Types
 
@@ -44,15 +45,33 @@ import { ScreenBase } from "../screen-base";
 
 export class NotebookEditScreen extends ScreenBase implements NotebookWatcher {
 
-  // Public Class Methods
+  // Public Constructor
 
-  public static create($parent: HTMLElement, path: NotebookPath): NotebookEditScreen {
-    return new this($parent, path);
+  public constructor($parent: HTMLElement, path: NotebookPath) {
+    super({
+      appendTo: $parent,
+      classes: [<ElementClass>'screen', <ElementClass>'notebookEditScreen'],
+      data: { path },
+      tag: 'div',
+    });
+
+    const options: OpenNotebookOptions = { mustExist: true, watcher: this };
+    ClientNotebook.open(path, options)
+    .then(
+      (notebook: ClientNotebook)=>{
+        this.notebook = notebook;
+        this.sidebar = new Sidebar(this);
+        this.content = new Content(this);
+        this.tools = new Tools(this);
+        this.debugPopup = new DebugPopup(this);
+      },
+      (err)=>{
+        const message = <Html>`Error opening notebook '${path}'`;
+        reportError(err, message);
+        this.displayErrorMessage(<Html>`${message}: ${escapeHtml(err.message)}`);
+      }
+    );
   }
-
-  // Public Instance Event Handlers
-
-  public onResize(_window: Window, _event: UIEvent): void { /* Nothing to do. */ }
 
   // Public Instance Properties
 
@@ -63,6 +82,10 @@ export class NotebookEditScreen extends ScreenBase implements NotebookWatcher {
   public content!: Content;
 
   // Public Instance Methods
+
+  // Public Instance Event Handlers
+
+  public onResize(_window: Window, _event: UIEvent): void { /* Nothing to do. */ }
 
   // ClientNotebookWatcher Methods
 
@@ -83,34 +106,6 @@ export class NotebookEditScreen extends ScreenBase implements NotebookWatcher {
   }
 
   // --- PRIVATE ---
-
-  // Private Constructor
-
-  private constructor($parent: HTMLElement, path: NotebookPath) {
-    super({
-      appendTo: $parent,
-      classes: ['screen', 'notebookEditScreen'],
-      data: { path },
-      tag: 'div',
-    });
-
-    const options: OpenNotebookOptions = { mustExist: true, watcher: this };
-    ClientNotebook.open(path, options)
-    .then(
-      (notebook: ClientNotebook)=>{
-        this.notebook = notebook;
-        this.sidebar = new Sidebar(this);
-        this.content = new Content(this);
-        this.tools = new Tools(this);
-        this.debugPopup = new DebugPopup(this);
-      },
-      (err)=>{
-        reportError(err, <Html>`Error opening notebook '${path} for editing`);
-        this.displayErrorMessage(<Html>`Error opening notebook '${path}'`);
-      }
-    );
-
-  }
 
   // Private Instance Properties
 

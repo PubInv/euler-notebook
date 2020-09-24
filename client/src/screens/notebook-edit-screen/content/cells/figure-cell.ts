@@ -19,12 +19,11 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 // Requirements
 
-import { Html, assert, notImplemented } from "../../../../shared/common";
+import { Html, assert, deepCopy, notImplemented, CssLength } from "../../../../shared/common";
 import { StrokeData, StyleId, StyleObject, NotebookChange } from "../../../../shared/notebook";
 import { StyleChangeRequest, StyleMoveRequest } from "../../../../shared/math-tablet-api";
 
-import { $configure, $newSvg, $, $svg, CLOSE_X_ENTITY, HtmlElementOrSpecification, CssLengthProperty } from "../../../../dom";
-import { deepCopy } from "../../../../common";
+import { $configure, $newSvg, $, $svg, CLOSE_X_ENTITY, HtmlElementOrSpecification, ElementClass } from "../../../../dom";
 
 import { Content } from "..";
 import { ResizerBar } from "../../../../resizer-bar";
@@ -55,16 +54,16 @@ export class FigureCell extends CellBase {
 
   public constructor(view: Content, style: StyleObject) {
 
-    const stylusDrawingPanel = new StylusDrawingPanel(<CssLengthProperty>"0px", <CssLengthProperty>"0px", (stroke)=>this.onStrokeComplete(stroke));
+    const stylusDrawingPanel = new StylusDrawingPanel(<CssLength>"0px", <CssLength>"0px", (stroke)=>this.onStrokeComplete(stroke));
     const $content = $new({
       tag: 'div',
-      class: 'content',
+      class: <ElementClass>'content',
       children: [
         stylusDrawingPanel.$elt,
         {
           tag: 'button',
           attrs: { tabindex: -1 },
-          class: 'deleteCellButton',
+          class: <ElementClass>'deleteCellButton',
           html: CLOSE_X_ENTITY,
           listeners: {
             click: e=>this.onDeleteCellButtonClicked(e),
@@ -72,7 +71,7 @@ export class FigureCell extends CellBase {
         },{
           tag: 'div',
           attrs: { draggable: true },
-          class: 'dragIcon',
+          class: <ElementClass>'dragIcon',
           html: <Html>"&equiv;",
           listeners: {
             dragend: e=>this.onDragEnd(e),
@@ -86,7 +85,7 @@ export class FigureCell extends CellBase {
     const children: HtmlElementOrSpecification[] = [
       $content,
     ];
-    super(view, style, 'figureCell', children);
+    super(view, style, <ElementClass>'figureCell', children);
 
     // LATER: These button be on *all* cells, not just ink cells.
     $configure(this.$elt, {
@@ -98,7 +97,7 @@ export class FigureCell extends CellBase {
     });
 
     // Create placeholder SVG panel. Will be replaced in this.render().
-    $newSvg({ tag: 'svg', appendTo: $content, class: 'svgPanel' });
+    $newSvg({ tag: 'svg', appendTo: $content, class: <ElementClass>'svgPanel' });
 
     // Create an overlay SVG for accepting drawing input.
     // TODO: Get dimensions from svgPanel?
@@ -251,7 +250,7 @@ export class FigureCell extends CellBase {
     // TODO: resizer bar should enforce minimum.
     // TODO: minimum height should be based on ink content.
     const newHeight = Math.max(currentHeight + deltaY, 10);
-    const newHeightStr = `${newHeight}px`;
+    const newHeightStr = <CssLength>`${newHeight}px`;
     $svgPanel.setAttribute('height', newHeightStr);
 
     if (final) {

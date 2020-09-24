@@ -25,7 +25,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 import * as debug1 from "debug";
 const debug = debug1('client:server-socket');
 
-import { assert, Html, PromiseResolver, Timestamp, newPromiseResolver, assertFalse } from "./shared/common";
+import { assert, Html, PromiseResolver, Timestamp, newPromiseResolver, assertFalse, ExpectedError } from "./shared/common";
 import { ClientMessage, ServerMessage, ServerMessageBase, RequestId } from "./shared/math-tablet-api";
 
 import { messageDisplayInstance } from "./message-display";
@@ -195,7 +195,7 @@ export class ServerSocket {
         } else {
           // Message is an error.
           // Reject the request promise.
-          requestInfo.resolver.reject(new Error(msg.message));
+          requestInfo.resolver.reject(new ExpectedError(msg.message));
           this.requestMap.delete(requestId!);
         }
       }

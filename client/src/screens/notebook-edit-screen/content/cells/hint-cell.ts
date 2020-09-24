@@ -22,12 +22,13 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 import * as debug1 from "debug";
 const debug = debug1('client:hint-cell');
 
-import { escapeHtml } from "../../../../dom";
+import { assertFalse, escapeHtml } from "../../../../shared/common";
 import { StyleObject, HintData, HintStatus, HintRelationship, NotebookChange } from "../../../../shared/notebook";
-import { Content } from "..";
+
+import { ElementClass } from "../../../../dom";
+import { Content } from "../index";
 
 import { CellBase } from "./cell-base";
-import { assertFalse } from "../../../../shared/common";
 
 // Types
 
@@ -42,7 +43,7 @@ export class HintCell extends CellBase {
   // Public Constructor
 
   public constructor(notebookView: Content, style: StyleObject) {
-    super(notebookView, style, 'hintCell', []);
+    super(notebookView, style, <ElementClass>'hintCell', []);
     this.render(style);
   }
 

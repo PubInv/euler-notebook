@@ -21,7 +21,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 // Requirements
 
-import { RIGHT_TRIANGLE_ENTITY } from "./dom";
+import { ElementClass, RIGHT_TRIANGLE_ENTITY } from "./dom";
 import { HtmlElement } from "./html-element";
 
 // Types
@@ -69,7 +69,7 @@ export class ResizerBar extends HtmlElement<'div'>  {
     super({
       tag: 'div',
       appendTo: $parentElt,
-      class: 'resizeBar',
+      class: <ElementClass>'resizeBar',
       listeners: {
         pointercancel:  e=>this.onPointerCancel(e),
         pointerdown:    e=>this.onPointerDown(e),
@@ -84,7 +84,7 @@ export class ResizerBar extends HtmlElement<'div'>  {
         {
           tag: 'button',
           attrs: { tabindex: -1 },
-          class: 'insertCellBelowButton',
+          class: <ElementClass>'insertCellBelowButton',
           html: RIGHT_TRIANGLE_ENTITY,
           listeners: { click: _e=>insertCallbackFn() },
         }

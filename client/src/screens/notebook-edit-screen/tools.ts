@@ -19,11 +19,11 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 // Requirements
 
-import { assert, Html } from "../../shared/common";
+import { assert, Html, escapeHtml } from "../../shared/common";
 import { StyleId, FindStyleOptions } from "../../shared/notebook";
 import { SymbolTable, ToolData } from "../../shared/math-tablet-api";
 
-import { $new, escapeHtml } from "../../dom";
+import { $new, ElementClass } from "../../dom";
 import { HtmlElement } from "../../html-element";
 import { NotebookEditScreen } from ".";
 
@@ -45,7 +45,7 @@ export class Tools extends HtmlElement<'div'>{
     super({
       tag: 'div',
       appendTo: screen.$elt,
-      class: 'tools',
+      class: <ElementClass>'tools',
     });
     this.screen = screen;
   }
@@ -69,7 +69,7 @@ export class Tools extends HtmlElement<'div'>{
       for (const [symbol, constraints] of Object.entries(symbolTableData)) {
         html += `<tr><td>${escapeHtml(symbol)}</td><td>${constraints.map(c=>escapeHtml(c)).join('; ')}</td></tr>`
       }
-      const $table = $new({ tag: 'table', class: 'symbolTable', html });
+      const $table = $new({ tag: 'table', class: <ElementClass>'symbolTable', html });
       this.$elt.appendChild($table);
     }
 
@@ -87,7 +87,7 @@ export class Tools extends HtmlElement<'div'>{
 
       const $button = $new({
         tag: 'button',
-        class: 'tool',
+        class: <ElementClass>'tool',
         html,
         listeners: { 'click': _e=>this.screen.content.useTool(toolStyle.id) }
       });

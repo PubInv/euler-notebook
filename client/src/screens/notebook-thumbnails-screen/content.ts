@@ -19,7 +19,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 // Requirements
 
-import { $newSvg, $allSvg } from "../../dom";
+import { $newSvg, $allSvg, ElementClass, ElementId } from "../../dom";
 import { NotebookThumbnailsScreen } from ".";
 import { HtmlElement } from "../../html-element";
 import { notImplemented } from "../../shared/common";
@@ -140,7 +140,7 @@ export class Content extends HtmlElement<'div'>{
 
   public constructor(screen: NotebookThumbnailsScreen) {
 
-    super({ tag: 'div', appendTo: screen.$elt, class: 'content' });
+    super({ tag: 'div', appendTo: screen.$elt, class: <ElementClass>'content' });
 
     this.marginPercent = 0.1;
     this.pagesPerRow = 4;
@@ -208,8 +208,8 @@ export class Content extends HtmlElement<'div'>{
         attrs: {
           viewBox: `0 0 ${viewBoxWidth} ${viewBoxHeight}`,
         },
-        class: 'page',
-        id: pageData.id,
+        class: <ElementClass>'page',
+        id: <ElementId>pageData.id,
         listeners: {
           click: e=>this.onPageClicked(e),
           dblclick: e=>this.onPageDoubleClicked(e),

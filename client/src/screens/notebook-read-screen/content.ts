@@ -19,10 +19,10 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 // Requirements
 
-import { $newSvg, $allSvg } from "../../dom";
+import { $newSvg, $allSvg, ElementClass, $outerSvg } from "../../dom";
 import { NotebookReadScreen } from "./index";
 import { HtmlElement } from "../../html-element";
-import { notImplemented } from "../../shared/common";
+import { assert, notImplemented } from "../../shared/common";
 
 // Types
 
@@ -32,102 +32,7 @@ const PIXELS_PER_INCH = 96;
 
 // TEMPORARY page data until our Notebooks are paginated:
 
-export type CellId = string;
-export type PageId = string;
-
-export interface CellData {
-  id: CellId;
-  size: CssSize;
-}
-
-export interface CssSize {
-  height: string; // TYPESCRIPT: CssLength
-  width: string; // TYPESCRIPT: CssLength
-}
-
-interface Document {
-  pageConfig: PageConfig,
-  pages: PageData[];
-}
-
-interface PageConfig {
-  size: CssSize;
-  margins: PageMargins;
-}
-
-interface PageData {
-  id: PageId;
-  cells: CellData[];
-}
-
-interface PageMargins {
-  bottom: string;
-  left: string;
-  right: string;
-  top: string;
-}
-
-const DOCUMENT: Document = {
-  pageConfig: {
-    size: { width: '8.5in', height: '11in' },
-    margins: { top: '1in', bottom: '1in', left: '1in', right: '1in' },
-  },
-  pages: [
-    {
-      id: 'p1',
-      cells: [
-        { id: 'p1c1', size: { width: '6.5in', height: '1in' } },
-        { id: 'p1c2', size: { width: '6.5in', height: '1in' } },
-        { id: 'p1c3', size: { width: '6.5in', height: '1in' } },
-        { id: 'p1c4', size: { width: '6.5in', height: '1in' } },
-        { id: 'p1c5', size: { width: '6.5in', height: '1in' } },
-        { id: 'p1c6', size: { width: '6.5in', height: '1in' } },
-        { id: 'p1c7', size: { width: '6.5in', height: '1in' } },
-        { id: 'p1c8', size: { width: '6.5in', height: '1in' } },
-        { id: 'p1c9', size: { width: '6.5in', height: '1in' } },
-      ],
-    },
-    {
-      id: 'p2',
-      cells: [
-        { id: 'p2c1', size: { width: '6.5in', height: '1in' } },
-        { id: 'p2c2', size: { width: '6.5in', height: '1in' } },
-        { id: 'p2c3', size: { width: '6.5in', height: '1in' } },
-        { id: 'p2c4', size: { width: '6.5in', height: '1in' } },
-        { id: 'p2c5', size: { width: '6.5in', height: '1in' } },
-        { id: 'p2c6', size: { width: '6.5in', height: '1in' } },
-        { id: 'p2c7', size: { width: '6.5in', height: '1in' } },
-        { id: 'p2c8', size: { width: '6.5in', height: '1in' } },
-        { id: 'p2c9', size: { width: '6.5in', height: '1in' } },
-      ],
-    },
-    {
-      id: 'p3',
-      cells: [
-        { id: 'p3c1', size: { width: '6.5in', height: '9in' } },
-      ],
-    },
-    { id: 'p4', cells: [
-      { id: 'p4c1', size: { width: '6.5in', height: '9in' } },
-    ]},
-    { id: 'p5', cells: [
-      { id: 'p5c1', size: { width: '6.5in', height: '9in' } },
-    ]},
-    { id: 'p6', cells: [
-      { id: 'p6c1', size: { width: '6.5in', height: '9in' } },
-    ]},
-    { id: 'p7', cells: [
-      { id: 'p7c1', size: { width: '6.5in', height: '9in' } },
-    ]},
-    { id: 'p8', cells: [
-      { id: 'p8c1', size: { width: '6.5in', height: '9in' } },
-    ]},
-    { id: 'p9', cells: [
-      { id: 'p9c1', size: { width: '6.5in', height: '9in' } },
-    ]},
-  ],
-};
-
+//
 // Global Variables
 
 // Class
@@ -140,8 +45,9 @@ export class Content extends HtmlElement<'div'>{
 
   public constructor(screen: NotebookReadScreen) {
 
-    super({ tag: 'div', appendTo: screen.$elt, class: 'content' });
+    super({ tag: 'div', appendTo: screen.$elt, class: <ElementClass>'content' });
 
+    this.screen = screen;
     this.marginPercent = 0.025;
     this.pagesPerRow = 1;
 
@@ -149,8 +55,11 @@ export class Content extends HtmlElement<'div'>{
     this.resize();
   }
 
+  // Public Instance Properties
 
-  // Instance Methods
+  // Public Instance Property Functions
+
+  // Public Instance Methods
 
   public resize(): void {
 
@@ -160,19 +69,20 @@ export class Content extends HtmlElement<'div'>{
     const viewWidth = this.$elt.getBoundingClientRect().width;
 
     // Calculate the size of the page thumbnails
-    const pageAspectRatio = parseInt(DOCUMENT.pageConfig.size.width) / parseInt(DOCUMENT.pageConfig.size.height);
+    const notebook = this.screen.notebook;
+    const pageAspectRatio = parseInt(notebook.pageConfig.size.width) / parseInt(notebook.pageConfig.size.height);
     let pageWidth = viewWidth / (this.pagesPerRow + (this.pagesPerRow+1)*this.marginPercent);
     const pageHeight = Math.round(pageWidth / pageAspectRatio);
     const pageMargin = Math.round(pageWidth * this.marginPercent);
     pageWidth = Math.round(pageWidth);
 
-    // LATER: Update the stylesheet instead of each of the pages.
-    // const stylesheet: CSSStyleSheet = <CSSStyleSheet>Array.from(document.styleSheets).find(s=>s.href && s.href.endsWith('drawing.css'));
-    // const stylesheetRules: CSSStyleRule[] = <CSSStyleRule[]>Array.from(stylesheet.cssRules);
-    // const pageRule = stylesheetRules.find(r=>r.selectorText == '.page')!;
-    // pageRule.style.width = `${pageWidth}px`;
-    // pageRule.style.height = `${pageHeight}px`;
-    // pageRule.style.margin = `${pageMargin}px 0 0 ${pageMargin}px`;
+    // REVIEW: Update the stylesheet instead of each of the pages?
+    //         const stylesheet: CSSStyleSheet = <CSSStyleSheet>Array.from(document.styleSheets).find(s=>s.href && s.href.endsWith('drawing.css'));
+    //         const stylesheetRules: CSSStyleRule[] = <CSSStyleRule[]>Array.from(stylesheet.cssRules);
+    //         const pageRule = stylesheetRules.find(r=>r.selectorText == '.page')!;
+    //         pageRule.style.width = `${pageWidth}px`;
+    //         pageRule.style.height = `${pageHeight}px`;
+    //         pageRule.style.margin = `${pageMargin}px 0 0 ${pageMargin}px`;
 
     const $pages: NodeListOf<SVGSVGElement> = $allSvg<'svg'>(this.$elt, '.page');
     for (const $page of $pages) {
@@ -188,44 +98,53 @@ export class Content extends HtmlElement<'div'>{
 
   private marginPercent: number;
   private pagesPerRow: number;
+  private screen: NotebookReadScreen;
 
   // Private Instance Methods
 
   private render(): void {
-    const openNotebook = DOCUMENT;
+    const notebook = this.screen.notebook;
 
-    const pageWidth = parseInt(openNotebook.pageConfig.size.width);
-    const pageHeight = parseInt(openNotebook.pageConfig.size.height);
+    const pageWidth = parseInt(notebook.pageConfig.size.width);
+    const pageHeight = parseInt(notebook.pageConfig.size.height);
     const viewBoxWidth = pageWidth * PIXELS_PER_INCH;
     const viewBoxHeight = pageHeight * PIXELS_PER_INCH;
 
-    const topMargin = openNotebook.pageConfig.margins.top;
-    const leftMargin = openNotebook.pageConfig.margins.left;
-    for (const pageData of openNotebook.pages) {
+    // const topMargin = notebook.pageConfig.margins.top;
+    // const leftMargin = notebook.pageConfig.margins.left;
+
+    for (const page of notebook.pages) {
       const $page = $newSvg({
         tag: 'svg',
         appendTo: this.$elt,
         attrs: {
           viewBox: `0 0 ${viewBoxWidth} ${viewBoxHeight}`,
         },
-        class: 'page',
-        id: pageData.id,
+        class: <ElementClass>'page',
         listeners: {
           click: e=>this.onPageClicked(e),
           dblclick: e=>this.onPageDoubleClicked(e),
         },
       });
 
-      let y: number = parseInt(topMargin);
-      for (const cellData of pageData.cells) {
-        // Cell.create(this.$cellView, cellData);
-        $newSvg<'use'>({
-          tag: 'use',
-          // TODO: parse unit from page config.
-          attrs: { href: `#${cellData.id}`, x: leftMargin, y: `${y}in` },
-          appendTo: $page,
-        });
-        y += parseInt(cellData.size.height);
+      // let y: number = parseInt(topMargin);
+      for (const styleId of page.styleIds) {
+
+        const style = this.screen.notebook.getStyle(styleId);
+        const svgRepStyle = this.screen.notebook.findStyle({ role: 'REPRESENTATION', type: 'SVG-MARKUP' }, style.id);
+        if (!svgRepStyle) {
+          console.warn(`Top-level style does not have SVG representation: ${style.id}`);
+          continue;
+        }
+
+        const $cellSvg = $outerSvg(svgRepStyle.data);
+        // TODO: translate SVG by (leftMargin, y);
+        $page.appendChild($cellSvg);
+
+        const svgHeight = $cellSvg.getAttribute('height')!;
+        assert(svgHeight);
+
+        // y += parseInt(svgHeight);
       }
     }
   }
@@ -253,3 +172,64 @@ export class Content extends HtmlElement<'div'>{
   }
 
 }
+
+// const DOCUMENT: Document = {
+//   pageConfig: {
+//     size: { width: '8.5in', height: '11in' },
+//     margins: { top: '1in', bottom: '1in', left: '1in', right: '1in' },
+//   },
+//   pages: [
+//     {
+//       id: 'p1',
+//       cells: [
+//         { id: 'p1c1', size: { width: '6.5in', height: '1in' } },
+//         { id: 'p1c2', size: { width: '6.5in', height: '1in' } },
+//         { id: 'p1c3', size: { width: '6.5in', height: '1in' } },
+//         { id: 'p1c4', size: { width: '6.5in', height: '1in' } },
+//         { id: 'p1c5', size: { width: '6.5in', height: '1in' } },
+//         { id: 'p1c6', size: { width: '6.5in', height: '1in' } },
+//         { id: 'p1c7', size: { width: '6.5in', height: '1in' } },
+//         { id: 'p1c8', size: { width: '6.5in', height: '1in' } },
+//         { id: 'p1c9', size: { width: '6.5in', height: '1in' } },
+//       ],
+//     },
+//     {
+//       id: 'p2',
+//       cells: [
+//         { id: 'p2c1', size: { width: '6.5in', height: '1in' } },
+//         { id: 'p2c2', size: { width: '6.5in', height: '1in' } },
+//         { id: 'p2c3', size: { width: '6.5in', height: '1in' } },
+//         { id: 'p2c4', size: { width: '6.5in', height: '1in' } },
+//         { id: 'p2c5', size: { width: '6.5in', height: '1in' } },
+//         { id: 'p2c6', size: { width: '6.5in', height: '1in' } },
+//         { id: 'p2c7', size: { width: '6.5in', height: '1in' } },
+//         { id: 'p2c8', size: { width: '6.5in', height: '1in' } },
+//         { id: 'p2c9', size: { width: '6.5in', height: '1in' } },
+//       ],
+//     },
+//     {
+//       id: 'p3',
+//       cells: [
+//         { id: 'p3c1', size: { width: '6.5in', height: '9in' } },
+//       ],
+//     },
+//     { id: 'p4', cells: [
+//       { id: 'p4c1', size: { width: '6.5in', height: '9in' } },
+//     ]},
+//     { id: 'p5', cells: [
+//       { id: 'p5c1', size: { width: '6.5in', height: '9in' } },
+//     ]},
+//     { id: 'p6', cells: [
+//       { id: 'p6c1', size: { width: '6.5in', height: '9in' } },
+//     ]},
+//     { id: 'p7', cells: [
+//       { id: 'p7c1', size: { width: '6.5in', height: '9in' } },
+//     ]},
+//     { id: 'p8', cells: [
+//       { id: 'p8c1', size: { width: '6.5in', height: '9in' } },
+//     ]},
+//     { id: 'p9', cells: [
+//       { id: 'p9c1', size: { width: '6.5in', height: '9in' } },
+//     ]},
+//   ],
+// };

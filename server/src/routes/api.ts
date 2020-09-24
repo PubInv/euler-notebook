@@ -25,7 +25,8 @@ const debug = debug1(`server:${MODULE}`);
 
 import { NextFunction, Request, Response, Router } from "express";
 
-import { escapeHtml, StyleId, StyleObject, WolframExpression } from "../shared/notebook";
+import { escapeHtml } from "../shared/common";
+import { StyleId, StyleObject, WolframExpression } from "../shared/notebook";
 import { DebugParams, DebugResults, SymbolTable } from "../shared/math-tablet-api";
 
 import { ServerNotebook } from "../server-notebook";

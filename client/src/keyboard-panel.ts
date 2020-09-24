@@ -20,7 +20,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 // Requirements
 
 import * as debug1 from "debug";
-import { $new } from "./dom";
+import { $new, ElementClass } from "./dom";
 const debug = debug1('client:keyboard-panel');
 
 import { HtmlElement } from "./html-element";
@@ -56,7 +56,7 @@ export class KeyboardPanel extends HtmlElement<'div'> {
 
     super({
       tag: 'div',
-      classes: [ 'editPanel', 'keyboardPanel'],
+      classes: [ <ElementClass>'editPanel', <ElementClass>'keyboardPanel'],
       children: [ $textArea ],
     });
 

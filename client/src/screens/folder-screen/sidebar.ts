@@ -19,7 +19,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 // Requirements
 
-import { $new, svgIconReference } from "../../dom";
+import { $new, ElementClass, svgIconReference } from "../../dom";
 import { FolderScreen } from ".";
 import { ButtonBar } from "../../button-bar";
 
@@ -41,7 +41,7 @@ export class Sidebar extends ButtonBar {
 
     const $newFolderButton = $new({
       tag: 'button',
-      class: 'iconButton',
+      class: <ElementClass>'iconButton',
       html: svgIconReference('iconMonstrFolder5'),
       asyncListeners: {
         click: (e: MouseEvent)=>this.onNewFolderClicked(e)
@@ -51,7 +51,7 @@ export class Sidebar extends ButtonBar {
 
     const $newNotebookButton = $new({
       tag: 'button',
-      class: 'iconButton',
+      class: <ElementClass>'iconButton',
       html: svgIconReference('iconMonstrFile15'),
       asyncListeners: {
         click: (e: MouseEvent)=>this.onNewNotebookClicked(e)
@@ -62,7 +62,7 @@ export class Sidebar extends ButtonBar {
     super({
       tag: 'div',
       appendTo: screen.$elt,
-      class: 'sidebar',
+      class: <ElementClass>'sidebar',
       children: [ $newFolderButton, $newNotebookButton ],
     });
 

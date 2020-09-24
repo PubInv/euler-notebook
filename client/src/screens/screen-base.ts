@@ -20,7 +20,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 // Requirements
 
 import { Html } from "../shared/common";
-import { $new, HtmlElementSpecification } from "../dom";
+import { $new, ElementClass, HtmlElementSpecification } from "../dom";
 import { HtmlElement } from "../html-element";
 
 // Requirements
@@ -52,7 +52,7 @@ export abstract class ScreenBase extends HtmlElement<'div'>{
     // LATER: Give user helpful instructions, e.g. "refresh the page, go to the parent folder, or go to the home folder."
     $new({
       tag: 'div',
-      class: 'error',
+      class: <ElementClass>'error',
       html,
       replaceInner: this.$elt,
     });

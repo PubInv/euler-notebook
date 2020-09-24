@@ -22,9 +22,11 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 // Types
 
 export type CssClass = '{CssClass}';
+export type CssLength = '{CssLength}';
 export type Html = '{Html}';
 export type Milliseconds = number;  // Time interval in milliseconds.
 export type PlainText = '{PlainText}';
+type StackTrace = '{StackTrace}';
 export type SvgMarkup = '{SvgMarkup}';
 export type Timestamp = number;     // Number of milliseconds since Jan 1, 1970 as returned by Date.now().
 
@@ -48,8 +50,23 @@ export function assertFalse( message?: string): never {
   throw new Error(message || ASSERTION_FAILED_MSG);
 }
 
+export function deepCopy<T>(data: T): T {
+  return JSON.parse(JSON.stringify(data));
+}
+
 export function errorMessageForUser(err: Error): Html {
-  return <Html>(err instanceof ExpectedError ? err.message : "An unexpected error occurred.");
+  return <Html>(err instanceof ExpectedError ? escapeHtml(err.message) : "An unexpected error occurred.");
+}
+
+export function escapeHtml(str: string): Html {
+  // REVIEW: This function also exists in dom.ts, but that only works in the browser.
+  // From http://jehiah.cz/a/guide-to-escape-sequences. Note that has a bug in that it only replaces the first occurrence.
+  // REVIEW: Is this sufficient?
+  return <Html>str.replace(/&/g, "&amp;")
+            .replace(/"/g, "&quot;")
+            .replace(/'/g, "&#39;")
+            .replace(/>/g, "&gt;")
+            .replace(/</g, "&lt;");
 }
 
 export function newPromiseResolver<T>(): { promise: Promise<T>, resolver: PromiseResolver<T> } {
@@ -67,10 +84,10 @@ export function sleep(ms: Milliseconds): Promise<void> {
   return new Promise<void>(resolve=>setTimeout(resolve, ms));
 }
 
-export function stackTrace(): string {
-  let rval: string;
+export function stackTrace(): StackTrace {
+  let rval: StackTrace;
   try { throw new Error('StackTrace'); }
-  catch(err) { rval = err.stack; }
+  catch(err) { rval = <StackTrace>err.stack; }
   return rval;
 }
 

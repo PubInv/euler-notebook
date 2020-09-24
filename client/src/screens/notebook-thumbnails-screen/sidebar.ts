@@ -19,7 +19,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 // Requirements
 
-import { svgIconReference } from "../../dom";
+import { ElementClass, svgIconReference } from "../../dom";
 import { ButtonBar } from "../../button-bar";
 import { NotebookThumbnailsScreen } from "./index";
 
@@ -41,11 +41,11 @@ export class Sidebar extends ButtonBar {
     super({
       tag: 'div',
       appendTo: screen.$elt,
-      class: 'sidebar',
+      class: <ElementClass>'sidebar',
       children: [{
         // thumbnail view
         tag: 'button',
-        class: 'iconButton',
+        class: <ElementClass>'iconButton',
         html: svgIconReference('iconMonstrFile12'),
         // listeners: { click: (_e: MouseEvent)=>{ window.location.href = `/#${screen.notebook.path}`; }},
         title: "Thumbnail view",
@@ -53,19 +53,19 @@ export class Sidebar extends ButtonBar {
       },{
         // reading view
         tag: 'button',
-        class: 'iconButton',
+        class: <ElementClass>'iconButton',
         html: svgIconReference('iconMonstrFile5'),
         listeners: { click: (_e: MouseEvent)=>{ window.location.href = `/#${screen.notebook.path}?view=read`; }},
         title: "Reading view",
       },{
         // edit view
         tag: 'button',
-        class: 'iconButton',
+        class: <ElementClass>'iconButton',
         html: svgIconReference('iconMonstrNote23'),
         listeners: { click: (_e: MouseEvent)=>{ window.location.href = `/#${screen.notebook.path}?view=edit`; }},
         title: "Editing view",
       }, {
-        tag: 'div', class: 'separator'
+        tag: 'div', class: <ElementClass>'separator'
       }]
      });
   }

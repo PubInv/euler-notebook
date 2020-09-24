@@ -21,20 +21,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 // Types
 
-type StackTrace = string;
-
 // Constants
-
 
 // Exported Functions
 
-export function deepCopy<T>(data: T): T {
-  return JSON.parse(JSON.stringify(data));
-}
-
-export function stackTrace(): StackTrace {
-  let rval: string;
-  try { throw new Error('StackTrace'); }
-  catch(err) { rval = err.stack; }
-  return rval;
-}

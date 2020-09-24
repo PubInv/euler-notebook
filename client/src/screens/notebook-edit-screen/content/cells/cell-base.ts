@@ -25,7 +25,7 @@ import { Content } from "..";
 import { StyleObject, StyleId, NotebookChange } from "../../../../shared/notebook";
 import { Tools } from "../../tools";
 import { HtmlElement } from "../../../../html-element";
-import { HtmlElementOrSpecification } from "../../../../dom";
+import { ElementClass, ElementId, HtmlElementOrSpecification } from "../../../../dom";
 
 // Exported Class
 
@@ -105,15 +105,15 @@ export abstract class CellBase extends HtmlElement<'div'>{
   protected constructor(
     content: Content,
     style: StyleObject,
-    subclass: /* TYPESCRIPT: CssClass */string,
+    subclass: ElementClass,
     children: HtmlElementOrSpecification[],
   ) {
 
     super({
       tag: 'div',
       attrs: { tabindex: 0 },
-      classes: [ 'cell', subclass ],
-      id: `C${style.id}`,
+      classes: [ <ElementClass>'cell', subclass ],
+      id: <ElementId>`C${style.id}`,
       children,
       listeners: {
         'click': e=>this.onClicked(e),

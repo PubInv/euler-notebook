@@ -20,42 +20,15 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 // Requirements
 
-import { Html, assert } from "./common";
+import { CssLength, Html, assert, deepCopy, escapeHtml, ExpectedError } from "./common";
 import { WatchedResource, Watcher } from "./watched-resource";
 import { NOTEBOOK_NAME_RE, NotebookName, NotebookPath } from "./folder";
 
 // Types
 
-type CssLength = string; // TODO: Duplicated in stroke.ts
-
 export interface CssSize {
   height: CssLength;
   width: CssLength;
-}
-
-export interface StrokeData {
-  size: CssSize;
-  strokeGroups: StrokeGroup[];
-}
-
-export interface NotebookWatcher extends Watcher {
-  onChange(change: NotebookChange): void;
-}
-
-export interface Stroke {
-  // id?: string;
-  // p?: number[];
-  // pointerId?: number;
-  // pointerType?: 'PEN'|'TOUCH'|'ERASER';
-  // t?: number[];
-  x: number[];
-  y: number[];
-}
-
-export interface StrokeGroup {
-  // penStyle?: string;
-  // penStyleClasses?: string;
-  strokes: Stroke[];
 }
 
 export interface FindRelationshipOptions {
@@ -148,10 +121,31 @@ export interface StyleMoved {
 
 export interface NotebookObject {
   nextId: StyleId;
+  pageConfig: PageConfig;
+  pages: Page[];
   relationshipMap: RelationshipMap;
   styleMap: StyleMap;
-  styleOrder: StyleId[];
   version: string;
+}
+
+export interface NotebookWatcher extends Watcher {
+  onChange(change: NotebookChange): void;
+}
+
+interface Page {
+  styleIds: StyleId[];
+}
+
+interface PageConfig {
+  size: CssSize;
+  margins: PageMargins;
+}
+
+interface PageMargins {
+  bottom: CssLength;
+  left: CssLength;
+  right: CssLength;
+  top: CssLength;
 }
 
 export type RelationshipId = number;
@@ -205,6 +199,28 @@ export type RelationshipStyleRole =
   'OUTPUT-FORMULA' |
   'TRANSFORMATION-TOOL' |
   'TRANSFORMATION-HINT';
+
+export interface Stroke {
+  // id?: string;
+  // p?: number[];
+  // pointerId?: number;
+  // pointerType?: 'PEN'|'TOUCH'|'ERASER';
+  // t?: number[];
+  x: number[];
+  y: number[];
+}
+
+export interface StrokeData {
+  size: CssSize;
+  strokeGroups: StrokeGroup[];
+}
+
+export interface StrokeGroup {
+  // penStyle?: string;
+  // penStyleClasses?: string;
+  strokes: Stroke[];
+}
+
 
 export type StyleId = number;
 
@@ -349,9 +365,19 @@ export type MTLExpression = '{MTLExpression}';
 
 // Constants
 
+const DEFAULT_PAGE_CONFIG: PageConfig = {
+  size: { width: <CssLength>'8.5in', height: <CssLength>'8.5in' },
+  margins: {
+    top: <CssLength>'1in',
+    right: <CssLength>'1in',
+    bottom: <CssLength>'1in',
+    left: <CssLength>'1in'
+  }
+}
+
 const RIGHT_ARROW_ENTITY = '&#x27A1;';
 
-export const VERSION = "0.0.15";
+export const VERSION = "0.0.16";
 
 // Exported Class
 
@@ -370,13 +396,15 @@ export abstract class Notebook<W extends NotebookWatcher> extends WatchedResourc
     // LATER: More thorough validation of the object.
     if (!obj.nextId) { throw new Error("Invalid notebook object JSON."); }
     if (obj.version != VERSION) {
-      throw new Error(`Invalid notebook version ${obj.version}. Expect version ${VERSION}`);
+      throw new ExpectedError(`Invalid notebook version ${obj.version}. Expect version ${VERSION}`);
     }
   }
 
   // Public Instance Properties
 
-  public nextId: StyleId; // TODO: Move nextId to server-notebook because it is not needed on the client.
+  public nextId: StyleId;
+  public pageConfig: PageConfig;
+  public pages: Page[];
 
   // Public Instance Property Functions
 
@@ -406,18 +434,18 @@ export abstract class Notebook<W extends NotebookWatcher> extends WatchedResourc
     // Returns a negative number if style1 is before style2,
     // zero if they are the same styles,
     // or a positive number if style1 is after style2.
-    const p1 = this.styleOrder.indexOf(id1);
-    const p2 = this.styleOrder.indexOf(id2);
+    const p1 = this.pages[0].styleIds.indexOf(id1);
+    const p2 = this.pages[0].styleIds.indexOf(id2);
     assert(p1>=0 && p2>=0);
     return p1 - p2;
   }
 
   public followingStyleId(id: StyleId): StyleId {
     // Returns the id of the style immediately after the top-level style specified.
-    const i = this.styleOrder.indexOf(id);
+    const i = this.pages[0].styleIds.indexOf(id);
     assert(i>=0);
-    if (i+1>=this.styleOrder.length) { return 0; }
-    return this.styleOrder[i+1];
+    if (i+1>=this.pages[0].styleIds.length) { return 0; }
+    return this.pages[0].styleIds[i+1];
   }
 
   public getRelationship(id: RelationshipId): RelationshipObject {
@@ -438,7 +466,7 @@ export abstract class Notebook<W extends NotebookWatcher> extends WatchedResourc
 
   public isEmpty(): boolean {
     // Returns true iff the notebook does not have any contents.
-    return this.styleOrder.length == 0;
+    return this.pages[0].styleIds.length == 0;
   }
 
   public isTopLevelStyle(id: StyleId): boolean {
@@ -447,10 +475,10 @@ export abstract class Notebook<W extends NotebookWatcher> extends WatchedResourc
 
   public precedingStyleId(id: StyleId): StyleId {
     // Returns the id of the style immediately before the top-level style specified.
-    const i = this.styleOrder.indexOf(id);
+    const i = this.pages[0].styleIds.indexOf(id);
     assert(i>=0);
     if (i<1) { return 0; }
-    return this.styleOrder[i-1];
+    return this.pages[0].styleIds[i-1];
   }
 
   public relationshipsOf(id: StyleId): RelationshipObject[] {
@@ -470,14 +498,13 @@ export abstract class Notebook<W extends NotebookWatcher> extends WatchedResourc
   }
 
   public topLevelStyleOrder(): StyleId[] {
-    // Returns all thoughts in notebook order
-    // REVIEW: Return an iterator?
-    return this.styleOrder;
+    // REVIEW: Return IterableIterator<StyleId>?
+    return this.pages.reduce((acc: StyleId[], page: Page)=>acc.concat(page.styleIds), []);
   }
 
   public topLevelStyles(): StyleObject[] {
     // REVIEW: Return an iterator?
-    return this.styleOrder.map(styleId=>this.getStyle(styleId));
+    return this.pages[0].styleIds.map(styleId=>this.getStyle(styleId));
   }
 
   public topLevelStyleOf(id: StyleId): StyleObject {
@@ -495,7 +522,7 @@ export abstract class Notebook<W extends NotebookWatcher> extends WatchedResourc
     // getThoughtIndex(A) < getThoughtIndex(B) implies A may not
     // in anyway depend on B.
     const top = this.topLevelStyleOf(id);
-    return this.styleOrder.indexOf(top.id);
+    return this.pages[0].styleIds.indexOf(top.id);
   }
 
   public toText(): string {
@@ -633,16 +660,16 @@ export abstract class Notebook<W extends NotebookWatcher> extends WatchedResourc
   protected constructor(path: NotebookPath) {
     super(path);
     this.nextId = 1;
+    this.pages = [{ styleIds: []}];
     this.relationshipMap = {};
+    this.pageConfig = deepCopy(DEFAULT_PAGE_CONFIG),
     this.styleMap = {};
-    this.styleOrder = [];
   }
 
   // Private Instance Properties
 
   protected relationshipMap: RelationshipMap;
   protected styleMap: StyleMap;     // Mapping from style ids to style objects.
-  protected styleOrder: StyleId[];  // List of style ids in the top-down order they appear in the notebook.
 
   // Private Instance Property Functions
 
@@ -736,9 +763,9 @@ export abstract class Notebook<W extends NotebookWatcher> extends WatchedResourc
   private deleteStyle(style: StyleObject): void {
     // If this is a top-level style then remove it from the top-level style order first.
     if (!style.parentId) {
-      const i = this.styleOrder.indexOf(style.id);
+      const i = this.pages[0].styleIds.indexOf(style.id);
       if (i<0) { throw new Error(`Deleting unknown top-level style ${style.id}`); }
-      this.styleOrder.splice(i,1);
+      this.pages[0].styleIds.splice(i,1);
     }
     if (!this.styleMap[style.id]) { throw new Error(`Deleting unknown style ${style.id}`); }
     delete this.styleMap[style.id];
@@ -746,9 +773,10 @@ export abstract class Notebook<W extends NotebookWatcher> extends WatchedResourc
 
   protected initializeFromObject(obj: NotebookObject): void {
     this.nextId = obj.nextId;
+    this.pageConfig = obj.pageConfig;
+    this.pages = obj.pages;
     this.relationshipMap = obj.relationshipMap;
     this.styleMap = obj.styleMap;
-    this.styleOrder = obj.styleOrder;
   }
 
   private insertRelationship(relationship: RelationshipObject): void {
@@ -761,13 +789,13 @@ export abstract class Notebook<W extends NotebookWatcher> extends WatchedResourc
     // Insert top-level styles in the style order.
     if (!style.parentId) {
       if (!afterId || afterId===StylePosition.Top) {
-        this.styleOrder.unshift(style.id);
+        this.pages[0].styleIds.unshift(style.id);
       } else if (afterId===StylePosition.Bottom) {
-        this.styleOrder.push(style.id);
+        this.pages[0].styleIds.push(style.id);
       } else {
-        const i = this.styleOrder.indexOf(afterId);
+        const i = this.pages[0].styleIds.indexOf(afterId);
         if (i<0) { throw new Error(`Cannot insert thought after unknown thought ${afterId}`); }
-        this.styleOrder.splice(i+1, 0, style.id);
+        this.pages[0].styleIds.splice(i+1, 0, style.id);
       }
     }
   }
@@ -777,8 +805,8 @@ export abstract class Notebook<W extends NotebookWatcher> extends WatchedResourc
     // of a top level style. However, only a move a top-level thought
     // actually should be affected here.
     if (this.isTopLevelStyle(change.styleId)) {
-      this.styleOrder.splice(change.oldPosition, 1);
-      this.styleOrder.splice(change.newPosition, 0, change.styleId);
+      this.pages[0].styleIds.splice(change.oldPosition, 1);
+      this.pages[0].styleIds.splice(change.newPosition, 0, change.styleId);
     }
   }
 }
@@ -786,17 +814,6 @@ export abstract class Notebook<W extends NotebookWatcher> extends WatchedResourc
 // Helper Classes
 
 // Helper Functions
-
-export function escapeHtml(str: string): Html {
-  // REVIEW: This function also exists in dom.ts, but that only works in the browser.
-  // From http://jehiah.cz/a/guide-to-escape-sequences. Note that has a bug in that it only replaces the first occurrence.
-  // REVIEW: Is this sufficient?
-  return <Html>str.replace(/&/g, "&amp;")
-            .replace(/"/g, "&quot;")
-            .replace(/'/g, "&#39;")
-            .replace(/>/g, "&gt;")
-            .replace(/</g, "&lt;");
-}
 
 function indentation(indentationLevel: number): string { return ' '.repeat(indentationLevel*2); }
 
