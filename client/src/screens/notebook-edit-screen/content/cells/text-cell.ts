@@ -130,7 +130,7 @@ export class TextCell extends CellBase {
     if (svgRepStyle) {
       $svg = $outerSvg<'svg'>(svgRepStyle.data);
     } else {
-      $svg = $newSvg<'svg'>({ tag: 'svg', class: <ElementClass>'displayPanel', attrs: { height: '1in', width: '6.5in' }});
+      $svg = $newSvg<'svg'>({ tag: 'svg', class: <ElementClass>'displayPanel', attrs: { height: '72pt' /* 1in */, width: '468pt' /* 6.5in */ }});
     }
     return $svg;
   }

@@ -19,7 +19,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 // Requirements
 
-import { assert, Html, SvgMarkup } from "./shared/common";
+import { assert, CssLength, CssLengthUnits, Html, SvgMarkup } from "./shared/common";
 import { SyncListener, addSyncEventListener, addAsyncEventListener, AsyncListener } from "./error-handler";
 
 // Types
@@ -228,6 +228,12 @@ export function $svg<K extends keyof SVGElementTagNameMap>(root: Element|Documen
 //   $div.appendChild(document.createTextNode(str));
 //   return <Html>$div.innerHTML;
 // }
+
+export function cssLength(length: CssLength, units: CssLengthUnits): number {
+  console.log(`${length} ends with ${units}???`)
+  assert(length.endsWith(units)); // LATER: Allow unit conversions.
+  return parseFloat(length);
+}
 
 export function svgIconReference(id: string): Html {
   return <Html>`<svg class="icon"><use xlink:href="#${id}"/></svg>`

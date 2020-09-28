@@ -366,12 +366,12 @@ export type MTLExpression = '{MTLExpression}';
 // Constants
 
 const DEFAULT_PAGE_CONFIG: PageConfig = {
-  size: { width: <CssLength>'8.5in', height: <CssLength>'8.5in' },
+  size: { width: <CssLength>'8.5in', height: <CssLength>'11in' },
   margins: {
-    top: <CssLength>'1in',
-    right: <CssLength>'1in',
-    bottom: <CssLength>'1in',
-    left: <CssLength>'1in'
+    top: <CssLength>'72pt', /* 72pt = 1 in */
+    right: <CssLength>'72pt',
+    bottom: <CssLength>'72pt',
+    left: <CssLength>'72pt',
   }
 }
 

@@ -19,10 +19,10 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 // Requirements
 
-import { $newSvg, $allSvg, ElementClass, $outerSvg } from "../../dom";
+import { $newSvg, $allSvg, ElementClass, $outerSvg, cssLength } from "../../dom";
 import { Mode, NotebookReadScreen } from "./index";
 import { HtmlElement } from "../../html-element";
-import { assert, notImplemented } from "../../shared/common";
+import { assert, CssLength, notImplemented } from "../../shared/common";
 
 // Types
 
@@ -116,8 +116,8 @@ export class Content extends HtmlElement<'div'>{
     const viewBoxWidth = pageWidth * PIXELS_PER_INCH;
     const viewBoxHeight = pageHeight * PIXELS_PER_INCH;
 
-    // const topMargin = notebook.pageConfig.margins.top;
-    // const leftMargin = notebook.pageConfig.margins.left;
+    const topMargin = notebook.pageConfig.margins.top;
+    const leftMargin = notebook.pageConfig.margins.left;
 
     for (const page of notebook.pages) {
       const $page = $newSvg({
@@ -133,7 +133,8 @@ export class Content extends HtmlElement<'div'>{
         },
       });
 
-      // let y: number = parseInt(topMargin);
+      let x: number = cssLength(leftMargin, 'pt');
+      let y: number = cssLength(topMargin, 'pt');
       for (const styleId of page.styleIds) {
 
         const style = this.screen.notebook.getStyle(styleId);
@@ -144,13 +145,15 @@ export class Content extends HtmlElement<'div'>{
         }
 
         const $cellSvg = $outerSvg(svgRepStyle.data);
+        $cellSvg.setAttribute('x', `${x}pt`);
+        $cellSvg.setAttribute('y', `${y}pt`);
         // TODO: translate SVG by (leftMargin, y);
         $page.appendChild($cellSvg);
 
-        const svgHeight = $cellSvg.getAttribute('height')!;
-        assert(svgHeight);
+        // LATER: MathJax sets the height of equations SVGs in "ex" units.
+        const svgHeight = /* LATER: <CssLength|null>$cellSvg.getAttribute('height') || */ <CssLength>'72pt';
 
-        // y += parseInt(svgHeight);
+        y += cssLength(svgHeight, 'pt');
       }
     }
   }
@@ -178,64 +181,3 @@ export class Content extends HtmlElement<'div'>{
   }
 
 }
-
-// const DOCUMENT: Document = {
-//   pageConfig: {
-//     size: { width: '8.5in', height: '11in' },
-//     margins: { top: '1in', bottom: '1in', left: '1in', right: '1in' },
-//   },
-//   pages: [
-//     {
-//       id: 'p1',
-//       cells: [
-//         { id: 'p1c1', size: { width: '6.5in', height: '1in' } },
-//         { id: 'p1c2', size: { width: '6.5in', height: '1in' } },
-//         { id: 'p1c3', size: { width: '6.5in', height: '1in' } },
-//         { id: 'p1c4', size: { width: '6.5in', height: '1in' } },
-//         { id: 'p1c5', size: { width: '6.5in', height: '1in' } },
-//         { id: 'p1c6', size: { width: '6.5in', height: '1in' } },
-//         { id: 'p1c7', size: { width: '6.5in', height: '1in' } },
-//         { id: 'p1c8', size: { width: '6.5in', height: '1in' } },
-//         { id: 'p1c9', size: { width: '6.5in', height: '1in' } },
-//       ],
-//     },
-//     {
-//       id: 'p2',
-//       cells: [
-//         { id: 'p2c1', size: { width: '6.5in', height: '1in' } },
-//         { id: 'p2c2', size: { width: '6.5in', height: '1in' } },
-//         { id: 'p2c3', size: { width: '6.5in', height: '1in' } },
-//         { id: 'p2c4', size: { width: '6.5in', height: '1in' } },
-//         { id: 'p2c5', size: { width: '6.5in', height: '1in' } },
-//         { id: 'p2c6', size: { width: '6.5in', height: '1in' } },
-//         { id: 'p2c7', size: { width: '6.5in', height: '1in' } },
-//         { id: 'p2c8', size: { width: '6.5in', height: '1in' } },
-//         { id: 'p2c9', size: { width: '6.5in', height: '1in' } },
-//       ],
-//     },
-//     {
-//       id: 'p3',
-//       cells: [
-//         { id: 'p3c1', size: { width: '6.5in', height: '9in' } },
-//       ],
-//     },
-//     { id: 'p4', cells: [
-//       { id: 'p4c1', size: { width: '6.5in', height: '9in' } },
-//     ]},
-//     { id: 'p5', cells: [
-//       { id: 'p5c1', size: { width: '6.5in', height: '9in' } },
-//     ]},
-//     { id: 'p6', cells: [
-//       { id: 'p6c1', size: { width: '6.5in', height: '9in' } },
-//     ]},
-//     { id: 'p7', cells: [
-//       { id: 'p7c1', size: { width: '6.5in', height: '9in' } },
-//     ]},
-//     { id: 'p8', cells: [
-//       { id: 'p8c1', size: { width: '6.5in', height: '9in' } },
-//     ]},
-//     { id: 'p9', cells: [
-//       { id: 'p9c1', size: { width: '6.5in', height: '9in' } },
-//     ]},
-//   ],
-// };

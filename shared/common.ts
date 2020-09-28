@@ -23,6 +23,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 export type CssClass = '{CssClass}';
 export type CssLength = '{CssLength}';
+export type CssLengthUnits = 'in'|'pt'|'px';
 export type Html = '{Html}';
 export type Milliseconds = number;  // Time interval in milliseconds.
 export type PlainText = '{PlainText}';
