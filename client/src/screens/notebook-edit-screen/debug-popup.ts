@@ -19,7 +19,8 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 // Requirements
 
-import { $, CLOSE_X_ENTITY, ElementClass } from "../../dom";
+import { CssClass } from "../../shared/common";
+import { $, CLOSE_X_ENTITY } from "../../dom";
 import { HtmlElement } from "../../html-element";
 import { NotebookEditScreen } from ".";
 
@@ -41,16 +42,16 @@ export class DebugPopup extends HtmlElement<'div'>{
     super({
       tag: 'div',
       appendTo: screen.$elt,
-      class: <ElementClass>'debugPopup',
+      class: <CssClass>'debugPopup',
       children: [
         {
           tag: 'button',
-          class: <ElementClass>'close',
+          class: <CssClass>'close',
           html: CLOSE_X_ENTITY,
           listeners: { click: e=> this.onCloseClick(e), }
         }, {
           tag: 'div',
-          class: <ElementClass>'content',
+          class: <CssClass>'content',
           listeners: { click: e=>this.onContentClick(e) , }
         }
       ],

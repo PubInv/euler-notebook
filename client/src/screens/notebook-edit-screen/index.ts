@@ -22,7 +22,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 // Requirements
 
-import { Html, escapeHtml } from "../../shared/common";
+import { CssClass, Html, escapeHtml } from "../../shared/common";
 import { NotebookPath } from "../../shared/folder";
 import { NotebookChange, NotebookWatcher } from "../../shared/notebook";
 
@@ -33,7 +33,6 @@ import { Sidebar } from "./sidebar";
 import { Tools } from "./tools";
 import { ClientNotebook, OpenNotebookOptions } from "../../client-notebook";
 import { ScreenBase } from "../screen-base";
-import { ElementClass } from "../../dom";
 
 // Types
 
@@ -50,7 +49,7 @@ export class NotebookEditScreen extends ScreenBase implements NotebookWatcher {
   public constructor($parent: HTMLElement, path: NotebookPath) {
     super({
       appendTo: $parent,
-      classes: [<ElementClass>'screen', <ElementClass>'notebookEditScreen'],
+      classes: [<CssClass>'screen', <CssClass>'notebookEditScreen'],
       data: { path },
       tag: 'div',
     });

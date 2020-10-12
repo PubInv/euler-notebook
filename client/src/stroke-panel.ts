@@ -22,10 +22,10 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 import * as debug1 from "debug";
 const debug = debug1('client:stroke-panel');
 
-import { CssLength, SvgMarkup, assert, deepCopy } from "./shared/common";
+import { CssClass, CssLength, SvgMarkup, assert, deepCopy } from "./shared/common";
 import { StrokeData } from "./shared/notebook";
 
-import { $outerSvg, $newSvg, $svg, ElementClass } from "./dom";
+import { $outerSvg, $newSvg, $svg } from "./dom";
 
 import { SvgStroke } from "./svg-stroke";
 import { StylusDrawingPanel } from "./stylus-drawing-panel";
@@ -56,7 +56,7 @@ export class StrokePanel extends HtmlElement<'div'> {
     debug(`Creating instance ${svgMarkup?'with':'without'} SVG markup.`);
 
     // REVIEW: Why do we have to specify height here?
-    const $svgPanel = svgMarkup ? $outerSvg<'svg'>(svgMarkup) : $newSvg<'svg'>({ tag: 'svg', class: <ElementClass>'svgPanel', attrs: { height: strokeData.size.height, width:strokeData.size.width }});
+    const $svgPanel = svgMarkup ? $outerSvg<'svg'>(svgMarkup) : $newSvg<'svg'>({ tag: 'svg', class: <CssClass>'svgPanel', attrs: { height: strokeData.size.height, width:strokeData.size.width }});
 
     const width = <CssLength>$svgPanel.getAttribute('width'); // REVIEW: Get computed value instead?
     const height = <CssLength>$svgPanel.getAttribute('height');
@@ -64,7 +64,7 @@ export class StrokePanel extends HtmlElement<'div'> {
 
     super({
       tag: 'div',
-      classes: [ <ElementClass>'editPanel', <ElementClass>'strokePanel'],
+      classes: [ <CssClass>'editPanel', <CssClass>'strokePanel'],
       children: [
         stylusDrawingPanel.$elt,
         $svgPanel,

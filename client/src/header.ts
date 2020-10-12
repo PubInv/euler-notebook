@@ -25,11 +25,11 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 import * as debug1 from "debug";
 const debug = debug1('client:header');
 
-import { Html, escapeHtml, notImplemented } from "./shared/common";
+import { CssClass, Html, escapeHtml, notImplemented } from "./shared/common";
 import { Path } from "./shared/folder";
 
 import { ButtonBar } from "./button-bar";
-import { $, $new, svgIconReference, ElementClass, ElementId } from "./dom";
+import { $, $new, svgIconReference, ElementId } from "./dom";
 import { monitorPromise } from "./error-handler";
 import { userSettingsInstance, InputMode } from "./user-settings";
 
@@ -76,7 +76,7 @@ export class Header extends ButtonBar {
 
     const $fullscreenButton = $new({
       tag: 'button',
-      class: <ElementClass>'iconButton',
+      class: <CssClass>'iconButton',
       title: "Full screen",
       html: svgIconReference('iconMonstrFullScreen7'),
       disabled: !document.fullscreenEnabled,
@@ -95,7 +95,7 @@ export class Header extends ButtonBar {
           children: [
             {
               tag: 'button',
-              class: <ElementClass>'iconButton',
+              class: <CssClass>'iconButton',
               title: "Math Tablet home",
               html: svgIconReference('iconMonstrHome6'),
               listeners: { click: _e=>{ window.location.href = '/#/'; }},
@@ -121,7 +121,7 @@ export class Header extends ButtonBar {
           children: [
             {
               tag: 'button',
-              class: <ElementClass>'iconButton',
+              class: <CssClass>'iconButton',
               title: "Refresh page",
               html: svgIconReference('iconMonstrRefresh2'),
               listeners: { click: _e=>window.location.reload() },
@@ -129,7 +129,7 @@ export class Header extends ButtonBar {
             $fullscreenButton,
             {
               tag: 'button',
-              class: <ElementClass>'iconButton',
+              class: <CssClass>'iconButton',
               title: "User settings",
               html: svgIconReference('iconMonstrUser1'),
               listeners: { click: _e=>notImplemented() },

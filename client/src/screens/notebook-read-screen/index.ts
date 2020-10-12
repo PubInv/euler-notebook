@@ -19,7 +19,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 // Requirements
 
-import { Html, escapeHtml } from "../../shared/common";
+import { CssClass, Html, escapeHtml } from "../../shared/common";
 import { NotebookChange } from "../../shared/notebook";
 import { NotebookPath } from "../../shared/folder";
 
@@ -29,7 +29,6 @@ import { ScreenBase } from "../screen-base";
 
 import { Content } from "./content";
 import { Sidebar } from "./sidebar";
-import { ElementClass } from "../../dom";
 
 // Types
 
@@ -53,7 +52,7 @@ export class NotebookReadScreen extends ScreenBase {
   public constructor($parent: HTMLElement, path: NotebookPath, mode: Mode) {
     super({
       appendTo: $parent,
-      classes: [<ElementClass>'screen', <ElementClass>'notebookReadScreen'],
+      classes: [<CssClass>'screen', <CssClass>'notebookReadScreen'],
       data: { path },
       tag: 'div',
     });

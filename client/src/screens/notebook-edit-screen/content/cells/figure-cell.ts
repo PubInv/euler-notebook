@@ -19,30 +19,21 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 // Requirements
 
-import { Html, assert, deepCopy, notImplemented, CssLength } from "../../../../shared/common";
-import { StrokeData, StyleId, StyleObject, NotebookChange } from "../../../../shared/notebook";
-import { StyleChangeRequest, StyleMoveRequest } from "../../../../shared/math-tablet-api";
+import * as debug1 from "debug";
+const debug = debug1('client:figure-cell');
 
-import { $configure, $newSvg, $, $svg, CLOSE_X_ENTITY, HtmlElementOrSpecification, ElementClass } from "../../../../dom";
+import { CssClass, CssLength, Html, assert, assertFalse } from "../../../../shared/common";
+import { StrokeData, StyleObject, NotebookChange } from "../../../../shared/notebook";
+import { StyleChangeRequest } from "../../../../shared/math-tablet-api";
 
-import { Content } from "..";
-import { ResizerBar } from "../../../../resizer-bar";
-import { SvgStroke } from "../../../../svg-stroke";
-import { StylusDrawingPanel } from "../../../../stylus-drawing-panel";
+import { $new, $svg } from "../../../../dom";
+import { StrokePanel } from "../../../../stroke-panel";
 
-import { CellBase } from "./cell-base";
-import { $new } from "../../../../dom";
-import { reportError } from "../../../../error-handler";
+import { Content } from "../index";
+
+import { CellBase, isDisplayStyle, isInputStyle, isStrokeSvgStyle } from "./cell-base";
 
 // Types
-
-interface CellDragData {
-  styleId: StyleId;
-}
-
-// Constants
-
-const CELL_MIME_TYPE = 'application/vnd.mathtablet.cell';
 
 // Exported Class
 
@@ -52,199 +43,157 @@ export class FigureCell extends CellBase {
 
   // Public Constructor
 
-  public constructor(view: Content, style: StyleObject) {
+  public constructor(container: Content, rootStyle: StyleObject) {
 
-    const stylusDrawingPanel = new StylusDrawingPanel(<CssLength>"0px", <CssLength>"0px", (stroke)=>this.onStrokeComplete(stroke));
-    const $content = $new({
-      tag: 'div',
-      class: <ElementClass>'content',
-      children: [
-        stylusDrawingPanel.$elt,
-        {
-          tag: 'button',
-          attrs: { tabindex: -1 },
-          class: <ElementClass>'deleteCellButton',
-          html: CLOSE_X_ENTITY,
-          listeners: {
-            click: e=>this.onDeleteCellButtonClicked(e),
-          },
-        },{
-          tag: 'div',
-          attrs: { draggable: true },
-          class: <ElementClass>'dragIcon',
-          html: <Html>"&equiv;",
-          listeners: {
-            dragend: e=>this.onDragEnd(e),
-            dragstart: e=>this.onDragStart(e),
-          },
-          style: "width:16px;height:16px",
-        }
-      ]
-    });
+    const notebook = container.screen.notebook;
+    // const svgRepStyle = notebook.findStyle({ role: 'REPRESENTATION', type: 'SVG-MARKUP' }, rootStyle.id);
 
-    const children: HtmlElementOrSpecification[] = [
-      $content,
-    ];
-    super(view, style, <ElementClass>'figureCell', children);
+    const $editPanel = $new({ tag: 'div', class: <CssClass>'editPanel', html: <Html>"Placeholder" });
 
-    // LATER: These button be on *all* cells, not just ink cells.
-    $configure(this.$elt, {
-      listeners: {
-        dragenter: e=>this.onDragEnter(e),
-        dragover: e=>this.onDragOver(e),
-        drop: e=>this.onDrop(e),
-      }
-    });
+    super(container, rootStyle, $editPanel);
 
-    // Create placeholder SVG panel. Will be replaced in this.render().
-    $newSvg({ tag: 'svg', appendTo: $content, class: <ElementClass>'svgPanel' });
+    this.$editPanel = $editPanel;
 
-    // Create an overlay SVG for accepting drawing input.
-    // TODO: Get dimensions from svgPanel?
-    // TODO: Resize drawing panel if underlying SVG panel changes size.
-    // this.stylusDrawingPanel = stylusDrawingPanel
-
-    /* this.resizerBar = */ ResizerBar.create(this.$elt, (deltaY: number, final: boolean)=>this.onResize(deltaY, final), ()=>this.onInsertCellBelow());
-
-    this.render(style);
+    const inputStyle = notebook.findStyle({ role: 'INPUT' }, rootStyle.id);
+    this.replaceEditPanel(inputStyle);
   }
 
   // Public Instance Methods
 
   // ClientNotebookWatcher Methods
 
-  public onChange(_change: NotebookChange): void {
-    notImplemented();
+  public onChange(change: NotebookChange): void {
+    debug(`onChange: cell ${this.styleId}, type ${change.type}`);
+    // TODO: Changes that affect the prefix panel.
+
+    switch (change.type) {
+      case 'relationshipDeleted':
+      case 'relationshipInserted': {
+        // Ignore. Not something that affects our display.
+        break;
+      }
+      case 'styleInserted':
+      case 'styleChanged': {
+        const changedStyle = change.style;
+        /* if (isDisplayStyle(changedStyle, this.styleId)) {
+          this.updateDisplayPanel(change.type, changedStyle);
+        } else */if (isInputStyle(changedStyle, this.styleId)) {
+          this.updateEditPanelData(change.type, changedStyle);
+        } else if (isStrokeSvgStyle(changedStyle, this.styleId, this.container.screen.notebook)) {
+          this.updateEditPanelDrawing(change.type, changedStyle);
+        } else {
+          // Ignore. Not something that affects our display.
+        }
+        break;
+      }
+      case 'styleConverted': {
+        // Currently the styles that we use to update our display are never converted, so we
+        // do not handle that case.
+        const style = this.container.screen.notebook.getStyle(change.styleId);
+        assert(!isDisplayStyle(style, this.styleId));
+        assert(!isInputStyle(style, this.styleId));
+        assert(!isStrokeSvgStyle(style, this.styleId, this.container.screen.notebook));
+        break;
+      }
+      case 'styleDeleted': {
+        // Currently the styles that we use to update our display are never deleted, so we
+        // do not handle that case.
+        const style = change.style;
+        assert(!isDisplayStyle(style, this.styleId));
+        assert(!isInputStyle(style, this.styleId));
+        assert(!isStrokeSvgStyle(style, this.styleId, this.container.screen.notebook));
+        break;
+      }
+      case 'styleMoved':  assertFalse();
+      default: assertFalse();
+    }
   }
 
-  public onChangesFinished(): void {
-    notImplemented();
-  }
+  public onChangesFinished(): void { /* Nothing to do. */ }
 
   // -- PRIVATE --
 
   // Private Instance Properties
 
-  private _inputStyleCopy?: StyleObject;
+  private $editPanel: HTMLDivElement;
+  private strokePanel?: StrokePanel;
   // private stylusDrawingPanel: StylusDrawingPanel;
 
   // Private Instance Property Functions
 
-  private get inputStyleCopy(): StyleObject|undefined {
-    // REVIEW: What if the input style changes?
-    if (!this._inputStyleCopy) {
-      const style = this.content.screen.notebook.findStyle({ role: 'INPUT', type: 'STROKE-DATA' }, this.styleId);
-      this._inputStyleCopy = style ? deepCopy(style) : undefined;
-    }
-    return this._inputStyleCopy;
-  }
-
   // Private Instance Methods
 
-  private render(style: StyleObject): void {
-    const svgRepStyle = this.content.screen.notebook.findStyle({ role: 'REPRESENTATION', type: 'SVG-MARKUP' }, style.id);
-    if (!svgRepStyle) {
-      // TODO: What to do in this case? Put an error message in the cell?
-      console.warn("No SVG-MARKUP substyle for FIGURE style.");
+  // private render(style: StyleObject): void {
+
+  //   const svgRepStyle = this.container.screen.notebook.findStyle({ role: 'REPRESENTATION', type: 'SVG-MARKUP' }, style.id);
+  //   if (!svgRepStyle) {
+  //     // TODO: What to do in this case? Put an error message in the cell?
+  //     console.warn("No SVG-MARKUP substyle for FIGURE style.");
+  //     return;
+  //   }
+
+  //   const $newSvgPanel = $outerSvg<'svg'>(svgRepStyle.data);
+  //   this.$svgPanel.replaceWith($newSvgPanel);
+  //   this.$svgPanel = $newSvgPanel;
+  // }
+
+  private createStrokeSubpanel(inputStyle: StyleObject): StrokePanel {
+    const svgRepStyle = this.container.screen.notebook.findStyle({ role: 'REPRESENTATION', type: 'SVG-MARKUP' }, inputStyle.id);
+    const strokePanel = new StrokePanel(
+      inputStyle.data,
+      svgRepStyle?.data,
+      async (strokeData: StrokeData)=>{
+        const notebook = this.container.screen.notebook;
+        const changeRequest: StyleChangeRequest = { type: 'changeStyle', styleId: inputStyle.id, data: strokeData };
+        // TODO: We don't want to wait for *all* processing of the strokes to finish, just the svg update.
+        // TODO: Incremental changes.
+        await notebook.sendChangeRequest(changeRequest);
+      },
+    );
+    return strokePanel;
+  }
+
+  private replaceEditPanel(inputStyle: StyleObject|undefined): void {
+    if (!inputStyle) {
+      // No edit panel can be created yet because the root style doesn't have the necessary substyles yet,
       return;
     }
+    this.strokePanel = this.createStrokeSubpanel(inputStyle);
+    const $newEditPanel = this.strokePanel.$elt;
+    this.$editPanel.replaceWith($newEditPanel);
+    this.$editPanel = $newEditPanel;
+  }
 
-    // Replace the existing SVG panel with the new one from the server.
-    const $oldSvgPanel = $(this.$elt, '.svgPanel');
-    $oldSvgPanel.outerHTML = svgRepStyle.data;
+  private updateEditPanelData(changeType: 'styleChanged'|'styleInserted', inputStyle: StyleObject): void {
+    if (changeType == 'styleInserted') {
+      assert(inputStyle.type == 'STROKE-DATA' || inputStyle.type == 'PLAIN-TEXT');
+      assert(!this.strokePanel /* && !this.keyboardPanel */);
+      this.replaceEditPanel(inputStyle);
+    } else {
+      // 'styleChanged'
+      switch(inputStyle.type) {
+        case 'STROKE-DATA':
+          assert(this.strokePanel);
+          this.strokePanel!.updateStrokeData(inputStyle.data);
+          break;
+        // case 'PLAIN-TEXT':
+        //   assert(this.keyboardPanel);
+        //   this.keyboardPanel!.updateText(inputStyle.data);
+        //   break;
+        default: assertFalse();
+      }
+    }
+  }
 
-    // If the SVG panel has changed size, resize the drawing panel overlay to match.
-    /* const $newSvgPanel = */$svg<'svg'>(this.$elt, '.svgPanel');
-    // this.stylusDrawingPanel.matchSizeOfUnderlyingPanel($newSvgPanel);
+  private updateEditPanelDrawing(_changeType: 'styleChanged'|'styleInserted', svgRepStyle: StyleObject): void {
+    assert(this.strokePanel);
+    this.strokePanel!.updateSvgMarkup(svgRepStyle.data);
   }
 
   // Private Instance Event Handlers
 
-  private onDeleteCellButtonClicked(_event: MouseEvent): void {
-    this.content.deleteTopLevelStyle(this.styleId).catch(err=>{
-      // TODO: Better handling of this error.
-      reportError(err, <Html>"Error deleting cell");
-    });
-  }
-
-  // TODO: Remove or comment out all of the drag/drop console messages.
-
-  private onDragEnter(event: DragEvent): void {
-    // console.log("Drag enter");
-
-    // REVIEW: Very odd. If we try to get the data from the data transfer object we get an empty string
-    //         even though the dataTranspfer.types array indicates that the data is there.
-    //         So we can't make any decisions based on the data itself.
-    // const cellDragData = getDragData(event);
-
-    const dropAllowed = hasDragData(event);
-    if (!dropAllowed) {
-      console.warn(`Drag enter: aborting, no ${CELL_MIME_TYPE} data.`);
-      return;
-    }
-
-    // Allow a drop by preventing the default action.
-    event.preventDefault();
-    // REVIEW: Set event.dataTransfer.dropEffect?
-  }
-
-  private onDragOver(event: DragEvent): void {
-    // REVIEW: See review comment in onDragEnter. Getting the drag data from the event.dataTransfer fails.
-    const dropAllowed = hasDragData(event);
-    if (!dropAllowed) {
-      console.warn(`Drag over: aborting, no ${CELL_MIME_TYPE} data.`);
-      return;
-    }
-
-    // Allow a drop by preventing the default action.
-    event.preventDefault();
-  }
-
-  private onDragStart(event: DragEvent): void {
-    // console.log("Drag start");
-    const cellDragData: CellDragData = {
-      styleId: this.styleId,
-    }
-    // TODO: Other data types: LaTeX, SVG, text/plain, text/uri-list etc.
-    setDragData(event, cellDragData);
-    event.dataTransfer!.effectAllowed = 'all';
-  }
-
-  private onDragEnd(_event: DragEvent): void {
-    // console.log(`Drag end: ${event.dataTransfer?.dropEffect}`)
-  }
-
-  private onDrop(event: DragEvent): void {
-    const cellDragData = getDragData(event);
-    if (!cellDragData) { return; }
-    // console.log(`Dropped style ${cellDragData.styleId} onto style ${this.styleId}`);
-
-    const c = this.content.screen.notebook.compareStylePositions(cellDragData.styleId, this.styleId);
-    if (c==0) { /* Dropped onto self */ return; }
-
-    // If dragging down, then put dragged cell below the cell that was dropped on.
-    // If dragging up, then put dragged cell above the cell that was dropped on.
-    const afterId = c<0 ? this.styleId : this.content.screen.notebook.precedingStyleId(this.styleId);
-    const moveRequest: StyleMoveRequest = {
-      type: 'moveStyle',
-      styleId: cellDragData.styleId,
-      afterId,
-    }
-    this.content.editStyle([ moveRequest ])
-    .catch((err: Error)=>{
-      // TODO: What to do here?
-      reportError(err, <Html>"Error moving style for drag/drop");
-    });
-  }
-
-  private onInsertCellBelow(): void {
-    this.content.insertDrawingCellBelow(this.styleId).catch(err=>{
-      // TODO: Better handling of this error.
-      reportError(err, <Html>"Error inserting cell below");
-    });
-  }
-
-  private onResize(deltaY: number, final: boolean): void {
+  protected onResize(deltaY: number, final: boolean): void {
+    debug(`onResize: ${deltaY} ${final}`);
     const $svgPanel = $svg<'svg'>(this.$elt, '.svgPanel');
     const currentHeight = parseInt($svgPanel.getAttribute('height')!.slice(0, -2), 10);
     // TODO: resizer bar should enforce minimum.
@@ -253,53 +202,37 @@ export class FigureCell extends CellBase {
     const newHeightStr = <CssLength>`${newHeight}px`;
     $svgPanel.setAttribute('height', newHeightStr);
 
-    if (final) {
-      // TODO: Incremental change request?
-      const inputStyle = this.inputStyleCopy!;
-      assert(inputStyle);
-      const data = <StrokeData>inputStyle.data;
-      data.size.height = newHeightStr;
-      // REVIEW: what if size is unchanged?
-      const changeRequest: StyleChangeRequest = { type: 'changeStyle', styleId: inputStyle.id, data };
-      this.content.editStyle([ changeRequest ])
-      .catch((err: Error)=>{
-        // TODO: What to do here?
-        reportError(err, <Html>"Error submitting resize");
-      });
-    }
+    // if (final) {
+    //   // TODO: Incremental change request?
+    //   const inputStyle = this.inputStyleCopy!;
+    //   assert(inputStyle);
+    //   const data = <StrokeData>inputStyle.data;
+    //   data.size.height = newHeightStr;
+    //   // REVIEW: what if size is unchanged?
+    //   const changeRequest: StyleChangeRequest = { type: 'changeStyle', styleId: inputStyle.id, data };
+    //   this.container.editStyle([ changeRequest ])
+    //   .catch((err: Error)=>{
+    //     // TODO: What to do here?
+    //     reportError(err, <Html>"Error submitting resize");
+    //   });
+    // }
+
   }
 
-  private onStrokeComplete(stroke: SvgStroke): Promise<void> {
-    // TODO: What if socket to server is closed? We'll just accumulate strokes that will never get saved.
-    //       How do we handle offline operation?
-    // TODO: Incremental change request.
-    const inputStyle = this.inputStyleCopy!;
-    assert(inputStyle);
-    const data = <StrokeData>inputStyle.data;
-    data.strokeGroups[0].strokes.push(stroke.data);
-    const changeRequest: StyleChangeRequest = { type: 'changeStyle', styleId: inputStyle.id, data };
-    return this.content.editStyle([ changeRequest ]);
-  }
+  // private async onStroke(strokeData: StrokeData): Promise<void> {
+  // }
+
+  // private onStrokeComplete(stroke: SvgStroke): Promise<void> {
+  //   // TODO: What if socket to server is closed? We'll just accumulate strokes that will never get saved.
+  //   //       How do we handle offline operation?
+  //   // TODO: Incremental change request.
+  //   const inputStyle = this.inputStyleCopy!;
+  //   assert(inputStyle);
+  //   const data = <StrokeData>inputStyle.data;
+  //   data.strokeGroups[0].strokes.push(stroke.data);
+  //   const changeRequest: StyleChangeRequest = { type: 'changeStyle', styleId: inputStyle.id, data };
+  //   return this.container.editStyle([ changeRequest ]);
+  // }
 }
 
 
-// HELPER FUNCTIONS
-
-function getDragData(event: DragEvent): CellDragData|undefined {
-  assert(event.dataTransfer);
-  const json = event.dataTransfer!.getData(CELL_MIME_TYPE);
-  if (!json) { return undefined; }
-  const cellDragData = <CellDragData>JSON.parse(json);
-  return cellDragData;
-}
-
-function hasDragData(event: DragEvent): boolean {
-  return event.dataTransfer!.types.includes(CELL_MIME_TYPE);
-}
-
-function setDragData(event: DragEvent, cellDragData: CellDragData): void {
-  assert(event.dataTransfer);
-  const json = JSON.stringify(cellDragData);
-  event.dataTransfer!.setData(CELL_MIME_TYPE, json);
-  // TODO: Other data types: LaTeX, SVG, text/plain, text/uri-list etc.
-}

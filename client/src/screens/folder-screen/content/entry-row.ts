@@ -19,11 +19,11 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 // Requirements
 
-import { escapeHtml } from "../../../shared/common"
+import { CssClass, escapeHtml } from "../../../shared/common"
 import { Folder, FolderEntry, FolderName, NotebookEntry, NotebookName } from "../../../shared/folder";
 import { Notebook } from "../../../shared/notebook";
 
-import { svgIconReference, CLOSE_X_ENTITY, PENCIL_ENTITY, CHECKMARK_ENTITY, $new, DOTTED_CIRCLE_ENTITY, ElementClass } from "../../../dom";
+import { svgIconReference, CLOSE_X_ENTITY, PENCIL_ENTITY, CHECKMARK_ENTITY, $new, DOTTED_CIRCLE_ENTITY } from "../../../dom";
 import { ClientFolder } from "../../../client-folder";
 import { HtmlElement } from "../../../html-element";
 
@@ -63,11 +63,11 @@ export class EntryRow<K extends keyof EntryTypeMap> extends HtmlElement<'tr'> {
       },
     });
 
-    const $nameError = $new({ tag: 'div', class: <ElementClass>'error' });
+    const $nameError = $new({ tag: 'div', class: <CssClass>'error' });
 
     const $pencilButton = $new({
       tag: 'button',
-      class: <ElementClass>'iconButton',
+      class: <CssClass>'iconButton',
       html: PENCIL_ENTITY,
       listeners: {
         click: (e: MouseEvent)=>this.onPencilButtonClicked(e),
@@ -76,7 +76,7 @@ export class EntryRow<K extends keyof EntryTypeMap> extends HtmlElement<'tr'> {
 
     const $checkmarkButton = $new({
       tag: 'button',
-      class: <ElementClass>'iconButton',
+      class: <CssClass>'iconButton',
       style: 'display:none',
       html: CHECKMARK_ENTITY,
       asyncListeners: {
@@ -86,7 +86,7 @@ export class EntryRow<K extends keyof EntryTypeMap> extends HtmlElement<'tr'> {
 
     const $xButton = $new({
       tag: 'button',
-      class: <ElementClass>'iconButton',
+      class: <CssClass>'iconButton',
       html: CLOSE_X_ENTITY,
       asyncListeners: {
         click: (e: MouseEvent)=>this.onRemoveButtonClicked(e),
@@ -95,7 +95,7 @@ export class EntryRow<K extends keyof EntryTypeMap> extends HtmlElement<'tr'> {
 
     super({
       tag: 'tr',
-      class: <ElementClass>'folderListing',
+      class: <CssClass>'folderListing',
       appendTo: $parentElt,
       children: [
         // File or folder icon
@@ -106,7 +106,7 @@ export class EntryRow<K extends keyof EntryTypeMap> extends HtmlElement<'tr'> {
         // Input box starts out hidden, and error message is empty.
         {
           tag: 'td',
-          class: <ElementClass>'name',
+          class: <CssClass>'name',
           children: [
             $nameLink,
             $nameTextInput,

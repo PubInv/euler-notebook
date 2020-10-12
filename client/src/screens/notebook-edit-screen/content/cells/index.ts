@@ -38,16 +38,11 @@ export function createCell(notebookView: Content, style: StyleObject): CellBase 
   // If a style has a child of REPRESENTATION|INPUT/STROKES then use a stylus cell.
   let rval: CellBase;
   switch(style.role) {
-    case 'FIGURE':  // TODO: rval = FiguireCellView.create(notebookView, style); break;
-    case 'FORMULA':           rval = new FormulaCell(notebookView, style); break;
-    case 'HINT':              rval = new HintCell(notebookView, style); break;
-    case 'TEXT':              rval = new TextCell(notebookView, style); break;
-    case 'PLOT':              rval = new PlotCell(notebookView, style); break;
-    case 'FIGURE': rval = new FigureCell(notebookView, style); break;
-    // HACK: We don't actually know an 'UNKNOWN' cell will end up being a stylus cell until
-    // the REPRESENTATION|INPUT/STROKES style is attached, but this prevents us from needing
-    // the extra machinery to defer creating the cell until the substyles have been attached.
-    // LATER?: case 'UNKNOWN': rval = UnknownCellView.create(notebookView, style); break;
+    case 'FIGURE':   rval = new FigureCell(notebookView, style); break;
+    case 'FORMULA':  rval = new FormulaCell(notebookView, style); break;
+    case 'HINT':     rval = new HintCell(notebookView, style); break;
+    case 'TEXT':     rval = new TextCell(notebookView, style); break;
+    case 'PLOT':     rval = new PlotCell(notebookView, style); break;
     default: throw new Error(`Unknown top-level cell role: ${style.role}`);
   }
   return rval;

@@ -21,14 +21,13 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 // Requirements
 
-import { Html } from "../../shared/common";
+import { CssClass, Html } from "../../shared/common";
 import { FolderPath, FolderChange } from "../../shared/folder";
 import { Content } from "./content";
 import { Sidebar } from "./sidebar";
 import { ScreenBase } from "../screen-base";
 import { ClientFolder, ClientFolderWatcher, OpenFolderOptions } from "../../client-folder";
 import { reportError } from "../../error-handler";
-import { ElementClass } from "../../dom";
 
 // Types
 
@@ -47,7 +46,7 @@ export class FolderScreen extends ScreenBase implements ClientFolderWatcher {
   public constructor($parent: HTMLElement, path: FolderPath) {
     super({
       appendTo: $parent,
-      classes: [<ElementClass>'screen', <ElementClass>'folderScreen'],
+      classes: [<CssClass>'screen', <CssClass>'folderScreen'],
       data: { path },
       tag: 'div',
     });

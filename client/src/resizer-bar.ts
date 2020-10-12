@@ -21,7 +21,8 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 // Requirements
 
-import { ElementClass, RIGHT_TRIANGLE_ENTITY } from "./dom";
+import { CssClass } from "./shared/common";
+import { RIGHT_TRIANGLE_ENTITY } from "./dom";
 import { HtmlElement } from "./html-element";
 
 // Types
@@ -48,28 +49,17 @@ export class ResizerBar extends HtmlElement<'div'>  {
 
   // Class Methods
 
-  public static create(
-    $parentElt: Element,
-    resizeCallbackFn: ResizeCallbackFn,
-    insertCallbackFn: InsertCallbackFn,
-  ): ResizerBar {
-    return new this($parentElt, resizeCallbackFn, insertCallbackFn);
-  }
 
-  // -- PRIVATE --
+  // Public Constructor
 
-  // Private Constructor
-
-  private constructor(
-    $parentElt: Element,
+  public constructor(
     resizeCallbackFn: ResizeCallbackFn,
     insertCallbackFn: InsertCallbackFn,
   ) {
 
     super({
       tag: 'div',
-      appendTo: $parentElt,
-      class: <ElementClass>'resizeBar',
+      class: <CssClass>'resizeBar',
       listeners: {
         pointercancel:  e=>this.onPointerCancel(e),
         pointerdown:    e=>this.onPointerDown(e),
@@ -84,7 +74,7 @@ export class ResizerBar extends HtmlElement<'div'>  {
         {
           tag: 'button',
           attrs: { tabindex: -1 },
-          class: <ElementClass>'insertCellBelowButton',
+          class: <CssClass>'insertCellBelowButton',
           html: RIGHT_TRIANGLE_ENTITY,
           listeners: { click: _e=>insertCallbackFn() },
         }
@@ -94,6 +84,8 @@ export class ResizerBar extends HtmlElement<'div'>  {
     this.resizeCallbackFn = resizeCallbackFn;
     this.pointerMap = new Map();
   }
+
+  // -- PRIVATE --
 
   // Private Instance Properties
 

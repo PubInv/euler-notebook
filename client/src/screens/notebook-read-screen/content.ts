@@ -19,10 +19,12 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 // Requirements
 
-import { $newSvg, $allSvg, ElementClass, $outerSvg, cssLength } from "../../dom";
-import { Mode, NotebookReadScreen } from "./index";
+import { CssClass, assert, CssLength, notImplemented } from "../../shared/common";
+
+import { $newSvg, $allSvg, $outerSvg, cssLength } from "../../dom";
 import { HtmlElement } from "../../html-element";
-import { assert, CssLength, notImplemented } from "../../shared/common";
+
+import { Mode, NotebookReadScreen } from "./index";
 
 // Types
 
@@ -45,7 +47,7 @@ export class Content extends HtmlElement<'div'>{
 
   public constructor(screen: NotebookReadScreen, mode: Mode) {
 
-    super({ tag: 'div', appendTo: screen.$elt, class: <ElementClass>'content' });
+    super({ tag: 'div', appendTo: screen.$elt, class: <CssClass>'content' });
 
     this.screen = screen;
 
@@ -126,7 +128,7 @@ export class Content extends HtmlElement<'div'>{
         attrs: {
           viewBox: `0 0 ${viewBoxWidth} ${viewBoxHeight}`,
         },
-        class: <ElementClass>'page',
+        class: <CssClass>'page',
         listeners: {
           click: e=>this.onPageClicked(e),
           dblclick: e=>this.onPageDoubleClicked(e),

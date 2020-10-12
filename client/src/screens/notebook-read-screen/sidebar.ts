@@ -19,7 +19,8 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 // Requirements
 
-import { ElementClass, svgIconReference } from "../../dom";
+import { CssClass } from "../../shared/common";
+import { svgIconReference } from "../../dom";
 import { ButtonBar } from "../../button-bar";
 import { Mode, NotebookReadScreen } from "./index";
 
@@ -41,11 +42,11 @@ export class Sidebar extends ButtonBar {
     super({
       tag: 'div',
       appendTo: screen.$elt,
-      class: <ElementClass>'sidebar',
+      class: <CssClass>'sidebar',
       children: [{
         // thumbnail view
         tag: 'button',
-        class: <ElementClass>'iconButton',
+        class: <CssClass>'iconButton',
         html: svgIconReference('iconMonstrFile12'),
         listeners: { click: (_e: MouseEvent)=>{ window.location.href = `/#${screen.notebook.path}`; }},
         title: "Reading view",
@@ -53,7 +54,7 @@ export class Sidebar extends ButtonBar {
       },{
         // reading view
         tag: 'button',
-        class: <ElementClass>'iconButton',
+        class: <CssClass>'iconButton',
         html: svgIconReference('iconMonstrFile5'),
         listeners: { click: (_e: MouseEvent)=>{ window.location.href = `/#${screen.notebook.path}?view=read`; }},
         title: "Reading view",
@@ -61,12 +62,12 @@ export class Sidebar extends ButtonBar {
       },{
         // edit view
         tag: 'button',
-        class: <ElementClass>'iconButton',
+        class: <CssClass>'iconButton',
         html: svgIconReference('iconMonstrNote23'),
         listeners: { click: (_e: MouseEvent)=>{ window.location.href = `/#${screen.notebook.path}?view=edit`; }},
         title: "Editing view",
       }, {
-        tag: 'div', class: <ElementClass>'separator'
+        tag: 'div', class: <CssClass>'separator'
       }]
      });
   }

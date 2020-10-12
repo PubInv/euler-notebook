@@ -23,9 +23,9 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 // Requirements
 
-import { Html, errorMessageForUser } from "./shared/common";
+import { CssClass, Html, errorMessageForUser } from "./shared/common";
 
-import { CLOSE_X_ENTITY, ElementClass, ElementId } from "./dom";
+import { CLOSE_X_ENTITY, ElementId } from "./dom";
 import { HtmlElement } from "./html-element";
 
 // Types
@@ -97,13 +97,13 @@ class Message extends HtmlElement<'div'> {
 
     super({
       tag: 'div',
-      classes: [ <ElementClass>'message', <ElementClass>type ],
+      classes: [ <CssClass>'message', <CssClass>type ],
       children: [{
         tag: 'span',
         html,
       },{
         tag: 'button',
-        classes: [<ElementClass>'close', <ElementClass>'iconButton'],
+        classes: [<CssClass>'close', <CssClass>'iconButton'],
         html: CLOSE_X_ENTITY,
         listeners: {
           click: (e)=>this.onCloseClick(e),

@@ -22,12 +22,13 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 import * as debug1 from "debug";
 const debug = debug1('client:formula-cell');
 
+import { CssClass } from "../../../../shared/common";
 import { StyleObject, NotebookChange } from "../../../../shared/notebook";
 import { Content } from "..";
 
 import { CellBase } from "./cell-base";
-import { notImplemented } from "../../../../shared/common";
-import { ElementClass } from "../../../../dom";
+import { Html, notImplemented } from "../../../../shared/common";
+import { $new } from "../../../../dom";
 
 // Types
 
@@ -41,8 +42,10 @@ export class PlotCell extends CellBase {
 
   // Public Constructor
 
-  public  constructor(notebookView: Content, style: StyleObject) {
-    super(notebookView, style, <ElementClass>'plotCell', []);
+  public  constructor(container: Content, style: StyleObject) {
+
+    const $tempPlaceholder = $new<'div'>({ tag: 'div', class: <CssClass>'plotCell', html: <Html>"<i>Not implemented</i>" });
+    super(container, style, $tempPlaceholder);
     this.render(style);
   }
 
@@ -66,5 +69,8 @@ export class PlotCell extends CellBase {
     notImplemented();
   }
 
+  protected onResize(deltaY: number, final: boolean): void {
+    debug(`onResize: ${deltaY} ${final}`);
+  }
 
 }

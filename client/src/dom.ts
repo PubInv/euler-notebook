@@ -19,14 +19,13 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 // Requirements
 
-import { assert, CssLength, CssLengthUnits, Html, SvgMarkup } from "./shared/common";
+import { assert, CssClass, CssLength, CssLengthUnits, Html, SvgMarkup } from "./shared/common";
 import { SyncListener, addSyncEventListener, addAsyncEventListener, AsyncListener } from "./error-handler";
 
 // Types
 
 export type CssSelector = '{CssSelector}';
 export type ElementId = '{ElementId}';
-export type ElementClass = '{ElementClass}';
 
 interface Attributes {
   [name: string]: boolean|number|string,
@@ -74,8 +73,8 @@ interface DataAttributes {
 interface NewCommonOptions {
   asyncListeners?: AsyncListeners;
   attrs?: Attributes;
-  class?: ElementClass;
-  classes?: ElementClass[];
+  class?: CssClass;
+  classes?: CssClass[];
   data?: DataAttributes;
   disabled?: boolean;
   id?: ElementId;
