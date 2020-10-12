@@ -472,6 +472,37 @@ export class ServerNotebook extends Notebook<ServerNotebookWatcher> {
     }
     return rval;
   }
+  // Now let's make this recursive
+  public toInformativeOfStyle(style: StyleObject) : string {
+    return this.toInformativeRec('',style);
+  }
+
+
+  public toInformativeRec(ind : string, style: StyleObject) : string {
+    const data = ((typeof style.data) === 'string')
+      ? style.data :
+      JSON.stringify(style.data);
+    const rep : string =   ind +`${style.parentId} -> ${style.id} [ ${style.type}, ${style.role}, ${style.source} ]
+${ind} + ${data}
+`;
+    const children =
+      this.findStyles({ recursive: false }, style.id)
+      .map(s=>{
+        return this.toInformativeRec(ind+"  ",s);
+      })
+      .join('');
+    return rep + children;
+  }
+
+  public toInformative() : string {
+    const style_rep : string = this.topLevelStyleOrder()
+      .map(styleId=>{
+        const style = this.getStyle(styleId);
+        return this.toInformativeOfStyle(style);
+      })
+      .join('');
+    return style_rep;
+  }
 
   // Public Instance Methods
 
@@ -1314,5 +1345,3 @@ function absFilePathFromNotebookPath(path: NotebookPath): AbsFilePath {
   const absPath = absDirPathFromNotebookPath(path);
   return join(absPath, NOTEBOOK_FILE_NAME);
 }
-
-

@@ -394,6 +394,11 @@ export class SymbolClassifierObserver implements ObserverInstance {
       // at this point, we are doing a complete "recomputation" based the use.
       // TODO: We should remove all Substitution tools here
       await this.removeAllCurrentSymbols(style,rval);
+
+      // TODO: I believe this is adding duplicates because it is
+      // also called in add SymbolDefStyles, but we have to make
+      // sure it works in all cases.
+      await this.addSymbolUseStyles(style, rval);
       await this.addSymbolDefStyles(style, rval);
     } else if (style.type == 'SYMBOL-DATA') {
       debug("recomputeInsertRelationship");
@@ -401,7 +406,25 @@ export class SymbolClassifierObserver implements ObserverInstance {
     }
     return rval;
   }
+  // There is only one "def", so we can handle that by exclusivity of the children, but in the case
+  // of the uses, there may be more than one use. We therefore have little choice but to delete all
+  // SYMBOL-USE / SYMBOL children before add these in.
+  private async removeAllCurrentUses(style: StyleObject, rval: NotebookChangeRequest[]): Promise<void> {
+    // REVIEW: Does this search need to be recursive?
+    const children = this.notebook.findStyles({ type: 'SYMBOL-DATA', recursive: true }, style.id);
 
+
+    children.forEach( kid => {
+      if ((kid.parentId == style.id) &&
+          (kid.type == 'SYMBOL-DATA') &&
+          (kid.role == 'SYMBOL-USE')) {
+        const deleteReq : StyleDeleteRequest = { type: 'deleteStyle',
+                                                 styleId: kid.id };
+        rval.push(deleteReq);
+      };
+    });
+
+  }
   // Insert relations related to type SYMBOL
   private async recomputeInsertRelationships(tlid: StyleId,
                                              style: StyleObject,
@@ -725,6 +748,11 @@ export class SymbolClassifierObserver implements ObserverInstance {
           return s.split(' ').filter(function(str){return str!="";}).length;
           //return s.split(' ').filter(String).length; - this can also be used
         }
+
+          // In this case, we need to treat lval and rvals as expressions which may produce their own uses....
+//        await this.addSymbolUseStylesFromString(lhs, style, rval);
+//        await this.addSymbolUseStylesFromString(rhs, style, rval);
+
         if (!((countWords(lhs) === 1) && (countWords(rhs) === 1))) {
           const data = { lhs, rhs };
           styleProps = {
@@ -734,9 +762,6 @@ export class SymbolClassifierObserver implements ObserverInstance {
             relationsTo,
             exclusiveChildTypeAndRole: true,
           }
-          // In this case, we need to treat lval and rvals as expressions which may produce their own uses....
-          await this.addSymbolUseStylesFromString(lhs, style, rval);
-          await this.addSymbolUseStylesFromString(rhs, style, rval);
           const changeReq: StyleInsertRequest = { type: 'insertStyle', parentId: style.id, styleProps };
           rval.push(changeReq);
         } else {
@@ -801,8 +826,8 @@ export class SymbolClassifierObserver implements ObserverInstance {
               console.error("internal regular expression error");
               return;
             }
-            await this.addSymbolUseStylesFromString(lw, style, rval);
-            await this.addSymbolUseStylesFromString(rw, style, rval);
+//            await this.addSymbolUseStylesFromString(lw, style, rval);
+//            await this.addSymbolUseStylesFromString(rw, style, rval);
             // The relations here are wrong; we need to get all variables in each expression, actually!
             const relationsToLHS: RelationshipPropertiesMap =
               this.getAllMatchingNameAndType(lw,'SYMBOL-USE');
@@ -831,12 +856,17 @@ export class SymbolClassifierObserver implements ObserverInstance {
             const changeReq: StyleInsertRequest = { type: 'insertStyle', parentId: style.id, styleProps };
             rval.push(changeReq);
           }
-
         } else {
           debug('probably not an equation, not sure what to do:',result);
         }
       }
     }
+  }
+
+  private async  addSymbolUseStyles(style: StyleObject, rval: NotebookChangeRequest[]): Promise<void> {
+    await this.removeAllCurrentUses(style,rval);
+    const data : string = (style.data.wolframData) ? style.data.wolframData : style.data;
+    await this.addSymbolUseStylesFromString(data, style, rval);
   }
 
   private async  findSymbols(math: string): Promise<string[]> {
@@ -928,6 +958,7 @@ export class SymbolClassifierObserver implements ObserverInstance {
 
   private async  addSymbolUseStylesFromString(data: string,style: StyleObject, rval: NotebookChangeRequest[]): Promise<void> {
     const symbols = await this.findSymbols(data);
+    debug("symbols from string",data,symbols);
     symbols.forEach(s => {
       const relationsFrom: RelationshipPropertiesMap =
         this.getLatestMatchingNameAndType(s,'SYMBOL-DEFINITION');

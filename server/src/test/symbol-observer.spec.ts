@@ -189,7 +189,6 @@ describe("test symbol observer", function() {
       const changeRequests = [insertRequest[0],insertRequest[2],insertRequest[4]];
       await serializeChangeRequests(notebook,changeRequests);
 
-
       assert.equal(2,notebook.allRelationships().length);
       // We want to check that the relaionship is "duplicate def".
       const rds : RelationshipObject[] = notebook.findRelationships({ role: 'DUPLICATE-DEFINITION' });
@@ -328,9 +327,9 @@ describe("test symbol observer", function() {
       // now that we have the lastThought, we want to get the
       // LATEX type...
       const lastThought = notebook.getStyle(lastThoughtId);
-
+      const lastSymbolDef = notebook.findStyles({ type: 'SYMBOL-DATA', role: 'SYMBOL-DEFINITION', recursive: true }, lastThought.id);
       // REVIEW: Does this search need to be recursive?
-      const children = notebook.findStyles({ type: 'TEX-EXPRESSION', recursive: true }, lastThought.id);
+      const children = notebook.findStyles({ type: 'TEX-EXPRESSION', recursive: true }, lastSymbolDef[0].id);
       const texformatter = children[0];
       assert.equal('Y = 36',texformatter.data);
       const rels = notebook.recomputeAllSymbolRelationships();
@@ -383,9 +382,11 @@ describe("test symbol observer", function() {
       // LATEX type...
       const lastThought = notebook.getStyle(lastThoughtId);
 
-      // REVIEW: Does this search need to be recursive?
-      const texformatter = notebook.findStyle({ type: 'TEX-EXPRESSION', recursive: true}, lastThought.id);
-      assert.equal('Y = 16',texformatter!.data);
+      const lastSymbolDef = notebook.findStyles({ type: 'SYMBOL-DATA', role: 'SYMBOL-DEFINITION', recursive: true }, lastThought.id);
+      const children = notebook.findStyles({ type: 'TEX-EXPRESSION', recursive: true }, lastSymbolDef[0].id);
+
+//      const texformatter = notebook.findStyle({ type: 'TEX-EXPRESSION', recursive: true}, lastThought.id);
+      assert.equal('Y = 16',children[0]!.data);
 
 
     });
@@ -418,6 +419,8 @@ describe("test symbol observer", function() {
         // This raises the question: should we add an evaluation to the
         // notebook itself, which would be a bit expensive, but
         // allow us to directly see the evaluation.
+
+
 
         const lasttex = texformatOfLastThought(notebook);
 
@@ -559,6 +562,23 @@ describe("test symbol observer", function() {
       assert.equal(1,children.length);
     });
 
+    it("expressions and definitions produce the correct uses ",async function(){
+      const data0 = [
+          <MTLExpression>"a = 1",
+          <MTLExpression>"b = 2",
+          <MTLExpression>"c = 3",
+          <MTLExpression>"d = 4",
+          <MTLExpression>"a + b + c + d",
+        ];
+
+      const changeRequests = insertWolframFormulas(data0);
+      await serializeChangeRequests(notebook,changeRequests);
+      const rel_r = notebook.allRelationships();
+
+      assert.equal(rel_r.length,4);
+    });
+
+
     // TODO: Move this to a wolfram-cas.spec.ts file later...
     it.skip("Changing correctly recomputes representation",async function(){
       const data = [
@@ -633,11 +653,11 @@ function texformatOfLastThought(notebook : ServerNotebook) : string {
 
   // now that we have the lastThought, we want to get the
   // LATEX type...
-  const lastThought = notebook.getStyle(lastThoughtId);
+//  const lastThought = notebook.getStyle(lastThoughtId);
+  const lastSymbolDef = notebook.findStyles({ type: 'SYMBOL-DATA', role: 'SYMBOL-DEFINITION', recursive: true }, lastThoughtId);
+  const children = notebook.findStyles({ type: 'TEX-EXPRESSION', recursive: true }, lastSymbolDef[0].id);
 
-  // REVIEW: Does this search need to be recursive?
-  const texformatter = notebook.findStyle({ type: 'TEX-EXPRESSION', recursive: true }, lastThought.id);
-  return texformatter!.data;
+  return children[0]!.data;
 }
 
 // Note: i is allowed to be negative, to use the javascript
