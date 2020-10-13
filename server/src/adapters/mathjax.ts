@@ -46,7 +46,7 @@ let gHtml: MathDocument<any,any,any>; // TYPESCRIPT: Specific type parameters?
 // Exported Functions
 
 export function initialize(): void {
-  debug("Initializing.");
+  debug("Initializing");
   gAdaptor = liteAdaptor();
   /* const handler = */ RegisterHTMLHandler(gAdaptor);
 
@@ -56,6 +56,7 @@ export function initialize(): void {
 }
 
 export function convertTexToSvg(tex: TexExpression, cssClass: CssClass): SvgMarkup {
+  debug(`Converting TeX: "${tex}"`);
   const node = gHtml.convert(tex, { display: false, em: 16, ex: 8, containerWidth: 80*16 });
   // Returns HTML of a 'mjx-container' element enclosing an "svg" element.
   const html = <Html>gAdaptor.outerHTML(node);
@@ -70,6 +71,5 @@ function fixupSvgMarkup(markup: SvgMarkup, cssClass: CssClass): SvgMarkup {
   assert(markup.startsWith('<svg '));
   assert(markup.endsWith('</svg>'));
   markup = <SvgMarkup>markup.replace(/^<svg /, `<svg class="${cssClass}" `);
-  console.dir(markup);
   return <SvgMarkup>markup;
 }

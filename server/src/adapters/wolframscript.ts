@@ -77,10 +77,9 @@ export async function execute(command: WolframExpression): Promise<WolframExpres
   gExecutingPromise = new Promise<WolframExpression>((resolve, reject)=>{
     // Wait on the previous 'execute' invocation.
     // LATER: Use .finally instead when everyone is at node 10 or later.
-    executingPromise.then(
+    executingPromise.finally(
       // Execute the command.
       ()=>{ executeNow(command, resolve, reject); },
-      (_err)=>{ executeNow(command, resolve, reject); }
     );
   });
   return gExecutingPromise;

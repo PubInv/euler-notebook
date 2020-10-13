@@ -22,15 +22,18 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 import { createServer } from "http";
 import { join } from "path";
 
-import * as  createError from "http-errors";
-import * as express from "express";
-import * as cookieParser from "cookie-parser";
 import * as debug1 from "debug";
 const MODULE = __filename.split(/[/\\]/).slice(-1)[0].slice(0,-3);
 const debug = debug1(`server:${MODULE}`);
+
+import * as cookieParser from "cookie-parser";
+import * as express from "express";
+import * as  createError from "http-errors";
 import * as morgan from "morgan";
+import { satisfies as semverSatisfies } from "semver";
 import { middleware as stylusMiddleware } from "stylus";
 
+import { assert } from "./shared/common";
 import { ClientSocket } from "./client-socket";
 import { loadConfig, loadCredentials} from "./config";
 import { initialize as initializeMathJax } from "./adapters/mathjax";
@@ -43,18 +46,15 @@ import { router as exportRouter } from "./routes/export";
 import { router as indexRouter } from "./routes/index";
 import { router as xrayRouter } from "./routes/xray";
 
-// Helper Functions
+// Constants
 
-function normalizePort(val: string): string|number|boolean {
-  var port = parseInt(val, 10);
-  if (isNaN(port)) { /* named pipe */ return val; }
-  if (port >= 0) { /* port number */ return port; }
-  return false;
-}
+const NODE_REQUIREMENT = ">=12.16.3";
 
 // Application Entry Point
 
 async function main() {
+
+  assert(semverSatisfies(process.versions.node, NODE_REQUIREMENT), `Node version must satisfy requirement '${NODE_REQUIREMENT}'`);
 
   const config = await loadConfig();
   const credentials = await loadCredentials();
@@ -144,3 +144,12 @@ main().then(
       },
   (err)=>{ console.error(`ERROR ${MODULE}: Error initializing app: ${err.message}`); },
 );
+
+// Helper Functions
+
+function normalizePort(val: string): string|number|boolean {
+  var port = parseInt(val, 10);
+  if (isNaN(port)) { /* named pipe */ return val; }
+  if (port >= 0) { /* port number */ return port; }
+  return false;
+}

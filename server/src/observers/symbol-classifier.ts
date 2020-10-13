@@ -38,6 +38,7 @@ import { ServerNotebook, ObserverInstance } from "../server-notebook";
 import { execute as executeWolframscript, constructSubstitution, draftChangeContextName,
          convertWolframToMTL } from "../adapters/wolframscript";
 import { Config } from "../config";
+import { assert } from "console";
 
 export class SymbolClassifierObserver implements ObserverInstance {
 
@@ -71,13 +72,11 @@ export class SymbolClassifierObserver implements ObserverInstance {
     // TODO: Mark closed somehow?
   }
 
-
   // Note: This can be separated into an attempt to compute new solutions..
   // public async useTool(toolStyle: StyleObject): Promise<NotebookChangeRequest[]> {
   //   debug(`useTool ${this.notebook.path} ${toolStyle.id}`);
   //   return [];
   // }
-
 
   // TODO: This is a direct duplicate code in algebraic-tools.ts
   // that duplication must be removed.
@@ -125,22 +124,23 @@ export class SymbolClassifierObserver implements ObserverInstance {
     };
     // At present, the tool name is the only data we will record
     // about the transformation---in the future that might be enriched.
-    const tdata: TransformationToolData =
-      { output : toolStyle.data.data.output,
-        transformation: toolStyle.data.data.transformation,
-        transformationName: toolStyle.data.name };
+    const tdata: TransformationToolData = {
+      output : toolStyle.data.data.output,
+      transformation: toolStyle.data.data.transformation,
+      transformationName: toolStyle.data.name
+    };
     const props : RelationshipProperties = { role: 'TRANSFORMATION',
                                              id: relId,
                                              data: tdata };
 
-    const relReq : RelationshipInsertRequest =
-      { type: 'insertRelationship',
-        fromId,
-        toId,
-        inStyles: [ { role: 'LEGACY', id: fromId } ],
-        outStyles: [ { role: 'LEGACY', id: toId } ],
-        props: props
-      };
+    const relReq : RelationshipInsertRequest = {
+      type: 'insertRelationship',
+      fromId,
+      toId,
+      inStyles: [ { role: 'LEGACY', id: fromId } ],
+      outStyles: [ { role: 'LEGACY', id: toId } ],
+      props: props
+    };
 
     return [ hintReq, changeReq, relReq ];
   }
@@ -159,7 +159,7 @@ export class SymbolClassifierObserver implements ObserverInstance {
 
   // Private Instance Methods
 
-  private getLatestOfListOfStyleIds(styles: number[]) : number {
+  private getLatestOfListOfStyleIds(styles: number[]): number {
     const [max,maxstyle] = styles.reduce(
       (acc,val) => {
           const idx = this.notebook.topLevelStylePosition(val);
@@ -178,7 +178,7 @@ export class SymbolClassifierObserver implements ObserverInstance {
       return -1; // This would actually be an internal error
   }
 
-  private async deleteRule(change: StyleDeleted, rval: NotebookChangeRequest[]) : Promise<void>  {
+  private async deleteRule(change: StyleDeleted, rval: NotebookChangeRequest[]): Promise<void>  {
 
     const style = change.style;
     if (style.type == 'SYMBOL-DATA' && (style.role == 'SYMBOL-USE' || style.role == 'SYMBOL-DEFINITION')) {
@@ -192,7 +192,7 @@ export class SymbolClassifierObserver implements ObserverInstance {
   // or force its re-computation when changed. - rlr
   // Doing it this way seems to create the possibility of multiple deletes
   // do to concurrency problems.
-  private async deleteDependentHints(style: StyleObject, rval: NotebookChangeRequest[]) : Promise<void>  {
+  private async deleteDependentHints(style: StyleObject, rval: NotebookChangeRequest[]): Promise<void>  {
   //    if (style.source == 'SYMBOL-CLASSIFIER') {
         const did = style.id;
 
@@ -213,7 +213,7 @@ export class SymbolClassifierObserver implements ObserverInstance {
         });
 //      }
   }
-  private async deleteRelationships(style: StyleObject, rval: NotebookChangeRequest[]) : Promise<void>  {
+  private async deleteRelationships(style: StyleObject, rval: NotebookChangeRequest[]): Promise<void>  {
       if (style.role == 'SYMBOL-DEFINITION') {
         const did = style.id;
 
@@ -364,28 +364,29 @@ export class SymbolClassifierObserver implements ObserverInstance {
     return rval;
   }
 
-
   // Since a relationship may already exist and this code is trying to handle
   // both inserts and changes, we have to decide how we make sure there are not duplicates.
   // This is a little tricky, as we may be part of a chain. Possibly I should make a unit test
   // for this, to test that a change does not result int
-  private async insertRule(change: StyleInserted | StyleChanged, rval: NotebookChangeRequest[]) : Promise<NotebookChangeRequest[]>  {
+  private async insertRule(change: StyleInserted | StyleChanged, rval: NotebookChangeRequest[]): Promise<NotebookChangeRequest[]>  {
     const style = change.style;
-    return await this.insertFromStyleRule(style,rval);
+    return await this.insertFromStyleRule(style, rval);
   }
 
-  private async insertFromStyleRule(style: StyleObject, rval: NotebookChangeRequest[]) : Promise<NotebookChangeRequest[]>  {
+  private async insertFromStyleRule(style: StyleObject, rval: NotebookChangeRequest[]): Promise<NotebookChangeRequest[]>  {
 
     var tlStyle;
     try {
       tlStyle = this.notebook.topLevelStyleOf(style.id);
-    } catch (e) { // If we can't find a topLevelStyle, we have in
+    } catch (e) {
+      // If we can't find a topLevelStyle, we have in
       // inconsistency most likely caused by concurrency in some way
       debug(this.notebook.toText());
       console.log("error",e);
     }
     if (!tlStyle) return rval;
     const tlid = tlStyle.id;
+
     // I believe listening only for the WOLFRAM/INPUT forces
     // a serialization that we don't want to support. We also must
     // listen for definition and use and handle them separately...
@@ -406,6 +407,7 @@ export class SymbolClassifierObserver implements ObserverInstance {
     }
     return rval;
   }
+
   // There is only one "def", so we can handle that by exclusivity of the children, but in the case
   // of the uses, there may be more than one use. We therefore have little choice but to delete all
   // SYMBOL-USE / SYMBOL children before add these in.
@@ -425,12 +427,13 @@ export class SymbolClassifierObserver implements ObserverInstance {
     });
 
   }
+
   // Insert relations related to type SYMBOL
-  private async recomputeInsertRelationships(tlid: StyleId,
-                                             style: StyleObject,
-                                             rval: NotebookChangeRequest[])
-  : Promise<NotebookChangeRequest[]>
-  {
+  private async recomputeInsertRelationships(
+    tlid: StyleId,
+    style: StyleObject,
+    rval: NotebookChangeRequest[],
+  ): Promise<NotebookChangeRequest[]> {
     if (style.type == 'SYMBOL-DATA' && (style.role == 'SYMBOL-USE' || style.role == 'SYMBOL-DEFINITION')) {
       const name = (style.role == 'SYMBOL-USE') ?
         style.data.name :
@@ -560,7 +563,7 @@ export class SymbolClassifierObserver implements ObserverInstance {
     return rval;
   }
 
-    private async moveRule(change: StyleMoved, rval: NotebookChangeRequest[]) : Promise<NotebookChangeRequest[]>  {
+    private async moveRule(change: StyleMoved, rval: NotebookChangeRequest[]): Promise<NotebookChangeRequest[]>  {
 
       // Now trying to implement this using our recomputation capability...
       // we will remove all relationship references to this name,
@@ -625,7 +628,7 @@ export class SymbolClassifierObserver implements ObserverInstance {
   }
 
   private async onChange(change: NotebookChange, rval: NotebookChangeRequest[]): Promise<void> {
-    if (change == null) return;
+    assert(change);
 
     switch (change.type) {
       case 'styleDeleted': {
@@ -663,8 +666,10 @@ export class SymbolClassifierObserver implements ObserverInstance {
   // Therefore I'm passing a relationship to put in
   // the origin of the tool.
   // ===================== //
-  private async removeToolsDependentOnRel(relationship: RelationshipObject,
-                                          rval: NotebookChangeRequest[]): Promise<void> {
+  private async removeToolsDependentOnRel(
+    relationship: RelationshipObject,
+    rval: NotebookChangeRequest[],
+  ): Promise<void> {
     // Although PROBABLY only the from and to styles in the relatinship
     // depend on this, that might not be true...for example a hint.
     // At this writing, FindStyleOptions doesn't support looking into
@@ -673,10 +678,11 @@ export class SymbolClassifierObserver implements ObserverInstance {
     // In fact we could explicitly make a "depends on" set in the style
     // that names a set of ids (either relationships or styles) on which
     // the style depends.
-    const children = this.notebook.findStyles({ type: 'TOOL-DATA',
-                                                source: 'SYMBOL-CLASSIFIER',
-                                                recursive: true }
-                                             );
+    const children = this.notebook.findStyles({
+      type: 'TOOL-DATA',
+      source: 'SYMBOL-CLASSIFIER',
+      recursive: true,
+    });
     children.forEach( kid => {
       if ((kid.data.origin_id == relationship.id)) {
         const deleteReq : StyleDeleteRequest = { type: 'deleteStyle',
@@ -685,8 +691,6 @@ export class SymbolClassifierObserver implements ObserverInstance {
       };
     });
   }
-
-
 
   private async relationshipInsertedRule(relationship: RelationshipObject, rval: NotebookChangeRequest[]): Promise<NotebookChangeRequest[]> {
     if (relationship.role == 'SYMBOL-DEPENDENCY') {
@@ -697,12 +701,12 @@ export class SymbolClassifierObserver implements ObserverInstance {
     }
     return rval;
   }
-  private async relationshipDeletedRule(relationship: RelationshipObject, rval: NotebookChangeRequest[]): Promise<NotebookChangeRequest[]> {
 
-    await this.removeToolsDependentOnRel(relationship,
-                              rval);
+  private async relationshipDeletedRule(relationship: RelationshipObject, rval: NotebookChangeRequest[]): Promise<NotebookChangeRequest[]> {
+    await this.removeToolsDependentOnRel(relationship, rval);
     return rval;
   }
+
   private async addSymbolDefStyles(style: StyleObject, rval: NotebookChangeRequest[]): Promise<void> {
     const script = <WolframExpression>`FullForm[Hold[${style.data}]]`;
     const result = await execute(script);
@@ -741,7 +745,7 @@ export class SymbolClassifierObserver implements ObserverInstance {
         // I (rlr) am merely attempting to reduce confusiong with tools.
 
         // from: https://www.mediacollege.com/internet/javascript/text/count-words.html
-        function countWords(s:string) : number {
+        function countWords(s:string): number {
           s = s.replace(/(^\s*)|(\s*$)/gi,"");//exclude  start and end white-space
           s = s.replace(/[ ]{2,}/gi," ");//2 or more space to 1
           s = s.replace(/\n /,"\n"); // exclude newline with a start spacing
@@ -863,13 +867,13 @@ export class SymbolClassifierObserver implements ObserverInstance {
     }
   }
 
-  private async  addSymbolUseStyles(style: StyleObject, rval: NotebookChangeRequest[]): Promise<void> {
+  private async addSymbolUseStyles(style: StyleObject, rval: NotebookChangeRequest[]): Promise<void> {
     await this.removeAllCurrentUses(style,rval);
     const data : string = (style.data.wolframData) ? style.data.wolframData : style.data;
     await this.addSymbolUseStylesFromString(data, style, rval);
   }
 
-  private async  findSymbols(math: string): Promise<string[]> {
+  private async findSymbols(math: string): Promise<string[]> {
     if (isEmptyOrSpaces(math)) {
       return [];
     } else {
@@ -884,30 +888,33 @@ export class SymbolClassifierObserver implements ObserverInstance {
     }
   }
 
-  private getAllMatchingNameAndType(name: string,
-                                    useOrDef: 'SYMBOL-DEFINITION' | 'SYMBOL-USE') :  RelationshipPropertiesMap {
-      // Add the symbol-use style
-      const relationsFrom: RelationshipPropertiesMap = {};
+  private getAllMatchingNameAndType(
+    name: string,
+    useOrDef: 'SYMBOL-DEFINITION' | 'SYMBOL-USE',
+  ):  RelationshipPropertiesMap {
+    // Add the symbol-use style
+    const relationsFrom: RelationshipPropertiesMap = {};
+
     // Add any symbol-dependency relationships as a result of the new symbol-use style
-    if (this.notebook) {
-      for (const otherStyle of this.notebook.allStyles()) {
-        if (otherStyle.type == 'SYMBOL-DATA' &&
-            otherStyle.role == useOrDef &&
-            otherStyle.data.name == name) {
-          relationsFrom[otherStyle.id] = { role: 'SYMBOL-DEPENDENCY' };
-        }
+    assert(this.notebook);
+    for (const otherStyle of this.notebook.allStyles()) {
+      if (otherStyle.type == 'SYMBOL-DATA' &&
+          otherStyle.role == useOrDef &&
+          otherStyle.data.name == name) {
+        relationsFrom[otherStyle.id] = { role: 'SYMBOL-DEPENDENCY' };
       }
-    } else {
-      // Surely this is an error?!?
     }
     return relationsFrom;
   }
 
-  private getLatestMatchingNameAndType(name: string,
-                                       useOrDef: 'SYMBOL-DEFINITION' | 'SYMBOL-USE') :  RelationshipPropertiesMap {
-    // Add the symbol-use style
+  private getLatestMatchingNameAndType(
+    name: string,
+    useOrDef: 'SYMBOL-DEFINITION' | 'SYMBOL-USE',
+  ):  RelationshipPropertiesMap {
 
+    // Add the symbol-use style
     const relationsFrom: RelationshipPropertiesMap = {};
+
     // Add any symbol-dependency relationships as a result of the new symbol-use style
     // This code as actually longer than doing it
     // in a loop; nontheless I prefer this "reduce" style
@@ -953,7 +960,6 @@ export class SymbolClassifierObserver implements ObserverInstance {
         rval.push(deleteReq);
       };
     });
-
   }
 
   private async  addSymbolUseStylesFromString(data: string,style: StyleObject, rval: NotebookChangeRequest[]): Promise<void> {
@@ -979,17 +985,17 @@ export class SymbolClassifierObserver implements ObserverInstance {
 
 }
 
-  // Helper Functios
+// Helper Functios
 
-  async function execute(script: WolframExpression): Promise<WolframExpression|undefined> {
-    let result: WolframExpression;
-    try {
-      // debug(`Executing: ${script}`)
-      result = await executeWolframscript(script);
-    } catch (err) {
-      debug(`Wolfram '${script}' failed with '${err.message}'`);
-      return;
-    }
-    debug(`Wolfram '${script}' returned '${result}'`);
-    return result;
+async function execute(script: WolframExpression): Promise<WolframExpression|undefined> {
+  let result: WolframExpression;
+  try {
+    // debug(`Executing: ${script}`)
+    result = await executeWolframscript(script);
+  } catch (err) {
+    debug(`Wolfram '${script}' failed with '${err.message}'`);
+    return;
   }
+  debug(`Wolfram '${script}' returned '${result}'`);
+  return result;
+}

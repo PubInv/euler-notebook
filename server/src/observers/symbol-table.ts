@@ -23,7 +23,7 @@ import * as debug1 from "debug";
 const MODULE = __filename.split(/[/\\]/).slice(-1)[0].slice(0,-3);
 const debug = debug1(`server:${MODULE}`);
 
-import { NotebookChange, StyleObject, RelationshipObject } from "../shared/notebook";
+import { NotebookChange, StyleObject, RelationshipObject, WolframExpression } from "../shared/notebook";
 import { NotebookChangeRequest, StyleInsertRequest, StylePropertiesWithSubprops,
 //         StyleDeleteRequest,
          SymbolTable,
@@ -75,7 +75,6 @@ export class SymbolTableObserver implements ObserverInstance {
 
   public onClose(): void {
     debug(`onClose ${this.notebook.path}`);
-    delete this.notebook;
   }
 
   public async useTool(toolStyle: StyleObject): Promise<NotebookChangeRequest[]> {
@@ -172,7 +171,7 @@ export class SymbolTableObserver implements ObserverInstance {
       exprs = exprs.filter(x => x.includes("=="));
 
       var formulae_anded = exprs.join(' && ');
-      var code = `ExportString[InputForm[Solve[${formulae_anded}, {${symbols_in_curlies}}]],"ExpressionJSON"]`;
+      var code = <WolframExpression>`ExportString[InputForm[Solve[${formulae_anded}, {${symbols_in_curlies}}]],"ExpressionJSON"]`;
       debug("code = ",code);
       var results = await execute(code);
       debug("results = ",results,typeof(results));
