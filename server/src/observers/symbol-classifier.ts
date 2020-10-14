@@ -943,8 +943,7 @@ export class SymbolClassifierObserver implements ObserverInstance {
     children.forEach( kid => {
       if ((kid.parentId == style.id) &&
           (kid.type == 'SYMBOL-DATA')) {
-        const deleteReq: StyleDeleteRequest = { type: 'deleteStyle',
-                                                 styleId: kid.id };
+        const deleteReq: StyleDeleteRequest = { type: 'deleteStyle', styleId: kid.id };
         rval.push(deleteReq);
       };
     });

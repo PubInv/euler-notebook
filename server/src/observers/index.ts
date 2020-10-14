@@ -30,8 +30,8 @@ import { MathematicaObserver } from "./mathematica-cas";
 import { MyScriptObserver } from "./myscript-observer";
 import { RepresentationObserver } from "./system-observer";
 import { SandboxObserver } from "./sandbox";
-import { SubtrivClassifierObserver } from "./subtriv-classifier";
-import { SymbolClassifierObserver } from "./symbol-classifier";
+// import { SubtrivClassifierObserver } from "./subtriv-classifier";
+// import { SymbolClassifierObserver } from "./symbol-classifier";
 // REVIEW: import { SymbolTableObserver } from "./symbol-table";
 import { TeXFormatterObserver } from "./tex-formatter";
 import { WolframObserver } from "./wolfram-observer";
@@ -62,8 +62,9 @@ export async function initialize(config: Config, credentials: Credentials): Prom
     await MathematicaObserver.initialize(config);
     ServerNotebook.registerObserver('ALGEBRAIC-DATAFLOW-OBSERVER', AlgebraicDataflowObserver);
     ServerNotebook.registerObserver('MATHEMATICA', MathematicaObserver);
-    ServerNotebook.registerObserver('SUBTRIV-CLASSIFIER', SubtrivClassifierObserver);
-    ServerNotebook.registerObserver('SYMBOL-CLASSIFIER', SymbolClassifierObserver);
+    // DEJ: Temporarily disabled. See private slack message from DEJ to RLR on 10/14/20.
+    //      ServerNotebook.registerObserver('SUBTRIV-CLASSIFIER', SubtrivClassifierObserver);
+    //      ServerNotebook.registerObserver('SYMBOL-CLASSIFIER', SymbolClassifierObserver);
     // REVIEW: ServerNotebook.registerObserver('SYMBOL-TABLE', SymbolTableObserver);
     ServerNotebook.registerObserver('EQUATION-SOLVER', EquationSolverObserver);
     ServerNotebook.registerObserver('TEX-FORMATTER', TeXFormatterObserver);
@@ -92,9 +93,10 @@ export function terminate(): void {
   if (useMathematica) {
     ServerNotebook.deregisterObserver('ALGEBRAIC-DATAFLOW-OBSERVER');
     ServerNotebook.deregisterObserver('MATHEMATICA');
-    ServerNotebook.deregisterObserver('SUBTRIV-CLASSIFIER');
-    ServerNotebook.deregisterObserver('SYMBOL-CLASSIFIER');
-    ServerNotebook.deregisterObserver('SYMBOL-TABLE');
+    // DEJ: Temporarily disabled. See private slack message from DEJ to RLR on 10/14/20.
+    //      ServerNotebook.deregisterObserver('SUBTRIV-CLASSIFIER');
+    //      ServerNotebook.deregisterObserver('SYMBOL-CLASSIFIER');
+    // ServerNotebook.deregisterObserver('SYMBOL-TABLE');
     ServerNotebook.deregisterObserver('EQUATION-SOLVER');
     ServerNotebook.deregisterObserver('TEX-FORMATTER');
     ServerNotebook.deregisterObserver('MATHJAX-OBSERVER');

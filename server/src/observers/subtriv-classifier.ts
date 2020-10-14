@@ -67,7 +67,6 @@ export class SubtrivClassifierObserver implements ObserverInstance {
 
   public  onClose(): void {
     debug(`onClose ${this.notebook.path}`);
-    delete this.notebook;
   }
 
   public async useTool(toolStyle: StyleObject): Promise<NotebookChangeRequest[]> {
