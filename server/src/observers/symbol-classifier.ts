@@ -72,15 +72,9 @@ export class SymbolClassifierObserver implements ObserverInstance {
     // TODO: Mark closed somehow?
   }
 
-  // Note: This can be separated into an attempt to compute new solutions..
-  // public async useTool(toolStyle: StyleObject): Promise<NotebookChangeRequest[]> {
-  //   debug(`useTool ${this.notebook.path} ${toolStyle.id}`);
-  //   return [];
-  // }
-
-  // TODO: This is a direct duplicate code in algebraic-tools.ts
-  // that duplication must be removed.
   public async useTool(toolStyle: StyleObject): Promise<NotebookChangeRequest[]> {
+    // TODO: This is a direct duplicate code in algebraic-tools.ts
+    // that duplication must be removed.
     debug(`useTool ${this.notebook.path} ${toolStyle.id}`);
 
     // the origin_id is a relationship Id; we want a "From ID" in the
@@ -125,15 +119,17 @@ export class SymbolClassifierObserver implements ObserverInstance {
     // At present, the tool name is the only data we will record
     // about the transformation---in the future that might be enriched.
     const tdata: TransformationToolData = {
-      output : toolStyle.data.data.output,
+      output: toolStyle.data.data.output,
       transformation: toolStyle.data.data.transformation,
       transformationName: toolStyle.data.name
     };
-    const props : RelationshipProperties = { role: 'TRANSFORMATION',
-                                             id: relId,
-                                             data: tdata };
+    const props: RelationshipProperties = {
+      role: 'TRANSFORMATION',
+      id: relId,
+      data: tdata,
+    };
 
-    const relReq : RelationshipInsertRequest = {
+    const relReq: RelationshipInsertRequest = {
       type: 'insertRelationship',
       fromId,
       toId,
@@ -179,7 +175,6 @@ export class SymbolClassifierObserver implements ObserverInstance {
   }
 
   private async deleteRule(change: StyleDeleted, rval: NotebookChangeRequest[]): Promise<void>  {
-
     const style = change.style;
     if (style.type == 'SYMBOL-DATA' && (style.role == 'SYMBOL-USE' || style.role == 'SYMBOL-DEFINITION')) {
       this.deleteRelationships(style, rval);
@@ -187,111 +182,115 @@ export class SymbolClassifierObserver implements ObserverInstance {
     this.deleteDependentHints(style,rval);
   }
 
-  // TODO: I personally think this should be added to the high-level api
-  // by allow any style to declare styles which invalidate it when removed
-  // or force its re-computation when changed. - rlr
-  // Doing it this way seems to create the possibility of multiple deletes
-  // do to concurrency problems.
   private async deleteDependentHints(style: StyleObject, rval: NotebookChangeRequest[]): Promise<void>  {
-  //    if (style.source == 'SYMBOL-CLASSIFIER') {
-        const did = style.id;
+    // TODO: I personally think this should be added to the high-level api
+    // by allow any style to declare styles which invalidate it when removed
+    // or force its re-computation when changed. - rlr
+    // Doing it this way seems to create the possibility of multiple deletes
+    // do to concurrency problems.
+
+    //    if (style.source == 'SYMBOL-CLASSIFIER') {
+    const did = style.id;
 
     // RLR ALERT: This is returning null values from fromId and toId!!! It appears that
     // the HINT change to mention a relationship, and this code never changed to match it.
     // The impact is that nothing gets deleted based on relationship dependencies, which is weird.
-        const hints = this.notebook.findStyles({ type: 'HINT-DATA', role: 'HINT', recursive: true });
+    const hints = this.notebook.findStyles({ type: 'HINT-DATA', role: 'HINT', recursive: true });
     hints.forEach(h => {
       debug("hint",h);
           const fromId = h.data.fromId;
           const toId = h.data.toId;
           debug("=================== ",fromId,toId,did);
           if ((did == fromId) || (did == toId)) {
-            const deleteReq : StyleDeleteRequest = { type: 'deleteStyle',
-                                                   styleId: h.id };
+            const deleteReq: StyleDeleteRequest = { type: 'deleteStyle', styleId: h.id };
             rval.push(deleteReq);
           }
         });
-//      }
+    //      }
   }
+
   private async deleteRelationships(style: StyleObject, rval: NotebookChangeRequest[]): Promise<void>  {
-      if (style.role == 'SYMBOL-DEFINITION') {
-        const did = style.id;
 
-        // not this is nullable, and is a Relationship.
-        var duplicateof : RelationshipObject | undefined;
-        const rs = this.notebook.allRelationships();
-        rs.forEach(r => {
-          if ((r.toId == did) && r.role == 'DUPLICATE-DEFINITION') {
-            if (duplicateof != null) {
-              debug("INTERNAL ERROR: Linearity of defintions broken1!");
-              throw new Error("INTERNAL ERROR: Linearity of defintions broken1!"+r);
-            }
-            duplicateof = r;
-          }
-        });
+    if (style.role == 'SYMBOL-DEFINITION') {
+      const did = style.id;
 
-        const U = this.notebook.getSymbolStylesThatDependOnMe(style);
-        const users : number[] = [];
-        for(const u of U) {
-          users.push(u.id);
-        }
-        const rids = new Set<number>();
-        for(const r of rs) {
-          if ((r.fromId == did) || (r.toId == did)) {
-            rids.add(r.id);
+      // not this is nullable, and is a Relationship.
+      var duplicateof: RelationshipObject | undefined;
+      const rs = this.notebook.allRelationships();
+      rs.forEach(r => {
+        if ((r.toId == did) && r.role == 'DUPLICATE-DEFINITION') {
+          if (duplicateof != null) {
+            debug("INTERNAL ERROR: Linearity of defintions broken1!");
+            throw new Error("INTERNAL ERROR: Linearity of defintions broken1!"+r);
           }
+          duplicateof = r;
         }
-        // console.log("users of me",users);
-        // console.log("duplicateof",duplicateof);
-        if (!(duplicateof === undefined)) {
-          rids.add(duplicateof.id);
-          for(const u of users) {
-            const props : RelationshipProperties = { role: 'SYMBOL-DEPENDENCY' };
-            const fromId = duplicateof.fromId;
-            const toId = u;
-            rval.push({
-              type: 'insertRelationship',
-              fromId,
-              toId,
-              inStyles: [ { role: 'LEGACY', id: fromId } ],
-              outStyles: [ { role: 'LEGACY', id: toId } ],
-              props: props,
-            });
-          }
-        }
-        rids.forEach(id => rval.push({ type: 'deleteRelationship',
-                                       id: id }));
-      } else if  (style.role == 'SYMBOL-USE') {
-        // Note: Deleting a use shold be simpler; a use is not a definition.
-        // We have already insisted that the code keep a linear chain
-        // of relationships; no matter what the definition chain, the
-        // use just gets rid of the relationships that use it.
-        const did = style.id;
-        // note this is nullable, and is a Relationship.
-        var singleuseof : RelationshipObject | undefined;
-        const rs = this.notebook.allRelationships();
-        rs.forEach(r => {
-          if ((r.toId == did)) {
-            if (singleuseof != null) {
-              debug("INTERNAL ERROR: Linearity of defintions broken1!");
-              throw new Error("INTERNAL ERROR: Linearity of defintions broken1!"+r);
-            }
-            singleuseof = r;
-          }
-        });
-        if (singleuseof)
-          rval.push({ type: 'deleteRelationship',
-                      id: singleuseof.id });
+      });
+
+      const U = this.notebook.getSymbolStylesThatDependOnMe(style);
+      const users : number[] = [];
+      for(const u of U) {
+        users.push(u.id);
       }
+      const rids = new Set<number>();
+      for(const r of rs) {
+        if ((r.fromId == did) || (r.toId == did)) {
+          rids.add(r.id);
+        }
+      }
+      // console.log("users of me",users);
+      // console.log("duplicateof",duplicateof);
+      if (!(duplicateof === undefined)) {
+        rids.add(duplicateof.id);
+        for(const u of users) {
+          const props: RelationshipProperties = { role: 'SYMBOL-DEPENDENCY' };
+          const fromId = duplicateof.fromId;
+          const toId = u;
+          rval.push({
+            type: 'insertRelationship',
+            fromId,
+            toId,
+            inStyles: [ { role: 'LEGACY', id: fromId } ],
+            outStyles: [ { role: 'LEGACY', id: toId } ],
+            props: props,
+          });
+        }
+      }
+      rids.forEach(id => rval.push({ type: 'deleteRelationship',
+                                      id: id }));
+    } else if  (style.role == 'SYMBOL-USE') {
+      // Note: Deleting a use shold be simpler; a use is not a definition.
+      // We have already insisted that the code keep a linear chain
+      // of relationships; no matter what the definition chain, the
+      // use just gets rid of the relationships that use it.
+      const did = style.id;
+      // note this is nullable, and is a Relationship.
+      var singleuseof: RelationshipObject | undefined;
+      const rs = this.notebook.allRelationships();
+      rs.forEach(r => {
+        if ((r.toId == did)) {
+          if (singleuseof != null) {
+            debug("INTERNAL ERROR: Linearity of defintions broken1!");
+            throw new Error("INTERNAL ERROR: Linearity of defintions broken1!"+r);
+          }
+          singleuseof = r;
+        }
+      });
+      if (singleuseof)
+        rval.push({ type: 'deleteRelationship',
+                    id: singleuseof.id });
+    }
+
     // If this style has uses reaching it, those relationships
     // should be removed.
     debug("RVAL deletion ====XXXX",rval);
   }
+
   private async recomputeTools(relId: RelationshipId,
                                fromId: StyleId,
                                toId: StyleId,
-                               rval: NotebookChangeRequest[])
-  : Promise<NotebookChangeRequest[]> {
+                               rval: NotebookChangeRequest[],
+  ): Promise<NotebookChangeRequest[]> {
     debug("BEGINNING TOOL ADD");
 
     debug("relId",relId);
@@ -321,7 +320,7 @@ export class SymbolClassifierObserver implements ObserverInstance {
                               [{ name: fromS.data.name,
                                  value: fromS.data.value}]);
       const isolated = <WolframExpression>`InputForm[runPrivate[FullSimplify[${sub_expr_w}]]]`;
-      const substituted = <WolframExpression>await execute(isolated);
+      const substituted = <WolframExpression>await executeWolframscript(isolated);
 
       // TODO -- we can do back substitutions that just produce "TRUE"
       // Maybe this acceptable? But True is not a part of the MTL right now!
@@ -336,29 +335,24 @@ export class SymbolClassifierObserver implements ObserverInstance {
       // Note: Create TeX is actually more complicated, and will require a
       // conversion procedure. However, this cast below works on simple
       // expressions from MTL into TeX
-      const toolData: ToolData = { name: "substitute",
-                                   html: <Html>/* REVIEW: safe cast? */sub_expr_mtl,
-                                   // WARNING: Invalid cast (MTL is not TeX)
-                                   tex: <TexExpression>substituted_mtl,
-                                   //                                        html: html_fun(f),
-                                   //                                        tex: tex_fun(tex_f),
-                                   // WARNING: Invalid cast (MTL is not TeX)
-                                   data: { output: <TexExpression>substituted_mtl,
-                                           // This is a pure Wolfram transform that does not include the conversion back to MTL
-                                           transformation: isolated,
-                                           transformationName: "substitute"
-                                         },
-                                   origin_id: relId};
-      const styleProps2: StylePropertiesWithSubprops = {
-        type: 'TOOL-DATA',
-        role: 'ATTRIBUTE',
-        data: toolData,
-      }
-      const changeReq2: StyleInsertRequest = {
-        type: 'insertStyle',
-        parentId: toEval.id,
-        styleProps: styleProps2
+      const toolData: ToolData = {
+        name: "substitute",
+        html: <Html>/* REVIEW: safe cast? */sub_expr_mtl,
+        // WARNING: Invalid cast (MTL is not TeX)
+        tex: <TexExpression>substituted_mtl,
+        //                                        html: html_fun(f),
+        //                                        tex: tex_fun(tex_f),
+        // WARNING: Invalid cast (MTL is not TeX)
+        data: {
+          output: <TexExpression>substituted_mtl,
+          // This is a pure Wolfram transform that does not include the conversion back to MTL
+          transformation: isolated,
+          transformationName: "substitute"
+        },
+        origin_id: relId
       };
+      const styleProps2: StylePropertiesWithSubprops = { type: 'TOOL-DATA', role: 'ATTRIBUTE', data: toolData }
+      const changeReq2: StyleInsertRequest = { type: 'insertStyle', parentId: toEval.id, styleProps: styleProps2 };
       rval.push(changeReq2);
     }
     return rval;
@@ -375,16 +369,18 @@ export class SymbolClassifierObserver implements ObserverInstance {
 
   private async insertFromStyleRule(style: StyleObject, rval: NotebookChangeRequest[]): Promise<NotebookChangeRequest[]>  {
 
-    var tlStyle;
-    try {
-      tlStyle = this.notebook.topLevelStyleOf(style.id);
-    } catch (e) {
-      // If we can't find a topLevelStyle, we have in
-      // inconsistency most likely caused by concurrency in some way
-      debug(this.notebook.toText());
-      console.log("error",e);
-    }
-    if (!tlStyle) return rval;
+    // WAS:
+    // var tlStyle;
+    // try {
+    // tlStyle = this.notebook.topLevelStyleOf(style.id);
+    // } catch (e) {
+    //   // If we can't find a topLevelStyle, we have in
+    //   // inconsistency most likely caused by concurrency in some way
+    //   debug(notebookSynopsys(this.notebook));
+    //   console.log("error",e);
+    // }
+    // if (!tlStyle) return rval;
+    const tlStyle = this.notebook.topLevelStyleOf(style.id);
     const tlid = tlStyle.id;
 
     // I believe listening only for the WOLFRAM/INPUT forces
@@ -420,7 +416,7 @@ export class SymbolClassifierObserver implements ObserverInstance {
       if ((kid.parentId == style.id) &&
           (kid.type == 'SYMBOL-DATA') &&
           (kid.role == 'SYMBOL-USE')) {
-        const deleteReq : StyleDeleteRequest = { type: 'deleteStyle',
+        const deleteReq: StyleDeleteRequest = { type: 'deleteStyle',
                                                  styleId: kid.id };
         rval.push(deleteReq);
       };
@@ -435,9 +431,7 @@ export class SymbolClassifierObserver implements ObserverInstance {
     rval: NotebookChangeRequest[],
   ): Promise<NotebookChangeRequest[]> {
     if (style.type == 'SYMBOL-DATA' && (style.role == 'SYMBOL-USE' || style.role == 'SYMBOL-DEFINITION')) {
-      const name = (style.role == 'SYMBOL-USE') ?
-        style.data.name :
-        style.data.name;
+      const name = (style.role == 'SYMBOL-USE') ? style.data.name : style.data.name;
       const relationsUse: RelationshipPropertiesMap =
         this.getAllMatchingNameAndType(name,'SYMBOL-USE');
       const relationsDef: RelationshipPropertiesMap =
@@ -480,29 +474,23 @@ export class SymbolClassifierObserver implements ObserverInstance {
           this.getLatestOfListOfStyleIds(defs) :
           this.getLatestOfListOfStyleIds(uses);
         if (index >= 0) {
-          const myFromId =
-            (style.role == 'SYMBOL-USE') ?
-            index :
-            style.id;
-          const myToId =
-            (style.role == 'SYMBOL-USE') ?
-            style.id :
-            index;
+          const myFromId = (style.role == 'SYMBOL-USE' ? index : style.id);
+          const myToId = (style.role == 'SYMBOL-USE' ? style.id : index);
 
 
           debug('ZZZZZ');
           debug(style.role);
-          const relOp : FindRelationshipOptions = { toId: myToId,
+          const relOp: FindRelationshipOptions = { toId: myToId,
                                                     fromId: myFromId,
                                                     role: 'SYMBOL-DEPENDENCY',
                                                     source: 'SYMBOL-CLASSIFIER' };
 
 
-          const relsInPlace : RelationshipObject[] = this.notebook.findRelationships(relOp);
+          const relsInPlace: RelationshipObject[] = this.notebook.findRelationships(relOp);
 
           if (relsInPlace.length == 0) {
           // Check that the notebook already had this relationship,
-          const props : RelationshipProperties = { role: 'SYMBOL-DEPENDENCY'
+          const props: RelationshipProperties = { role: 'SYMBOL-DEPENDENCY'
                                                  };
           const changeReq: RelationshipInsertRequest = {
             type: 'insertRelationship',
@@ -535,7 +523,7 @@ export class SymbolClassifierObserver implements ObserverInstance {
         }
         debug("ZZZZZZZ defs",defs);
         if (defs.length >= 1) {
-          const dup_prop : RelationshipProperties =
+          const dup_prop: RelationshipProperties =
             { role: 'DUPLICATE-DEFINITION' };
 
           const last_def = this.getLatestOfListOfStyleIds(defs);
@@ -571,7 +559,7 @@ export class SymbolClassifierObserver implements ObserverInstance {
       const style = this.notebook.getStyle(change.styleId);
       const tlStyle = this.notebook.topLevelStyleOf(style.id);
       // Now for each style is as use or defintion, collect the names...
-      const symbols : Set<string> = new Set<string>();
+      const symbols: Set<string> = new Set<string>();
       // REVIEW: Does this search need to be recursive?
       const syms = this.notebook.findStyles({ type: 'SYMBOL-DATA', recursive: true }, tlStyle.id);
       syms.forEach(sym => {
@@ -606,10 +594,10 @@ export class SymbolClassifierObserver implements ObserverInstance {
       });
 
       // TODO: Not posibbly this is returning a tool insertion as well!!!
-      const rels : RelationshipObject[] =
+      const rels: RelationshipObject[] =
         this.notebook.recomputeAllSymbolRelationshipsForSymbols(symbols);
       rels.forEach(r => {
-          const prop : RelationshipProperties =
+          const prop: RelationshipProperties =
             { role: r.role };
             const changeReq: RelationshipInsertRequest = {
               type: 'insertRelationship',
@@ -685,7 +673,7 @@ export class SymbolClassifierObserver implements ObserverInstance {
     });
     children.forEach( kid => {
       if ((kid.data.origin_id == relationship.id)) {
-        const deleteReq : StyleDeleteRequest = { type: 'deleteStyle',
+        const deleteReq: StyleDeleteRequest = { type: 'deleteStyle',
                                                  styleId: kid.id };
         rval.push(deleteReq);
       };
@@ -709,7 +697,7 @@ export class SymbolClassifierObserver implements ObserverInstance {
 
   private async addSymbolDefStyles(style: StyleObject, rval: NotebookChangeRequest[]): Promise<void> {
     const script = <WolframExpression>`FullForm[Hold[${style.data}]]`;
-    const result = await execute(script);
+    const result = await executeWolframscript(script);
     if (!result) { return; }
     if (result.startsWith("Hold[Set[")) {
       // WARNING! TODO!  This may work but will not match
@@ -809,9 +797,9 @@ export class SymbolClassifierObserver implements ObserverInstance {
 
           // But we use the Wolfram interpretation for out other work...
           const script_lhs = <WolframExpression>`FullForm[Hold[${lhs}]]`;
-          const result_lhs = await execute(script_lhs);
+          const result_lhs = await executeWolframscript(script_lhs);
           const script_rhs = <WolframExpression>`FullForm[Hold[${rhs}]]`;
-          const result_rhs = await execute(script_rhs);
+          const result_rhs = await executeWolframscript(script_rhs);
 
           if (result_lhs && result_rhs) {
             const hold_matcher = /Hold\[(.*)\]/;
@@ -869,7 +857,7 @@ export class SymbolClassifierObserver implements ObserverInstance {
 
   private async addSymbolUseStyles(style: StyleObject, rval: NotebookChangeRequest[]): Promise<void> {
     await this.removeAllCurrentUses(style,rval);
-    const data : string = (style.data.wolframData) ? style.data.wolframData : style.data;
+    const data: string = (style.data.wolframData) ? style.data.wolframData : style.data;
     await this.addSymbolUseStylesFromString(data, style, rval);
   }
 
@@ -878,7 +866,7 @@ export class SymbolClassifierObserver implements ObserverInstance {
       return [];
     } else {
       const script = <WolframExpression>(`runPrivate[Variables[` + math + `]]`);
-      const oresult = await execute(script);
+      const oresult = await executeWolframscript(script);
       if (!oresult) { return []; }
       const result = draftChangeContextName(oresult);
 
@@ -955,7 +943,7 @@ export class SymbolClassifierObserver implements ObserverInstance {
     children.forEach( kid => {
       if ((kid.parentId == style.id) &&
           (kid.type == 'SYMBOL-DATA')) {
-        const deleteReq : StyleDeleteRequest = { type: 'deleteStyle',
+        const deleteReq: StyleDeleteRequest = { type: 'deleteStyle',
                                                  styleId: kid.id };
         rval.push(deleteReq);
       };
@@ -983,19 +971,4 @@ export class SymbolClassifierObserver implements ObserverInstance {
     });
   }
 
-}
-
-// Helper Functios
-
-async function execute(script: WolframExpression): Promise<WolframExpression|undefined> {
-  let result: WolframExpression;
-  try {
-    // debug(`Executing: ${script}`)
-    result = await executeWolframscript(script);
-  } catch (err) {
-    debug(`Wolfram '${script}' failed with '${err.message}'`);
-    return;
-  }
-  debug(`Wolfram '${script}' returned '${result}'`);
-  return result;
 }

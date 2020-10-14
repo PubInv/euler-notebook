@@ -343,7 +343,6 @@ export const STYLE_SOURCES = [
   'ALGEBRAIC-DATAFLOW-OBSERVER',
   'ALGEBRAIC-TOOLS',  // Algebraic tools provided by Wolfram
   'EQUATION-SOLVER',  // Attempt to expose Wolfram solutions
-  'FORMULA-OBSERVER',
   'MATHEMATICA',      // Mathematica C.A.S.
   'MATHJAX-OBSERVER',
   'MYSCRIPT',         // MyScript handwriting recognition`
@@ -354,6 +353,7 @@ export const STYLE_SOURCES = [
   'SYSTEM',           // Primary observer of Math Tablet, itself.
   'TEST',             // An example source used only by our test system
   'TEX-FORMATTER',
+  'TEX-OBSERVER',
   'USER',             // Directly entered by user
   'WOLFRAM-OBSERVER', // Wolfram C.A.S.
 ] as const;
@@ -525,21 +525,10 @@ export abstract class Notebook<W extends NotebookWatcher> extends WatchedResourc
     return this.pages[0].styleIds.indexOf(top.id);
   }
 
-  public toText(): string {
-    // A textual representation useful for debugging.
-    return this.topLevelStyleOrder()
-    .map(styleId=>{
-      const style = this.getStyle(styleId);
-      return this.styleToText(style);
-    })
-    .join('');
-  }
-
   // Public Instance Methods
 
   public applyChange(change: NotebookChange): void {
-    // TODO: Don't let changes be null.
-    if (change == null) { return; }
+    assert(change);
 
     // REVEIW: Maybe all change notification should go out prior?
     //         Then the styleChanged would not have to include "previousData"
@@ -682,15 +671,6 @@ export abstract class Notebook<W extends NotebookWatcher> extends WatchedResourc
     return <Html>`<div><span class="leaf">R${relationship.id} ${relationship.role} [${inStylesHtml} ${RIGHT_ARROW_ENTITY} ${outStylesHtml}] (${relationship.fromId} ${RIGHT_ARROW_ENTITY} ${relationship.toId}) ${dataJson} logic: ${logic} status: ${status}</span></div>`;
   }
 
-  private relationshipToText(relationship: RelationshipObject, indentationLevel: number): string {
-    const dataJson = (typeof relationship.data != 'undefined' ? JSON.stringify(relationship.data) : 'undefined' );
-    const logic = relationship.logic;
-    const status = relationship.status;
-    const inStylesText = relationship.inStyles.map(rs=>`${rs.role} ${rs.id}`).join(", ");
-    const outStylesText = relationship.outStyles.map(rs=>`${rs.role} ${rs.id}`).join(", ");
-    return `${indentation(indentationLevel)}R${relationship.id} ${relationship.role} [${inStylesText} => ${outStylesText}] (${relationship.fromId}=> ${relationship.toId}) ${dataJson} logic: ${logic} status: ${status}\n`;
-  }
-
   private styleToHtml(style: StyleObject): Html {
     // TODO: This is very inefficient as notebook.childStylesOf goes through *all* styles.
     const childStyleObjects = Array.from(this.childStylesOf(style.id));
@@ -712,33 +692,6 @@ export abstract class Notebook<W extends NotebookWatcher> extends WatchedResourc
     ${relationshipsHtml}
   </div>
 </div>`;
-    }
-  }
-
-  public styleToText(style: StyleObject, indentationLevel: number = 0): string {
-    // TODO: This is very inefficient as notebook.childStylesOf goes through *all* styles.
-    const childStyleObjects = Array.from(this.childStylesOf(style.id));
-    // TODO: This is very inefficient as notebook.relationshipOf goes through *all* relationships.
-    const relationshipObjects = Array.from(this.relationshipsOf(style.id));
-    const dataJson = (typeof style.data != 'undefined' ? JSON.stringify(style.data) : 'undefined' );
-    const roleSubrole = (style.subrole ? `${style.role}|${style.subrole}` : style.role);
-    const styleInfo = `S${style.id} ${roleSubrole} ${style.type} ${style.source}`
-    if (childStyleObjects.length == 0 && relationshipObjects.length == 0 && dataJson.length<50) {
-      return `${indentation(indentationLevel)}${styleInfo} ${dataJson}\n`;
-    } else {
-      let rval: string;
-      if (dataJson.length<30) {
-        rval = `${indentation(indentationLevel)}${styleInfo}${dataJson}\n`;
-      } else {
-        rval = `${indentation(indentationLevel)}${styleInfo}\n${indentation(indentationLevel)}${dataJson}\n`;
-      }
-      for (const childStyle of childStyleObjects) {
-        rval += this.styleToText(childStyle, indentationLevel+1)
-      }
-      for (const relationship of relationshipObjects) {
-        rval += this.relationshipToText(relationship, indentationLevel+1);
-      }
-      return rval;
     }
   }
 
@@ -814,8 +767,6 @@ export abstract class Notebook<W extends NotebookWatcher> extends WatchedResourc
 // Helper Classes
 
 // Helper Functions
-
-function indentation(indentationLevel: number): string { return ' '.repeat(indentationLevel*2); }
 
 export function StyleInsertedFromNotebookChange(change: NotebookChange): StyleInserted {
   // TODO: Rename this function so it doesn't start with a capital letter.

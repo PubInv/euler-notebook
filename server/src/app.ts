@@ -54,7 +54,7 @@ const NODE_REQUIREMENT = ">=12.16.3";
 
 async function main() {
 
-  assert(semverSatisfies(process.versions.node, NODE_REQUIREMENT), `Node version must satisfy requirement '${NODE_REQUIREMENT}'`);
+  checkNodeVersion();
 
   const config = await loadConfig();
   const credentials = await loadCredentials();
@@ -146,6 +146,10 @@ main().then(
 );
 
 // Helper Functions
+
+function checkNodeVersion(): void {
+  assert(semverSatisfies(process.versions.node, NODE_REQUIREMENT), `Node version must satisfy requirement '${NODE_REQUIREMENT}'`);
+}
 
 function normalizePort(val: string): string|number|boolean {
   var port = parseInt(val, 10);

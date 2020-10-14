@@ -21,7 +21,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 import debug1 from "debug";
 
-import { FormulaData, MTLExpression } from "../shared/notebook";
+import { FormulaData } from "../shared/notebook";
 import { TexExpression } from "../shared/math-tablet-api";
 
 import { ServerNotebook } from "../server-notebook";
@@ -36,15 +36,15 @@ const debug = debug1(`server:${MODULE}`);
 
 // Exported Class
 
-export class FormulaObserver extends BaseObserver {
+export class TexObserver extends BaseObserver {
 
   // --- OVERRIDES ---
 
-  protected get rules(): Rules { return FormulaObserver.RULES; }
+  protected get rules(): Rules { return TexObserver.RULES; }
 
   // --- PUBLIC ---
 
-  public static async onOpen(notebook: ServerNotebook): Promise<FormulaObserver> {
+  public static async onOpen(notebook: ServerNotebook): Promise<TexObserver> {
     debug(`Opening FormulaObserver for ${notebook.path}.`);
     return new this(notebook);
   }
@@ -59,15 +59,7 @@ export class FormulaObserver extends BaseObserver {
       styleRelation: StyleRelation.ChildToParent,
       styleTest: { role: 'INPUT', source: 'USER', type: 'TEX-EXPRESSION' },
       props: { role: 'FORMULA', type: 'FORMULA-DATA' },
-      computeAsync: FormulaObserver.parseTexInput,
-    },
-    {
-      name: "parseWolframInput",
-      styleRelation: StyleRelation.ChildToParent,
-      styleTest: { role: 'INPUT', source: 'USER', type: 'WOLFRAM-EXPRESSION' },
-      // REVIEW: Are props necessary in ChildToParent relations? Validate that parent has expected props?
-      props: { role: 'FORMULA', type: 'FORMULA-DATA' },
-      computeSync: FormulaObserver.parseWolframInput,
+      computeAsync: TexObserver.parseTexInput,
     },
     {
       name: "renderFormulaToTex",
@@ -75,28 +67,11 @@ export class FormulaObserver extends BaseObserver {
       styleTest: { role: 'FORMULA', type: 'FORMULA-DATA' },
       props: { role: 'REPRESENTATION', type: 'TEX-EXPRESSION' },
       exclusiveChildTypeAndRole: true,
-      computeAsync: FormulaObserver.renderFormulaToTexRepresentation,
-    },
-    {
-      name: "renderFormulaToWolfram",
-      styleRelation: StyleRelation.ParentToChild,
-      styleTest: { role: 'FORMULA', type: 'FORMULA-DATA' },
-      props: { role: 'REPRESENTATION', type: 'WOLFRAM-EXPRESSION' },
-      computeSync: FormulaObserver.renderFormulaToWolframRepresentation,
+      computeAsync: TexObserver.renderFormulaToTexRepresentation,
     },
   ];
 
   // Private Class Methods
-
-  private static parseWolframInput(wolframData: MTLExpression): FormulaData|undefined {
-    // TODO: Make this async, pass the string to WolframScript to normalize.
-    return { wolframData };
-  }
-
-  private static renderFormulaToWolframRepresentation(formulaData: FormulaData): MTLExpression|undefined {
-    // REVIEW: Convert single equal sign to double equal sign?
-    return formulaData.wolframData;
-  }
 
   private static async parseTexInput(data: TexExpression): Promise<FormulaData|undefined> {
     // REVIEW: If conversion fails?

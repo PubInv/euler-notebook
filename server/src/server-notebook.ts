@@ -28,7 +28,7 @@ import * as debug1 from "debug";
 import { readdirSync, writeFileSync } from "fs"; // LATER: Eliminate synchronous file operations.
 import { join } from "path";
 
-import { assert, ExpectedError, Timestamp } from "./shared/common";
+import { assert, assertFalse, ExpectedError, Timestamp } from "./shared/common";
 import { NotebookPath, NOTEBOOK_PATH_RE, NotebookName, FolderPath, NotebookEntry } from "./shared/folder";
 import {
   Notebook, NotebookObject, NotebookChange, StyleObject, StyleRole, StyleType, StyleSource, StyleId,
@@ -46,6 +46,7 @@ import { AbsDirectoryPath, ROOT_DIR_PATH, mkDir, readFile, rename, rmRaf, writeF
 import { constructSubstitution } from "./adapters/wolframscript";
 import { OpenOptions } from "./shared/watched-resource";
 import { logError } from "./error-handler";
+import { notebookChangeRequestSynopsis, notebookChangeSynopsis, notebookSynopsis } from "./debug-synopsis";
 
 
 // LATER: Convert these to imports.
@@ -677,7 +678,7 @@ ${ind} + ${data}
     // or we reach a limit.
 
     assert(!this.terminated);
-    debug(`requestChanges ${changeRequests.length}`);
+    debug(`Requested changes: ${changeRequests.length}`);
 
     // Make the requested changes to the notebook.
     const changes: NotebookChange[] = [];
@@ -693,7 +694,7 @@ ${ind} + ${data}
     for (let round = 0; asyncStartIndex<changes.length && round<MAX_ASYNC_ROUNDS; round++) {
       debug(`Async round ${round}.`);
       asyncStartIndex = await this.processChangesAsync(changes, asyncStartIndex);
-      syncStartIndex = this.processChangesSync(changes, syncStartIndex);
+      syncStartIndex = this.processChangesSync(changes, syncStartIndex, round);
 
       this.notifyWatchersOfChanges(changes.slice(notifyStartIndex), undefined, true, originatingWatcher, requestId);
       notifyStartIndex = changes.length;
@@ -726,7 +727,7 @@ ${ind} + ${data}
 
     // We are only plottable if we make the normal substitutions...
     const rs = this.getSymbolStylesIDependOn(evaluationStyle);
-    debug("RS",rs);
+    debug("RS", rs);
 
     var cvariables  = [...variables];
 
@@ -831,8 +832,9 @@ ${ind} + ${data}
     change: NotebookChange,
     rval: NotebookChange[],
   ): void {
-    debug(`Applying change: source ${source}, type ${change.type}.`);
+    debug(`${source} change: ${notebookChangeSynopsis(change)}`);
     this.applyChange(change);
+    debug(notebookSynopsis(this));
     rval.push(change);
   }
 
@@ -843,26 +845,33 @@ ${ind} + ${data}
   ): NotebookChangeRequest[] {
     const undoChangeRequests: NotebookChangeRequest[] = [];
     for (const changeRequest of changeRequests) {
-
-      if (!changeRequest) {
-        // REVIEW: Should not get null change requests.
-        console.error("WARNING: falsy notebook change request.");
-        continue;
-      }
-
-      // debug(`Change request from ${source}: ${JSON.stringify(changeRequest)}`);
-
+      assert(changeRequest);
+      debug(`${source} change request: ${notebookChangeRequestSynopsis(changeRequest)}`);
       let undoChangeRequest: NotebookChangeRequest|undefined;
       switch(changeRequest.type) {
-        case 'changeStyle':         undoChangeRequest = this.applyStyleChangeRequest(source, changeRequest, rval); break;
-        case 'convertStyle':        undoChangeRequest = this.applyStyleConvertRequest(source, changeRequest, rval); break;
-        case 'deleteRelationship':  undoChangeRequest = this.applyRelationshipDeleteRequest(source, changeRequest, rval); break;
-        case 'deleteStyle':         undoChangeRequest = this.applyStyleDeleteRequest(source, changeRequest, rval); break;
-        case 'insertRelationship':  undoChangeRequest = this.applyRelationshipInsertRequest(source, changeRequest, rval); break;
-        case 'insertStyle':         undoChangeRequest = this.applyStyleInsertRequest(source, changeRequest, rval); break;
-        case 'moveStyle':           undoChangeRequest = this.applyStyleMoveRequest(source, changeRequest, rval); break;
+        case 'changeStyle':
+          undoChangeRequest = this.applyChangeStyleRequest(source, changeRequest, rval);
+          break;
+        case 'convertStyle':
+          undoChangeRequest = this.applyConvertStyleRequest(source, changeRequest, rval);
+          break;
+        case 'deleteRelationship':
+          undoChangeRequest = this.applyDeleteRelationshipRequest(source, changeRequest, rval);
+          break;
+        case 'deleteStyle':
+          undoChangeRequest = this.applyDeleteStyleRequest(source, changeRequest, rval);
+          break;
+        case 'insertRelationship':
+          undoChangeRequest = this.applyInsertRelationshipRequest(source, changeRequest, rval);
+          break;
+        case 'insertStyle':
+          undoChangeRequest = this.applyInsertStyleRequest(source, changeRequest, rval);
+          break;
+        case 'moveStyle':
+          undoChangeRequest = this.applyMoveStyleRequest(source, changeRequest, rval);
+          break;
         default:
-          throw new Error(`Unexpected change request type ${(<any>changeRequest).type}`);
+          assertFalse();
       }
       if (undoChangeRequest) {
         // debug(`Undo change request is: ${JSON.stringify(undoChangeRequest)}`);
@@ -873,7 +882,48 @@ ${ind} + ${data}
     return undoChangeRequests;
   }
 
-  private applyRelationshipDeleteRequest(
+  private applyChangeStyleRequest(
+    source: StyleSource,
+    request: StyleChangeRequest,
+    rval: NotebookChange[],
+  ): StyleChangeRequest {
+    const style = this.getStyle(request.styleId);
+    const previousData = style.data;
+    style.data = request.data;
+    const change: StyleChanged = { type: 'styleChanged', style, previousData };
+    this.appendChange(source, change, rval);
+    const undoChangeRequest: StyleChangeRequest = {
+      type: 'changeStyle',
+      styleId: style.id,
+      data: previousData,
+    }
+    return undoChangeRequest;
+  }
+
+  private applyConvertStyleRequest(
+    source: StyleSource,
+    request: StyleConvertRequest,
+    rval: NotebookChange[],
+  ): StyleConvertRequest {
+    const style = this.getStyle(request.styleId);
+    const previousRole = style.role;
+    const previousSubrole = style.subrole;
+    if (request.role) { style.role = request.role; }
+    if (request.subrole) { style.subrole = request.subrole; }
+    if (request.styleType) { style.type = request.styleType; }
+    if (request.data) { style.data = request.data; }
+    const change: StyleConverted = { type: 'styleConverted', styleId: style.id, role: request.role, subrole: request.subrole };
+    this.appendChange(source, change, rval);
+    const undoChangeRequest: StyleConvertRequest = {
+      type: 'convertStyle',
+      styleId: style.id,
+      role: previousRole,
+      subrole: previousSubrole,
+    }
+    return undoChangeRequest;
+  }
+
+  private applyDeleteRelationshipRequest(
     source: StyleSource,
     request: RelationshipDeleteRequest,
     rval: NotebookChange[],
@@ -893,7 +943,53 @@ ${ind} + ${data}
     return undoChangeRequest;
   }
 
-  private applyRelationshipInsertRequest(
+  private applyDeleteStyleRequest(
+    source: StyleSource,
+    request: StyleDeleteRequest,
+    rval: NotebookChange[],
+  ): StyleInsertRequest|undefined {
+
+    var style = this.getStyle(request.styleId);
+
+    // Assemble the undo change request before we delete anything
+    // from the notebook.
+    // TODO: gather substyles and relationships from the same source, etc.
+    const styleProps: StylePropertiesWithSubprops = {
+      type: style.type,
+      role: style.role,
+      data: style.data,
+    };
+    const undoChangeRequest: StyleInsertRequest = {
+      type: 'insertStyle',
+      // TODO: afterId
+      // TODO: parentId
+      styleProps,
+    };
+
+    // Delete substyles recursively
+    const substyles = this.childStylesOf(style.id);
+    for(const substyle of substyles) {
+      const request2: StyleDeleteRequest = { type: 'deleteStyle', styleId: substyle.id };
+      this.applyDeleteStyleRequest(source, request2, rval);
+    }
+
+    // // Delete any relationships attached to this style.
+    // Note: We actually can't do this automatically.
+    // Although deleting a "from" or "to" style in a relationship
+    // certainly invalidates that relationship, we may need the
+    // relationship to compute how to "repair" or "reroute" the dependency
+    // const relationships = this.relationshipsOf(id);
+    // for(const relationship of relationships) {
+    //   changes.push(this.deleteRelationshipChange(relationship.id));
+    // }
+
+    const change: StyleDeleted = { type: 'styleDeleted', style };
+    this.appendChange(source, change, rval);
+
+    return undoChangeRequest;
+  }
+
+  private applyInsertRelationshipRequest(
     source: StyleSource,
     request: RelationshipInsertRequest,
     rval: NotebookChange[],
@@ -928,105 +1024,7 @@ ${ind} + ${data}
     return undoChangeRequest;
   }
 
-  private applyStyleChangeRequest(
-    source: StyleSource,
-    request: StyleChangeRequest,
-    rval: NotebookChange[],
-  ): StyleChangeRequest {
-    const style = this.getStyle(request.styleId);
-    const previousData = style.data;
-    style.data = request.data;
-    const change: StyleChanged = { type: 'styleChanged', style, previousData };
-    this.appendChange(source, change, rval);
-    const undoChangeRequest: StyleChangeRequest = {
-      type: 'changeStyle',
-      styleId: style.id,
-      data: previousData,
-    }
-    return undoChangeRequest;
-  }
-
-  private applyStyleConvertRequest(
-    source: StyleSource,
-    request: StyleConvertRequest,
-    rval: NotebookChange[],
-  ): StyleConvertRequest {
-    const style = this.getStyle(request.styleId);
-    const previousRole = style.role;
-    const previousSubrole = style.subrole;
-    if (request.role) { style.role = request.role; }
-    if (request.subrole) { style.subrole = request.subrole; }
-    if (request.styleType) { style.type = request.styleType; }
-    if (request.data) { style.data = request.data; }
-    const change: StyleConverted = { type: 'styleConverted', styleId: style.id, role: request.role, subrole: request.subrole };
-    this.appendChange(source, change, rval);
-    const undoChangeRequest: StyleConvertRequest = {
-      type: 'convertStyle',
-      styleId: style.id,
-      role: previousRole,
-      subrole: previousSubrole,
-    }
-    return undoChangeRequest;
-  }
-
-  private applyStyleDeleteRequest(
-    source: StyleSource,
-    request: StyleDeleteRequest,
-    rval: NotebookChange[],
-  ): StyleInsertRequest|undefined {
-
-    var style = this.getStyleThatMayNotExist(request.styleId);
-    if (!style) {
-      // This may be sloppy thought, but it is the best I can do.
-      // I don't know if concurrency makes this an inevitable happenstance,
-      // or if a coding error has produced this. The way this arose
-      // makes me think the latter---our code is probably creating a
-      // "double delete" somewhere. This is the best I can do for now,
-      // and I have created a test that covers the bug that led me
-      // here. - rlr
-      debug("requested to delete unknown style",request.styleId);
-      return undefined;
-    }
-
-    // Assemble the undo change request before we delete anything
-    // from the notebook.
-    // TODO: gather substyles and relationships from the same source, etc.
-    const styleProps: StylePropertiesWithSubprops = {
-      type: style.type,
-      role: style.role,
-      data: style.data,
-    };
-    const undoChangeRequest: StyleInsertRequest = {
-      type: 'insertStyle',
-      // TODO: afterId
-      // TODO: parentId
-      styleProps,
-    };
-
-    // Delete substyles recursively
-    const substyles = this.childStylesOf(style.id);
-    for(const substyle of substyles) {
-      const request2: StyleDeleteRequest = { type: 'deleteStyle', styleId: substyle.id };
-      this.applyStyleDeleteRequest(source, request2, rval);
-    }
-
-    // // Delete any relationships attached to this style.
-    // Note: We actually can't do this automatically.
-    // Although deleting a "from" or "to" style in a relationship
-    // certainly invalidates that relationship, we may need the
-    // relationship to compute how to "repair" or "reroute" the dependency
-    // const relationships = this.relationshipsOf(id);
-    // for(const relationship of relationships) {
-    //   changes.push(this.deleteRelationshipChange(relationship.id));
-    // }
-
-    const change: StyleDeleted = { type: 'styleDeleted', style };
-    this.appendChange(source, change, rval);
-
-    return undoChangeRequest;
-  }
-
-  private applyStyleInsertRequest(
+  private applyInsertStyleRequest(
     source: StyleSource,
     request: StyleInsertRequest,
     rval: NotebookChange[],
@@ -1061,7 +1059,7 @@ ${ind} + ${data}
       const children = this.findStyles({ role: style.role, type: style.type, recursive: true }, parentId);
       for (const child of children) {
         const request2: StyleDeleteRequest = { type: 'deleteStyle', styleId: child.id };
-        this.applyStyleDeleteRequest(source, request2, rval);
+        this.applyDeleteStyleRequest(source, request2, rval);
       }
     }
 
@@ -1071,7 +1069,7 @@ ${ind} + ${data}
     if (styleProps.subprops) {
       for (const substyleProps of styleProps.subprops) {
         const request2: StyleInsertRequest = { type: 'insertStyle', parentId: style.id, styleProps: substyleProps };
-        this.applyStyleInsertRequest(source, request2, rval);
+        this.applyInsertStyleRequest(source, request2, rval);
       }
     }
 
@@ -1087,7 +1085,7 @@ ${ind} + ${data}
           outStyles: [ { role: 'LEGACY', id: toId } ],
           props
         };
-        this.applyRelationshipInsertRequest(source, request2, rval);
+        this.applyInsertRelationshipRequest(source, request2, rval);
       }
     }
 
@@ -1103,7 +1101,7 @@ ${ind} + ${data}
           outStyles: [ { role: 'LEGACY', id: toId } ],
           props
         };
-        this.applyRelationshipInsertRequest(source, request2, rval);
+        this.applyInsertRelationshipRequest(source, request2, rval);
       }
     }
 
@@ -1114,7 +1112,7 @@ ${ind} + ${data}
     return undoChangeRequest;
   }
 
-  private applyStyleMoveRequest(
+  private applyMoveStyleRequest(
     source: StyleSource,
     request: StyleMoveRequest,
     rval: NotebookChange[],
@@ -1229,7 +1227,7 @@ ${ind} + ${data}
         observer.onChangesAsync(changes, startIndex, endIndex)
         .then(
           (changeRequests)=>{ this.applyRequestedChanges(source, changeRequests, changes); },
-          // TODO: (err)=>
+          // REVIEW: Error handling? (err)=>
         )
       );
     };
@@ -1237,10 +1235,14 @@ ${ind} + ${data}
     return endIndex;
   }
 
-  private processChangesSync(changes: NotebookChange[], startIndex: number): number {
+  private processChangesSync(
+    changes: NotebookChange[],
+    startIndex: number,
+    asyncRound?: number
+  ): number {
     let round: number;
     for (round = 0; startIndex<changes.length && round<MAX_SYNC_ROUNDS; round++) {
-      debug(`Sync round ${round}.`);
+      debug(`Sync round ${asyncRound!=undefined?`${asyncRound}/`:''}${round}.`);
 
       // Pass the new changes to each observer synchronously to determine if
       // the observer wants to make additional change requests as the result of

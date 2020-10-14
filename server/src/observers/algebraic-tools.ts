@@ -40,6 +40,7 @@ import { execute,
          convertMTLToTeX
        } from "../adapters/wolframscript";
 import { Config } from "../config";
+import { notebookSynopsis } from "../debug-synopsis";
 
 // Types
 
@@ -76,7 +77,6 @@ export class AlgebraicToolsObserver implements ObserverInstance {
 
   public onClose(): void {
     debug(`onClose ${this.notebook.path}`);
-    delete this.notebook;
   }
 
   // TODO: This is a direct duplicate code in symbol-classifier.ts
@@ -100,7 +100,7 @@ export class AlgebraicToolsObserver implements ObserverInstance {
     if (origin_top.role == 'FORMULA' && origin_top.type == 'FORMULA-DATA') {
       fromId = origin_top.id;
     } else {
-      debug("notebook",this.notebook.toText());
+      debug("notebook", notebookSynopsis(this.notebook));
       fromId = this.notebook.findStyle({role: 'FORMULA', type: 'FORMULA-DATA',recursive: true },
                                origin_top!.id)!.id;
     }

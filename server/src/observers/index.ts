@@ -25,7 +25,7 @@ import { ServerNotebook } from "../server-notebook";
 import { AlgebraicDataflowObserver } from "./algebraic-dataflow-observer";
 import { AlgebraicToolsObserver } from "./algebraic-tools";
 import { EquationSolverObserver } from "./equation-solver";
-import { FormulaObserver } from "./formula-observer";
+import { TexObserver } from "./tex-observer";
 import { MathematicaObserver } from "./mathematica-cas";
 import { MyScriptObserver } from "./myscript-observer";
 import { RepresentationObserver } from "./system-observer";
@@ -75,7 +75,7 @@ export async function initialize(config: Config, credentials: Credentials): Prom
     await MyScriptObserver.initialize(config, credentials.myscript);
     ServerNotebook.registerObserver('MYSCRIPT', MyScriptObserver);
   }
-  ServerNotebook.registerObserver('FORMULA-OBSERVER', FormulaObserver);
+  ServerNotebook.registerObserver('TEX-OBSERVER', TexObserver);
   await SandboxObserver.initialize(config);
   ServerNotebook.registerObserver('SANDBOX', SandboxObserver);
 
@@ -104,7 +104,7 @@ export function terminate(): void {
   if (useMyScript) {
     ServerNotebook.deregisterObserver('MYSCRIPT');
   }
-  ServerNotebook.deregisterObserver('FORMULA-OBSERVER');
+  ServerNotebook.deregisterObserver('TEX-OBSERVER');
   ServerNotebook.deregisterObserver('SANDBOX');
 
   initialized = false;
