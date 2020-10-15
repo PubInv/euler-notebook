@@ -50,9 +50,17 @@ export function initialize(): void {
   gAdaptor = liteAdaptor();
   /* const handler = */ RegisterHTMLHandler(gAdaptor);
 
+  // TeX input processor options are described at:
+  // http://docs.mathjax.org/en/latest/options/input/tex.html
   const tex = new TeX({ packages: AllPackages });
-  const svg = new SVG({ fontCache: 'none' }); // REVIEW: Do we want 'local'?
-  gHtml = mathjax.document('', {InputJax: tex, OutputJax: svg});
+
+  // MathJax SVG output processor options are described at:
+  // http://docs.mathjax.org/en/latest/options/output/svg.html
+  const svg = new SVG({
+    // REVIEW: Why doesn't this work?: displayAlign: 'left',
+    fontCache: 'local', // REVIEW: Could we save space using 'global'?
+  });
+  gHtml = mathjax.document('', { InputJax: tex, OutputJax: svg });
 }
 
 export function convertTexToSvg(tex: TexExpression, cssClass: CssClass): SvgMarkup {

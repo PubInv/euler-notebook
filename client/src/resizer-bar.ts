@@ -74,7 +74,7 @@ export class ResizerBar extends HtmlElement<'div'>  {
         {
           tag: 'button',
           attrs: { tabindex: -1 },
-          class: <CssClass>'insertCellBelowButton',
+          classes: [ <CssClass>'insertCellBelowButton', <CssClass>'iconButton' ],
           html: RIGHT_TRIANGLE_ENTITY,
           listeners: { click: _e=>insertCallbackFn() },
         }

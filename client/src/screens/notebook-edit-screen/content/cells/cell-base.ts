@@ -127,7 +127,6 @@ export abstract class CellBase extends HtmlElement<'div'>{
     const $leftMargin = $new<'div'>({
       tag: 'div',
       class: <CssClass>'leftMargin',
-      html: <Html>'BUGBUG',
     });
 
     const $rightMargin = $new<'div'>({
@@ -137,7 +136,7 @@ export abstract class CellBase extends HtmlElement<'div'>{
         {
           tag: 'button',
           attrs: { tabindex: -1 },
-          class: <CssClass>'deleteCellButton',
+          classes:[ <CssClass>'deleteCellButton', <CssClass>'iconButton' ],
           html: CLOSE_X_ENTITY,
           listeners: {
             click: e=>this.onDeleteCellButtonClicked(e),

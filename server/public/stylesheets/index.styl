@@ -238,12 +238,46 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
       >.main
         display flex
+        justify-content space-between
 
         >.leftMargin
-          background-color green
+          width 30pt
+
+        >.content
+          flex-grow 1
 
         >.rightMargin
-          background-color yellow
+          position relative
+          width 30pt
+
+          >.deleteCellButton
+            color lightgray
+            position absolute
+            right 4pt
+            top 4pt
+
+          >.dragIcon
+            color lightgray
+            padding 6px 12px 6px 6px
+            position absolute
+            right 0
+            top 30px
+
+      >.resizeBar
+        border-top 1px dotted  #F0F0F0
+        cursor row-resize
+        //height 4pt
+        margin 2pt 0
+        pen-action none
+        position relative
+        touch-action none
+        width 100%
+
+        >.insertCellBelowButton
+          // left 5pt
+          top -5pt
+          color gray
+          position absolute
 
     .cell:focus
       outline none
@@ -307,41 +341,6 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
     .figureCell
       padding var(--svg-top-offset) 0px 0px var(--svg-left-offset)
-      position relative
-
-      >.content
-
-        .deleteCellButton
-          background transparent
-          border none
-          top 0
-          color lightgray
-          padding 3px 12px 3px 3px
-          position absolute
-          right 0
-
-        .dragIcon
-          color lightgray
-          padding 6px 12px 6px 6px
-          position absolute
-          right 0
-          top 30px
-
-      .resizeBar
-        cursor row-resize
-        margin -8px 0px
-        pen-action none
-        position relative
-        touch-action none
-        width 100%
-        z-index 10
-
-        .insertCellBelowButton
-          background transparent
-          border none
-          color gray
-          display block
-          padding 3px 3px 3px 6px
 
     .hintCell
       padding-left 20px
