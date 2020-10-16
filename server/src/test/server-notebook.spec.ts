@@ -41,8 +41,8 @@ class TestObserver implements ObserverInstance {
   static async initialize(_config: Config): Promise<void> { }
   static async onOpen(_notebook: ServerNotebook): Promise<TestObserver> { return new this(); }
   constructor() {}
-  async onChangesAsync(_changes: NotebookChange[]): Promise<NotebookChangeRequest[]> { return []; }
-  public onChangesSync(_changes: NotebookChange[]): NotebookChangeRequest[] { return []; }
+  async onChangesAsync(_changes: NotebookChange[], _startIndex: number, _endIndex: number): Promise<NotebookChangeRequest[]> { return []; }
+  public onChangesSync(_changes: NotebookChange[], _startIndex: number, _endIndex: number): NotebookChangeRequest[] { return []; }
   onClose(): void { }
   async useTool(_style: StyleObject): Promise<NotebookChangeRequest[]> { return []; }
 }
@@ -57,8 +57,8 @@ describe("server notebook", function() {
     let observer: TestObserver;
 
     const onOpenSpy: sinon.SinonSpy<[ServerNotebook], Promise<ObserverInstance>> = sinon.spy(TestObserver, 'onOpen');
-    let onChangesAsyncSpy: sinon.SinonSpy<[NotebookChange[]], Promise<NotebookChangeRequest[]>>;
-    let onChangesSyncSpy: sinon.SinonSpy<[NotebookChange[]], NotebookChangeRequest[]>;
+    let onChangesAsyncSpy: sinon.SinonSpy<[NotebookChange[], number, number], Promise<NotebookChangeRequest[]>>;
+    let onChangesSyncSpy: sinon.SinonSpy<[NotebookChange[], number, number], NotebookChangeRequest[]>;
     let onCloseSpy: sinon.SinonSpy<[], void>;
     let useToolSpy: sinon.SinonSpy<[StyleObject], Promise<NotebookChangeRequest[]>>;
 
