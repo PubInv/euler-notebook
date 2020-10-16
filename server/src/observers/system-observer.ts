@@ -29,7 +29,7 @@ import { convertTexToSvg } from "../adapters/mathjax";
 
 import { ServerNotebook } from "../server-notebook";
 
-import { BaseObserver, Rules, StyleRelation } from "./base-observer";
+import { AsyncRules, BaseObserver, StyleRelation, SyncRules } from "./base-observer";
 
 const MODULE = __filename.split(/[/\\]/).slice(-1)[0].slice(0,-3);
 const debug = debug1(`server:${MODULE}`);
@@ -38,15 +38,16 @@ const debug = debug1(`server:${MODULE}`);
 
 // Exported Class
 
-export class RepresentationObserver extends BaseObserver {
+export class SystemObserver extends BaseObserver {
 
   // --- OVERRIDES ---
 
-  protected get rules(): Rules { return RepresentationObserver.RULES; }
+  protected get asyncRules(): AsyncRules { return SystemObserver.ASYNC_RULES; }
+  protected get syncRules(): SyncRules { return SystemObserver.SYNC_RULES; }
 
   // --- PUBLIC ---
 
-  public static async onOpen(notebook: ServerNotebook): Promise<RepresentationObserver> {
+  public static async onOpen(notebook: ServerNotebook): Promise<SystemObserver> {
     debug(`Opening SvgObserver for ${notebook.path}.`);
     return new this(notebook);
   }
@@ -55,42 +56,45 @@ export class RepresentationObserver extends BaseObserver {
 
   // Private Class Constants
 
-  private static RULES: Rules = [
+  private static ASYNC_RULES: AsyncRules = [];
+
+  private static SYNC_RULES: SyncRules = [
     {
       name: "strokes-to-svg",
       styleTest: { role: 'INPUT', type: 'STROKE-DATA' },
       styleRelation: StyleRelation.ParentToChild,
       props: { role: 'REPRESENTATION', type: 'SVG-MARKUP' },
-      computeSync: RepresentationObserver.convertStrokesToSvg,
+      compute: SystemObserver.prototype.convertStrokesToSvgRule,
     },
     {
       name: "plain-text-to-svg",
       styleTest: { role: 'INPUT', type: 'PLAIN-TEXT' },
       styleRelation: StyleRelation.PeerToPeer,
       props: { role: 'REPRESENTATION', type: 'SVG-MARKUP' },
-      computeSync: RepresentationObserver.convertPlainTextToSvg,
+      compute: SystemObserver.prototype.convertPlainTextToSvgRule,
     },
     {
+      debug: true,
       name: "tex-to-svg",
       styleTest: { role: 'REPRESENTATION', type: 'TEX-EXPRESSION' },
       styleRelation: StyleRelation.PeerToPeer,
       props: { role: 'REPRESENTATION', type: 'SVG-MARKUP' },
-      computeSync: RepresentationObserver.convertTexToSvg,
+      compute: SystemObserver.prototype.convertTexToSvgRule,
     },
   ];
 
-  // Private Class Methods
+  // Private Instance Methods
 
-  private static convertPlainTextToSvg(text: PlainText): SvgMarkup {
+  private convertPlainTextToSvgRule(text: PlainText): SvgMarkup {
     // TODO: Proper font
     // TODO: Wrap text
     // TODO: Line breaks matching those put into the input textarea
-    debug(`convertPlainTextToSvg rule on: "${text.length>30 ? `${text.slice(0,30)}...`: text}".`);
+    debug(`convertPlainTextToSvgRule on: "${text.length>30 ? `${text.slice(0,30)}...`: text}".`);
     return <SvgMarkup>`<svg class="displayPanel" height="1in" width="6.5in" fill="none" stroke="black"><text x="20" y="20">${escapeHtml(text)}</text></svg>`;
   }
 
-  private static convertStrokesToSvg(data: StrokeData): SvgMarkup|undefined {
-    debug(`convertDrawingToSvg rule on ${JSON.stringify(data)}`);
+  private convertStrokesToSvgRule(data: StrokeData): SvgMarkup|undefined {
+    debug(`convertDrawingToSvgRule on ${JSON.stringify(data)}`);
     const paths: string[] = [];
     for (const strokeGroup of data.strokeGroups) {
       for (const stroke of strokeGroup.strokes) {
@@ -99,12 +103,12 @@ export class RepresentationObserver extends BaseObserver {
       }
     }
     const svgMarkup = <SvgMarkup>`<svg class="svgPanel" height="${data.size.height}" width="${data.size.width}" fill="none" stroke="black">${paths.join('')}</svg>`;
-    debug(`convertDrawingToSvg rule returns '${svgMarkup}'`);
+    debug(`convertDrawingToSvgRule returns '${svgMarkup}'`);
     return svgMarkup;
   }
 
-  private static convertTexToSvg(tex: TexExpression): SvgMarkup {
-    debug(`convertTexToSvg rule on: ${tex}`);
+  private convertTexToSvgRule(tex: TexExpression): SvgMarkup {
+    debug(`convertTexToSvgRule on: ${tex}`);
     return convertTexToSvg(tex, <CssClass>'displayPanel');
   }
 

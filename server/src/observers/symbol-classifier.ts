@@ -23,7 +23,7 @@ import * as debug1 from "debug";
 const MODULE = __filename.split(/[/\\]/).slice(-1)[0].slice(0,-3);
 const debug = debug1(`server:${MODULE}`);
 
-import { Html } from "../shared/common";
+import { assert, Html } from "../shared/common";
 import {
   NotebookChange, StyleObject, StyleId, RelationshipObject, RelationshipId, RelationshipProperties,
   StyleDeleted, StyleMoved, FindRelationshipOptions, StyleInserted, StyleChanged, HintData,
@@ -34,11 +34,14 @@ import {
   StylePropertiesWithSubprops, RelationshipPropertiesMap, RelationshipInsertRequest,
   isEmptyOrSpaces, TransformationToolData, TexExpression
 } from "../shared/math-tablet-api";
+
+import {
+  execute as executeWolframscript, constructSubstitution, draftChangeContextName,
+  convertWolframToMTL
+} from "../adapters/wolframscript";
+
 import { ServerNotebook, ObserverInstance } from "../server-notebook";
-import { execute as executeWolframscript, constructSubstitution, draftChangeContextName,
-         convertWolframToMTL } from "../adapters/wolframscript";
 import { Config } from "../config";
-import { assert } from "console";
 
 export class SymbolClassifierObserver implements ObserverInstance {
 
@@ -55,15 +58,16 @@ export class SymbolClassifierObserver implements ObserverInstance {
 
   // Instance Methods
 
-  public async onChangesAsync(changes: NotebookChange[]): Promise<NotebookChangeRequest[]> {
+  public async onChangesAsync(changes: NotebookChange[], startIndex: number, endIndex: number): Promise<NotebookChangeRequest[]> {
     const rval: NotebookChangeRequest[] = [];
-    for (const change of changes) {
+    for (let i=startIndex; i<endIndex; i++) {
+      const change = changes[i];
       await this.onChange(change, rval);
     }
     return rval;
   }
 
-  public onChangesSync(_changes: NotebookChange[]): NotebookChangeRequest[] {
+  public onChangesSync(_changes: NotebookChange[], _startIndex: number, _endIndex: number): NotebookChangeRequest[] {
     return [];
   }
 

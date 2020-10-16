@@ -46,7 +46,7 @@ import { AbsDirectoryPath, ROOT_DIR_PATH, mkDir, readFile, rename, rmRaf, writeF
 import { constructSubstitution } from "./adapters/wolframscript";
 import { OpenOptions } from "./shared/watched-resource";
 import { logError } from "./error-handler";
-import { notebookChangeRequestSynopsis, notebookChangeSynopsis, notebookSynopsis } from "./debug-synopsis";
+import { notebookChangeRequestSynopsis, notebookChangeSynopsis } from "./debug-synopsis";
 
 
 // LATER: Convert these to imports.
@@ -834,7 +834,8 @@ ${ind} + ${data}
   ): void {
     debug(`${source} change: ${notebookChangeSynopsis(change)}`);
     this.applyChange(change);
-    debug(notebookSynopsis(this));
+    // Uncomment the following line to see a dump of the notebook after every change.
+    // debug(notebookSynopsis(this));
     rval.push(change);
   }
 

@@ -22,14 +22,17 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 import * as debug1 from "debug";
 const deepEqual = require('deep-equal');  // LATER: Use import instead of require
 
+import { assert } from "../shared/common";
 import {
   NotebookChange, StyleObject, FindStyleOptions, styleMatchesPattern, StyleProperties, StyleId
 } from "../shared/notebook";
 import { NotebookChangeRequest } from "../shared/math-tablet-api";
+
+import { ServerKeys } from "../adapters/myscript";
+
+import { notebookChangeSynopsis } from "../debug-synopsis";
 import { ObserverInstance, ServerNotebook }  from "../server-notebook";
 import { Config } from "../config";
-import { ServerKeys } from "../adapters/myscript";
-import { assert } from "console";
 
 const MODULE = __filename.split(/[/\\]/).slice(-1)[0].slice(0,-3);
 const debug = debug1(`server:${MODULE}`);
@@ -46,10 +49,8 @@ type StyleTestFunction = (notebook: ServerNotebook, style: StyleObject)=>boolean
 
 type StyleTest  = FindStyleOptions|StyleTestFunction;
 
-export type Rules = Rule[];
-
-type Rule = AsyncRule | SyncRule
 interface BaseRule {
+  debug?: boolean;  // Set to true for additional debug information related to matching this rule.
   exclusiveChildTypeAndRole?: boolean;
   name: string;   // Rule name for debugging.
   styleTest: StyleTest;
@@ -57,11 +58,15 @@ interface BaseRule {
   props: Omit<StyleProperties, "data">;
 }
 interface AsyncRule extends BaseRule {
-  computeAsync: (parentData: /* TYPESCRIPT: */any)=>Promise</* TYPESCRIPT: */any|undefined>;
+  compute: (this: /* TYPESCRIPT: */BaseObserver, parentData: /* TYPESCRIPT: */any)=>Promise</* TYPESCRIPT: */any|undefined>;
 }
 interface SyncRule extends BaseRule {
-  computeSync: (parentData: /* TYPESCRIPT: */any)=>/* TYPESCRIPT: */any|undefined;
+  compute: (this: /* TYPESCRIPT: */BaseObserver, parentData: /* TYPESCRIPT: */any)=>/* TYPESCRIPT: */any|undefined;
 }
+type Rule = AsyncRule|SyncRule;
+
+export type AsyncRules = AsyncRule[];
+export type SyncRules = SyncRule[];
 
 // Exported Class
 
@@ -69,7 +74,8 @@ export abstract class BaseObserver implements ObserverInstance {
 
   // --- ABSTRACT/OVERRIDABLE ---
 
-  protected abstract get rules(): Rules;
+  protected abstract get asyncRules(): AsyncRule[];
+  protected abstract get syncRules(): SyncRule[];
 
   // --- PUBLIC ---
 
@@ -83,16 +89,14 @@ export abstract class BaseObserver implements ObserverInstance {
 
   // Instance Methods
 
-  public async onChangesAsync(changes: NotebookChange[]): Promise<NotebookChangeRequest[]> {
+  public async onChangesAsync(changes: NotebookChange[], startIndex: number, endIndex: number): Promise<NotebookChangeRequest[]> {
     // IMPORTANT: This code is identical to onChangesSync, except this code has awaits and that code doesn't.
     const rval: NotebookChangeRequest[] = [];
-    for (const change of changes) {
+    for (let i=startIndex; i<endIndex; i++) {
+      const change = changes[i];
       assert(change);
       // console.log(`CONSIDERING ASYNC CHANGE: ${JSON.stringify(change)}`);
-      for (const rule of this.rules) {
-        // If the rule is asynchronous, then don't bother.
-        // TODO: separate list of sync rules from async rules.
-        if (!isAsyncRule(rule)) { continue; }
+      for (const rule of this.asyncRules) {
         // console.log(`  CONSIDERING RULE: ${rule.name}`);
         const changeRequest = await this.onChangeAsync(rule, change);
         if (changeRequest) { rval.push(changeRequest); }
@@ -101,15 +105,14 @@ export abstract class BaseObserver implements ObserverInstance {
     return rval;
   }
 
-  public onChangesSync(changes: NotebookChange[]): NotebookChangeRequest[] {
+  public onChangesSync(changes: NotebookChange[], startIndex: number, endIndex: number): NotebookChangeRequest[] {
     // IMPORTANT: This code is identical to onChangesAsync, except that code has awaits and this code doesn't.
     const rval: NotebookChangeRequest[] = [];
-    for (const change of changes) {
+    for (let i=startIndex; i<endIndex; i++) {
+      const change = changes[i];
       assert(change);
       // console.log(`CONSIDERING SYNC CHANGE: ${JSON.stringify(change)}`);
-      for (const rule of this.rules) {
-        // If the rule is asynchronous, then don't bother.
-        if (isAsyncRule(rule)) { continue; }
+      for (const rule of this.syncRules) {
         // console.log(`  CONSIDERING RULE: ${rule.name}`);
         const changeRequest = this.onChangeSync(rule, change);
         if (changeRequest) { rval.push(changeRequest); }
@@ -147,32 +150,29 @@ export abstract class BaseObserver implements ObserverInstance {
   private async onChangeAsync(rule: AsyncRule, change: NotebookChange): Promise<NotebookChangeRequest|undefined> {
     // IMPORTANT: This code is identical to onChangeSync, except this code has awaits and that code doesn't.
     const inputData = this.preChange(rule, change);
-    if (typeof inputData == 'undefined') { return undefined; }
-    // TODO: The function in the rule should be an instance method, not a class method.
-    //       See how it is done in the dataflow-observer base class.
-    const outputData = await rule.computeAsync!.call(this.constructor, inputData);
+    if (inputData === false) { return undefined; }
+    const outputData = await rule.compute.call(this, inputData);
     return this.postChange(rule, change, outputData);
   }
 
   private onChangeSync(rule: SyncRule, change: NotebookChange): NotebookChangeRequest|undefined {
     // IMPORTANT: This code is identical to onChangeAsync, except that code has awaits and this code doesn't.
     const inputData = this.preChange(rule, change);
-    if (typeof inputData == 'undefined') { return undefined; }
-    const outputData = rule.computeSync!.call(this.constructor, inputData);
+    if (inputData === false) { return undefined; }
+    const outputData = rule.compute.call(this, inputData);
     return this.postChange(rule, change, outputData);
   }
 
-  private preChange(rule: Rule, change: NotebookChange): any|undefined {
+  private preChange(rule: Rule, change: NotebookChange): any|false {
     switch(change.type) {
       case 'styleChanged':
-      case 'styleInserted':
-        if (styleMatchesRuleTest(this.notebook, change.style, rule.styleTest)) {
-          // console.log("    MATCHES");
-          return change.style.data;
-        } else {
-          // console.log("    DOESN'T MATCH");
-          return undefined;
+      case 'styleInserted': {
+        const matches = styleMatchesRuleTest(this.notebook, change.style, rule.styleTest);
+        if (rule.debug) {
+          debug(`Rule ${rule.name} ${matches?"matches":"does not match"} ${notebookChangeSynopsis(change)}`);
         }
+        return matches && change.style.data;
+      }
       default:
         // TODO: 'styleDeleted': if styleInserted resulted in creating a peer style, then styleDeleted should delete that style.
         // TODO: 'styleConverted': should be treated like a style deleted followed by a style inserted.
@@ -233,10 +233,6 @@ export abstract class BaseObserver implements ObserverInstance {
 }
 
 // Helper Functions
-
-function isAsyncRule(rule: Rule): rule is AsyncRule {
-  return rule.hasOwnProperty('computeAsync');
-}
 
 function styleMatchesRuleTest(notebook: ServerNotebook, style: StyleObject, test: StyleTest): boolean {
   return (typeof test == 'function' ? test(notebook, style) : styleMatchesPattern(style, test));

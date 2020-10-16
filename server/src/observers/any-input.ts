@@ -45,14 +45,15 @@ export class AnyInputObserver implements ObserverInstance {
 
   // Instance Methods
 
-  public async onChangesAsync(_changes: NotebookChange[]): Promise<NotebookChangeRequest[]> {
+  public async onChangesAsync(_changes: NotebookChange[], _startIndex: number, _endIndex: number): Promise<NotebookChangeRequest[]> {
     return [];
   }
 
-  public onChangesSync(changes: NotebookChange[]): NotebookChangeRequest[] {
+  public onChangesSync(changes: NotebookChange[], startIndex: number, endIndex: number): NotebookChangeRequest[] {
     debug(`onChanges ${changes.length}`);
     const rval: NotebookChangeRequest[] = [];
-    for (const change of changes) {
+    for (let i=startIndex; i<endIndex; i++) {
+      const change = changes[i];
       this.onChange(change, rval);
     }
     debug(`onChanges returning ${rval.length} changes.`);
@@ -62,7 +63,6 @@ export class AnyInputObserver implements ObserverInstance {
   // TODO: can't these be inherited?
   public onClose(): void {
     debug(`onClose ${this.notebook.path}`);
-    delete this.notebook;
   }
 
   public async useTool(style: StyleObject): Promise<NotebookChangeRequest[]> {

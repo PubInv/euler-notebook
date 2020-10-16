@@ -25,7 +25,7 @@ import debug1 from "debug";
 import { WolframExpression,MTLExpression, FormulaData } from "../shared/notebook";
 import { isEmptyOrSpaces } from "../shared/math-tablet-api";
 
-import { BaseObserver, Rules, StyleRelation } from "./base-observer";
+import { AsyncRules, BaseObserver, StyleRelation, SyncRules } from "./base-observer";
 import {
   convertMTLToWolfram,
   execute } from "../adapters/wolframscript";
@@ -42,7 +42,8 @@ export class WolframObserver extends BaseObserver {
 
   // --- OVERRIDES ---
 
-  protected get rules(): Rules { return WolframObserver.RULES; }
+  protected get asyncRules(): AsyncRules { return WolframObserver.ASYNC_RULES; }
+  protected get syncRules(): SyncRules { return WolframObserver.SYNC_RULES; }
 
   // --- PUBLIC ---
 
@@ -55,47 +56,50 @@ export class WolframObserver extends BaseObserver {
 
   // Private Class Constants
 
-  private static RULES: Rules = [
+  private static ASYNC_RULES: AsyncRules = [
     {
       name: "evaluate-wolfram",
       // REVIEW: Should evaluation be attached to FORMULA, rather than REPRESENTATION?
       styleTest: { role: 'REPRESENTATION', type: 'WOLFRAM-EXPRESSION' },
       styleRelation: StyleRelation.ParentToChild,
       props: { role: 'EVALUATION', type: 'WOLFRAM-EXPRESSION' },
-      computeAsync: WolframObserver.ruleEvaluateWolframExpr,
+      compute: WolframObserver.prototype.evaluateWolframExprRule,
     },
+  ];
+
+  private static SYNC_RULES: SyncRules = [
     {
       name: "parseWolframInput",
       styleRelation: StyleRelation.ChildToParent,
       styleTest: { role: 'INPUT', source: 'USER', type: 'WOLFRAM-EXPRESSION' },
       // REVIEW: Are props necessary in ChildToParent relations? Validate that parent has expected props?
       props: { role: 'FORMULA', type: 'FORMULA-DATA' },
-      computeSync: WolframObserver.parseWolframInput,
+      compute: WolframObserver.prototype.parseWolframInputRule,
     },
     {
       name: "renderFormulaToWolfram",
       styleRelation: StyleRelation.ParentToChild,
       styleTest: { role: 'FORMULA', type: 'FORMULA-DATA' },
       props: { role: 'REPRESENTATION', type: 'WOLFRAM-EXPRESSION' },
-      computeSync: WolframObserver.renderFormulaToWolframRepresentation,
+      compute: WolframObserver.prototype.renderFormulaToWolframRepresentationRule,
     },
   ];
 
-  // Private Class Methods
+  // Private Instance Methods
 
-  private static parseWolframInput(wolframData: MTLExpression): FormulaData|undefined {
+  private parseWolframInputRule(wolframData: MTLExpression): FormulaData|undefined {
     // TODO: Make this async, pass the string to WolframScript to normalize.
     return { wolframData };
   }
 
-  private static renderFormulaToWolframRepresentation(formulaData: FormulaData): MTLExpression|undefined {
+  private renderFormulaToWolframRepresentationRule(formulaData: FormulaData): MTLExpression|undefined {
     // REVIEW: Convert single equal sign to double equal sign?
     return formulaData.wolframData;
   }
 
   // One problem here is that we are not rewriting the single equal, which is the "math-tablet input" language,
   // to the double equal, which is essentially the wolfram language (thought not a one-to-one correspondence.)
-  private static async ruleEvaluateWolframExpr(expr: MTLExpression) : Promise<WolframExpression|undefined> {
+  private async evaluateWolframExprRule(expr: MTLExpression) : Promise<WolframExpression|undefined> {
     // REVIEW: If evaluation fails?
     debug(`Evaluating: "${expr}".`);
     let rval: WolframExpression|undefined;

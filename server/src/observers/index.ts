@@ -28,7 +28,7 @@ import { EquationSolverObserver } from "./equation-solver";
 import { TexObserver } from "./tex-observer";
 import { MathematicaObserver } from "./mathematica-cas";
 import { MyScriptObserver } from "./myscript-observer";
-import { RepresentationObserver } from "./system-observer";
+import { SystemObserver } from "./system-observer";
 import { SandboxObserver } from "./sandbox";
 // import { SubtrivClassifierObserver } from "./subtriv-classifier";
 // import { SymbolClassifierObserver } from "./symbol-classifier";
@@ -56,7 +56,7 @@ export async function initialize(config: Config, credentials: Credentials): Prom
   initializing = true;
 
   // IMPORTANT: Keep in sync with 'terminate'
-  ServerNotebook.registerObserver('SYSTEM', RepresentationObserver);
+  ServerNotebook.registerObserver('SYSTEM', SystemObserver);
   useMathematica = !!config.mathematica;
   if (useMathematica) {
     await MathematicaObserver.initialize(config);

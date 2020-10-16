@@ -79,14 +79,15 @@ export abstract class DataflowObserver implements ObserverInstance {
 
   // Instance Methods
 
-  public async onChangesAsync(changes: NotebookChange[]): Promise<NotebookChangeRequest[]> {
+  public async onChangesAsync(changes: NotebookChange[], startIndex: number, endIndex: number): Promise<NotebookChangeRequest[]> {
     debug(`async changes: ${changes.length} changes`);
     const rval: NotebookChangeRequest[] = [];
 
     // Identify all of the styles that have changed,
     // and the relationships associated with those styles.
     const rules = this.rules;
-    for (const change of changes) {
+    for (let i=startIndex; i<endIndex; i++) {
+      const change = changes[i];
       switch(change.type) {
         case 'styleChanged': {
           const style = change.style;
@@ -155,7 +156,7 @@ export abstract class DataflowObserver implements ObserverInstance {
     return rval;
   }
 
-  public onChangesSync(_changes: NotebookChange[]): NotebookChangeRequest[] {
+  public onChangesSync(_changes: NotebookChange[], _startIndex: number, _endIndex: number): NotebookChangeRequest[] {
     // TODO: Sync version of onChangesAsync.
     return [];
   }

@@ -47,15 +47,17 @@ export class SandboxObserver implements ObserverInstance {
 
   // Instance Methods
 
-  public async onChangesAsync(changes: NotebookChange[]): Promise<NotebookChangeRequest[]> {
-    for (const change of changes) {
+  public async onChangesAsync(changes: NotebookChange[], startIndex: number, endIndex: number): Promise<NotebookChangeRequest[]> {
+    for (let i=startIndex; i<endIndex; i++) {
+      const change = changes[i];
       debug(`async change:  ${this.notebook.path} ${change.type}`)
     }
     return [];
   }
 
-  public onChangesSync(changes: NotebookChange[]): NotebookChangeRequest[] {
-    for (const change of changes) {
+  public onChangesSync(changes: NotebookChange[], startIndex: number, endIndex: number): NotebookChangeRequest[] {
+    for (let i=startIndex; i<endIndex; i++) {
+      const change = changes[i];
       debug(`sync change:  ${this.notebook.path} ${change.type}`)
     }
     return [];
@@ -63,7 +65,6 @@ export class SandboxObserver implements ObserverInstance {
 
   public  onClose(): void {
     debug(`onClose ${this.notebook.path}`);
-    delete this.notebook;
   }
 
   public async useTool(style: StyleObject): Promise<NotebookChangeRequest[]> {

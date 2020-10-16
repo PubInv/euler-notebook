@@ -27,7 +27,7 @@ import { TexExpression } from "../shared/math-tablet-api";
 import { ServerNotebook } from "../server-notebook";
 import { convertTeXtoWolfram, convertWolframToTeX, convertMTLToWolfram, convertWolframToMTL } from "../adapters/wolframscript";
 
-import { BaseObserver, Rules, StyleRelation } from "./base-observer";
+import { AsyncRules, BaseObserver, StyleRelation, SyncRules } from "./base-observer";
 
 const MODULE = __filename.split(/[/\\]/).slice(-1)[0].slice(0,-3);
 const debug = debug1(`server:${MODULE}`);
@@ -40,7 +40,8 @@ export class TexObserver extends BaseObserver {
 
   // --- OVERRIDES ---
 
-  protected get rules(): Rules { return TexObserver.RULES; }
+  protected get asyncRules(): AsyncRules { return TexObserver.ASYNC_RULES; }
+  protected get syncRules(): SyncRules { return TexObserver.SYNC_RULES; }
 
   // --- PUBLIC ---
 
@@ -53,13 +54,13 @@ export class TexObserver extends BaseObserver {
 
   // Private Class Constants
 
-  private static RULES: Rules = [
+  private static ASYNC_RULES: AsyncRules = [
     {
       name: "parseTexInput",
       styleRelation: StyleRelation.ChildToParent,
       styleTest: { role: 'INPUT', source: 'USER', type: 'TEX-EXPRESSION' },
       props: { role: 'FORMULA', type: 'FORMULA-DATA' },
-      computeAsync: TexObserver.parseTexInput,
+      compute: TexObserver.prototype.parseTexInputRule,
     },
     {
       name: "renderFormulaToTex",
@@ -67,19 +68,21 @@ export class TexObserver extends BaseObserver {
       styleTest: { role: 'FORMULA', type: 'FORMULA-DATA' },
       props: { role: 'REPRESENTATION', type: 'TEX-EXPRESSION' },
       exclusiveChildTypeAndRole: true,
-      computeAsync: TexObserver.renderFormulaToTexRepresentation,
+      compute: TexObserver.prototype.renderFormulaToTexRepresentationRule,
     },
   ];
 
+  private static SYNC_RULES: SyncRules = [];
+
   // Private Class Methods
 
-  private static async parseTexInput(data: TexExpression): Promise<FormulaData|undefined> {
+  private async parseTexInputRule(data: TexExpression): Promise<FormulaData|undefined> {
     // REVIEW: If conversion fails?
     const wolframData = convertWolframToMTL(await convertTeXtoWolfram(data));
     return { wolframData };
   }
 
-  private static async renderFormulaToTexRepresentation(formulaData: FormulaData): Promise<TexExpression|undefined> {
+  private async renderFormulaToTexRepresentationRule(formulaData: FormulaData): Promise<TexExpression|undefined> {
     // REVIEW: If conversion fails?
     return await convertWolframToTeX(convertMTLToWolfram(formulaData.wolframData));
   }

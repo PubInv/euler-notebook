@@ -54,10 +54,11 @@ export class MathematicaObserver implements ObserverInstance {
 
   // Instance Methods
 
-  public async onChangesAsync(changes: NotebookChange[]): Promise<NotebookChangeRequest[]> {
+  public async onChangesAsync(changes: NotebookChange[], startIndex: number, endIndex: number): Promise<NotebookChangeRequest[]> {
     debug(`onChanges ${changes.length}`);
     let rval: NotebookChangeRequest[] = [];
-    for (const change of changes) {
+    for (let i=startIndex; i<endIndex; i++) {
+      const change = changes[i];
       const changeRequests = await this.onChange(change);
       rval = rval.concat(changeRequests);
     }
@@ -65,13 +66,12 @@ export class MathematicaObserver implements ObserverInstance {
     return rval;
   }
 
-  public onChangesSync(_changes: NotebookChange[]): NotebookChangeRequest[] {
+  public onChangesSync(_changes: NotebookChange[], _startIndex: number, _endIndex: number): NotebookChangeRequest[] {
     return [];
   }
 
   public onClose(): void {
     debug(`onClose ${this.notebook.path}`);
-    delete this.notebook;
   }
 
   public async useTool(style: StyleObject): Promise<NotebookChangeRequest[]> {

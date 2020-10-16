@@ -28,7 +28,7 @@ import { Config } from "../config";
 import { ServerKeys, postLatexRequest } from "../adapters/myscript";
 import { ServerNotebook }  from "../server-notebook";
 
-import { BaseObserver, Rules, StyleRelation } from "./base-observer";
+import { AsyncRules, BaseObserver, StyleRelation, SyncRules } from "./base-observer";
 
 const MODULE = __filename.split(/[/\\]/).slice(-1)[0].slice(0,-3);
 const debug = debug1(`server:${MODULE}`);
@@ -41,7 +41,8 @@ export class MyScriptObserver extends BaseObserver {
 
   // --- OVERRIDES ---
 
-  protected get rules(): Rules { return MyScriptObserver.RULES; }
+  protected get asyncRules(): AsyncRules { return MyScriptObserver.ASYNC_RULES; }
+  protected get syncRules(): SyncRules { return MyScriptObserver.SYNC_RULES; }
 
   // --- PUBLIC ---
 
@@ -59,28 +60,30 @@ export class MyScriptObserver extends BaseObserver {
 
   // Private Class Constants
 
-  private static RULES: Rules = [
+  private static ASYNC_RULES: AsyncRules = [
     {
       // TODO: Only recognize input on "formula" ink cells.
       name: "strokes-to-latex",
       styleTest: { role: 'INPUT', type: 'STROKE-DATA' },
       styleRelation: StyleRelation.PeerToPeer,
       props: { role: 'REPRESENTATION', type: 'TEX-EXPRESSION' },
-      computeAsync: MyScriptObserver.ruleConvertStrokesToLatex,
+      compute: MyScriptObserver.prototype.convertStrokesToLatexRule,
     },
   ];
+
+  private static SYNC_RULES: SyncRules = [];
 
   // Private Class Properties
 
   private static keys: ServerKeys;
 
-  // Private Class Methods
+  // Private Instance Methods
 
-  private static async ruleConvertStrokesToLatex(data: StrokeData): Promise<TexExpression> {
+  private async convertStrokesToLatexRule(data: StrokeData): Promise<TexExpression> {
     // TODO: Prevent multiple calls to MyScript at the same time. "serialze" flag on rule?
     // TODO: Gather up multiple changes that occur with a series of strokes, rather than stroke by stroke.
     debug("Converting strokes to TexExpression");
-    const rval = await postLatexRequest(this.keys, data.strokeGroups);
+    const rval = await postLatexRequest(MyScriptObserver.keys, data.strokeGroups);
     debug(`Recognized TeX: ${rval}`);
     return rval;
   }

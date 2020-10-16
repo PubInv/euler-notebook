@@ -51,17 +51,18 @@ export class SubtrivClassifierObserver implements ObserverInstance {
 
   // Instance Methods
 
-  public async onChangesAsync(changes: NotebookChange[]): Promise<NotebookChangeRequest[]> {
+  public async onChangesAsync(changes: NotebookChange[], startIndex: number, endIndex: number): Promise<NotebookChangeRequest[]> {
     debug(`onChanges ${changes.length}`);
     const rval: NotebookChangeRequest[] = [];
-    for (const change of changes) {
+    for (let i=startIndex; i<endIndex; i++) {
+      const change = changes[i];
       await this.onChange(change, rval);
     }
     debug(`onChanges returning ${rval.length} changes.`);
     return rval;
   }
 
-  public onChangesSync(_changes: NotebookChange[]): NotebookChangeRequest[] {
+  public onChangesSync(_changes: NotebookChange[], _startIndex: number, _endIndex: number): NotebookChangeRequest[] {
     return [];
   }
 
