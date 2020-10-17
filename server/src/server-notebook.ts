@@ -705,7 +705,8 @@ ${ind} + ${data}
       logError(new Error("Dropping async changes due to running out of rounds"));
     }
 
-
+    // REVIEW: If other batches of changes are being processed at the same time?
+    // LATER: Set/restart a timer for the save so we save only once when the document reaches a quiescent state.
     await this.save();
 
     return changes;

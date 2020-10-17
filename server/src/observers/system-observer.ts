@@ -21,7 +21,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 import debug1 from "debug";
 
-import { CssClass, PlainText, SvgMarkup, escapeHtml } from "../shared/common";
+import { CssClass, PlainText, SvgMarkup, escapeHtml, stackTrace } from "../shared/common";
 import { Stroke, StrokeData } from "../shared/notebook";
 import { TexExpression } from "../shared/math-tablet-api";
 
@@ -60,22 +60,22 @@ export class SystemObserver extends BaseObserver {
 
   private static SYNC_RULES: SyncRules = [
     {
-      name: "strokes-to-svg",
+      debug: true,
+      name: "convertStrokesToSvgRule",
       styleTest: { role: 'INPUT', type: 'STROKE-DATA' },
       styleRelation: StyleRelation.ParentToChild,
       props: { role: 'REPRESENTATION', type: 'SVG-MARKUP' },
       compute: SystemObserver.prototype.convertStrokesToSvgRule,
     },
     {
-      name: "plain-text-to-svg",
+      name: "convertPlainTextToSvgRule",
       styleTest: { role: 'INPUT', type: 'PLAIN-TEXT' },
       styleRelation: StyleRelation.PeerToPeer,
       props: { role: 'REPRESENTATION', type: 'SVG-MARKUP' },
       compute: SystemObserver.prototype.convertPlainTextToSvgRule,
     },
     {
-      debug: true,
-      name: "tex-to-svg",
+      name: "convertTexToSvgRule",
       styleTest: { role: 'REPRESENTATION', type: 'TEX-EXPRESSION' },
       styleRelation: StyleRelation.PeerToPeer,
       props: { role: 'REPRESENTATION', type: 'SVG-MARKUP' },
@@ -94,7 +94,8 @@ export class SystemObserver extends BaseObserver {
   }
 
   private convertStrokesToSvgRule(data: StrokeData): SvgMarkup|undefined {
-    debug(`convertDrawingToSvgRule on ${JSON.stringify(data)}`);
+    debug(`convertStrokesToSvgRule on ${JSON.stringify(data)}`);
+    console.log(stackTrace());
     const paths: string[] = [];
     for (const strokeGroup of data.strokeGroups) {
       for (const stroke of strokeGroup.strokes) {

@@ -163,7 +163,11 @@ export abstract class BaseObserver implements ObserverInstance {
     return this.postChange(rule, change, outputData);
   }
 
-  private preChange(rule: Rule, change: NotebookChange): any|false {
+  private preChange(rule: Rule, change: NotebookChange): /* TYPESCRIPT: */any|false {
+    // Common code for onChangeAsync and onChangeSync.
+    // Everything that needs to be done before the async/sync compute call is made.
+    // Returns the data that should be passed to the compute call,
+    // or false if the compute function should not be called.
     switch(change.type) {
       case 'styleChanged':
       case 'styleInserted': {
@@ -174,14 +178,16 @@ export abstract class BaseObserver implements ObserverInstance {
         return matches && change.style.data;
       }
       default:
-        // TODO: 'styleDeleted': if styleInserted resulted in creating a peer style, then styleDeleted should delete that style.
+        // TODO: 'styleDeleted': if styleInserted resulted in creating a peer style, then styleDeleted should delete that style if it still exists.
         // TODO: 'styleConverted': should be treated like a style deleted followed by a style inserted.
-        return undefined;
+        return false;
     }
   }
 
   private postChange(rule: Rule, change: NotebookChange, data: any): NotebookChangeRequest|undefined {
-
+    // Common code for onChangeAsync and onChangeSync.
+    // Everything that needs to be done after the async/sync compute call was made.
+    // Returns the notebookChange request to 'undo' the change.
     if (change.type != 'styleChanged' && change.type != 'styleInserted') { throw new Error('Unexpected.'); }
 
     let parentId: StyleId|undefined;

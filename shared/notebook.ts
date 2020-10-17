@@ -461,6 +461,7 @@ export abstract class Notebook<W extends NotebookWatcher> extends WatchedResourc
   }
 
   public getStyleThatMayNotExist(id: StyleId): StyleObject|undefined {
+    // TODO: Eliminate. Change usages to .findStyle.
     return this.styleMap[id];
   }
 
@@ -503,7 +504,7 @@ export abstract class Notebook<W extends NotebookWatcher> extends WatchedResourc
   }
 
   public topLevelStyles(): StyleObject[] {
-    // REVIEW: Return an iterator?
+    // REVIEW: Return IterableIterator<StyleObjectd>?
     return this.pages[0].styleIds.map(styleId=>this.getStyle(styleId));
   }
 
