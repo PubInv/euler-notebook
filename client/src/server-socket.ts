@@ -26,6 +26,7 @@ import * as debug1 from "debug";
 const debug = debug1('client:server-socket');
 
 import { assert, Html, PromiseResolver, Timestamp, newPromiseResolver, assertFalse, ExpectedError } from "./shared/common";
+import { clientMessageSynopsis, serverMessageSynopsis } from "./shared/debug-synopsis";
 import { ClientMessage, ServerMessage, ServerMessageBase, RequestId } from "./shared/math-tablet-api";
 
 import { messageDisplayInstance } from "./message-display";
@@ -68,6 +69,7 @@ export class ServerSocket {
   }
 
   public sendMessage(msg: ClientMessage): void {
+    debug(`Sent: ${clientMessageSynopsis(msg)}`)
     const json = JSON.stringify(msg);
     try {
       this.ws.send(json);
@@ -143,12 +145,12 @@ export class ServerSocket {
     // REVIEW: Other clients will not get message if one client set a request ID.
     try {
       const msg: ServerMessage = JSON.parse(event.data);
+      debug(`Recd: ${serverMessageSynopsis(msg)}`);
 
       const requestId = msg.requestId;
       const requestInfo = requestId && this.requestMap.get(requestId)!;
 
       // Dispatch the messages.
-      debug(`Message from server: ${msg.type}`);
       // console.dir(msg);
       switch(msg.type) {
         // TODO: case 'error': errors should only come back from 'requests'

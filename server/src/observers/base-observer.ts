@@ -30,7 +30,7 @@ import { NotebookChangeRequest } from "../shared/math-tablet-api";
 
 import { ServerKeys } from "../adapters/myscript";
 
-import { notebookChangeSynopsis } from "../debug-synopsis";
+import { notebookChangeSynopsis } from "../shared/debug-synopsis";
 import { ObserverInstance, ServerNotebook }  from "../server-notebook";
 import { Config } from "../config";
 

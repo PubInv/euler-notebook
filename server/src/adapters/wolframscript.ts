@@ -29,6 +29,7 @@ import { WolframExpression,MTLExpression } from "../shared/notebook";
 import { TexExpression } from "../shared/math-tablet-api";
 
 import { WolframScriptConfig } from "../config";
+import { logWarning } from "../error-handler";
 
 // Types
 
@@ -205,7 +206,7 @@ async function startProcess(config?: WolframScriptConfig): Promise<void> {
   if (gServerStartingPromise) {
     // REVIEW: Should this throw an error or be ignored?
     // throw new Error("WolframScript already started.");
-    console.warn("WARNING: Attempting to start WolframScript process when it is already started. Ignoring.");
+    logWarning(MODULE, "Attempting to start WolframScript process when it is already started. Ignoring.");
     return;
   }
 

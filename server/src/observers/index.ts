@@ -21,6 +21,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 import { Config, Credentials } from "../config";
 import { ServerNotebook } from "../server-notebook";
+import { logWarning } from "../error-handler";
 
 import { AlgebraicDataflowObserver } from "./algebraic-dataflow-observer";
 import { AlgebraicToolsObserver } from "./algebraic-tools";
@@ -36,6 +37,8 @@ import { SymbolClassifierObserver } from "./symbol-classifier";
 import { TeXFormatterObserver } from "./tex-formatter";
 import { WolframObserver } from "./wolfram-observer";
 
+const MODULE = __filename.split(/[/\\]/).slice(-1)[0].slice(0,-3);
+
 // Globals
 
 let initializing: boolean = false;
@@ -49,7 +52,7 @@ export async function initialize(config: Config, credentials: Credentials): Prom
 
   if (initializing) { throw new Error("Observer initialize called while initializing."); }
   if (initialized) {
-    console.warn("Observer initialize called multiple times.");
+    logWarning(MODULE, "Observer initialize called multiple times.");
     return;
   }
 

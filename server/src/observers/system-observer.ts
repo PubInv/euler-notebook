@@ -26,7 +26,7 @@ import { Stroke, StrokeData } from "../shared/notebook";
 import { TexExpression } from "../shared/math-tablet-api";
 
 import { convertTexToSvg } from "../adapters/mathjax";
-
+import { logWarning } from "../error-handler";
 import { ServerNotebook } from "../server-notebook";
 
 import { AsyncRules, BaseObserver, StyleRelation, SyncRules } from "./base-observer";
@@ -124,7 +124,7 @@ export class SystemObserver extends BaseObserver {
 
 function convertStrokeToPath(stroke: Stroke): string {
   if (stroke.x.length<2) {
-    console.warn(`Have a stroke with too few data points: ${stroke.x.length}`)
+    logWarning(MODULE, `Have a stroke with too few data points: ${stroke.x.length}`)
     return "";
   }
   let dAttribute = `M${stroke.x[0]} ${stroke.y[0]}`;

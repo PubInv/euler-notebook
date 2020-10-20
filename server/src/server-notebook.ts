@@ -46,7 +46,7 @@ import { AbsDirectoryPath, ROOT_DIR_PATH, mkDir, readFile, rename, rmRaf, writeF
 import { constructSubstitution } from "./adapters/wolframscript";
 import { OpenOptions } from "./shared/watched-resource";
 import { logError } from "./error-handler";
-import { notebookChangeRequestSynopsis, notebookChangeSynopsis } from "./debug-synopsis";
+import { notebookChangeRequestSynopsis, notebookChangeSynopsis } from "./shared/debug-synopsis";
 
 
 // LATER: Convert these to imports.

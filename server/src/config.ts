@@ -24,8 +24,11 @@ import { join } from "path";
 import { promisify } from "util";
 
 import { ServerKeys } from "./adapters/myscript";
+import { logWarning } from "./error-handler";
 
 const readFile2 = promisify(readFile);
+
+const MODULE = __filename.split(/[/\\]/).slice(-1)[0].slice(0,-3);
 
 // Types
 
@@ -69,7 +72,7 @@ export async function loadConfig(): Promise<Config> {
   if (!globalConfig) {
     globalConfig = await getJsonFileFromConfigDir<Config>(CONFIG_FILENAME);
   } else {
-    console.warn("WARNING: Loading config file multiple times.");
+    logWarning(MODULE, "Loading config file multiple times.");
   }
   return globalConfig;
 }
@@ -78,7 +81,7 @@ export async function loadCredentials(): Promise<Credentials> {
   if (!globalCredentials) {
     globalCredentials = await getJsonFileFromConfigDir<Credentials>(CREDENTIALS_FILENAME);
   } else {
-    console.warn("WARNING: Loading credentials file multiple times.");
+    logWarning(MODULE, "Loading credentials file multiple times.");
   }
   return globalCredentials;
 }

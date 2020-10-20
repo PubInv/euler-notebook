@@ -40,7 +40,7 @@ import { execute,
          convertMTLToTeX
        } from "../adapters/wolframscript";
 import { Config } from "../config";
-import { notebookSynopsis } from "../debug-synopsis";
+import { notebookSynopsis } from "../shared/debug-synopsis";
 
 // Types
 

@@ -25,8 +25,12 @@ import { ExpectedError } from "./shared/common";
 
 // Exported Functions
 
-export function logError(err: Error, message?: string /* TYPESCRIPT: Html type? */): void {
+export function logError(/* TODO: component, */ err: Error, message?: string /* TYPESCRIPT: Html type? */): void {
   if (err instanceof ExpectedError) { return; }
   console.error(message || err.message);
   console.dir(err);
+}
+
+export function logWarning(component: string, message: string): void {
+  console.warn(`WARNING (${component}) ${message}`);
 }

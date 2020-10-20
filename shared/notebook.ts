@@ -597,7 +597,10 @@ export abstract class Notebook<W extends NotebookWatcher> extends WatchedResourc
     // If it finds more than one matching style then it returns the first and outputs a warning.
     const styles = this.findStyles(options, rootId);
     if (styles.length > 0) {
-      if (styles.length > 1) { console.warn(`WARNING: More than one style found for ${rootId}/${JSON.stringify(options)}`); }
+      if (styles.length > 1) {
+        // TODO: On the server, this should use the logging system rather than console output.
+        console.warn(`More than one style found for ${rootId}/${JSON.stringify(options)}`);
+      }
       return styles[0];
     } else {
       return undefined;

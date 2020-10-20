@@ -22,8 +22,6 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 import { Server } from "http";
 
 import * as debug1 from "debug";
-const MODULE = __filename.split(/[/\\]/).slice(-1)[0].slice(0,-3);
-const debug = debug1(`server:${MODULE}`);
 import { Request } from "express";
 import * as WebSocket from "ws";
 
@@ -40,9 +38,13 @@ import {
 import { NotebookChange, NotebookObject, NotebookWatcher as ServerNotebookWatcher } from "./shared/notebook";
 
 // REVIEW: This file should not be dependent on any specific observers.
-import { logError } from "./error-handler";
+import { logError, logWarning } from "./error-handler";
 import { ServerFolder, ServerFolderWatcher } from "./server-folder";
 import { ServerNotebook } from "./server-notebook";
+import { clientMessageSynopsis, serverMessageSynopsis } from "./shared/debug-synopsis";
+
+const MODULE = __filename.split(/[/\\]/).slice(-1)[0].slice(0,-3);
+const debug = debug1(`server:${MODULE}`);
 
 // Types
 
@@ -118,15 +120,15 @@ export class ClientSocket {
           debug(`Socket closing: ${this.id}`);
           this.socket.close(code, reason);
         } else {
-          console.warn(`WARNING: Client Socket ${this.id}: closing socket that is closing.`)
+          logWarning(MODULE, `Closing socket that is closing: ${this.id}.`)
         }
       } else {
-        console.warn(`WARNING: Client Socket ${this.id}: closing socket that is already closed.`)
+        logWarning(MODULE , `Closing socket that is already closed: ${this.id}`)
         this.closePromise = Promise.resolve();
       }
     } else {
       // REVIEW: This may not be an error.
-      console.warn(`WARNING: Client Socket ${this.id}: repeat close call.`);
+      logWarning(MODULE, `Repeat close call: ${this.id}`);
       return this.closePromise;
     }
     return this.closePromise;
@@ -168,7 +170,7 @@ export class ClientSocket {
   public sendMessage(msg: ServerMessage): void {
     // Should only be called by our watchers.
 
-    debug(`Socket sent message: ${this.id} ${msg.type}`);
+    debug(`Sent: ${this.id} ${serverMessageSynopsis(msg)}`);
     // console.dir(msg, { depth: null });
     const json = JSON.stringify(msg);
     try {
@@ -264,7 +266,7 @@ export class ClientSocket {
   }
 
   private async cmMessage(msg: ClientMessage): Promise<void> {
-    debug(`Socket received message: ${this.id} ${msg.type}/${msg.operation}`);
+    debug(`Recd: ${this.id} ${clientMessageSynopsis(msg)}`);
     // console.dir(msg, { depth: null });
     switch(msg.type) {
       case 'folder':

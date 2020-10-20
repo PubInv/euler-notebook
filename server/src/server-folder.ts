@@ -36,6 +36,7 @@ import { ClientFolderChangeMessage, ServerFolderChangedMessage } from "./shared/
 import { AbsDirectoryPath, ROOT_DIR_PATH, dirStat, mkDir, readDir, rename, rmDir } from "./adapters/file-system";
 import { ServerNotebook, notebookPath } from "./server-notebook";
 import { OpenOptions } from "./shared/watched-resource";
+import { logWarning } from "./error-handler";
 
 const MODULE = __filename.split(/[/\\]/).slice(-1)[0].slice(0,-3);
 const debug = debug1(`server:${MODULE}`);
@@ -247,13 +248,13 @@ export class ServerFolder extends Folder<ServerFolderWatcher> {
         if (listing.endsWith(suffix)) {
           const nameWithoutSuffix: NotebookName = <NotebookName>listing.slice(0, -suffixLen);
           if (!ServerNotebook.isValidNotebookName(nameWithoutSuffix)) {
-            console.warn(`Skipping notebook with invalid name: '${listing}'`);
+            logWarning(MODULE, `Skipping notebook with invalid name: '${listing}'`);
             continue;
           }
           notebooks.push({ name: nameWithoutSuffix, path: <NotebookPath>`${this.path}${listing}` })
         } else {
           if (!ServerFolder.isValidFolderName(<FolderName>listing)) {
-            console.warn(`Skipping folder with invalid name: '${listing}'`);
+            logWarning(MODULE, `Skipping folder with invalid name: '${listing}'`);
             continue;
           }
           folders.push({ name: <FolderName>listing, path: <FolderPath>`${this.path}${listing}/` })
