@@ -110,16 +110,11 @@ export class TextCell extends CellBase {
         assert(!isStrokeSvgStyle(style, this.styleId, this.container.screen.notebook));
         break;
       }
-      case 'styleDeleted': {
-        // Currently the styles that we use to update our display are never deleted, so we
-        // do not handle that case.
-        const style = change.style;
-        assert(!isDisplayStyle(style, this.styleId));
-        assert(!isInputStyle(style, this.styleId));
-        assert(!isStrokeSvgStyle(style, this.styleId, this.container.screen.notebook));
+      case 'styleDeleted':
+        // Styles relevant to display of the formula are only deleted when the entire formula is deleted,
+        // so we can ignore styleDeleted messages.
         break;
-      }
-      case 'styleMoved':  assertFalse();
+      case 'styleMoved': assertFalse();
       default: assertFalse();
     }
   }

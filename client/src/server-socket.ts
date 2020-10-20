@@ -203,7 +203,7 @@ export class ServerSocket {
       }
 
     } catch(err) {
-      reportError(err, <Html>"Unexpected client error handling `WebSocket message event.");
+      reportError(err, <Html>"Unexpected client error handling WebSocket message event.");
     }
   }
 
