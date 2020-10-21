@@ -27,7 +27,7 @@ import { StrokeData, StyleObject, NotebookChange } from "../../../../shared/note
 import { StyleChangeRequest } from "../../../../shared/math-tablet-api";
 
 import { $new, $svg } from "../../../../dom";
-import { StrokePanel } from "../../../../stroke-panel";
+import { StrokePanel } from "../../../../components/stroke-panel";
 
 import { Content } from "../index";
 
@@ -112,25 +112,10 @@ export class FigureCell extends CellBase {
 
   private $editPanel: HTMLDivElement;
   private strokePanel?: StrokePanel;
-  // private stylusDrawingPanel: StylusDrawingPanel;
 
   // Private Instance Property Functions
 
   // Private Instance Methods
-
-  // private render(style: StyleObject): void {
-
-  //   const svgRepStyle = this.container.screen.notebook.findStyle({ role: 'REPRESENTATION', type: 'SVG-MARKUP' }, style.id);
-  //   if (!svgRepStyle) {
-  //     // TODO: What to do in this case? Put an error message in the cell?
-  //     console.warn("No SVG-MARKUP substyle for FIGURE style.");
-  //     return;
-  //   }
-
-  //   const $newSvgPanel = $outerSvg<'svg'>(svgRepStyle.data);
-  //   this.$svgPanel.replaceWith($newSvgPanel);
-  //   this.$svgPanel = $newSvgPanel;
-  // }
 
   private createStrokeSubpanel(inputStyle: StyleObject): StrokePanel {
     const svgRepStyle = this.container.screen.notebook.findStyle({ role: 'REPRESENTATION', type: 'SVG-MARKUP' }, inputStyle.id);

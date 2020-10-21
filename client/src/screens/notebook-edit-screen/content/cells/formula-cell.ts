@@ -29,8 +29,8 @@ import { $new, $newSvg, $outerSvg } from "../../../../dom";
 import { Content } from "..";
 
 import { CellBase, isDisplayStyle, isInputStyle, isStrokeSvgStyle } from "./cell-base";
-import { KeyboardPanel } from "../../../../keyboard-panel";
-import { StrokePanel } from "../../../../stroke-panel";
+import { KeyboardPanel } from "../../../../components/keyboard-panel";
+import { StrokePanel } from "../../../../components/stroke-panel";
 import { StyleChangeRequest } from "../../../../shared/math-tablet-api";
 
 // Types

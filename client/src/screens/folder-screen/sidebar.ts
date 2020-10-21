@@ -22,7 +22,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 import { CssClass } from "../../shared/common";
 import { $new, svgIconReference } from "../../dom";
 import { FolderScreen } from ".";
-import { ButtonBar } from "../../button-bar";
+import { ButtonBar } from "../../components/button-bar";
 
 // Types
 

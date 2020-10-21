@@ -22,7 +22,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 import { Html, assertFalse } from "../shared/common";
 import { FOLDER_PATH_RE, NOTEBOOK_PATH_RE, FolderPath, NotebookPath } from "../shared/folder";
 
-import { headerInstance } from "../header";
+import { headerInstance } from "../components/header";
 
 import { ScreenBase } from "./screen-base";
 import { addSyncEventListener } from "../error-handler";

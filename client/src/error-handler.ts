@@ -67,6 +67,9 @@ export function logError(err: Error, message?: Html): void {
   // LATER: Report error to server.
   if (err instanceof ExpectedError) { return; }
   if (message) { console.error(message); }
+  // LATER: This console.dir does not use the sourcemap to interpret the stack trace.
+  //        How do we get it to do that?
+  // Uncomment this to see interpreted stack trace: */ throw err;
   console.dir(err);
 }
 

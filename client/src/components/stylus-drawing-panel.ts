@@ -22,11 +22,11 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 import * as debug1 from "debug";
 const debug = debug1('client:stylus-drawing-panel');
 
-import { Html, CssClass, CssLength } from "./shared/common";
+import { Html, CssClass, CssLength } from "../shared/common";
 
-import { SvgStroke } from "./svg-stroke";
-import { reportError } from "./error-handler";
-import { SvgElement } from "./svg-element";
+import { SvgStroke } from "../svg-stroke";
+import { reportError } from "../error-handler";
+import { SvgElement } from "../svg-element";
 
 
 // Types

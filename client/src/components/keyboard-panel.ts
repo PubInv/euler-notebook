@@ -21,11 +21,11 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 import * as debug1 from "debug";
 
-import { CssClass } from "./shared/common";
-import { $new } from "./dom";
+import { CssClass } from "../shared/common";
+import { $new } from "../dom";
 const debug = debug1('client:keyboard-panel');
 
-import { HtmlElement } from "./html-element";
+import { HtmlElement } from "../html-element";
 
 // Types
 

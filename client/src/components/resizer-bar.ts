@@ -21,9 +21,9 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 // Requirements
 
-import { CssClass } from "./shared/common";
-import { RIGHT_TRIANGLE_ENTITY } from "./dom";
-import { HtmlElement } from "./html-element";
+import { CssClass } from "../shared/common";
+import { RIGHT_TRIANGLE_ENTITY } from "../dom";
+import { HtmlElement } from "../html-element";
 
 // Types
 

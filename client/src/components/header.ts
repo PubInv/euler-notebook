@@ -25,13 +25,13 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 import * as debug1 from "debug";
 const debug = debug1('client:header');
 
-import { CssClass, Html, escapeHtml, notImplemented } from "./shared/common";
-import { Path } from "./shared/folder";
+import { CssClass, Html, escapeHtml, notImplemented } from "../shared/common";
+import { Path } from "../shared/folder";
 
 import { ButtonBar } from "./button-bar";
-import { $, $new, svgIconReference, ElementId } from "./dom";
-import { monitorPromise } from "./error-handler";
-import { userSettingsInstance, InputMode } from "./user-settings";
+import { $, $new, svgIconReference, ElementId } from "../dom";
+import { monitorPromise } from "../error-handler";
+import { userSettingsInstance, InputMode } from "../user-settings";
 
 // Types
 

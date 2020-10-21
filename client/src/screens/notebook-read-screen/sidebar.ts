@@ -21,7 +21,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 import { CssClass } from "../../shared/common";
 import { svgIconReference } from "../../dom";
-import { ButtonBar } from "../../button-bar";
+import { ButtonBar } from "../../components/button-bar";
 import { Mode, NotebookReadScreen } from "./index";
 
 // Types

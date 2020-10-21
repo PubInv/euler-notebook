@@ -22,15 +22,15 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 import * as debug1 from "debug";
 const debug = debug1('client:stroke-panel');
 
-import { CssClass, CssLength, SvgMarkup, assert, deepCopy } from "./shared/common";
-import { StrokeData } from "./shared/notebook";
+import { CssClass, CssLength, SvgMarkup, assert, deepCopy } from "../shared/common";
+import { StrokeData } from "../shared/notebook";
 
-import { $outerSvg, $newSvg, $svg } from "./dom";
+import { $outerSvg, $newSvg, $svg } from "../dom";
 
-import { SvgStroke } from "./svg-stroke";
+import { SvgStroke } from "../svg-stroke";
 import { StylusDrawingPanel } from "./stylus-drawing-panel";
 
-import { HtmlElement } from "./html-element";
+import { HtmlElement } from "../html-element";
 
 // TODO: Rename stylus panel.
 

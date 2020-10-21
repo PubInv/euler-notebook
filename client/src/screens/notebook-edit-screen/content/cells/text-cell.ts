@@ -27,8 +27,8 @@ import { StyleObject, NotebookChange, StrokeData } from "../../../../shared/note
 import { StyleChangeRequest } from "../../../../shared/math-tablet-api";
 
 import { $new, $newSvg, $outerSvg } from "../../../../dom";
-import { KeyboardPanel } from "../../../../keyboard-panel";
-import { StrokePanel } from "../../../../stroke-panel";
+import { KeyboardPanel } from "../../../../components/keyboard-panel";
+import { StrokePanel } from "../../../../components/stroke-panel";
 
 import { Content } from "../index";
 

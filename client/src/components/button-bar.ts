@@ -19,8 +19,8 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 // Requirements
 
-import { $configureAll, $all, HtmlElementSpecification } from "./dom";
-import { HtmlElement } from "./html-element";
+import { $configureAll, $all, HtmlElementSpecification } from "../dom";
+import { HtmlElement } from "../html-element";
 
 // Class
 

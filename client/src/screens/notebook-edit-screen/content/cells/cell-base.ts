@@ -29,7 +29,7 @@ import { HtmlElement } from "../../../../html-element";
 import { $new, CLOSE_X_ENTITY, ElementId, HtmlElementOrSpecification } from "../../../../dom";
 import { reportError } from "../../../../error-handler";
 import { assert, Html } from "../../../../shared/common";
-import { ResizerBar } from "../../../../resizer-bar";
+import { ResizerBar } from "../../../../components/resizer-bar";
 import { StyleMoveRequest } from "../../../../shared/math-tablet-api";
 import { ClientNotebook } from "../../../../client-notebook";
 

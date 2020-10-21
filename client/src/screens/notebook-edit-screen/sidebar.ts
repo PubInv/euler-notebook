@@ -20,7 +20,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 // Requirements
 
 import { CssClass } from "../../shared/common";
-import { ButtonBar } from "../../button-bar";
+import { ButtonBar } from "../../components/button-bar";
 import { svgIconReference, $new, SIGMA_ENTITY } from "../../dom";
 
 import { NotebookEditScreen } from "./index";
