@@ -234,7 +234,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
   >.content
 
-    .cell
+    >.cell
 
       >.main
         display flex
@@ -244,6 +244,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
           width 30pt
 
         >.content
+          position relative
           flex-grow 1
 
         >.rightMargin
@@ -295,10 +296,6 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
       flex-direction row
       padding 9px 0 9px 0
 
-      >.editPanel
-        outline 1px solid gray
-        position relative
-
       >.keyboardPanel
 
         >textarea
@@ -307,22 +304,6 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
           padding 0px
           resize none
           width 6.5in
-
-      >.strokePanel
-        .stylusDrawingPanel
-          background-color transparent
-          display block
-          fill none
-          pen-action none
-          position absolute
-          stroke gray
-          touch-action none
-
-        .svgPanel
-          // background-color white
-          display block
-          fill none
-          stroke black
 
       >.displayPanel
         flex-grow 1
@@ -403,6 +384,21 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
     svg
       fill #808080
 
+.strokePanel
+  >.stylusDrawingPanel
+    background-color transparent
+    display block
+    fill none
+    pen-action none
+    position absolute
+    stroke gray
+    touch-action none
+
+  >.svgPanel
+    // background-color white
+    display block
+    fill none
+    stroke black
 
 // Element types
 

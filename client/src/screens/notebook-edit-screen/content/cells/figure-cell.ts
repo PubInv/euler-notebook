@@ -29,9 +29,9 @@ import { StyleChangeRequest } from "../../../../shared/math-tablet-api";
 import { $new, $svg } from "../../../../dom";
 import { StrokePanel } from "../../../../components/stroke-panel";
 
-import { Content } from "../index";
+import { Content as CellContainer } from "../index";
 
-import { CellBase, isDisplayStyle, isInputStyle, isStrokeSvgStyle } from "./cell-base";
+import { CellBase, isDisplaySvgStyle, isInputStyle, isStrokeSvgStyle } from "./cell-base";
 
 // Types
 
@@ -43,19 +43,22 @@ export class FigureCell extends CellBase {
 
   // Public Constructor
 
-  public constructor(container: Content, rootStyle: StyleObject) {
+  public constructor(container: CellContainer, rootStyle: StyleObject) {
+
+    const $content = $new({
+      tag: 'div',
+      classes: [ <CssClass>'content', <CssClass>'figureCell' ],
+    });
+
+    super(container, rootStyle, $content);
+
+    this.$content = $content;
 
     const notebook = container.screen.notebook;
-    // const svgRepStyle = notebook.findStyle({ role: 'REPRESENTATION', type: 'SVG-MARKUP' }, rootStyle.id);
-
-    const $editPanel = $new({ tag: 'div', class: <CssClass>'editPanel', html: <Html>"Placeholder" });
-
-    super(container, rootStyle, $editPanel);
-
-    this.$editPanel = $editPanel;
-
     const inputStyle = notebook.findStyle({ role: 'INPUT' }, rootStyle.id);
-    this.replaceEditPanel(inputStyle);
+    if (inputStyle) {
+      this.createStrokePanel(inputStyle);
+    }
   }
 
   // Public Instance Methods
@@ -72,15 +75,21 @@ export class FigureCell extends CellBase {
         // Ignore. Not something that affects our display.
         break;
       }
-      case 'styleInserted':
+      case 'styleInserted': {
+        if (isInputStyle(change.style, this.styleId)) {
+          this.createStrokePanel(change.style);
+        } else if (isStrokeSvgStyle(change.style, this.styleId, this.container.screen.notebook)) {
+          this.strokePanel!.updateSvgMarkup(change.style.data);
+        } else {
+          // Ignore. Not something that affects our display.
+        }
+        break;
+      }
       case 'styleChanged': {
-        const changedStyle = change.style;
-        /* if (isDisplayStyle(changedStyle, this.styleId)) {
-          this.updateDisplayPanel(change.type, changedStyle);
-        } else */if (isInputStyle(changedStyle, this.styleId)) {
-          this.updateEditPanelData(change.type, changedStyle);
-        } else if (isStrokeSvgStyle(changedStyle, this.styleId, this.container.screen.notebook)) {
-          this.updateEditPanelDrawing(change.type, changedStyle);
+        if (isInputStyle(change.style, this.styleId)) {
+          this.strokePanel!.updateStrokeData(change.style.data);
+        } else if (isStrokeSvgStyle(change.style, this.styleId, this.container.screen.notebook)) {
+          this.strokePanel!.updateSvgMarkup(change.style.data);
         } else {
           // Ignore. Not something that affects our display.
         }
@@ -90,7 +99,7 @@ export class FigureCell extends CellBase {
         // Currently the styles that we use to update our display are never converted, so we
         // do not handle that case.
         const style = this.container.screen.notebook.getStyle(change.styleId);
-        assert(!isDisplayStyle(style, this.styleId));
+        assert(!isDisplaySvgStyle(style, this.styleId));
         assert(!isInputStyle(style, this.styleId));
         assert(!isStrokeSvgStyle(style, this.styleId, this.container.screen.notebook));
         break;
@@ -110,16 +119,16 @@ export class FigureCell extends CellBase {
 
   // Private Instance Properties
 
-  private $editPanel: HTMLDivElement;
+  private $content: HTMLDivElement;
   private strokePanel?: StrokePanel;
 
   // Private Instance Property Functions
 
   // Private Instance Methods
 
-  private createStrokeSubpanel(inputStyle: StyleObject): StrokePanel {
+  private createStrokePanel(inputStyle: StyleObject): void {
     const svgRepStyle = this.container.screen.notebook.findStyle({ role: 'REPRESENTATION', type: 'SVG-MARKUP' }, inputStyle.id);
-    const strokePanel = new StrokePanel(
+    this.strokePanel = new StrokePanel(
       inputStyle.data,
       svgRepStyle?.data,
       async (strokeData: StrokeData)=>{
@@ -130,44 +139,8 @@ export class FigureCell extends CellBase {
         await notebook.sendChangeRequest(changeRequest);
       },
     );
-    return strokePanel;
-  }
-
-  private replaceEditPanel(inputStyle: StyleObject|undefined): void {
-    if (!inputStyle) {
-      // No edit panel can be created yet because the root style doesn't have the necessary substyles yet,
-      return;
-    }
-    this.strokePanel = this.createStrokeSubpanel(inputStyle);
-    const $newEditPanel = this.strokePanel.$elt;
-    this.$editPanel.replaceWith($newEditPanel);
-    this.$editPanel = $newEditPanel;
-  }
-
-  private updateEditPanelData(changeType: 'styleChanged'|'styleInserted', inputStyle: StyleObject): void {
-    if (changeType == 'styleInserted') {
-      assert(inputStyle.type == 'STROKE-DATA' || inputStyle.type == 'PLAIN-TEXT');
-      assert(!this.strokePanel /* && !this.keyboardPanel */);
-      this.replaceEditPanel(inputStyle);
-    } else {
-      // 'styleChanged'
-      switch(inputStyle.type) {
-        case 'STROKE-DATA':
-          assert(this.strokePanel);
-          this.strokePanel!.updateStrokeData(inputStyle.data);
-          break;
-        // case 'PLAIN-TEXT':
-        //   assert(this.keyboardPanel);
-        //   this.keyboardPanel!.updateText(inputStyle.data);
-        //   break;
-        default: assertFalse();
-      }
-    }
-  }
-
-  private updateEditPanelDrawing(_changeType: 'styleChanged'|'styleInserted', svgRepStyle: StyleObject): void {
-    assert(this.strokePanel);
-    this.strokePanel!.updateSvgMarkup(svgRepStyle.data);
+    assert(this.$content.children.length == 0);
+    this.$content.appendChild(this.strokePanel.$elt);
   }
 
   // Private Instance Event Handlers
@@ -182,6 +155,7 @@ export class FigureCell extends CellBase {
     const newHeightStr = <CssLength>`${newHeight}px`;
     $svgPanel.setAttribute('height', newHeightStr);
 
+    // TODO: Save new cell height on final resize call.
     // if (final) {
     //   // TODO: Incremental change request?
     //   const inputStyle = this.inputStyleCopy!;
@@ -198,21 +172,6 @@ export class FigureCell extends CellBase {
     // }
 
   }
-
-  // private async onStroke(strokeData: StrokeData): Promise<void> {
-  // }
-
-  // private onStrokeComplete(stroke: SvgStroke): Promise<void> {
-  //   // TODO: What if socket to server is closed? We'll just accumulate strokes that will never get saved.
-  //   //       How do we handle offline operation?
-  //   // TODO: Incremental change request.
-  //   const inputStyle = this.inputStyleCopy!;
-  //   assert(inputStyle);
-  //   const data = <StrokeData>inputStyle.data;
-  //   data.strokeGroups[0].strokes.push(stroke.data);
-  //   const changeRequest: StyleChangeRequest = { type: 'changeStyle', styleId: inputStyle.id, data };
-  //   return this.container.editStyle([ changeRequest ]);
-  // }
 }
 
 

@@ -24,7 +24,7 @@ const debug = debug1('client:formula-cell');
 
 import { CssClass } from "../../../../shared/common";
 import { StyleObject, NotebookChange } from "../../../../shared/notebook";
-import { Content } from "..";
+import { Content as CellContainer } from "..";
 
 import { CellBase } from "./cell-base";
 import { Html, notImplemented } from "../../../../shared/common";
@@ -42,10 +42,10 @@ export class PlotCell extends CellBase {
 
   // Public Constructor
 
-  public  constructor(container: Content, style: StyleObject) {
+  public  constructor(container: CellContainer, style: StyleObject) {
 
-    const $tempPlaceholder = $new<'div'>({ tag: 'div', class: <CssClass>'plotCell', html: <Html>"<i>Not implemented</i>" });
-    super(container, style, $tempPlaceholder);
+    const $content = $new<'div'>({ tag: 'div', class: <CssClass>'plotCell', html: <Html>"<i>Not implemented</i>" });
+    super(container, style, $content);
     this.render(style);
   }
 

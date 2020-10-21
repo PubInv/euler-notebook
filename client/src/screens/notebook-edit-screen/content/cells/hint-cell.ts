@@ -26,7 +26,7 @@ import { CssClass } from "../../../../shared/common";
 import { StyleObject, /* HintData, HintStatus, HintRelationship, */ NotebookChange } from "../../../../shared/notebook";
 
 import { $new } from "../../../../dom";
-import { Content } from "../index";
+import { Content as CellContainer } from "../index";
 
 import { CellBase } from "./cell-base";
 import { Html } from "../../../../shared/common";
@@ -43,10 +43,10 @@ export class HintCell extends CellBase {
 
   // Public Constructor
 
-  public constructor(container: Content, style: StyleObject) {
+  public constructor(container: CellContainer, style: StyleObject) {
 
-    const $tempPlaceholder = $new<'div'>({ tag: 'div', class: <CssClass>'hintCell', html: <Html>"<i>Not implemented</i>" });
-    super(container, style,  $tempPlaceholder);
+    const $content = $new<'div'>({ tag: 'div', class: <CssClass>'hintCell', html: <Html>"<i>Not implemented</i>" });
+    super(container, style,  $content);
     // this.render(style);
   }
 

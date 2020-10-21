@@ -26,9 +26,9 @@ import { CssClass, Html, assertFalse, assert } from "../../../../shared/common";
 import { StyleObject, NotebookChange, StrokeData, StyleSubrole } from "../../../../shared/notebook";
 
 import { $new, $newSvg, $outerSvg } from "../../../../dom";
-import { Content } from "..";
+import { Content as CellContainer } from "..";
 
-import { CellBase, isDisplayStyle, isInputStyle, isStrokeSvgStyle } from "./cell-base";
+import { CellBase, isDisplaySvgStyle, isInputStyle, isStrokeSvgStyle } from "./cell-base";
 import { KeyboardPanel } from "../../../../components/keyboard-panel";
 import { StrokePanel } from "../../../../components/stroke-panel";
 import { StyleChangeRequest } from "../../../../shared/math-tablet-api";
@@ -54,7 +54,7 @@ export class FormulaCell extends CellBase {
 
   // Public Constructor
 
-  public constructor(container: Content, rootStyle: StyleObject) {
+  public constructor(container: CellContainer, rootStyle: StyleObject) {
     debug(`Creating instance: style ${rootStyle.id}`);
 
     const notebook = container.screen.notebook;
@@ -114,7 +114,7 @@ export class FormulaCell extends CellBase {
       case 'styleInserted':
       case 'styleChanged': {
         const changedStyle = change.style;
-        if (isDisplayStyle(changedStyle, this.styleId)) {
+        if (isDisplaySvgStyle(changedStyle, this.styleId)) {
           this.updateDisplayPanel(change.type, changedStyle);
         } else if (isInputStyle(changedStyle, this.styleId)) {
           this.updateEditPanelData(change.type, changedStyle);
@@ -129,7 +129,7 @@ export class FormulaCell extends CellBase {
         // Currently the styles that we use to update our display are never converted, so we
         // do not handle that case.
         const style = this.container.screen.notebook.getStyle(change.styleId);
-        assert(!isDisplayStyle(style, this.styleId));
+        assert(!isDisplaySvgStyle(style, this.styleId));
         assert(!isInputStyle(style, this.styleId));
         assert(!isStrokeSvgStyle(style, this.styleId, this.container.screen.notebook));
         break;

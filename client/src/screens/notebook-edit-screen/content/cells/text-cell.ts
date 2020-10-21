@@ -30,9 +30,9 @@ import { $new, $newSvg, $outerSvg } from "../../../../dom";
 import { KeyboardPanel } from "../../../../components/keyboard-panel";
 import { StrokePanel } from "../../../../components/stroke-panel";
 
-import { Content } from "../index";
+import { Content as CellContainer } from "../index";
 
-import { CellBase, isDisplayStyle, isInputStyle, isStrokeSvgStyle } from "./cell-base";
+import { CellBase, isDisplaySvgStyle, isInputStyle, isStrokeSvgStyle } from "./cell-base";
 
 // Types
 
@@ -46,7 +46,7 @@ export class TextCell extends CellBase {
 
   // Public Constructor
 
-  public constructor(container: Content, rootStyle: StyleObject) {
+  public constructor(container: CellContainer, rootStyle: StyleObject) {
     debug(`Creating instance: style ${rootStyle.id}`);
 
     const notebook = container.screen.notebook;
@@ -90,7 +90,7 @@ export class TextCell extends CellBase {
       case 'styleInserted':
       case 'styleChanged': {
         const changedStyle = change.style;
-        if (isDisplayStyle(changedStyle, this.styleId)) {
+        if (isDisplaySvgStyle(changedStyle, this.styleId)) {
           this.updateDisplayPanel(change.type, changedStyle);
         } else if (isInputStyle(changedStyle, this.styleId)) {
           this.updateEditPanelData(change.type, changedStyle);
@@ -105,7 +105,7 @@ export class TextCell extends CellBase {
         // Currently the styles that we use to update our display are never converted, so we
         // do not handle that case.
         const style = this.container.screen.notebook.getStyle(change.styleId);
-        assert(!isDisplayStyle(style, this.styleId));
+        assert(!isDisplaySvgStyle(style, this.styleId));
         assert(!isInputStyle(style, this.styleId));
         assert(!isStrokeSvgStyle(style, this.styleId, this.container.screen.notebook));
         break;

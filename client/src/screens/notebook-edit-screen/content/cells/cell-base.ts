@@ -21,7 +21,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 // Requirements
 
-import { Content } from "../index";
+import { Content as CellContainer } from "../index";
 import { CssClass } from "../../../../shared/common";
 import { StyleObject, StyleId, NotebookChange } from "../../../../shared/notebook";
 import { Tools } from "../../tools";
@@ -119,9 +119,9 @@ export abstract class CellBase extends HtmlElement<'div'>{
   // Private Constructor
 
   protected constructor(
-    container: Content,
+    container: CellContainer,
     style: StyleObject,
-    child: HtmlElementOrSpecification,
+    contentSpec: HtmlElementOrSpecification,
   ) {
 
     const $leftMargin = $new<'div'>({
@@ -160,7 +160,7 @@ export abstract class CellBase extends HtmlElement<'div'>{
       class: <CssClass>'main',
       children: [
         $leftMargin,
-        child,
+        contentSpec,
         $rightMargin,
       ],
     });
@@ -190,7 +190,7 @@ export abstract class CellBase extends HtmlElement<'div'>{
 
   // Private Instance Properties
 
-  protected container: Content;
+  protected container: CellContainer;
 
   // Private Instance Methods
 
@@ -289,7 +289,7 @@ export abstract class CellBase extends HtmlElement<'div'>{
 
 // EXPORTED FUNCTIONS
 
-export function isDisplayStyle(style: StyleObject, parentId: StyleId): boolean {
+export function isDisplaySvgStyle(style: StyleObject, parentId: StyleId): boolean {
   return style.role == 'REPRESENTATION' && style.type == 'SVG-MARKUP' && style.parentId == parentId;
 }
 
@@ -301,9 +301,7 @@ export function isStrokeSvgStyle(style: StyleObject, parentId: StyleId, notebook
   let rval = false;
   if (style.role == 'REPRESENTATION' && style.type == 'SVG-MARKUP' && style.parentId != parentId) {
     const parentStyle = notebook.getStyle(style.parentId);
-    if (parentStyle.role == 'INPUT' && parentStyle.type == 'STROKE-DATA' && parentStyle.parentId == parentId) {
-      rval = true;
-    }
+    rval = (parentStyle.role == 'INPUT' && parentStyle.type == 'STROKE-DATA' && parentStyle.parentId == parentId);
   }
   return rval;
 }
