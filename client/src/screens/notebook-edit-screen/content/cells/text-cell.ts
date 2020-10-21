@@ -26,13 +26,14 @@ import { CssClass, assert, assertFalse, Html } from "../../../../shared/common";
 import { StyleObject, NotebookChange, StrokeData } from "../../../../shared/notebook";
 import { StyleChangeRequest } from "../../../../shared/math-tablet-api";
 
-import { $new, $newSvg, $outerSvg } from "../../../../dom";
+import { $new } from "../../../../dom";
 import { KeyboardPanel } from "../../../../components/keyboard-panel";
 import { StrokePanel } from "../../../../components/stroke-panel";
 
 import { Content as CellContainer } from "../index";
 
-import { CellBase, isDisplaySvgStyle, isInputStyle, isStrokeSvgStyle } from "./cell-base";
+import { CellBase, isInputStyle, isStrokeSvgStyle } from "./cell-base";
+import { notebookChangeSynopsis } from "../../../../shared/debug-synopsis";
 
 // Types
 
@@ -46,40 +47,35 @@ export class TextCell extends CellBase {
 
   // Public Constructor
 
-  public constructor(container: CellContainer, rootStyle: StyleObject) {
-    debug(`Creating instance: style ${rootStyle.id}`);
+  public constructor(container: CellContainer, style: StyleObject) {
+    debug(`Creating instance: style ${style.id}`);
 
     const notebook = container.screen.notebook;
-    const svgRepStyle = notebook.findStyle({ role: 'REPRESENTATION', type: 'SVG-MARKUP' }, rootStyle.id);
-    const inputStyle = notebook.findStyle({ role: 'INPUT' }, rootStyle.id);
+    const inputStyle = notebook.findStyle({ role: 'INPUT' }, style.id);
 
     // These two placeholders will be replaced, below.
-    const $displayPanel = $newSvg<'svg'>({ tag: 'svg', class: <CssClass>'displayPanel', attrs: { height: '72pt' /* 1in */, width: '468pt' /* 6.5in */ }});
     const $editPanel = $new({ tag: 'div', class: <CssClass>'editPanel', html: <Html>"Placeholder" });
 
     const $content = $new({
       tag: 'div',
       classes: [ <CssClass>'content', <CssClass>'textCell' ],
       children: [
-        $displayPanel,
         $editPanel,
       ]
     });
 
-    super(container, rootStyle, $content);
+    super(container, style, $content);
 
-    this.$displayPanel = $displayPanel;
     this.$editPanel = $editPanel;
 
-    this.replaceDisplayPanel(svgRepStyle);
     this.replaceEditPanel(inputStyle);
   }
 
   // ClientNotebookWatcher Methods
 
-  public onChange(change: NotebookChange): void {
-    debug(`onChange: cell ${this.styleId}, type ${change.type}`);
-    // TODO: Changes that affect the prefix panel.
+  public onChange(change: NotebookChange): boolean {
+    debug(`onChange: style ${this.styleId} ${notebookChangeSynopsis(change)}`);
+    if (super.onChange(change)) { return true; }
 
     switch (change.type) {
       case 'relationshipDeleted':
@@ -89,13 +85,10 @@ export class TextCell extends CellBase {
       }
       case 'styleInserted':
       case 'styleChanged': {
-        const changedStyle = change.style;
-        if (isDisplaySvgStyle(changedStyle, this.styleId)) {
-          this.updateDisplayPanel(change.type, changedStyle);
-        } else if (isInputStyle(changedStyle, this.styleId)) {
-          this.updateEditPanelData(change.type, changedStyle);
-        } else if (isStrokeSvgStyle(changedStyle, this.styleId, this.container.screen.notebook)) {
-          this.updateEditPanelDrawing(change.type, changedStyle);
+        if (isInputStyle(change.style, this.styleId)) {
+          this.updateEditPanelData(change.type, change.style);
+        } else if (isStrokeSvgStyle(change.style, this.styleId, this.container.screen.notebook)) {
+          this.updateEditPanelDrawing(change.type, change.style);
         } else {
           // Ignore. Not something that affects our display.
         }
@@ -105,7 +98,6 @@ export class TextCell extends CellBase {
         // Currently the styles that we use to update our display are never converted, so we
         // do not handle that case.
         const style = this.container.screen.notebook.getStyle(change.styleId);
-        assert(!isDisplaySvgStyle(style, this.styleId));
         assert(!isInputStyle(style, this.styleId));
         assert(!isStrokeSvgStyle(style, this.styleId, this.container.screen.notebook));
         break;
@@ -117,6 +109,7 @@ export class TextCell extends CellBase {
       case 'styleMoved': assertFalse();
       default: assertFalse();
     }
+    return false;
   }
 
   public onChangesFinished(): void { /* Nothing to do. */ }
@@ -125,7 +118,6 @@ export class TextCell extends CellBase {
 
   // Private Instance Properties
 
-  private $displayPanel: SVGSVGElement;
   private $editPanel: HTMLDivElement;
   private keyboardPanel?: KeyboardPanel;
   private strokePanel?: StrokePanel;
@@ -149,15 +141,6 @@ export class TextCell extends CellBase {
       await notebook.sendChangeRequest(changeRequest);
     });
     return strokePanel;
-  }
-
-  private replaceDisplayPanel(svgRepStyle: StyleObject|undefined): void {
-    let $newDisplayPanel: SVGSVGElement|undefined;
-    if (svgRepStyle) {
-      $newDisplayPanel = $outerSvg<'svg'>(svgRepStyle.data);
-      this.$displayPanel.replaceWith($newDisplayPanel);
-      this.$displayPanel = $newDisplayPanel;
-    }
   }
 
   private replaceEditPanel(inputStyle: StyleObject|undefined): void {
@@ -210,9 +193,6 @@ export class TextCell extends CellBase {
     this.strokePanel!.updateSvgMarkup(svgRepStyle.data);
   }
 
-  private updateDisplayPanel(_changeType: 'styleChanged'|'styleInserted', svgRepStyle: StyleObject): void {
-    this.replaceDisplayPanel(svgRepStyle);
-  }
 
   // Private Instance Event Handlers
 

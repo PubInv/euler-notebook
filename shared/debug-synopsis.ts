@@ -170,11 +170,11 @@ export function serverMessageSynopsis(msg: ServerMessage): string {
 // Helper Functions
 
 function clientFolderMessageSynopsis(msg: ClientFolderMessage): string {
-  let rval = `${msg.path} ${msg.operation} `;
+  let rval = `${msg.path} ${msg.operation}`;
   switch(msg.operation) {
     case 'change':
       for (const request of msg.changeRequests) {
-        rval += `${folderChangeRequestSynopsis(request)}; `;
+        rval += ` ${folderChangeRequestSynopsis(request)};`;
       }
       break;
     case 'close': break;
@@ -185,15 +185,16 @@ function clientFolderMessageSynopsis(msg: ClientFolderMessage): string {
 }
 
 function clientNotebookMessageSynopsis(msg: ClientNotebookMessage): string {
-  let rval = `${msg.path} ${msg.operation} `;
+  let rval = `${msg.path} ${msg.operation}`;
   switch(msg.operation) {
     case 'change':
       for (const request of msg.changeRequests) {
-        rval += `${notebookChangeRequestSynopsis(request)}; `;
+        rval += ` ${notebookChangeRequestSynopsis(request)};`;
       }
       break;
     case 'close': break;
     case 'open': break;
+    case 'useTool': rval += `style ${msg.styleId}`; break;
     default: assertFalse();
   }
   return rval;

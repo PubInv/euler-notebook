@@ -23,8 +23,8 @@ import * as debug1 from "debug";
 const MODULE = __filename.split(/[/\\]/).slice(-1)[0].slice(0,-3);
 const debug = debug1(`server:${MODULE}`);
 
-import { Html } from "../shared/common";
-import { NotebookChange, StyleObject, RelationshipObject, WolframExpression } from "../shared/notebook";
+import { Html, SvgMarkup } from "../shared/common";
+import { NotebookChange, StyleObject, RelationshipObject, WolframExpression, PlotData } from "../shared/notebook";
 import { ToolData, NotebookChangeRequest, StyleInsertRequest, StylePropertiesWithSubprops, StyleDeleteRequest } from "../shared/math-tablet-api";
 
 import { ServerNotebook, ObserverInstance, absDirPathFromNotebookPath } from "../server-notebook";
@@ -33,8 +33,15 @@ import { Config } from "../config";
 // import * as uuid from "uuid-js";
 // import uuid = require('uuid');
 import { v4 as uuid } from "uuid";
-// import fs from "fs";
 import * as fs from "fs";
+import { assert } from "console";
+
+// Constants
+
+const XML_PREFIX = '<?xml version="1.0" encoding="UTF-8"?>\n';
+const XML_SUFFIX = '\n';
+
+// Exported Class
 
 export class SubtrivClassifierObserver implements ObserverInstance {
 
@@ -106,7 +113,7 @@ export class SubtrivClassifierObserver implements ObserverInstance {
       createdPlotSuccessfully = await plotSubtrivariate(sub_expr,rvars,fullFilename);
       debug("PLOTTER SUCCESS SAYS:",createdPlotSuccessfully);
     } catch (e) {
-      debug("MATHEMATICA QUAD PLOT FAILED :",e);
+      debug("MATHEMATICA QUAD PLOT FAILED:",e);
       return [];
     }
 
@@ -165,7 +172,7 @@ export class SubtrivClassifierObserver implements ObserverInstance {
 
   private async subtrivariateClassifierRule(style: StyleObject, rval: NotebookChangeRequest[]): Promise<void> {
     if (style.type != 'WOLFRAM-EXPRESSION' || style.role != 'EVALUATION') { return; }
-    // debug("INSIDE QUAD CLASSIFIER :",style);
+    // debug("INSIDE QUAD CLASSIFIER:",style);
 
     var isSubTrivariate;
     try {
@@ -177,7 +184,7 @@ export class SubtrivClassifierObserver implements ObserverInstance {
       isSubTrivariate = await isExpressionSubTrivariate(style.data,rs);
       debug("SUBTRIVARIATE CLASSIFER SAYS:", isSubTrivariate);
     } catch (e) {
-      debug("MATHEMATICA EVALUATION FAILED :", e);
+      debug("MATHEMATICA EVALUATION FAILED:", e);
       return;
     }
 
@@ -263,7 +270,7 @@ export class SubtrivClassifierObserver implements ObserverInstance {
         isSubTrivariate = await isExpressionSubTrivariate(unique_style.data,rs);
         debug("SUBTRI CLASSIFER SAYS:",isSubTrivariate);
       } catch (e) {
-        debug("MATHEMATICA EVALUATION FAILED :",e);
+        debug("MATHEMATICA EVALUATION FAILED:",e);
       }
       debug("IS PLOTTABLE",isSubTrivariate);
       debug("IS BEFOREQUDRATIC",beforeChangeClassifiedAsSubTrivariate);
@@ -311,7 +318,7 @@ async function isExpressionSubTrivariate(expr: WolframExpression, usedSymbols: S
   const unwrapped_script = subtrivariate_function_script+" &[" + sub_expr + "]";
   const script = <WolframExpression>("runPrivate[" + unwrapped_script + "]");
   debug("EXPRESSION FOR CLASSIFIFYING: ",script );
-  let result : string = await execute(script);
+  let result: string = await execute(script);
   if (result == "False") {
     return null;
   } else {
@@ -320,10 +327,11 @@ async function isExpressionSubTrivariate(expr: WolframExpression, usedSymbols: S
     return trimmed;
   }
 }
-// Possibly this function should be moved out to make
-// the "source" more meaningful
-async function plotSubtrivariate(expr : string, variables: string[], filename : string) : Promise<StyleInsertRequest> {
-  debug("VARIABLES",variables);
+
+async function plotSubtrivariate(expr: string, variables: string[], filename: string): Promise<StyleInsertRequest> {
+  // REVIEW: Possibly this function should be moved out to make the "source" more meaningful -RLR
+  // REVIEW: Don't export the SVG to a file, just pass it back in the return value?
+  debug("VARIABLES", variables);
   let plot_script =
     (variables.length == 1) ?
     <WolframExpression>`Export["${filename}",Plot[${expr},{${variables[0]},0,6 Pi},PlotTheme->"Monochrome"],"SVG"]` :
@@ -334,17 +342,27 @@ async function plotSubtrivariate(expr : string, variables: string[], filename : 
   // Having produced the .svg, we may wish to add an SVG object
   // in order to make it renderable in a systematic way
   var contents = fs.readFileSync(filename,'utf8');
-  var svg_data = contents.toString();
+  const xml = contents.toString();
+
+  // Strip off XML wrapper
+  assert(xml.startsWith(XML_PREFIX));
+  assert(xml.endsWith(XML_SUFFIX));
+  const svgMarkup: SvgMarkup = <SvgMarkup>xml.slice(XML_PREFIX.length, -XML_SUFFIX.length);
+
+  const plotData: PlotData = {
+    formulaStyleId: -1, // LATER: Identify the formula from which the plot was made.
+    // LATER: Identify the variables used in the plot.
+  };
 
   const styleProps: StylePropertiesWithSubprops = {
     type: 'PLOT-DATA',
-    data: svg_data,
+    data: plotData,
     role: 'PLOT',
     subprops: [{
       role: 'REPRESENTATION',
       subrole: 'PRIMARY',
       type: 'SVG-MARKUP',
-      data: svg_data,
+      data: svgMarkup,
     }],
   };
   changeRequest = {

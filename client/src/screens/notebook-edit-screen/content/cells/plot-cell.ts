@@ -23,12 +23,11 @@ import * as debug1 from "debug";
 const debug = debug1('client:formula-cell');
 
 import { CssClass } from "../../../../shared/common";
-import { StyleObject, NotebookChange } from "../../../../shared/notebook";
+import { StyleObject } from "../../../../shared/notebook";
 import { Content as CellContainer } from "..";
 
 import { CellBase } from "./cell-base";
-import { Html, notImplemented } from "../../../../shared/common";
-import { $new } from "../../../../dom";
+import { HtmlElementSpecification } from "../../../../dom";
 
 // Types
 
@@ -43,34 +42,19 @@ export class PlotCell extends CellBase {
   // Public Constructor
 
   public  constructor(container: CellContainer, style: StyleObject) {
-
-    const $content = $new<'div'>({ tag: 'div', class: <CssClass>'plotCell', html: <Html>"<i>Not implemented</i>" });
-    super(container, style, $content);
-    this.render(style);
+    const contentSpec: HtmlElementSpecification<'div'> = {
+      tag: 'div',
+      classes: [ <CssClass>'plotCell', <CssClass>'content' ],
+    };
+    super(container, style, contentSpec);
   }
-
-  // ClientNotebookWatcher Methods
-
-  public onChange(_change: NotebookChange): void {
-    notImplemented();
-  }
-
-  public onChangesFinished(): void {
-    notImplemented();
-  }
-
 
   // -- PRIVATE --
 
   // Private Instance Methods
 
-  private render(style: StyleObject): void {
-    debug(`Rendering plot cell: style ${style.id}`);
-    notImplemented();
-  }
-
-  protected onResize(deltaY: number, final: boolean): void {
-    debug(`onResize: ${deltaY} ${final}`);
+  protected onResize(_deltaY: number, _final: boolean): void {
+    debug("PlotCell resize not implemented.");
   }
 
 }

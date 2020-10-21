@@ -22,16 +22,17 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 import * as debug1 from "debug";
 const debug = debug1('client:figure-cell');
 
-import { CssClass, CssLength, Html, assert, assertFalse } from "../../../../shared/common";
+import { CssClass, CssLength, assert, assertFalse } from "../../../../shared/common";
 import { StrokeData, StyleObject, NotebookChange } from "../../../../shared/notebook";
 import { StyleChangeRequest } from "../../../../shared/math-tablet-api";
 
-import { $new, $svg } from "../../../../dom";
+import { $svg, HtmlElementSpecification } from "../../../../dom";
 import { StrokePanel } from "../../../../components/stroke-panel";
 
 import { Content as CellContainer } from "../index";
 
 import { CellBase, isDisplaySvgStyle, isInputStyle, isStrokeSvgStyle } from "./cell-base";
+import { notebookChangeSynopsis } from "../../../../shared/debug-synopsis";
 
 // Types
 
@@ -45,14 +46,11 @@ export class FigureCell extends CellBase {
 
   public constructor(container: CellContainer, rootStyle: StyleObject) {
 
-    const $content = $new({
+    const contentSpec: HtmlElementSpecification<'div'> = {
       tag: 'div',
       classes: [ <CssClass>'content', <CssClass>'figureCell' ],
-    });
-
-    super(container, rootStyle, $content);
-
-    this.$content = $content;
+    };
+    super(container, rootStyle, contentSpec);
 
     const notebook = container.screen.notebook;
     const inputStyle = notebook.findStyle({ role: 'INPUT' }, rootStyle.id);
@@ -65,9 +63,9 @@ export class FigureCell extends CellBase {
 
   // ClientNotebookWatcher Methods
 
-  public onChange(change: NotebookChange): void {
-    debug(`onChange: cell ${this.styleId}, type ${change.type}`);
-    // TODO: Changes that affect the prefix panel.
+  public onChange(change: NotebookChange): boolean {
+    debug(`onChange: style ${this.styleId} ${notebookChangeSynopsis(change)}`);
+    if (super.onChange(change)) { return true; }
 
     switch (change.type) {
       case 'relationshipDeleted':
@@ -111,6 +109,7 @@ export class FigureCell extends CellBase {
       case 'styleMoved': assertFalse();
       default: assertFalse();
     }
+    return false;
   }
 
   public onChangesFinished(): void { /* Nothing to do. */ }
@@ -119,7 +118,6 @@ export class FigureCell extends CellBase {
 
   // Private Instance Properties
 
-  private $content: HTMLDivElement;
   private strokePanel?: StrokePanel;
 
   // Private Instance Property Functions
@@ -139,7 +137,6 @@ export class FigureCell extends CellBase {
         await notebook.sendChangeRequest(changeRequest);
       },
     );
-    assert(this.$content.children.length == 0);
     this.$content.appendChild(this.strokePanel.$elt);
   }
 

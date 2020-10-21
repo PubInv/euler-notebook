@@ -25,13 +25,14 @@ const debug = debug1('client:formula-cell');
 import { CssClass, Html, assertFalse, assert } from "../../../../shared/common";
 import { StyleObject, NotebookChange, StrokeData, StyleSubrole } from "../../../../shared/notebook";
 
-import { $new, $newSvg, $outerSvg } from "../../../../dom";
+import { $new } from "../../../../dom";
 import { Content as CellContainer } from "..";
 
-import { CellBase, isDisplaySvgStyle, isInputStyle, isStrokeSvgStyle } from "./cell-base";
+import { CellBase, isInputStyle, isStrokeSvgStyle } from "./cell-base";
 import { KeyboardPanel } from "../../../../components/keyboard-panel";
 import { StrokePanel } from "../../../../components/stroke-panel";
 import { StyleChangeRequest } from "../../../../shared/math-tablet-api";
+import { notebookChangeSynopsis } from "../../../../shared/debug-synopsis";
 
 // Types
 
@@ -58,14 +59,12 @@ export class FormulaCell extends CellBase {
     debug(`Creating instance: style ${rootStyle.id}`);
 
     const notebook = container.screen.notebook;
-    const svgRepStyle = notebook.findStyle({ role: 'REPRESENTATION', type: 'SVG-MARKUP' }, rootStyle.id);
     const inputStyle = notebook.findStyle({ role: 'INPUT' }, rootStyle.id);
 
     const prefixHtml = rootStyle.subrole ? FORMULA_SUBROLE_PREFIX.get(rootStyle.subrole!)! : <Html>'';
     const $prefixPanel = $new({ tag: 'div', class: <CssClass>'prefixPanel', html: prefixHtml });
 
     // These two placeholders will be replaced, below.
-    const $displayPanel = $newSvg<'svg'>({ tag: 'svg', class: <CssClass>'displayPanel', attrs: { height: '72pt' /* 1in */, width: '468pt' /* 6.5in */ }});
     const $editPanel = $new({ tag: 'div', class: <CssClass>'editPanel', html: <Html>"Placeholder" });
 
     const $handlePanel = $new({ tag: 'div', class: <CssClass>'handlePanel', html: <Html>`(${rootStyle.id})` });
@@ -77,7 +76,6 @@ export class FormulaCell extends CellBase {
       classes: [ <CssClass>'content', <CssClass>'formulaCell' ],
       children: [
         $prefixPanel,
-        $displayPanel,
         $editPanel,
         $handlePanel,
         $statusPanel,
@@ -87,10 +85,8 @@ export class FormulaCell extends CellBase {
     super(container, rootStyle, $content);
 
     // this.$prefixPanel = $prefixPanel;
-    this.$displayPanel = $displayPanel;
     this.$editPanel = $editPanel;
 
-    this.replaceDisplayPanel(svgRepStyle);
     this.replaceEditPanel(inputStyle);
   }
 
@@ -98,8 +94,10 @@ export class FormulaCell extends CellBase {
 
   // ClientNotebookWatcher Methods
 
-  public onChange(change: NotebookChange): void {
-    debug(`onChange: cell ${this.styleId}, type ${change.type}`);
+  public onChange(change: NotebookChange): boolean {
+    debug(`onChange: cell ${this.styleId} ${notebookChangeSynopsis(change)}`);
+    if (super.onChange(change)) { return true; }
+
     // TODO: Changes that affect the prefix panel.
 
     // TODO: Do we deal with showing the Wolfram Evaluation values in the formula,
@@ -114,9 +112,7 @@ export class FormulaCell extends CellBase {
       case 'styleInserted':
       case 'styleChanged': {
         const changedStyle = change.style;
-        if (isDisplaySvgStyle(changedStyle, this.styleId)) {
-          this.updateDisplayPanel(change.type, changedStyle);
-        } else if (isInputStyle(changedStyle, this.styleId)) {
+        if (isInputStyle(changedStyle, this.styleId)) {
           this.updateEditPanelData(change.type, changedStyle);
         } else if (isStrokeSvgStyle(changedStyle, this.styleId, this.container.screen.notebook)) {
           this.updateEditPanelDrawing(change.type, changedStyle);
@@ -129,7 +125,6 @@ export class FormulaCell extends CellBase {
         // Currently the styles that we use to update our display are never converted, so we
         // do not handle that case.
         const style = this.container.screen.notebook.getStyle(change.styleId);
-        assert(!isDisplaySvgStyle(style, this.styleId));
         assert(!isInputStyle(style, this.styleId));
         assert(!isStrokeSvgStyle(style, this.styleId, this.container.screen.notebook));
         break;
@@ -141,6 +136,7 @@ export class FormulaCell extends CellBase {
       case 'styleMoved': assertFalse();
       default: assertFalse();
     }
+    return false;
   }
 
   public onChangesFinished(): void { /* Nothing to do. */ }
@@ -150,7 +146,6 @@ export class FormulaCell extends CellBase {
   // Private Instance Properties
 
   private $editPanel: HTMLDivElement;
-  private $displayPanel: SVGSVGElement;
   // private $prefixPanel: HTMLDivElement;
   private keyboardPanel?: KeyboardPanel;
   private strokePanel?: StrokePanel;
@@ -222,15 +217,6 @@ export class FormulaCell extends CellBase {
     return strokePanel;
   }
 
-  private replaceDisplayPanel(svgRepStyle: StyleObject|undefined): void {
-    let $newDisplayPanel: SVGSVGElement|undefined;
-    if (svgRepStyle) {
-      $newDisplayPanel = $outerSvg<'svg'>(svgRepStyle.data);
-      this.$displayPanel.replaceWith($newDisplayPanel);
-      this.$displayPanel = $newDisplayPanel;
-    }
-  }
-
   private replaceEditPanel(inputStyle: StyleObject|undefined): void {
     if (!inputStyle) {
       // No edit panel can be created yet because the root style doesn't have the necessary substyles yet,
@@ -279,10 +265,6 @@ export class FormulaCell extends CellBase {
   private updateEditPanelDrawing(_changeType: 'styleChanged'|'styleInserted', svgRepStyle: StyleObject): void {
     assert(this.strokePanel);
     this.strokePanel!.updateSvgMarkup(svgRepStyle.data);
-  }
-
-  private updateDisplayPanel(_changeType: 'styleChanged'|'styleInserted', svgRepStyle: StyleObject): void {
-    this.replaceDisplayPanel(svgRepStyle);
   }
 
   // Private Event Handlers

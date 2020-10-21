@@ -148,6 +148,11 @@ interface PageMargins {
   top: CssLength;
 }
 
+export interface PlotData {
+  formulaStyleId: StyleId;
+  // LATER: Identify the symbols used in the plot for each axis, etc.
+}
+
 export type RelationshipId = number;
 
 export interface RelationshipObject extends RelationshipProperties {

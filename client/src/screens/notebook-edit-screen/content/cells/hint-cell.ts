@@ -30,6 +30,7 @@ import { Content as CellContainer } from "../index";
 
 import { CellBase } from "./cell-base";
 import { Html } from "../../../../shared/common";
+import { notebookChangeSynopsis } from "../../../../shared/debug-synopsis";
 
 // Types
 
@@ -55,9 +56,13 @@ export class HintCell extends CellBase {
 
   // ClientNotebookWatcher Methods
 
-  public onChange(change: NotebookChange): void {
+  public onChange(change: NotebookChange): boolean {
+    debug(`onChange: style ${this.styleId} ${notebookChangeSynopsis(change)}`);
+    if (super.onChange(change)) { return true; }
+
     debug(`Hint cell received change: ${this.styleId} ${JSON.stringify(change)}`);
     // TODO: update rendering?
+    return false;
   }
 
   public onChangesFinished(): void {}
