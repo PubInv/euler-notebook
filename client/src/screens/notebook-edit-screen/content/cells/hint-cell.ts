@@ -56,13 +56,11 @@ export class HintCell extends CellBase {
 
   // ClientNotebookWatcher Methods
 
-  public onChange(change: NotebookChange): boolean {
+  public onChange(change: NotebookChange): void {
     debug(`onChange: style ${this.styleId} ${notebookChangeSynopsis(change)}`);
-    if (super.onChange(change)) { return true; }
 
     debug(`Hint cell received change: ${this.styleId} ${JSON.stringify(change)}`);
     // TODO: update rendering?
-    return false;
   }
 
   public onChangesFinished(): void {}

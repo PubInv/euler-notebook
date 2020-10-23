@@ -21,8 +21,8 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 // Requirements
 
-import * as debug1 from "debug";
-const debug = debug1('client:cell-base');
+// import * as debug1 from "debug";
+// const debug = debug1('client:cell-base');
 
 import { Content as CellContainer } from "../index";
 import { CssClass } from "../../../../shared/common";
@@ -30,14 +30,13 @@ import { StyleObject, StyleId, NotebookChange } from "../../../../shared/noteboo
 import { Tools } from "../../tools";
 import { HtmlElement } from "../../../../html-element";
 import {
-  $maybe, $new, $outerSvg, CLOSE_X_ENTITY, ElementId, HtmlElementOrSpecification, HtmlElementSpecification
+  $new, CLOSE_X_ENTITY, ElementId, HtmlElementOrSpecification, HtmlElementSpecification
 } from "../../../../dom";
 import { reportError } from "../../../../error-handler";
 import { assert, Html } from "../../../../shared/common";
 import { ResizerBar } from "../../../../components/resizer-bar";
 import { StyleMoveRequest } from "../../../../shared/math-tablet-api";
 import { ClientNotebook } from "../../../../client-notebook";
-import { notebookChangeSynopsis } from "../../../../shared/debug-synopsis";
 
 // Types
 
@@ -116,38 +115,8 @@ export abstract class CellBase extends HtmlElement<'div'>{
 
   // Overridable ClientNotebookWatcher Methods
 
-  public onChange(change: NotebookChange): boolean {
-    debug(`onChange: style ${this.styleId} ${notebookChangeSynopsis(change)}`);
-    let rval: boolean = false;
-    switch (change.type) {
-      case 'styleInserted':
-        if (isDisplaySvgStyle(change.style, this.styleId)) {
-          this.insertDisplayPanel(change.style);
-          rval = true;
-        }
-        break;
-      case 'styleChanged':
-        if (isDisplaySvgStyle(change.style, this.styleId)) {
-          this.updateDisplayPanel(change.style);
-          rval = true;
-        }
-        break;
-      case 'styleConverted': {
-        const style = this.container.screen.notebook.getStyle(change.styleId);
-        assert(!isDisplaySvgStyle(style, this.styleId));
-        break;
-      }
-      case 'styleDeleted':
-        if (isDisplaySvgStyle(change.style, this.styleId)) {
-          this.removeDisplayPanel();
-          rval = true;
-        }
-        break;
-    }
-    return rval;
-  };
-
-  public onChangesFinished(): void { /* Do nothing */ }
+  public abstract onChange(change: NotebookChange): void;
+  public abstract onChangesFinished(): void;
 
   // PRIVATE
 
@@ -227,40 +196,15 @@ export abstract class CellBase extends HtmlElement<'div'>{
     this.container = container;
     this.styleId = style.id;
 
-    const notebook = container.screen.notebook;
-    const svgRepStyle = notebook.findStyle({ role: 'REPRESENTATION', type: 'SVG-MARKUP' }, style.id);
-    if (svgRepStyle) { this.insertDisplayPanel(svgRepStyle); }
+
   }
 
   // Private Instance Properties
 
   protected $content: HTMLDivElement;
-  protected $display?: SVGSVGElement;
   protected container: CellContainer;
 
   // Private Instance Methods
-
-  private insertDisplayPanel(style: StyleObject): void {
-    assert(!this.$display);
-    assert(!$maybe(this.$content, '.display'));
-    this.$display = $outerSvg<'svg'>(style.data);
-    this.$display.classList.add('display');
-    this.$content.prepend(this.$display);
-  }
-
-  private updateDisplayPanel(style: StyleObject): void {
-    assert(this.$display);
-    const $display = $outerSvg<'svg'>(style.data);
-    $display.classList.add('display');
-    this.$display!.replaceWith($display);
-    this.$display = $display;
-  }
-
-  private removeDisplayPanel(): void {
-    assert(this.$display);
-    this.$display!.remove();
-    delete this.$display;
-  }
 
   // Private Event Handlers
 

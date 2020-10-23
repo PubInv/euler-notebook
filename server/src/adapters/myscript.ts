@@ -17,6 +17,8 @@ You should have received a copy of the GNU Affero General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
+// TODO: Prevent multiple calls to MyScript at the same time. "serialze" flag on rule?
+
 // NOTE: This is not a complete set of types for the library.
 //       Just the stuff that we have used.
 // NOTE: Optionality is not always correct.
@@ -257,7 +259,7 @@ async function postRequest(keys: ServerKeys, accept: string, batchRequest: Batch
   const body = JSON.stringify(batchRequest);
   const hmac = computeHmac(keys, body);
   const headers = {
-    // NOTE: Must have application/json as that is the return type for errors.
+    // NOTE: application/json is the return type for errors.
     Accept: `${accept},application/json`,
     'Content-Type': "application/json",
     applicationKey: keys.applicationKey,

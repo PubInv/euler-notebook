@@ -58,7 +58,7 @@ export class KeyboardPanel extends HtmlElement<'div'> {
 
     super({
       tag: 'div',
-      classes: [ <CssClass>'editPanel', <CssClass>'keyboardPanel'],
+      classes: [ <CssClass>'inputPanel', <CssClass>'keyboardPanel'],
       children: [ $textArea ],
     });
 

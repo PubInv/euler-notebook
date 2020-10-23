@@ -63,9 +63,10 @@ export class FigureCell extends CellBase {
 
   // ClientNotebookWatcher Methods
 
-  public onChange(change: NotebookChange): boolean {
+  public onChange(change: NotebookChange): void {
     debug(`onChange: style ${this.styleId} ${notebookChangeSynopsis(change)}`);
-    if (super.onChange(change)) { return true; }
+
+    // Update the SVG display if it has changed.
 
     switch (change.type) {
       case 'relationshipDeleted':
@@ -109,7 +110,6 @@ export class FigureCell extends CellBase {
       case 'styleMoved': assertFalse();
       default: assertFalse();
     }
-    return false;
   }
 
   public onChangesFinished(): void { /* Nothing to do. */ }

@@ -25,10 +25,10 @@ const debug = debug1('client:formula-cell');
 import { CssClass, Html, assertFalse, assert } from "../../../../shared/common";
 import { StyleObject, NotebookChange, StrokeData, StyleSubrole } from "../../../../shared/notebook";
 
-import { $new } from "../../../../dom";
+import { $, $new, $outerSvg } from "../../../../dom";
 import { Content as CellContainer } from "..";
 
-import { CellBase, isInputStyle, isStrokeSvgStyle } from "./cell-base";
+import { CellBase, isDisplaySvgStyle, isInputStyle, isStrokeSvgStyle } from "./cell-base";
 import { KeyboardPanel } from "../../../../components/keyboard-panel";
 import { StrokePanel } from "../../../../components/stroke-panel";
 import { StyleChangeRequest } from "../../../../shared/math-tablet-api";
@@ -55,20 +55,12 @@ export class FormulaCell extends CellBase {
 
   // Public Constructor
 
-  public constructor(container: CellContainer, rootStyle: StyleObject) {
-    debug(`Creating instance: style ${rootStyle.id}`);
+  public constructor(container: CellContainer, style: StyleObject) {
+    debug(`Creating instance: style ${style.id}`);
 
-    const notebook = container.screen.notebook;
-    const inputStyle = notebook.findStyle({ role: 'INPUT' }, rootStyle.id);
-
-    const prefixHtml = rootStyle.subrole ? FORMULA_SUBROLE_PREFIX.get(rootStyle.subrole!)! : <Html>'';
+    const prefixHtml = style.subrole ? FORMULA_SUBROLE_PREFIX.get(style.subrole!)! : <Html>'Assume';
     const $prefixPanel = $new({ tag: 'div', class: <CssClass>'prefixPanel', html: prefixHtml });
-
-    // These two placeholders will be replaced, below.
-    const $editPanel = $new({ tag: 'div', class: <CssClass>'editPanel', html: <Html>"Placeholder" });
-
-    const $handlePanel = $new({ tag: 'div', class: <CssClass>'handlePanel', html: <Html>`(${rootStyle.id})` });
-
+    const $handlePanel = $new({ tag: 'div', class: <CssClass>'handlePanel', html: <Html>`(${style.id})` });
     const $statusPanel = $new({ tag: 'div', class: <CssClass>'statusPanel', html: <Html>'&nbsp;' });
 
     const $content = $new({
@@ -76,18 +68,25 @@ export class FormulaCell extends CellBase {
       classes: [ <CssClass>'content', <CssClass>'formulaCell' ],
       children: [
         $prefixPanel,
-        $editPanel,
         $handlePanel,
         $statusPanel,
       ]
     });
 
-    super(container, rootStyle, $content);
+    super(container, style, $content);
 
-    // this.$prefixPanel = $prefixPanel;
-    this.$editPanel = $editPanel;
+    const notebook = container.screen.notebook;
+    const svgRepStyle = notebook.findStyle({ role: 'REPRESENTATION', type: 'SVG-MARKUP' }, style.id);
+    if (svgRepStyle) {
+      this.$displayPanel = this.createDisplayPanel(svgRepStyle);
+      $prefixPanel.after(this.$displayPanel);
+    }
 
-    this.replaceEditPanel(inputStyle);
+    const inputStyle = notebook.findStyle({ role: 'INPUT' }, style.id);
+    if (inputStyle) {
+      this.$inputPanel = this.createInputPanel(inputStyle);
+      $handlePanel.before(this.$inputPanel);
+    }
   }
 
   // Public Instance Methods
@@ -96,7 +95,6 @@ export class FormulaCell extends CellBase {
 
   public onChange(change: NotebookChange): boolean {
     debug(`onChange: cell ${this.styleId} ${notebookChangeSynopsis(change)}`);
-    if (super.onChange(change)) { return true; }
 
     // TODO: Changes that affect the prefix panel.
 
@@ -109,13 +107,27 @@ export class FormulaCell extends CellBase {
         //       updating them here, or should we move their display to the tools panel?
         break;
       }
-      case 'styleInserted':
+      case 'styleInserted': {
+        if (isDisplaySvgStyle(change.style, this.styleId)) {
+          this.$displayPanel = this.createDisplayPanel(change.style);
+          const $prefixPanel = $(this.$content, '.prefixPanel');
+          $prefixPanel.after(this.$displayPanel);
+        } else if (isInputStyle(change.style, this.styleId)) {
+          this.$inputPanel = this.createInputPanel(change.style);
+          const $handlePanel = $(this.$content, '.handlePanel');
+          $handlePanel.before(this.$inputPanel);
+        } else {
+          // Ignore. Not something we are interested in.
+        }
+        break;
+      }
       case 'styleChanged': {
-        const changedStyle = change.style;
-        if (isInputStyle(changedStyle, this.styleId)) {
-          this.updateEditPanelData(change.type, changedStyle);
-        } else if (isStrokeSvgStyle(changedStyle, this.styleId, this.container.screen.notebook)) {
-          this.updateEditPanelDrawing(change.type, changedStyle);
+        if (isDisplaySvgStyle(change.style, this.styleId)) {
+          this.updateDisplayPanel(change.style);
+        } else if (isInputStyle(change.style, this.styleId)) {
+          this.updateInputPanelData(change.type, change.style);
+        } else if (isStrokeSvgStyle(change.style, this.styleId, this.container.screen.notebook)) {
+          this.updateInputPanelDrawing(change.type, change.style);
         } else {
           // Ignore. Not something we are interested in.
         }
@@ -125,14 +137,21 @@ export class FormulaCell extends CellBase {
         // Currently the styles that we use to update our display are never converted, so we
         // do not handle that case.
         const style = this.container.screen.notebook.getStyle(change.styleId);
+        assert(!isDisplaySvgStyle(style, this.styleId));
         assert(!isInputStyle(style, this.styleId));
         assert(!isStrokeSvgStyle(style, this.styleId, this.container.screen.notebook));
         break;
       }
-      case 'styleDeleted':
-        // Styles relevant to display of the formula are only deleted when the entire formula is deleted,
-        // so we can ignore styleDeleted messages.
+      case 'styleDeleted': {
+        if (isDisplaySvgStyle(change.style, this.styleId)) {
+          this.removeDisplayPanel();
+        } else if (isInputStyle(change.style, this.styleId)) {
+          this.removeInputPanel();
+        } else {
+          // Ignore. Not something we are interested in.
+        }
         break;
+      }
       case 'styleMoved': assertFalse();
       default: assertFalse();
     }
@@ -145,8 +164,8 @@ export class FormulaCell extends CellBase {
 
   // Private Instance Properties
 
-  private $editPanel: HTMLDivElement;
-  // private $prefixPanel: HTMLDivElement;
+  private $displayPanel?: SVGSVGElement;
+  private $inputPanel?: HTMLDivElement;
   private keyboardPanel?: KeyboardPanel;
   private strokePanel?: StrokePanel;
 
@@ -199,52 +218,78 @@ export class FormulaCell extends CellBase {
   //   return html;
   // }
 
-  private createKeyboardSubpanel(inputStyle: StyleObject): KeyboardPanel {
-    return new KeyboardPanel(inputStyle.data, async (text: string)=>{
-      const changeRequest: StyleChangeRequest = { type: 'changeStyle', styleId: inputStyle.id, data: text };
-      await this.container.screen.notebook.sendChangeRequest(changeRequest);
-    });
+  private createDisplayPanel(style: StyleObject): SVGSVGElement {
+    const $displayPanel = $outerSvg<'svg'>(style.data);
+    $displayPanel.classList.add('display');
+    return $displayPanel;
   }
 
-  private createStrokeSubpanel(inputStyle: StyleObject): StrokePanel {
-    const svgRepStyle = this.container.screen.notebook.findStyle({ role: 'REPRESENTATION', type: 'SVG-MARKUP' }, inputStyle.id);
-    const strokePanel = new StrokePanel(inputStyle.data, svgRepStyle?.data, async (strokeData: StrokeData)=>{
-      const changeRequest: StyleChangeRequest = { type: 'changeStyle', styleId: inputStyle.id, data: strokeData };
-      // TODO: We don't want to wait for *all* processing of the strokes to finish, just the svg update.
-      // TODO: Incremental changes.
-      await this.container.screen.notebook.sendChangeRequest(changeRequest);
-    });
-    return strokePanel;
-  }
-
-  private replaceEditPanel(inputStyle: StyleObject|undefined): void {
-    if (!inputStyle) {
-      // No edit panel can be created yet because the root style doesn't have the necessary substyles yet,
-      return;
-    }
-
-    let $newEditPanel: HTMLDivElement|undefined = undefined;
+  private createInputPanel(inputStyle: StyleObject): HTMLDivElement {
+    let panel: KeyboardPanel|StrokePanel;
     switch(inputStyle.type) {
       case 'WOLFRAM-EXPRESSION':
-        this.keyboardPanel = this.createKeyboardSubpanel(inputStyle);
-        $newEditPanel = this.keyboardPanel.$elt;
+        panel = this.keyboardPanel = this.createKeyboardSubpanel(inputStyle);
         break;
       case 'STROKE-DATA': {
-        this.strokePanel = this.createStrokeSubpanel(inputStyle);
-        $newEditPanel = this.strokePanel.$elt;
+        panel = this.createStrokeSubpanel(inputStyle);
         break;
       }
       default: assertFalse();
     }
-    this.$editPanel.replaceWith($newEditPanel);
-    this.$editPanel = $newEditPanel;
+    return panel.$elt;
   }
 
-  private updateEditPanelData(changeType: 'styleChanged'|'styleInserted', inputStyle: StyleObject): void {
+  private createKeyboardSubpanel(inputStyle: StyleObject): KeyboardPanel {
+
+    // Callback function for when text in the panel has changed.
+    // Submit a notebook change request.
+    const textChangeCallback = async (text: string)=>{
+      const changeRequest: StyleChangeRequest = { type: 'changeStyle', styleId: inputStyle.id, data: text };
+      await this.container.screen.notebook.sendChangeRequest(changeRequest);
+    }
+
+    // Create the panel
+    return new KeyboardPanel(inputStyle.data, textChangeCallback);
+  }
+
+  private createStrokeSubpanel(inputStyle: StyleObject): StrokePanel {
+
+    // Callback function for when strokes in the panel have changed.
+    // Submit a notebook change request.
+    const strokesChangeCallback = async (strokeData: StrokeData)=>{
+      const changeRequest: StyleChangeRequest = { type: 'changeStyle', styleId: inputStyle.id, data: strokeData };
+      // TODO: We don't want to wait for *all* processing of the strokes to finish, just the svg update.
+      // TODO: Incremental changes.
+      await this.container.screen.notebook.sendChangeRequest(changeRequest);
+    };
+
+    // Create the panel
+    const svgRepStyle = this.container.screen.notebook.findStyle({ role: 'REPRESENTATION', type: 'SVG-MARKUP' }, inputStyle.id);
+    const strokePanel = new StrokePanel(inputStyle.data, svgRepStyle?.data, strokesChangeCallback);
+    return strokePanel;
+  }
+
+  private removeDisplayPanel(): void {
+    this.$displayPanel!.remove();
+    delete this.$displayPanel;
+  }
+
+  private removeInputPanel(): void {
+    this.$inputPanel!.remove();
+    delete this.$inputPanel;
+  }
+
+  private updateDisplayPanel(style: StyleObject): void {
+    const $displayPanel = this.createDisplayPanel(style);
+    this.$displayPanel!.replaceWith($displayPanel);
+    this.$displayPanel = $displayPanel;
+  }
+
+  private updateInputPanelData(changeType: 'styleChanged'|'styleInserted', inputStyle: StyleObject): void {
     if (changeType == 'styleInserted') {
       assert(inputStyle.type == 'STROKE-DATA' || inputStyle.type == 'TEX-EXPRESSION' || inputStyle.type == 'WOLFRAM-EXPRESSION' );
       assert(!this.strokePanel && !this.keyboardPanel);
-      this.replaceEditPanel(inputStyle);
+      this.createInputPanel(inputStyle);
     } else {
       // 'styleChanged'
       switch(inputStyle.type) {
@@ -262,7 +307,7 @@ export class FormulaCell extends CellBase {
     }
   }
 
-  private updateEditPanelDrawing(_changeType: 'styleChanged'|'styleInserted', svgRepStyle: StyleObject): void {
+  private updateInputPanelDrawing(_changeType: 'styleChanged'|'styleInserted', svgRepStyle: StyleObject): void {
     assert(this.strokePanel);
     this.strokePanel!.updateSvgMarkup(svgRepStyle.data);
   }

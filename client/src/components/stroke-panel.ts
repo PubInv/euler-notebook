@@ -64,7 +64,7 @@ export class StrokePanel extends HtmlElement<'div'> {
 
     super({
       tag: 'div',
-      classes: [ <CssClass>'editPanel', <CssClass>'strokePanel'],
+      classes: [ <CssClass>'inputPanel', <CssClass>'strokePanel'],
       children: [
         stylusDrawingPanel.$elt,
         $svgPanel,

@@ -23,11 +23,12 @@ import * as debug1 from "debug";
 const debug = debug1('client:formula-cell');
 
 import { CssClass } from "../../../../shared/common";
-import { StyleObject } from "../../../../shared/notebook";
+import { NotebookChange, StyleObject } from "../../../../shared/notebook";
 import { Content as CellContainer } from "..";
 
 import { CellBase } from "./cell-base";
 import { HtmlElementSpecification } from "../../../../dom";
+import { notebookChangeSynopsis } from "../../../../shared/debug-synopsis";
 
 // Types
 
@@ -48,6 +49,23 @@ export class PlotCell extends CellBase {
     };
     super(container, style, contentSpec);
   }
+
+  // ClientNotebookWatcher Methods
+
+  public onChange(change: NotebookChange): void {
+    debug(`onChange: style ${this.styleId} ${notebookChangeSynopsis(change)}`);
+
+    // TODO:
+    // switch (change.type) {
+    //   case 'styleInserted':
+    //   case 'styleChanged':
+    //   case 'styleConverted':
+    //   case 'styleDeleted':
+    //   default: assertFalse();
+    // }
+  }
+
+  public onChangesFinished(): void { /* Nothing to do. */ }
 
   // -- PRIVATE --
 
