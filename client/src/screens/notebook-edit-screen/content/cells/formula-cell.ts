@@ -118,9 +118,9 @@ export class FormulaCell extends CellBase {
         if (isDisplaySvgStyle(change.style, this.styleId)) {
           this.updateDisplayPanel(change.style);
         } else if (isInputStyle(change.style, this.styleId)) {
-          this.updateInputPanelData(change.type, change.style);
+          this.updateInputPanelData(change.style);
         } else if (isStrokeSvgStyle(change.style, this.styleId, this.container.screen.notebook)) {
-          this.updateInputPanelDrawing(change.type, change.style);
+          this.updateInputPanelDrawing(change.style);
         } else {
           // Ignore. Not something we are interested in.
         }
@@ -292,29 +292,22 @@ export class FormulaCell extends CellBase {
     this.$displayPanel = $displayPanel;
   }
 
-  private updateInputPanelData(changeType: 'styleChanged'|'styleInserted', inputStyle: StyleObject): void {
-    if (changeType == 'styleInserted') {
-      assert(inputStyle.type == 'STROKE-DATA' || inputStyle.type == 'TEX-EXPRESSION' || inputStyle.type == 'WOLFRAM-EXPRESSION' );
-      assert(!this.strokePanel && !this.keyboardPanel);
-      this.createInputPanel(inputStyle);
-    } else {
-      // 'styleChanged'
-      switch(inputStyle.type) {
-        case 'STROKE-DATA':
-          assert(this.strokePanel);
-          this.strokePanel!.updateStrokeData(inputStyle.data);
-          break;
-        case 'TEX-EXPRESSION':
-        case 'WOLFRAM-EXPRESSION':
-          assert(this.keyboardPanel);
-          this.keyboardPanel!.updateText(inputStyle.data);
-          break;
-        default: assertFalse();
-      }
+  private updateInputPanelData(inputStyle: StyleObject): void {
+    switch(inputStyle.type) {
+      case 'STROKE-DATA':
+        assert(this.strokePanel);
+        this.strokePanel!.updateStrokeData(inputStyle.data);
+        break;
+      case 'TEX-EXPRESSION':
+      case 'WOLFRAM-EXPRESSION':
+        assert(this.keyboardPanel);
+        this.keyboardPanel!.updateText(inputStyle.data);
+        break;
+      default: assertFalse();
     }
   }
 
-  private updateInputPanelDrawing(_changeType: 'styleChanged'|'styleInserted', svgRepStyle: StyleObject): void {
+  private updateInputPanelDrawing(svgRepStyle: StyleObject): void {
     assert(this.strokePanel);
     this.strokePanel!.updateSvgMarkup(svgRepStyle.data);
   }
