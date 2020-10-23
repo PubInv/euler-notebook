@@ -17,6 +17,8 @@ You should have received a copy of the GNU Affero General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
+// TODO: Render prefix, handle and status into display SVG.
+
 // Requirements
 
 import * as debug1 from "debug";
@@ -58,19 +60,9 @@ export class FormulaCell extends CellBase {
   public constructor(container: CellContainer, style: StyleObject) {
     debug(`Creating instance: style ${style.id}`);
 
-    const prefixHtml = style.subrole ? FORMULA_SUBROLE_PREFIX.get(style.subrole!)! : <Html>'Assume';
-    const $prefixPanel = $new({ tag: 'div', class: <CssClass>'prefixPanel', html: prefixHtml });
-    const $handlePanel = $new({ tag: 'div', class: <CssClass>'handlePanel', html: <Html>`(${style.id})` });
-    const $statusPanel = $new({ tag: 'div', class: <CssClass>'statusPanel', html: <Html>'&nbsp;' });
-
     const $content = $new({
       tag: 'div',
       classes: [ <CssClass>'content', <CssClass>'formulaCell' ],
-      children: [
-        $prefixPanel,
-        $handlePanel,
-        $statusPanel,
-      ]
     });
 
     super(container, style, $content);
@@ -79,13 +71,13 @@ export class FormulaCell extends CellBase {
     const svgRepStyle = notebook.findStyle({ role: 'REPRESENTATION', type: 'SVG-MARKUP' }, style.id);
     if (svgRepStyle) {
       this.$displayPanel = this.createDisplayPanel(svgRepStyle);
-      $prefixPanel.after(this.$displayPanel);
+      this.$content.prepend(this.$displayPanel);
     }
 
     const inputStyle = notebook.findStyle({ role: 'INPUT' }, style.id);
     if (inputStyle) {
-      this.$inputPanel = this.createInputPanel(inputStyle);
-      $handlePanel.before(this.$inputPanel);
+      this.$inputPanel = this.createInputPanel(style, inputStyle);
+      this.$content.append(this.$inputPanel);
     }
   }
 
@@ -113,7 +105,8 @@ export class FormulaCell extends CellBase {
           const $prefixPanel = $(this.$content, '.prefixPanel');
           $prefixPanel.after(this.$displayPanel);
         } else if (isInputStyle(change.style, this.styleId)) {
-          this.$inputPanel = this.createInputPanel(change.style);
+          const style = this.container.screen.notebook.getStyle(this.styleId);
+          this.$inputPanel = this.createInputPanel(style, change.style);
           const $handlePanel = $(this.$content, '.handlePanel');
           $handlePanel.before(this.$inputPanel);
         } else {
@@ -224,7 +217,8 @@ export class FormulaCell extends CellBase {
     return $displayPanel;
   }
 
-  private createInputPanel(inputStyle: StyleObject): HTMLDivElement {
+  private createInputPanel(style: StyleObject, inputStyle: StyleObject): HTMLDivElement {
+
     let panel: KeyboardPanel|StrokePanel;
     switch(inputStyle.type) {
       case 'WOLFRAM-EXPRESSION':
@@ -236,7 +230,20 @@ export class FormulaCell extends CellBase {
       }
       default: assertFalse();
     }
-    return panel.$elt;
+
+    const prefixHtml = style.subrole ? FORMULA_SUBROLE_PREFIX.get(style.subrole!)! : <Html>'';
+    const $inputPanel = $new({
+      tag: 'div',
+      class: <CssClass>'formulaInput',
+      children: [
+        { tag: 'div', class: <CssClass>'prefixPanel', html: prefixHtml },
+        panel.$elt,
+        { tag: 'div', class: <CssClass>'handlePanel', html: <Html>`(${style.id})` },
+        { tag: 'div', class: <CssClass>'statusPanel', html: <Html>'&nbsp;' },
+      ],
+    });
+
+    return $inputPanel;
   }
 
   private createKeyboardSubpanel(inputStyle: StyleObject): KeyboardPanel {

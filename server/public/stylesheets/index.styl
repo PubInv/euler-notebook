@@ -176,6 +176,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
   padding 0
 
 .inputPanel
+  border 1px solid #E0E0E0
 
   .inputRow
     align-items center
@@ -249,9 +250,6 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
           position relative
           flex-grow 1
 
-          >.inputPanel
-            border 1px solid #E0E0E0
-
         >.rightMargin
           position relative
           width 30pt
@@ -296,34 +294,38 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
     .textCell
     .formulaCell
-      align-items center
-      display flex
-      flex-direction row
-      padding 9px 0 9px 0
+      >.display
+        display block
 
-      >.keyboardPanel
+      >.formulaInput
+        align-items center
+        display flex
+        flex-direction row
+        padding 9px 0 9px 0
 
-        >textarea
-          border none
-          height 1in
-          padding 0px
-          resize none
-          width 6.5in
+        >.keyboardPanel
 
-      >.displayPanel
-        flex-grow 1
+          >textarea
+            border none
+            height 1in
+            padding 0px
+            resize none
+            width 6.5in
 
-      >.handlePanel
-        padding 4px 0 4px 0
-        text-align right
-        width 36px
+        >.displayPanel
+          flex-grow 1
 
-      >.prefixPanel
-        padding-left 40px
+        >.handlePanel
+          padding 4px 0 4px 0
+          text-align right
+          width 36px
 
-      >.statusPanel
-        text-align left
-        width 36px
+        >.prefixPanel
+          padding-left 40px
+
+        >.statusPanel
+          text-align left
+          width 36px
 
     .figureCell
       padding var(--svg-top-offset) 0px 0px var(--svg-left-offset)
