@@ -33,7 +33,7 @@ import { StrokePanel } from "../../../../components/stroke-panel";
 import { Content as CellContainer } from "../index";
 
 import { CellBase, isDisplaySvgStyle, isInputStyle, isStrokeSvgStyle } from "./cell-base";
-import { notebookChangeSynopsis } from "../../../../shared/debug-synopsis";
+import { notebookChangeSynopsis, styleSynopsis } from "../../../../shared/debug-synopsis";
 
 // Types
 
@@ -48,7 +48,7 @@ export class TextCell extends CellBase {
   // Public Constructor
 
   public constructor(container: CellContainer, style: StyleObject) {
-    debug(`Creating instance: style ${style.id}`);
+    debug(`Constructing: ${styleSynopsis(style)}`);
 
     const $content = $new({
       tag: 'div',

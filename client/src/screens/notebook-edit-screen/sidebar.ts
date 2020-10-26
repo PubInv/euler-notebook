@@ -135,7 +135,7 @@ export class Sidebar extends ButtonBar {
           class: <CssClass>'iconButton',
           html: svgIconReference('iconMonstrPencil9'),
           asyncListeners: { click: async (_e: MouseEvent)=>{
-            await this.screen.content.insertDrawingCellBelow();
+            await this.screen.content.insertFigureCellBelow();
           }},
           title: "Insert drawing cell",
         }, {

@@ -25,7 +25,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 import * as debug1 from "debug";
 const debug = debug1('client:notebook-edit-screen-content');
 
-import { CssClass, assert, deepCopy, ExpectedError, Html, assertFalse, notImplemented, CssLength } from "../../../shared/common";
+import { CssClass, assert, deepCopy, Html, assertFalse, notImplemented, CssLength, PlainText } from "../../../shared/common";
 import {
   StrokeData, StyleId, StyleObject, NotebookChange,
   StyleRelativePosition,
@@ -198,48 +198,39 @@ export class Content extends HtmlElement<'div'>{
     // WAS: this.screen.debugPopup.showContents(results.html);
   }
 
-  public async insertHintCellBelow(): Promise<void> {
-    // TODO: InsertHintButton should only be enabled when first of two consecutive formula cells is selected.
-    if (!this.lastCellSelected) {
-      throw new ExpectedError("You must select a FORMULA cell to insert a hint.");
-    }
-    const fromId = this.lastCellSelected.styleId;
-    const fromStyle = this.screen.notebook.getStyle(fromId);
-    if (fromStyle.role != 'FORMULA') {
-      throw new ExpectedError("You must select a FORMULA cell to insert a hint.");
-    }
-    const toId = this.screen.notebook.followingStyleId(fromId);
-    if (!toId) {
-      throw new ExpectedError("You can't insert a hint after last formula.");
-    }
-    const toStyle = this.screen.notebook.getStyle(toId);
-    if (toStyle.role != 'FORMULA') {
-      throw new ExpectedError("You can only insert a hint between two FORMULA cells.");
+  public async insertHintCellBelow(afterId?: StyleRelativePosition): Promise<void> {
+
+    // If cell to insert after is not specified, then insert below the last cell selected.
+    // If no cells are selected, then insert at the end of the notebook.
+    if (afterId === undefined) {
+      if (this.lastCellSelected) { afterId = this.lastCellSelected.styleId; }
+      else { afterId = StylePosition.Bottom; }
     }
 
+    const hintText: PlainText = <PlainText>"";
     const data: HintData = {
       relationship: HintRelationship.Unknown,
       status: HintStatus.Unknown,
-//      idOfRelationshipDecorated: relId
+      text: hintText,
     };
-
     const styleProps: StylePropertiesWithSubprops = {
       role: 'HINT', type: 'HINT-DATA', data,
       subprops: [
-        { role: 'INPUT', type: 'PLAIN-TEXT', data: "" },
+        { role: 'INPUT', type: 'PLAIN-TEXT', data: hintText },
       ]
     };
 
-    const changeRequest: StyleInsertRequest = { type: 'insertStyle', afterId: fromId, styleProps };
+    const changeRequest: StyleInsertRequest = { type: 'insertStyle', afterId, styleProps };
     /* const undoChangeRequest = */await this.sendUndoableChangeRequest(changeRequest);
     // const styleId = (<StyleDeleteRequest>undoChangeRequest).styleId;
   }
 
-  public async insertDrawingCellBelow(afterId?: StyleRelativePosition): Promise<void> {
+  public async insertFigureCellBelow(afterId?: StyleRelativePosition): Promise<void> {
+    debug("Insert Formula Cell Below");
+
+    // If cell to insert after is not specified, then insert below the last cell selected.
+    // If no cells are selected, then insert at the end of the notebook.
     if (afterId === undefined) {
-      // Cell to insert after is not specified.
-      // If cells are selected then in insert a keyboard input cell below the last cell selected.
-      // Otherwise, insert at the end of the notebook.
       if (this.lastCellSelected) { afterId = this.lastCellSelected.styleId; }
       else { afterId = StylePosition.Bottom; }
     }
@@ -255,14 +246,15 @@ export class Content extends HtmlElement<'div'>{
     // const styleId = (<StyleDeleteRequest>undoChangeRequest).styleId
   }
 
-  public async insertFormulaCellBelow(): Promise<void> {
+  public async insertFormulaCellBelow(afterId?: StyleRelativePosition): Promise<void> {
     debug("Insert Formula Cell Below");
 
-    // If cells are selected then in insert a keyboard input cell below the last cell selected.
-    // Otherwise, insert at the end of the notebook.
-    let afterId: StyleRelativePosition;
-    if (this.lastCellSelected) { afterId = this.lastCellSelected.styleId; }
-    else { afterId = StylePosition.Bottom; }
+    // If cell to insert after is not specified, then insert below the last cell selected.
+    // If no cells are selected, then insert at the end of the notebook.
+    if (afterId === undefined) {
+      if (this.lastCellSelected) { afterId = this.lastCellSelected.styleId; }
+      else { afterId = StylePosition.Bottom; }
+    }
 
     const inputMode = userSettingsInstance.defaultInputMode;
     const inputStyle: StylePropertiesWithSubprops = (inputMode=='keyboard' ?
@@ -285,14 +277,15 @@ export class Content extends HtmlElement<'div'>{
     // TODO: Set focus?
   }
 
-  public async insertTextCellBelow(): Promise<void> {
+  public async insertTextCellBelow(afterId?: StyleRelativePosition): Promise<void> {
     debug("Insert Text Cell Below");
 
-    // If cells are selected then in insert a keyboard input cell below the last cell selected.
-    // Otherwise, insert at the end of the notebook.
-    let afterId: StyleRelativePosition;
-    if (this.lastCellSelected) { afterId = this.lastCellSelected.styleId; }
-    else { afterId = StylePosition.Bottom; }
+    // If cell to insert after is not specified, then insert below the last cell selected.
+    // If no cells are selected, then insert at the end of the notebook.
+    if (afterId === undefined) {
+      if (this.lastCellSelected) { afterId = this.lastCellSelected.styleId; }
+      else { afterId = StylePosition.Bottom; }
+    }
 
     const inputMode = userSettingsInstance.defaultInputMode;
     const inputStyle: StylePropertiesWithSubprops = (inputMode=='keyboard' ?

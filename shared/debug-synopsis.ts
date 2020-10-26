@@ -167,6 +167,10 @@ export function serverMessageSynopsis(msg: ServerMessage): string {
   return rval;
 }
 
+export function styleSynopsis(s: StyleObject, indentationLevel: number = 0): string {
+  return `${indentation(indentationLevel)}S${s.parentId?`${s.parentId}.`:''}${s.id} ${s.source} ${s.role}${s.subrole?`|${s.subrole}`:''} ${s.type} ${dataSynopsis(s.data)}`;
+}
+
 // Helper Functions
 
 function clientFolderMessageSynopsis(msg: ClientFolderMessage): string {
@@ -241,10 +245,6 @@ function serverNotebookMessageSynopsis(msg: ServerNotebookMessage): string {
     default: assertFalse();
   }
   return rval;
-}
-
-function styleSynopsis(s: StyleObject, indentationLevel: number = 0): string {
-  return `${indentation(indentationLevel)}S${s.parentId?`${s.parentId}.`:''}${s.id} ${s.source} ${s.role}${s.subrole?`|${s.subrole}`:''} ${s.type} ${dataSynopsis(s.data)}`;
 }
 
 function styleSynopsisRecursive(notebook: Notebook<any>, style: StyleObject, indentationLevel: number = 0): string {

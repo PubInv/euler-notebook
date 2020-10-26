@@ -20,7 +20,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 // Requirements
 
-import { CssLength, Html, assert, deepCopy, escapeHtml, ExpectedError } from "./common";
+import { CssLength, Html, assert, deepCopy, escapeHtml, ExpectedError, PlainText } from "./common";
 import { WatchedResource, Watcher } from "./watched-resource";
 import { NOTEBOOK_NAME_RE, NotebookName, NotebookPath } from "./folder";
 
@@ -56,7 +56,7 @@ export interface FormulaData {
 export interface HintData {
   relationship: HintRelationship,
   status: HintStatus,
-  idOfRelationshipDecorated? : RelationshipId;
+  text: PlainText,  // LATER: Allow rich text in hints.
 }
 
 export enum HintRelationship {

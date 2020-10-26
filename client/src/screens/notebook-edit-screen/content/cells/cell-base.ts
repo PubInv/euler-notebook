@@ -289,7 +289,7 @@ export abstract class CellBase extends HtmlElement<'div'>{
   }
 
   private onInsertCellBelow(): void {
-    this.container.insertDrawingCellBelow(this.styleId).catch(err=>{
+    this.container.insertFigureCellBelow(this.styleId).catch(err=>{
       // TODO: Better handling of this error.
       reportError(err, <Html>"Error inserting cell below");
     });
