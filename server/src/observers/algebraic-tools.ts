@@ -24,8 +24,9 @@ const MODULE = __filename.split(/[/\\]/).slice(-1)[0].slice(0,-3);
 const debug = debug1(`server:${MODULE}`);
 
 import { Html } from "../shared/common";
+import { FormulaData, PlainTextMath } from "../shared/formula";
 import {
-  StyleType,NotebookChange, StyleObject, FormulaData, WolframExpression, PlainTextMath
+  StyleType,NotebookChange, StyleObject, WolframExpression
 } from "../shared/notebook";
 import {
   ToolData, NotebookChangeRequest, StyleInsertRequest, StyleDeleteRequest, StylePropertiesWithSubprops,
@@ -39,7 +40,7 @@ import { execute,
          convertMTLToTeX
        } from "../adapters/wolframscript";
 import { Config } from "../config";
-import { notebookSynopsis } from "../shared/debug-synopsis";
+import { CellType } from "../shared/cell";
 
 // Types
 
@@ -94,17 +95,6 @@ export class AlgebraicToolsObserver implements ObserverInstance {
 
     debug("xxx",toolData);
 
-    const origin_top = this.notebook.topLevelStyleOf(toolData.origin_id!);
-    var fromId : number;
-    debug("origin_top",origin_top);
-    if (origin_top.role == 'FORMULA' && origin_top.type == 'FORMULA-DATA') {
-      fromId = origin_top.id;
-    } else {
-      debug("notebook", notebookSynopsis(this.notebook));
-      fromId = this.notebook.findStyle({role: 'FORMULA', type: 'FORMULA-DATA',recursive: true },
-                               origin_top!.id)!.id;
-    }
-
     const toId = this.notebook.reserveId();
 
     // I believe the "id" in relationsFrom is not working below!!!
@@ -121,7 +111,11 @@ export class AlgebraicToolsObserver implements ObserverInstance {
 
     debug("toolData.output", transformationData.output);
 
-    const formulaData: FormulaData = { wolframData: <PlainTextMath>transformationData.output };
+    const formulaData: FormulaData = {
+      type: CellType.Formula,
+      height: 72, // points
+      plainTextMath: <PlainTextMath>transformationData.output,
+    };
     const styleProps: StylePropertiesWithSubprops = {
       id: toId,
       role: 'FORMULA',

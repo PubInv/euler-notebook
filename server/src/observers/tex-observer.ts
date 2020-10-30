@@ -21,13 +21,15 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 import debug1 from "debug";
 
-import { FormulaData, StyleObject } from "../shared/notebook";
+import { FormulaData } from "../shared/formula";
+import { StyleObject } from "../shared/notebook";
 import { TexExpression } from "../shared/math-tablet-api";
 
 import { ServerNotebook } from "../server-notebook";
 import { convertTeXtoWolfram, convertWolframToTeX, convertMTLToWolfram, convertWolframToMTL } from "../adapters/wolframscript";
 
 import { AsyncRules, BaseObserver, StyleRelation, SyncRules } from "./base-observer";
+import { CellType } from "../shared/cell";
 
 const MODULE = __filename.split(/[/\\]/).slice(-1)[0].slice(0,-3);
 const debug = debug1(`server:${MODULE}`);
@@ -80,13 +82,17 @@ export class TexObserver extends BaseObserver {
     // REVIEW: If conversion fails?
     const data: TexExpression = style.data;
     const wolframData = convertWolframToMTL(await convertTeXtoWolfram(data));
-    return { wolframData };
+    return {
+      type: CellType.Formula,
+      height: 72, // points
+      plainTextMath: wolframData,
+    };
   }
 
   private async convertFormulaToTexRule(style: StyleObject): Promise<TexExpression|undefined> {
     // REVIEW: If conversion fails?
     const formulaData: FormulaData = style.data;
-    return await convertWolframToTeX(convertMTLToWolfram(formulaData.wolframData));
+    return await convertWolframToTeX(convertMTLToWolfram(formulaData.plainTextMath));
   }
 
 

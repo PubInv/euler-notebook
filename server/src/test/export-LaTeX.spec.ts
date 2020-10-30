@@ -29,11 +29,12 @@ const latex = require('node-latex'); // REVIEW: why not import?
 import 'mocha';
 // import * as sinon from "sinon";
 
-import { FormulaData, PlainTextMath } from "../shared/notebook";
+import { FormulaData, PlainTextMath } from "../shared/formula";
 import { StyleInsertRequest, TexExpression } from "../shared/math-tablet-api";
 import { ServerNotebook }  from "../server-notebook";
 
 import { ensureGlobalLoaded } from "./global";
+import { CellType } from "../shared/cell";
 ensureGlobalLoaded();
 
 // Unit Tests
@@ -75,7 +76,11 @@ describe("LaTeX export tests", function() {
 function generateInsertRequests(inputs: PlainTextMath[]) : StyleInsertRequest[] {
   var reqs : StyleInsertRequest[] = [];
   for(const wolframData of inputs) {
-    const formulaData: FormulaData = { wolframData };
+    const formulaData: FormulaData = {
+      type: CellType.Formula,
+      height: 72, // points
+      plainTextMath: wolframData
+    };
     reqs.push({
       type: 'insertStyle',
       styleProps: {

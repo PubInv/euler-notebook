@@ -26,10 +26,10 @@ import * as debug1 from "debug";
 const debug = debug1('client:notebook-edit-screen-content');
 
 import { CssClass, assert, deepCopy, Html, assertFalse, notImplemented, CssLength } from "../../../shared/common";
+import { CellType } from "../../../shared/cell";
+import { FormulaData, PlainTextMath } from "../../../shared/formula";
 import {
-  StrokeData, StyleId, StyleObject, NotebookChange,
-  StyleRelativePosition,
-  StylePosition, FormulaData, PlainTextMath
+  StrokeData, StyleId, StyleObject, NotebookChange, StyleRelativePosition, StylePosition,
 } from "../../../shared/notebook";
 import {
   DebugParams, DebugResults, StyleDeleteRequest, StyleInsertRequest, StylePropertiesWithSubprops,
@@ -234,7 +234,11 @@ export class Content extends HtmlElement<'div'>{
       { role: 'INPUT', type: userSettingsInstance.defaultMathKeyboardInputFormat, data: '' } :
       { role: 'INPUT', type: 'STROKE-DATA', data: deepCopy(EMPTY_STROKE_DATA) });
 
-    const data: FormulaData = { wolframData: <PlainTextMath>'' };
+    const data: FormulaData = {
+      type: CellType.Formula,
+      height: 72, // points
+      plainTextMath: <PlainTextMath>'' ,
+    };
     const styleProps: StylePropertiesWithSubprops = {
       role: 'FORMULA',
       type: 'FORMULA-DATA',

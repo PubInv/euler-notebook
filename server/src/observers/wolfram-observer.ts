@@ -22,7 +22,8 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 import debug1 from "debug";
 
 
-import { WolframExpression,PlainTextMath, FormulaData, StyleObject } from "../shared/notebook";
+import { FormulaData, PlainTextMath } from "../shared/formula";
+import { WolframExpression, StyleObject } from "../shared/notebook";
 import { isEmptyOrSpaces } from "../shared/math-tablet-api";
 
 import { AsyncRules, BaseObserver, StyleRelation, SyncRules } from "./base-observer";
@@ -30,6 +31,7 @@ import {
   convertMTLToWolfram,
   execute } from "../adapters/wolframscript";
 import { ServerNotebook } from "../server-notebook";
+import { CellType } from "../shared/cell";
 
 const MODULE = __filename.split(/[/\\]/).slice(-1)[0].slice(0,-3);
 const debug = debug1(`server:${MODULE}`);
@@ -90,13 +92,17 @@ export class WolframObserver extends BaseObserver {
   private convertWolframToFormulaRule(style: StyleObject): FormulaData|undefined {
     // TODO: Make this async, pass the string to WolframScript to normalize.
     const wolframData: PlainTextMath = style.data;
-    return { wolframData };
+    return {
+      type: CellType.Formula,
+      height: 72, // points
+      plainTextMath: wolframData,
+    };
   }
 
   private convertFormulaToWolframRule(style: StyleObject): PlainTextMath|undefined {
     const formulaData: FormulaData = style.data;
     // REVIEW: Convert single equal sign to double equal sign?
-    return formulaData.wolframData;
+    return formulaData.plainTextMath;
   }
 
   // One problem here is that we are not rewriting the single equal, which is the "math-tablet input" language,

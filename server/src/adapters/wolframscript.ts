@@ -19,13 +19,14 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 // Requirements
 
+import { spawn, ChildProcess } from "child_process";
+
 import * as debug1 from "debug";
 const MODULE = __filename.split(/[/\\]/).slice(-1)[0].slice(0,-3);
 const debug = debug1(`server:${MODULE}`);
 
-import { spawn, ChildProcess } from "child_process";
-
-import { WolframExpression, PlainTextMath } from "../shared/notebook";
+import { PlainTextMath } from "../shared/formula";
+import { WolframExpression } from "../shared/notebook";
 import { TexExpression } from "../shared/math-tablet-api";
 
 import { WolframScriptConfig } from "../config";

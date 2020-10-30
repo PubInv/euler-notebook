@@ -26,11 +26,13 @@ import { assert } from "chai";
 import 'mocha';
 // import * as sinon from "sinon";
 
-import { FormulaData, PlainTextMath, StyleId, StyleInserted, WolframExpression } from "../shared/notebook";
+import { FormulaData, PlainTextMath } from "../shared/formula";
+import { StyleId, StyleInserted, WolframExpression } from "../shared/notebook";
 import { StyleInsertRequest, StyleChangeRequest } from "../shared/math-tablet-api";
 import { ServerNotebook }  from "../server-notebook";
 
 import { ensureGlobalLoaded } from "./global";
+import { CellType } from "../shared/cell";
 ensureGlobalLoaded();
 
 // Unit Tests
@@ -109,7 +111,11 @@ describe("test relationships", function() {
 // Helper Functions
 // TODO: This should probably be extended to respect the MTLExpression type
 function wolframFormulaInsertRequest(wolframData: PlainTextMath): StyleInsertRequest {
-  const data: FormulaData = { wolframData };
+  const data: FormulaData = {
+    type: CellType.Formula,
+    height: 72, // points
+  plainTextMath: wolframData,
+  };
   const request: StyleInsertRequest = {
     type: 'insertStyle',
     // styleProps: { role: 'REPRESENTATION', type: 'WOLFRAM-EXPRESSION', data },

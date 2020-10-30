@@ -24,9 +24,10 @@ const MODULE = __filename.split(/[/\\]/).slice(-1)[0].slice(0,-3);
 const debug = debug1(`server:${MODULE}`);
 
 import { assert, Html } from "../shared/common";
+import { FormulaData } from "../shared/formula";
 import {
   NotebookChange, StyleObject, StyleId, RelationshipObject, RelationshipId, RelationshipProperties,
-  StyleDeleted, StyleMoved, FindRelationshipOptions, StyleInserted, StyleChanged, FormulaData, WolframExpression
+  StyleDeleted, StyleMoved, FindRelationshipOptions, StyleInserted, StyleChanged, WolframExpression
 } from "../shared/notebook";
 import {
   SymbolData, NotebookChangeRequest, StyleInsertRequest, ToolData, StyleDeleteRequest,
@@ -41,6 +42,7 @@ import {
 
 import { ServerNotebook, ObserverInstance } from "../server-notebook";
 import { Config } from "../config";
+import { CellType } from "../shared/cell";
 
 export class SymbolClassifierObserver implements ObserverInstance {
 
@@ -88,7 +90,11 @@ export class SymbolClassifierObserver implements ObserverInstance {
     const relId = this.notebook.reserveId();
 
     const wolframData = toolStyle.data.data.output;
-    const formulaData: FormulaData = { wolframData };
+    const formulaData: FormulaData = {
+      type: CellType.Formula,
+      height: 72, // points
+      plainTextMath: wolframData,
+    };
     const styleProps: StylePropertiesWithSubprops = {
       id: toId,
       role: 'FORMULA',

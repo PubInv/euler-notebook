@@ -25,6 +25,7 @@ export type CssClass = '{CssClass}';
 export type CssLength = '{CssLength}';
 export type CssLengthUnits = 'in'|'pt'|'px';
 export type Html = '{Html}';
+export type LengthInPoints = number;
 export type Milliseconds = number;  // Time interval in milliseconds.
 export type PlainText = '{PlainText}';
 type StackTrace = '{StackTrace}';

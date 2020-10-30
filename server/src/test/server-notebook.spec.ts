@@ -27,12 +27,14 @@ import 'mocha';
 import * as sinon from "sinon";
 
 import { Html } from "../shared/common";
-import { NotebookChange, StyleInserted, StyleObject, FormulaData, PlainTextMath } from "../shared/notebook";
+import { FormulaData, PlainTextMath } from "../shared/formula";
+import { NotebookChange, StyleInserted, StyleObject } from "../shared/notebook";
 import { NotebookChangeRequest, StyleInsertRequest, StylePropertiesWithSubprops, ToolData } from "../shared/math-tablet-api";
 import { ServerNotebook, ObserverInstance }  from "../server-notebook";
 import { Config } from "../config";
 
 import { ensureGlobalLoaded } from "./global";
+import { CellType } from "../shared/cell";
 ensureGlobalLoaded();
 
 // Test Observer Class
@@ -98,7 +100,9 @@ describe("server notebook", function() {
       const callCountAsync = onChangesAsyncSpy.callCount;
       const callCountSync = onChangesSyncSpy.callCount;
       const data: FormulaData = {
-        wolframData: <PlainTextMath>"",
+        type: CellType.Formula,
+        height: 72, // points
+          plainTextMath: <PlainTextMath>"",
       };
       const styleProps: StylePropertiesWithSubprops = { role: 'FORMULA', type: 'FORMULA-DATA', data };
       const insertRequest: StyleInsertRequest = { type: 'insertStyle', styleProps };
@@ -128,7 +132,11 @@ describe("server notebook", function() {
 
       // Insert a top-level style with a tool style attached.
       const toolData: ToolData = { name: 'test-tool', html: <Html>"Check Equivalences", data: "tool-data" };
-      const formulaData: FormulaData = { wolframData: <PlainTextMath>'' };
+      const formulaData: FormulaData = {
+        type: CellType.Formula,
+        height: 72, // points
+        plainTextMath: <PlainTextMath>'',
+      };
       const styleProps: StylePropertiesWithSubprops = {
         role: 'FORMULA',
         type: 'FORMULA-DATA',

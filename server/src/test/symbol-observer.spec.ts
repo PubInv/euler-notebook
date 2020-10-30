@@ -26,19 +26,18 @@ import { assert } from "chai";
 import 'mocha';
 // import * as sinon from "sinon";
 
-import { StyleObject, RelationshipObject,
-         StyleId,
-         FormulaData,
-         PlainTextMath
-       } from "../shared/notebook";
-import { NotebookChangeRequest, StyleInsertRequest,
-         StyleChangeRequest,
-         StyleMoveRequest,
-         StyleDeleteRequest, StylePropertiesWithSubprops
-       } from "../shared/math-tablet-api";
+import { FormulaData, PlainTextMath } from "../shared/formula";
+import {
+  StyleObject, RelationshipObject, StyleId
+} from "../shared/notebook";
+import {
+  NotebookChangeRequest, StyleInsertRequest, StyleChangeRequest, StyleMoveRequest, StyleDeleteRequest,
+  StylePropertiesWithSubprops
+} from "../shared/math-tablet-api";
 import { ServerNotebook }  from "../server-notebook";
 
 import { ensureGlobalLoaded } from "./global";
+import { CellType } from "../shared/cell";
 ensureGlobalLoaded();
 
 // Types
@@ -627,7 +626,11 @@ async function serializeChangeRequests(notebook: ServerNotebook,
 function insertWolframFormulas(wolframDatas: PlainTextMath[]) : StyleInsertRequest[] {
   var reqs : StyleInsertRequest[] = [];
   for(const wolframData of wolframDatas) {
-    const data: FormulaData = { wolframData };
+    const data: FormulaData = {
+      type: CellType.Formula,
+      height: 72, // points
+      plainTextMath: wolframData,
+    };
     reqs.push({
       type: 'insertStyle',
       styleProps: { role: 'FORMULA', type: 'FORMULA-DATA', data }

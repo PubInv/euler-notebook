@@ -49,9 +49,6 @@ export interface FindStyleOptions {
   type?: StyleType;
   recursive?: boolean;
 }
-export interface FormulaData {
-  wolframData: PlainTextMath;
-}
 
 export type NotebookChange =
   RelationshipDeleted|RelationshipInserted|
@@ -337,11 +334,6 @@ export const STYLE_SOURCES = [
 export type StyleSource = typeof STYLE_SOURCES[number];
 
 export type WolframExpression = '{WolframExpression}';
-
-// This type is for the variation of plain-text math input that we accept.
-// Currently, it is the same as WolframExpression
-// except that we convert single equals to double equals.
-export type PlainTextMath = '{PlainTextMath}';
 
 // Constants
 
