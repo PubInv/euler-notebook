@@ -27,8 +27,7 @@ import { DataflowObserver, Rules, DataflowValue, DataflowStatus } from "./datafl
 import { ServerNotebook } from "../server-notebook";
 import { execute } from "../adapters/wolframscript";
 
-import { RelationshipObject, HintData, HintRelationship, HintStatus } from "../shared/notebook";
-import { PlainText } from "../shared/common";
+import { RelationshipObject } from "../shared/notebook";
 
 const MODULE = __filename.split(/[/\\]/).slice(-1)[0].slice(0,-3);
 const debug = debug1(`server:${MODULE}`);
@@ -74,19 +73,12 @@ export class AlgebraicDataflowObserver extends DataflowObserver {
     var dfvs: DataflowValue[] = [];
     if (relationship.role != 'TRANSFORMATION') return dfvs;
     // In this case (that of ALGEBRAIC-TOOLS),
-    // The outputs are only FORMULA and HINT in that order
+    // The output is a FORMULA
 
     const changedData = inputValues[0].value;
 
     // TODO: need input styles so we can search for substyles with necessary data.
     var substituted = relationship.data.replace('${expr}', changedData.wolframData);
-
-    var hdata : HintData = {
-      relationship: HintRelationship.Equivalent,
-      text: <PlainText>"Equivalent",  // TODO: Wording
-      status: HintStatus.Correct,
-      idOfRelationshipDecorated: relationship.id,
-    };
 
     try {
       debug(`Executing: ${substituted}`);
@@ -95,10 +87,6 @@ export class AlgebraicDataflowObserver extends DataflowObserver {
       dfvs.push({
         status: DataflowStatus.Changed,
         value: { wolframData: transformed },
-      });
-      dfvs.push({
-        status: DataflowStatus.Changed,
-        value: hdata,
       });
     } catch (e) {
       debug("error in wolfram execution: "+substituted);

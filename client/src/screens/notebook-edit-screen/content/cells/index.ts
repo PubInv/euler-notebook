@@ -24,7 +24,6 @@ import { Content } from "..";
 
 import { CellBase } from "./cell-base";
 import { FormulaCell } from "./formula-cell";
-import { HintCell } from "./hint-cell";
 import { FigureCell } from "./figure-cell";
 import { PlotCell } from "./plot-cell";
 import { TextCell } from "./text-cell";
@@ -40,7 +39,6 @@ export function createCell(notebookView: Content, style: StyleObject): CellBase 
   switch(style.role) {
     case 'FIGURE':   rval = new FigureCell(notebookView, style); break;
     case 'FORMULA':  rval = new FormulaCell(notebookView, style); break;
-    case 'HINT':     rval = new HintCell(notebookView, style); break;
     case 'TEXT':     rval = new TextCell(notebookView, style); break;
     case 'PLOT':     rval = new PlotCell(notebookView, style); break;
     default: throw new Error(`Unknown top-level cell role: ${style.role}`);

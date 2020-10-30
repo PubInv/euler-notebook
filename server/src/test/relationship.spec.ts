@@ -47,14 +47,14 @@ describe("test relationships", function() {
     // The basic approach is to:
     // Create a forumla F1
     // Use a transformation tool on it
-    // This creates F2, a relationship and a HINT
+    // This creates F2, and a relationship
     // Use the inverse relationship (e.g., apart is the inverse of together) to create F3
-    // This creates F3, an additional HINT, and a second relationship
+    // This creates F3, and a second relationship
 
     // This structure can be used as the basis of several tests:
     // Can we change F1 and see that F3 changes (if inverse relationships are used, should be F3 == F1)?
     // Can we make a change to F1 that makes the tool inapplicable ( x^2 + x => 4) and see
-    // that the forumalae and hints are correctly marked as changed.
+    // that the forumalae are correctly marked as changed.
 
     it("Can derive formulae then propagate a change", async function(){
 

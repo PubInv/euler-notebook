@@ -43,6 +43,7 @@ export class Sidebar extends ButtonBar {
     const $newFolderButton = $new({
       tag: 'button',
       class: <CssClass>'iconButton',
+      attrs: { title: "New Folder"},
       html: svgIconReference('iconMonstrFolder5'),
       asyncListeners: {
         click: (e: MouseEvent)=>this.onNewFolderClicked(e)
@@ -53,6 +54,7 @@ export class Sidebar extends ButtonBar {
     const $newNotebookButton = $new({
       tag: 'button',
       class: <CssClass>'iconButton',
+      attrs: { title: "New Notebook"},
       html: svgIconReference('iconMonstrFile15'),
       asyncListeners: {
         click: (e: MouseEvent)=>this.onNewNotebookClicked(e)

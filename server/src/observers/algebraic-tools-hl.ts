@@ -23,14 +23,13 @@ import * as debug1 from "debug";
 const MODULE = __filename.split(/[/\\]/).slice(-1)[0].slice(0,-3);
 const debug = debug1(`server:${MODULE}`);
 
-import { Html, PlainText } from "../shared/common";
+import { Html } from "../shared/common";
 import {
-  StyleObject, RelationshipProperties, HintData, HintRelationship,
-  HintStatus, FormulaData, WolframExpression, MTLExpression
+  StyleObject, FormulaData, WolframExpression, MTLExpression
 } from "../shared/notebook";
 import {
   ToolData, NotebookChangeRequest, StyleInsertRequest, StylePropertiesWithSubprops,
-  TransformationToolData,RelationshipInsertRequest, TexExpression,
+  TransformationToolData,TexExpression,
 } from "../shared/math-tablet-api";
 import { AsyncComputeFunction, AsyncRule, AsyncRules, BaseObserver, StyleRelation, SyncRules } from "./base-observer";
 
@@ -41,7 +40,6 @@ import { execute,
          convertMTLToTeX
        } from "../adapters/wolframscript";
 import { Config } from "../config";
-import { notebookSynopsis } from "../shared/debug-synopsis";
 
 // Types
 
@@ -149,48 +147,12 @@ export class AlgebraicToolsObserverHL extends BaseObserver {
     const toolData: ToolData = toolStyle.data;
     const transformationData: TransformationToolData = toolData.data;
 
-    //    const fromId = toolData.origin_id!;
-
     // We made a design decision that the relationship
     // is from top level formula and to top level formula
 
     debug("xxx",toolData);
 
-    const origin_top = this.notebook.topLevelStyleOf(toolData.origin_id!);
-    var fromId : number;
-    debug("origin_top",origin_top);
-    if (origin_top.role == 'FORMULA' && origin_top.type == 'FORMULA-DATA') {
-      fromId = origin_top.id;
-    } else {
-      debug("notebook", notebookSynopsis(this.notebook));
-      fromId = this.notebook.findStyle({role: 'FORMULA', type: 'FORMULA-DATA',recursive: true },
-                               origin_top!.id)!.id;
-    }
-
     const toId = this.notebook.reserveId();
-    const hintId = this.notebook.reserveId();
-    const relId = this.notebook.reserveId();
-
-    const data: HintData = {
-      relationship: HintRelationship.Equivalent,
-      status: HintStatus.Correct,
-      text: <PlainText>"Equivalent",  // TODO: Wording
-      idOfRelationshipDecorated: relId
-    };
-
-    // TODO: "Input" doesn't see like right place for Hint string unless Hint text came from user.
-    const hintProps: StylePropertiesWithSubprops = {
-      role: 'HINT', type: 'HINT-DATA', data,
-      id: hintId,
-      subprops: [
-        { role: 'INPUT', type: 'PLAIN-TEXT', data: `From ${toolData.name}` },
-      ]
-    };
-    const hintReq: StyleInsertRequest = {
-      type: 'insertStyle',
-      // TODO: afterId should be ID of subtrivariate.
-      styleProps: hintProps,
-    };
 
     debug("toolData.output", transformationData.output);
 
@@ -208,30 +170,7 @@ export class AlgebraicToolsObserverHL extends BaseObserver {
       styleProps,
     };
 
-    const relProps : RelationshipProperties =
-      { role: 'TRANSFORMATION',
-        data: transformationData.transformation, // Change this to Wolfram expression
-        dataflow: true,
-        id: relId,
-        logic: HintRelationship.Equivalent,
-        status: HintStatus.Correct,
-      };
-
-    const relReq: RelationshipInsertRequest =
-      { type: 'insertRelationship',
-        fromId,
-        toId,
-        inStyles: [
-                    { role: 'INPUT-FORMULA', id: fromId},
-                    { role: 'TRANSFORMATION-TOOL', id: toolStyle.id}
-                  ],
-        outStyles: [
-                     { role: 'OUTPUT-FORMULA', id: toId},
-                     { role: 'TRANSFORMATION-HINT', id: hintId}
-                   ],
-        props: relProps };
-
-    return [ hintReq, changeReq, relReq ];
+    return [ changeReq ];
   }
 
   private effectiveEqual(a : string,b :string) : boolean {

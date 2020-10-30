@@ -23,11 +23,10 @@ import * as debug1 from "debug";
 const MODULE = __filename.split(/[/\\]/).slice(-1)[0].slice(0,-3);
 const debug = debug1(`server:${MODULE}`);
 
-import { assert, Html, PlainText } from "../shared/common";
+import { assert, Html } from "../shared/common";
 import {
   NotebookChange, StyleObject, StyleId, RelationshipObject, RelationshipId, RelationshipProperties,
-  StyleDeleted, StyleMoved, FindRelationshipOptions, StyleInserted, StyleChanged, HintData,
-  HintRelationship, HintStatus, FormulaData, WolframExpression
+  StyleDeleted, StyleMoved, FindRelationshipOptions, StyleInserted, StyleChanged, FormulaData, WolframExpression
 } from "../shared/notebook";
 import {
   SymbolData, NotebookChangeRequest, StyleInsertRequest, ToolData, StyleDeleteRequest,
@@ -81,32 +80,12 @@ export class SymbolClassifierObserver implements ObserverInstance {
     // that duplication must be removed.
     debug(`useTool ${this.notebook.path} ${toolStyle.id}`);
 
-    // the origin_id is a relationship Id; we want a "From ID" in the
-    // style for the HINT, at least I think so if doing as a refactoring
+    // the origin_id is a relationship Id
     const relationship = this.notebook.getRelationship(toolStyle.data.origin_id);
     //    const fromId = this.notebook.topLevelStyleOf(relationship.fromId).id;
     const fromId = relationship.fromId;
     const toId = this.notebook.reserveId();
     const relId = this.notebook.reserveId();
-
-    const data: HintData = {
-      relationship: HintRelationship.Implies,
-      status: HintStatus.Correct,
-      text: <PlainText>"Implies",  // TODO: Wording
-      idOfRelationshipDecorated: relId
-    };
-
-    const hintProps: StylePropertiesWithSubprops = {
-      role: 'HINT', type: 'HINT-DATA', data,
-      subprops: [
-        { role: 'INPUT', type: 'PLAIN-TEXT', data: `From ${toolStyle.data.name}` },
-      ]
-    };
-    const hintReq: StyleInsertRequest = {
-      type: 'insertStyle',
-      // TODO: afterId should be ID of subtrivariate.
-      styleProps: hintProps,
-    };
 
     const wolframData = toolStyle.data.data.output;
     const formulaData: FormulaData = { wolframData };
@@ -143,7 +122,7 @@ export class SymbolClassifierObserver implements ObserverInstance {
       props: props
     };
 
-    return [ hintReq, changeReq, relReq ];
+    return [ changeReq, relReq ];
   }
 
   // --- PRIVATE ---
@@ -184,34 +163,6 @@ export class SymbolClassifierObserver implements ObserverInstance {
     if (style.type == 'SYMBOL-DATA' && (style.role == 'SYMBOL-USE' || style.role == 'SYMBOL-DEFINITION')) {
       this.deleteRelationships(style, rval);
     }
-    this.deleteDependentHints(style,rval);
-  }
-
-  private async deleteDependentHints(style: StyleObject, rval: NotebookChangeRequest[]): Promise<void>  {
-    // TODO: I personally think this should be added to the high-level api
-    // by allow any style to declare styles which invalidate it when removed
-    // or force its re-computation when changed. - rlr
-    // Doing it this way seems to create the possibility of multiple deletes
-    // do to concurrency problems.
-
-    //    if (style.source == 'SYMBOL-CLASSIFIER') {
-    const did = style.id;
-
-    // RLR ALERT: This is returning null values from fromId and toId!!! It appears that
-    // the HINT change to mention a relationship, and this code never changed to match it.
-    // The impact is that nothing gets deleted based on relationship dependencies, which is weird.
-    const hints = this.notebook.findStyles({ type: 'HINT-DATA', role: 'HINT', recursive: true });
-    hints.forEach(h => {
-      debug("hint",h);
-          const fromId = h.data.fromId;
-          const toId = h.data.toId;
-          debug("=================== ",fromId,toId,did);
-          if ((did == fromId) || (did == toId)) {
-            const deleteReq: StyleDeleteRequest = { type: 'deleteStyle', styleId: h.id };
-            rval.push(deleteReq);
-          }
-        });
-    //      }
   }
 
   private async deleteRelationships(style: StyleObject, rval: NotebookChangeRequest[]): Promise<void>  {
@@ -664,7 +615,7 @@ export class SymbolClassifierObserver implements ObserverInstance {
     rval: NotebookChangeRequest[],
   ): Promise<void> {
     // Although PROBABLY only the from and to styles in the relatinship
-    // depend on this, that might not be true...for example a hint.
+    // depend on this, that might not be true.
     // At this writing, FindStyleOptions doesn't support looking into
     // the data. Making that an optional lambda expression
     // is probably a good idea for efficiency and concision. TODO!

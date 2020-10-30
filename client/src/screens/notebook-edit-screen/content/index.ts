@@ -25,11 +25,11 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 import * as debug1 from "debug";
 const debug = debug1('client:notebook-edit-screen-content');
 
-import { CssClass, assert, deepCopy, Html, assertFalse, notImplemented, CssLength, PlainText } from "../../../shared/common";
+import { CssClass, assert, deepCopy, Html, assertFalse, notImplemented, CssLength } from "../../../shared/common";
 import {
   StrokeData, StyleId, StyleObject, NotebookChange,
   StyleRelativePosition,
-  StylePosition, HintData, HintStatus, HintRelationship, FormulaData, MTLExpression
+  StylePosition, FormulaData, MTLExpression
 } from "../../../shared/notebook";
 import {
   DebugParams, DebugResults, StyleDeleteRequest, StyleInsertRequest, StylePropertiesWithSubprops,
@@ -196,33 +196,6 @@ export class Content extends HtmlElement<'div'>{
     /* const results = */<DebugResults>await response.json();
     notImplemented();
     // WAS: this.screen.debugPopup.showContents(results.html);
-  }
-
-  public async insertHintCellBelow(afterId?: StyleRelativePosition): Promise<void> {
-
-    // If cell to insert after is not specified, then insert below the last cell selected.
-    // If no cells are selected, then insert at the end of the notebook.
-    if (afterId === undefined) {
-      if (this.lastCellSelected) { afterId = this.lastCellSelected.styleId; }
-      else { afterId = StylePosition.Bottom; }
-    }
-
-    const hintText: PlainText = <PlainText>"";
-    const data: HintData = {
-      relationship: HintRelationship.Unknown,
-      status: HintStatus.Unknown,
-      text: hintText,
-    };
-    const styleProps: StylePropertiesWithSubprops = {
-      role: 'HINT', type: 'HINT-DATA', data,
-      subprops: [
-        { role: 'INPUT', type: 'PLAIN-TEXT', data: hintText },
-      ]
-    };
-
-    const changeRequest: StyleInsertRequest = { type: 'insertStyle', afterId, styleProps };
-    /* const undoChangeRequest = */await this.sendUndoableChangeRequest(changeRequest);
-    // const styleId = (<StyleDeleteRequest>undoChangeRequest).styleId;
   }
 
   public async insertFigureCellBelow(afterId?: StyleRelativePosition): Promise<void> {

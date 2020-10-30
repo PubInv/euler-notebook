@@ -20,7 +20,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 // Requirements
 
-import { CssLength, Html, assert, deepCopy, escapeHtml, ExpectedError, PlainText } from "./common";
+import { CssLength, Html, assert, deepCopy, escapeHtml, ExpectedError } from "./common";
 import { WatchedResource, Watcher } from "./watched-resource";
 import { NOTEBOOK_NAME_RE, NotebookName, NotebookPath } from "./folder";
 
@@ -51,27 +51,6 @@ export interface FindStyleOptions {
 }
 export interface FormulaData {
   wolframData: MTLExpression;
-}
-
-export interface HintData {
-  relationship: HintRelationship,
-  status: HintStatus,
-  text: PlainText,  // LATER: Allow rich text in hints.
-  idOfRelationshipDecorated?: StyleId,
-}
-
-export enum HintRelationship {
-  Unknown = 0,
-  Equivalent = 1,
-  NotEquivalent = 2,
-  Implies = 3,
-  ImpliedBy = 4,
-}
-
-export enum HintStatus {
-  Unknown = 0,
-  Correct = 1,
-  Incorrect = 2,
 }
 
 export type NotebookChange =
@@ -186,8 +165,6 @@ export interface RelationshipMap {
 export interface RelationshipProperties {
   id?: StyleId;
   role: RelationshipRole;
-  status?: HintStatus;
-  logic?: HintRelationship;
   data?: any;
   // REVIEW: Use role: DATAFLOW with a subrole instead of dataflow flag?
   dataflow?: boolean;
@@ -202,8 +179,7 @@ export type RelationshipStyleRole =
   'LEGACY' |      // Legacy compatibility. TODO: remove
   'INPUT-FORMULA' |
   'OUTPUT-FORMULA' |
-  'TRANSFORMATION-TOOL' |
-  'TRANSFORMATION-HINT';
+  'TRANSFORMATION-TOOL';
 
 export interface Stroke {
   // id?: string;
@@ -237,7 +213,6 @@ export const STYLE_ROLES = [
   // Top level (cell) roles
   'FIGURE',
   'FORMULA',              // Hold FormulaData
-  'HINT',                 // Explanation of why two formula are related
   'PLOT',
   'TEXT',                 // Data is null.
   'FIGURE',               // Data is null.
@@ -305,8 +280,6 @@ export const STYLE_SUBROLES = [
   'PROVE',
   'OTHER',
 
-  // 'HINT' subroles
-
   // 'PLOT' subroles
 
   // 'TEXT' subroles
@@ -326,7 +299,6 @@ export const STYLE_TYPES = [
   'CLASSIFICATION-DATA',  // DEPRECATED: A classifcication of the style.
   'EQUATION-DATA',   // An equation (ambiguously assertion or relation)
   'FORMULA-DATA',    // Type of data for top-level 'FORMULA' styles
-  'HINT-DATA',       // Type of data for top-level 'HINT' styles
   'IMAGE-URL',       // ImageData: URL of image relative to notebook folder.
   'MYSCRIPT-DATA',   // Jiix: MyScript JIIX export from 'MATH' editor.
   'NONE',            // No data. Data field is null.
@@ -674,11 +646,9 @@ export abstract class Notebook<W extends NotebookWatcher> extends WatchedResourc
 
   private relationshipToHtml(relationship: RelationshipObject): Html {
     const dataJson = (typeof relationship.data != 'undefined' ? escapeHtml(JSON.stringify(relationship.data)) : 'undefined' );
-    const logic = relationship.logic;
-    const status = relationship.status;
     const inStylesHtml = relationship.inStyles.map(rs=>`${rs.role} ${rs.id}`).join(", ");
     const outStylesHtml = relationship.outStyles.map(rs=>`${rs.role} ${rs.id}`).join(", ");
-    return <Html>`<div><span class="leaf">R${relationship.id} ${relationship.role} [${inStylesHtml} ${RIGHT_ARROW_ENTITY} ${outStylesHtml}] (${relationship.fromId} ${RIGHT_ARROW_ENTITY} ${relationship.toId}) ${dataJson} logic: ${logic} status: ${status}</span></div>`;
+    return <Html>`<div><span class="leaf">R${relationship.id} ${relationship.role} [${inStylesHtml} ${RIGHT_ARROW_ENTITY} ${outStylesHtml}] (${relationship.fromId} ${RIGHT_ARROW_ENTITY} ${relationship.toId}) ${dataJson}</span></div>`;
   }
 
   private styleToHtml(style: StyleObject): Html {

@@ -205,143 +205,101 @@ export class ServerNotebook extends Notebook<ServerNotebookWatcher> {
     function displayFormula(f : string) : string {
       return `\\begin{align}\n ${f} \\end{align}\n`;
     }
-    function renderHintAsIndependent(hint: string, relationship: number, from: string, to: string, status: number) : string {
-      // a checkmark or an X for monochrome rendering.
-      const statussym = (status == 1) ? "\\checkmark" : "\\sout{\\checkmark}";
-
-      // TODO: I don't what the other statuses are supposed to be!
-      const relationsym = (relationship == 1) ? "\\equiv" : "\\implies";
-      return `$ ${relationsym} ${statussym} $ \\{  ${hint} \\}  $ (${from}) \\mapsto (${to}) $`;
-    }
     const tlso = this.topLevelStyleOrder();
     const cells = [];
     debug("TOP LEVEL",tlso);
     for(const tls of tlso) {
       var retLaTeX = "";
-      const styleObject = this.getStyle(tls);
-      if (styleObject.role == 'HINT') {
-        if (styleObject.type == 'HINT-DATA') {
-
-          // TODO: This will be off in terms of equation numbering. We need to decide
-          // If we should number by notebook numbers of equational order! It is currently inconsistent.
-          var from_id : string;
-          try {
-             from_id = "" + this.topLevelStyleOf(styleObject.data.fromId).id;
-          } catch (e) {
-            console.error("Internal Error:",e);
-            from_id = "\\text{Internal Error}";
-          }
-          var to_id : string;
-          try {
-            to_id = "" + this.topLevelStyleOf(styleObject.data.toId).id;
-          } catch (e) {
-            console.error("Internal Error:",e);
-            to_id = "\\text{Internal Error}";
-          }
-          const status = styleObject.data.status;
-          const relationship = styleObject.data.relationship;
-
-          const reps = this.findStyles({ type: 'PLAIN-TEXT', recursive: true }, tls);
-          var hint = "";
-          for(const r of reps) {
-            hint += r.data;
-          }
-          retLaTeX += renderHintAsIndependent(hint,relationship,from_id,to_id,status);
-        } else {
-          console.error("HINT role of type other than HINT-DATA not implemented");
-        }
-      } else {
-        // REVIEW: Does this search need to be recursive?
-        const latex = this.findStyles({ type: 'TEX-EXPRESSION', recursive: true }, tls);
-        if (latex.length > 1) { // here we have to have some disambiguation
-          retLaTeX += "ambiguous: " +displayFormula(latex[0].data);
-        } else if (latex.length == 1) {  // here it is obvious, maybe...
-          retLaTeX += displayFormula(latex[0].data);
-        }
-
-
-        // REVIEW: Does this search need to be recursive?
-        const image = this.findStyles({ type: 'IMAGE-URL', role: 'PLOT', recursive: true }, tls);
-        if (image.length > 0) {
-          const plot = image[0];
-          const apath = this.absoluteDirectoryPath();
-          // The notebook name is both a part of the plot.data,
-          // AND is a part of the absolute path. So we take only
-          // the final file name of local.data here.
-          const final = plot.data.split("/");
-          const graphics = `\\includegraphics{${apath}/${final[2]}}`;
-          retLaTeX += graphics;
-          retLaTeX += `\n`;
-          if (image.length > 1) {
-            retLaTeX += " more than one plot, not sure how to handle that";
-          }
-        }
-
-        // TODO: Handle embedded PNGS & SVGs.
-        //       We started putting SVGs of plots, etc. inline
-        //       so the code here that reads the SVG files needs to be updated.
-        // Now we search for .PNGs --- most likely generated from
-        // .svgs, but not necessarily, which allows the possibility
-        // of photographs being included in output later.
-        // REVIEW: Does this search need to be recursive?
-        // const svgs = this.findStyles({ type: 'SVG-MARKUP', recursive: true }, tls);
-        // debug("SVGS:",svgs);
-        // debug("tlso:",styleObject);
-        // for(const s of svgs) {
-        //   // NOTE: At present, this is using a BUFFER, which is volatile.
-        //   // It does not correctly survive resets of the notebook.
-        //   // In fact when we output the file to a file, we need to change
-        //   // the notebook do have a durable 'PNG-FILE' type generated from
-        //   // the buffer. This may seem awkward, but it keeps the
-        //   // function "ruleConvertSvgToPng" completely pure and static,
-        //   // which is a paradigm worth preserving. However, this means
-        //   // we have to handle the data being null until we have consistent
-        //   // file handling.
-        //   if (s.data) {
-        //     const b: Buffer = await apiFunctionWrapper(s.data);
-        //     const ts = Date.now();
-        //     console.log(tls);
-        //     console.log(ts);
-        //     const filename = `image-${s.id}-${ts}.png`;
-        //     console.log("filename",filename);
-        //     const apath = this.absoluteDirectoryPath();
-        //     var abs_filename = `${apath}/${filename}`;
-        //     const directory = apath;
-
-        //     var foundfile = "";
-        //     debug("BEGIN", directory);
-        //     var files = readdirSync(directory);
-        //     debug("files", files);
-        //     // TODO: We removed timestamp from the style, so we need to make whatever changes are necessary here.
-        //     // for (const file of files) {
-        //     //   // I don't know why this is needed!
-        //     //   if (fileIsLaterVersionThan(s.id, s.timestamp, file)) {
-        //     //     foundfile = file;
-        //     //   }
-        //     // }
-        //     debug("END");
-        //     if (foundfile) {
-        //       abs_filename = `${apath}/${foundfile}`;
-        //     } else {
-        //       writeFileSync(abs_filename, b);
-        //       debug("directory",directory);
-        //       var files = readdirSync(directory);
-
-        //       for (const file of files) {
-        //         debug("file",file);
-        //         // I don't know why this is needed!
-        //         if (fileIsEarlierVersionThan(s.id,ts,file)) {
-        //           unlink(join(directory, file), err  => {
-        //             if (err) throw err;
-        //           });
-        //         }
-        //       }
-        //     }
-        //     const graphics = `\\includegraphics{${abs_filename}}`;
-        //     retLaTeX += graphics;
-        //   }
-        // }
+      // REVIEW: Does this search need to be recursive?
+      const latex = this.findStyles({ type: 'TEX-EXPRESSION', recursive: true }, tls);
+      if (latex.length > 1) { // here we have to have some disambiguation
+        retLaTeX += "ambiguous: " +displayFormula(latex[0].data);
+      } else if (latex.length == 1) {  // here it is obvious, maybe...
+        retLaTeX += displayFormula(latex[0].data);
       }
+
+
+      // REVIEW: Does this search need to be recursive?
+      const image = this.findStyles({ type: 'IMAGE-URL', role: 'PLOT', recursive: true }, tls);
+      if (image.length > 0) {
+        const plot = image[0];
+        const apath = this.absoluteDirectoryPath();
+        // The notebook name is both a part of the plot.data,
+        // AND is a part of the absolute path. So we take only
+        // the final file name of local.data here.
+        const final = plot.data.split("/");
+        const graphics = `\\includegraphics{${apath}/${final[2]}}`;
+        retLaTeX += graphics;
+        retLaTeX += `\n`;
+        if (image.length > 1) {
+          retLaTeX += " more than one plot, not sure how to handle that";
+        }
+      }
+
+      // TODO: Handle embedded PNGS & SVGs.
+      //       We started putting SVGs of plots, etc. inline
+      //       so the code here that reads the SVG files needs to be updated.
+      // Now we search for .PNGs --- most likely generated from
+      // .svgs, but not necessarily, which allows the possibility
+      // of photographs being included in output later.
+      // REVIEW: Does this search need to be recursive?
+      // const svgs = this.findStyles({ type: 'SVG-MARKUP', recursive: true }, tls);
+      // debug("SVGS:",svgs);
+      // debug("tlso:",styleObject);
+      // for(const s of svgs) {
+      //   // NOTE: At present, this is using a BUFFER, which is volatile.
+      //   // It does not correctly survive resets of the notebook.
+      //   // In fact when we output the file to a file, we need to change
+      //   // the notebook do have a durable 'PNG-FILE' type generated from
+      //   // the buffer. This may seem awkward, but it keeps the
+      //   // function "ruleConvertSvgToPng" completely pure and static,
+      //   // which is a paradigm worth preserving. However, this means
+      //   // we have to handle the data being null until we have consistent
+      //   // file handling.
+      //   if (s.data) {
+      //     const b: Buffer = await apiFunctionWrapper(s.data);
+      //     const ts = Date.now();
+      //     console.log(tls);
+      //     console.log(ts);
+      //     const filename = `image-${s.id}-${ts}.png`;
+      //     console.log("filename",filename);
+      //     const apath = this.absoluteDirectoryPath();
+      //     var abs_filename = `${apath}/${filename}`;
+      //     const directory = apath;
+
+      //     var foundfile = "";
+      //     debug("BEGIN", directory);
+      //     var files = readdirSync(directory);
+      //     debug("files", files);
+      //     // TODO: We removed timestamp from the style, so we need to make whatever changes are necessary here.
+      //     // for (const file of files) {
+      //     //   // I don't know why this is needed!
+      //     //   if (fileIsLaterVersionThan(s.id, s.timestamp, file)) {
+      //     //     foundfile = file;
+      //     //   }
+      //     // }
+      //     debug("END");
+      //     if (foundfile) {
+      //       abs_filename = `${apath}/${foundfile}`;
+      //     } else {
+      //       writeFileSync(abs_filename, b);
+      //       debug("directory",directory);
+      //       var files = readdirSync(directory);
+
+      //       for (const file of files) {
+      //         debug("file",file);
+      //         // I don't know why this is needed!
+      //         if (fileIsEarlierVersionThan(s.id,ts,file)) {
+      //           unlink(join(directory, file), err  => {
+      //             if (err) throw err;
+      //           });
+      //         }
+      //       }
+      //     }
+      //     const graphics = `\\includegraphics{${abs_filename}}`;
+      //     retLaTeX += graphics;
+      //   }
+      // }
       cells.push(retLaTeX);
     }
 
