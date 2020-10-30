@@ -172,7 +172,7 @@ export class MathematicaObserver implements ObserverInstance {
           const equiv = await checkEquiv(sub_expr1,sub_expr2);
           expressionEquivalence[expressID] = equiv;
         } catch (e) {
-          debug("error evaluting equivalentce",e);
+          debug("error evaluting equivalence",e);
           expressionEquivalence[expressID] = false;
         }
       }

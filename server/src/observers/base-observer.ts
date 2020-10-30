@@ -57,11 +57,13 @@ interface BaseRule {
   styleRelation: StyleRelation;
   props: Omit<StyleProperties, "data">;
 }
-interface AsyncRule extends BaseRule {
-  compute: (this: /* TYPESCRIPT: */BaseObserver, parentData: /* TYPESCRIPT: */any)=>Promise</* TYPESCRIPT: */any|undefined>;
+export type AsyncComputeFunction = (this: /* TYPESCRIPT: */BaseObserver, style: StyleObject)=>Promise</* TYPESCRIPT: */any|undefined>;
+export interface AsyncRule extends BaseRule {
+  compute: AsyncComputeFunction;
 }
-interface SyncRule extends BaseRule {
-  compute: (this: /* TYPESCRIPT: */BaseObserver, parentData: /* TYPESCRIPT: */any)=>/* TYPESCRIPT: */any|undefined;
+export type SyncComputeFunction = (this: /* TYPESCRIPT: */BaseObserver, style: StyleObject)=>/* TYPESCRIPT: */any|undefined;
+export interface SyncRule extends BaseRule {
+  compute: SyncComputeFunction;
 }
 type Rule = AsyncRule|SyncRule;
 
@@ -149,21 +151,21 @@ export abstract class BaseObserver implements ObserverInstance {
 
   private async onChangeAsync(rule: AsyncRule, change: NotebookChange): Promise<NotebookChangeRequest|undefined> {
     // IMPORTANT: This code is identical to onChangeSync, except this code has awaits and that code doesn't.
-    const inputData = this.preChange(rule, change);
-    if (inputData === false) { return undefined; }
-    const outputData = await rule.compute.call(this, inputData);
+    const style = this.preChange(rule, change);
+    if (!style) { return undefined; }
+    const outputData = await rule.compute.call(this, style);
     return this.postChange(rule, change, outputData);
   }
 
   private onChangeSync(rule: SyncRule, change: NotebookChange): NotebookChangeRequest|undefined {
     // IMPORTANT: This code is identical to onChangeAsync, except that code has awaits and this code doesn't.
-    const inputData = this.preChange(rule, change);
-    if (inputData === false) { return undefined; }
-    const outputData = rule.compute.call(this, inputData);
+    const style = this.preChange(rule, change);
+    if (!style) { return undefined; }
+    const outputData = rule.compute.call(this, style);
     return this.postChange(rule, change, outputData);
   }
 
-  private preChange(rule: Rule, change: NotebookChange): /* TYPESCRIPT: */any|false {
+  private preChange(rule: Rule, change: NotebookChange): StyleObject|undefined {
     // Common code for onChangeAsync and onChangeSync.
     // Everything that needs to be done before the async/sync compute call is made.
     // Returns the data that should be passed to the compute call,
@@ -175,12 +177,12 @@ export abstract class BaseObserver implements ObserverInstance {
         if (rule.debug) {
           debug(`Rule ${rule.name} ${matches?"matches":"does not match"} ${notebookChangeSynopsis(change)}`);
         }
-        return matches && change.style.data;
+        return matches ? change.style : undefined;
       }
       default:
         // TODO: 'styleDeleted': if styleInserted resulted in creating a peer style, then styleDeleted should delete that style if it still exists.
         // TODO: 'styleConverted': should be treated like a style deleted followed by a style inserted.
-        return false;
+        return undefined;
     }
   }
 

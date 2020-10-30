@@ -25,7 +25,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 // Requirements
 
 import * as debug1 from "debug";
-import { readdirSync, writeFileSync } from "fs"; // LATER: Eliminate synchronous file operations.
+// import { readdirSync, unlink, writeFileSync } from "fs"; // LATER: Eliminate synchronous file operations.
 import { join } from "path";
 
 import { assert, assertFalse, ExpectedError, Timestamp } from "./shared/common";
@@ -49,8 +49,7 @@ import { logError } from "./error-handler";
 import { notebookChangeRequestSynopsis, notebookChangeSynopsis } from "./shared/debug-synopsis";
 
 
-// LATER: Convert these to imports.
-const svg2img = require('svg2img');
+// const svg2img = require('svg2img');
 
 const MODULE = __filename.split(/[/\\]/).slice(-1)[0].slice(0,-3);
 const debug = debug1(`server:${MODULE}`);
@@ -277,105 +276,71 @@ export class ServerNotebook extends Notebook<ServerNotebookWatcher> {
             retLaTeX += " more than one plot, not sure how to handle that";
           }
         }
+
+        // TODO: Handle embedded PNGS & SVGs.
+        //       We started putting SVGs of plots, etc. inline
+        //       so the code here that reads the SVG files needs to be updated.
         // Now we search for .PNGs --- most likely generated from
         // .svgs, but not necessarily, which allows the possibility
         // of photographs being included in output later.
         // REVIEW: Does this search need to be recursive?
-        const svgs = this.findStyles({ type: 'SVG-MARKUP', recursive: true }, tls);
+        // const svgs = this.findStyles({ type: 'SVG-MARKUP', recursive: true }, tls);
+        // debug("SVGS:",svgs);
+        // debug("tlso:",styleObject);
+        // for(const s of svgs) {
+        //   // NOTE: At present, this is using a BUFFER, which is volatile.
+        //   // It does not correctly survive resets of the notebook.
+        //   // In fact when we output the file to a file, we need to change
+        //   // the notebook do have a durable 'PNG-FILE' type generated from
+        //   // the buffer. This may seem awkward, but it keeps the
+        //   // function "ruleConvertSvgToPng" completely pure and static,
+        //   // which is a paradigm worth preserving. However, this means
+        //   // we have to handle the data being null until we have consistent
+        //   // file handling.
+        //   if (s.data) {
+        //     const b: Buffer = await apiFunctionWrapper(s.data);
+        //     const ts = Date.now();
+        //     console.log(tls);
+        //     console.log(ts);
+        //     const filename = `image-${s.id}-${ts}.png`;
+        //     console.log("filename",filename);
+        //     const apath = this.absoluteDirectoryPath();
+        //     var abs_filename = `${apath}/${filename}`;
+        //     const directory = apath;
 
-        debug("SVGS:",svgs);
-        debug("tlso:",styleObject);
-        for(const s of svgs) {
-          // NOTE: At present, this is using a BUFFER, which is volatile.
-          // It does not correctly survive resets of the notebook.
-          // In fact when we output the file to a file, we need to change
-          // the notebook do have a durable 'PNG-FILE' type generated from
-          // the buffer. This may seem awkward, but it keeps the
-          // function "ruleConvertSvgToPng" completely pure and static,
-          // which is a paradigm worth preserving. However, this means
-          // we have to handle the data being null until we have consistent
-          // file handling.
-          if (s.data) {
-            // from : https://stackoverflow.com/questions/5010288/how-to-make-a-function-wait-until-a-callback-has-been-called-using-node-js
-            // myFunction wraps the above API call into a Promise
-            // and handles the callbacks with resolve and reject
-            function apiFunctionWrapper(data: string) : Promise<Buffer> {
-              // @ts-ignore
-              return new Promise((resolve, reject) => {
-                // @ts-ignore
-                svg2img(data,function(error, buffer) {
-                  resolve(buffer);
-                });
-              });
-            };
+        //     var foundfile = "";
+        //     debug("BEGIN", directory);
+        //     var files = readdirSync(directory);
+        //     debug("files", files);
+        //     // TODO: We removed timestamp from the style, so we need to make whatever changes are necessary here.
+        //     // for (const file of files) {
+        //     //   // I don't know why this is needed!
+        //     //   if (fileIsLaterVersionThan(s.id, s.timestamp, file)) {
+        //     //     foundfile = file;
+        //     //   }
+        //     // }
+        //     debug("END");
+        //     if (foundfile) {
+        //       abs_filename = `${apath}/${foundfile}`;
+        //     } else {
+        //       writeFileSync(abs_filename, b);
+        //       debug("directory",directory);
+        //       var files = readdirSync(directory);
 
-            function getTimeStampOfCompatibleFileName(id:number, name: string) : number|undefined{
-              const parts = name.split('-');
-              if (parts.length < 3) return;
-              if (parseInt(parts[1]) != id) return;
-              const third = parts[2];
-              const nametsAndExtension = third.split('.');
-              if (nametsAndExtension.length < 2) return;
-              return parseInt(nametsAndExtension[0]);
-            }
-
-            function fileIsEarlierVersionThan(id:number, ts: number|undefined, name: string) : boolean {
-              if (!ts) return false;
-              const filets = getTimeStampOfCompatibleFileName(id, name);
-              return !!filets && ts>filets;
-            }
-
-            // function fileIsLaterVersionThan(id:number, ts: number|undefined, name: string) : boolean {
-            //   if (!ts) return false;
-            //   const filets = getTimeStampOfCompatibleFileName(id, name);
-            //   return !!filets && ts<filets;
-            // }
-
-            const b: Buffer = await apiFunctionWrapper(s.data);
-            const ts = Date.now();
-            console.log(tls);
-            console.log(ts);
-            const filename = `image-${s.id}-${ts}.png`;
-            console.log("filename",filename);
-            const apath = this.absoluteDirectoryPath();
-            var abs_filename = `${apath}/${filename}`;
-            const directory = apath;
-
-            var foundfile = "";
-            debug("BEGIN", directory);
-            // @ts-ignore
-            var files = fs.readdirSync(directory);
-            debug("files", files);
-            // TODO: We removed timestamp from the style, so we need to make whatever changes are necessary here.
-            // for (const file of files) {
-            //   // I don't know why this is needed!
-            //   if (fileIsLaterVersionThan(s.id, s.timestamp, file)) {
-            //     foundfile = file;
-            //   }
-            // }
-            debug("END");
-            if (foundfile) {
-              abs_filename = `${apath}/${foundfile}`;
-            } else {
-              writeFileSync(abs_filename, b);
-              debug("directory",directory);
-              var files = readdirSync(directory);
-
-              for (const file of files) {
-                debug("file",file);
-                // I don't know why this is needed!
-                if (fileIsEarlierVersionThan(s.id,ts,file)) {
-                  // @ts-ignore
-                  fs.unlink(path.join(directory, file), err  => {
-                    if (err) throw err;
-                  });
-                }
-              }
-            }
-            const graphics = `\\includegraphics{${abs_filename}}`;
-            retLaTeX += graphics;
-          }
-        }
+        //       for (const file of files) {
+        //         debug("file",file);
+        //         // I don't know why this is needed!
+        //         if (fileIsEarlierVersionThan(s.id,ts,file)) {
+        //           unlink(join(directory, file), err  => {
+        //             if (err) throw err;
+        //           });
+        //         }
+        //       }
+        //     }
+        //     const graphics = `\\includegraphics{${abs_filename}}`;
+        //     retLaTeX += graphics;
+        //   }
+        // }
       }
       cells.push(retLaTeX);
     }
@@ -1349,3 +1314,39 @@ function absFilePathFromNotebookPath(path: NotebookPath): AbsFilePath {
   const absPath = absDirPathFromNotebookPath(path);
   return join(absPath, NOTEBOOK_FILE_NAME);
 }
+
+// function apiFunctionWrapper(data: string) : Promise<Buffer> {
+//   // from : https://stackoverflow.com/questions/5010288/how-to-make-a-function-wait-until-a-callback-has-been-called-using-node-js
+//   // myFunction wraps the above API call into a Promise
+//   // and handles the callbacks with resolve and reject
+//   // @ts-ignore
+//   return new Promise((resolve, reject) => {
+//     // @ts-ignore
+//     svg2img(data,function(error, buffer) {
+//       resolve(buffer);
+//     });
+//   });
+// };
+
+// function getTimeStampOfCompatibleFileName(id: number, name: string) : number|undefined{
+//   const parts = name.split('-');
+//   if (parts.length < 3) return;
+//   if (parseInt(parts[1]) != id) return;
+//   const third = parts[2];
+//   const nametsAndExtension = third.split('.');
+//   if (nametsAndExtension.length < 2) return;
+//   return parseInt(nametsAndExtension[0]);
+// }
+
+// function fileIsEarlierVersionThan(id: number, ts: number|undefined, name: string) : boolean {
+//   if (!ts) return false;
+//   const filets = getTimeStampOfCompatibleFileName(id, name);
+//   return !!filets && ts>filets;
+// }
+
+// function fileIsLaterVersionThan(id:number, ts: number|undefined, name: string) : boolean {
+//   if (!ts) return false;
+//   const filets = getTimeStampOfCompatibleFileName(id, name);
+//   return !!filets && ts<filets;
+// }
+

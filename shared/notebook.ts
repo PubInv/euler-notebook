@@ -57,6 +57,7 @@ export interface HintData {
   relationship: HintRelationship,
   status: HintStatus,
   text: PlainText,  // LATER: Allow rich text in hints.
+  idOfRelationshipDecorated?: StyleId,
 }
 
 export enum HintRelationship {
@@ -176,8 +177,7 @@ export type RelationshipRole =
   'SYMBOL-DEPENDENCY' |
   'DUPLICATE-DEFINITION' |
   'EQUIVALENCE' |
-  'TRANSFORMATION' |
-  'USER-DEFINED';
+  'TRANSFORMATION';
 
 export interface RelationshipMap {
   [id: /* RelationshipId */number]: RelationshipObject;
@@ -371,6 +371,7 @@ export type MTLExpression = '{MTLExpression}';
 // Constants
 
 const DEFAULT_PAGE_CONFIG: PageConfig = {
+  // REVIEW: Standardize on "pt" as the unit of measurement rather than mixing inches and points?
   size: { width: <CssLength>'8.5in', height: <CssLength>'11in' },
   margins: {
     top: <CssLength>'72pt', /* 72pt = 1 in */

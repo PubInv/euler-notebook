@@ -21,7 +21,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 import * as debug1 from "debug";
 
-import { StrokeData } from "../shared/notebook";
+import { StrokeData, StyleObject } from "../shared/notebook";
 import { TexExpression } from "../shared/math-tablet-api";
 
 import { Config } from "../config";
@@ -63,11 +63,11 @@ export class MyScriptObserver extends BaseObserver {
   private static ASYNC_RULES: AsyncRules = [
     {
       // TODO: Only recognize input on "formula" ink cells.
-      name: "strokes-to-latex",
+      name: "convertStrokesToTexRule",
       styleTest: { role: 'INPUT', type: 'STROKE-DATA' },
       styleRelation: StyleRelation.PeerToPeer,
       props: { role: 'REPRESENTATION', type: 'TEX-EXPRESSION' },
-      compute: MyScriptObserver.prototype.convertStrokesToLatexRule,
+      compute: MyScriptObserver.prototype.convertStrokesToTexRule,
     },
   ];
 
@@ -79,10 +79,11 @@ export class MyScriptObserver extends BaseObserver {
 
   // Private Instance Methods
 
-  private async convertStrokesToLatexRule(data: StrokeData): Promise<TexExpression> {
+  private async convertStrokesToTexRule(style: StyleObject): Promise<TexExpression> {
     // TODO: Prevent multiple calls to MyScript at the same time. "serialze" flag on rule?
     // TODO: Gather up multiple changes that occur with a series of strokes, rather than stroke by stroke.
     debug("Converting strokes to TexExpression");
+    const data: StrokeData = style.data;
     const rval = await postLatexRequest(MyScriptObserver.keys, data.strokeGroups);
     debug(`Recognized TeX: ${rval}`);
     return rval;

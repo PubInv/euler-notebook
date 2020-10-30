@@ -23,7 +23,7 @@ import * as debug1 from "debug";
 const MODULE = __filename.split(/[/\\]/).slice(-1)[0].slice(0,-3);
 const debug = debug1(`server:${MODULE}`);
 
-import { Html } from "../shared/common";
+import { Html, PlainText } from "../shared/common";
 import {
   StyleType,NotebookChange, StyleObject, RelationshipProperties, HintData, HintRelationship,
   HintStatus, FormulaData, WolframExpression, MTLExpression
@@ -113,6 +113,7 @@ export class AlgebraicToolsObserver implements ObserverInstance {
     const data: HintData = {
       relationship: HintRelationship.Equivalent,
       status: HintStatus.Correct,
+      text: <PlainText>"Equivalent",  // TODO: Wording
       idOfRelationshipDecorated: relId
     };
 
@@ -300,7 +301,7 @@ export class AlgebraicToolsObserver implements ObserverInstance {
                        <WolframExpression>"InputForm[Factor[${expr}]]",
                        "factor",
                        (s : string) => <Html>`Factor: ${s}`,
-                       (s : string) => <TexExpression>`\\text{Expand: } ${s}`);
+                       (s : string) => <TexExpression>`\\text{Factor: } ${s}`);
     await this.addTool(style,rval,
                        <WolframExpression>"InputForm[Expand[${expr}]]",
                        "expand",

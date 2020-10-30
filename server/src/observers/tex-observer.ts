@@ -21,7 +21,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 import debug1 from "debug";
 
-import { FormulaData } from "../shared/notebook";
+import { FormulaData, StyleObject } from "../shared/notebook";
 import { TexExpression } from "../shared/math-tablet-api";
 
 import { ServerNotebook } from "../server-notebook";
@@ -56,19 +56,19 @@ export class TexObserver extends BaseObserver {
 
   private static ASYNC_RULES: AsyncRules = [
     {
-      name: "parseTexInput",
+      name: "convertTexToFormulaRule",
       styleRelation: StyleRelation.ChildToParent,
       styleTest: { role: 'INPUT', source: 'USER', type: 'TEX-EXPRESSION' },
       props: { role: 'FORMULA', type: 'FORMULA-DATA' },
-      compute: TexObserver.prototype.parseTexInputRule,
+      compute: TexObserver.prototype.convertTexToFormulaRule,
     },
     {
-      name: "renderFormulaToTex",
+      name: "convertFormulaToTexRule",
       styleRelation: StyleRelation.ParentToChild,
       styleTest: { role: 'FORMULA', type: 'FORMULA-DATA' },
       props: { role: 'REPRESENTATION', type: 'TEX-EXPRESSION' },
       exclusiveChildTypeAndRole: true,
-      compute: TexObserver.prototype.renderFormulaToTexRepresentationRule,
+      compute: TexObserver.prototype.convertFormulaToTexRule,
     },
   ];
 
@@ -76,14 +76,16 @@ export class TexObserver extends BaseObserver {
 
   // Private Class Methods
 
-  private async parseTexInputRule(data: TexExpression): Promise<FormulaData|undefined> {
+  private async convertTexToFormulaRule(style: StyleObject): Promise<FormulaData|undefined> {
     // REVIEW: If conversion fails?
+    const data: TexExpression = style.data;
     const wolframData = convertWolframToMTL(await convertTeXtoWolfram(data));
     return { wolframData };
   }
 
-  private async renderFormulaToTexRepresentationRule(formulaData: FormulaData): Promise<TexExpression|undefined> {
+  private async convertFormulaToTexRule(style: StyleObject): Promise<TexExpression|undefined> {
     // REVIEW: If conversion fails?
+    const formulaData: FormulaData = style.data;
     return await convertWolframToTeX(convertMTLToWolfram(formulaData.wolframData));
   }
 

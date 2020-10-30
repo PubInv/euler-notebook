@@ -23,7 +23,7 @@ import * as debug1 from "debug";
 const MODULE = __filename.split(/[/\\]/).slice(-1)[0].slice(0,-3);
 const debug = debug1(`server:${MODULE}`);
 
-import { assert, Html } from "../shared/common";
+import { assert, Html, PlainText } from "../shared/common";
 import {
   NotebookChange, StyleObject, StyleId, RelationshipObject, RelationshipId, RelationshipProperties,
   StyleDeleted, StyleMoved, FindRelationshipOptions, StyleInserted, StyleChanged, HintData,
@@ -92,6 +92,7 @@ export class SymbolClassifierObserver implements ObserverInstance {
     const data: HintData = {
       relationship: HintRelationship.Implies,
       status: HintStatus.Correct,
+      text: <PlainText>"Implies",  // TODO: Wording
       idOfRelationshipDecorated: relId
     };
 

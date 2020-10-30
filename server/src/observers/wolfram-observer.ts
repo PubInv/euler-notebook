@@ -22,7 +22,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 import debug1 from "debug";
 
 
-import { WolframExpression,MTLExpression, FormulaData } from "../shared/notebook";
+import { WolframExpression,MTLExpression, FormulaData, StyleObject } from "../shared/notebook";
 import { isEmptyOrSpaces } from "../shared/math-tablet-api";
 
 import { AsyncRules, BaseObserver, StyleRelation, SyncRules } from "./base-observer";
@@ -69,37 +69,40 @@ export class WolframObserver extends BaseObserver {
 
   private static SYNC_RULES: SyncRules = [
     {
-      name: "parseWolframInput",
+      name: "convertWolframToFormulaRule",
       styleRelation: StyleRelation.ChildToParent,
       styleTest: { role: 'INPUT', source: 'USER', type: 'WOLFRAM-EXPRESSION' },
       // REVIEW: Are props necessary in ChildToParent relations? Validate that parent has expected props?
       props: { role: 'FORMULA', type: 'FORMULA-DATA' },
-      compute: WolframObserver.prototype.parseWolframInputRule,
+      compute: WolframObserver.prototype.convertWolframToFormulaRule,
     },
     {
-      name: "renderFormulaToWolfram",
+      name: "convertFormulaToWolframRule",
       styleRelation: StyleRelation.ParentToChild,
       styleTest: { role: 'FORMULA', type: 'FORMULA-DATA' },
       props: { role: 'REPRESENTATION', type: 'WOLFRAM-EXPRESSION' },
-      compute: WolframObserver.prototype.renderFormulaToWolframRepresentationRule,
+      compute: WolframObserver.prototype.convertFormulaToWolframRule,
     },
   ];
 
   // Private Instance Methods
 
-  private parseWolframInputRule(wolframData: MTLExpression): FormulaData|undefined {
+  private convertWolframToFormulaRule(style: StyleObject): FormulaData|undefined {
     // TODO: Make this async, pass the string to WolframScript to normalize.
+    const wolframData: MTLExpression = style.data;
     return { wolframData };
   }
 
-  private renderFormulaToWolframRepresentationRule(formulaData: FormulaData): MTLExpression|undefined {
+  private convertFormulaToWolframRule(style: StyleObject): MTLExpression|undefined {
+    const formulaData: FormulaData = style.data;
     // REVIEW: Convert single equal sign to double equal sign?
     return formulaData.wolframData;
   }
 
   // One problem here is that we are not rewriting the single equal, which is the "math-tablet input" language,
   // to the double equal, which is essentially the wolfram language (thought not a one-to-one correspondence.)
-  private async evaluateWolframExprRule(expr: MTLExpression) : Promise<WolframExpression|undefined> {
+  private async evaluateWolframExprRule(style: StyleObject) : Promise<WolframExpression|undefined> {
+    const expr: MTLExpression = style.data;
     // REVIEW: If evaluation fails?
     debug(`Evaluating: "${expr}".`);
     let rval: WolframExpression|undefined;

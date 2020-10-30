@@ -27,7 +27,7 @@ const debug = debug1('client:formula-cell');
 import { CssClass, Html, assertFalse, assert } from "../../../../shared/common";
 import { StyleObject, NotebookChange, StrokeData, StyleSubrole } from "../../../../shared/notebook";
 
-import { $, $new, $outerSvg } from "../../../../dom";
+import { $new, $outerSvg } from "../../../../dom";
 import { Content as CellContainer } from "..";
 
 import { CellBase, isDisplaySvgStyle, isInputStyle, isStrokeSvgStyle } from "./cell-base";
@@ -102,13 +102,11 @@ export class FormulaCell extends CellBase {
       case 'styleInserted': {
         if (isDisplaySvgStyle(change.style, this.styleId)) {
           this.$displayPanel = this.createDisplayPanel(change.style);
-          const $prefixPanel = $(this.$content, '.prefixPanel');
-          $prefixPanel.after(this.$displayPanel);
+          this.$content.prepend(this.$displayPanel);
         } else if (isInputStyle(change.style, this.styleId)) {
           const style = this.container.screen.notebook.getStyle(this.styleId);
           this.$inputPanel = this.createInputPanel(style, change.style);
-          const $handlePanel = $(this.$content, '.handlePanel');
-          $handlePanel.before(this.$inputPanel);
+          this.$content.append(this.$inputPanel);
         } else {
           // Ignore. Not something we are interested in.
         }
@@ -163,17 +161,6 @@ export class FormulaCell extends CellBase {
   private strokePanel?: StrokePanel;
 
   // Private Instance Methods
-
-  // private formulaPanelHtml(notebook: ClientNotebook, rootStyleId: StyleId, texRepStyle: StyleObject): Html {
-  //   let html: Html;
-  //   // Render the formula data.
-  //   const renderer = getRenderer(texRepStyle.type);
-  //   const { html: contentHtml, errorHtml } = renderer(texRepStyle.data);
-  //   if (!errorHtml) {
-  //     html = contentHtml!;
-  //   } else {
-  //     html = <Html>`<div class="error">${errorHtml}</div><tt>${escapeHtml(texRepStyle.data.toString())}</tt>`;
-  //   }
 
   //   // Render Wolfram evaluation if it exists.
   //   // REVIEW: Rendering evaluation annotations should probably be

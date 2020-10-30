@@ -22,7 +22,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 import debug1 from "debug";
 
 import { CssClass, PlainText, SvgMarkup, escapeHtml, stackTrace } from "../shared/common";
-import { Stroke, StrokeData } from "../shared/notebook";
+import { Stroke, StrokeData, StyleObject } from "../shared/notebook";
 import { TexExpression } from "../shared/math-tablet-api";
 
 import { convertTexToSvg } from "../adapters/mathjax";
@@ -75,6 +75,7 @@ export class SystemObserver extends BaseObserver {
       compute: SystemObserver.prototype.convertPlainTextToSvgRule,
     },
     {
+      // REVIEW: Move this to TeX observer?
       name: "convertTexToSvgRule",
       styleTest: { role: 'REPRESENTATION', type: 'TEX-EXPRESSION' },
       styleRelation: StyleRelation.PeerToPeer,
@@ -85,15 +86,17 @@ export class SystemObserver extends BaseObserver {
 
   // Private Instance Methods
 
-  private convertPlainTextToSvgRule(text: PlainText): SvgMarkup {
+  private convertPlainTextToSvgRule(style: StyleObject): SvgMarkup {
     // TODO: Proper font
     // TODO: Wrap text
     // TODO: Line breaks matching those put into the input textarea
+    const text: PlainText = style.data;
     debug(`convertPlainTextToSvgRule on: "${text.length>30 ? `${text.slice(0,30)}...`: text}".`);
     return <SvgMarkup>`<svg class="displayPanel" height="1in" width="6.5in" fill="none" stroke="black"><text x="20" y="20">${escapeHtml(text)}</text></svg>`;
   }
 
-  private convertStrokesToSvgRule(data: StrokeData): SvgMarkup|undefined {
+  private convertStrokesToSvgRule(style: StyleObject): SvgMarkup|undefined {
+    const data: StrokeData = style.data;
     debug(`convertStrokesToSvgRule on ${JSON.stringify(data)}`);
     console.log(stackTrace());
     const paths: string[] = [];
@@ -108,7 +111,8 @@ export class SystemObserver extends BaseObserver {
     return svgMarkup;
   }
 
-  private convertTexToSvgRule(tex: TexExpression): SvgMarkup {
+  private convertTexToSvgRule(style: StyleObject): SvgMarkup {
+    const tex: TexExpression = style.data;
     debug(`convertTexToSvgRule on: ${tex}`);
     return convertTexToSvg(tex, <CssClass>'displayPanel');
   }

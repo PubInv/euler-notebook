@@ -28,6 +28,7 @@ import { ServerNotebook } from "../server-notebook";
 import { execute } from "../adapters/wolframscript";
 
 import { RelationshipObject, HintData, HintRelationship, HintStatus } from "../shared/notebook";
+import { PlainText } from "../shared/common";
 
 const MODULE = __filename.split(/[/\\]/).slice(-1)[0].slice(0,-3);
 const debug = debug1(`server:${MODULE}`);
@@ -82,6 +83,7 @@ export class AlgebraicDataflowObserver extends DataflowObserver {
 
     var hdata : HintData = {
       relationship: HintRelationship.Equivalent,
+      text: <PlainText>"Equivalent",  // TODO: Wording
       status: HintStatus.Correct,
       idOfRelationshipDecorated: relationship.id,
     };

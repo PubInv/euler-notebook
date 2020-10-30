@@ -17,6 +17,9 @@ You should have received a copy of the GNU Affero General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
+// TODO: We have commented out teh TexFormatterObserver.
+//       If this is not actually used we can delete the code.
+
 // Requirements
 
 import { Config, Credentials } from "../config";
@@ -24,7 +27,8 @@ import { ServerNotebook } from "../server-notebook";
 import { logWarning } from "../error-handler";
 
 import { AlgebraicDataflowObserver } from "./algebraic-dataflow-observer";
-import { AlgebraicToolsObserver } from "./algebraic-tools";
+// import { AlgebraicToolsObserver } from "./algebraic-tools";
+import { AlgebraicToolsObserverHL } from "./algebraic-tools-hl";
 import { EquationSolverObserver } from "./equation-solver";
 import { TexObserver } from "./tex-observer";
 import { MathematicaObserver } from "./mathematica-cas";
@@ -34,7 +38,7 @@ import { SandboxObserver } from "./sandbox";
 import { SubtrivClassifierObserver } from "./subtriv-classifier";
 import { SymbolClassifierObserver } from "./symbol-classifier";
 // REVIEW: import { SymbolTableObserver } from "./symbol-table";
-import { TeXFormatterObserver } from "./tex-formatter";
+// import { TeXFormatterObserver } from "./tex-formatter";
 import { WolframObserver } from "./wolfram-observer";
 
 const MODULE = __filename.split(/[/\\]/).slice(-1)[0].slice(0,-3);
@@ -69,9 +73,10 @@ export async function initialize(config: Config, credentials: Credentials): Prom
     ServerNotebook.registerObserver('SYMBOL-CLASSIFIER', SymbolClassifierObserver);
     // REVIEW: ServerNotebook.registerObserver('SYMBOL-TABLE', SymbolTableObserver);
     ServerNotebook.registerObserver('EQUATION-SOLVER', EquationSolverObserver);
-    ServerNotebook.registerObserver('TEX-FORMATTER', TeXFormatterObserver);
+    // ServerNotebook.registerObserver('TEX-FORMATTER', TeXFormatterObserver);
     ServerNotebook.registerObserver('WOLFRAM-OBSERVER', WolframObserver);
-    ServerNotebook.registerObserver('ALGEBRAIC-TOOLS', AlgebraicToolsObserver);
+//    ServerNotebook.registerObserver('ALGEBRAIC-TOOLS', AlgebraicToolsObserver);
+    ServerNotebook.registerObserver('ALGEBRAIC-TOOLS', AlgebraicToolsObserverHL);
   }
   useMyScript = !!credentials.myscript;
   if (useMyScript) {
@@ -99,7 +104,7 @@ export function terminate(): void {
     ServerNotebook.deregisterObserver('SYMBOL-CLASSIFIER');
     // ServerNotebook.deregisterObserver('SYMBOL-TABLE');
     ServerNotebook.deregisterObserver('EQUATION-SOLVER');
-    ServerNotebook.deregisterObserver('TEX-FORMATTER');
+    // ServerNotebook.deregisterObserver('TEX-FORMATTER');
     ServerNotebook.deregisterObserver('MATHJAX-OBSERVER');
     ServerNotebook.deregisterObserver('WOLFRAM-OBSERVER');
     ServerNotebook.deregisterObserver('ALGEBRAIC-TOOLS');

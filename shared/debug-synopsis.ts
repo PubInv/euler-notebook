@@ -206,9 +206,13 @@ function clientNotebookMessageSynopsis(msg: ClientNotebookMessage): string {
 
 
 function dataSynopsis(data: any): string {
-  const json: string = JSON.stringify(data);
-  const abbreviatedJson = json.length<31 ? json : `${json.substr(0,30)}...`;
-  return `${abbreviatedJson}`;
+  if (typeof data == 'undefined') {
+    return 'undefined';
+  } else {
+    const json: string = JSON.stringify(data);
+    const abbreviatedJson = json.length<31 ? json : `${json.substr(0,30)}...`;
+    return `${abbreviatedJson}`;
+  }
 }
 
 function indentation(indentationLevel: number): string { return ' '.repeat(indentationLevel*2); }
