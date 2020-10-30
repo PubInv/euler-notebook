@@ -29,7 +29,7 @@ import { CssClass, assert, deepCopy, Html, assertFalse, notImplemented, CssLengt
 import {
   StrokeData, StyleId, StyleObject, NotebookChange,
   StyleRelativePosition,
-  StylePosition, FormulaData, MTLExpression
+  StylePosition, FormulaData, PlainTextMath
 } from "../../../shared/notebook";
 import {
   DebugParams, DebugResults, StyleDeleteRequest, StyleInsertRequest, StylePropertiesWithSubprops,
@@ -234,7 +234,7 @@ export class Content extends HtmlElement<'div'>{
       { role: 'INPUT', type: userSettingsInstance.defaultMathKeyboardInputFormat, data: '' } :
       { role: 'INPUT', type: 'STROKE-DATA', data: deepCopy(EMPTY_STROKE_DATA) });
 
-    const data: FormulaData = { wolframData: <MTLExpression>'' };
+    const data: FormulaData = { wolframData: <PlainTextMath>'' };
     const styleProps: StylePropertiesWithSubprops = {
       role: 'FORMULA',
       type: 'FORMULA-DATA',
@@ -451,28 +451,6 @@ export class Content extends HtmlElement<'div'>{
       afterCell.$elt.insertAdjacentElement('afterend', cellView.$elt);
     }
   }
-
-  // public async insertKeyboardCellAndEdit(afterId: StyleRelativePosition): Promise<void> {
-  //   // Shared implementation of 'insertKeyboardCellAbove' and 'insertKeyboardCellBelow'
-  //   // Inserts a cell into the notebook, and opens it for editing.
-  //   // TODO: Inserting text cells, not just formula cells.
-
-  //   const data: FormulaData = { wolframData: <MTLExpression>'' };
-  //   const styleProps: StylePropertiesWithSubprops = {
-  //     role: 'FORMULA',
-  //     type: 'FORMULA-DATA',
-  //     data,
-  //     subprops: [
-  //       { role: 'INPUT', type: userSettingsInstance.defaultMathKeyboardInputFormat, data: '' },
-  //     ]
-  //   };
-
-  //   // Insert top-level style and wait for it to be inserted.
-  //   const changeRequest: StyleInsertRequest = { type: 'insertStyle', afterId, styleProps };
-  //   const undoChangeRequest = await this.sendUndoableChangeRequest(changeRequest);
-  //   const styleId = (<StyleDeleteRequest>undoChangeRequest).styleId;
-  //   this.startEditingCell(styleId);
-  // }
 
   public async insertStyle(styleProps: StylePropertiesWithSubprops, afterId: StyleRelativePosition = StylePosition.Bottom): Promise<void> {
     const changeRequest: StyleInsertRequest = { type: 'insertStyle', afterId, styleProps };

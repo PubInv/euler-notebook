@@ -25,7 +25,7 @@ const debug = debug1(`server:${MODULE}`);
 
 import { spawn, ChildProcess } from "child_process";
 
-import { WolframExpression,MTLExpression } from "../shared/notebook";
+import { WolframExpression, PlainTextMath } from "../shared/notebook";
 import { TexExpression } from "../shared/math-tablet-api";
 
 import { WolframScriptConfig } from "../config";
@@ -287,7 +287,7 @@ export async function convertEvaluatedWolframToTeX(text: WolframExpression): Pro
     }
 }
 
-export async function convertMTLToTeX(text: MTLExpression): Promise<TexExpression> {
+export async function convertMTLToTeX(text: PlainTextMath): Promise<TexExpression> {
     if (<unknown>text == '') { return <TexExpression>''; }
     const getTex = <WolframExpression>`TeXForm[HoldForm[${text}]]`;
     try {
@@ -300,9 +300,9 @@ export async function convertMTLToTeX(text: MTLExpression): Promise<TexExpressio
 
 // This is to simple an explanation, but generally the Math Table Langauge used the equality (=) sign
 // to mean universal equality. Wolfram uses it to mean assignment, and == for boolean relations, which can at least be simplified.
-export function convertMTLToWolfram(expr: MTLExpression) : WolframExpression {
+export function convertMTLToWolfram(expr: PlainTextMath) : WolframExpression {
   return <WolframExpression>expr.replace("=","==");
 }
-export function convertWolframToMTL(expr: WolframExpression) : MTLExpression {
-  return <MTLExpression>expr.replace("==","=");
+export function convertWolframToMTL(expr: WolframExpression) : PlainTextMath {
+  return <PlainTextMath>expr.replace("==","=");
 }

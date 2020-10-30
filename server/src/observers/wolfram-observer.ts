@@ -22,7 +22,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 import debug1 from "debug";
 
 
-import { WolframExpression,MTLExpression, FormulaData, StyleObject } from "../shared/notebook";
+import { WolframExpression,PlainTextMath, FormulaData, StyleObject } from "../shared/notebook";
 import { isEmptyOrSpaces } from "../shared/math-tablet-api";
 
 import { AsyncRules, BaseObserver, StyleRelation, SyncRules } from "./base-observer";
@@ -89,11 +89,11 @@ export class WolframObserver extends BaseObserver {
 
   private convertWolframToFormulaRule(style: StyleObject): FormulaData|undefined {
     // TODO: Make this async, pass the string to WolframScript to normalize.
-    const wolframData: MTLExpression = style.data;
+    const wolframData: PlainTextMath = style.data;
     return { wolframData };
   }
 
-  private convertFormulaToWolframRule(style: StyleObject): MTLExpression|undefined {
+  private convertFormulaToWolframRule(style: StyleObject): PlainTextMath|undefined {
     const formulaData: FormulaData = style.data;
     // REVIEW: Convert single equal sign to double equal sign?
     return formulaData.wolframData;
@@ -102,7 +102,7 @@ export class WolframObserver extends BaseObserver {
   // One problem here is that we are not rewriting the single equal, which is the "math-tablet input" language,
   // to the double equal, which is essentially the wolfram language (thought not a one-to-one correspondence.)
   private async evaluateWolframExprRule(style: StyleObject) : Promise<WolframExpression|undefined> {
-    const expr: MTLExpression = style.data;
+    const expr: PlainTextMath = style.data;
     // REVIEW: If evaluation fails?
     debug(`Evaluating: "${expr}".`);
     let rval: WolframExpression|undefined;

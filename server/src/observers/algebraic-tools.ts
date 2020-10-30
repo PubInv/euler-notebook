@@ -25,7 +25,7 @@ const debug = debug1(`server:${MODULE}`);
 
 import { Html } from "../shared/common";
 import {
-  StyleType,NotebookChange, StyleObject, FormulaData, WolframExpression, MTLExpression
+  StyleType,NotebookChange, StyleObject, FormulaData, WolframExpression, PlainTextMath
 } from "../shared/notebook";
 import {
   ToolData, NotebookChangeRequest, StyleInsertRequest, StyleDeleteRequest, StylePropertiesWithSubprops,
@@ -121,7 +121,7 @@ export class AlgebraicToolsObserver implements ObserverInstance {
 
     debug("toolData.output", transformationData.output);
 
-    const formulaData: FormulaData = { wolframData: <MTLExpression>transformationData.output };
+    const formulaData: FormulaData = { wolframData: <PlainTextMath>transformationData.output };
     const styleProps: StylePropertiesWithSubprops = {
       id: toId,
       role: 'FORMULA',

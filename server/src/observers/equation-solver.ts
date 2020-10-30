@@ -25,7 +25,7 @@ const debug = debug1(`server:${MODULE}`);
 
 import { NotebookChange, StyleObject, RelationshipObject, StyleId,
          FormulaData, WolframExpression,
-         MTLExpression} from "../shared/notebook";
+         PlainTextMath} from "../shared/notebook";
 import { assert } from "../shared/common";
 import {
   ToolData, NotebookChangeRequest, StyleInsertRequest, StylePropertiesWithSubprops,
@@ -87,7 +87,7 @@ export class EquationSolverObserver implements ObserverInstance {
     //   relationsTo,
     // };
     debug("npv.value",nvp.value);
-    const wolframData = <MTLExpression>(nvp.name + ' = ' + nvp.value);
+    const wolframData = <PlainTextMath>(nvp.name + ' = ' + nvp.value);
     const formulaData: FormulaData = { wolframData };
     const styleProps: StylePropertiesWithSubprops = {
       role: 'FORMULA',
