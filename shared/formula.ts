@@ -21,6 +21,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 import { StylusInput } from "./stylus";
 import { CellData, CellType, InputType } from "./cell";
+import { SvgMarkup } from "./common";
 
 // Types
 
@@ -33,12 +34,13 @@ interface FormulaCellDataBase extends CellData {
   type: CellType.Formula,
   plainTextMath: PlainTextMath;
 }
-interface FormulaCellKeyboardData extends FormulaCellDataBase {
+export interface FormulaCellKeyboardData extends FormulaCellDataBase {
   inputType: InputType.Keyboard,
 }
-interface FormulaCellStylusData extends FormulaCellDataBase {
+export interface FormulaCellStylusData extends FormulaCellDataBase {
   inputType: InputType.Stylus,
   stylusInput: StylusInput,
+  stylusSvg: SvgMarkup,
 }
 interface FormulaCellNoInputData extends FormulaCellDataBase {
   inputType: InputType.None,

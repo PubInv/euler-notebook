@@ -22,7 +22,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 import * as debug1 from "debug";
 const debug = debug1('client:figure-cell');
 
-import { CssClass, CssLength, assert, assertFalse } from "../../../../shared/common";
+import { CssClass, CssLength, assertFalse } from "../../../../shared/common";
 import { StrokeData } from "../../../../shared/stylus";
 import { StyleObject, NotebookChange } from "../../../../shared/notebook";
 import { StyleChangeRequest } from "../../../../shared/math-tablet-api";
@@ -32,7 +32,7 @@ import { StrokePanel } from "../../../../components/stroke-panel";
 
 import { Content as CellContainer } from "../index";
 
-import { CellBase, isDisplaySvgStyle, isInputStyle, isStrokeSvgStyle } from "./cell-base";
+import { CellBase } from "./cell-base";
 import { notebookChangeSynopsis } from "../../../../shared/debug-synopsis";
 
 // Types
@@ -45,19 +45,14 @@ export class FigureCell extends CellBase {
 
   // Public Constructor
 
-  public constructor(container: CellContainer, rootStyle: StyleObject) {
+  public constructor(container: CellContainer, style: StyleObject) {
 
     const contentSpec: HtmlElementSpecification<'div'> = {
       tag: 'div',
       classes: [ <CssClass>'content', <CssClass>'figureCell' ],
     };
-    super(container, rootStyle, contentSpec);
-
-    const notebook = container.screen.notebook;
-    const inputStyle = notebook.findStyle({ role: 'INPUT' }, rootStyle.id);
-    if (inputStyle) {
-      this.createStrokePanel(inputStyle);
-    }
+    super(container, style, contentSpec);
+    this.createInputPanel(style);
   }
 
   // Public Instance Methods
@@ -76,19 +71,12 @@ export class FigureCell extends CellBase {
         break;
       }
       case 'styleInserted': {
-        if (isInputStyle(change.style, this.styleId)) {
-          this.createStrokePanel(change.style);
-        } else if (isStrokeSvgStyle(change.style, this.styleId, this.container.screen.notebook)) {
-          this.strokePanel!.updateSvgMarkup(change.style.data);
-        } else {
-          // Ignore. Not something that affects our display.
-        }
+        // Ignore. Not something that affects our display.
         break;
       }
       case 'styleChanged': {
-        if (isInputStyle(change.style, this.styleId)) {
+        if (change.style.id == this.styleId) {
           this.strokePanel!.updateStrokeData(change.style.data);
-        } else if (isStrokeSvgStyle(change.style, this.styleId, this.container.screen.notebook)) {
           this.strokePanel!.updateSvgMarkup(change.style.data);
         } else {
           // Ignore. Not something that affects our display.
@@ -98,10 +86,7 @@ export class FigureCell extends CellBase {
       case 'styleConverted': {
         // Currently the styles that we use to update our display are never converted, so we
         // do not handle that case.
-        const style = this.container.screen.notebook.getStyle(change.styleId);
-        assert(!isDisplaySvgStyle(style, this.styleId));
-        assert(!isInputStyle(style, this.styleId));
-        assert(!isStrokeSvgStyle(style, this.styleId, this.container.screen.notebook));
+        assertFalse();
         break;
       }
       case 'styleDeleted':
@@ -125,7 +110,7 @@ export class FigureCell extends CellBase {
 
   // Private Instance Methods
 
-  private createStrokePanel(inputStyle: StyleObject): void {
+  private createInputPanel(inputStyle: StyleObject): void {
     const svgRepStyle = this.container.screen.notebook.findStyle({ role: 'REPRESENTATION', type: 'SVG-MARKUP' }, inputStyle.id);
     this.strokePanel = new StrokePanel(
       inputStyle.data,

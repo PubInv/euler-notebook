@@ -48,6 +48,8 @@ export enum InputType {
 
 export interface FigureCellData extends CellData {
   type: CellType.Figure,
+  inputType: InputType.Stylus,
+  stylusInput: StylusInput,
 }
 
 export interface PlotCellData extends CellData {

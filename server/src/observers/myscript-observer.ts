@@ -21,15 +21,12 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 import * as debug1 from "debug";
 
-import { StrokeData } from "../shared/stylus";
-import { StyleObject } from "../shared/notebook";
-import { TexExpression } from "../shared/math-tablet-api";
 
 import { Config } from "../config";
-import { ServerKeys, postLatexRequest } from "../adapters/myscript";
+import { ServerKeys } from "../adapters/myscript";
 import { ServerNotebook }  from "../server-notebook";
 
-import { AsyncRules, BaseObserver, StyleRelation, SyncRules } from "./base-observer";
+import { AsyncRules, BaseObserver, SyncRules } from "./base-observer";
 
 const MODULE = __filename.split(/[/\\]/).slice(-1)[0].slice(0,-3);
 const debug = debug1(`server:${MODULE}`);
@@ -49,7 +46,6 @@ export class MyScriptObserver extends BaseObserver {
 
   public static async initialize(_config: Config, keys: ServerKeys): Promise<void> {
     debug(`Initialize: ${keys.applicationKey}/${keys.hmacKey}`);
-    this.keys = keys;
 }
 
   public static async onOpen(notebook: ServerNotebook): Promise<MyScriptObserver> {
@@ -62,33 +58,30 @@ export class MyScriptObserver extends BaseObserver {
   // Private Class Constants
 
   private static ASYNC_RULES: AsyncRules = [
-    {
-      // TODO: Only recognize input on "formula" ink cells.
-      name: "convertStrokesToTexRule",
-      styleTest: { role: 'INPUT', type: 'STROKE-DATA' },
-      styleRelation: StyleRelation.PeerToPeer,
-      props: { role: 'REPRESENTATION', type: 'TEX-EXPRESSION' },
-      compute: MyScriptObserver.prototype.convertStrokesToTexRule,
-    },
+    // {
+    //   // TODO: Only recognize input on "formula" ink cells.
+    //   name: "convertStrokesToTexRule",
+    //   styleTest: { role: 'INPUT', type: 'STROKE-DATA' },
+    //   styleRelation: StyleRelation.PeerToPeer,
+    //   props: { role: 'REPRESENTATION', type: 'TEX-EXPRESSION' },
+    //   compute: MyScriptObserver.prototype.convertStrokesToTexRule,
+    // },
   ];
 
   private static SYNC_RULES: SyncRules = [];
 
-  // Private Class Properties
-
-  private static keys: ServerKeys;
 
   // Private Instance Methods
 
-  private async convertStrokesToTexRule(style: StyleObject): Promise<TexExpression> {
-    // TODO: Prevent multiple calls to MyScript at the same time. "serialze" flag on rule?
-    // TODO: Gather up multiple changes that occur with a series of strokes, rather than stroke by stroke.
-    debug("Converting strokes to TexExpression");
-    const data: StrokeData = style.data;
-    const rval = await postLatexRequest(MyScriptObserver.keys, data.strokeGroups);
-    debug(`Recognized TeX: ${rval}`);
-    return rval;
-  }
+  // private async convertStrokesToTexRule(style: StyleObject): Promise<TexExpression> {
+  //   // TODO: Prevent multiple calls to MyScript at the same time. "serialze" flag on rule?
+  //   // TODO: Gather up multiple changes that occur with a series of strokes, rather than stroke by stroke.
+  //   debug("Converting strokes to TexExpression");
+  //   const data: StrokeData = style.data;
+  //   const rval = await postLatexRequest(MyScriptObserver.keys, data.strokeGroups);
+  //   debug(`Recognized TeX: ${rval}`);
+  //   return rval;
+  // }
 
   // Private Constructor
 

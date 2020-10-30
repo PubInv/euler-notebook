@@ -33,7 +33,7 @@ import { StrokePanel } from "../../../../components/stroke-panel";
 
 import { Content as CellContainer } from "../index";
 
-import { CellBase, isDisplaySvgStyle, isInputStyle, isStrokeSvgStyle } from "./cell-base";
+import { CellBase, isDisplaySvgStyle } from "./cell-base";
 import { notebookChangeSynopsis, styleSynopsis } from "../../../../shared/debug-synopsis";
 
 // Types
@@ -65,11 +65,8 @@ export class TextCell extends CellBase {
       this.$content.prepend(this.$displayPanel);
     }
 
-    const inputStyle = notebook.findStyle({ role: 'INPUT' }, style.id);
-    if (inputStyle) {
-      this.$inputPanel = this.createInputPanel(inputStyle);
-      this.$content.append(this.$inputPanel);
-    }
+    this.$inputPanel = this.createInputPanel(style);
+    this.$content.append(this.$inputPanel);
   }
 
   // ClientNotebookWatcher Methods
@@ -87,9 +84,6 @@ export class TextCell extends CellBase {
         if (isDisplaySvgStyle(change.style, this.styleId)) {
           this.$displayPanel = this.createDisplayPanel(change.style);
           this.$content.prepend(this.$displayPanel);
-        } else if (isInputStyle(change.style, this.styleId)) {
-          this.$inputPanel = this.createInputPanel(change.style);
-          this.$content.append(this.$inputPanel);
         } else {
           // Ignore. Not something we are interested in.
         }
@@ -98,9 +92,8 @@ export class TextCell extends CellBase {
       case 'styleChanged': {
         if (isDisplaySvgStyle(change.style, this.styleId)) {
           this.updateDisplayPanel(change.style);
-        } else if (isInputStyle(change.style, this.styleId)) {
+        } else if (change.style.id == this.styleId) {
           this.updateInputPanelData(change.style);
-        } else if (isStrokeSvgStyle(change.style, this.styleId, this.container.screen.notebook)) {
           this.updateInputPanelDrawing(change.style);
         } else {
           // Ignore. Not something that affects our display.
@@ -108,12 +101,7 @@ export class TextCell extends CellBase {
         break;
       }
       case 'styleConverted': {
-        // Currently the styles that we use to update our display are never converted, so we
-        // do not handle that case.
-        const style = this.container.screen.notebook.getStyle(change.styleId);
-        assert(!isDisplaySvgStyle(style, this.styleId));
-        assert(!isInputStyle(style, this.styleId));
-        assert(!isStrokeSvgStyle(style, this.styleId, this.container.screen.notebook));
+        assertFalse();
         break;
       }
       case 'styleDeleted': {
@@ -121,8 +109,6 @@ export class TextCell extends CellBase {
         // so we can ignore styleDeleted messages.
         if (isDisplaySvgStyle(change.style, this.styleId)) {
           this.removeDisplayPanel();
-        } else if (isInputStyle(change.style, this.styleId)) {
-          this.removeInputPanel();
         } else {
           // Ignore. Not something we are interested in.
         }
@@ -190,11 +176,6 @@ private createKeyboardSubpanel(inputStyle: StyleObject): KeyboardPanel {
   private removeDisplayPanel(): void {
     this.$displayPanel!.remove();
     delete this.$displayPanel;
-  }
-
-  private removeInputPanel(): void {
-    this.$inputPanel!.remove();
-    delete this.$inputPanel;
   }
 
   private updateDisplayPanel(style: StyleObject): void {

@@ -25,7 +25,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 import * as debug1 from "debug";
 const debug = debug1('client:notebook-edit-screen-content');
 
-import { CssClass, assert, deepCopy, Html, assertFalse, notImplemented, CssLength, PlainText } from "../../../shared/common";
+import { CssClass, assert, deepCopy, Html, assertFalse, notImplemented, CssLength, PlainText, SvgMarkup } from "../../../shared/common";
 import { StylusInput } from "../../../shared/stylus";
 import { CellType, FigureCellData, InputType, TextCellData } from "../../../shared/cell";
 import { FormulaCellData, PlainTextMath } from "../../../shared/formula";
@@ -211,14 +211,11 @@ export class Content extends HtmlElement<'div'>{
 
     const data: FigureCellData = {
       type: CellType.Figure,
+      inputType: InputType.Stylus,
       height: 72, // points
+      stylusInput: deepCopy(EMPTY_STYLUS_INPUT),
     }
-    const styleProps: StylePropertiesWithSubprops = {
-      role: 'FIGURE', subrole: 'OTHER', type: 'NONE', data,
-      subprops: [
-        { role: 'INPUT', type: 'STROKE-DATA', data: deepCopy(EMPTY_STYLUS_INPUT) }
-      ]
-    };
+    const styleProps: StylePropertiesWithSubprops = { role: 'FIGURE', subrole: 'OTHER', type: 'NONE', data };
     const changeRequest: StyleInsertRequest = { type: 'insertStyle', afterId, styleProps };
     /* const undoChangeRequest = */ await this.sendUndoableChangeRequest(changeRequest);
     // const styleId = (<StyleDeleteRequest>undoChangeRequest).styleId
@@ -235,31 +232,23 @@ export class Content extends HtmlElement<'div'>{
     }
 
     const inputMode = userSettingsInstance.defaultInputMode;
-    const inputStyle: StylePropertiesWithSubprops = (inputMode=='keyboard' ?
-      { role: 'INPUT', type: userSettingsInstance.defaultMathKeyboardInputFormat, data: '' } :
-      { role: 'INPUT', type: 'STROKE-DATA', data: deepCopy(EMPTY_STYLUS_INPUT) });
-
     const data: FormulaCellData = (inputMode=='keyboard' ?
       {
         type: CellType.Formula,
         inputType: InputType.Keyboard,
         height: 72, // points
-        plainTextMath: <PlainTextMath>'' ,
+        plainTextMath: <PlainTextMath>'',
       } :
       {
         type: CellType.Formula,
         inputType: InputType.Stylus,
         height: 72, // points
-        plainTextMath: <PlainTextMath>'' ,
+        plainTextMath: <PlainTextMath>'',
         stylusInput: deepCopy(EMPTY_STYLUS_INPUT),
+        stylusSvg: <SvgMarkup>'',
       }
     );
-    const styleProps: StylePropertiesWithSubprops = {
-      role: 'FORMULA',
-      type: 'FORMULA-DATA',
-      data,
-      subprops: [ inputStyle ],
-    };
+    const styleProps: StylePropertiesWithSubprops = { role: 'FORMULA', type: 'FORMULA-DATA', data };
 
     // Insert top-level style and wait for it to be inserted.
     const changeRequest: StyleInsertRequest = { type: 'insertStyle', afterId, styleProps };
@@ -280,10 +269,6 @@ export class Content extends HtmlElement<'div'>{
     }
 
     const inputMode = userSettingsInstance.defaultInputMode;
-    const inputStyle: StylePropertiesWithSubprops = (inputMode=='keyboard' ?
-      { role: 'INPUT', type: userSettingsInstance.defaultTextKeyboardInputFormat, data: '' } :
-      { role: 'INPUT', type: 'STROKE-DATA', data: deepCopy(EMPTY_STYLUS_INPUT) });
-
     const data: TextCellData = (inputMode=='keyboard' ?
       {
         type: CellType.Text,
@@ -299,12 +284,7 @@ export class Content extends HtmlElement<'div'>{
         stylusInput: deepCopy(EMPTY_STYLUS_INPUT),
       }
     );
-    const styleProps: StylePropertiesWithSubprops = {
-      role: 'TEXT',
-      type: 'NONE',
-      data,
-      subprops: [ inputStyle ],
-    };
+    const styleProps: StylePropertiesWithSubprops = { role: 'TEXT', type: 'NONE', data };
 
     // Insert top-level style and wait for it to be inserted.
     const changeRequest: StyleInsertRequest = { type: 'insertStyle', afterId, styleProps };

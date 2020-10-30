@@ -36,7 +36,6 @@ import { reportError } from "../../../../error-handler";
 import { assert, Html } from "../../../../shared/common";
 import { ResizerBar } from "../../../../components/resizer-bar";
 import { StyleMoveRequest } from "../../../../shared/math-tablet-api";
-import { ClientNotebook } from "../../../../client-notebook";
 
 // Types
 
@@ -303,19 +302,6 @@ export abstract class CellBase extends HtmlElement<'div'>{
 
 export function isDisplaySvgStyle(style: StyleObject, parentId: StyleId): boolean {
   return style.role == 'REPRESENTATION' && style.type == 'SVG-MARKUP' && style.parentId == parentId;
-}
-
-export function isInputStyle(style: StyleObject, parentId: StyleId): boolean {
-  return style.role == 'INPUT' && style.parentId == parentId;
-}
-
-export function isStrokeSvgStyle(style: StyleObject, parentId: StyleId, notebook: ClientNotebook): boolean {
-  let rval = false;
-  if (style.role == 'REPRESENTATION' && style.type == 'SVG-MARKUP' && style.parentId != parentId) {
-    const parentStyle = notebook.getStyle(style.parentId);
-    rval = (parentStyle.role == 'INPUT' && parentStyle.type == 'STROKE-DATA' && parentStyle.parentId == parentId);
-  }
-  return rval;
 }
 
 // HELPER FUNCTIONS

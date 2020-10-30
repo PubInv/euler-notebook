@@ -21,13 +21,11 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 import debug1 from "debug";
 
-import { CssClass, PlainText, SvgMarkup, escapeHtml, stackTrace } from "../shared/common";
-import { Stroke, StrokeData } from "../shared/stylus";
+import { CssClass, SvgMarkup } from "../shared/common";
 import { StyleObject } from "../shared/notebook";
 import { TexExpression } from "../shared/math-tablet-api";
 
 import { convertTexToSvg } from "../adapters/mathjax";
-import { logWarning } from "../error-handler";
 import { ServerNotebook } from "../server-notebook";
 
 import { AsyncRules, BaseObserver, StyleRelation, SyncRules } from "./base-observer";
@@ -60,21 +58,21 @@ export class SystemObserver extends BaseObserver {
   private static ASYNC_RULES: AsyncRules = [];
 
   private static SYNC_RULES: SyncRules = [
-    {
-      debug: true,
-      name: "convertStrokesToSvgRule",
-      styleTest: { role: 'INPUT', type: 'STROKE-DATA' },
-      styleRelation: StyleRelation.ParentToChild,
-      props: { role: 'REPRESENTATION', type: 'SVG-MARKUP' },
-      compute: SystemObserver.prototype.convertStrokesToSvgRule,
-    },
-    {
-      name: "convertPlainTextToSvgRule",
-      styleTest: { role: 'INPUT', type: 'PLAIN-TEXT' },
-      styleRelation: StyleRelation.PeerToPeer,
-      props: { role: 'REPRESENTATION', type: 'SVG-MARKUP' },
-      compute: SystemObserver.prototype.convertPlainTextToSvgRule,
-    },
+    // {
+    //   debug: true,
+    //   name: "convertStrokesToSvgRule",
+    //   styleTest: { role: 'INPUT', type: 'STROKE-DATA' },
+    //   styleRelation: StyleRelation.ParentToChild,
+    //   props: { role: 'REPRESENTATION', type: 'SVG-MARKUP' },
+    //   compute: SystemObserver.prototype.convertStrokesToSvgRule,
+    // },
+    // {
+    //   name: "convertPlainTextToSvgRule",
+    //   styleTest: { role: 'INPUT', type: 'PLAIN-TEXT' },
+    //   styleRelation: StyleRelation.PeerToPeer,
+    //   props: { role: 'REPRESENTATION', type: 'SVG-MARKUP' },
+    //   compute: SystemObserver.prototype.convertPlainTextToSvgRule,
+    // },
     {
       // REVIEW: Move this to TeX observer?
       name: "convertTexToSvgRule",
@@ -87,30 +85,30 @@ export class SystemObserver extends BaseObserver {
 
   // Private Instance Methods
 
-  private convertPlainTextToSvgRule(style: StyleObject): SvgMarkup {
-    // TODO: Proper font
-    // TODO: Wrap text
-    // TODO: Line breaks matching those put into the input textarea
-    const text: PlainText = style.data;
-    debug(`convertPlainTextToSvgRule on: "${text.length>30 ? `${text.slice(0,30)}...`: text}".`);
-    return <SvgMarkup>`<svg class="displayPanel" height="1in" width="6.5in" fill="none" stroke="black"><text x="20" y="20">${escapeHtml(text)}</text></svg>`;
-  }
+  // private convertPlainTextToSvgRule(style: StyleObject): SvgMarkup {
+  //   // TODO: Proper font
+  //   // TODO: Wrap text
+  //   // TODO: Line breaks matching those put into the input textarea
+  //   const text: PlainText = style.data;
+  //   debug(`convertPlainTextToSvgRule on: "${text.length>30 ? `${text.slice(0,30)}...`: text}".`);
+  //   return <SvgMarkup>`<svg class="displayPanel" height="1in" width="6.5in" fill="none" stroke="black"><text x="20" y="20">${escapeHtml(text)}</text></svg>`;
+  // }
 
-  private convertStrokesToSvgRule(style: StyleObject): SvgMarkup|undefined {
-    const data: StrokeData = style.data;
-    debug(`convertStrokesToSvgRule on ${JSON.stringify(data)}`);
-    console.log(stackTrace());
-    const paths: string[] = [];
-    for (const strokeGroup of data.strokeGroups) {
-      for (const stroke of strokeGroup.strokes) {
-        const path = convertStrokeToPath(stroke);
-        paths.push(path);
-      }
-    }
-    const svgMarkup = <SvgMarkup>`<svg class="svgPanel" height="${data.size.height}" width="${data.size.width}" fill="none" stroke="black">${paths.join('')}</svg>`;
-    debug(`convertDrawingToSvgRule returns '${svgMarkup}'`);
-    return svgMarkup;
-  }
+  // private convertStrokesToSvgRule(style: StyleObject): SvgMarkup|undefined {
+  //   const data: StrokeData = style.data;
+  //   debug(`convertStrokesToSvgRule on ${JSON.stringify(data)}`);
+  //   console.log(stackTrace());
+  //   const paths: string[] = [];
+  //   for (const strokeGroup of data.strokeGroups) {
+  //     for (const stroke of strokeGroup.strokes) {
+  //       const path = convertStrokeToPath(stroke);
+  //       paths.push(path);
+  //     }
+  //   }
+  //   const svgMarkup = <SvgMarkup>`<svg class="svgPanel" height="${data.size.height}" width="${data.size.width}" fill="none" stroke="black">${paths.join('')}</svg>`;
+  //   debug(`convertDrawingToSvgRule returns '${svgMarkup}'`);
+  //   return svgMarkup;
+  // }
 
   private convertTexToSvgRule(style: StyleObject): SvgMarkup {
     const tex: TexExpression = style.data;
@@ -127,14 +125,14 @@ export class SystemObserver extends BaseObserver {
 
 // HELPER FUNCTIONS
 
-function convertStrokeToPath(stroke: Stroke): string {
-  if (stroke.x.length<2) {
-    logWarning(MODULE, `Have a stroke with too few data points: ${stroke.x.length}`)
-    return "";
-  }
-  let dAttribute = `M${stroke.x[0]} ${stroke.y[0]}`;
-  for (let i=1; i<stroke.x.length; i++) {
-    dAttribute += ` L${stroke.x[i]} ${stroke.y[i]}`
-  }
-  return `<path d="${dAttribute}"></path>`;
-}
+// function convertStrokeToPath(stroke: Stroke): string {
+//   if (stroke.x.length<2) {
+//     logWarning(MODULE, `Have a stroke with too few data points: ${stroke.x.length}`)
+//     return "";
+//   }
+//   let dAttribute = `M${stroke.x[0]} ${stroke.y[0]}`;
+//   for (let i=1; i<stroke.x.length; i++) {
+//     dAttribute += ` L${stroke.x[i]} ${stroke.y[i]}`
+//   }
+//   return `<path d="${dAttribute}"></path>`;
+// }

@@ -31,7 +31,6 @@ import {
   convertMTLToWolfram,
   execute } from "../adapters/wolframscript";
 import { ServerNotebook } from "../server-notebook";
-import { CellType, InputType } from "../shared/cell";
 
 const MODULE = __filename.split(/[/\\]/).slice(-1)[0].slice(0,-3);
 const debug = debug1(`server:${MODULE}`);
@@ -70,14 +69,14 @@ export class WolframObserver extends BaseObserver {
   ];
 
   private static SYNC_RULES: SyncRules = [
-    {
-      name: "convertWolframToFormulaRule",
-      styleRelation: StyleRelation.ChildToParent,
-      styleTest: { role: 'INPUT', source: 'USER', type: 'WOLFRAM-EXPRESSION' },
-      // REVIEW: Are props necessary in ChildToParent relations? Validate that parent has expected props?
-      props: { role: 'FORMULA', type: 'FORMULA-DATA' },
-      compute: WolframObserver.prototype.convertWolframToFormulaRule,
-    },
+    // {
+    //   name: "convertWolframToFormulaRule",
+    //   styleRelation: StyleRelation.ChildToParent,
+    //   styleTest: { role: 'INPUT', source: 'USER', type: 'WOLFRAM-EXPRESSION' },
+    //   // REVIEW: Are props necessary in ChildToParent relations? Validate that parent has expected props?
+    //   props: { role: 'FORMULA', type: 'FORMULA-DATA' },
+    //   compute: WolframObserver.prototype.convertWolframToFormulaRule,
+    // },
     {
       name: "convertFormulaToWolframRule",
       styleRelation: StyleRelation.ParentToChild,
@@ -89,16 +88,16 @@ export class WolframObserver extends BaseObserver {
 
   // Private Instance Methods
 
-  private convertWolframToFormulaRule(style: StyleObject): FormulaCellData|undefined {
-    // TODO: Make this async, pass the string to WolframScript to normalize.
-    const wolframData: PlainTextMath = style.data;
-    return {
-      type: CellType.Formula,
-      inputType: InputType.None,
-      height: 72, // points
-      plainTextMath: wolframData,
-    };
-  }
+  // private convertWolframToFormulaRule(style: StyleObject): FormulaCellData|undefined {
+  //   // TODO: Make this async, pass the string to WolframScript to normalize.
+  //   const wolframData: PlainTextMath = style.data;
+  //   return {
+  //     type: CellType.Formula,
+  //     inputType: InputType.None,
+  //     height: 72, // points
+  //     plainTextMath: wolframData,
+  //   };
+  // }
 
   private convertFormulaToWolframRule(style: StyleObject): PlainTextMath|undefined {
     const formulaData: FormulaCellData = style.data;

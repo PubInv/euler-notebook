@@ -164,7 +164,6 @@ export interface RelationshipStyle {
 
 export type RelationshipStyleRole =
   'LEGACY' |      // Legacy compatibility. TODO: remove
-  'INPUT-FORMULA' |
   'OUTPUT-FORMULA' |
   'TRANSFORMATION-TOOL';
 
@@ -188,7 +187,6 @@ export const STYLE_ROLES = [
   'EVALUATION-ERROR',     // Error in CAS evaluation of an expression.
   'EXPOSITION',           // A longer discussion or description.
   'HANDWRITING',          // REVIEW: Used? Deprecate? Stroke information for the user's handwriting.
-  'INPUT',                // Holds the original user input.
   'QUADRATIC',            // DEPRECATED: A quadratic expression, presumably worth plotting.
   'SIMPLIFICATION',       // CAS simplification of expression or equation.
   'EQUATION',             // An equation
