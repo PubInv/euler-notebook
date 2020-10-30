@@ -40,7 +40,7 @@ import { execute,
          convertMTLToTeX
        } from "../adapters/wolframscript";
 import { Config } from "../config";
-import { CellType } from "../shared/cell";
+import { CellType, InputType } from "../shared/cell";
 
 // Types
 
@@ -113,6 +113,7 @@ export class AlgebraicToolsObserver implements ObserverInstance {
 
     const formulaData: FormulaCellData = {
       type: CellType.Formula,
+      inputType: InputType.None,
       height: 72, // points
       plainTextMath: <PlainTextMath>transformationData.output,
     };

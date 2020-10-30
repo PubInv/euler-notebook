@@ -19,7 +19,8 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 // Requirements
 
-import { CellData, CellType } from "./cell";
+import { StylusInput } from "./stylus";
+import { CellData, CellType, InputType } from "./cell";
 
 // Types
 
@@ -28,7 +29,18 @@ import { CellData, CellType } from "./cell";
 // except that we convert single equals to double equals.
 export type PlainTextMath = '{PlainTextMath}';
 
-export interface FormulaCellData extends CellData /* TEMPORARILY */{
+interface FormulaCellDataBase extends CellData {
   type: CellType.Formula,
   plainTextMath: PlainTextMath;
 }
+interface FormulaCellKeyboardData extends FormulaCellDataBase {
+  inputType: InputType.Keyboard,
+}
+interface FormulaCellStylusData extends FormulaCellDataBase {
+  inputType: InputType.Stylus,
+  stylusInput: StylusInput,
+}
+interface FormulaCellNoInputData extends FormulaCellDataBase {
+  inputType: InputType.None,
+}
+export type FormulaCellData = FormulaCellKeyboardData | FormulaCellStylusData | FormulaCellNoInputData;

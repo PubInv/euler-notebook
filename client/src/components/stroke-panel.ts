@@ -23,7 +23,7 @@ import * as debug1 from "debug";
 const debug = debug1('client:stroke-panel');
 
 import { CssClass, CssLength, SvgMarkup, assert, deepCopy } from "../shared/common";
-import { StrokeData } from "../shared/notebook";
+import { StrokeData } from "../shared/stylus";
 
 import { $outerSvg, $newSvg, $svg } from "../dom";
 

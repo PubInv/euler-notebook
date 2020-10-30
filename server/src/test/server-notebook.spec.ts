@@ -34,7 +34,7 @@ import { ServerNotebook, ObserverInstance }  from "../server-notebook";
 import { Config } from "../config";
 
 import { ensureGlobalLoaded } from "./global";
-import { CellType } from "../shared/cell";
+import { CellType, InputType } from "../shared/cell";
 ensureGlobalLoaded();
 
 // Test Observer Class
@@ -101,6 +101,7 @@ describe("server notebook", function() {
       const callCountSync = onChangesSyncSpy.callCount;
       const data: FormulaCellData = {
         type: CellType.Formula,
+        inputType: InputType.None,
         height: 72, // points
           plainTextMath: <PlainTextMath>"",
       };
@@ -134,6 +135,7 @@ describe("server notebook", function() {
       const toolData: ToolData = { name: 'test-tool', html: <Html>"Check Equivalences", data: "tool-data" };
       const formulaData: FormulaCellData = {
         type: CellType.Formula,
+        inputType: InputType.None,
         height: 72, // points
         plainTextMath: <PlainTextMath>'',
       };

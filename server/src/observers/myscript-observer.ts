@@ -21,7 +21,8 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 import * as debug1 from "debug";
 
-import { StrokeData, StyleObject } from "../shared/notebook";
+import { StrokeData } from "../shared/stylus";
+import { StyleObject } from "../shared/notebook";
 import { TexExpression } from "../shared/math-tablet-api";
 
 import { Config } from "../config";

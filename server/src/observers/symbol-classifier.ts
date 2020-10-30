@@ -42,7 +42,7 @@ import {
 
 import { ServerNotebook, ObserverInstance } from "../server-notebook";
 import { Config } from "../config";
-import { CellType } from "../shared/cell";
+import { CellType, InputType } from "../shared/cell";
 
 export class SymbolClassifierObserver implements ObserverInstance {
 
@@ -92,6 +92,7 @@ export class SymbolClassifierObserver implements ObserverInstance {
     const wolframData = toolStyle.data.data.output;
     const formulaData: FormulaCellData = {
       type: CellType.Formula,
+      inputType: InputType.None,
       height: 72, // points
       plainTextMath: wolframData,
     };

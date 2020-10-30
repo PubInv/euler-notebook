@@ -34,7 +34,7 @@ import { StyleInsertRequest, TexExpression } from "../shared/math-tablet-api";
 import { ServerNotebook }  from "../server-notebook";
 
 import { ensureGlobalLoaded } from "./global";
-import { CellType } from "../shared/cell";
+import { CellType, InputType } from "../shared/cell";
 ensureGlobalLoaded();
 
 // Unit Tests
@@ -78,6 +78,7 @@ function generateInsertRequests(inputs: PlainTextMath[]) : StyleInsertRequest[] 
   for(const wolframData of inputs) {
     const formulaData: FormulaCellData = {
       type: CellType.Formula,
+      inputType: InputType.None,
       height: 72, // points
       plainTextMath: wolframData
     };

@@ -32,6 +32,11 @@ type StackTrace = '{StackTrace}';
 export type SvgMarkup = '{SvgMarkup}';
 export type Timestamp = number;     // Number of milliseconds since Jan 1, 1970 as returned by Date.now().
 
+export interface CssSize {
+  height: CssLength;
+  width: CssLength;
+}
+
 // REVIEW: This is also defined in server/common.ts.
 export interface PromiseResolver<T> {
   resolve: (s: T)=>void;

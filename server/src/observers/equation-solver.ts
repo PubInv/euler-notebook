@@ -36,7 +36,7 @@ import {
 import { ServerNotebook, ObserverInstance } from "../server-notebook";
 import { execute, convertWolframToTeX } from "../adapters/wolframscript";
 import { Config } from "../config";
-import { CellType } from "../shared/cell";
+import { CellType, InputType } from "../shared/cell";
 
 
 
@@ -93,6 +93,7 @@ export class EquationSolverObserver implements ObserverInstance {
     const wolframData = <PlainTextMath>(nvp.name + ' = ' + nvp.value);
     const formulaData: FormulaCellData = {
       type: CellType.Formula,
+      inputType: InputType.None,
       height: 72, // points
       plainTextMath: wolframData,
     };

@@ -20,16 +20,11 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 // Requirements
 
-import { CssLength, Html, assert, deepCopy, escapeHtml, ExpectedError } from "./common";
+import { CssLength, CssSize, Html, assert, deepCopy, escapeHtml, ExpectedError } from "./common";
 import { WatchedResource, Watcher } from "./watched-resource";
 import { NOTEBOOK_NAME_RE, NotebookName, NotebookPath } from "./folder";
 
 // Types
-
-export interface CssSize {
-  height: CssLength;
-  width: CssLength;
-}
 
 export interface FindRelationshipOptions {
   // NOTE: toId and fromId are mutually "or". The ids and all other fields are "and".
@@ -173,27 +168,6 @@ export type RelationshipStyleRole =
   'OUTPUT-FORMULA' |
   'TRANSFORMATION-TOOL';
 
-export interface Stroke {
-  // id?: string;
-  // p?: number[];
-  // pointerId?: number;
-  // pointerType?: 'PEN'|'TOUCH'|'ERASER';
-  // t?: number[];
-  x: number[];
-  y: number[];
-}
-
-export interface StrokeData {
-  size: CssSize;
-  strokeGroups: StrokeGroup[];
-}
-
-export interface StrokeGroup {
-  // penStyle?: string;
-  // penStyleClasses?: string;
-  strokes: Stroke[];
-}
-
 
 export type StyleId = number;
 
@@ -207,7 +181,6 @@ export const STYLE_ROLES = [
   'FORMULA',              // FormulaCellData
   'PLOT',                 // PlotCellData
   'TEXT',                 // TextCellData
-  'UNKNOWN',              // Type of the cell hasn't been determined.
 
   'ATTRIBUTE',            // Generic attribute. Meaning implied by type.
   'ERROR',                // An error message. Type should be text.
@@ -277,9 +250,6 @@ export const STYLE_SUBROLES = [
   'HEADING1',
   'HEADING2',
   'NORMAL',
-
-  // 'UNKNOWN' subroles
-  'UNKNOWN',
 ];
 export type StyleSubrole = typeof STYLE_SUBROLES[number];
 
@@ -300,7 +270,6 @@ export const STYLE_TYPES = [
   'TEX-EXPRESSION',  // LatexData: LaTeX string // TODO: rename 'TEX'
   'TOOL-DATA',       // ToolInfo: Tool that can be applied to the parent style.
   'WOLFRAM-EXPRESSION', // WolframExpression: Wolfram language expression
-  // 'UNKNOWN',       // Type is as-yet unknown. Data field should be 'null'.
 ] as const;
 export type StyleType = typeof STYLE_TYPES[number];
 

@@ -37,7 +37,7 @@ import {
 import { ServerNotebook }  from "../server-notebook";
 
 import { ensureGlobalLoaded } from "./global";
-import { CellType } from "../shared/cell";
+import { CellType, InputType } from "../shared/cell";
 ensureGlobalLoaded();
 
 // Types
@@ -628,6 +628,7 @@ function insertWolframFormulas(wolframDatas: PlainTextMath[]) : StyleInsertReque
   for(const wolframData of wolframDatas) {
     const data: FormulaCellData = {
       type: CellType.Formula,
+      inputType: InputType.None,
       height: 72, // points
       plainTextMath: wolframData,
     };

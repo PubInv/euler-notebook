@@ -23,7 +23,8 @@ import * as debug1 from "debug";
 const debug = debug1('client:figure-cell');
 
 import { CssClass, CssLength, assert, assertFalse } from "../../../../shared/common";
-import { StrokeData, StyleObject, NotebookChange } from "../../../../shared/notebook";
+import { StrokeData } from "../../../../shared/stylus";
+import { StyleObject, NotebookChange } from "../../../../shared/notebook";
 import { StyleChangeRequest } from "../../../../shared/math-tablet-api";
 
 import { $svg, HtmlElementSpecification } from "../../../../dom";

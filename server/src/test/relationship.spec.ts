@@ -32,7 +32,7 @@ import { StyleInsertRequest, StyleChangeRequest } from "../shared/math-tablet-ap
 import { ServerNotebook }  from "../server-notebook";
 
 import { ensureGlobalLoaded } from "./global";
-import { CellType } from "../shared/cell";
+import { CellType, InputType } from "../shared/cell";
 ensureGlobalLoaded();
 
 // Unit Tests
@@ -110,11 +110,12 @@ describe("test relationships", function() {
 
 // Helper Functions
 // TODO: This should probably be extended to respect the MTLExpression type
-function wolframFormulaInsertRequest(wolframData: PlainTextMath): StyleInsertRequest {
+function wolframFormulaInsertRequest(plainTextMath: PlainTextMath): StyleInsertRequest {
   const data: FormulaCellData = {
     type: CellType.Formula,
+    inputType: InputType.None,
     height: 72, // points
-  plainTextMath: wolframData,
+  plainTextMath,
   };
   const request: StyleInsertRequest = {
     type: 'insertStyle',

@@ -25,7 +25,8 @@ import * as debug1 from "debug";
 const debug = debug1('client:formula-cell');
 
 import { CssClass, Html, assertFalse, assert } from "../../../../shared/common";
-import { StyleObject, NotebookChange, StrokeData, StyleSubrole } from "../../../../shared/notebook";
+import { StrokeData } from "../../../../shared/stylus";
+import { StyleObject, NotebookChange, StyleSubrole } from "../../../../shared/notebook";
 
 import { $new, $outerSvg } from "../../../../dom";
 import { Content as CellContainer } from "..";
@@ -42,7 +43,6 @@ import { notebookChangeSynopsis } from "../../../../shared/debug-synopsis";
 
 const FORMULA_SUBROLE_PREFIX = new Map<StyleSubrole,Html>([
   // IMPORTANT: Keep in sync with FORMULA_SUBROLE_OPTIONS
-  [ 'UNKNOWN', <Html>"<i>Unknown</i>&nbsp;" ],
   [ 'ASSUME', <Html>"<i>Assume</i>&nbsp;" ],
   [ 'DEFINITION', <Html>"<i>Definition</i>&nbsp;" ],
   [ 'PROVE', <Html>"<i>Prove </i>&nbsp;" ],

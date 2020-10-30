@@ -22,7 +22,8 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 import debug1 from "debug";
 
 import { CssClass, PlainText, SvgMarkup, escapeHtml, stackTrace } from "../shared/common";
-import { Stroke, StrokeData, StyleObject } from "../shared/notebook";
+import { Stroke, StrokeData } from "../shared/stylus";
+import { StyleObject } from "../shared/notebook";
 import { TexExpression } from "../shared/math-tablet-api";
 
 import { convertTexToSvg } from "../adapters/mathjax";

@@ -29,7 +29,7 @@ import { ServerNotebook } from "../server-notebook";
 import { convertTeXtoWolfram, convertWolframToTeX, convertMTLToWolfram, convertWolframToMTL } from "../adapters/wolframscript";
 
 import { AsyncRules, BaseObserver, StyleRelation, SyncRules } from "./base-observer";
-import { CellType } from "../shared/cell";
+import { CellType, InputType } from "../shared/cell";
 
 const MODULE = __filename.split(/[/\\]/).slice(-1)[0].slice(0,-3);
 const debug = debug1(`server:${MODULE}`);
@@ -84,6 +84,7 @@ export class TexObserver extends BaseObserver {
     const wolframData = convertWolframToMTL(await convertTeXtoWolfram(data));
     return {
       type: CellType.Formula,
+      inputType: InputType.None,
       height: 72, // points
       plainTextMath: wolframData,
     };

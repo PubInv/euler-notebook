@@ -26,10 +26,11 @@ import * as debug1 from "debug";
 const debug = debug1('client:notebook-edit-screen-content');
 
 import { CssClass, assert, deepCopy, Html, assertFalse, notImplemented, CssLength, PlainText } from "../../../shared/common";
-import { CellType, FigureCellData, TextCellData } from "../../../shared/cell";
+import { StylusInput } from "../../../shared/stylus";
+import { CellType, FigureCellData, InputType, TextCellData } from "../../../shared/cell";
 import { FormulaCellData, PlainTextMath } from "../../../shared/formula";
 import {
-  StrokeData, StyleId, StyleObject, NotebookChange, StyleRelativePosition, StylePosition,
+  StyleId, StyleObject, NotebookChange, StyleRelativePosition, StylePosition,
 } from "../../../shared/notebook";
 import {
   DebugParams, DebugResults, StyleDeleteRequest, StyleInsertRequest, StylePropertiesWithSubprops,
@@ -88,7 +89,7 @@ const KEY_MAP: [ KeyName, KeyMods, CommandName][] = [
 
 const KEY_BINDINGS = new Map<KeyCombo, CommandName>(KEY_MAP.map(([ keyName, keyMods, commandName])=>[ `${keyName}${keyMods}`, commandName ]));
 
-const EMPTY_STROKE_DATA: StrokeData = {
+const EMPTY_STYLUS_INPUT: StylusInput = {
   size: { height: <CssLength>'96px', width: <CssLength>'624px' }, // 1in x 6.5in = 96px
   strokeGroups: [
     { strokes: [] }
@@ -215,7 +216,7 @@ export class Content extends HtmlElement<'div'>{
     const styleProps: StylePropertiesWithSubprops = {
       role: 'FIGURE', subrole: 'OTHER', type: 'NONE', data,
       subprops: [
-        { role: 'INPUT', type: 'STROKE-DATA', data: deepCopy(EMPTY_STROKE_DATA) }
+        { role: 'INPUT', type: 'STROKE-DATA', data: deepCopy(EMPTY_STYLUS_INPUT) }
       ]
     };
     const changeRequest: StyleInsertRequest = { type: 'insertStyle', afterId, styleProps };
@@ -236,13 +237,23 @@ export class Content extends HtmlElement<'div'>{
     const inputMode = userSettingsInstance.defaultInputMode;
     const inputStyle: StylePropertiesWithSubprops = (inputMode=='keyboard' ?
       { role: 'INPUT', type: userSettingsInstance.defaultMathKeyboardInputFormat, data: '' } :
-      { role: 'INPUT', type: 'STROKE-DATA', data: deepCopy(EMPTY_STROKE_DATA) });
+      { role: 'INPUT', type: 'STROKE-DATA', data: deepCopy(EMPTY_STYLUS_INPUT) });
 
-    const data: FormulaCellData = {
-      type: CellType.Formula,
-      height: 72, // points
-      plainTextMath: <PlainTextMath>'' ,
-    };
+    const data: FormulaCellData = (inputMode=='keyboard' ?
+      {
+        type: CellType.Formula,
+        inputType: InputType.Keyboard,
+        height: 72, // points
+        plainTextMath: <PlainTextMath>'' ,
+      } :
+      {
+        type: CellType.Formula,
+        inputType: InputType.Stylus,
+        height: 72, // points
+        plainTextMath: <PlainTextMath>'' ,
+        stylusInput: deepCopy(EMPTY_STYLUS_INPUT),
+      }
+    );
     const styleProps: StylePropertiesWithSubprops = {
       role: 'FORMULA',
       type: 'FORMULA-DATA',
@@ -271,13 +282,23 @@ export class Content extends HtmlElement<'div'>{
     const inputMode = userSettingsInstance.defaultInputMode;
     const inputStyle: StylePropertiesWithSubprops = (inputMode=='keyboard' ?
       { role: 'INPUT', type: userSettingsInstance.defaultTextKeyboardInputFormat, data: '' } :
-      { role: 'INPUT', type: 'STROKE-DATA', data: deepCopy(EMPTY_STROKE_DATA) });
+      { role: 'INPUT', type: 'STROKE-DATA', data: deepCopy(EMPTY_STYLUS_INPUT) });
 
-    const data: TextCellData = {
-      type: CellType.Text,
-      height: 72, // points
-      plainText: <PlainText>'',
-    };
+    const data: TextCellData = (inputMode=='keyboard' ?
+      {
+        type: CellType.Text,
+        inputType: InputType.Keyboard,
+        height: 72, // points
+        plainText: <PlainText>'',
+      } :
+      {
+        type: CellType.Text,
+        inputType: InputType.Stylus,
+        height: 72, // points
+        plainText: <PlainText>'',
+        stylusInput: deepCopy(EMPTY_STYLUS_INPUT),
+      }
+    );
     const styleProps: StylePropertiesWithSubprops = {
       role: 'TEXT',
       type: 'NONE',

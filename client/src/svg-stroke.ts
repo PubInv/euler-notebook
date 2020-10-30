@@ -20,7 +20,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 // Requirements
 
 import { $newSvg } from "./dom";
-import { Stroke } from "./shared/notebook";
+import { Stroke } from "./shared/stylus";
 
 // Types
 

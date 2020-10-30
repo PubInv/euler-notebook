@@ -31,7 +31,7 @@ import {
   convertMTLToWolfram,
   execute } from "../adapters/wolframscript";
 import { ServerNotebook } from "../server-notebook";
-import { CellType } from "../shared/cell";
+import { CellType, InputType } from "../shared/cell";
 
 const MODULE = __filename.split(/[/\\]/).slice(-1)[0].slice(0,-3);
 const debug = debug1(`server:${MODULE}`);
@@ -94,6 +94,7 @@ export class WolframObserver extends BaseObserver {
     const wolframData: PlainTextMath = style.data;
     return {
       type: CellType.Formula,
+      inputType: InputType.None,
       height: 72, // points
       plainTextMath: wolframData,
     };

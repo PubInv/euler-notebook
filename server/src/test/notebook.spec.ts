@@ -32,7 +32,7 @@ import { ServerNotebook }  from "../server-notebook";
 
 import { ensureGlobalLoaded } from "./global";
 import { CssLength, PlainText } from "../shared/common";
-import { CellType, TextCellData } from "../shared/cell";
+import { CellType, InputType, TextCellData } from "../shared/cell";
 ensureGlobalLoaded();
 
 // Unit Tests
@@ -99,6 +99,7 @@ async function createNotebookFromText(type: StyleType, text: string): Promise<Se
   const changeRequests: NotebookChangeRequest[] = text.split(";").map(s=>{
     const data: TextCellData = {
       type: CellType.Text,
+      inputType: InputType.Keyboard,
       height: 72, // points
       plainText: <PlainText>s.trim()
     };

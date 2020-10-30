@@ -20,6 +20,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 // Requirements
 
 import { LengthInPoints, PlainText } from "./common";
+import { StylusInput } from "./stylus";
 import { StyleId } from "./notebook";
 
 // Types
@@ -36,6 +37,12 @@ export interface CellData {
   height: LengthInPoints;
 }
 
+export enum InputType {
+  None = 0,
+  Keyboard = 1,
+  Stylus = 2,
+}
+
 // HERE TEMPORARILY:
 // Move them into their own files when they become classes.
 
@@ -49,7 +56,15 @@ export interface PlotCellData extends CellData {
   // LATER: Identify the symbols used in the plot for each axis, etc.
 }
 
-export interface TextCellData extends CellData {
+interface TextCellDataBase extends CellData {
   type: CellType.Text,
   plainText: PlainText,
 }
+export interface TextCellKeyboardData extends TextCellDataBase {
+  inputType: InputType.Keyboard,
+}
+export interface TextCellStylusData extends TextCellDataBase {
+  inputType: InputType.Stylus,
+  stylusInput: StylusInput,
+}
+export type TextCellData = TextCellKeyboardData | TextCellStylusData;
