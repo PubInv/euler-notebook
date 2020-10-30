@@ -39,13 +39,17 @@ export interface CellData {
 // HERE TEMPORARILY:
 // Move them into their own files when they become classes.
 
+export interface FigureCellData extends CellData {
+  type: CellType.Figure,
+}
+
 export interface PlotCellData extends CellData {
   type: CellType.Plot,
   formulaStyleId: StyleId,
+  // LATER: Identify the symbols used in the plot for each axis, etc.
 }
 
 export interface TextCellData extends CellData {
   type: CellType.Text,
   plainText: PlainText,
-  // LATER: Identify the symbols used in the plot for each axis, etc.
 }

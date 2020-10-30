@@ -203,11 +203,10 @@ export interface StyleMap {
 
 export const STYLE_ROLES = [
   // Top level (cell) roles
-  'FIGURE',
+  'FIGURE',               // FigureCellData
   'FORMULA',              // FormulaCellData
   'PLOT',                 // PlotCellData
-  'TEXT',                 // TextCellData.
-  'FIGURE',               // Data is null.
+  'TEXT',                 // TextCellData
   'UNKNOWN',              // Type of the cell hasn't been determined.
 
   'ATTRIBUTE',            // Generic attribute. Meaning implied by type.
@@ -278,9 +277,6 @@ export const STYLE_SUBROLES = [
   'HEADING1',
   'HEADING2',
   'NORMAL',
-
-  // 'FIGURE' subroles
-  // 'OTHER'
 
   // 'UNKNOWN' subroles
   'UNKNOWN',

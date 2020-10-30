@@ -26,7 +26,7 @@ import * as debug1 from "debug";
 const debug = debug1('client:notebook-edit-screen-content');
 
 import { CssClass, assert, deepCopy, Html, assertFalse, notImplemented, CssLength, PlainText } from "../../../shared/common";
-import { CellType, TextCellData } from "../../../shared/cell";
+import { CellType, FigureCellData, TextCellData } from "../../../shared/cell";
 import { FormulaCellData, PlainTextMath } from "../../../shared/formula";
 import {
   StrokeData, StyleId, StyleObject, NotebookChange, StyleRelativePosition, StylePosition,
@@ -208,8 +208,12 @@ export class Content extends HtmlElement<'div'>{
       else { afterId = StylePosition.Bottom; }
     }
 
+    const data: FigureCellData = {
+      type: CellType.Figure,
+      height: 72, // points
+    }
     const styleProps: StylePropertiesWithSubprops = {
-      role: 'FIGURE', subrole: 'OTHER', type: 'NONE', data: null,
+      role: 'FIGURE', subrole: 'OTHER', type: 'NONE', data,
       subprops: [
         { role: 'INPUT', type: 'STROKE-DATA', data: deepCopy(EMPTY_STROKE_DATA) }
       ]
