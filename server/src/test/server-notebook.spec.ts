@@ -27,7 +27,7 @@ import 'mocha';
 import * as sinon from "sinon";
 
 import { Html } from "../shared/common";
-import { FormulaData, PlainTextMath } from "../shared/formula";
+import { FormulaCellData, PlainTextMath } from "../shared/formula";
 import { NotebookChange, StyleInserted, StyleObject } from "../shared/notebook";
 import { NotebookChangeRequest, StyleInsertRequest, StylePropertiesWithSubprops, ToolData } from "../shared/math-tablet-api";
 import { ServerNotebook, ObserverInstance }  from "../server-notebook";
@@ -99,7 +99,7 @@ describe("server notebook", function() {
     it("onChanges is called when style is inserted", async function(){
       const callCountAsync = onChangesAsyncSpy.callCount;
       const callCountSync = onChangesSyncSpy.callCount;
-      const data: FormulaData = {
+      const data: FormulaCellData = {
         type: CellType.Formula,
         height: 72, // points
           plainTextMath: <PlainTextMath>"",
@@ -132,7 +132,7 @@ describe("server notebook", function() {
 
       // Insert a top-level style with a tool style attached.
       const toolData: ToolData = { name: 'test-tool', html: <Html>"Check Equivalences", data: "tool-data" };
-      const formulaData: FormulaData = {
+      const formulaData: FormulaCellData = {
         type: CellType.Formula,
         height: 72, // points
         plainTextMath: <PlainTextMath>'',

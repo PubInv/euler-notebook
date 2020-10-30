@@ -31,7 +31,8 @@ import { NotebookChangeRequest, StyleInsertRequest, StylePropertiesWithSubprops 
 import { ServerNotebook }  from "../server-notebook";
 
 import { ensureGlobalLoaded } from "./global";
-import { CssLength } from "../shared/common";
+import { CssLength, PlainText } from "../shared/common";
+import { CellType, TextCellData } from "../shared/cell";
 ensureGlobalLoaded();
 
 // Unit Tests
@@ -96,7 +97,11 @@ describe("notebook", function() {
 async function createNotebookFromText(type: StyleType, text: string): Promise<ServerNotebook> {
   const td = await ServerNotebook.openEphemeral();
   const changeRequests: NotebookChangeRequest[] = text.split(";").map(s=>{
-    const data = s.trim();
+    const data: TextCellData = {
+      type: CellType.Text,
+      height: 72, // points
+      plainText: <PlainText>s.trim()
+    };
     const styleProps: StylePropertiesWithSubprops = { role: 'TEXT', type, data };
     const rval: StyleInsertRequest = { type: 'insertStyle', styleProps }
     return rval;

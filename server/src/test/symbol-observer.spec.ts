@@ -26,7 +26,7 @@ import { assert } from "chai";
 import 'mocha';
 // import * as sinon from "sinon";
 
-import { FormulaData, PlainTextMath } from "../shared/formula";
+import { FormulaCellData, PlainTextMath } from "../shared/formula";
 import {
   StyleObject, RelationshipObject, StyleId
 } from "../shared/notebook";
@@ -626,7 +626,7 @@ async function serializeChangeRequests(notebook: ServerNotebook,
 function insertWolframFormulas(wolframDatas: PlainTextMath[]) : StyleInsertRequest[] {
   var reqs : StyleInsertRequest[] = [];
   for(const wolframData of wolframDatas) {
-    const data: FormulaData = {
+    const data: FormulaCellData = {
       type: CellType.Formula,
       height: 72, // points
       plainTextMath: wolframData,

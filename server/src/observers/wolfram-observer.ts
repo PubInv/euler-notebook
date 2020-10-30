@@ -22,7 +22,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 import debug1 from "debug";
 
 
-import { FormulaData, PlainTextMath } from "../shared/formula";
+import { FormulaCellData, PlainTextMath } from "../shared/formula";
 import { WolframExpression, StyleObject } from "../shared/notebook";
 import { isEmptyOrSpaces } from "../shared/math-tablet-api";
 
@@ -89,7 +89,7 @@ export class WolframObserver extends BaseObserver {
 
   // Private Instance Methods
 
-  private convertWolframToFormulaRule(style: StyleObject): FormulaData|undefined {
+  private convertWolframToFormulaRule(style: StyleObject): FormulaCellData|undefined {
     // TODO: Make this async, pass the string to WolframScript to normalize.
     const wolframData: PlainTextMath = style.data;
     return {
@@ -100,7 +100,7 @@ export class WolframObserver extends BaseObserver {
   }
 
   private convertFormulaToWolframRule(style: StyleObject): PlainTextMath|undefined {
-    const formulaData: FormulaData = style.data;
+    const formulaData: FormulaCellData = style.data;
     // REVIEW: Convert single equal sign to double equal sign?
     return formulaData.plainTextMath;
   }

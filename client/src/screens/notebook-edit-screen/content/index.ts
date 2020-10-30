@@ -25,9 +25,9 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 import * as debug1 from "debug";
 const debug = debug1('client:notebook-edit-screen-content');
 
-import { CssClass, assert, deepCopy, Html, assertFalse, notImplemented, CssLength } from "../../../shared/common";
-import { CellType } from "../../../shared/cell";
-import { FormulaData, PlainTextMath } from "../../../shared/formula";
+import { CssClass, assert, deepCopy, Html, assertFalse, notImplemented, CssLength, PlainText } from "../../../shared/common";
+import { CellType, TextCellData } from "../../../shared/cell";
+import { FormulaCellData, PlainTextMath } from "../../../shared/formula";
 import {
   StrokeData, StyleId, StyleObject, NotebookChange, StyleRelativePosition, StylePosition,
 } from "../../../shared/notebook";
@@ -234,7 +234,7 @@ export class Content extends HtmlElement<'div'>{
       { role: 'INPUT', type: userSettingsInstance.defaultMathKeyboardInputFormat, data: '' } :
       { role: 'INPUT', type: 'STROKE-DATA', data: deepCopy(EMPTY_STROKE_DATA) });
 
-    const data: FormulaData = {
+    const data: FormulaCellData = {
       type: CellType.Formula,
       height: 72, // points
       plainTextMath: <PlainTextMath>'' ,
@@ -269,11 +269,15 @@ export class Content extends HtmlElement<'div'>{
       { role: 'INPUT', type: userSettingsInstance.defaultTextKeyboardInputFormat, data: '' } :
       { role: 'INPUT', type: 'STROKE-DATA', data: deepCopy(EMPTY_STROKE_DATA) });
 
-    // const data: PlainText = { ... };
+    const data: TextCellData = {
+      type: CellType.Text,
+      height: 72, // points
+      plainText: <PlainText>'',
+    };
     const styleProps: StylePropertiesWithSubprops = {
       role: 'TEXT',
       type: 'NONE',
-      data: null,
+      data,
       subprops: [ inputStyle ],
     };
 

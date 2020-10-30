@@ -19,7 +19,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 // Requirements
 
-import { Cell, CellType } from "./cell";
+import { CellData, CellType } from "./cell";
 
 // Types
 
@@ -28,7 +28,7 @@ import { Cell, CellType } from "./cell";
 // except that we convert single equals to double equals.
 export type PlainTextMath = '{PlainTextMath}';
 
-export interface FormulaData extends Cell /* TEMPORARILY */{
+export interface FormulaCellData extends CellData /* TEMPORARILY */{
   type: CellType.Formula,
   plainTextMath: PlainTextMath;
 }

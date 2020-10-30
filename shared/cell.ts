@@ -19,7 +19,8 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 // Requirements
 
-import { LengthInPoints } from "./common";
+import { LengthInPoints, PlainText } from "./common";
+
 // Types
 
 export enum CellType {
@@ -29,7 +30,12 @@ export enum CellType {
   Plot = 4,
 }
 
-export interface Cell {
+export interface CellData {
   type: CellType;
   height: LengthInPoints;
+}
+
+export interface TextCellData extends CellData {
+  type: CellType.Text,
+  plainText: PlainText,
 }

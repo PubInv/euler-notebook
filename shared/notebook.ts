@@ -209,9 +209,9 @@ export interface StyleMap {
 export const STYLE_ROLES = [
   // Top level (cell) roles
   'FIGURE',
-  'FORMULA',              // Hold FormulaData
+  'FORMULA',              // FormulaCellData
   'PLOT',
-  'TEXT',                 // Data is null.
+  'TEXT',                 // TextCellData.
   'FIGURE',               // Data is null.
   'UNKNOWN',              // Type of the cell hasn't been determined.
 

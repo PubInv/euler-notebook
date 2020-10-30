@@ -21,7 +21,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 import debug1 from "debug";
 
-import { FormulaData } from "../shared/formula";
+import { FormulaCellData } from "../shared/formula";
 import { StyleObject } from "../shared/notebook";
 import { TexExpression } from "../shared/math-tablet-api";
 
@@ -78,7 +78,7 @@ export class TexObserver extends BaseObserver {
 
   // Private Class Methods
 
-  private async convertTexToFormulaRule(style: StyleObject): Promise<FormulaData|undefined> {
+  private async convertTexToFormulaRule(style: StyleObject): Promise<FormulaCellData|undefined> {
     // REVIEW: If conversion fails?
     const data: TexExpression = style.data;
     const wolframData = convertWolframToMTL(await convertTeXtoWolfram(data));
@@ -91,7 +91,7 @@ export class TexObserver extends BaseObserver {
 
   private async convertFormulaToTexRule(style: StyleObject): Promise<TexExpression|undefined> {
     // REVIEW: If conversion fails?
-    const formulaData: FormulaData = style.data;
+    const formulaData: FormulaCellData = style.data;
     return await convertWolframToTeX(convertMTLToWolfram(formulaData.plainTextMath));
   }
 

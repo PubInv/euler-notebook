@@ -24,7 +24,7 @@ const MODULE = __filename.split(/[/\\]/).slice(-1)[0].slice(0,-3);
 const debug = debug1(`server:${MODULE}`);
 
 import { assert, Html } from "../shared/common";
-import { FormulaData } from "../shared/formula";
+import { FormulaCellData } from "../shared/formula";
 import {
   NotebookChange, StyleObject, StyleId, RelationshipObject, RelationshipId, RelationshipProperties,
   StyleDeleted, StyleMoved, FindRelationshipOptions, StyleInserted, StyleChanged, WolframExpression
@@ -90,7 +90,7 @@ export class SymbolClassifierObserver implements ObserverInstance {
     const relId = this.notebook.reserveId();
 
     const wolframData = toolStyle.data.data.output;
-    const formulaData: FormulaData = {
+    const formulaData: FormulaCellData = {
       type: CellType.Formula,
       height: 72, // points
       plainTextMath: wolframData,
