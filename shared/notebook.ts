@@ -125,11 +125,6 @@ interface PageMargins {
   top: CssLength;
 }
 
-export interface PlotData {
-  formulaStyleId: StyleId;
-  // LATER: Identify the symbols used in the plot for each axis, etc.
-}
-
 export type RelationshipId = number;
 
 export interface RelationshipObject extends RelationshipProperties {
@@ -210,7 +205,7 @@ export const STYLE_ROLES = [
   // Top level (cell) roles
   'FIGURE',
   'FORMULA',              // FormulaCellData
-  'PLOT',
+  'PLOT',                 // PlotCellData
   'TEXT',                 // TextCellData.
   'FIGURE',               // Data is null.
   'UNKNOWN',              // Type of the cell hasn't been determined.

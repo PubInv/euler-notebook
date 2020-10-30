@@ -24,7 +24,7 @@ const MODULE = __filename.split(/[/\\]/).slice(-1)[0].slice(0,-3);
 const debug = debug1(`server:${MODULE}`);
 
 import { Html, SvgMarkup } from "../shared/common";
-import { NotebookChange, StyleObject, RelationshipObject, WolframExpression, PlotData } from "../shared/notebook";
+import { NotebookChange, StyleObject, RelationshipObject, WolframExpression } from "../shared/notebook";
 import { ToolData, NotebookChangeRequest, StyleInsertRequest, StylePropertiesWithSubprops, StyleDeleteRequest } from "../shared/math-tablet-api";
 
 import { ServerNotebook, ObserverInstance, absDirPathFromNotebookPath } from "../server-notebook";
@@ -35,6 +35,7 @@ import { Config } from "../config";
 import { v4 as uuid } from "uuid";
 import * as fs from "fs";
 import { assert } from "console";
+import { CellType, PlotCellData } from "../shared/cell";
 
 // Constants
 
@@ -349,8 +350,10 @@ async function plotSubtrivariate(expr: string, variables: string[], filename: st
   assert(xml.endsWith(XML_SUFFIX));
   const svgMarkup: SvgMarkup = <SvgMarkup>xml.slice(XML_PREFIX.length, -XML_SUFFIX.length);
 
-  const plotData: PlotData = {
-    formulaStyleId: -1, // LATER: Identify the formula from which the plot was made.
+  const plotData: PlotCellData = {
+    type: CellType.Plot,
+    height: 72, // points
+    formulaStyleId: -1, // TODO: Identify the formula from which the plot was made.
     // LATER: Identify the variables used in the plot.
   };
 

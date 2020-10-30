@@ -20,6 +20,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 // Requirements
 
 import { LengthInPoints, PlainText } from "./common";
+import { StyleId } from "./notebook";
 
 // Types
 
@@ -35,7 +36,16 @@ export interface CellData {
   height: LengthInPoints;
 }
 
+// HERE TEMPORARILY:
+// Move them into their own files when they become classes.
+
+export interface PlotCellData extends CellData {
+  type: CellType.Plot,
+  formulaStyleId: StyleId,
+}
+
 export interface TextCellData extends CellData {
   type: CellType.Text,
   plainText: PlainText,
+  // LATER: Identify the symbols used in the plot for each axis, etc.
 }
