@@ -22,13 +22,13 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 import * as debug1 from "debug";
 const debug = debug1('client:text-cell');
 
-import { CssClass, assert, assertFalse } from "../../../../shared/common";
+import { CssClass, assert, assertFalse, Html } from "../../../../shared/common";
 import { StrokeData } from "../../../../shared/stylus";
 import { StyleObject, NotebookChange, } from "../../../../shared/notebook";
 // import { StyleChangeRequest } from "../../../../shared/math-tablet-api";
 
 import { $new, $outerSvg } from "../../../../dom";
-import { KeyboardPanel } from "../../../../components/keyboard-panel";
+import { KeyboardCallbackFn, KeyboardPanel } from "../../../../components/keyboard-panel";
 import { StrokePanel } from "../../../../components/stroke-panel";
 
 import { Content as CellContainer } from "../index";
@@ -36,6 +36,8 @@ import { Content as CellContainer } from "../index";
 import { CellBase } from "./cell-base";
 import { notebookChangeSynopsis, styleSynopsis } from "../../../../shared/debug-synopsis";
 import { TextCellData, TextCellKeyboardData, TextCellStylusData } from "../../../../shared/cell";
+import { KeyboardChangeRequest } from "../../../../shared/math-tablet-api";
+import { logError } from "../../../../error-handler";
 
 // Types
 
@@ -142,11 +144,24 @@ export class TextCell extends CellBase {
 
   private createKeyboardSubpanel(style: StyleObject): KeyboardPanel {
     const data = <TextCellKeyboardData>style.data;
-    return new KeyboardPanel(data.plainText, async (_text: string)=>{
-      throw new Error("TODO: Just send keystroke to server");
-      // const changeRequest: StyleChangeRequest = { type: 'changeStyle', styleId: style.id, data };
-      // await this.container.screen.notebook.sendChangeRequest(changeRequest);
-    });
+    const textChangeCallback: KeyboardCallbackFn = (event: InputEvent): void =>{
+      const target = <HTMLTextAreaElement>event.target!;
+      const changeRequest: KeyboardChangeRequest = {
+        type: 'keyboardChange',
+        styleId: style.id,
+        inputType: event.inputType,
+        data: event.data,
+        value: target.value,
+        selectionDirection: target.selectionDirection,
+        selectionStart: target.selectionStart,
+        selectionEnd: target.selectionEnd,
+      };
+      this.container.screen.notebook.sendChangeRequest(changeRequest)
+      .catch(err=>{
+        logError(err, <Html>"Error sending keyboardChangeRequest from formula cell");
+      });
+    }
+    return new KeyboardPanel(data.plainText, textChangeCallback);
   }
 
   private createStrokeSubpanel(style: StyleObject): StrokePanel {

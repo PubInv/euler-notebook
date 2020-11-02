@@ -33,11 +33,13 @@ import { $new, $outerSvg } from "../../../../dom";
 import { Content as CellContainer } from "..";
 
 import { CellBase } from "./cell-base";
-import { KeyboardPanel } from "../../../../components/keyboard-panel";
+import { KeyboardCallbackFn, KeyboardPanel } from "../../../../components/keyboard-panel";
 import { StrokePanel } from "../../../../components/stroke-panel";
 // import { StyleChangeRequest } from "../../../../shared/math-tablet-api";
 import { notebookChangeSynopsis } from "../../../../shared/debug-synopsis";
 import { InputType } from "../../../../shared/cell";
+import { KeyboardChangeRequest } from "../../../../shared/math-tablet-api";
+import { logError } from "../../../../error-handler";
 
 // Types
 
@@ -215,18 +217,24 @@ export class FormulaCell extends CellBase {
   }
 
   private createKeyboardSubpanel(style: StyleObject): KeyboardPanel {
-
     const data = <FormulaCellData>style.data;
-
-    // Callback function for when text in the panel has changed.
-    // Submit a notebook change request.
-    const textChangeCallback = async (_text: string)=>{
-      throw new Error("TODO: Just send keystroke to server");
-      // const changeRequest: StyleChangeRequest = { type: 'changeStyle', styleId: style.id, data: text };
-      // await this.container.screen.notebook.sendChangeRequest(changeRequest);
+    const textChangeCallback: KeyboardCallbackFn = (event: InputEvent): void=>{
+      const target = <HTMLTextAreaElement>event.target!;
+      const changeRequest: KeyboardChangeRequest = {
+        type: 'keyboardChange',
+        styleId: style.id,
+        inputType: event.inputType,
+        data: event.data,
+        value: target.value,
+        selectionDirection: target.selectionDirection,
+        selectionStart: target.selectionStart,
+        selectionEnd: target.selectionEnd,
+      };
+      this.container.screen.notebook.sendChangeRequest(changeRequest)
+      .catch(err=>{
+        logError(err, <Html>"Error sending keyboardChangeRequest from formula cell");
+      });
     }
-
-    // Create the panel
     return new KeyboardPanel(data.plainTextMath, textChangeCallback);
   }
 

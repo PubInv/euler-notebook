@@ -33,10 +33,10 @@ import {
 // Types
 
 export type ImageData = string;
-export type TexExpression = '{TexExpression}';
 export type MthMtcaData = string;
 export type RequestId = '{RequestId}';
 export type Symbol = string;
+export type TexExpression = '{TexExpression}';
 
 export interface SymbolData {
   name: string;
@@ -125,6 +125,7 @@ export interface NotebookRenameRequest {
 
 export type NotebookChangeRequest =
   InsertCellRequest|
+  KeyboardChangeRequest|
 
   // LEGACY:
   RelationshipDeleteRequest|
@@ -139,6 +140,16 @@ export interface InsertCellRequest {
   cellType: CellType;
   inputType: InputType;
   afterId: StyleRelativePosition;
+}
+export interface KeyboardChangeRequest {
+  type: 'keyboardChange';
+  styleId: StyleId;
+  data: string|null;
+  inputType: string;
+  selectionStart: number;
+  selectionEnd: number;
+  selectionDirection: 'forward'|'backward'|'none';
+  value: string;
 }
 export interface RelationshipDeleteRequest {
   type: 'deleteRelationship';

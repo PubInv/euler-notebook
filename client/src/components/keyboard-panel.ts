@@ -22,6 +22,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 import * as debug1 from "debug";
 
 import { CssClass } from "../shared/common";
+
 import { $new } from "../dom";
 const debug = debug1('client:keyboard-panel');
 
@@ -29,7 +30,7 @@ import { HtmlElement } from "../html-element";
 
 // Types
 
-type KeyboardCallbackFn = (text: string)=>Promise<void>;
+export type KeyboardCallbackFn = (event: InputEvent)=>void;
 
 // Constants
 
@@ -88,8 +89,13 @@ export class KeyboardPanel extends HtmlElement<'div'> {
 
   // Private Event Handlers
 
-  private onTextAreaInput(_event: Event): void {
-    debug(`TextArea input event`);
+  private onTextAreaInput(event: InputEvent): void {
+    debug(`TextArea input event: ${event.inputType} "${event.data}"`);
+    // See https://w3c.github.io/input-events/#interface-InputEvent
+    // TODO: getTargetRanges()?
+    console.dir(event);
+    console.dir((<any>event).getTargetRanges());
+    this.keyboardCallbackFn(event);
     // const text = this.$textArea.value;
     // TODO: Incremental change
   }
@@ -103,13 +109,14 @@ export class KeyboardPanel extends HtmlElement<'div'> {
           const text = this.$textArea.value;
           event.stopPropagation();
           this.lastText = text;
-          await this.keyboardCallbackFn(text);
+          // await this.keyboardCallbackFn(text);
         }
         break;
       case 'Escape':
+          // TODO: also save last value when we lose focus.
           event.stopPropagation();
           this.$textArea.value = this.lastText;
-          // TODO: restore previous value?
+          // TODO: this.keyboardCallbackFn('cancelEditing', this.lastText)
         break;
     }
   }

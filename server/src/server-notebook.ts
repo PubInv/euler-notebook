@@ -39,7 +39,7 @@ import {
   RelationshipInserted, StyleInserted, StyleDeleted, StyleConverted, NotebookWatcher, WolframExpression
 } from "./shared/notebook";
 import {
-  InsertCellRequest, NotebookChangeRequest, StyleMoveRequest, StyleInsertRequest, StyleChangeRequest,
+  InsertCellRequest, KeyboardChangeRequest, NotebookChangeRequest, StyleMoveRequest, StyleInsertRequest, StyleChangeRequest,
   RelationshipDeleteRequest, StyleDeleteRequest, RelationshipInsertRequest,
   StylePropertiesWithSubprops, TexExpression, StyleConvertRequest, ServerNotebookChangedMessage, ClientNotebookChangeMessage, ClientNotebookUseToolMessage, RequestId,
 } from "./shared/math-tablet-api";
@@ -781,6 +781,9 @@ ${ind} + ${data}
         case 'insertCell':
           undoChangeRequest = this.applyInsertCellRequest(source, changeRequest, rval);
           break;
+        case 'keyboardChange':
+          /* undoChangeRequest = */ this.applyKeyboardChangeRequest(source, changeRequest, rval);
+          break;
 
         // LEGACY:
         case 'changeStyle':
@@ -1026,6 +1029,15 @@ ${ind} + ${data}
       styleId: style.id,
     }
     return undoChangeRequest;
+  }
+
+  private applyKeyboardChangeRequest(
+    source: StyleSource,
+    request: KeyboardChangeRequest,
+    _rval: NotebookChange[],
+  ): void /* LATER: StyleChangeRequest */ {
+    console.log(`KEYBOARD CHANGE REQUEST ${source}`);
+    console.dir(request);
   }
 
   private applyInsertRelationshipRequest(
