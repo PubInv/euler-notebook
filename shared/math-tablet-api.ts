@@ -22,6 +22,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 // Requirements
 
+import { CellType, InputType } from "./cell";
 import { Html } from "./common";
 import { FolderObject, FolderPath, NotebookPath, FolderName, NotebookName, FolderChange } from "./folder";
 import {
@@ -123,6 +124,9 @@ export interface NotebookRenameRequest {
 // Notebook Change Requests
 
 export type NotebookChangeRequest =
+  InsertCellRequest|
+
+  // LEGACY:
   RelationshipDeleteRequest|
   RelationshipInsertRequest|
   StyleChangeRequest|
@@ -130,6 +134,12 @@ export type NotebookChangeRequest =
   StyleDeleteRequest|
   StyleInsertRequest|
   StyleMoveRequest;
+export interface InsertCellRequest {
+  type: 'insertCell';
+  cellType: CellType;
+  inputType: InputType;
+  afterId: StyleRelativePosition;
+}
 export interface RelationshipDeleteRequest {
   type: 'deleteRelationship';
   // TODO: rename id => relationshipId

@@ -31,7 +31,7 @@ import {
 } from "../../../shared/notebook";
 import {
   DebugParams, DebugResults, StyleDeleteRequest, StyleInsertRequest, StylePropertiesWithSubprops,
-  StyleMoveRequest, NotebookChangeRequest,
+  StyleMoveRequest, NotebookChangeRequest, InsertCellRequest,
 } from "../../../shared/math-tablet-api";
 
 import { CellBase } from "./cells/cell-base";
@@ -39,6 +39,8 @@ import { createCell } from "./cells/index";
 import { HtmlElement } from "../../../html-element";
 import { NotebookEditScreen } from "..";
 import { reportError } from "../../../error-handler";
+import { CellType, InputType } from "../../../shared/cell";
+import { userSettingsInstance } from "../../../user-settings";
 
 // Types
 
@@ -78,8 +80,8 @@ const KEY_MAP: [ KeyName, KeyMods, CommandName][] = [
   [ 'ArrowUp', KeyMod.Alt, 'moveSelectionUp'],
   [ 'Backspace', KeyMod.None, 'deleteSelectedCells'],
   [ 'Enter', KeyMod.None, 'editSelectedCell'],
-  [ 'Enter', KeyMod.Alt, 'insertKeyboardCellBelow'],
-  [ 'Enter', KeyMod.Alt|KeyMod.Shift, 'insertKeyboardCellAbove'],
+  [ 'Enter', KeyMod.Alt, 'insertFormulaCellBelow'],
+  // TODO: [ 'Enter', KeyMod.Alt|KeyMod.Shift, 'insertFormulaCellAbove'],
   [ 'Escape', KeyMod.None, 'unselectAll'],
 ];
 
@@ -224,32 +226,15 @@ export class Content extends HtmlElement<'div'>{
       else { afterId = StylePosition.Bottom; }
     }
 
-    // TODO: We don't have all the information to insert the full cell (displaySvg, etc.)
-    //       We need a change that specifically inserts a formula with partial data.
-    throw new Error("TODO:");
-    // const inputMode = userSettingsInstance.defaultInputMode;
-    // const data: FormulaCellData = (inputMode=='keyboard' ?
-    //   {
-    //     type: CellType.Formula,
-    //     inputType: InputType.Keyboard,
-    //     height: 72, // points
-    //     plainTextMath: <PlainTextMath>'',
-    //   } :
-    //   {
-    //     type: CellType.Formula,
-    //     inputType: InputType.Stylus,
-    //     height: 72, // points
-    //     plainTextMath: <PlainTextMath>'',
-    //     stylusInput: deepCopy(EMPTY_STYLUS_INPUT),
-    //     stylusSvg: <SvgMarkup>'',
-    //   }
-    // );
-    // const styleProps: StylePropertiesWithSubprops = { role: 'FORMULA', type: 'FORMULA-DATA', data };
-
-    // // Insert top-level style and wait for it to be inserted.
-    // const changeRequest: StyleInsertRequest = { type: 'insertStyle', afterId, styleProps };
-    // const undoChangeRequest = await this.sendUndoableChangeRequest(changeRequest);
-    // /* const styleId = */(<StyleDeleteRequest>undoChangeRequest).styleId;
+    const inputMode = userSettingsInstance.defaultInputMode;
+    const changeRequest: InsertCellRequest = {
+      type: 'insertCell',
+      cellType: CellType.Formula,
+      inputType: (inputMode=='keyboard' ? InputType.Keyboard : InputType.Stylus),
+      afterId,
+    }
+    /* const undoChangeRequest = */ await this.sendUndoableChangeRequest(changeRequest);
+    // const styleId = (<StyleDeleteRequest>undoChangeRequest).styleId;
 
     // TODO: Set focus?
   }
@@ -639,6 +624,11 @@ export class Content extends HtmlElement<'div'>{
     return rval;
   }
 
+  private async sendUndoableChangeRequest(changeRequest: NotebookChangeRequest): Promise<NotebookChangeRequest> {
+    const undoChangeRequests = await this.sendUndoableChangeRequests([changeRequest]);
+    assert(undoChangeRequests.length==1);
+    return undoChangeRequests[0];
+  }
 
   private async sendUndoableChangeRequests(changeRequests: NotebookChangeRequest[]): Promise<NotebookChangeRequest[]> {
     // Disable the undo and redo buttons

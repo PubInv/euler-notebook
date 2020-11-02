@@ -82,6 +82,9 @@ export function folderChangeSynopsis(change: FolderChange): string {
 export function notebookChangeRequestSynopsis(request: NotebookChangeRequest): string {
   let rval: string = request.type;
   switch(request.type) {
+    case 'insertCell': rval += ` Type ${request.cellType} Input ${request.inputType} After ${request.afterId}}`; break;
+
+    // LEGACY
     case 'changeStyle': rval += ` S${request.styleId} ${dataSynopsis(request.data)}`; break;
     case 'convertStyle': rval += ` TBD`; break;
     case 'deleteRelationship': rval += ` R${request.id}`; break;

@@ -69,5 +69,6 @@ export interface TextCellKeyboardData extends TextCellDataBase {
 export interface TextCellStylusData extends TextCellDataBase {
   inputType: InputType.Stylus,
   stylusInput: StylusInput,
+  stylusSvg: SvgMarkup,
 }
 export type TextCellData = TextCellKeyboardData | TextCellStylusData;

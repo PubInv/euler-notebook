@@ -253,6 +253,7 @@ export type StyleSubrole = typeof STYLE_SUBROLES[number];
 export const STYLE_TYPES = [
   'CLASSIFICATION-DATA',  // DEPRECATED: A classifcication of the style.
   'EQUATION-DATA',   // An equation (ambiguously assertion or relation)
+  'FIGURE-DATA',
   'FORMULA-DATA',    // Type of data for top-level 'FORMULA' styles
   'IMAGE-URL',       // ImageData: URL of image relative to notebook folder.
   'MYSCRIPT-DATA',   // Jiix: MyScript JIIX export from 'MATH' editor.
@@ -265,6 +266,7 @@ export const STYLE_TYPES = [
   'SYMBOL-DATA',     // SymbolData: symbol in a definition or expression.
   'SYMBOL-TABLE',     // SymbolTable // REVIEW: Rename SYMBOL-TABLE-DATA?
   'TEX-EXPRESSION',  // LatexData: LaTeX string // TODO: rename 'TEX'
+  'TEXT-DATA',
   'TOOL-DATA',       // ToolInfo: Tool that can be applied to the parent style.
   'WOLFRAM-EXPRESSION', // WolframExpression: Wolfram language expression
 ] as const;

@@ -28,7 +28,10 @@ import * as debug1 from "debug";
 // import { readdirSync, unlink, writeFileSync } from "fs"; // LATER: Eliminate synchronous file operations.
 import { join } from "path";
 
-import { assert, assertFalse, ExpectedError, Timestamp } from "./shared/common";
+import { assert, assertFalse, CssLength, ExpectedError, PlainText, SvgMarkup, Timestamp } from "./shared/common";
+import { FormulaCellData, FormulaCellKeyboardData, FormulaCellStylusData, PlainTextMath } from "./shared/formula";
+import { StylusInput } from "./shared/stylus";
+import { TextCellKeyboardData, TextCellStylusData } from "./shared/cell";
 import { NotebookPath, NOTEBOOK_PATH_RE, NotebookName, FolderPath, NotebookEntry } from "./shared/folder";
 import {
   Notebook, NotebookObject, NotebookChange, StyleObject, StyleRole, StyleType, StyleSource, StyleId,
@@ -36,17 +39,18 @@ import {
   RelationshipInserted, StyleInserted, StyleDeleted, StyleConverted, NotebookWatcher, WolframExpression
 } from "./shared/notebook";
 import {
-  NotebookChangeRequest, StyleMoveRequest, StyleInsertRequest, StyleChangeRequest,
+  InsertCellRequest, NotebookChangeRequest, StyleMoveRequest, StyleInsertRequest, StyleChangeRequest,
   RelationshipDeleteRequest, StyleDeleteRequest, RelationshipInsertRequest,
   StylePropertiesWithSubprops, TexExpression, StyleConvertRequest, ServerNotebookChangedMessage, ClientNotebookChangeMessage, ClientNotebookUseToolMessage, RequestId,
 } from "./shared/math-tablet-api";
+import { notebookChangeRequestSynopsis, notebookChangeSynopsis } from "./shared/debug-synopsis";
 
 import { ClientId } from "./client-socket";
 import { AbsDirectoryPath, ROOT_DIR_PATH, mkDir, readFile, rename, rmRaf, writeFile } from "./adapters/file-system";
 import { constructSubstitution } from "./adapters/wolframscript";
 import { OpenOptions } from "./shared/watched-resource";
 import { logError } from "./error-handler";
-import { notebookChangeRequestSynopsis, notebookChangeSynopsis } from "./shared/debug-synopsis";
+import { CellType, FigureCellData, InputType, TextCellData } from "./shared/cell";
 
 
 // const svg2img = require('svg2img');
@@ -774,6 +778,11 @@ ${ind} + ${data}
       debug(`${source} change request: ${notebookChangeRequestSynopsis(changeRequest)}`);
       let undoChangeRequest: NotebookChangeRequest|undefined;
       switch(changeRequest.type) {
+        case 'insertCell':
+          undoChangeRequest = this.applyInsertCellRequest(source, changeRequest, rval);
+          break;
+
+        // LEGACY:
         case 'changeStyle':
           undoChangeRequest = this.applyChangeStyleRequest(source, changeRequest, rval);
           break;
@@ -911,6 +920,111 @@ ${ind} + ${data}
     const change: StyleDeleted = { type: 'styleDeleted', style };
     this.appendChange(source, change, rval);
 
+    return undoChangeRequest;
+  }
+
+  private applyInsertCellRequest(
+    source: StyleSource,
+    request: InsertCellRequest,
+    rval: NotebookChange[],
+  ): StyleDeleteRequest {
+
+    const id = this.nextId++;
+
+    let data: FigureCellData|FormulaCellData|TextCellData;
+    let role: StyleRole;
+    let type: StyleType;
+    switch(request.cellType) {
+      case CellType.Figure: {
+        role = 'FIGURE';
+        type = 'FIGURE-DATA';
+        assert(request.inputType == InputType.Stylus);
+        const figureCellData: FigureCellData = {
+          type: request.cellType,
+          height: 72*3, // 3 inches in points
+          displaySvg: <SvgMarkup>'<svg></svg>',
+          inputType: InputType.Stylus,
+          stylusInput: emptyStylusInput(3, 6.5),
+        };
+        data = figureCellData;
+        break;
+      }
+      case CellType.Formula: {
+        role = 'FORMULA';
+        type = 'FORMULA-DATA';
+        switch(request.inputType) {
+          case InputType.Keyboard: {
+            const formulaCellKeyboardData: FormulaCellKeyboardData = {
+              type: request.cellType,
+              height: 72*1, // 1 inch in points
+              displaySvg: <SvgMarkup>'<svg></svg>',
+              inputType: InputType.Keyboard,
+              plainTextMath: <PlainTextMath>'',
+            };
+            data = formulaCellKeyboardData;
+            break;
+          }
+          case InputType.Stylus: {
+            const formulaCellStylusData: FormulaCellStylusData = {
+              type: request.cellType,
+              height: 72*1, // 1 inch in points
+              displaySvg: <SvgMarkup>'<svg></svg>',
+              inputType: InputType.Stylus,
+              plainTextMath: <PlainTextMath>'',
+              stylusInput: emptyStylusInput(1, 6.5),
+              stylusSvg: <SvgMarkup>'<svg></svg>',
+            };
+            data = formulaCellStylusData;
+            break;
+          }
+          default: assertFalse();
+        }
+        break;
+      }
+      case CellType.Text: {
+        role = 'TEXT';
+        type = 'TEXT-DATA';
+        switch(request.inputType) {
+          case InputType.Keyboard: {
+            const textCellKeyboardData: TextCellKeyboardData = {
+              type: request.cellType,
+              height: 72*1, // 1 inch in points
+              displaySvg: <SvgMarkup>'<svg></svg>',
+              inputType: InputType.Keyboard,
+              plainText: <PlainText>"",
+            };
+            data = textCellKeyboardData;
+            break;
+          }
+          case InputType.Stylus: {
+            const textCellStylusData: TextCellStylusData = {
+              type: request.cellType,
+              height: 72*1, // 1 inch in points
+              displaySvg: <SvgMarkup>'<svg></svg>',
+              inputType: InputType.Stylus,
+              plainText: <PlainText>"",
+              stylusInput: emptyStylusInput(1, 6.5),
+              stylusSvg: <SvgMarkup>'<svg></svg>',
+            };
+            data = textCellStylusData;
+            break;
+          }
+          default: assertFalse();
+        }
+        break;
+      }
+      default: assertFalse();
+    }
+
+    const style: StyleObject = { data, id, role, parentId: 0, source, type };
+
+    const change: StyleInserted =  { type: 'styleInserted', style, afterId: request.afterId };
+    this.appendChange(source, change, rval);
+
+    const undoChangeRequest: StyleDeleteRequest = {
+      type: 'deleteStyle',
+      styleId: style.id,
+    }
     return undoChangeRequest;
   }
 
@@ -1271,6 +1385,13 @@ export function notebookPath(path: FolderPath, name: NotebookName): NotebookPath
 function absFilePathFromNotebookPath(path: NotebookPath): AbsFilePath {
   const absPath = absDirPathFromNotebookPath(path);
   return join(absPath, NOTEBOOK_FILE_NAME);
+}
+
+function emptyStylusInput(height: number, width: number): StylusInput {
+  return {
+    size: { height: <CssLength>`${height*72}pt`, width: <CssLength>`${width*72}pt` },
+    strokeGroups: [ { strokes: [] }, ]
+  };
 }
 
 // function apiFunctionWrapper(data: string) : Promise<Buffer> {
