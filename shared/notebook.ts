@@ -192,7 +192,6 @@ export const STYLE_ROLES = [
   'EQUATION',             // An equation
   'EQUATION-SOLUTION',    // An equation
   'EQUATION-DEFINITION',  // A simple equality relation defined
-  'REPRESENTATION',       // A representation of the parent style.
   'SYMBOL',               // Symbols extracted from an expression.
   'SYMBOL-DEFINITION',    // Definition of a symbol.
   'SYMBOL-TABLE',         //

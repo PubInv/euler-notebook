@@ -24,7 +24,7 @@ const MODULE = __filename.split(/[/\\]/).slice(-1)[0].slice(0,-3);
 const debug = debug1(`server:${MODULE}`);
 
 import { assert, Html } from "../shared/common";
-import { FormulaCellData } from "../shared/formula";
+// import { FormulaCellData } from "../shared/formula";
 import {
   NotebookChange, StyleObject, StyleId, RelationshipObject, RelationshipId, RelationshipProperties,
   StyleDeleted, StyleMoved, FindRelationshipOptions, StyleInserted, StyleChanged, WolframExpression
@@ -32,7 +32,7 @@ import {
 import {
   SymbolData, NotebookChangeRequest, StyleInsertRequest, ToolData, StyleDeleteRequest,
   StylePropertiesWithSubprops, RelationshipPropertiesMap, RelationshipInsertRequest,
-  isEmptyOrSpaces, TransformationToolData, TexExpression
+  isEmptyOrSpaces, /* TransformationToolData, */ TexExpression
 } from "../shared/math-tablet-api";
 
 import {
@@ -42,7 +42,7 @@ import {
 
 import { ServerNotebook, ObserverInstance } from "../server-notebook";
 import { Config } from "../config";
-import { CellType, InputType } from "../shared/cell";
+// import { CellType, InputType } from "../shared/cell";
 
 export class SymbolClassifierObserver implements ObserverInstance {
 
@@ -77,59 +77,62 @@ export class SymbolClassifierObserver implements ObserverInstance {
     // TODO: Mark closed somehow?
   }
 
-  public async useTool(toolStyle: StyleObject): Promise<NotebookChangeRequest[]> {
-    // TODO: This is a direct duplicate code in algebraic-tools.ts
-    // that duplication must be removed.
-    debug(`useTool ${this.notebook.path} ${toolStyle.id}`);
+  public async useTool(_toolStyle: StyleObject): Promise<NotebookChangeRequest[]> {
+    // TODO: Need to put displaySvg field in FormulaData.
+    throw new Error("TODO:");
+    // // TODO: This is a direct duplicate code in algebraic-tools.ts
+    // // that duplication must be removed.
+    // debug(`useTool ${this.notebook.path} ${toolStyle.id}`);
 
-    // the origin_id is a relationship Id
-    const relationship = this.notebook.getRelationship(toolStyle.data.origin_id);
-    //    const fromId = this.notebook.topLevelStyleOf(relationship.fromId).id;
-    const fromId = relationship.fromId;
-    const toId = this.notebook.reserveId();
-    const relId = this.notebook.reserveId();
+    // // the origin_id is a relationship Id
+    // const relationship = this.notebook.getRelationship(toolStyle.data.origin_id);
+    // //    const fromId = this.notebook.topLevelStyleOf(relationship.fromId).id;
+    // const fromId = relationship.fromId;
+    // const toId = this.notebook.reserveId();
+    // const relId = this.notebook.reserveId();
 
-    const wolframData = toolStyle.data.data.output;
-    const formulaData: FormulaCellData = {
-      type: CellType.Formula,
-      inputType: InputType.None,
-      height: 72, // points
-      plainTextMath: wolframData,
-    };
-    const styleProps: StylePropertiesWithSubprops = {
-      id: toId,
-      role: 'FORMULA',
-      type: 'FORMULA-DATA',
-      data: formulaData,
-    };
-    const changeReq: StyleInsertRequest = {
-      type: 'insertStyle',
-      // TODO: afterId should be ID of subtrivariate.
-      styleProps,
-    };
-    // At present, the tool name is the only data we will record
-    // about the transformation---in the future that might be enriched.
-    const tdata: TransformationToolData = {
-      output: toolStyle.data.data.output,
-      transformation: toolStyle.data.data.transformation,
-      transformationName: toolStyle.data.name
-    };
-    const props: RelationshipProperties = {
-      role: 'TRANSFORMATION',
-      id: relId,
-      data: tdata,
-    };
+    // const wolframData = toolStyle.data.data.output;
+    // const formulaData: FormulaCellData = {
+    //   type: CellType.Formula,
+    //   inputType: InputType.None,
+    //   // TODO: displaySvg:
+    //   height: 72, // points
+    //   plainTextMath: wolframData,
+    // };
+    // const styleProps: StylePropertiesWithSubprops = {
+    //   id: toId,
+    //   role: 'FORMULA',
+    //   type: 'FORMULA-DATA',
+    //   data: formulaData,
+    // };
+    // const changeReq: StyleInsertRequest = {
+    //   type: 'insertStyle',
+    //   // TODO: afterId should be ID of subtrivariate.
+    //   styleProps,
+    // };
+    // // At present, the tool name is the only data we will record
+    // // about the transformation---in the future that might be enriched.
+    // const tdata: TransformationToolData = {
+    //   output: toolStyle.data.data.output,
+    //   transformation: toolStyle.data.data.transformation,
+    //   transformationName: toolStyle.data.name
+    // };
+    // const props: RelationshipProperties = {
+    //   role: 'TRANSFORMATION',
+    //   id: relId,
+    //   data: tdata,
+    // };
 
-    const relReq: RelationshipInsertRequest = {
-      type: 'insertRelationship',
-      fromId,
-      toId,
-      inStyles: [ { role: 'LEGACY', id: fromId } ],
-      outStyles: [ { role: 'LEGACY', id: toId } ],
-      props: props
-    };
+    // const relReq: RelationshipInsertRequest = {
+    //   type: 'insertRelationship',
+    //   fromId,
+    //   toId,
+    //   inStyles: [ { role: 'LEGACY', id: fromId } ],
+    //   outStyles: [ { role: 'LEGACY', id: toId } ],
+    //   props: props
+    // };
 
-    return [ changeReq, relReq ];
+    // return [ changeReq, relReq ];
   }
 
   // --- PRIVATE ---
@@ -349,7 +352,9 @@ export class SymbolClassifierObserver implements ObserverInstance {
     // I believe listening only for the WOLFRAM/INPUT forces
     // a serialization that we don't want to support. We also must
     // listen for definition and use and handle them separately...
-    if (style.role == 'REPRESENTATION' && style.type == 'WOLFRAM-EXPRESSION') {
+    // TODO: This was looking for REPRESENTATION/WOLFRAM-EXPRESSION styles that no longer exist.
+    throw new Error("TODO:");
+    if (false) {
       debug("WOLFRAM_REPRESENTATION");
       // at this point, we are doing a complete "recomputation" based the use.
       // TODO: We should remove all Substitution tools here

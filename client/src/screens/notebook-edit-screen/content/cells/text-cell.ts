@@ -25,7 +25,7 @@ const debug = debug1('client:text-cell');
 import { CssClass, assert, assertFalse } from "../../../../shared/common";
 import { StrokeData } from "../../../../shared/stylus";
 import { StyleObject, NotebookChange, } from "../../../../shared/notebook";
-import { StyleChangeRequest } from "../../../../shared/math-tablet-api";
+// import { StyleChangeRequest } from "../../../../shared/math-tablet-api";
 
 import { $new, $outerSvg } from "../../../../dom";
 import { KeyboardPanel } from "../../../../components/keyboard-panel";
@@ -33,8 +33,9 @@ import { StrokePanel } from "../../../../components/stroke-panel";
 
 import { Content as CellContainer } from "../index";
 
-import { CellBase, isDisplaySvgStyle } from "./cell-base";
+import { CellBase } from "./cell-base";
 import { notebookChangeSynopsis, styleSynopsis } from "../../../../shared/debug-synopsis";
+import { TextCellData, TextCellKeyboardData, TextCellStylusData } from "../../../../shared/cell";
 
 // Types
 
@@ -58,12 +59,8 @@ export class TextCell extends CellBase {
 
     super(container, style, $content);
 
-    const notebook = container.screen.notebook;
-    const svgRepStyle = notebook.findStyle({ role: 'REPRESENTATION', type: 'SVG-MARKUP' }, style.id);
-    if (svgRepStyle) {
-      this.$displayPanel = this.createDisplayPanel(svgRepStyle);
-      this.$content.prepend(this.$displayPanel);
-    }
+    this.$displayPanel = this.createDisplayPanel(style);
+    this.$content.prepend(this.$displayPanel);
 
     this.$inputPanel = this.createInputPanel(style);
     this.$content.append(this.$inputPanel);
@@ -81,18 +78,12 @@ export class TextCell extends CellBase {
         break;
       }
       case 'styleInserted': {
-        if (isDisplaySvgStyle(change.style, this.styleId)) {
-          this.$displayPanel = this.createDisplayPanel(change.style);
-          this.$content.prepend(this.$displayPanel);
-        } else {
-          // Ignore. Not something we are interested in.
-        }
+        // Ignore. Not something we are interested in.
         break;
       }
       case 'styleChanged': {
-        if (isDisplaySvgStyle(change.style, this.styleId)) {
+        if (change.style.id == this.styleId) {
           this.updateDisplayPanel(change.style);
-        } else if (change.style.id == this.styleId) {
           this.updateInputPanelData(change.style);
           this.updateInputPanelDrawing(change.style);
         } else {
@@ -105,13 +96,7 @@ export class TextCell extends CellBase {
         break;
       }
       case 'styleDeleted': {
-        // Styles relevant to display of the formula are only deleted when the entire formula is deleted,
-        // so we can ignore styleDeleted messages.
-        if (isDisplaySvgStyle(change.style, this.styleId)) {
-          this.removeDisplayPanel();
-        } else {
-          // Ignore. Not something we are interested in.
-        }
+        // Ignore. Not something we are interested in.
         break;
       }
       case 'styleMoved': assertFalse();
@@ -133,7 +118,8 @@ export class TextCell extends CellBase {
   // Private Instance Methods
 
   private createDisplayPanel(style: StyleObject): SVGSVGElement {
-    const $displayPanel = $outerSvg<'svg'>(style.data);
+    const data = <TextCellData>style.data;
+    const $displayPanel = $outerSvg<'svg'>(data.displaySvg);
     $displayPanel.classList.add('display');
     return $displayPanel;
   }
@@ -154,28 +140,25 @@ export class TextCell extends CellBase {
     return panel.$elt;
   }
 
-private createKeyboardSubpanel(inputStyle: StyleObject): KeyboardPanel {
-    return new KeyboardPanel(inputStyle.data, async (text: string)=>{
-      const changeRequest: StyleChangeRequest = { type: 'changeStyle', styleId: inputStyle.id, data: text };
-      await this.container.screen.notebook.sendChangeRequest(changeRequest);
+  private createKeyboardSubpanel(style: StyleObject): KeyboardPanel {
+    const data = <TextCellKeyboardData>style.data;
+    return new KeyboardPanel(data.plainText, async (_text: string)=>{
+      throw new Error("TODO: Just send keystroke to server");
+      // const changeRequest: StyleChangeRequest = { type: 'changeStyle', styleId: style.id, data };
+      // await this.container.screen.notebook.sendChangeRequest(changeRequest);
     });
   }
 
-  private createStrokeSubpanel(inputStyle: StyleObject): StrokePanel {
-    const svgRepStyle = this.container.screen.notebook.findStyle({ role: 'REPRESENTATION', type: 'SVG-MARKUP' }, inputStyle.id);
-    const strokePanel = new StrokePanel(inputStyle.data, svgRepStyle?.data, async (strokeData: StrokeData)=>{
-      const notebook = this.container.screen.notebook;
-      const changeRequest: StyleChangeRequest = { type: 'changeStyle', styleId: inputStyle.id, data: strokeData };
-      // TODO: We don't want to wait for *all* processing of the strokes to finish, just the svg update.
-      // TODO: Incremental changes.
-      await notebook.sendChangeRequest(changeRequest);
+  private createStrokeSubpanel(style: StyleObject): StrokePanel {
+    const data = <TextCellStylusData>style.data;
+    const strokePanel = new StrokePanel(data.stylusInput, data.displaySvg, async (_strokeData: StrokeData)=>{
+      throw new Error("TODO: Just send stroke to server");
+      // const changeRequest: StyleChangeRequest = { type: 'changeStyle', styleId: style.id, data: strokeData };
+      // // TODO: We don't want to wait for *all* processing of the strokes to finish, just the svg update.
+      // // TODO: Incremental changes.
+      // await this.container.screen.notebook.sendChangeRequest(changeRequest);
     });
     return strokePanel;
-  }
-
-  private removeDisplayPanel(): void {
-    this.$displayPanel!.remove();
-    delete this.$displayPanel;
   }
 
   private updateDisplayPanel(style: StyleObject): void {
@@ -188,7 +171,7 @@ private createKeyboardSubpanel(inputStyle: StyleObject): KeyboardPanel {
     switch(inputStyle.type) {
       case 'STROKE-DATA':
         assert(this.strokePanel);
-        this.strokePanel!.updateStrokeData(inputStyle.data);
+        this.strokePanel!.updateStylusInput(inputStyle.data);
         break;
       case 'PLAIN-TEXT':
         assert(this.keyboardPanel);

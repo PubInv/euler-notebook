@@ -25,10 +25,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 import * as debug1 from "debug";
 const debug = debug1('client:notebook-edit-screen-content');
 
-import { CssClass, assert, deepCopy, Html, assertFalse, notImplemented, CssLength, PlainText, SvgMarkup } from "../../../shared/common";
-import { StylusInput } from "../../../shared/stylus";
-import { CellType, FigureCellData, InputType, TextCellData } from "../../../shared/cell";
-import { FormulaCellData, PlainTextMath } from "../../../shared/formula";
+import { CssClass, assert, Html, assertFalse, notImplemented } from "../../../shared/common";
 import {
   StyleId, StyleObject, NotebookChange, StyleRelativePosition, StylePosition,
 } from "../../../shared/notebook";
@@ -42,7 +39,6 @@ import { createCell } from "./cells/index";
 import { HtmlElement } from "../../../html-element";
 import { NotebookEditScreen } from "..";
 import { reportError } from "../../../error-handler";
-import { userSettingsInstance } from "../../../user-settings";
 
 // Types
 
@@ -89,12 +85,6 @@ const KEY_MAP: [ KeyName, KeyMods, CommandName][] = [
 
 const KEY_BINDINGS = new Map<KeyCombo, CommandName>(KEY_MAP.map(([ keyName, keyMods, commandName])=>[ `${keyName}${keyMods}`, commandName ]));
 
-const EMPTY_STYLUS_INPUT: StylusInput = {
-  size: { height: <CssLength>'96px', width: <CssLength>'624px' }, // 1in x 6.5in = 96px
-  strokeGroups: [
-    { strokes: [] }
-  ],
-};
 
 // Exported Class
 
@@ -209,16 +199,19 @@ export class Content extends HtmlElement<'div'>{
       else { afterId = StylePosition.Bottom; }
     }
 
-    const data: FigureCellData = {
-      type: CellType.Figure,
-      inputType: InputType.Stylus,
-      height: 72, // points
-      stylusInput: deepCopy(EMPTY_STYLUS_INPUT),
-    }
-    const styleProps: StylePropertiesWithSubprops = { role: 'FIGURE', subrole: 'OTHER', type: 'NONE', data };
-    const changeRequest: StyleInsertRequest = { type: 'insertStyle', afterId, styleProps };
-    /* const undoChangeRequest = */ await this.sendUndoableChangeRequest(changeRequest);
-    // const styleId = (<StyleDeleteRequest>undoChangeRequest).styleId
+    // TODO: We don't have all the information to insert the full cell (displaySvg, etc.)
+    //       We need a change that specifically inserts a figure with partial data.
+    throw new Error("TODO:");
+    // const data: FigureCellData = {
+    //   type: CellType.Figure,
+    //   inputType: InputType.Stylus,
+    //   height: 72, // points
+    //   stylusInput: deepCopy(EMPTY_STYLUS_INPUT),
+    // }
+    // const styleProps: StylePropertiesWithSubprops = { role: 'FIGURE', subrole: 'OTHER', type: 'NONE', data };
+    // const changeRequest: StyleInsertRequest = { type: 'insertStyle', afterId, styleProps };
+    // /* const undoChangeRequest = */ await this.sendUndoableChangeRequest(changeRequest);
+    // // const styleId = (<StyleDeleteRequest>undoChangeRequest).styleId
   }
 
   public async insertFormulaCellBelow(afterId?: StyleRelativePosition): Promise<void> {
@@ -231,29 +224,32 @@ export class Content extends HtmlElement<'div'>{
       else { afterId = StylePosition.Bottom; }
     }
 
-    const inputMode = userSettingsInstance.defaultInputMode;
-    const data: FormulaCellData = (inputMode=='keyboard' ?
-      {
-        type: CellType.Formula,
-        inputType: InputType.Keyboard,
-        height: 72, // points
-        plainTextMath: <PlainTextMath>'',
-      } :
-      {
-        type: CellType.Formula,
-        inputType: InputType.Stylus,
-        height: 72, // points
-        plainTextMath: <PlainTextMath>'',
-        stylusInput: deepCopy(EMPTY_STYLUS_INPUT),
-        stylusSvg: <SvgMarkup>'',
-      }
-    );
-    const styleProps: StylePropertiesWithSubprops = { role: 'FORMULA', type: 'FORMULA-DATA', data };
+    // TODO: We don't have all the information to insert the full cell (displaySvg, etc.)
+    //       We need a change that specifically inserts a formula with partial data.
+    throw new Error("TODO:");
+    // const inputMode = userSettingsInstance.defaultInputMode;
+    // const data: FormulaCellData = (inputMode=='keyboard' ?
+    //   {
+    //     type: CellType.Formula,
+    //     inputType: InputType.Keyboard,
+    //     height: 72, // points
+    //     plainTextMath: <PlainTextMath>'',
+    //   } :
+    //   {
+    //     type: CellType.Formula,
+    //     inputType: InputType.Stylus,
+    //     height: 72, // points
+    //     plainTextMath: <PlainTextMath>'',
+    //     stylusInput: deepCopy(EMPTY_STYLUS_INPUT),
+    //     stylusSvg: <SvgMarkup>'',
+    //   }
+    // );
+    // const styleProps: StylePropertiesWithSubprops = { role: 'FORMULA', type: 'FORMULA-DATA', data };
 
-    // Insert top-level style and wait for it to be inserted.
-    const changeRequest: StyleInsertRequest = { type: 'insertStyle', afterId, styleProps };
-    const undoChangeRequest = await this.sendUndoableChangeRequest(changeRequest);
-    /* const styleId = */(<StyleDeleteRequest>undoChangeRequest).styleId;
+    // // Insert top-level style and wait for it to be inserted.
+    // const changeRequest: StyleInsertRequest = { type: 'insertStyle', afterId, styleProps };
+    // const undoChangeRequest = await this.sendUndoableChangeRequest(changeRequest);
+    // /* const styleId = */(<StyleDeleteRequest>undoChangeRequest).styleId;
 
     // TODO: Set focus?
   }
@@ -268,28 +264,31 @@ export class Content extends HtmlElement<'div'>{
       else { afterId = StylePosition.Bottom; }
     }
 
-    const inputMode = userSettingsInstance.defaultInputMode;
-    const data: TextCellData = (inputMode=='keyboard' ?
-      {
-        type: CellType.Text,
-        inputType: InputType.Keyboard,
-        height: 72, // points
-        plainText: <PlainText>'',
-      } :
-      {
-        type: CellType.Text,
-        inputType: InputType.Stylus,
-        height: 72, // points
-        plainText: <PlainText>'',
-        stylusInput: deepCopy(EMPTY_STYLUS_INPUT),
-      }
-    );
-    const styleProps: StylePropertiesWithSubprops = { role: 'TEXT', type: 'NONE', data };
+    // TODO: We don't have all the information to insert the full cell (displaySvg, etc.)
+    //       We need a change that specifically inserts a text with partial data.
+    throw new Error("TODO:");
+    // const inputMode = userSettingsInstance.defaultInputMode;
+    // const data: TextCellData = (inputMode=='keyboard' ?
+    //   {
+    //     type: CellType.Text,
+    //     inputType: InputType.Keyboard,
+    //     height: 72, // points
+    //     plainText: <PlainText>'',
+    //   } :
+    //   {
+    //     type: CellType.Text,
+    //     inputType: InputType.Stylus,
+    //     height: 72, // points
+    //     plainText: <PlainText>'',
+    //     stylusInput: deepCopy(EMPTY_STYLUS_INPUT),
+    //   }
+    // );
+    // const styleProps: StylePropertiesWithSubprops = { role: 'TEXT', type: 'NONE', data };
 
-    // Insert top-level style and wait for it to be inserted.
-    const changeRequest: StyleInsertRequest = { type: 'insertStyle', afterId, styleProps };
-    const undoChangeRequest = await this.sendUndoableChangeRequest(changeRequest);
-    /* const styleId = */(<StyleDeleteRequest>undoChangeRequest).styleId;
+    // // Insert top-level style and wait for it to be inserted.
+    // const changeRequest: StyleInsertRequest = { type: 'insertStyle', afterId, styleProps };
+    // const undoChangeRequest = await this.sendUndoableChangeRequest(changeRequest);
+    // /* const styleId = */(<StyleDeleteRequest>undoChangeRequest).styleId;
 
     // TODO: Set focus?
   }
@@ -640,17 +639,6 @@ export class Content extends HtmlElement<'div'>{
     return rval;
   }
 
-  // Private Instance Methods
-
-  // Private Notebook Change Handlers
-
-  // Private Event Handlers
-
-  private async sendUndoableChangeRequest(changeRequest: NotebookChangeRequest): Promise<NotebookChangeRequest> {
-    const undoChangeRequests = await this.sendUndoableChangeRequests([changeRequest]);
-    assert(undoChangeRequests.length==1);
-    return undoChangeRequests[0];
-  }
 
   private async sendUndoableChangeRequests(changeRequests: NotebookChangeRequest[]): Promise<NotebookChangeRequest[]> {
     // Disable the undo and redo buttons

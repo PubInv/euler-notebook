@@ -26,16 +26,16 @@ const debug = debug1('client:formula-cell');
 
 import { CssClass, Html, assertFalse, assert } from "../../../../shared/common";
 import { StrokeData } from "../../../../shared/stylus";
-import { FormulaCellData, FormulaCellStylusData, FormulaCellKeyboardData } from "../../../../shared/formula";
+import { FormulaCellData, FormulaCellStylusData } from "../../../../shared/formula";
 import { StyleObject, NotebookChange, StyleSubrole } from "../../../../shared/notebook";
 
 import { $new, $outerSvg } from "../../../../dom";
 import { Content as CellContainer } from "..";
 
-import { CellBase, isDisplaySvgStyle } from "./cell-base";
+import { CellBase } from "./cell-base";
 import { KeyboardPanel } from "../../../../components/keyboard-panel";
 import { StrokePanel } from "../../../../components/stroke-panel";
-import { StyleChangeRequest } from "../../../../shared/math-tablet-api";
+// import { StyleChangeRequest } from "../../../../shared/math-tablet-api";
 import { notebookChangeSynopsis } from "../../../../shared/debug-synopsis";
 import { InputType } from "../../../../shared/cell";
 
@@ -69,12 +69,8 @@ export class FormulaCell extends CellBase {
 
     super(container, style, $content);
 
-    const notebook = container.screen.notebook;
-    const svgRepStyle = notebook.findStyle({ role: 'REPRESENTATION', type: 'SVG-MARKUP' }, style.id);
-    if (svgRepStyle) {
-      this.$displayPanel = this.createDisplayPanel(svgRepStyle);
-      this.$content.prepend(this.$displayPanel);
-    }
+    this.$displayPanel = this.createDisplayPanel(style);
+    this.$content.prepend(this.$displayPanel);
 
     this.$inputPanel = this.createInputPanel(style);
     if (this.$inputPanel) {
@@ -101,18 +97,12 @@ export class FormulaCell extends CellBase {
         break;
       }
       case 'styleInserted': {
-        if (isDisplaySvgStyle(change.style, this.styleId)) {
-          this.$displayPanel = this.createDisplayPanel(change.style);
-          this.$content.prepend(this.$displayPanel);
-        } else {
-          // Ignore. Not something we are interested in.
-        }
+        // Ignore. Not something we are interested in.
         break;
       }
       case 'styleChanged': {
-        if (isDisplaySvgStyle(change.style, this.styleId)) {
+        if (change.style.id == this.styleId) {
           this.updateDisplayPanel(change.style);
-        } else if (change.style.id == this.styleId) {
           this.updateInputPanelData(change.style);
           this.updateInputPanelDrawing(change.style);
         } else {
@@ -125,11 +115,7 @@ export class FormulaCell extends CellBase {
         break;
       }
       case 'styleDeleted': {
-        if (isDisplaySvgStyle(change.style, this.styleId)) {
-          this.removeDisplayPanel();
-        } else {
-          // Ignore. Not something we are interested in.
-        }
+        // Ignore. Not something we are interested in.
         break;
       }
       case 'styleMoved': assertFalse();
@@ -188,7 +174,8 @@ export class FormulaCell extends CellBase {
   // }
 
   private createDisplayPanel(style: StyleObject): SVGSVGElement {
-    const $displayPanel = $outerSvg<'svg'>(style.data);
+    const data: FormulaCellData = style.data;
+    const $displayPanel = $outerSvg<'svg'>(data.displaySvg);
     $displayPanel.classList.add('display');
     return $displayPanel;
   }
@@ -229,14 +216,14 @@ export class FormulaCell extends CellBase {
 
   private createKeyboardSubpanel(style: StyleObject): KeyboardPanel {
 
-    const data = <FormulaCellKeyboardData>style.data;
+    const data = <FormulaCellData>style.data;
 
     // Callback function for when text in the panel has changed.
     // Submit a notebook change request.
-    const textChangeCallback = async (text: string)=>{
-      throw new Error("FIX DATA PARAM");
-      const changeRequest: StyleChangeRequest = { type: 'changeStyle', styleId: style.id, data: text };
-      await this.container.screen.notebook.sendChangeRequest(changeRequest);
+    const textChangeCallback = async (_text: string)=>{
+      throw new Error("TODO: Just send keystroke to server");
+      // const changeRequest: StyleChangeRequest = { type: 'changeStyle', styleId: style.id, data: text };
+      // await this.container.screen.notebook.sendChangeRequest(changeRequest);
     }
 
     // Create the panel
@@ -249,22 +236,17 @@ export class FormulaCell extends CellBase {
 
     // Callback function for when strokes in the panel have changed.
     // Submit a notebook change request.
-    const strokesChangeCallback = async (strokeData: StrokeData)=>{
-      throw new Error("FIX DATA PARAM");
-      const changeRequest: StyleChangeRequest = { type: 'changeStyle', styleId: style.id, data: strokeData };
-      // TODO: We don't want to wait for *all* processing of the strokes to finish, just the svg update.
-      // TODO: Incremental changes.
-      await this.container.screen.notebook.sendChangeRequest(changeRequest);
+    const strokesChangeCallback = async (_strokeData: StrokeData)=>{
+      throw new Error("TODO: Just send stroke to server");
+      // const changeRequest: StyleChangeRequest = { type: 'changeStyle', styleId: style.id, data: strokeData };
+      // // TODO: We don't want to wait for *all* processing of the strokes to finish, just the svg update.
+      // // TODO: Incremental changes.
+      // await this.container.screen.notebook.sendChangeRequest(changeRequest);
     };
 
     // Create the panel
     const strokePanel = new StrokePanel(data.stylusInput, data.stylusSvg, strokesChangeCallback);
     return strokePanel;
-  }
-
-  private removeDisplayPanel(): void {
-    this.$displayPanel!.remove();
-    delete this.$displayPanel;
   }
 
   private updateDisplayPanel(style: StyleObject): void {
@@ -277,7 +259,7 @@ export class FormulaCell extends CellBase {
     switch(inputStyle.type) {
       case 'STROKE-DATA':
         assert(this.strokePanel);
-        this.strokePanel!.updateStrokeData(inputStyle.data);
+        this.strokePanel!.updateStylusInput(inputStyle.data);
         break;
       case 'TEX-EXPRESSION':
       case 'WOLFRAM-EXPRESSION':

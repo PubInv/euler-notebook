@@ -144,17 +144,14 @@ export class MathematicaObserver implements ObserverInstance {
       debug("sustitutions",substitutions);
       debug("sub_expr",sub_expr);
 
-      const parentThought =  this.notebook.topLevelStyleOf(style.id);
+      // const parentThought =  this.notebook.topLevelStyleOf(style.id);
 
       const expressions = this.notebook.allStyles().filter(
-        (s: StyleObject, _index: number, _array: StyleObject[]) => {
-          const anc = this.notebook.topLevelStyleOf(s.id);
-          if (anc == parentThought) return false;
-          else {
-            debug(s);
-            debug(s.role == 'REPRESENTATION' && s.type == 'WOLFRAM-EXPRESSION');
-            return (s.role == 'REPRESENTATION' && s.type == 'WOLFRAM-EXPRESSION');
-          }
+        (_s: StyleObject, _index: number, _array: StyleObject[]) => {
+          // const anc = this.notebook.topLevelStyleOf(s.id);
+          // TODO: This was looking for REPRESENTATION/WOLFRAM-EXPRESSION styles but those no longer exist.
+          throw new Error("TODO:");
+          return false;
         });
       debug("expressions",expressions);
       // Now I will try to build a table...

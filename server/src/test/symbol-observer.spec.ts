@@ -26,7 +26,7 @@ import { assert } from "chai";
 import 'mocha';
 // import * as sinon from "sinon";
 
-import { FormulaCellData, PlainTextMath } from "../shared/formula";
+import { /* FormulaCellData, */ PlainTextMath } from "../shared/formula";
 import {
   StyleObject, RelationshipObject, StyleId
 } from "../shared/notebook";
@@ -37,7 +37,7 @@ import {
 import { ServerNotebook }  from "../server-notebook";
 
 import { ensureGlobalLoaded } from "./global";
-import { CellType, InputType } from "../shared/cell";
+// import { CellType, InputType } from "../shared/cell";
 ensureGlobalLoaded();
 
 // Types
@@ -116,8 +116,10 @@ describe("test symbol observer", function() {
       const childEvaluation = notebook.findStyles({ type: 'WOLFRAM-EXPRESSION', role: 'EVALUATION', recursive: true }, style.id);
       assert(childEvaluation.length == 1,"There should be one evaluation, but there are:"+childEvaluation.length);
 
-      const childRepresentation = notebook.findStyles({ type: 'WOLFRAM-EXPRESSION', role: 'REPRESENTATION', recursive: true }, style.id);
-      assert(childRepresentation.length == 1,"There should be one evaluation, but there are:"+childRepresentation.length);
+      // TODO: REPRESENTATION styles no longer exist.
+      throw new Error("TODO:");
+      // const childRepresentation = notebook.findStyles({ type: 'WOLFRAM-EXPRESSION', role: 'REPRESENTATION', recursive: true }, style.id);
+      // assert(childRepresentation.length == 1,"There should be one evaluation, but there are:"+childRepresentation.length);
     });
 
     it("a definition and a use creates a relationship if separate", async function(){
@@ -623,21 +625,23 @@ async function serializeChangeRequests(notebook: ServerNotebook,
   }
 }
 
-function insertWolframFormulas(wolframDatas: PlainTextMath[]) : StyleInsertRequest[] {
-  var reqs : StyleInsertRequest[] = [];
-  for(const wolframData of wolframDatas) {
-    const data: FormulaCellData = {
-      type: CellType.Formula,
-      inputType: InputType.None,
-      height: 72, // points
-      plainTextMath: wolframData,
-    };
-    reqs.push({
-      type: 'insertStyle',
-      styleProps: { role: 'FORMULA', type: 'FORMULA-DATA', data }
-    });
-  }
-  return reqs;
+function insertWolframFormulas(_wolframDatas: PlainTextMath[]) : StyleInsertRequest[] {
+  // TODO: Need to include displaySvg field in FormulaData.
+  throw new Error("TODO:");
+  // var reqs : StyleInsertRequest[] = [];
+  // for(const wolframData of wolframDatas) {
+  //   const data: FormulaCellData = {
+  //     type: CellType.Formula,
+  //     inputType: InputType.None,
+  //     height: 72, // points
+  //     plainTextMath: wolframData,
+  //   };
+  //   reqs.push({
+  //     type: 'insertStyle',
+  //     styleProps: { role: 'FORMULA', type: 'FORMULA-DATA', data }
+  //   });
+  // }
+  // return reqs;
 }
 
 function constructMapRelations(notebook: ServerNotebook, rs: RelationshipObject[]): RelationshipStringObject[] {

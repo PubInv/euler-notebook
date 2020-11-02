@@ -23,7 +23,7 @@ import * as debug1 from "debug";
 const debug = debug1('client:stroke-panel');
 
 import { CssClass, CssLength, SvgMarkup, assert, deepCopy } from "../shared/common";
-import { StrokeData } from "../shared/stylus";
+import { StylusInput } from "../shared/stylus";
 
 import { $outerSvg, $newSvg, $svg } from "../dom";
 
@@ -36,7 +36,7 @@ import { HtmlElement } from "../html-element";
 
 // Types
 
-type StrokeCallbackFn = (strokeData: StrokeData)=>Promise<void>;
+type StrokeCallbackFn = (stylusInput: StylusInput)=>Promise<void>;
 
 // Constants
 
@@ -49,14 +49,14 @@ export class StrokePanel extends HtmlElement<'div'> {
   // Public Constructor
 
   public constructor(
-    strokeData: StrokeData,
+    stylusInput: StylusInput,
     svgMarkup: SvgMarkup|undefined,
     strokeCallbackFn: StrokeCallbackFn,
   ) {
     debug(`Creating instance ${svgMarkup?'with':'without'} SVG markup.`);
 
     // REVIEW: Why do we have to specify height here?
-    const $svgPanel = svgMarkup ? $outerSvg<'svg'>(svgMarkup) : $newSvg<'svg'>({ tag: 'svg', class: <CssClass>'svgPanel', attrs: { height: strokeData.size.height, width:strokeData.size.width }});
+    const $svgPanel = svgMarkup ? $outerSvg<'svg'>(svgMarkup) : $newSvg<'svg'>({ tag: 'svg', class: <CssClass>'svgPanel', attrs: { height: stylusInput.size.height, width:stylusInput.size.width }});
 
     const width = <CssLength>$svgPanel.getAttribute('width'); // REVIEW: Get computed value instead?
     const height = <CssLength>$svgPanel.getAttribute('height');
@@ -73,8 +73,8 @@ export class StrokePanel extends HtmlElement<'div'> {
 
     this.$svgPanel = $svgPanel;
     this.strokeCallbackFn = strokeCallbackFn;
-    // REVIEW: Is strokeData updated in-place?
-    this.strokeData = deepCopy(strokeData);
+    // REVIEW: Is stylusInput updated in-place?
+    this.stylusInput = deepCopy(stylusInput);
   }
 
   // Public Instance Properties
@@ -82,8 +82,8 @@ export class StrokePanel extends HtmlElement<'div'> {
 
   // Public Instance Methods
 
-  public updateStrokeData(strokeData: StrokeData): void {
-    this.strokeData = deepCopy(strokeData);
+  public updateStylusInput(stylusInput: StylusInput): void {
+    this.stylusInput = deepCopy(stylusInput);
   }
 
   public updateSvgMarkup(markup: SvgMarkup): void {
@@ -99,7 +99,7 @@ export class StrokePanel extends HtmlElement<'div'> {
 
   private $svgPanel: SVGSVGElement|undefined;
   private strokeCallbackFn: StrokeCallbackFn;
-  private strokeData: StrokeData;
+  private stylusInput: StylusInput;
 
   // Private Instance Property Functions
 
@@ -136,9 +136,9 @@ export class StrokePanel extends HtmlElement<'div'> {
     // TODO: What if socket to server is closed? We'll just accumulate strokes that will never get saved.
     //       How do we handle offline operation?
     // TODO: Incremental change request.
-    this.strokeData.strokeGroups[0].strokes.push(stroke.data);
+    this.stylusInput.strokeGroups[0].strokes.push(stroke.data);
     debug(`Calling stroke callback function`);
-    return this.strokeCallbackFn(this.strokeData);
+    return this.strokeCallbackFn(this.stylusInput);
   }
 }
 

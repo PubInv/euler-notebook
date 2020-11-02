@@ -24,13 +24,13 @@ const MODULE = __filename.split(/[/\\]/).slice(-1)[0].slice(0,-3);
 const debug = debug1(`server:${MODULE}`);
 
 import { Html } from "../shared/common";
-import { FormulaCellData, PlainTextMath } from "../shared/formula";
+//import { FormulaCellData, PlainTextMath } from "../shared/formula";
 import {
   StyleObject, WolframExpression
 } from "../shared/notebook";
 import {
-  ToolData, NotebookChangeRequest, StyleInsertRequest, StylePropertiesWithSubprops,
-  TransformationToolData,TexExpression,
+  ToolData, NotebookChangeRequest, /* StyleInsertRequest, StylePropertiesWithSubprops,
+  TransformationToolData, */TexExpression,
 } from "../shared/math-tablet-api";
 import { AsyncComputeFunction, AsyncRule, AsyncRules, BaseObserver, StyleRelation, SyncRules } from "./base-observer";
 
@@ -41,7 +41,7 @@ import { execute,
          convertMTLToTeX
        } from "../adapters/wolframscript";
 import { Config } from "../config";
-import { CellType, InputType } from "../shared/cell";
+//import { CellType, InputType } from "../shared/cell";
 
 // Types
 
@@ -143,41 +143,43 @@ export class AlgebraicToolsObserverHL extends BaseObserver {
                        (s : string) => <TexExpression>`\\text{Apart: } ${s}`);
   }
 
-  public async useTool(toolStyle: StyleObject): Promise<NotebookChangeRequest[]> {
-//    debug(`useTool ${this.notebook.path} ${toolStyle.id}`);
+  public async useTool(_toolStyle: StyleObject): Promise<NotebookChangeRequest[]> {
+    // TODO: Need to add displaySvg field to FormulaData.
+    throw new Error("TODO:");
+// //    debug(`useTool ${this.notebook.path} ${toolStyle.id}`);
 
-    const toolData: ToolData = toolStyle.data;
-    const transformationData: TransformationToolData = toolData.data;
+//     const toolData: ToolData = toolStyle.data;
+//     const transformationData: TransformationToolData = toolData.data;
 
-    // We made a design decision that the relationship
-    // is from top level formula and to top level formula
+//     // We made a design decision that the relationship
+//     // is from top level formula and to top level formula
 
-    debug("xxx",toolData);
+//     debug("xxx",toolData);
 
-    const toId = this.notebook.reserveId();
+//     const toId = this.notebook.reserveId();
 
-    debug("toolData.output", transformationData.output);
+//     debug("toolData.output", transformationData.output);
 
-    const formulaData: FormulaCellData = {
-      type: CellType.Formula,
-      inputType: InputType.None,
-      height: 72, // points
-      plainTextMath: <PlainTextMath>transformationData.output,
-    };
-    const styleProps: StylePropertiesWithSubprops = {
-      id: toId,
-      role: 'FORMULA',
-      type: 'FORMULA-DATA',
-      data: formulaData,
-    };
+//     const formulaData: FormulaCellData = {
+//       type: CellType.Formula,
+//       inputType: InputType.None,
+//       height: 72, // points
+//       plainTextMath: <PlainTextMath>transformationData.output,
+//     };
+//     const styleProps: StylePropertiesWithSubprops = {
+//       id: toId,
+//       role: 'FORMULA',
+//       type: 'FORMULA-DATA',
+//       data: formulaData,
+//     };
 
-    const changeReq: StyleInsertRequest = {
-      type: 'insertStyle',
-      // TODO: afterId should be ID of subtrivariate.
-      styleProps,
-    };
+//     const changeReq: StyleInsertRequest = {
+//       type: 'insertStyle',
+//       // TODO: afterId should be ID of subtrivariate.
+//       styleProps,
+//     };
 
-    return [ changeReq ];
+//     return [ changeReq ];
   }
 
   private effectiveEqual(a : string,b :string) : boolean {

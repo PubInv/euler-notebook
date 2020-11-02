@@ -69,32 +69,6 @@ export abstract class CellBase extends HtmlElement<'div'>{
 
   // Instance Methods
 
-  // public abstract render(style: StyleObject): void;
-  // {
-  //   // get the primary representation
-  //   let repStyle = this.view.screen.notebook.findStyle({ role: 'REPRESENTATION', subrole: 'PRIMARY' }, style.id);
-  //   if (!repStyle) {
-  //     // TODO: Look for renderable alternate representations
-  //     this.$elt.innerHTML = CellBase.MISSING_ERROR;
-  //     return;
-  //   }
-
-  //   switch(repStyle.type) {
-  //     case 'IMAGE-URL': {
-  //       const url: string = style.data;
-  //       this.$elt.innerHTML = `<image src="${url}"/>`
-  //       break;
-  //     }
-  //     case 'SVG-MARKUP': {
-  //       this.$elt.innerHTML = repStyle.data;
-  //       break;
-  //     }
-  //     default:
-  //       assert(false, "TODO: Unrecognized representation type.");
-  //       break;
-  //   }
-  // }
-
   public renderTools(tools: Tools): void {
     tools.clear();
     tools.render(this.styleId);
@@ -299,10 +273,6 @@ export abstract class CellBase extends HtmlElement<'div'>{
 }
 
 // EXPORTED FUNCTIONS
-
-export function isDisplaySvgStyle(style: StyleObject, parentId: StyleId): boolean {
-  return style.role == 'REPRESENTATION' && style.type == 'SVG-MARKUP' && style.parentId == parentId;
-}
 
 // HELPER FUNCTIONS
 

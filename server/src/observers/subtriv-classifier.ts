@@ -348,25 +348,19 @@ async function plotSubtrivariate(expr: string, variables: string[], filename: st
   // Strip off XML wrapper
   assert(xml.startsWith(XML_PREFIX));
   assert(xml.endsWith(XML_SUFFIX));
-  const svgMarkup: SvgMarkup = <SvgMarkup>xml.slice(XML_PREFIX.length, -XML_SUFFIX.length);
+  const displaySvg: SvgMarkup = <SvgMarkup>xml.slice(XML_PREFIX.length, -XML_SUFFIX.length);
 
   const plotData: PlotCellData = {
     type: CellType.Plot,
-    height: 72, // points
+    height: 72, // points // TODO: Height should come from the plot itself!
+    displaySvg,
     formulaStyleId: -1, // TODO: Identify the formula from which the plot was made.
     // LATER: Identify the variables used in the plot.
   };
-
   const styleProps: StylePropertiesWithSubprops = {
     type: 'PLOT-DATA',
     data: plotData,
     role: 'PLOT',
-    subprops: [{
-      role: 'REPRESENTATION',
-      subrole: 'PRIMARY',
-      type: 'SVG-MARKUP',
-      data: svgMarkup,
-    }],
   };
   changeRequest = {
     type: 'insertStyle',

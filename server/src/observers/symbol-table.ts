@@ -133,7 +133,9 @@ export class SymbolTableObserver implements ObserverInstance {
 
     // These styles should be moved out...
     // Some of these may be empty, though that is probably wrong on our part...
-    var exprs = exprs_styles.map(s => this.notebook.findStyle({role: 'REPRESENTATION', type: 'WOLFRAM-EXPRESSION'},s.id)!.data).filter(x => x);
+    // TODO: This was looking for REPRESENTATION/WOLFRAM-EXPRESSION styles.
+    throw new Error("TODO:");
+    var exprs = []; //exprs_styles.map(s => this.notebook.findStyle({role: 'REPRESENTATION', type: 'WOLFRAM-EXPRESSION'},s.id)!.data).filter(x => x);
 
     var symbols : string[] = [];
     var use_styles: StyleObject[] = [];

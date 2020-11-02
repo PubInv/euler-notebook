@@ -87,7 +87,9 @@ async function obtainFormulaeInContext(notebook: ServerNotebook, style: StyleObj
 
   // These styles should be moved out...
   // Some of these may be empty, though that is probably wrong on our part...
-  var exprs = exprs_styles.map(s => notebook.findStyle({role: 'REPRESENTATION', type: 'WOLFRAM-EXPRESSION'},s.id)!.data).filter(x => x);
+  // TODO: This was looking for REPRESENTATION/WOLFRAM-EXPRESSION styles.
+  throw new Error("TODO:");
+  var exprs: any[] = []; // exprs_styles.map(s => notebook.findStyle({role: 'REPRESENTATION', type: 'WOLFRAM-EXPRESSION'},s.id)!.data).filter(x => x);
 
   var symbols : string[] = [];
   var use_styles: StyleObject[] = [];

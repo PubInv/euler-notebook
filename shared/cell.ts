@@ -19,7 +19,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 // Requirements
 
-import { LengthInPoints, PlainText } from "./common";
+import { LengthInPoints, PlainText, SvgMarkup } from "./common";
 import { StylusInput } from "./stylus";
 import { StyleId } from "./notebook";
 
@@ -35,6 +35,7 @@ export enum CellType {
 export interface CellData {
   type: CellType;
   height: LengthInPoints;
+  displaySvg: SvgMarkup;
 }
 
 export enum InputType {

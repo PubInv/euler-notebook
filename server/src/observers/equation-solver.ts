@@ -24,19 +24,19 @@ const MODULE = __filename.split(/[/\\]/).slice(-1)[0].slice(0,-3);
 const debug = debug1(`server:${MODULE}`);
 
 import { assert } from "../shared/common";
-import { FormulaCellData, PlainTextMath } from "../shared/formula";
+//import { FormulaCellData, PlainTextMath } from "../shared/formula";
 import {
   NotebookChange, StyleObject, RelationshipObject, StyleId, WolframExpression,
 } from "../shared/notebook";
 
 import {
   ToolData, NotebookChangeRequest, StyleInsertRequest, StylePropertiesWithSubprops,
-  StyleDeleteRequest, TexExpression, RelationshipPropertiesMap, NameValuePair
+  StyleDeleteRequest, TexExpression, /* RelationshipPropertiesMap, */NameValuePair
 } from "../shared/math-tablet-api";
 import { ServerNotebook, ObserverInstance } from "../server-notebook";
 import { execute, convertWolframToTeX } from "../adapters/wolframscript";
 import { Config } from "../config";
-import { CellType, InputType } from "../shared/cell";
+//import { CellType, InputType } from "../shared/cell";
 
 
 
@@ -74,40 +74,42 @@ export class EquationSolverObserver implements ObserverInstance {
     debug(`onClose ${this.notebook.path}`);
   }
 
-  public async useTool(toolStyle: StyleObject): Promise<NotebookChangeRequest[]> {
-    debug(`useTool ${this.notebook.path} ${toolStyle.id}`);
+  public async useTool(_toolStyle: StyleObject): Promise<NotebookChangeRequest[]> {
+    // TODO: Need to add displaySvg field to FormulaData.
+    throw new Error("TODO:");
+    // debug(`useTool ${this.notebook.path} ${toolStyle.id}`);
 
-    const nvp = JSON.parse(toolStyle.data.data);
+    // const nvp = JSON.parse(toolStyle.data.data);
 
-    // This needs to be filled up!!
-    // As an experiment--I am attempting to simulate a "WOLFRAM INPUT",
-    // in hopes that we get all the good definitional and change function out of that.
-    const relationsTo: RelationshipPropertiesMap = {};
+    // // This needs to be filled up!!
+    // // As an experiment--I am attempting to simulate a "WOLFRAM INPUT",
+    // // in hopes that we get all the good definitional and change function out of that.
+    // const relationsTo: RelationshipPropertiesMap = {};
+    // // const styleProps: StylePropertiesWithSubprops = {
+    // //   type: 'SYMBOL',
+    // //   data: nvp,
+    // //   role: 'SYMBOL-DEFINITION',
+    // //   relationsTo,
+    // // };
+    // debug("npv.value",nvp.value);
+    // const wolframData = <PlainTextMath>(nvp.name + ' = ' + nvp.value);
+    // const formulaData: FormulaCellData = {
+    //   type: CellType.Formula,
+    //   inputType: InputType.None,
+    //   height: 72, // points
+    //   plainTextMath: wolframData,
+    // };
     // const styleProps: StylePropertiesWithSubprops = {
-    //   type: 'SYMBOL',
-    //   data: nvp,
-    //   role: 'SYMBOL-DEFINITION',
+    //   role: 'FORMULA',
+    //   type: 'FORMULA-DATA',
+    //   data: formulaData,
     //   relationsTo,
     // };
-    debug("npv.value",nvp.value);
-    const wolframData = <PlainTextMath>(nvp.name + ' = ' + nvp.value);
-    const formulaData: FormulaCellData = {
-      type: CellType.Formula,
-      inputType: InputType.None,
-      height: 72, // points
-      plainTextMath: wolframData,
-    };
-    const styleProps: StylePropertiesWithSubprops = {
-      role: 'FORMULA',
-      type: 'FORMULA-DATA',
-      data: formulaData,
-      relationsTo,
-    };
-    const changeReq: StyleInsertRequest = {
-        type: 'insertStyle',
-        styleProps,
-      };
-      return [ changeReq ];
+    // const changeReq: StyleInsertRequest = {
+    //     type: 'insertStyle',
+    //     styleProps,
+    //   };
+    //   return [ changeReq ];
   }
 
   // --- PRIVATE ---

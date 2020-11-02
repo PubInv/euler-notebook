@@ -25,6 +25,7 @@ import { $newSvg, $allSvg, $outerSvg, cssLength } from "../../dom";
 import { HtmlElement } from "../../html-element";
 
 import { Mode, NotebookReadScreen } from "./index";
+import { CellData } from "../../shared/cell";
 
 // Types
 
@@ -140,13 +141,9 @@ export class Content extends HtmlElement<'div'>{
       for (const styleId of page.styleIds) {
 
         const style = this.screen.notebook.getStyle(styleId);
-        const svgRepStyle = this.screen.notebook.findStyle({ role: 'REPRESENTATION', type: 'SVG-MARKUP' }, style.id);
-        if (!svgRepStyle) {
-          console.warn(`Top-level style does not have SVG representation: ${style.id}`);
-          continue;
-        }
+        const data = <CellData>style.data;
 
-        const $cellSvg = $outerSvg(svgRepStyle.data);
+        const $cellSvg = $outerSvg(data.displaySvg);
         $cellSvg.setAttribute('x', `${x}pt`);
         $cellSvg.setAttribute('y', `${y}pt`);
         // TODO: translate SVG by (leftMargin, y);

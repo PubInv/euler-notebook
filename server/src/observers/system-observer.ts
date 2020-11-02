@@ -21,14 +21,14 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 import debug1 from "debug";
 
-import { CssClass, SvgMarkup } from "../shared/common";
-import { StyleObject } from "../shared/notebook";
-import { TexExpression } from "../shared/math-tablet-api";
+// import { CssClass, SvgMarkup } from "../shared/common";
+// import { StyleObject } from "../shared/notebook";
+// import { TexExpression } from "../shared/math-tablet-api";
 
-import { convertTexToSvg } from "../adapters/mathjax";
+// import { convertTexToSvg } from "../adapters/mathjax";
 import { ServerNotebook } from "../server-notebook";
 
-import { AsyncRules, BaseObserver, StyleRelation, SyncRules } from "./base-observer";
+import { AsyncRules, BaseObserver, /* StyleRelation, */ SyncRules } from "./base-observer";
 
 const MODULE = __filename.split(/[/\\]/).slice(-1)[0].slice(0,-3);
 const debug = debug1(`server:${MODULE}`);
@@ -73,14 +73,14 @@ export class SystemObserver extends BaseObserver {
     //   props: { role: 'REPRESENTATION', type: 'SVG-MARKUP' },
     //   compute: SystemObserver.prototype.convertPlainTextToSvgRule,
     // },
-    {
-      // REVIEW: Move this to TeX observer?
-      name: "convertTexToSvgRule",
-      styleTest: { role: 'REPRESENTATION', type: 'TEX-EXPRESSION' },
-      styleRelation: StyleRelation.PeerToPeer,
-      props: { role: 'REPRESENTATION', type: 'SVG-MARKUP' },
-      compute: SystemObserver.prototype.convertTexToSvgRule,
-    },
+    // {
+    //   // REVIEW: Move this to TeX observer?
+    //   name: "convertTexToSvgRule",
+    //   styleTest: { role: 'REPRESENTATION', type: 'TEX-EXPRESSION' },
+    //   styleRelation: StyleRelation.PeerToPeer,
+    //   props: { role: 'REPRESENTATION', type: 'SVG-MARKUP' },
+    //   compute: SystemObserver.prototype.convertTexToSvgRule,
+    // },
   ];
 
   // Private Instance Methods
@@ -110,11 +110,11 @@ export class SystemObserver extends BaseObserver {
   //   return svgMarkup;
   // }
 
-  private convertTexToSvgRule(style: StyleObject): SvgMarkup {
-    const tex: TexExpression = style.data;
-    debug(`convertTexToSvgRule on: ${tex}`);
-    return convertTexToSvg(tex, <CssClass>'displayPanel');
-  }
+  // private convertTexToSvgRule(style: StyleObject): SvgMarkup {
+  //   const tex: TexExpression = style.data;
+  //   debug(`convertTexToSvgRule on: ${tex}`);
+  //   return convertTexToSvg(tex, <CssClass>'displayPanel');
+  // }
 
 
   // Private Constructor

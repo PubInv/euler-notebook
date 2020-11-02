@@ -21,14 +21,14 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 import debug1 from "debug";
 
-import { FormulaCellData } from "../shared/formula";
-import { StyleObject } from "../shared/notebook";
-import { TexExpression } from "../shared/math-tablet-api";
+// import { FormulaCellData } from "../shared/formula";
+// import { StyleObject } from "../shared/notebook";
+// import { TexExpression } from "../shared/math-tablet-api";
 
 import { ServerNotebook } from "../server-notebook";
-import { convertWolframToTeX, convertMTLToWolfram } from "../adapters/wolframscript";
+// import { convertWolframToTeX, convertMTLToWolfram } from "../adapters/wolframscript";
 
-import { AsyncRules, BaseObserver, StyleRelation, SyncRules } from "./base-observer";
+import { AsyncRules, BaseObserver, /* StyleRelation, */ SyncRules } from "./base-observer";
 
 const MODULE = __filename.split(/[/\\]/).slice(-1)[0].slice(0,-3);
 const debug = debug1(`server:${MODULE}`);
@@ -63,14 +63,14 @@ export class TexObserver extends BaseObserver {
     //   props: { role: 'FORMULA', type: 'FORMULA-DATA' },
     //   compute: TexObserver.prototype.convertTexToFormulaRule,
     // },
-    {
-      name: "convertFormulaToTexRule",
-      styleRelation: StyleRelation.ParentToChild,
-      styleTest: { role: 'FORMULA', type: 'FORMULA-DATA' },
-      props: { role: 'REPRESENTATION', type: 'TEX-EXPRESSION' },
-      exclusiveChildTypeAndRole: true,
-      compute: TexObserver.prototype.convertFormulaToTexRule,
-    },
+    // {
+    //   name: "convertFormulaToTexRule",
+    //   styleRelation: StyleRelation.ParentToChild,
+    //   styleTest: { role: 'FORMULA', type: 'FORMULA-DATA' },
+    //   props: { role: 'REPRESENTATION', type: 'TEX-EXPRESSION' },
+    //   exclusiveChildTypeAndRole: true,
+    //   compute: TexObserver.prototype.convertFormulaToTexRule,
+    // },
   ];
 
   private static SYNC_RULES: SyncRules = [];
@@ -89,11 +89,11 @@ export class TexObserver extends BaseObserver {
   //   };
   // }
 
-  private async convertFormulaToTexRule(style: StyleObject): Promise<TexExpression|undefined> {
-    // REVIEW: If conversion fails?
-    const formulaData: FormulaCellData = style.data;
-    return await convertWolframToTeX(convertMTLToWolfram(formulaData.plainTextMath));
-  }
+  // private async convertFormulaToTexRule(style: StyleObject): Promise<TexExpression|undefined> {
+  //   // REVIEW: If conversion fails?
+  //   const formulaData: FormulaCellData = style.data;
+  //   return await convertWolframToTeX(convertMTLToWolfram(formulaData.plainTextMath));
+  // }
 
 
   // Private Constructor

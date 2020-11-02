@@ -23,9 +23,9 @@ import * as debug1 from "debug";
 const debug = debug1('client:figure-cell');
 
 import { CssClass, CssLength, assertFalse } from "../../../../shared/common";
-import { StrokeData } from "../../../../shared/stylus";
+import { StylusInput } from "../../../../shared/stylus";
 import { StyleObject, NotebookChange } from "../../../../shared/notebook";
-import { StyleChangeRequest } from "../../../../shared/math-tablet-api";
+// import { StyleChangeRequest } from "../../../../shared/math-tablet-api";
 
 import { $svg, HtmlElementSpecification } from "../../../../dom";
 import { StrokePanel } from "../../../../components/stroke-panel";
@@ -34,6 +34,7 @@ import { Content as CellContainer } from "../index";
 
 import { CellBase } from "./cell-base";
 import { notebookChangeSynopsis } from "../../../../shared/debug-synopsis";
+import { FigureCellData } from "../../../../shared/cell";
 
 // Types
 
@@ -76,7 +77,7 @@ export class FigureCell extends CellBase {
       }
       case 'styleChanged': {
         if (change.style.id == this.styleId) {
-          this.strokePanel!.updateStrokeData(change.style.data);
+          this.strokePanel!.updateStylusInput(change.style.data);
           this.strokePanel!.updateSvgMarkup(change.style.data);
         } else {
           // Ignore. Not something that affects our display.
@@ -110,17 +111,17 @@ export class FigureCell extends CellBase {
 
   // Private Instance Methods
 
-  private createInputPanel(inputStyle: StyleObject): void {
-    const svgRepStyle = this.container.screen.notebook.findStyle({ role: 'REPRESENTATION', type: 'SVG-MARKUP' }, inputStyle.id);
+  private createInputPanel(style: StyleObject): void {
+    const data: FigureCellData = style.data;
     this.strokePanel = new StrokePanel(
-      inputStyle.data,
-      svgRepStyle?.data,
-      async (strokeData: StrokeData)=>{
-        const notebook = this.container.screen.notebook;
-        const changeRequest: StyleChangeRequest = { type: 'changeStyle', styleId: inputStyle.id, data: strokeData };
-        // TODO: We don't want to wait for *all* processing of the strokes to finish, just the svg update.
-        // TODO: Incremental changes.
-        await notebook.sendChangeRequest(changeRequest);
+      data.stylusInput,
+      data.displaySvg,
+      async (_stylusInput: StylusInput)=>{
+        throw new Error("TODO: Just send stroke to server");
+        // const changeRequest: StyleChangeRequest = { type: 'changeStyle', styleId: style.id, data: stylusInput };
+        // // TODO: We don't want to wait for *all* processing of the strokes to finish, just the svg update.
+        // // TODO: Incremental changes.
+        // await this.container.screen.notebook.sendChangeRequest(changeRequest);
       },
     );
     this.$content.appendChild(this.strokePanel.$elt);
