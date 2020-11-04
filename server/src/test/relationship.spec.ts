@@ -26,13 +26,14 @@ import { assert } from "chai";
 import 'mocha';
 // import * as sinon from "sinon";
 
-import { FormulaCellData, PlainTextMath } from "../shared/formula";
+import { FormulaCellData, PlainTextFormula } from "../shared/formula";
 import { StyleId, StyleInserted, WolframExpression } from "../shared/notebook";
 import { StyleInsertRequest, StyleChangeRequest } from "../shared/math-tablet-api";
 import { ServerNotebook }  from "../server-notebook";
 
 import { ensureGlobalLoaded } from "./global";
 import { CellType, InputType } from "../shared/cell";
+import { EMPTY_SVG, PlainText } from "../shared/common";
 ensureGlobalLoaded();
 
 // Unit Tests
@@ -60,9 +61,9 @@ describe("test relationships", function() {
 
     it("Can derive formulae then propagate a change", async function(){
 
-      const OLD_F1 = <PlainTextMath>"x + x^2";
+      const OLD_F1 = <PlainTextFormula>"x + x^2";
       const NEW_F1 = <WolframExpression>"2*x + 2*x^2";
-      const NEW_F2 = <PlainTextMath>"2*x*(1 + x)";
+      const NEW_F2 = <PlainTextFormula>"2*x*(1 + x)";
       const NEW_F3 = <WolframExpression>"2*x + 2*x^2";
 
       // Insert "old" formula 1
@@ -110,12 +111,14 @@ describe("test relationships", function() {
 
 // Helper Functions
 // TODO: This should probably be extended to respect the MTLExpression type
-function wolframFormulaInsertRequest(plainTextMath: PlainTextMath): StyleInsertRequest {
+function wolframFormulaInsertRequest(plainTextFormula: PlainTextFormula): StyleInsertRequest {
   const data: FormulaCellData = {
     type: CellType.Formula,
     inputType: InputType.None,
+    displaySvg: EMPTY_SVG,
     height: 72, // points
-  plainTextMath,
+    inputText: <PlainText>plainTextFormula,
+    plainTextFormula: plainTextFormula,
   };
   const request: StyleInsertRequest = {
     type: 'insertStyle',

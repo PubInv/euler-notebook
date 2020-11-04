@@ -34,7 +34,7 @@ import { satisfies as semverSatisfies } from "semver";
 import { middleware as stylusMiddleware } from "stylus";
 
 import { assert } from "./shared/common";
-import { ClientSocket } from "./client-socket";
+import { ServerSocket } from "./server-socket";
 import { loadConfig, loadCredentials} from "./config";
 import { initialize as initializeMathJax } from "./adapters/mathjax";
 import { initialize as initializeObservers } from "./observers";
@@ -135,7 +135,7 @@ async function main() {
     console.log('Listening on ' + bind);
   });
 
-  ClientSocket.initialize(server);
+  ServerSocket.initialize(server);
 
 }
 

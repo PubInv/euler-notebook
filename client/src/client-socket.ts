@@ -23,7 +23,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 // Requirements
 
 import * as debug1 from "debug";
-const debug = debug1('client:server-socket');
+const debug = debug1('client:client-socket');
 
 import { assert, Html, PromiseResolver, Timestamp, newPromiseResolver, assertFalse, ExpectedError } from "./shared/common";
 import { clientMessageSynopsis, serverMessageSynopsis } from "./shared/debug-synopsis";
@@ -36,7 +36,7 @@ import { reportError } from "./error-handler";
 
 // Types
 
-type ConnectResolver = PromiseResolver<ServerSocket>;
+type ConnectResolver = PromiseResolver<ClientSocket>;
 type RequestResolver = PromiseResolver<ServerMessage[]>;
 
 interface RequestInfo {
@@ -46,14 +46,14 @@ interface RequestInfo {
 
 // Class
 
-export class ServerSocket {
+export class ClientSocket {
 
   // Class Methods
 
-  public static async connect(url: string): Promise<ServerSocket> {
+  public static async connect(url: string): Promise<ClientSocket> {
     // REVIEW: Use newPromiseResolver?
     return new Promise((resolve, reject)=>{
-      new ServerSocket(url, { resolve, reject });
+      new ClientSocket(url, { resolve, reject });
     });
   }
 
@@ -149,13 +149,14 @@ export class ServerSocket {
 
       const requestId = msg.requestId;
       const requestInfo = requestId && this.requestMap.get(requestId)!;
+      const ownRequest = !!requestInfo; // True if our own request initiated this response.
 
       // Dispatch the messages.
       // console.dir(msg);
       switch(msg.type) {
         // TODO: case 'error': errors should only come back from 'requests'
-        case 'folder': ClientFolder.smMessage(msg); break;
-        case 'notebook': ClientNotebook.smMessage(msg); break;
+        case 'folder': ClientFolder.smMessage(msg, ownRequest); break;
+        case 'notebook': ClientNotebook.smMessage(msg, ownRequest); break;
         case 'error': {
           if (requestInfo) {
             // Do nothing.

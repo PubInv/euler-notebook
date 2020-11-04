@@ -26,7 +26,7 @@ import { assert } from "chai";
 import 'mocha';
 // import * as sinon from "sinon";
 
-import { /* FormulaCellData, */ PlainTextMath } from "../shared/formula";
+import { /* FormulaCellData, */ PlainTextFormula } from "../shared/formula";
 import {
   StyleObject, RelationshipObject, StyleId
 } from "../shared/notebook";
@@ -49,12 +49,12 @@ interface RelationshipStringObject {
 
 // Constants
 
-const data: PlainTextMath[] = [
-  <PlainTextMath>"X = 4",
-  <PlainTextMath>"X + Y",
-  <PlainTextMath>"X = 5",
-  <PlainTextMath>"X = 6",
-  <PlainTextMath>"Y = X^2"
+const data: PlainTextFormula[] = [
+  <PlainTextFormula>"X = 4",
+  <PlainTextFormula>"X + Y",
+  <PlainTextFormula>"X = 5",
+  <PlainTextFormula>"X = 6",
+  <PlainTextFormula>"Y = X^2"
 ];
 
 const insertRequest:StyleInsertRequest[] = insertWolframFormulas(data);
@@ -71,7 +71,7 @@ describe("test symbol observer", function() {
     // Note: Doing this for WOLFRAM / INPUT is not really
     // the intended use case for our "exclusivity", but it will serve.
     it("two insert requests, if marked exclusive, only produce one child", async function(){
-      const data = [ <PlainTextMath>"X = 4" ];
+      const data = [ <PlainTextFormula>"X = 4" ];
       const changeRequests = insertWolframFormulas(data);
 
       await notebook.requestChange('TEST', changeRequests[0]);
@@ -205,8 +205,8 @@ describe("test symbol observer", function() {
     });
     it("An input and change does produces only one relationhsip",async function(){
       const data = [
-        <PlainTextMath>"X = 4",
-        <PlainTextMath>"X^2 + Y",
+        <PlainTextFormula>"X = 4",
+        <PlainTextFormula>"X^2 + Y",
       ];
       const changeRequests = insertWolframFormulas(data);
 
@@ -230,8 +230,8 @@ describe("test symbol observer", function() {
     });
     it("An input and change does produces only one relationhsip",async function(){
       const data = [
-        <PlainTextMath>"X = 4",
-        <PlainTextMath> "X^2 + Y",
+        <PlainTextFormula>"X = 4",
+        <PlainTextFormula> "X^2 + Y",
       ];
       const changeRequests = insertWolframFormulas(data);
 
@@ -256,7 +256,7 @@ describe("test symbol observer", function() {
 
     it("Can hanlde 3x - 10 = 11",async function(){
       const data0 = [
-        <PlainTextMath>"3x - 10 = 11",
+        <PlainTextFormula>"3x - 10 = 11",
       ];
       const changeRequests = insertWolframFormulas(data0);
       await serializeChangeRequests(notebook,changeRequests);
@@ -271,8 +271,8 @@ describe("test symbol observer", function() {
 
     it("Deleting a use correctly deletes relationships.",async function(){
       const data = [
-        <PlainTextMath>"X = 4",
-        <PlainTextMath> "X^2 + Y",
+        <PlainTextFormula>"X = 4",
+        <PlainTextFormula> "X^2 + Y",
       ];
       const changeRequests = insertWolframFormulas(data);
 
@@ -293,9 +293,9 @@ describe("test symbol observer", function() {
     });
     it("Relationships can be completely recomputed",async function(){
       const data = [
-        <PlainTextMath>"X = 3",
-        <PlainTextMath>"X = 4",
-        <PlainTextMath>"X^2"];
+        <PlainTextFormula>"X = 3",
+        <PlainTextFormula>"X = 4",
+        <PlainTextFormula>"X^2"];
       const changeRequests = insertWolframFormulas(data);
 
       await serializeChangeRequests(notebook,changeRequests);
@@ -305,10 +305,10 @@ describe("test symbol observer", function() {
 
     it("three defs cause the final one to be used",async function(){
       const data = [
-        <PlainTextMath>"X = 4",
-        <PlainTextMath>"X = 5",
-        <PlainTextMath>"X = 6",
-        <PlainTextMath>"Y = X^2",
+        <PlainTextFormula>"X = 4",
+        <PlainTextFormula>"X = 5",
+        <PlainTextFormula>"X = 6",
+        <PlainTextFormula>"Y = X^2",
       ];
       const changeRequests = insertWolframFormulas(data);
 
@@ -339,8 +339,8 @@ describe("test symbol observer", function() {
     });
     it("getSymbolStylesThatDependOnMe works",async function(){
       const data = [
-        <PlainTextMath>"X = 6",
-        <PlainTextMath>"Y = X^2",
+        <PlainTextFormula>"X = 6",
+        <PlainTextFormula>"Y = X^2",
       ];
       const insertRequests = insertWolframFormulas(data);
       await serializeChangeRequests(notebook,insertRequests);
@@ -355,9 +355,9 @@ describe("test symbol observer", function() {
     });
     it("two defs and a delete cause the final one to be used",async function(){
       const data = [
-        <PlainTextMath>"X = 4",
-        <PlainTextMath>"X = 6",
-        <PlainTextMath>"Y = X^2",
+        <PlainTextFormula>"X = 4",
+        <PlainTextFormula>"X = 6",
+        <PlainTextFormula>"Y = X^2",
       ];
       const insertRequests = insertWolframFormulas(data);
       await serializeChangeRequests(notebook,insertRequests);
@@ -393,12 +393,12 @@ describe("test symbol observer", function() {
     });
     it("multiples defs and a deletes are handled",async function(){
       const NUM = 8;
-      let data: PlainTextMath[] = [];
+      let data: PlainTextFormula[] = [];
 
       for(var i = 0; i < NUM; i++) {
-        data[i] = <PlainTextMath>("X = "+(i+3));
+        data[i] = <PlainTextFormula>("X = "+(i+3));
       }
-      data.push(<PlainTextMath>"Y = X^2");
+      data.push(<PlainTextFormula>"Y = X^2");
       const insertRequests = insertWolframFormulas(data);
       await serializeChangeRequests(notebook,insertRequests);
 
@@ -435,10 +435,10 @@ describe("test symbol observer", function() {
 
     it("reorderings are supported in simplest possible case",async function(){
       // REVIEW: Just use a static array.
-      let data: PlainTextMath[] = [];
-      data.push(<PlainTextMath>"X = 3");
-      data.push(<PlainTextMath>"X = 4");
-      data.push(<PlainTextMath>"Y = X^2");
+      let data: PlainTextFormula[] = [];
+      data.push(<PlainTextFormula>"X = 3");
+      data.push(<PlainTextFormula>"X = 4");
+      data.push(<PlainTextFormula>"Y = X^2");
       const insertRequests = insertWolframFormulas(data);
       await serializeChangeRequests(notebook,insertRequests);
 
@@ -459,11 +459,11 @@ describe("test symbol observer", function() {
     it("multiple formulae are handled correctly", async function(){
 
       const data = [
-        <PlainTextMath>"X = 3",
-        <PlainTextMath>"A = 4",
-        <PlainTextMath>"X = 5",
-        <PlainTextMath>"Y = X^2",
-        <PlainTextMath>"B = A^2",
+        <PlainTextFormula>"X = 3",
+        <PlainTextFormula>"A = 4",
+        <PlainTextFormula>"X = 5",
+        <PlainTextFormula>"Y = X^2",
+        <PlainTextFormula>"B = A^2",
       ];
       const insertRequests = insertWolframFormulas(data);
       await serializeChangeRequests(notebook, insertRequests);
@@ -476,11 +476,11 @@ describe("test symbol observer", function() {
     it("reorderings are supported across symbols", async function(){
 
       const data = [
-        <PlainTextMath>"X = 3",
-        <PlainTextMath>"A = 4",
-        <PlainTextMath>"X = 5",
-        <PlainTextMath>"Y = X^2",
-        <PlainTextMath>"B = A^2",
+        <PlainTextFormula>"X = 3",
+        <PlainTextFormula>"A = 4",
+        <PlainTextFormula>"X = 5",
+        <PlainTextFormula>"Y = X^2",
+        <PlainTextFormula>"B = A^2",
       ];
       const insertRequests = insertWolframFormulas(data);
       await serializeChangeRequests(notebook, insertRequests);
@@ -508,11 +508,11 @@ describe("test symbol observer", function() {
 
     it("A change correctly updates all relationships",async function(){
       const data0 = [
-        <PlainTextMath>"x = 2",
-        <PlainTextMath>"x^2",
+        <PlainTextFormula>"x = 2",
+        <PlainTextFormula>"x^2",
         ];
       const data1 = [
-        <PlainTextMath>"x = 3",
+        <PlainTextFormula>"x = 3",
         ];
       const changeRequests = insertWolframFormulas(data0);
       await serializeChangeRequests(notebook,changeRequests);
@@ -538,8 +538,8 @@ describe("test symbol observer", function() {
     });
 
     it("A change of an equation produces only one equation, not two",async function(){
-       const data0 = [ <PlainTextMath>"3x - 10 = 11" ];
-      const data1 = [ <PlainTextMath>"3x - 10 = 14" ];
+       const data0 = [ <PlainTextFormula>"3x - 10 = 11" ];
+      const data1 = [ <PlainTextFormula>"3x - 10 = 14" ];
       const changeRequests = insertWolframFormulas(data0);
       await serializeChangeRequests(notebook,changeRequests);
 
@@ -565,11 +565,11 @@ describe("test symbol observer", function() {
 
     it("expressions and definitions produce the correct uses ",async function(){
       const data0 = [
-          <PlainTextMath>"a = 1",
-          <PlainTextMath>"b = 2",
-          <PlainTextMath>"c = 3",
-          <PlainTextMath>"d = 4",
-          <PlainTextMath>"a + b + c + d",
+          <PlainTextFormula>"a = 1",
+          <PlainTextFormula>"b = 2",
+          <PlainTextFormula>"c = 3",
+          <PlainTextFormula>"d = 4",
+          <PlainTextFormula>"a + b + c + d",
         ];
 
       const changeRequests = insertWolframFormulas(data0);
@@ -583,10 +583,10 @@ describe("test symbol observer", function() {
     // TODO: Move this to a wolfram-cas.spec.ts file later...
     it.skip("Changing correctly recomputes representation",async function(){
       const data = [
-        <PlainTextMath>"x = 2",
-        <PlainTextMath>"x^2",
-        <PlainTextMath>"x = 3",
-        <PlainTextMath>"x = 4"
+        <PlainTextFormula>"x = 2",
+        <PlainTextFormula>"x^2",
+        <PlainTextFormula>"x = 3",
+        <PlainTextFormula>"x = 4"
       ];
 
       const changeRequests = insertWolframFormulas([data[0],data[1]]);
@@ -625,7 +625,7 @@ async function serializeChangeRequests(notebook: ServerNotebook,
   }
 }
 
-function insertWolframFormulas(_wolframDatas: PlainTextMath[]) : StyleInsertRequest[] {
+function insertWolframFormulas(_wolframDatas: PlainTextFormula[]) : StyleInsertRequest[] {
   // TODO: Need to include displaySvg field in FormulaData.
   throw new Error("TODO:");
   // var reqs : StyleInsertRequest[] = [];
@@ -634,7 +634,7 @@ function insertWolframFormulas(_wolframDatas: PlainTextMath[]) : StyleInsertRequ
   //     type: CellType.Formula,
   //     inputType: InputType.None,
   //     height: 72, // points
-  //     plainTextMath: wolframData,
+  //     plainTextFormula: wolframData,
   //   };
   //   reqs.push({
   //     type: 'insertStyle',

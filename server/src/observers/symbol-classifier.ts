@@ -97,7 +97,7 @@ export class SymbolClassifierObserver implements ObserverInstance {
     //   inputType: InputType.None,
     //   // TODO: displaySvg:
     //   height: 72, // points
-    //   plainTextMath: wolframData,
+    //   plainTextFormula: wolframData,
     // };
     // const styleProps: StylePropertiesWithSubprops = {
     //   id: toId,

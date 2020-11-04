@@ -35,7 +35,7 @@ import {
 import { reportError } from "../../../../error-handler";
 import { assert, Html } from "../../../../shared/common";
 import { ResizerBar } from "../../../../components/resizer-bar";
-import { StyleMoveRequest } from "../../../../shared/math-tablet-api";
+import { ServerNotebookCellChangedMessage, StyleMoveRequest } from "../../../../shared/math-tablet-api";
 
 // Types
 
@@ -88,6 +88,7 @@ export abstract class CellBase extends HtmlElement<'div'>{
 
   // Overridable ClientNotebookWatcher Methods
 
+  public abstract onCellChange(msg: ServerNotebookCellChangedMessage, ownRequest: boolean): void;
   public abstract onChange(change: NotebookChange): void;
   public abstract onChangesFinished(): void;
 

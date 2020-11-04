@@ -26,7 +26,7 @@ import { NextFunction, Request, Response, Router } from "express";
 
 import { NotebookPath } from "../shared/folder";
 
-import { ClientSocket } from "../client-socket";
+import { ServerSocket } from "../server-socket";
 import { ServerNotebook } from "../server-notebook";
 import { ServerFolder } from "../server-folder";
 
@@ -62,7 +62,7 @@ async function onDashboard(req: Request, res: Response) {
       case 'closeClient': {
         for (const clientId of Object.keys(req.body.clientSockets)) {
           debug(`Closing client ${clientId}`);
-          await ClientSocket.close(clientId, 4000, 'dashboard');
+          await ServerSocket.close(clientId, 4000, 'dashboard');
         }
         break;
       }
@@ -81,7 +81,7 @@ async function onDashboard(req: Request, res: Response) {
 
     // REVIEW: Does Pug support iteration over iterables? If so, then we don't need to convert to an array.
     //         Pug issue 2559 (https://github.com/pugjs/pug/issues/2559), last updated Mar 2017, says no.
-    const clientSockets: ClientSocket[] = Array.from(ClientSocket.allInstances);
+    const clientSockets: ServerSocket[] = Array.from(ServerSocket.allInstances);
     const folders: ServerFolder[] = Array.from(ServerFolder.allInstances);
     const notebooks: ServerNotebook[] = Array.from(ServerNotebook.allInstances);
 

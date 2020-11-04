@@ -85,14 +85,14 @@ export class TexObserver extends BaseObserver {
   //     type: CellType.Formula,
   //     inputType: InputType.None,
   //     height: 72, // points
-  //     plainTextMath: wolframData,
+  //     plainTextFormula: wolframData,
   //   };
   // }
 
   // private async convertFormulaToTexRule(style: StyleObject): Promise<TexExpression|undefined> {
   //   // REVIEW: If conversion fails?
   //   const formulaData: FormulaCellData = style.data;
-  //   return await convertWolframToTeX(convertMTLToWolfram(formulaData.plainTextMath));
+  //   return await convertWolframToTeX(convertMTLToWolfram(formulaData.plainTextFormula));
   // }
 
 

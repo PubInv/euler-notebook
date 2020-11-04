@@ -24,7 +24,10 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 import { assertFalse } from './common';
 import { FolderChange } from './folder';
 import { Notebook, NotebookChange, RelationshipObject, StyleObject } from './notebook';
-import { ClientFolderMessage, ClientMessage, ClientNotebookMessage, FolderChangeRequest, NotebookChangeRequest, ServerFolderMessage, ServerMessage, ServerNotebookMessage } from './math-tablet-api';
+import {
+  ClientFolderMessage, ClientMessage, ClientNotebookMessage, FolderChangeRequest, NotebookChangeRequest,
+  ServerFolderMessage, ServerMessage, ServerNotebookMessage, ClientNotebookCellChangeMessage, NotebookCellChangeRequest,
+} from './math-tablet-api';
 
 // Exported Functions
 
@@ -79,13 +82,19 @@ export function folderChangeSynopsis(change: FolderChange): string {
   return rval;
 }
 
+export function notebookCellChangeRequestSynopsis(request: NotebookCellChangeRequest): string {
+  let rval: string = request.type;
+  switch(request.type){
+    case 'insertCell': rval += ` TODO:`; break;
+    case 'keyboardInputChange': rval += ` TODO:`; break;
+    case 'stylusInputChange': rval += ` TODO:`; break;
+  }
+  return rval;
+}
+
 export function notebookChangeRequestSynopsis(request: NotebookChangeRequest): string {
   let rval: string = request.type;
   switch(request.type) {
-    case 'insertCell': rval += ` Type ${request.cellType} Input ${request.inputType} After ${request.afterId}}`; break;
-    case 'keyboardChange': rval += ` S${request.styleId} Type ${request.inputType} Data "${request.data}"`; break;
-
-    // LEGACY
     case 'changeStyle': rval += ` S${request.styleId} ${dataSynopsis(request.data)}`; break;
     case 'convertStyle': rval += ` TBD`; break;
     case 'deleteRelationship': rval += ` R${request.id}`; break;
@@ -192,9 +201,16 @@ function clientFolderMessageSynopsis(msg: ClientFolderMessage): string {
   return rval;
 }
 
+function clientNotebookCellChangeMessageSynopsis(msg: ClientNotebookCellChangeMessage): string {
+  return `${msg.path} ${msg.operation} ${notebookCellChangeRequestSynopsis(msg.changeRequest)}`;
+}
+
 function clientNotebookMessageSynopsis(msg: ClientNotebookMessage): string {
   let rval = `${msg.path} ${msg.operation}`;
   switch(msg.operation) {
+    case 'cellChange':
+      rval = clientNotebookCellChangeMessageSynopsis(msg);
+      break;
     case 'change':
       for (const request of msg.changeRequests) {
         rval += ` ${notebookChangeRequestSynopsis(request)};`;
@@ -243,6 +259,8 @@ function serverFolderMessageSynopsis(msg: ServerFolderMessage): string {
 function serverNotebookMessageSynopsis(msg: ServerNotebookMessage): string {
   let rval = `${msg.path} ${msg.operation} `;
   switch(msg.operation) {
+    case 'cellChanged':
+      break;
     case 'changed':
       for (const change of msg.changes) {
         rval += `${notebookChangeSynopsis(change)}; `;

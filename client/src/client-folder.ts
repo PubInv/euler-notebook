@@ -34,7 +34,7 @@ import { OpenOptions } from "./shared/watched-resource";
 // Types
 
 export interface ClientFolderWatcher extends FolderWatcher {
-  onChangesFinished(): void;
+  onChangesFinished(ownRequest: boolean): void;
 }
 
 export type OpenFolderOptions = OpenOptions<ClientFolderWatcher>;
@@ -62,12 +62,15 @@ export class ClientFolder extends Folder<ClientFolderWatcher> {
 
   // Class Event Handlers
 
-  public static smMessage(msg: ServerFolderMessage): void {
+  public static smMessage(msg: ServerFolderMessage, ownRequest: boolean): void {
     // A folder message was received from the server.
     switch(msg.operation) {
-      case 'changed': this.smChanged(msg); break;
-      case 'closed':  this.smClosed(msg); break;
-      case 'opened':  break; // Nothing to do. Opened response is handled when request promise is resolved.
+      case 'changed': this.smChanged(msg, ownRequest); break;
+      case 'closed':  this.smClosed(msg, ownRequest); break;
+      case 'opened':
+        // Nothing to do. Opened response is handled when request promise is resolved.
+        assert(ownRequest);
+        break;
       default: assertFalse();
     }
   }
@@ -134,13 +137,13 @@ export class ClientFolder extends Folder<ClientFolderWatcher> {
 
   // Private Class Event Handlers
 
-  private static smChanged(msg: ServerFolderChangedMessage): void {
+  private static smChanged(msg: ServerFolderChangedMessage, ownRequest: boolean): void {
     // A change message has come in that was not from our own change request.
     const instance = this.getInstance(msg.path);
-    instance.smChanged(msg);
+    instance.smChanged(msg, ownRequest);
   }
 
-  private static smClosed(msg: ServerFolderClosedMessage): void {
+  private static smClosed(msg: ServerFolderClosedMessage, _ownRequest: boolean): void {
     // Message from the server that the folder has been closed by the server.
     // For example, if the folder was deleted or moved.
     const had = this.close(msg.path, msg.reason);
@@ -223,7 +226,7 @@ export class ClientFolder extends Folder<ClientFolderWatcher> {
 
   // Private Event Handlers
 
-  private smChanged(msg: ServerFolderChangedMessage): void {
+  private smChanged(msg: ServerFolderChangedMessage, ownRequest: boolean): void {
     // Message from the server indicating the folder has changed.
 
     // Apply changes to the notebook data structure, and notify the view of the change.
@@ -233,11 +236,11 @@ export class ClientFolder extends Folder<ClientFolderWatcher> {
     //  determine what cell to update. If the style has been deleted from the notebook already
     //  then it cannot do that.)
     for (const change of msg.changes) {
-      this.applyChange(change);
+      this.applyChange(change, ownRequest);
     }
 
     for (const watcher of this.watchers) {
-      watcher.onChangesFinished();
+      watcher.onChangesFinished(ownRequest);
     }
 
   }

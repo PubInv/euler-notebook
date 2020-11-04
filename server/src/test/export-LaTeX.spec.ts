@@ -29,12 +29,13 @@ const latex = require('node-latex'); // REVIEW: why not import?
 import 'mocha';
 // import * as sinon from "sinon";
 
-import { FormulaCellData, PlainTextMath } from "../shared/formula";
+import { FormulaCellData, PlainTextFormula } from "../shared/formula";
 import { StyleInsertRequest, TexExpression } from "../shared/math-tablet-api";
 import { ServerNotebook }  from "../server-notebook";
 
 import { ensureGlobalLoaded } from "./global";
 import { CellType, InputType } from "../shared/cell";
+import { EMPTY_SVG, PlainText } from "../shared/common";
 ensureGlobalLoaded();
 
 // Unit Tests
@@ -46,12 +47,12 @@ describe("LaTeX export tests", function() {
   afterEach(function(){ notebook.close(); });
 
   it("export LaTeX is actually generated", async function(){
-    const data:PlainTextMath[] = [
-      <PlainTextMath>"X = 4",
-      <PlainTextMath>"X + Y",
-      <PlainTextMath>"X = 5",
-      <PlainTextMath>"X = 6",
-      <PlainTextMath>"Y = X^2",
+    const data:PlainTextFormula[] = [
+      <PlainTextFormula>"X = 4",
+      <PlainTextFormula>"X + Y",
+      <PlainTextFormula>"X = 5",
+      <PlainTextFormula>"X = 6",
+      <PlainTextFormula>"Y = X^2",
     ];
     const changeRequests = generateInsertRequests(data);
     await notebook.requestChange('TEST', changeRequests[0]);
@@ -73,14 +74,16 @@ describe("LaTeX export tests", function() {
 
 // Helper Functions
 
-function generateInsertRequests(inputs: PlainTextMath[]) : StyleInsertRequest[] {
+function generateInsertRequests(inputs: PlainTextFormula[]) : StyleInsertRequest[] {
   var reqs : StyleInsertRequest[] = [];
   for(const wolframData of inputs) {
     const formulaData: FormulaCellData = {
       type: CellType.Formula,
       inputType: InputType.None,
+      displaySvg: EMPTY_SVG,
       height: 72, // points
-      plainTextMath: wolframData
+      inputText: <PlainText>wolframData,
+      plainTextFormula: wolframData,
     };
     reqs.push({
       type: 'insertStyle',

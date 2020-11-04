@@ -47,6 +47,8 @@ export interface PromiseResolver<T> {
 
 const ASSERTION_FAILED_MSG = "Assertion failed.";
 
+export const EMPTY_SVG = <SvgMarkup>"<svg></svg>";
+
 // Exported Functions
 
 export function assert(value: any, message?: string): void {
@@ -85,6 +87,10 @@ export function newPromiseResolver<T>(): { promise: Promise<T>, resolver: Promis
 
 export function notImplemented(): never {
   throw new Error("Not implemented.");
+}
+
+export function replaceStringSegment(s: string, start: number, end: number, replacement: string): string {
+  return `${s.slice(0, start)}${replacement}${s.slice(end)}`;
 }
 
 export function sleep(ms: Milliseconds): Promise<void> {

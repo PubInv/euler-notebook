@@ -23,7 +23,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 // Requirements
 
 import { CellType, InputType } from "./cell";
-import { Html } from "./common";
+import { Html, LengthInPoints, PlainText, SvgMarkup } from "./common";
 import { FolderObject, FolderPath, NotebookPath, FolderName, NotebookName, FolderChange } from "./folder";
 import {
   RelationshipProperties, StyleProperties, StyleId, NotebookChange, NotebookObject, StyleRelativePosition,
@@ -121,12 +121,35 @@ export interface NotebookRenameRequest {
   newName: NotebookName;
 }
 
+// Notebook Cell Change Requests
+
+export type NotebookCellChangeRequest =
+  InsertCellRequest|
+  KeyboardInputRequest|
+  StylusInputRequest;
+export interface InsertCellRequest {
+  type: 'insertCell';
+  cellType: CellType;
+  inputType: InputType;
+  afterId: StyleRelativePosition;
+}
+export interface KeyboardInputRequest {
+  type: 'keyboardInputChange';
+  cellId: StyleId;
+  start: number;          // 0-based index of first character to replace.
+  end: number;            // 0-based index of character after last character to replace.
+  replacement: PlainText; // Replacement text.
+  value: PlainText;          // Full value of input text, may be able to eliminate.
+}
+export interface StylusInputRequest {
+  type: 'stylusInputChange';
+  cellId: StyleId;
+  // TODO: Stroke insert or delete info.
+}
+
 // Notebook Change Requests
 
 export type NotebookChangeRequest =
-  InsertCellRequest|
-  KeyboardChangeRequest|
-
   // LEGACY:
   RelationshipDeleteRequest|
   RelationshipInsertRequest|
@@ -135,22 +158,6 @@ export type NotebookChangeRequest =
   StyleDeleteRequest|
   StyleInsertRequest|
   StyleMoveRequest;
-export interface InsertCellRequest {
-  type: 'insertCell';
-  cellType: CellType;
-  inputType: InputType;
-  afterId: StyleRelativePosition;
-}
-export interface KeyboardChangeRequest {
-  type: 'keyboardChange';
-  styleId: StyleId;
-  data: string|null;
-  inputType: string;
-  selectionStart: number;
-  selectionEnd: number;
-  selectionDirection: 'forward'|'backward'|'none';
-  value: string;
-}
 export interface RelationshipDeleteRequest {
   type: 'deleteRelationship';
   // TODO: rename id => relationshipId
@@ -227,6 +234,20 @@ interface ServerNotebookMessageBase extends ServerMessageBase {
   type: 'notebook',
   path: NotebookPath,
 }
+export interface ServerNotebookCellChangedMessage extends ServerNotebookMessageBase {
+  operation: 'cellChanged';
+  cellId: StyleId;
+  height?: LengthInPoints;
+  displaySvg?: SvgMarkup;
+
+  // Keyboard cell changes
+  inputText?: PlainText;
+  inputTextStart?: number;
+  inputTextEnd?: number;
+  inputTextReplacement?: PlainText;
+
+  // LATER: Stylus cell changes
+}
 export interface ServerNotebookChangedMessage extends ServerNotebookMessageBase {
   operation: 'changed';
   changes: NotebookChange[];
@@ -242,7 +263,7 @@ export interface ServerNotebookOpenedMessage extends ServerNotebookMessageBase {
 }
 
 export type ServerFolderMessage = ServerFolderChangedMessage|ServerFolderClosedMessage|ServerFolderOpenedMessage;
-export type ServerNotebookMessage = ServerNotebookChangedMessage|ServerNotebookClosedMessage|ServerNotebookOpenedMessage;
+export type ServerNotebookMessage = ServerNotebookCellChangedMessage|ServerNotebookChangedMessage|ServerNotebookClosedMessage|ServerNotebookOpenedMessage;
 export type ServerMessage = ServerErrorMessage|ServerFolderMessage|ServerNotebookMessage;
 
 // Messages from the client
@@ -270,6 +291,10 @@ interface ClientNotebookMessageBase extends ClientMessageBase {
   type: 'notebook';
   path: NotebookPath;
 }
+export interface ClientNotebookCellChangeMessage extends ClientNotebookMessageBase {
+  operation: 'cellChange';
+  changeRequest: NotebookCellChangeRequest;
+}
 export interface ClientNotebookChangeMessage extends ClientNotebookMessageBase {
   operation: 'change';
   changeRequests: NotebookChangeRequest[];
@@ -285,8 +310,9 @@ export interface ClientNotebookUseToolMessage extends ClientNotebookMessageBase 
   styleId: StyleId;
 }
 
+
 export type ClientFolderMessage = ClientFolderChangeMessage|ClientFolderCloseMessage|ClientFolderOpenMessage;
-export type ClientNotebookMessage = ClientNotebookChangeMessage|ClientNotebookCloseMessage|ClientNotebookOpenMessage|ClientNotebookUseToolMessage;
+export type ClientNotebookMessage = ClientNotebookCellChangeMessage|ClientNotebookChangeMessage|ClientNotebookCloseMessage|ClientNotebookOpenMessage|ClientNotebookUseToolMessage;
 export type ClientMessage = ClientFolderMessage|ClientNotebookMessage;
 
 // API Calls

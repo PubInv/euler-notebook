@@ -1,7 +1,7 @@
 [
-  { "type": "insertStyle", "styleProps": { "role": "FORMULA", "type": "FORMULA-DATA", "data": { "plainTextMath": "x_1" }}},
-  { "type": "insertStyle", "styleProps": { "role": "FORMULA", "type": "FORMULA-DATA", "data": { "plainTextMath": "x_1" }}},
-  { "type": "insertStyle", "styleProps": { "role": "FORMULA", "type": "FORMULA-DATA", "data": { "plainTextMath": "x_1" }}},
-  { "type": "insertStyle", "styleProps": { "role": "FORMULA", "type": "FORMULA-DATA", "data": { "plainTextMath": "x_1" }}},
-  { "type": "insertStyle", "styleProps": { "role": "FORMULA", "type": "FORMULA-DATA", "data": { "plainTextMath": "x_1" }}}
+  { "type": "insertStyle", "styleProps": { "role": "FORMULA", "type": "FORMULA-DATA", "data": { "plainTextFormula": "x_1" }}},
+  { "type": "insertStyle", "styleProps": { "role": "FORMULA", "type": "FORMULA-DATA", "data": { "plainTextFormula": "x_1" }}},
+  { "type": "insertStyle", "styleProps": { "role": "FORMULA", "type": "FORMULA-DATA", "data": { "plainTextFormula": "x_1" }}},
+  { "type": "insertStyle", "styleProps": { "role": "FORMULA", "type": "FORMULA-DATA", "data": { "plainTextFormula": "x_1" }}},
+  { "type": "insertStyle", "styleProps": { "role": "FORMULA", "type": "FORMULA-DATA", "data": { "plainTextFormula": "x_1" }}}
 ]

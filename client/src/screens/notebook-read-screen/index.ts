@@ -29,6 +29,7 @@ import { ScreenBase } from "../screen-base";
 
 import { Content } from "./content";
 import { Sidebar } from "./sidebar";
+import { ServerNotebookCellChangedMessage } from "../../shared/math-tablet-api";
 
 // Types
 
@@ -87,6 +88,11 @@ export class NotebookReadScreen extends ScreenBase {
   }
 
   // Notebook Watcher Methods
+
+  public onCellChange(_msg: ServerNotebookCellChangedMessage, _ownRequest: boolean): void {
+    // TODO:
+  }
+
 
   public onChange(_change: NotebookChange): void {
     // TODO:

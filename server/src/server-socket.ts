@@ -33,7 +33,7 @@ import {
   ClientNotebookChangeMessage, ClientNotebookOpenMessage, ClientNotebookUseToolMessage,
   ServerNotebookChangedMessage, NotebookChangeRequest, RequestId, ServerFolderChangedMessage,
   ClientFolderCloseMessage, ServerFolderClosedMessage, ServerFolderOpenedMessage,
-  ServerNotebookClosedMessage, ClientNotebookCloseMessage, ServerNotebookOpenedMessage
+  ServerNotebookClosedMessage, ClientNotebookCloseMessage, ServerNotebookOpenedMessage, ServerNotebookCellChangedMessage, ClientNotebookCellChangeMessage
 } from "./shared/math-tablet-api";
 import { NotebookChange, NotebookObject, NotebookWatcher as ServerNotebookWatcher } from "./shared/notebook";
 
@@ -64,11 +64,11 @@ interface NotebookWatchersObject {
 
 // Exported Class
 
-export class ClientSocket {
+export class ServerSocket {
 
   // Public Class Properties
 
-  public static get allInstances(): IterableIterator<ClientSocket> {
+  public static get allInstances(): IterableIterator<ServerSocket> {
     return this.instanceMap.values();
   }
 
@@ -186,7 +186,7 @@ export class ClientSocket {
 
   // Private Class Properties
 
-  private static instanceMap: Map<ClientId, ClientSocket> = new Map();
+  private static instanceMap: Map<ClientId, ServerSocket> = new Map();
 
   // Private Class Methods
 
@@ -279,6 +279,7 @@ export class ClientSocket {
         break;
       case 'notebook':
         switch(msg.operation) {
+          case 'cellChange': this.cmNotebookCellChangeMessage(msg); break;
           case 'change': this.cmNotebookChangeMessage(msg); break;
           case 'close':  this.cmNotebookCloseMessage(msg); break;
           case 'open': await this.cmNotebookOpenMessage(msg); break;
@@ -288,6 +289,12 @@ export class ClientSocket {
         break;
       default: assert(false); break;
     }
+  }
+
+  private cmNotebookCellChangeMessage(msg: ClientNotebookCellChangeMessage): void {
+    const watcher = this.notebookWatchers.get(msg.path)!;
+    assert(watcher);
+    watcher.onNotebookCellChangeMessage(msg);
   }
 
   private cmNotebookChangeMessage(msg: ClientNotebookChangeMessage): void {
@@ -327,7 +334,7 @@ export class ClientSocket {
         this.closeAllFolders(false);
         this.closeAllNotebooks(false);
       }
-      ClientSocket.instanceMap.delete(this.id);
+      ServerSocket.instanceMap.delete(this.id);
     } catch(err) {
       logError(err, "Client Socket: Unexpected error handling web-socket close.");
     }
@@ -374,7 +381,7 @@ class FolderWatcher implements ServerFolderWatcher {
   // Public Class Methods
 
   public static async open(
-    socket: ClientSocket,
+    socket: ServerSocket,
     msg: ClientFolderOpenMessage
   ): Promise<{ watcher: FolderWatcher, obj: FolderObject }> {
     const watcher = new this(socket);
@@ -386,7 +393,7 @@ class FolderWatcher implements ServerFolderWatcher {
   // Public Instance Properties
 
   public folder!: ServerFolder;
-  public socket: ClientSocket;
+  public socket: ServerSocket;
 
   // Public Instance Methods
 
@@ -421,7 +428,7 @@ class FolderWatcher implements ServerFolderWatcher {
 
   // Private Constructor
 
-  private constructor(socket: ClientSocket) {
+  private constructor(socket: ServerSocket) {
     // this.folder assigned asynchronously in 'open'.
     this.socket = socket;
   }
@@ -435,7 +442,7 @@ class NotebookWatcher implements ServerNotebookWatcher {
   // Public Class Methods
 
   public static async open(
-    socket: ClientSocket,
+    socket: ServerSocket,
     msg: ClientNotebookOpenMessage
   ): Promise<{ watcher: NotebookWatcher, obj: NotebookObject }> {
     const watcher = new this(socket);
@@ -447,7 +454,7 @@ class NotebookWatcher implements ServerNotebookWatcher {
   // Public Instance Properties
 
   public notebook!: ServerNotebook;
-  public socket: ClientSocket;
+  public socket: ServerSocket;
 
   // Public Instance Methods
 
@@ -459,8 +466,12 @@ class NotebookWatcher implements ServerNotebookWatcher {
 
   public onChange(_change: NotebookChange): void { };
 
+  public onCellChange(msg: ServerNotebookCellChangedMessage): void {
+    this.socket.sendMessage(msg);
+  };
+
   public onChanged(msg: ServerNotebookChangedMessage): void {
-    // ServerFolder is notifying us that the batch of changes is complete.
+    // ServerNotebook is notifying us that the batch of changes is complete.
     this.socket.sendMessage(msg);
   }
 
@@ -473,6 +484,11 @@ class NotebookWatcher implements ServerNotebookWatcher {
   }
 
   // Event Handlers
+
+  public onNotebookCellChangeMessage(msg: ClientNotebookCellChangeMessage): void {
+    // .requestChanges('USER', msg.changeRequests, options);
+    this.notebook.onNotebookCellChangeMessage(this, msg);
+  }
 
   public onNotebookChangeMessage(msg: ClientNotebookChangeMessage): void {
     // .requestChanges('USER', msg.changeRequests, options);
@@ -488,7 +504,7 @@ class NotebookWatcher implements ServerNotebookWatcher {
 
   // Private Constructor
 
-  private constructor(socket: ClientSocket) {
+  private constructor(socket: ServerSocket) {
     // this.folder assigned asynchronously in 'open'.
     this.socket = socket;
   }

@@ -26,7 +26,7 @@ import { Html } from "./shared/common";
 import { addAsyncEventListener, addSyncEventListener } from "./error-handler";
 import { Header } from "./components/header";
 import { Pathname, Screens } from "./screens";
-import { ServerSocket } from "./server-socket";
+import { ClientSocket } from "./client-socket";
 import { MessageDisplay } from "./message-display";
 
 // Types
@@ -52,7 +52,7 @@ class App {
   // Public Instance Properties
 
   // REVIEW: Ensure these are read-only?
-  public socket!: ServerSocket;  // Connection initiated at DOM ready.
+  public socket!: ClientSocket;  // Connection initiated at DOM ready.
 
   // Public Instance Methods
 
@@ -80,7 +80,7 @@ class App {
     Screens.initialize();
 
     // TODO: Show a "connecting..." spinner.
-    this.socket = await ServerSocket.connect(`ws://${window.location.host}/`);
+    this.socket = await ClientSocket.connect(`ws://${window.location.host}/`);
     Screens.navigateTo(this.currentPath);
   }
 

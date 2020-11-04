@@ -183,7 +183,7 @@ export class ServerFolder extends Folder<ServerFolderWatcher> {
       }
 
       // REVIEW: Apply delete changes after notification?
-      this.applyChange(change);
+      this.applyChange(change, false);
       changes.push(change);
     }
     const response: ServerFolderChangedMessage = { type: 'folder', operation: 'changed', path: this.path, changes, complete: true };

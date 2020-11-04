@@ -31,7 +31,7 @@ import {
 } from "../../../shared/notebook";
 import {
   DebugParams, DebugResults, StyleDeleteRequest, StyleInsertRequest, StylePropertiesWithSubprops,
-  StyleMoveRequest, NotebookChangeRequest, InsertCellRequest,
+  StyleMoveRequest, NotebookChangeRequest, InsertCellRequest, NotebookCellChangeRequest, ServerNotebookMessage, ServerNotebookCellChangedMessage,
 } from "../../../shared/math-tablet-api";
 
 import { CellBase } from "./cells/cell-base";
@@ -233,7 +233,7 @@ export class Content extends HtmlElement<'div'>{
       inputType: (inputMode=='keyboard' ? InputType.Keyboard : InputType.Stylus),
       afterId,
     }
-    /* const undoChangeRequest = */ await this.sendUndoableChangeRequest(changeRequest);
+    /* const undoChangeRequest = */ await this.sendCellChangeRequest(changeRequest);
     // const styleId = (<StyleDeleteRequest>undoChangeRequest).styleId;
 
     // TODO: Set focus?
@@ -479,6 +479,11 @@ export class Content extends HtmlElement<'div'>{
 
   // ClientNotebookWatcher Methods
 
+  public onCellChange(msg: ServerNotebookCellChangedMessage, ownRequest: boolean): void {
+    const cell = this.cellViewFromId(msg.cellId);
+    cell.onCellChange(msg, ownRequest);
+  }
+
   public onChange(change: NotebookChange): void {
     const notebook = this.screen.notebook;
     // If a change would (or might) modify the display of a cell,
@@ -492,11 +497,11 @@ export class Content extends HtmlElement<'div'>{
         //         Is that too conservative?
         const fromTopLevelStyleId = notebook.topLevelStyleOf(change.relationship.fromId).id;
         this.dirtyCells.add(fromTopLevelStyleId);
-        this.cellViewFromStyleId(fromTopLevelStyleId).onChange(change);
+        this.cellViewFromId(fromTopLevelStyleId).onChange(change);
 
         const toTopLevelStyleId = notebook.topLevelStyleOf(change.relationship.toId).id;
         this.dirtyCells.add(toTopLevelStyleId);
-        this.cellViewFromStyleId(toTopLevelStyleId).onChange(change);
+        this.cellViewFromId(toTopLevelStyleId).onChange(change);
 
         break;
       }
@@ -504,13 +509,13 @@ export class Content extends HtmlElement<'div'>{
         // REVIEW: Is there a way to tell what styles affect display?
         const topLevelStyleId = notebook.topLevelStyleOf(change.style.id).id;
         this.dirtyCells.add(topLevelStyleId);
-        this.cellViewFromStyleId(topLevelStyleId).onChange(change);
+        this.cellViewFromId(topLevelStyleId).onChange(change);
         break;
       }
       case 'styleConverted': {
         const topLevelStyleId = notebook.topLevelStyleOf(change.styleId).id;
         this.dirtyCells.add(topLevelStyleId);
-        this.cellViewFromStyleId(topLevelStyleId).onChange(change);
+        this.cellViewFromId(topLevelStyleId).onChange(change);
         break;
       }
       case 'styleDeleted': {
@@ -521,7 +526,7 @@ export class Content extends HtmlElement<'div'>{
         if (style.id != topLevelStyle.id) {
           // REVIEW: Is there a way to tell what styles affect display?
           this.dirtyCells.add(topLevelStyle.id);
-          this.cellViewFromStyleId(topLevelStyle.id).onChange(change);
+          this.cellViewFromId(topLevelStyle.id).onChange(change);
         } else {
           const cellView = this.cellViews.get(style.id);
           assert(cellView);
@@ -537,7 +542,7 @@ export class Content extends HtmlElement<'div'>{
           // REVIEW: Is there a way to tell what styles affect display?
           const topLevelStyle = notebook.topLevelStyleOf(change.style.id);
           this.dirtyCells.add(topLevelStyle.id);
-          this.cellViewFromStyleId(topLevelStyle.id).onChange(change);
+          this.cellViewFromId(topLevelStyle.id).onChange(change);
         }
         break;
       }
@@ -559,7 +564,7 @@ export class Content extends HtmlElement<'div'>{
   public onChangesFinished(): void {
     // Redraw all of the cells that (may) have changed.
     for (const styleId of this.dirtyCells) {
-      const cellView = this.cellViewFromStyleId(styleId);
+      const cellView = this.cellViewFromId(styleId);
       cellView.onChangesFinished();
     }
     if (this.lastCellSelected) {
@@ -580,8 +585,8 @@ export class Content extends HtmlElement<'div'>{
 
   // Private Instance Property Functions
 
-  private cellViewFromStyleId(styleId: StyleId): CellBase {
-    const rval = this.cellViews.get(styleId)!;
+  private cellViewFromId(cellId: StyleId): CellBase {
+    const rval = this.cellViews.get(cellId)!;
     assert(rval);
     return rval;
   }
@@ -589,14 +594,14 @@ export class Content extends HtmlElement<'div'>{
   private cellViewFromElement($elt: HTMLDivElement): CellBase {
     // Strip 'C' prefix from cell ID to get the style id.
     const styleId: StyleId = parseInt($elt.id.slice(1), 10);
-    return this.cellViewFromStyleId(styleId);
+    return this.cellViewFromId(styleId);
   }
 
   private firstCell(): CellBase | undefined {
     const styleOrder = this.screen.notebook.topLevelStyleOrder();
     if (styleOrder.length==0) { return undefined; }
     const styleId = styleOrder[0];
-    const cellView = this.cellViewFromStyleId(styleId);
+    const cellView = this.cellViewFromId(styleId);
     assert(cellView);
     return cellView;
   }
@@ -624,11 +629,15 @@ export class Content extends HtmlElement<'div'>{
     return rval;
   }
 
-  private async sendUndoableChangeRequest(changeRequest: NotebookChangeRequest): Promise<NotebookChangeRequest> {
-    const undoChangeRequests = await this.sendUndoableChangeRequests([changeRequest]);
-    assert(undoChangeRequests.length==1);
-    return undoChangeRequests[0];
+  private async sendCellChangeRequest<R extends ServerNotebookMessage>(changeRequest: NotebookCellChangeRequest): Promise<R[]> {
+    return await this.screen.notebook.sendCellChangeRequest<R>(changeRequest);
   }
+
+  // private async sendUndoableChangeRequest(changeRequest: NotebookChangeRequest): Promise<NotebookChangeRequest> {
+  //   const undoChangeRequests = await this.sendUndoableChangeRequests([changeRequest]);
+  //   assert(undoChangeRequests.length==1);
+  //   return undoChangeRequests[0];
+  // }
 
   private async sendUndoableChangeRequests(changeRequests: NotebookChangeRequest[]): Promise<NotebookChangeRequest[]> {
     // Disable the undo and redo buttons

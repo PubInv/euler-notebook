@@ -23,6 +23,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 import { CssLength, CssSize, Html, assert, deepCopy, escapeHtml, ExpectedError } from "./common";
 import { WatchedResource, Watcher } from "./watched-resource";
 import { NOTEBOOK_NAME_RE, NotebookName, NotebookPath } from "./folder";
+import { ServerNotebookCellChangedMessage } from "./math-tablet-api";
 
 // Types
 
@@ -101,7 +102,8 @@ export interface NotebookObject {
 }
 
 export interface NotebookWatcher extends Watcher {
-  onChange(change: NotebookChange): void;
+  onCellChange(change: ServerNotebookCellChangedMessage, ownRequest: boolean): void;
+  onChange(change: NotebookChange, ownRequest: boolean): void;
 }
 
 interface Page {
@@ -460,7 +462,7 @@ export abstract class Notebook<W extends NotebookWatcher> extends WatchedResourc
 
   // Public Instance Methods
 
-  public applyChange(change: NotebookChange): void {
+  public applyChange(change: NotebookChange, ownRequest: boolean): void {
     assert(change);
 
     // REVEIW: Maybe all change notification should go out prior?
@@ -469,7 +471,7 @@ export abstract class Notebook<W extends NotebookWatcher> extends WatchedResourc
     // examine the style or relationship before it is modified.
     const notifyBefore = (change.type == 'relationshipDeleted' || change.type == 'styleConverted' || change.type == 'styleDeleted');
     if (notifyBefore) {
-      for (const watcher of this.watchers) { watcher.onChange(change); }
+      for (const watcher of this.watchers) { watcher.onChange(change, ownRequest); }
     }
 
     switch(change.type) {
@@ -486,12 +488,12 @@ export abstract class Notebook<W extends NotebookWatcher> extends WatchedResourc
 
     // Send change notifications that are supposed to go out *after* the change has been applied.
     if (!notifyBefore) {
-      for (const watcher of this.watchers) { watcher.onChange(change); }
+      for (const watcher of this.watchers) { watcher.onChange(change, ownRequest); }
     }
   }
 
-  public applyChanges(changes: NotebookChange[]): void {
-    for (const change of changes) { this.applyChange(change); }
+  public applyChanges(changes: NotebookChange[], ownRequest: boolean): void {
+    for (const change of changes) { this.applyChange(change, ownRequest); }
   }
 
   public deleteRelationship(relationship: RelationshipObject): void {

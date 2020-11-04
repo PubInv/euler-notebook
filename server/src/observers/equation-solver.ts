@@ -24,7 +24,7 @@ const MODULE = __filename.split(/[/\\]/).slice(-1)[0].slice(0,-3);
 const debug = debug1(`server:${MODULE}`);
 
 import { assert } from "../shared/common";
-//import { FormulaCellData, PlainTextMath } from "../shared/formula";
+//import { FormulaCellData, PlainTextFormula } from "../shared/formula";
 import {
   NotebookChange, StyleObject, RelationshipObject, StyleId, WolframExpression,
 } from "../shared/notebook";
@@ -92,12 +92,12 @@ export class EquationSolverObserver implements ObserverInstance {
     // //   relationsTo,
     // // };
     // debug("npv.value",nvp.value);
-    // const wolframData = <PlainTextMath>(nvp.name + ' = ' + nvp.value);
+    // const wolframData = <PlainTextFormula>(nvp.name + ' = ' + nvp.value);
     // const formulaData: FormulaCellData = {
     //   type: CellType.Formula,
     //   inputType: InputType.None,
     //   height: 72, // points
-    //   plainTextMath: wolframData,
+    //   plainTextFormula: wolframData,
     // };
     // const styleProps: StylePropertiesWithSubprops = {
     //   role: 'FORMULA',

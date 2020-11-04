@@ -21,7 +21,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 import * as debug1 from "debug";
 
-import { CssClass } from "../shared/common";
+import { CssClass, PlainText } from "../shared/common";
 
 import { $new } from "../dom";
 const debug = debug1('client:keyboard-panel');
@@ -30,7 +30,7 @@ import { HtmlElement } from "../html-element";
 
 // Types
 
-export type KeyboardCallbackFn = (event: InputEvent)=>void;
+export type KeyboardCallbackFn = (start: number, end: number, replacement: PlainText, value: PlainText)=>void;
 
 // Constants
 
@@ -91,13 +91,17 @@ export class KeyboardPanel extends HtmlElement<'div'> {
 
   private onTextAreaInput(event: InputEvent): void {
     debug(`TextArea input event: ${event.inputType} "${event.data}"`);
+    const target = <HTMLTextAreaElement>event.target!;
     // See https://w3c.github.io/input-events/#interface-InputEvent
-    // TODO: getTargetRanges()?
     console.dir(event);
     console.dir((<any>event).getTargetRanges());
-    this.keyboardCallbackFn(event);
-    // const text = this.$textArea.value;
-    // TODO: Incremental change
+
+    // TODO: Compute start and end and replacement values from event data.
+    const start = 0;
+    const end = -1;
+    const replacement = <PlainText>"";
+    const value = <PlainText>target.value;
+    this.keyboardCallbackFn(start, end, replacement, value);
   }
 
   private async onTextAreaKeyUp(event: KeyboardEvent): Promise<void> {

@@ -101,7 +101,7 @@ async function createNotebookFromText(type: StyleType, text: string): Promise<Se
       type: CellType.Text,
       inputType: InputType.Keyboard,
       height: 72, // points
-      plainText: <PlainText>s.trim()
+      inputText: <PlainText>s.trim()
     };
     const styleProps: StylePropertiesWithSubprops = { role: 'TEXT', type, data };
     const rval: StyleInsertRequest = { type: 'insertStyle', styleProps }

@@ -83,7 +83,7 @@ export interface FolderObject {
 }
 
 export interface FolderWatcher extends Watcher {
-  onChange(change: FolderChange): void;
+  onChange(change: FolderChange, ownRequest: boolean): void;
 }
 
 // An entry in a list of notebooks.
@@ -160,13 +160,13 @@ export abstract class Folder<W extends FolderWatcher> extends WatchedResource<Fo
 
   // Public Instance Methods
 
-  public applyChange(change: FolderChange): void {
+  public applyChange(change: FolderChange, ownRequest: boolean): void {
     // Send deletion change notifications.
     // Deletion change notifications are sent before the change happens so the watcher can
     // examine the style or relationship being deleted before it disappears from the notebook.
     const notifyBefore = (change.type == 'folderDeleted' || change.type == 'notebookDeleted');
     if (notifyBefore) {
-      for (const watcher of this.watchers) { watcher.onChange(change); }
+      for (const watcher of this.watchers) { watcher.onChange(change, ownRequest); }
     }
 
     switch(change.type) {
@@ -207,7 +207,7 @@ export abstract class Folder<W extends FolderWatcher> extends WatchedResource<Fo
 
     // Send non-deletion change notification.
     if (!notifyBefore) {
-      for (const watcher of this.watchers) { watcher.onChange(change); }
+      for (const watcher of this.watchers) { watcher.onChange(change, ownRequest); }
     }
   }
 

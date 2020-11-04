@@ -23,7 +23,11 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 import { OpenOptions } from "./shared/watched-resource";
 import { Notebook, NotebookChange, StyleId, NotebookWatcher } from "./shared/notebook";
-import { ServerNotebookChangedMessage, NotebookChangeRequest, ClientNotebookChangeMessage, ClientNotebookUseToolMessage, ClientNotebookOpenMessage, ServerNotebookOpenedMessage, ServerNotebookMessage, ServerNotebookClosedMessage } from "./shared/math-tablet-api";
+import {
+  ServerNotebookChangedMessage, NotebookChangeRequest, ClientNotebookChangeMessage, ClientNotebookUseToolMessage,
+  ClientNotebookOpenMessage, ServerNotebookOpenedMessage, ServerNotebookMessage, ServerNotebookClosedMessage,
+  NotebookCellChangeRequest, ClientNotebookCellChangeMessage, ServerNotebookCellChangedMessage,
+} from "./shared/math-tablet-api";
 
 import { appInstance } from "./app";
 import { NotebookName, NotebookPath } from "./shared/folder";
@@ -32,7 +36,7 @@ import { assert, assertFalse } from "./shared/common";
 // Types
 
 export interface ClientNotebookWatcher extends NotebookWatcher {
-  onChangesFinished(): void;
+  onChangesFinished(ownRequest: boolean): void;
 }
 
 export type OpenNotebookOptions = OpenOptions<ClientNotebookWatcher>;
@@ -63,11 +67,12 @@ export class ClientNotebook extends Notebook<ClientNotebookWatcher> {
 
   // Class Event Handlers
 
-  public static smMessage(msg: ServerNotebookMessage): void {
+  public static smMessage(msg: ServerNotebookMessage, ownRequest: boolean): void {
     // A notebook message was received from the server.
     switch(msg.operation) {
-      case 'changed': this.smChanged(msg); break;
-      case 'closed':  this.smClosed(msg); break;
+      case 'cellChanged': this.smCellChanged(msg, ownRequest); break;
+      case 'changed': this.smChanged(msg, ownRequest); break;
+      case 'closed':  this.smClosed(msg, ownRequest); break;
       case 'opened':  break; // Nothing to do. Opened response is handled when request promise is resolved.
       default: assertFalse();
     }
@@ -93,6 +98,17 @@ export class ClientNotebook extends Notebook<ClientNotebookWatcher> {
     const url = `/export${this.path}`;
     // window.location.href = url;
     window.open(url, "_blank")
+  }
+
+  public async sendCellChangeRequest<R extends ServerNotebookMessage>(changeRequest: NotebookCellChangeRequest): Promise<R[]> {
+    assert(!this.terminated);
+    const msg: ClientNotebookCellChangeMessage = {
+      type: 'notebook',
+      operation: 'cellChange',
+      path: this.path,
+      changeRequest,
+    }
+    return await appInstance.socket.sendRequest<R>(msg);
   }
 
   public async sendChangeRequest(changeRequest: NotebookChangeRequest): Promise<ChangeRequestResults> {
@@ -145,13 +161,19 @@ export class ClientNotebook extends Notebook<ClientNotebookWatcher> {
 
   // Private Class Event Handlers
 
-  private static smChanged(msg: ServerNotebookChangedMessage): void {
+  private static smCellChanged(msg: ServerNotebookCellChangedMessage, ownRequest: boolean): void {
     // Message from the server that the notebook has changed.
     const instance = this.getInstance(msg.path);
-    instance.smChanged(msg);
+    instance.smCellChanged(msg, ownRequest);
   }
 
-  private static smClosed(msg: ServerNotebookClosedMessage): void {
+  private static smChanged(msg: ServerNotebookChangedMessage, ownRequest: boolean): void {
+    // Message from the server that the notebook has changed.
+    const instance = this.getInstance(msg.path);
+    instance.smChanged(msg, ownRequest);
+  }
+
+  private static smClosed(msg: ServerNotebookClosedMessage, _ownRequest: boolean): void {
     // Message from the server that the notebook has been closed by the server.
     // For example, if the notebook was deleted or moved.
     const had = this.close(msg.path, msg.reason);
@@ -182,7 +204,15 @@ export class ClientNotebook extends Notebook<ClientNotebookWatcher> {
 
   // Private Event Handlers
 
-  private smChanged(msg: ServerNotebookChangedMessage): void {
+  private smCellChanged(msg: ServerNotebookCellChangedMessage, ownRequest: boolean): void {
+    // Message from the server indicating that a cell in the notebook has changed.
+    // Notify all watchers of this notebook.
+    for (const watcher of this.watchers) {
+      watcher.onCellChange(msg, ownRequest);
+    }
+  }
+
+  private smChanged(msg: ServerNotebookChangedMessage, ownRequest: boolean): void {
     // Message from the server indicating this notebook has changed.
 
     // Apply changes to the notebook data structure, and notify the view of the change.
@@ -192,12 +222,13 @@ export class ClientNotebook extends Notebook<ClientNotebookWatcher> {
     //  determine what cell to update. If the style has been deleted from the notebook already
     //  then it cannot do that.)
     for (const change of msg.changes) {
-      this.applyChange(change);
+      this.applyChange(change, ownRequest);
     }
 
     for (const watcher of this.watchers) {
-      watcher.onChangesFinished();
+      watcher.onChangesFinished(ownRequest);
     }
   }
+
 
 }

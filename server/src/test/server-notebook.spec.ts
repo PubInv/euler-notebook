@@ -26,8 +26,8 @@ import { assert } from "chai";
 import 'mocha';
 import * as sinon from "sinon";
 
-import { Html } from "../shared/common";
-import { FormulaCellData, PlainTextMath } from "../shared/formula";
+import { EMPTY_SVG, Html, PlainText } from "../shared/common";
+import { EMPTY_FORMULA, FormulaCellData } from "../shared/formula";
 import { NotebookChange, StyleInserted, StyleObject } from "../shared/notebook";
 import { NotebookChangeRequest, StyleInsertRequest, StylePropertiesWithSubprops, ToolData } from "../shared/math-tablet-api";
 import { ServerNotebook, ObserverInstance }  from "../server-notebook";
@@ -102,8 +102,10 @@ describe("server notebook", function() {
       const data: FormulaCellData = {
         type: CellType.Formula,
         inputType: InputType.None,
+        displaySvg: EMPTY_SVG,
         height: 72, // points
-          plainTextMath: <PlainTextMath>"",
+        inputText: <PlainText>"",
+        plainTextFormula: EMPTY_FORMULA,
       };
       const styleProps: StylePropertiesWithSubprops = { role: 'FORMULA', type: 'FORMULA-DATA', data };
       const insertRequest: StyleInsertRequest = { type: 'insertStyle', styleProps };
@@ -136,8 +138,10 @@ describe("server notebook", function() {
       const formulaData: FormulaCellData = {
         type: CellType.Formula,
         inputType: InputType.None,
+        displaySvg: EMPTY_SVG,
         height: 72, // points
-        plainTextMath: <PlainTextMath>'',
+        inputText: <PlainText>"",
+        plainTextFormula: EMPTY_FORMULA,
       };
       const styleProps: StylePropertiesWithSubprops = {
         role: 'FORMULA',

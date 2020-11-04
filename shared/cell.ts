@@ -61,7 +61,7 @@ export interface PlotCellData extends CellData {
 
 interface TextCellDataBase extends CellData {
   type: CellType.Text,
-  plainText: PlainText,
+  inputText: PlainText,
 }
 export interface TextCellKeyboardData extends TextCellDataBase {
   inputType: InputType.Keyboard,

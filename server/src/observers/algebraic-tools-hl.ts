@@ -24,7 +24,6 @@ const MODULE = __filename.split(/[/\\]/).slice(-1)[0].slice(0,-3);
 const debug = debug1(`server:${MODULE}`);
 
 import { Html } from "../shared/common";
-//import { FormulaCellData, PlainTextMath } from "../shared/formula";
 import {
   StyleObject, WolframExpression
 } from "../shared/notebook";
@@ -164,7 +163,7 @@ export class AlgebraicToolsObserverHL extends BaseObserver {
 //       type: CellType.Formula,
 //       inputType: InputType.None,
 //       height: 72, // points
-//       plainTextMath: <PlainTextMath>transformationData.output,
+//       plainTextFormula: <PlainTextFormula>transformationData.output,
 //     };
 //     const styleProps: StylePropertiesWithSubprops = {
 //       id: toId,

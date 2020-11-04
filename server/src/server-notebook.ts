@@ -28,8 +28,8 @@ import * as debug1 from "debug";
 // import { readdirSync, unlink, writeFileSync } from "fs"; // LATER: Eliminate synchronous file operations.
 import { join } from "path";
 
-import { assert, assertFalse, CssLength, ExpectedError, PlainText, SvgMarkup, Timestamp } from "./shared/common";
-import { FormulaCellData, FormulaCellKeyboardData, FormulaCellStylusData, PlainTextMath } from "./shared/formula";
+import { assert, assertFalse, CssLength, EMPTY_SVG, ExpectedError, notImplemented, PlainText, Timestamp } from "./shared/common";
+import { EMPTY_FORMULA, FormulaCellData, FormulaCellKeyboardData, FormulaCellStylusData } from "./shared/formula";
 import { StylusInput } from "./shared/stylus";
 import { TextCellKeyboardData, TextCellStylusData } from "./shared/cell";
 import { NotebookPath, NOTEBOOK_PATH_RE, NotebookName, FolderPath, NotebookEntry } from "./shared/folder";
@@ -39,13 +39,15 @@ import {
   RelationshipInserted, StyleInserted, StyleDeleted, StyleConverted, NotebookWatcher, WolframExpression
 } from "./shared/notebook";
 import {
-  InsertCellRequest, KeyboardChangeRequest, NotebookChangeRequest, StyleMoveRequest, StyleInsertRequest, StyleChangeRequest,
-  RelationshipDeleteRequest, StyleDeleteRequest, RelationshipInsertRequest,
+  NotebookChangeRequest, StyleMoveRequest, StyleInsertRequest, StyleChangeRequest,
+  RelationshipDeleteRequest, StyleDeleteRequest, RelationshipInsertRequest, ClientNotebookCellChangeMessage,
   StylePropertiesWithSubprops, TexExpression, StyleConvertRequest, ServerNotebookChangedMessage, ClientNotebookChangeMessage, ClientNotebookUseToolMessage, RequestId,
+  ServerNotebookCellChangedMessage,
+  InsertCellRequest, KeyboardInputRequest, StylusInputRequest,
 } from "./shared/math-tablet-api";
 import { notebookChangeRequestSynopsis, notebookChangeSynopsis } from "./shared/debug-synopsis";
 
-import { ClientId } from "./client-socket";
+import { ClientId } from "./server-socket";
 import { AbsDirectoryPath, ROOT_DIR_PATH, mkDir, readFile, rename, rmRaf, writeFile } from "./adapters/file-system";
 import { constructSubstitution } from "./adapters/wolframscript";
 import { OpenOptions } from "./shared/watched-resource";
@@ -687,14 +689,54 @@ ${ind} + ${data}
 
   // Public Event Handlers
 
+  public onNotebookCellChangeMessage(
+    originatingWatcher: NotebookWatcher,
+    msg: ClientNotebookCellChangeMessage,
+  ): void {
+    assert(!this.terminated);
+    const source: StyleSource = 'USER';
+    const changeRequest = msg.changeRequest;
+    let reply: ServerNotebookCellChangedMessage|undefined = undefined;
+    switch(changeRequest.type) {
+      case 'insertCell': {
+        const changeRequest2 = this.processInsertCellRequest(changeRequest);
+        this.requestChanges(source, [ changeRequest2 ], originatingWatcher, msg.requestId)
+         .catch(err=>{
+            // REVIEW: Proper error handling?
+            logError(err, "Error processing client notebook cell change message.");
+          });
+            break;
+      }
+      case 'keyboardInputChange':
+        reply = this.processKeyboardChangeRequest(source, changeRequest, msg.requestId);
+        break;
+      case 'stylusInputChange':
+        reply = this.processStylusChangeRequest(source, changeRequest, msg.requestId);
+        break;
+      default: assertFalse();
+    }
+
+    // Notify watchers of changes
+    if (reply) {
+      reply.complete = true;
+      const requestId = msg.requestId;
+      for (const watcher of this.watchers) {
+        const reply2 = (watcher == originatingWatcher && requestId ? { ...reply, requestId } : reply);
+        watcher.onCellChange(reply2, false);
+      };
+    }
+  }
+
   public onNotebookChangeMessage(
     originatingWatcher: NotebookWatcher,
     msg: ClientNotebookChangeMessage,
   ): void {
     assert(!this.terminated);
-    // TODO: pass request ID on responses to originatingWatcher.
-    // TODO: options.client ID
-    this.requestChanges('USER', msg.changeRequests, originatingWatcher, msg.requestId);
+    this.requestChanges('USER', msg.changeRequests, originatingWatcher, msg.requestId)
+    .catch(err=>{
+      // REVIEW: Proper error handling?
+      logError(err, "Error processing client notebook change message.");
+    });
   }
 
   public onNotebookUseToolMessage(
@@ -761,7 +803,7 @@ ${ind} + ${data}
     rval: NotebookChange[],
   ): void {
     debug(`${source} change: ${notebookChangeSynopsis(change)}`);
-    this.applyChange(change);
+    this.applyChange(change, false);
     // Uncomment the following line to see a dump of the notebook after every change.
     // debug(notebookSynopsis(this));
     rval.push(change);
@@ -778,14 +820,6 @@ ${ind} + ${data}
       debug(`${source} change request: ${notebookChangeRequestSynopsis(changeRequest)}`);
       let undoChangeRequest: NotebookChangeRequest|undefined;
       switch(changeRequest.type) {
-        case 'insertCell':
-          undoChangeRequest = this.applyInsertCellRequest(source, changeRequest, rval);
-          break;
-        case 'keyboardChange':
-          /* undoChangeRequest = */ this.applyKeyboardChangeRequest(source, changeRequest, rval);
-          break;
-
-        // LEGACY:
         case 'changeStyle':
           undoChangeRequest = this.applyChangeStyleRequest(source, changeRequest, rval);
           break;
@@ -924,120 +958,6 @@ ${ind} + ${data}
     this.appendChange(source, change, rval);
 
     return undoChangeRequest;
-  }
-
-  private applyInsertCellRequest(
-    source: StyleSource,
-    request: InsertCellRequest,
-    rval: NotebookChange[],
-  ): StyleDeleteRequest {
-
-    const id = this.nextId++;
-
-    let data: FigureCellData|FormulaCellData|TextCellData;
-    let role: StyleRole;
-    let type: StyleType;
-    switch(request.cellType) {
-      case CellType.Figure: {
-        role = 'FIGURE';
-        type = 'FIGURE-DATA';
-        assert(request.inputType == InputType.Stylus);
-        const figureCellData: FigureCellData = {
-          type: request.cellType,
-          height: 72*3, // 3 inches in points
-          displaySvg: <SvgMarkup>'<svg></svg>',
-          inputType: InputType.Stylus,
-          stylusInput: emptyStylusInput(3, 6.5),
-        };
-        data = figureCellData;
-        break;
-      }
-      case CellType.Formula: {
-        role = 'FORMULA';
-        type = 'FORMULA-DATA';
-        switch(request.inputType) {
-          case InputType.Keyboard: {
-            const formulaCellKeyboardData: FormulaCellKeyboardData = {
-              type: request.cellType,
-              height: 72*1, // 1 inch in points
-              displaySvg: <SvgMarkup>'<svg></svg>',
-              inputType: InputType.Keyboard,
-              plainTextMath: <PlainTextMath>'',
-            };
-            data = formulaCellKeyboardData;
-            break;
-          }
-          case InputType.Stylus: {
-            const formulaCellStylusData: FormulaCellStylusData = {
-              type: request.cellType,
-              height: 72*1, // 1 inch in points
-              displaySvg: <SvgMarkup>'<svg></svg>',
-              inputType: InputType.Stylus,
-              plainTextMath: <PlainTextMath>'',
-              stylusInput: emptyStylusInput(1, 6.5),
-              stylusSvg: <SvgMarkup>'<svg></svg>',
-            };
-            data = formulaCellStylusData;
-            break;
-          }
-          default: assertFalse();
-        }
-        break;
-      }
-      case CellType.Text: {
-        role = 'TEXT';
-        type = 'TEXT-DATA';
-        switch(request.inputType) {
-          case InputType.Keyboard: {
-            const textCellKeyboardData: TextCellKeyboardData = {
-              type: request.cellType,
-              height: 72*1, // 1 inch in points
-              displaySvg: <SvgMarkup>'<svg></svg>',
-              inputType: InputType.Keyboard,
-              plainText: <PlainText>"",
-            };
-            data = textCellKeyboardData;
-            break;
-          }
-          case InputType.Stylus: {
-            const textCellStylusData: TextCellStylusData = {
-              type: request.cellType,
-              height: 72*1, // 1 inch in points
-              displaySvg: <SvgMarkup>'<svg></svg>',
-              inputType: InputType.Stylus,
-              plainText: <PlainText>"",
-              stylusInput: emptyStylusInput(1, 6.5),
-              stylusSvg: <SvgMarkup>'<svg></svg>',
-            };
-            data = textCellStylusData;
-            break;
-          }
-          default: assertFalse();
-        }
-        break;
-      }
-      default: assertFalse();
-    }
-
-    const style: StyleObject = { data, id, role, parentId: 0, source, type };
-
-    const change: StyleInserted =  { type: 'styleInserted', style, afterId: request.afterId };
-    this.appendChange(source, change, rval);
-
-    const undoChangeRequest: StyleDeleteRequest = {
-      type: 'deleteStyle',
-      styleId: style.id,
-    }
-    return undoChangeRequest;
-  }
-
-  private applyKeyboardChangeRequest(
-    source: StyleSource,
-    request: KeyboardChangeRequest,
-    _rval: NotebookChange[],
-  ): void /* LATER: StyleChangeRequest */ {
-    console.log(`KEYBOARD CHANGE REQUEST ${source}`);
-    console.dir(request);
   }
 
   private applyInsertRelationshipRequest(
@@ -1321,6 +1241,152 @@ ${ind} + ${data}
     }
 
     return startIndex;
+  }
+
+  private processInsertCellRequest(
+    request: InsertCellRequest,
+  ): StyleInsertRequest {
+    let data: FigureCellData|FormulaCellData|TextCellData;
+    let role: StyleRole;
+    let type: StyleType;
+    switch(request.cellType) {
+      case CellType.Figure: {
+        role = 'FIGURE';
+        type = 'FIGURE-DATA';
+        assert(request.inputType == InputType.Stylus);
+        const figureCellData: FigureCellData = {
+          type: request.cellType,
+          height: 72*3, // 3 inches in points
+          displaySvg: EMPTY_SVG,
+          inputType: InputType.Stylus,
+          stylusInput: emptyStylusInput(3, 6.5),
+        };
+        data = figureCellData;
+        break;
+      }
+      case CellType.Formula: {
+        role = 'FORMULA';
+        type = 'FORMULA-DATA';
+        switch(request.inputType) {
+          case InputType.Keyboard: {
+            const formulaCellKeyboardData: FormulaCellKeyboardData = {
+              type: request.cellType,
+              height: 72*1, // 1 inch in points
+              displaySvg: EMPTY_SVG,
+              inputType: InputType.Keyboard,
+              inputText: <PlainText>'',
+              plainTextFormula: EMPTY_FORMULA,
+            };
+            data = formulaCellKeyboardData;
+            break;
+          }
+          case InputType.Stylus: {
+            const formulaCellStylusData: FormulaCellStylusData = {
+              type: request.cellType,
+              height: 72*1, // 1 inch in points
+              displaySvg: EMPTY_SVG,
+              inputType: InputType.Stylus,
+              inputText: <PlainText>'',
+              plainTextFormula: EMPTY_FORMULA,
+              stylusInput: emptyStylusInput(1, 6.5),
+              stylusSvg: EMPTY_SVG,
+            };
+            data = formulaCellStylusData;
+            break;
+          }
+          default: assertFalse();
+        }
+        break;
+      }
+      case CellType.Text: {
+        role = 'TEXT';
+        type = 'TEXT-DATA';
+        switch(request.inputType) {
+          case InputType.Keyboard: {
+            const textCellKeyboardData: TextCellKeyboardData = {
+              type: request.cellType,
+              height: 72*1, // 1 inch in points
+              displaySvg: EMPTY_SVG,
+              inputType: InputType.Keyboard,
+              inputText: <PlainText>"",
+            };
+            data = textCellKeyboardData;
+            break;
+          }
+          case InputType.Stylus: {
+            const textCellStylusData: TextCellStylusData = {
+              type: request.cellType,
+              height: 72*1, // 1 inch in points
+              displaySvg: EMPTY_SVG,
+              inputType: InputType.Stylus,
+              inputText: <PlainText>"",
+              stylusInput: emptyStylusInput(1, 6.5),
+              stylusSvg: EMPTY_SVG,
+            };
+            data = textCellStylusData;
+            break;
+          }
+          default: assertFalse();
+        }
+        break;
+      }
+      default: assertFalse();
+    }
+
+    const changeRequest: StyleInsertRequest = {
+      type: 'insertStyle',
+      afterId: request.afterId,
+      parentId: 0,
+      styleProps: { role, type, data },
+    }
+    return changeRequest;
+
+  }
+
+  private processKeyboardChangeRequest(
+    _source: StyleSource,
+    request: KeyboardInputRequest,
+    requestId?: RequestId,
+  ): ServerNotebookCellChangedMessage {
+
+    // Update the inputText field in the cell.
+    const style = this.getStyle(request.cellId);
+    assert(style.role == 'FORMULA' || style.role == 'TEXT');
+    const data: FormulaCellData|TextCellData = style.data;
+
+    // TODO: Use start, end, replacement to just replace changed segment.
+    // data.inputText = <PlainText>replaceStringSegment(data.inputText, request.start, request.end, request.replacement);
+    data.inputText = request.value;
+
+    // LATER: This will fail when there is a race condition between two clients attempting to update the value.
+    //        Need to deal with that case.
+    assert(data.inputText==request.value);
+
+    // TODO: Update display svg, etc.
+
+    // Notify all watchers
+    const reply: ServerNotebookCellChangedMessage = {
+      type: 'notebook',
+      path: this.path,
+      operation: 'cellChanged',
+      cellId: request.cellId,
+      complete: true,
+      requestId,
+
+      inputText: data.inputText,
+      inputTextStart: request.start,
+      inputTextEnd: request.end,
+      inputTextReplacement: request.replacement,
+    };
+    return reply;
+  }
+
+  private processStylusChangeRequest(
+    _source: StyleSource,
+    _request: StylusInputRequest,
+    _requestId?: RequestId,
+  ): ServerNotebookCellChangedMessage {
+    notImplemented();
   }
 
   // Do not call this directly.

@@ -21,18 +21,19 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 import { StylusInput } from "./stylus";
 import { CellData, CellType, InputType } from "./cell";
-import { SvgMarkup } from "./common";
+import { PlainText, SvgMarkup } from "./common";
 
 // Types
 
 // This type is for the variation of plain-text math input that we accept.
 // Currently, it is the same as WolframExpression
 // except that we convert single equals to double equals.
-export type PlainTextMath = '{PlainTextMath}';
+export type PlainTextFormula = '{PlainTextFormula}';
 
 interface FormulaCellDataBase extends CellData {
   type: CellType.Formula,
-  plainTextMath: PlainTextMath;
+  inputText: PlainText;
+  plainTextFormula: PlainTextFormula;
 }
 export interface FormulaCellKeyboardData extends FormulaCellDataBase {
   inputType: InputType.Keyboard,
@@ -46,3 +47,7 @@ interface FormulaCellNoInputData extends FormulaCellDataBase {
   inputType: InputType.None,
 }
 export type FormulaCellData = FormulaCellKeyboardData | FormulaCellStylusData | FormulaCellNoInputData;
+
+// CONSTANTS
+
+export const EMPTY_FORMULA = <PlainTextFormula>'';

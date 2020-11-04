@@ -33,6 +33,7 @@ import { Sidebar } from "./sidebar";
 import { Tools } from "./tools";
 import { ClientNotebook, OpenNotebookOptions } from "../../client-notebook";
 import { ScreenBase } from "../screen-base";
+import { ServerNotebookCellChangedMessage } from "../../shared/math-tablet-api";
 
 // Types
 
@@ -87,6 +88,10 @@ export class NotebookEditScreen extends ScreenBase implements NotebookWatcher {
   public onResize(_window: Window, _event: UIEvent): void { /* Nothing to do. */ }
 
   // ClientNotebookWatcher Methods
+
+  public onCellChange(msg: ServerNotebookCellChangedMessage, ownRequest: boolean): void {
+    this.content.onCellChange(msg, ownRequest);
+  }
 
   public onChange(change: NotebookChange): void {
     this.content.onChange(change);

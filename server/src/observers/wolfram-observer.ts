@@ -22,7 +22,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 import debug1 from "debug";
 
 
-// import { FormulaCellData, PlainTextMath } from "../shared/formula";
+// import { FormulaCellData, PlainTextFormula } from "../shared/formula";
 // import { WolframExpression, StyleObject } from "../shared/notebook";
 // import { isEmptyOrSpaces } from "../shared/math-tablet-api";
 
@@ -88,25 +88,25 @@ export class WolframObserver extends BaseObserver {
 
   // private convertWolframToFormulaRule(style: StyleObject): FormulaCellData|undefined {
   //   // TODO: Make this async, pass the string to WolframScript to normalize.
-  //   const wolframData: PlainTextMath = style.data;
+  //   const wolframData: PlainTextFormula = style.data;
   //   return {
   //     type: CellType.Formula,
   //     inputType: InputType.None,
   //     height: 72, // points
-  //     plainTextMath: wolframData,
+  //     plainTextFormula: wolframData,
   //   };
   // }
 
-  // private convertFormulaToWolframRule(style: StyleObject): PlainTextMath|undefined {
+  // private convertFormulaToWolframRule(style: StyleObject): PlainTextFormula|undefined {
   //   const formulaData: FormulaCellData = style.data;
   //   // REVIEW: Convert single equal sign to double equal sign?
-  //   return formulaData.plainTextMath;
+  //   return formulaData.plainTextFormula;
   // }
 
   // // One problem here is that we are not rewriting the single equal, which is the "math-tablet input" language,
   // // to the double equal, which is essentially the wolfram language (thought not a one-to-one correspondence.)
   // private async evaluateWolframExprRule(style: StyleObject) : Promise<WolframExpression|undefined> {
-  //   const expr: PlainTextMath = style.data;
+  //   const expr: PlainTextFormula = style.data;
   //   // REVIEW: If evaluation fails?
   //   debug(`Evaluating: "${expr}".`);
   //   let rval: WolframExpression|undefined;
