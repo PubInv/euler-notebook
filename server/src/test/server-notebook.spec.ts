@@ -67,8 +67,8 @@ describe("server notebook", function() {
     before("onOpen is called when notebook is created", async function(){
       // Register the observer
       notebook = await ServerNotebook.openEphemeral();
-      const testObserver = await TestObserver.onOpen(notebook);
-      notebook.registerObserver('TEST', testObserver);
+      // const testObserver = await TestObserver.onOpen(notebook);
+      // notebook.registerObserver('TEST', testObserver);
 
       // Observer's onOpen should be called with notebook as an argument
       // and return an observer instance. Spy on the observer.
@@ -114,21 +114,6 @@ describe("server notebook", function() {
       assert(onChangesAsyncSpy.callCount>callCountAsync);
       assert(onChangesSyncSpy.callCount>callCountSync);
 
-      // TODO: Commented out this test because it is very fragile, depending on what the observers
-      //       are doing exactly. Need to change it to look specifically for changes that are expected,
-      //       and not worry about what other changes may occur.
-      // const expectedNotebookChange: StyleInserted = {
-      //   type: 'styleInserted',
-      //   style: {
-      //     id: 1,
-      //     parentId: 0,
-      //     source: 'TEST',
-      //     ...styleProps,
-      //   },
-      //   afterId: -1,
-      // }
-      // assert.deepEqual(onChangesAsyncSpy.lastCall.args[0], [ expectedNotebookChange ]);
-      // assert.deepEqual(onChangesSyncSpy.lastCall.args[0], [ expectedNotebookChange ]);
     });
 
     it("useTool is called when tool is used", async function(){

@@ -37,7 +37,6 @@ import {
 } from "./shared/math-tablet-api";
 import { NotebookChange, NotebookObject, NotebookWatcher as ServerNotebookWatcher } from "./shared/notebook";
 
-// REVIEW: This file should not be dependent on any specific observers.
 import { logError, logWarning } from "./error-handler";
 import { ServerFolder, ServerFolderWatcher } from "./server-folder";
 import { ServerNotebook } from "./server-notebook";

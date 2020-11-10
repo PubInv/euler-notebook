@@ -35,9 +35,8 @@ import { middleware as stylusMiddleware } from "stylus";
 
 import { assert } from "./shared/common";
 import { ServerSocket } from "./server-socket";
-import { loadConfig, loadCredentials} from "./config";
+import { loadConfig } from "./config";
 import { initialize as initializeMathJax } from "./adapters/mathjax";
-import { initialize as initializeObservers } from "./observers";
 import { rootDir as notebookRootDir } from "./server-folder";
 import { start as startWolframscript } from "./adapters/wolframscript";
 
@@ -57,14 +56,11 @@ async function main() {
   checkNodeVersion();
 
   const config = await loadConfig();
-  const credentials = await loadCredentials();
+  // const credentials = await loadCredentials();
 
   // TODO: stopWolframscript before exiting.
   if (config.mathematica) { await startWolframscript(config.wolframscript); }
   initializeMathJax();
-
-  // TODO: We should terminateObservers when shutting down.
-  await initializeObservers(config, credentials);
 
   const app: express.Express = express();
 

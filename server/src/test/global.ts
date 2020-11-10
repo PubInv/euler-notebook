@@ -23,8 +23,7 @@ const debug = debug1(`tests:${MODULE}`);
 
 import { initialize as initializeMathJax } from "../adapters/mathjax";
 import { start as startWolframscript, stop as stopWolframscript } from "../adapters/wolframscript";
-import { initialize as initializeObservers, terminate as terminateObservers } from "../observers";
-import { loadConfig, loadCredentials } from "../config";
+import { loadConfig /* , loadCredentials */ } from "../config";
 
 // Exported functions
 
@@ -32,7 +31,7 @@ export function ensureGlobalLoaded() { }
 
 // Global before/after
 
-before("Loading config, starting WolframScript, and initializing standard observers.", async function() {
+before("Loading config and starting WolframScript.", async function() {
   // REVIEW: It is a little fragile that we count on initializing things in the same order
   //         as server/src/app.ts/main(). Both should call the same high-level initialization
   //         function that insures the initialization is done in the same order.
@@ -40,21 +39,17 @@ before("Loading config, starting WolframScript, and initializing standard observ
   debug(`Global before`);
   const config = await loadConfig();
   if (!config.mathematica) { throw new Error(`Unit tests require WolframScript.`); }
-  const credentials = await loadCredentials();
+  // const credentials = await loadCredentials();
   debug(`  Starting WolframScript.`);
   await startWolframscript(config.wolframscript);
   debug(`  Initializing MathJax adapter.`);
   initializeMathJax();
-  debug(`  Initializing observers.`);
-  await initializeObservers(config, credentials);
   debug(`  Global before finished.`);
 });
 
-after("Terminating standard observers and stopping WolframScript.", async function(){
+after("Stopping WolframScript.", async function(){
   this.timeout(10*1000);
   debug(`Global after.`);
-  debug(`  Terminating observers.`);
-  terminateObservers();
   debug(`  Stopping WolframScript.`);
   await stopWolframscript();
   debug(`  Global after finished.`);

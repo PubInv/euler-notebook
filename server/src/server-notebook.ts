@@ -28,7 +28,7 @@ import * as debug1 from "debug";
 // import { readdirSync, unlink, writeFileSync } from "fs"; // LATER: Eliminate synchronous file operations.
 import { join } from "path";
 
-import { assert, assertFalse, ExpectedError, Timestamp } from "./shared/common";
+import { assert, assertFalse, ExpectedError, notImplemented, Timestamp } from "./shared/common";
 import { NotebookPath, NOTEBOOK_PATH_RE, NotebookName, FolderPath, NotebookEntry } from "./shared/folder";
 import {
   Notebook, NotebookObject, NotebookChange, StyleObject, StyleRole, StyleType, StyleSource, StyleId,
@@ -87,8 +87,6 @@ interface StyleOrderMapping {
 
 // Constants
 
-const MAX_ASYNC_ROUNDS = 10;
-const MAX_SYNC_ROUNDS = 10;
 const NOTEBOOK_ENCODING = 'utf8';
 const NOTEBOOK_FILE_NAME = 'notebook.json';
 
@@ -368,14 +366,6 @@ ${ind} + ${data}
 
   // Public Instance Methods
 
-  public deRegisterObserver(source: StyleSource): void {
-    this.observers.delete(source);
-  }
-
-  public registerObserver(source: StyleSource, instance: ObserverInstance): void {
-    this.observers.set(source, instance);
-  }
-
   public async requestChange(
     source: StyleSource,
     changeRequest: NotebookChangeRequest,
@@ -389,11 +379,6 @@ ${ind} + ${data}
     originatingWatcher?: NotebookWatcher,
     requestId?: RequestId,
   ): Promise<NotebookChange[]> {
-    // Applies the change requests to the notebook,
-    // then runs the resulting changes through all of the
-    // observers synchronously, until there are no more changes,
-    // or we reach a limit.
-
     assert(!this.terminated);
     debug(`Requested changes: ${changeRequests.length}`);
 
@@ -401,26 +386,7 @@ ${ind} + ${data}
     const changes: NotebookChange[] = [];
     const undoChangeRequests = this.applyRequestedChanges(source, changeRequests, changes);
 
-    let asyncStartIndex = 0;
-    let syncStartIndex = 0;
-    syncStartIndex = this.processChangesSync(changes, syncStartIndex);
-
     this.notifyWatchersOfChanges(changes, undoChangeRequests, false, originatingWatcher, requestId);
-    let notifyStartIndex = changes.length;
-
-    for (let round = 0; asyncStartIndex<changes.length && round<MAX_ASYNC_ROUNDS; round++) {
-      debug(`Async round ${round}.`);
-      asyncStartIndex = await this.processChangesAsync(changes, asyncStartIndex);
-      syncStartIndex = this.processChangesSync(changes, syncStartIndex, round);
-
-      this.notifyWatchersOfChanges(changes.slice(notifyStartIndex), undefined, true, originatingWatcher, requestId);
-      notifyStartIndex = changes.length;
-    }
-
-    if (asyncStartIndex<changes.length) {
-      // TODO: What do we do? Just drop the changes on the floor?
-      logError(new Error("Dropping async changes due to running out of rounds"));
-    }
 
     // REVIEW: If other batches of changes are being processed at the same time?
     // LATER: Set/restart a timer for the save so we save only once when the document reaches a quiescent state.
@@ -438,13 +404,14 @@ ${ind} + ${data}
   public async useTool(styleId: StyleId): Promise<NotebookChange[]> {
     debug(`useTool ${styleId}`);
     assert(!this.terminated);
-    const style = this.getStyle(styleId);
-    const source = style.source;
-    if (!style) { throw new Error(`Notebook useTool style ID not found: ${styleId}`); }
-    const observer = this.observers.get(source);
-    const changeRequests = await observer!.useTool(style);
-    const changes = await this.requestChanges(source, changeRequests);
-    return changes;
+    notImplemented();
+    // const style = this.getStyle(styleId);
+    // const source = style.source;
+    // if (!style) { throw new Error(`Notebook useTool style ID not found: ${styleId}`); }
+    // const observer = this.observers.get(source);
+    // const changeRequests = await observer!.useTool(style);
+    // const changes = await this.requestChanges(source, changeRequests);
+    // return changes;
   }
 
   // Public Event Handlers
@@ -503,7 +470,6 @@ ${ind} + ${data}
   private constructor(path: NotebookPath, options: OpenNotebookOptions) {
     super(path);
     this.ephemeral = options.ephemeral;
-    this.observers = new Map();
     this.reservedIds = new Set();
   }
 
@@ -511,7 +477,6 @@ ${ind} + ${data}
 
   // TODO: purge changes in queue that have been processed asynchronously.
   private ephemeral?: boolean;     // Not persisted to the filesystem.
-  private observers: Map<StyleSource, ObserverInstance>;
   private reservedIds: Set<StyleId>;
   private saving?: boolean;
 
@@ -760,13 +725,7 @@ ${ind} + ${data}
     } else {
       // LATER: Neither mustExist or mustNotExist specified. Open if it exists, or create if it doesn't exist.
       //        Currently this is an illegal option configuration.
-    }
-
-    // TODO: Use watcher interface for observers instead of separate observer interface?
-    // Call "onOpen" to get an observer instance for every registered observer class.
-    for (const [name, observerClass] of ServerNotebook.observerClasses.entries()) {
-      const observer = await observerClass.onOpen(this);
-      this.registerObserver(name, observer)
+      notImplemented();
     }
   }
 
@@ -797,69 +756,6 @@ ${ind} + ${data}
       }
       watcher.onChanged(msg);
     };
-  }
-
-  private async processChangesAsync(changes: NotebookChange[], startIndex: number): Promise<number> {
-
-    // TODO: timeout on observer processing of changes.
-    // TODO: Don't allow multiple asynchronous requestChanges to be operating at the same time per observer.
-
-    // Submit the changes to each observer in parallel to determine if they want to make
-    // additional changes as the result of the previous changes.
-    // Make apply the changes to the notebook as they come back,
-    // and accumulate all of the changes in the newChanges array.
-    // REVIEW: What if a requested change fails? (e.g. modify a style that another observer already deleted.)
-    const endIndex = changes.length;
-    assert(startIndex<endIndex);
-    const promises: Promise<void>[] = [];
-    for (const [source, observer] of this.observers) {
-      promises.push(
-        observer.onChangesAsync(changes, startIndex, endIndex)
-        .then(
-          (changeRequests)=>{ this.applyRequestedChanges(source, changeRequests, changes); },
-          // REVIEW: Error handling? (err)=>
-        )
-      );
-    };
-    await Promise.all(promises);
-    return endIndex;
-  }
-
-  private processChangesSync(
-    changes: NotebookChange[],
-    startIndex: number,
-    asyncRound?: number
-  ): number {
-    let round: number;
-    for (round = 0; startIndex<changes.length && round<MAX_SYNC_ROUNDS; round++) {
-      debug(`Sync round ${asyncRound!=undefined?`${asyncRound}/`:''}${round}.`);
-
-      // Pass the new changes to each observer synchronously to determine if
-      // the observer wants to make additional change requests as the result of
-      // the changes.
-      const endIndex = changes.length;
-      const observerChangeRequests: Map<StyleSource, NotebookChangeRequest[]> = new Map();
-      for (const [source, observer] of this.observers) {
-        assert(startIndex<endIndex);
-        const changeRequests = observer.onChangesSync(changes, startIndex, endIndex);
-        observerChangeRequests.set(source, changeRequests);
-      };
-
-      // Apply the change requests from the observers, if there are any.
-      // The changes resulting from the change requests will be appended
-      // to the changes array, and processed in the next round.
-      startIndex = endIndex;
-      for (const [source, changeRequests] of observerChangeRequests) {
-        this.applyRequestedChanges(source, changeRequests, changes);
-      }
-    }
-
-    if (startIndex<changes.length) {
-      // TODO: What do we do? Just drop the changes on the floor?
-      logError(new Error("Dropping sync changes due to running out of rounds"));
-    }
-
-    return startIndex;
   }
 
   // private processInsertCellRequest(
@@ -1028,10 +924,7 @@ ${ind} + ${data}
   }
 
   protected terminate(reason: string): void {
-    // TODO: Ensure notebook is not in the middle of processing change requests or saving.
-    for (const observer of this.observers.values()) {
-      observer.onClose();
-    }
+    // REVIEW: Notify watchers?
     super.terminate(reason);
   }
 
