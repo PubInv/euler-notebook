@@ -22,14 +22,13 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 import * as debug1 from "debug";
 const debug = debug1('client:formula-cell');
 
-import { assert, assertFalse, CssClass, notImplemented } from "../../../../shared/common";
+import { assert, assertFalse, CssClass } from "../../../../shared/common";
 import { NotebookChange, StyleObject } from "../../../../shared/notebook";
 import { Content as CellContainer } from "..";
 
 import { CellBase } from "./cell-base";
 import { $outerSvg, HtmlElementSpecification } from "../../../../dom";
 import { notebookChangeSynopsis } from "../../../../shared/debug-synopsis";
-import { ServerNotebookCellChangedMessage } from "../../../../shared/math-tablet-api";
 
 // Types
 
@@ -54,10 +53,6 @@ export class PlotCell extends CellBase {
   }
 
   // ClientNotebookWatcher Methods
-
-  public onCellChange(_msg: ServerNotebookCellChangedMessage, _ownRequest: boolean): void {
-    notImplemented();
-  }
 
   public onChange(change: NotebookChange): void {
     debug(`onChange: style ${this.styleId} ${notebookChangeSynopsis(change)}`);

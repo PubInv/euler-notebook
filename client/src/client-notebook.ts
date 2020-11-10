@@ -26,7 +26,6 @@ import { Notebook, NotebookChange, StyleId, NotebookWatcher } from "./shared/not
 import {
   ServerNotebookChangedMessage, NotebookChangeRequest, ClientNotebookChangeMessage, ClientNotebookUseToolMessage,
   ClientNotebookOpenMessage, ServerNotebookOpenedMessage, ServerNotebookMessage, ServerNotebookClosedMessage,
-  NotebookCellChangeRequest, ClientNotebookCellChangeMessage, ServerNotebookCellChangedMessage,
 } from "./shared/math-tablet-api";
 
 import { appInstance } from "./app";
@@ -70,7 +69,6 @@ export class ClientNotebook extends Notebook<ClientNotebookWatcher> {
   public static smMessage(msg: ServerNotebookMessage, ownRequest: boolean): void {
     // A notebook message was received from the server.
     switch(msg.operation) {
-      case 'cellChanged': this.smCellChanged(msg, ownRequest); break;
       case 'changed': this.smChanged(msg, ownRequest); break;
       case 'closed':  this.smClosed(msg, ownRequest); break;
       case 'opened':  break; // Nothing to do. Opened response is handled when request promise is resolved.
@@ -98,17 +96,6 @@ export class ClientNotebook extends Notebook<ClientNotebookWatcher> {
     const url = `/export${this.path}`;
     // window.location.href = url;
     window.open(url, "_blank")
-  }
-
-  public async sendCellChangeRequest<R extends ServerNotebookMessage>(changeRequest: NotebookCellChangeRequest): Promise<R[]> {
-    assert(!this.terminated);
-    const msg: ClientNotebookCellChangeMessage = {
-      type: 'notebook',
-      operation: 'cellChange',
-      path: this.path,
-      changeRequest,
-    }
-    return await appInstance.socket.sendRequest<R>(msg);
   }
 
   public async sendChangeRequest(changeRequest: NotebookChangeRequest): Promise<ChangeRequestResults> {
@@ -161,12 +148,6 @@ export class ClientNotebook extends Notebook<ClientNotebookWatcher> {
 
   // Private Class Event Handlers
 
-  private static smCellChanged(msg: ServerNotebookCellChangedMessage, ownRequest: boolean): void {
-    // Message from the server that the notebook has changed.
-    const instance = this.getInstance(msg.path);
-    instance.smCellChanged(msg, ownRequest);
-  }
-
   private static smChanged(msg: ServerNotebookChangedMessage, ownRequest: boolean): void {
     // Message from the server that the notebook has changed.
     const instance = this.getInstance(msg.path);
@@ -203,14 +184,6 @@ export class ClientNotebook extends Notebook<ClientNotebookWatcher> {
   }
 
   // Private Event Handlers
-
-  private smCellChanged(msg: ServerNotebookCellChangedMessage, ownRequest: boolean): void {
-    // Message from the server indicating that a cell in the notebook has changed.
-    // Notify all watchers of this notebook.
-    for (const watcher of this.watchers) {
-      watcher.onCellChange(msg, ownRequest);
-    }
-  }
 
   private smChanged(msg: ServerNotebookChangedMessage, ownRequest: boolean): void {
     // Message from the server indicating this notebook has changed.

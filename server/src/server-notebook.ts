@@ -28,10 +28,7 @@ import * as debug1 from "debug";
 // import { readdirSync, unlink, writeFileSync } from "fs"; // LATER: Eliminate synchronous file operations.
 import { join } from "path";
 
-import { assert, assertFalse, CssLength, EMPTY_SVG, ExpectedError, notImplemented, PlainText, Timestamp } from "./shared/common";
-import { EMPTY_FORMULA, FormulaCellData, FormulaCellKeyboardData, FormulaCellStylusData } from "./shared/formula";
-import { StylusInput } from "./shared/stylus";
-import { TextCellKeyboardData, TextCellStylusData } from "./shared/cell";
+import { assert, assertFalse, ExpectedError, Timestamp } from "./shared/common";
 import { NotebookPath, NOTEBOOK_PATH_RE, NotebookName, FolderPath, NotebookEntry } from "./shared/folder";
 import {
   Notebook, NotebookObject, NotebookChange, StyleObject, StyleRole, StyleType, StyleSource, StyleId,
@@ -40,10 +37,8 @@ import {
 } from "./shared/notebook";
 import {
   NotebookChangeRequest, StyleMoveRequest, StyleInsertRequest, StyleChangeRequest,
-  StyleDeleteRequest, ClientNotebookCellChangeMessage,
+  StyleDeleteRequest,
   StylePropertiesWithSubprops, TexExpression, StyleConvertRequest, ServerNotebookChangedMessage, ClientNotebookChangeMessage, ClientNotebookUseToolMessage, RequestId,
-  ServerNotebookCellChangedMessage,
-  InsertCellRequest, KeyboardInputRequest, StylusInputRequest,
 } from "./shared/math-tablet-api";
 import { notebookChangeRequestSynopsis, notebookChangeSynopsis } from "./shared/debug-synopsis";
 
@@ -51,7 +46,6 @@ import { ClientId } from "./server-socket";
 import { AbsDirectoryPath, ROOT_DIR_PATH, mkDir, readFile, rename, rmRaf, writeFile } from "./adapters/file-system";
 import { OpenOptions } from "./shared/watched-resource";
 import { logError } from "./error-handler";
-import { CellType, FigureCellData, InputType, TextCellData } from "./shared/cell";
 
 
 // const svg2img = require('svg2img');
@@ -454,44 +448,6 @@ ${ind} + ${data}
   }
 
   // Public Event Handlers
-
-  public onNotebookCellChangeMessage(
-    originatingWatcher: NotebookWatcher,
-    msg: ClientNotebookCellChangeMessage,
-  ): void {
-    assert(!this.terminated);
-    const source: StyleSource = 'USER';
-    const changeRequest = msg.changeRequest;
-    let reply: ServerNotebookCellChangedMessage|undefined = undefined;
-    switch(changeRequest.type) {
-      case 'insertCell': {
-        const changeRequest2 = this.processInsertCellRequest(changeRequest);
-        this.requestChanges(source, [ changeRequest2 ], originatingWatcher, msg.requestId)
-         .catch(err=>{
-            // REVIEW: Proper error handling?
-            logError(err, "Error processing client notebook cell change message.");
-          });
-            break;
-      }
-      case 'keyboardInputChange':
-        reply = this.processKeyboardChangeRequest(source, changeRequest, msg.requestId);
-        break;
-      case 'stylusInputChange':
-        reply = this.processStylusChangeRequest(source, changeRequest, msg.requestId);
-        break;
-      default: assertFalse();
-    }
-
-    // Notify watchers of changes
-    if (reply) {
-      reply.complete = true;
-      const requestId = msg.requestId;
-      for (const watcher of this.watchers) {
-        const reply2 = (watcher == originatingWatcher && requestId ? { ...reply, requestId } : reply);
-        watcher.onCellChange(reply2, false);
-      };
-    }
-  }
 
   public onNotebookChangeMessage(
     originatingWatcher: NotebookWatcher,
@@ -906,151 +862,151 @@ ${ind} + ${data}
     return startIndex;
   }
 
-  private processInsertCellRequest(
-    request: InsertCellRequest,
-  ): StyleInsertRequest {
-    let data: FigureCellData|FormulaCellData|TextCellData;
-    let role: StyleRole;
-    let type: StyleType;
-    switch(request.cellType) {
-      case CellType.Figure: {
-        role = 'FIGURE';
-        type = 'FIGURE-DATA';
-        assert(request.inputType == InputType.Stylus);
-        const figureCellData: FigureCellData = {
-          type: request.cellType,
-          height: 72*3, // 3 inches in points
-          displaySvg: EMPTY_SVG,
-          inputType: InputType.Stylus,
-          stylusInput: emptyStylusInput(3, 6.5),
-        };
-        data = figureCellData;
-        break;
-      }
-      case CellType.Formula: {
-        role = 'FORMULA';
-        type = 'FORMULA-DATA';
-        switch(request.inputType) {
-          case InputType.Keyboard: {
-            const formulaCellKeyboardData: FormulaCellKeyboardData = {
-              type: request.cellType,
-              height: 72*1, // 1 inch in points
-              displaySvg: EMPTY_SVG,
-              inputType: InputType.Keyboard,
-              inputText: <PlainText>'',
-              plainTextFormula: EMPTY_FORMULA,
-            };
-            data = formulaCellKeyboardData;
-            break;
-          }
-          case InputType.Stylus: {
-            const formulaCellStylusData: FormulaCellStylusData = {
-              type: request.cellType,
-              height: 72*1, // 1 inch in points
-              displaySvg: EMPTY_SVG,
-              inputType: InputType.Stylus,
-              inputText: <PlainText>'',
-              plainTextFormula: EMPTY_FORMULA,
-              stylusInput: emptyStylusInput(1, 6.5),
-              stylusSvg: EMPTY_SVG,
-            };
-            data = formulaCellStylusData;
-            break;
-          }
-          default: assertFalse();
-        }
-        break;
-      }
-      case CellType.Text: {
-        role = 'TEXT';
-        type = 'TEXT-DATA';
-        switch(request.inputType) {
-          case InputType.Keyboard: {
-            const textCellKeyboardData: TextCellKeyboardData = {
-              type: request.cellType,
-              height: 72*1, // 1 inch in points
-              displaySvg: EMPTY_SVG,
-              inputType: InputType.Keyboard,
-              inputText: <PlainText>"",
-            };
-            data = textCellKeyboardData;
-            break;
-          }
-          case InputType.Stylus: {
-            const textCellStylusData: TextCellStylusData = {
-              type: request.cellType,
-              height: 72*1, // 1 inch in points
-              displaySvg: EMPTY_SVG,
-              inputType: InputType.Stylus,
-              inputText: <PlainText>"",
-              stylusInput: emptyStylusInput(1, 6.5),
-              stylusSvg: EMPTY_SVG,
-            };
-            data = textCellStylusData;
-            break;
-          }
-          default: assertFalse();
-        }
-        break;
-      }
-      default: assertFalse();
-    }
+  // private processInsertCellRequest(
+  //   request: InsertCellRequest,
+  // ): StyleInsertRequest {
+  //   let data: FigureCellData|FormulaCellData|TextCellData;
+  //   let role: StyleRole;
+  //   let type: StyleType;
+  //   switch(request.cellType) {
+  //     case CellType.Figure: {
+  //       role = 'FIGURE';
+  //       type = 'FIGURE-DATA';
+  //       assert(request.inputType == InputType.Stylus);
+  //       const figureCellData: FigureCellData = {
+  //         type: request.cellType,
+  //         height: 72*3, // 3 inches in points
+  //         displaySvg: EMPTY_SVG,
+  //         inputType: InputType.Stylus,
+  //         stylusInput: emptyStylusInput(3, 6.5),
+  //       };
+  //       data = figureCellData;
+  //       break;
+  //     }
+  //     case CellType.Formula: {
+  //       role = 'FORMULA';
+  //       type = 'FORMULA-DATA';
+  //       switch(request.inputType) {
+  //         case InputType.Keyboard: {
+  //           const formulaCellKeyboardData: FormulaCellKeyboardData = {
+  //             type: request.cellType,
+  //             height: 72*1, // 1 inch in points
+  //             displaySvg: EMPTY_SVG,
+  //             inputType: InputType.Keyboard,
+  //             inputText: <PlainText>'',
+  //             plainTextFormula: EMPTY_FORMULA,
+  //           };
+  //           data = formulaCellKeyboardData;
+  //           break;
+  //         }
+  //         case InputType.Stylus: {
+  //           const formulaCellStylusData: FormulaCellStylusData = {
+  //             type: request.cellType,
+  //             height: 72*1, // 1 inch in points
+  //             displaySvg: EMPTY_SVG,
+  //             inputType: InputType.Stylus,
+  //             inputText: <PlainText>'',
+  //             plainTextFormula: EMPTY_FORMULA,
+  //             stylusInput: emptyStylusInput(1, 6.5),
+  //             stylusSvg: EMPTY_SVG,
+  //           };
+  //           data = formulaCellStylusData;
+  //           break;
+  //         }
+  //         default: assertFalse();
+  //       }
+  //       break;
+  //     }
+  //     case CellType.Text: {
+  //       role = 'TEXT';
+  //       type = 'TEXT-DATA';
+  //       switch(request.inputType) {
+  //         case InputType.Keyboard: {
+  //           const textCellKeyboardData: TextCellKeyboardData = {
+  //             type: request.cellType,
+  //             height: 72*1, // 1 inch in points
+  //             displaySvg: EMPTY_SVG,
+  //             inputType: InputType.Keyboard,
+  //             inputText: <PlainText>"",
+  //           };
+  //           data = textCellKeyboardData;
+  //           break;
+  //         }
+  //         case InputType.Stylus: {
+  //           const textCellStylusData: TextCellStylusData = {
+  //             type: request.cellType,
+  //             height: 72*1, // 1 inch in points
+  //             displaySvg: EMPTY_SVG,
+  //             inputType: InputType.Stylus,
+  //             inputText: <PlainText>"",
+  //             stylusInput: emptyStylusInput(1, 6.5),
+  //             stylusSvg: EMPTY_SVG,
+  //           };
+  //           data = textCellStylusData;
+  //           break;
+  //         }
+  //         default: assertFalse();
+  //       }
+  //       break;
+  //     }
+  //     default: assertFalse();
+  //   }
 
-    const changeRequest: StyleInsertRequest = {
-      type: 'insertStyle',
-      afterId: request.afterId,
-      parentId: 0,
-      styleProps: { role, type, data },
-    }
-    return changeRequest;
+  //   const changeRequest: StyleInsertRequest = {
+  //     type: 'insertStyle',
+  //     afterId: request.afterId,
+  //     parentId: 0,
+  //     styleProps: { role, type, data },
+  //   }
+  //   return changeRequest;
 
-  }
+  // }
 
-  private processKeyboardChangeRequest(
-    _source: StyleSource,
-    request: KeyboardInputRequest,
-    requestId?: RequestId,
-  ): ServerNotebookCellChangedMessage {
+  // private processKeyboardChangeRequest(
+  //   _source: StyleSource,
+  //   request: KeyboardInputRequest,
+  //   requestId?: RequestId,
+  // ): ServerNotebookCellChangedMessage {
 
-    // Update the inputText field in the cell.
-    const style = this.getStyle(request.cellId);
-    assert(style.role == 'FORMULA' || style.role == 'TEXT');
-    const data: FormulaCellData|TextCellData = style.data;
+  //   // Update the inputText field in the cell.
+  //   const style = this.getStyle(request.cellId);
+  //   assert(style.role == 'FORMULA' || style.role == 'TEXT');
+  //   const data: FormulaCellData|TextCellData = style.data;
 
-    // TODO: Use start, end, replacement to just replace changed segment.
-    // data.inputText = <PlainText>replaceStringSegment(data.inputText, request.start, request.end, request.replacement);
-    data.inputText = request.value;
+  //   // TODO: Use start, end, replacement to just replace changed segment.
+  //   // data.inputText = <PlainText>replaceStringSegment(data.inputText, request.start, request.end, request.replacement);
+  //   data.inputText = request.value;
 
-    // LATER: This will fail when there is a race condition between two clients attempting to update the value.
-    //        Need to deal with that case.
-    assert(data.inputText==request.value);
+  //   // LATER: This will fail when there is a race condition between two clients attempting to update the value.
+  //   //        Need to deal with that case.
+  //   assert(data.inputText==request.value);
 
-    // TODO: Update display svg, etc.
+  //   // TODO: Update display svg, etc.
 
-    // Notify all watchers
-    const reply: ServerNotebookCellChangedMessage = {
-      type: 'notebook',
-      path: this.path,
-      operation: 'cellChanged',
-      cellId: request.cellId,
-      complete: true,
-      requestId,
+  //   // Notify all watchers
+  //   const reply: ServerNotebookCellChangedMessage = {
+  //     type: 'notebook',
+  //     path: this.path,
+  //     operation: 'cellChanged',
+  //     cellId: request.cellId,
+  //     complete: true,
+  //     requestId,
 
-      inputText: data.inputText,
-      inputTextStart: request.start,
-      inputTextEnd: request.end,
-      inputTextReplacement: request.replacement,
-    };
-    return reply;
-  }
+  //     inputText: data.inputText,
+  //     inputTextStart: request.start,
+  //     inputTextEnd: request.end,
+  //     inputTextReplacement: request.replacement,
+  //   };
+  //   return reply;
+  // }
 
-  private processStylusChangeRequest(
-    _source: StyleSource,
-    _request: StylusInputRequest,
-    _requestId?: RequestId,
-  ): ServerNotebookCellChangedMessage {
-    notImplemented();
-  }
+  // private processStylusChangeRequest(
+  //   _source: StyleSource,
+  //   _request: StylusInputRequest,
+  //   _requestId?: RequestId,
+  // ): ServerNotebookCellChangedMessage {
+  //   notImplemented();
+  // }
 
   // Do not call this directly.
   // Changes to the document should result in calls to notifyChange,
@@ -1128,12 +1084,12 @@ function absFilePathFromNotebookPath(path: NotebookPath): AbsFilePath {
   return join(absPath, NOTEBOOK_FILE_NAME);
 }
 
-function emptyStylusInput(height: number, width: number): StylusInput {
-  return {
-    size: { height: <CssLength>`${height*72}pt`, width: <CssLength>`${width*72}pt` },
-    strokeGroups: [ { strokes: [] }, ]
-  };
-}
+// function emptyStylusInput(height: number, width: number): StylusInput {
+//   return {
+//     size: { height: <CssLength>`${height*72}pt`, width: <CssLength>`${width*72}pt` },
+//     strokeGroups: [ { strokes: [] }, ]
+//   };
+// }
 
 // function apiFunctionWrapper(data: string) : Promise<Buffer> {
 //   // from : https://stackoverflow.com/questions/5010288/how-to-make-a-function-wait-until-a-callback-has-been-called-using-node-js

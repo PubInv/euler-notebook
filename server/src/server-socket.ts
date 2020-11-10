@@ -33,7 +33,7 @@ import {
   ClientNotebookChangeMessage, ClientNotebookOpenMessage, ClientNotebookUseToolMessage,
   ServerNotebookChangedMessage, NotebookChangeRequest, RequestId, ServerFolderChangedMessage,
   ClientFolderCloseMessage, ServerFolderClosedMessage, ServerFolderOpenedMessage,
-  ServerNotebookClosedMessage, ClientNotebookCloseMessage, ServerNotebookOpenedMessage, ServerNotebookCellChangedMessage, ClientNotebookCellChangeMessage
+  ServerNotebookClosedMessage, ClientNotebookCloseMessage, ServerNotebookOpenedMessage,
 } from "./shared/math-tablet-api";
 import { NotebookChange, NotebookObject, NotebookWatcher as ServerNotebookWatcher } from "./shared/notebook";
 
@@ -279,7 +279,6 @@ export class ServerSocket {
         break;
       case 'notebook':
         switch(msg.operation) {
-          case 'cellChange': this.cmNotebookCellChangeMessage(msg); break;
           case 'change': this.cmNotebookChangeMessage(msg); break;
           case 'close':  this.cmNotebookCloseMessage(msg); break;
           case 'open': await this.cmNotebookOpenMessage(msg); break;
@@ -289,12 +288,6 @@ export class ServerSocket {
         break;
       default: assert(false); break;
     }
-  }
-
-  private cmNotebookCellChangeMessage(msg: ClientNotebookCellChangeMessage): void {
-    const watcher = this.notebookWatchers.get(msg.path)!;
-    assert(watcher);
-    watcher.onNotebookCellChangeMessage(msg);
   }
 
   private cmNotebookChangeMessage(msg: ClientNotebookChangeMessage): void {
@@ -466,10 +459,6 @@ class NotebookWatcher implements ServerNotebookWatcher {
 
   public onChange(_change: NotebookChange): void { };
 
-  public onCellChange(msg: ServerNotebookCellChangedMessage): void {
-    this.socket.sendMessage(msg);
-  };
-
   public onChanged(msg: ServerNotebookChangedMessage): void {
     // ServerNotebook is notifying us that the batch of changes is complete.
     this.socket.sendMessage(msg);
@@ -484,11 +473,6 @@ class NotebookWatcher implements ServerNotebookWatcher {
   }
 
   // Event Handlers
-
-  public onNotebookCellChangeMessage(msg: ClientNotebookCellChangeMessage): void {
-    // .requestChanges('USER', msg.changeRequests, options);
-    this.notebook.onNotebookCellChangeMessage(this, msg);
-  }
 
   public onNotebookChangeMessage(msg: ClientNotebookChangeMessage): void {
     // .requestChanges('USER', msg.changeRequests, options);

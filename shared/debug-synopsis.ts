@@ -26,7 +26,7 @@ import { FolderChange } from './folder';
 import { Notebook, NotebookChange, StyleObject } from './notebook';
 import {
   ClientFolderMessage, ClientMessage, ClientNotebookMessage, FolderChangeRequest, NotebookChangeRequest,
-  ServerFolderMessage, ServerMessage, ServerNotebookMessage, ClientNotebookCellChangeMessage, NotebookCellChangeRequest,
+  ServerFolderMessage, ServerMessage, ServerNotebookMessage,
 } from './math-tablet-api';
 
 // Exported Functions
@@ -78,16 +78,6 @@ export function folderChangeSynopsis(change: FolderChange): string {
       rval += ` ${change.oldName}=>${change.entry.name}`;
       break;
     default: assertFalse();
-  }
-  return rval;
-}
-
-export function notebookCellChangeRequestSynopsis(request: NotebookCellChangeRequest): string {
-  let rval: string = request.type;
-  switch(request.type){
-    case 'insertCell': rval += ` TODO:`; break;
-    case 'keyboardInputChange': rval += ` TODO:`; break;
-    case 'stylusInputChange': rval += ` TODO:`; break;
   }
   return rval;
 }
@@ -189,16 +179,9 @@ function clientFolderMessageSynopsis(msg: ClientFolderMessage): string {
   return rval;
 }
 
-function clientNotebookCellChangeMessageSynopsis(msg: ClientNotebookCellChangeMessage): string {
-  return `${msg.path} ${msg.operation} ${notebookCellChangeRequestSynopsis(msg.changeRequest)}`;
-}
-
 function clientNotebookMessageSynopsis(msg: ClientNotebookMessage): string {
   let rval = `${msg.path} ${msg.operation}`;
   switch(msg.operation) {
-    case 'cellChange':
-      rval = clientNotebookCellChangeMessageSynopsis(msg);
-      break;
     case 'change':
       for (const request of msg.changeRequests) {
         rval += ` ${notebookChangeRequestSynopsis(request)};`;
@@ -243,8 +226,6 @@ function serverFolderMessageSynopsis(msg: ServerFolderMessage): string {
 function serverNotebookMessageSynopsis(msg: ServerNotebookMessage): string {
   let rval = `${msg.path} ${msg.operation} `;
   switch(msg.operation) {
-    case 'cellChanged':
-      break;
     case 'changed':
       for (const change of msg.changes) {
         rval += `${notebookChangeSynopsis(change)}; `;

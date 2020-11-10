@@ -23,7 +23,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 // Requirements
 
 import { CellType, InputType } from "./cell";
-import { Html, LengthInPoints, PlainText, SvgMarkup } from "./common";
+import { Html, PlainText } from "./common";
 import { FolderObject, FolderPath, NotebookPath, FolderName, NotebookName, FolderChange } from "./folder";
 import {
   StyleProperties, StyleId, NotebookChange, NotebookObject, StyleRelativePosition,
@@ -115,12 +115,18 @@ export interface NotebookRenameRequest {
   newName: NotebookName;
 }
 
-// Notebook Cell Change Requests
+// Notebook Change Requests
 
-export type NotebookCellChangeRequest =
+export type NotebookChangeRequest =
   InsertCellRequest|
   KeyboardInputRequest|
-  StylusInputRequest;
+  StylusInputRequest|
+  // LEGACY:
+  StyleChangeRequest|
+  StyleConvertRequest|
+  StyleDeleteRequest|
+  StyleInsertRequest|
+  StyleMoveRequest;
 export interface InsertCellRequest {
   type: 'insertCell';
   cellType: CellType;
@@ -140,16 +146,6 @@ export interface StylusInputRequest {
   cellId: StyleId;
   // TODO: Stroke insert or delete info.
 }
-
-// Notebook Change Requests
-
-export type NotebookChangeRequest =
-  // LEGACY:
-  StyleChangeRequest|
-  StyleConvertRequest|
-  StyleDeleteRequest|
-  StyleInsertRequest|
-  StyleMoveRequest;
 export interface StyleChangeRequest {
   type: 'changeStyle';
   styleId: StyleId;
@@ -213,20 +209,6 @@ interface ServerNotebookMessageBase extends ServerMessageBase {
   type: 'notebook',
   path: NotebookPath,
 }
-export interface ServerNotebookCellChangedMessage extends ServerNotebookMessageBase {
-  operation: 'cellChanged';
-  cellId: StyleId;
-  height?: LengthInPoints;
-  displaySvg?: SvgMarkup;
-
-  // Keyboard cell changes
-  inputText?: PlainText;
-  inputTextStart?: number;
-  inputTextEnd?: number;
-  inputTextReplacement?: PlainText;
-
-  // LATER: Stylus cell changes
-}
 export interface ServerNotebookChangedMessage extends ServerNotebookMessageBase {
   operation: 'changed';
   changes: NotebookChange[];
@@ -242,7 +224,7 @@ export interface ServerNotebookOpenedMessage extends ServerNotebookMessageBase {
 }
 
 export type ServerFolderMessage = ServerFolderChangedMessage|ServerFolderClosedMessage|ServerFolderOpenedMessage;
-export type ServerNotebookMessage = ServerNotebookCellChangedMessage|ServerNotebookChangedMessage|ServerNotebookClosedMessage|ServerNotebookOpenedMessage;
+export type ServerNotebookMessage = ServerNotebookChangedMessage|ServerNotebookClosedMessage|ServerNotebookOpenedMessage;
 export type ServerMessage = ServerErrorMessage|ServerFolderMessage|ServerNotebookMessage;
 
 // Messages from the client
@@ -270,10 +252,6 @@ interface ClientNotebookMessageBase extends ClientMessageBase {
   type: 'notebook';
   path: NotebookPath;
 }
-export interface ClientNotebookCellChangeMessage extends ClientNotebookMessageBase {
-  operation: 'cellChange';
-  changeRequest: NotebookCellChangeRequest;
-}
 export interface ClientNotebookChangeMessage extends ClientNotebookMessageBase {
   operation: 'change';
   changeRequests: NotebookChangeRequest[];
@@ -291,7 +269,7 @@ export interface ClientNotebookUseToolMessage extends ClientNotebookMessageBase 
 
 
 export type ClientFolderMessage = ClientFolderChangeMessage|ClientFolderCloseMessage|ClientFolderOpenMessage;
-export type ClientNotebookMessage = ClientNotebookCellChangeMessage|ClientNotebookChangeMessage|ClientNotebookCloseMessage|ClientNotebookOpenMessage|ClientNotebookUseToolMessage;
+export type ClientNotebookMessage = ClientNotebookChangeMessage|ClientNotebookCloseMessage|ClientNotebookOpenMessage|ClientNotebookUseToolMessage;
 export type ClientMessage = ClientFolderMessage|ClientNotebookMessage;
 
 // API Calls

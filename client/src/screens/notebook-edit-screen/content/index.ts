@@ -31,7 +31,7 @@ import {
 } from "../../../shared/notebook";
 import {
   DebugParams, DebugResults, StyleDeleteRequest, StyleInsertRequest, StylePropertiesWithSubprops,
-  StyleMoveRequest, NotebookChangeRequest, InsertCellRequest, NotebookCellChangeRequest, ServerNotebookMessage, ServerNotebookCellChangedMessage,
+  StyleMoveRequest, NotebookChangeRequest,
 } from "../../../shared/math-tablet-api";
 
 import { CellBase } from "./cells/cell-base";
@@ -39,8 +39,6 @@ import { createCell } from "./cells/index";
 import { HtmlElement } from "../../../html-element";
 import { NotebookEditScreen } from "..";
 import { reportError } from "../../../error-handler";
-import { CellType, InputType } from "../../../shared/cell";
-import { userSettingsInstance } from "../../../user-settings";
 
 // Types
 
@@ -216,24 +214,26 @@ export class Content extends HtmlElement<'div'>{
     // // const styleId = (<StyleDeleteRequest>undoChangeRequest).styleId
   }
 
-  public async insertFormulaCellBelow(afterId?: StyleRelativePosition): Promise<void> {
+  public async insertFormulaCellBelow(_afterId?: StyleRelativePosition): Promise<void> {
     debug("Insert Formula Cell Below");
 
-    // If cell to insert after is not specified, then insert below the last cell selected.
-    // If no cells are selected, then insert at the end of the notebook.
-    if (afterId === undefined) {
-      if (this.lastCellSelected) { afterId = this.lastCellSelected.styleId; }
-      else { afterId = StylePosition.Bottom; }
-    }
+    notImplemented();
+    // // If cell to insert after is not specified, then insert below the last cell selected.
+    // // If no cells are selected, then insert at the end of the notebook.
+    // if (afterId === undefined) {
+    //   if (this.lastCellSelected) { afterId = this.lastCellSelected.styleId; }
+    //   else { afterId = StylePosition.Bottom; }
+    // }
 
-    const inputMode = userSettingsInstance.defaultInputMode;
-    const changeRequest: InsertCellRequest = {
-      type: 'insertCell',
-      cellType: CellType.Formula,
-      inputType: (inputMode=='keyboard' ? InputType.Keyboard : InputType.Stylus),
-      afterId,
-    }
-    /* const undoChangeRequest = */ await this.sendCellChangeRequest(changeRequest);
+    // const inputMode = userSettingsInstance.defaultInputMode;
+    // const changeRequest: InsertCellRequest = {
+    //   type: 'insertCell',
+    //   cellType: CellType.Formula,
+    //   inputType: (inputMode=='keyboard' ? InputType.Keyboard : InputType.Stylus),
+    //   afterId,
+    // };
+
+    /* const undoChangeRequest = */ // await this.sendChangeRequest(changeRequest);
     // const styleId = (<StyleDeleteRequest>undoChangeRequest).styleId;
 
     // TODO: Set focus?
@@ -479,11 +479,6 @@ export class Content extends HtmlElement<'div'>{
 
   // ClientNotebookWatcher Methods
 
-  public onCellChange(msg: ServerNotebookCellChangedMessage, ownRequest: boolean): void {
-    const cell = this.cellViewFromId(msg.cellId);
-    cell.onCellChange(msg, ownRequest);
-  }
-
   public onChange(change: NotebookChange): void {
     const notebook = this.screen.notebook;
     // If a change would (or might) modify the display of a cell,
@@ -612,10 +607,6 @@ export class Content extends HtmlElement<'div'>{
       if (cellView.isSelected()) { rval.push(cellView); }
     }
     return rval;
-  }
-
-  private async sendCellChangeRequest<R extends ServerNotebookMessage>(changeRequest: NotebookCellChangeRequest): Promise<R[]> {
-    return await this.screen.notebook.sendCellChangeRequest<R>(changeRequest);
   }
 
   // private async sendUndoableChangeRequest(changeRequest: NotebookChangeRequest): Promise<NotebookChangeRequest> {

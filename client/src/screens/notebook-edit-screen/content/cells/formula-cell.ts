@@ -24,7 +24,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 import * as debug1 from "debug";
 const debug = debug1('client:formula-cell');
 
-import { CssClass, Html, assertFalse, assert, PlainText } from "../../../../shared/common";
+import { CssClass, Html, assertFalse, assert, PlainText, notImplemented } from "../../../../shared/common";
 import { StrokeData } from "../../../../shared/stylus";
 import { FormulaCellData, FormulaCellStylusData } from "../../../../shared/formula";
 import { StyleObject, NotebookChange, StyleSubrole } from "../../../../shared/notebook";
@@ -37,8 +37,6 @@ import { KeyboardCallbackFn, KeyboardPanel } from "../../../../components/keyboa
 import { StrokePanel } from "../../../../components/stroke-panel";
 import { notebookChangeSynopsis } from "../../../../shared/debug-synopsis";
 import { InputType } from "../../../../shared/cell";
-import { logError } from "../../../../error-handler";
-import { KeyboardInputRequest, ServerNotebookCellChangedMessage } from "../../../../shared/math-tablet-api";
 
 // Types
 
@@ -83,18 +81,18 @@ export class FormulaCell extends CellBase {
 
   // ClientNotebookWatcher Methods
 
-  public onCellChange(msg: ServerNotebookCellChangedMessage, ownRequest: boolean): void {
+  // public onCellChange(msg: ServerNotebookCellChangedMessage, ownRequest: boolean): void {
 
-    // If input text has changed then update the keyboard panel.
-    if (!ownRequest) {
-      if (msg.inputText) {
-        assert(this.keyboardPanel);
-        // LATER: msg.inputTextStart/End/Replacement.
-        this.keyboardPanel!.updateText(msg.inputText);
-      }
-    }
+  //   // If input text has changed then update the keyboard panel.
+  //   if (!ownRequest) {
+  //     if (msg.inputText) {
+  //       assert(this.keyboardPanel);
+  //       // LATER: msg.inputTextStart/End/Replacement.
+  //       this.keyboardPanel!.updateText(msg.inputText);
+  //     }
+  //   }
 
-  }
+  // }
 
   public onChange(change: NotebookChange): boolean {
     debug(`onChange: cell ${this.styleId} ${notebookChangeSynopsis(change)}`);
@@ -224,12 +222,13 @@ export class FormulaCell extends CellBase {
 
   private createKeyboardSubpanel(style: StyleObject): KeyboardPanel {
     const data = <FormulaCellData>style.data;
-    const textChangeCallback: KeyboardCallbackFn = (start: number, end: number, replacement: PlainText, value: PlainText): void=>{
-      const changeRequest: KeyboardInputRequest = { type: 'keyboardInputChange', cellId: style.id, start, end, replacement, value, };
-      this.container.screen.notebook.sendCellChangeRequest(changeRequest)
-      .catch(err=>{
-        logError(err, <Html>"Error sending keyboardInputChange from formula cell");
-      });
+    const textChangeCallback: KeyboardCallbackFn = (_start: number, _end: number, _replacement: PlainText, _value: PlainText): void=>{
+      notImplemented();
+      // const changeRequest: KeyboardInputRequest = { type: 'keyboardInputChange', cellId: style.id, start, end, replacement, value, };
+      // this.container.screen.notebook.sendCellChangeRequest(changeRequest)
+      // .catch(err=>{
+      //   logError(err, <Html>"Error sending keyboardInputChange from formula cell");
+      // });
     }
     return new KeyboardPanel(data.inputText, textChangeCallback);
   }

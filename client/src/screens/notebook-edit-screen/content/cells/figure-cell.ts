@@ -35,7 +35,6 @@ import { Content as CellContainer } from "../index";
 import { CellBase } from "./cell-base";
 import { notebookChangeSynopsis } from "../../../../shared/debug-synopsis";
 import { FigureCellData } from "../../../../shared/cell";
-import { ServerNotebookCellChangedMessage } from "../../../../shared/math-tablet-api";
 
 // Types
 
@@ -60,9 +59,6 @@ export class FigureCell extends CellBase {
   // Public Instance Methods
 
   // ClientNotebookWatcher Methods
-
-  public onCellChange(_msg: ServerNotebookCellChangedMessage, _ownRequest: boolean): void {
-  }
 
   public onChange(change: NotebookChange): void {
     debug(`onChange: style ${this.styleId} ${notebookChangeSynopsis(change)}`);

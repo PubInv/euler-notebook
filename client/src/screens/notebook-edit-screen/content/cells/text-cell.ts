@@ -22,7 +22,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 import * as debug1 from "debug";
 const debug = debug1('client:text-cell');
 
-import { CssClass, assert, assertFalse, Html, PlainText, notImplemented } from "../../../../shared/common";
+import { CssClass, assert, assertFalse, PlainText, notImplemented } from "../../../../shared/common";
 import { StrokeData } from "../../../../shared/stylus";
 import { StyleObject, NotebookChange, } from "../../../../shared/notebook";
 // import { StyleChangeRequest } from "../../../../shared/math-tablet-api";
@@ -36,8 +36,6 @@ import { Content as CellContainer } from "../index";
 import { CellBase } from "./cell-base";
 import { notebookChangeSynopsis, styleSynopsis } from "../../../../shared/debug-synopsis";
 import { TextCellData, TextCellKeyboardData, TextCellStylusData } from "../../../../shared/cell";
-import { KeyboardInputRequest, ServerNotebookCellChangedMessage } from "../../../../shared/math-tablet-api";
-import { logError } from "../../../../error-handler";
 
 // Types
 
@@ -69,10 +67,6 @@ export class TextCell extends CellBase {
   }
 
   // ClientNotebookWatcher Methods
-
-  public onCellChange(_msg: ServerNotebookCellChangedMessage, _ownRequest: boolean): void {
-    notImplemented();
-  }
 
   public onChange(change: NotebookChange): void {
     debug(`onChange: style ${this.styleId} ${notebookChangeSynopsis(change)}`);
@@ -143,12 +137,13 @@ export class TextCell extends CellBase {
 
   private createKeyboardSubpanel(style: StyleObject): KeyboardPanel {
     const data = <TextCellKeyboardData>style.data;
-    const textChangeCallback: KeyboardCallbackFn = (start: number, end: number, replacement: PlainText, value: PlainText): void =>{
-      const changeRequest: KeyboardInputRequest = { type: 'keyboardInputChange', cellId: style.id, start, end, replacement, value, };
-      this.container.screen.notebook.sendCellChangeRequest(changeRequest)
-      .catch(err=>{
-        logError(err, <Html>"Error sending keyboardInputChange from text cell");
-      });
+    const textChangeCallback: KeyboardCallbackFn = (_start: number, _end: number, _replacement: PlainText, _value: PlainText): void =>{
+      notImplemented();
+      // const changeRequest: KeyboardInputRequest = { type: 'keyboardInputChange', cellId: style.id, start, end, replacement, value, };
+      // this.container.screen.notebook.sendCellChangeRequest(changeRequest)
+      // .catch(err=>{
+      //   logError(err, <Html>"Error sending keyboardInputChange from text cell");
+      // });
     }
     return new KeyboardPanel(data.inputText, textChangeCallback);
   }

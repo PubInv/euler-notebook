@@ -23,7 +23,6 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 import { CssLength, CssSize, Html, assert, deepCopy, escapeHtml, ExpectedError } from "./common";
 import { WatchedResource, Watcher } from "./watched-resource";
 import { NOTEBOOK_NAME_RE, NotebookName, NotebookPath } from "./folder";
-import { ServerNotebookCellChangedMessage } from "./math-tablet-api";
 
 // Types
 
@@ -82,7 +81,6 @@ export interface NotebookObject {
 }
 
 export interface NotebookWatcher extends Watcher {
-  onCellChange(change: ServerNotebookCellChangedMessage, ownRequest: boolean): void;
   onChange(change: NotebookChange, ownRequest: boolean): void;
 }
 
