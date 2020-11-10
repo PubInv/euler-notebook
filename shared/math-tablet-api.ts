@@ -25,7 +25,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 import { Html, PlainText } from "./common";
 import { FolderObject, FolderPath, NotebookPath, FolderName, NotebookName, FolderChange } from "./folder";
 import {
-  StyleProperties, StyleId, NotebookChange, NotebookObject, StyleRelativePosition, WolframExpression
+  StyleProperties, CellId, NotebookChange, NotebookObject, CellRelativePosition, WolframExpression
 } from "./notebook";
 
 // Types
@@ -115,21 +115,21 @@ export type NotebookChangeRequest =
   StylusInputRequest;
 export interface DeleteCellRequest {
   type: 'deleteCell';
-  styleId: StyleId;
+  styleId: CellId;
 }
 export interface InsertCellRequest {
   type: 'insertCell';
-  afterId?: StyleRelativePosition;
+  afterId?: CellRelativePosition;
   // TODO: rename styleProps => props
   styleProps: StyleProperties;
   // type: 'insertCell';
   // cellType: CellType;
   // inputType: InputType;
-  // afterId: StyleRelativePosition;
+  // afterId: CellRelativePosition;
 }
 export interface KeyboardInputRequest {
   type: 'keyboardInputChange';
-  cellId: StyleId;
+  cellId: CellId;
   start: number;          // 0-based index of first character to replace.
   end: number;            // 0-based index of character after last character to replace.
   replacement: PlainText; // Replacement text.
@@ -137,12 +137,12 @@ export interface KeyboardInputRequest {
 }
 export interface MoveCellRequest {
   type: 'moveCell';
-  styleId: StyleId;
-  afterId: StyleRelativePosition;
+  styleId: CellId;
+  afterId: CellRelativePosition;
 }
 export interface StylusInputRequest {
   type: 'stylusInputChange';
-  cellId: StyleId;
+  cellId: CellId;
   // TODO: Stroke insert or delete info.
 }
 
@@ -234,7 +234,7 @@ export interface ClientNotebookOpenMessage extends ClientNotebookMessageBase {
 }
 export interface ClientNotebookUseToolMessage extends ClientNotebookMessageBase {
   operation: 'useTool';
-  styleId: StyleId;
+  styleId: CellId;
 }
 
 
@@ -247,7 +247,7 @@ export type ClientMessage = ClientFolderMessage|ClientNotebookMessage;
 export interface DebugParams {
   // /api/debug post JSON params
   notebookPath: NotebookPath;
-  styleId?: StyleId;
+  styleId?: CellId;
 }
 
 export interface DebugResults {

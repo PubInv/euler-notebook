@@ -21,7 +21,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 import { LengthInPoints, PlainText, SvgMarkup } from "./common";
 import { StylusInput } from "./stylus";
-import { StyleId } from "./notebook";
+import { CellId } from "./notebook";
 
 // Types
 
@@ -55,7 +55,7 @@ export interface FigureCellData extends CellData {
 
 export interface PlotCellData extends CellData {
   type: CellType.Plot,
-  formulaStyleId: StyleId,
+  formulaStyleId: CellId,
   // LATER: Identify the symbols used in the plot for each axis, etc.
 }
 

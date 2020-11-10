@@ -29,7 +29,6 @@ import { NOTEBOOK_NAME_RE, NotebookName, NotebookPath } from "./folder";
 export interface FindStyleOptions {
   // REVIEW: Rename this interface to FindStylePattern
   role?: StyleRole|RegExp;
-  subrole?: StyleSubrole;
   source?: StyleSource;
   notSource?: StyleSource;
   type?: StyleType;
@@ -44,19 +43,19 @@ export interface CellDeleted {
 export interface CellInserted {
   type: 'cellInserted';
   style: StyleObject;
-  afterId?: StyleRelativePosition;
-  // REVIEW: position?: StylePosition for top-level styles?
+  afterId?: CellRelativePosition;
+  // REVIEW: position?: CellPosition for top-level styles?
 }
 export interface CellMoved {
   type: 'cellMoved';
-  styleId: StyleId;
-  afterId: StyleRelativePosition;
-  oldPosition: StyleOrdinalPosition;
-  newPosition: StyleOrdinalPosition;
+  styleId: CellId;
+  afterId: CellRelativePosition;
+  oldPosition: CellOrdinalPosition;
+  newPosition: CellOrdinalPosition;
 }
 
 export interface NotebookObject {
-  nextId: StyleId;
+  nextId: CellId;
   pageConfig: PageConfig;
   pages: Page[];
   styleMap: StyleMap;
@@ -68,7 +67,7 @@ export interface NotebookWatcher extends Watcher {
 }
 
 interface Page {
-  styleIds: StyleId[];
+  styleIds: CellId[];
 }
 
 interface PageConfig {
@@ -83,10 +82,10 @@ interface PageMargins {
   top: CssLength;
 }
 
-export type StyleId = number;
+export type CellId = number;
 
 export interface StyleMap {
-  [id: /* StyleId */number]: StyleObject;
+  [id: /* CellId */number]: StyleObject;
 }
 
 export const STYLE_ROLES = [
@@ -119,50 +118,28 @@ export const STYLE_ROLES = [
 export type StyleRole = typeof STYLE_ROLES[number];
 
 export interface StyleObject extends StyleProperties {
-  id: StyleId;
+  id: CellId;
   source: StyleSource;
 }
 
 // Position of style in the notebook.
 // Applies only to top-level styles.
 // Position 0 is the first cell of the notebook.
-export type StyleOrdinalPosition = number;
+export type CellOrdinalPosition = number;
 
 export interface StyleProperties {
-  id?: StyleId;
+  id?: CellId;
   data: any;
   role: StyleRole;
-  subrole?: StyleSubrole;
   type: StyleType;
 }
 
-export type StyleRelativePosition = StyleId | StylePosition;
+export type CellRelativePosition = CellId | CellPosition;
 
-export enum StylePosition {
+export enum CellPosition {
   Top = 0,
   Bottom = -1,
 }
-
-export const STYLE_SUBROLES = [
-
-  // 'FIGURE' subroles
-  'SKETCH',
-  'DRAWING',
-
-  // 'FORMULA' subroles
-  'ASSUME',
-  'DEFINITION',
-  'PROVE',
-  'OTHER',
-
-  // 'PLOT' subroles
-
-  // 'TEXT' subroles
-  'HEADING1',
-  'HEADING2',
-  'NORMAL',
-];
-export type StyleSubrole = typeof STYLE_SUBROLES[number];
 
 export const STYLE_TYPES = [
   'CLASSIFICATION-DATA',  // DEPRECATED: A classifcication of the style.
@@ -246,7 +223,7 @@ export abstract class Notebook<W extends NotebookWatcher> extends WatchedResourc
 
   // Public Instance Properties
 
-  public nextId: StyleId;
+  public nextId: CellId;
   public pageConfig: PageConfig;
   public pages: Page[];
 
@@ -254,11 +231,11 @@ export abstract class Notebook<W extends NotebookWatcher> extends WatchedResourc
 
   public allStyles(): StyleObject[] {
     // REVIEW: Return an iterator?
-    const sortedIds: StyleId[] = Object.keys(this.styleMap).map(k=>parseInt(k,10)).sort();
+    const sortedIds: CellId[] = Object.keys(this.styleMap).map(k=>parseInt(k,10)).sort();
     return sortedIds.map(id=>this.getStyle(id));
   }
 
-  public compareStylePositions(id1: StyleId, id2: StyleId): number {
+  public compareStylePositions(id1: CellId, id2: CellId): number {
     // Returns a negative number if style1 is before style2,
     // zero if they are the same styles,
     // or a positive number if style1 is after style2.
@@ -268,7 +245,7 @@ export abstract class Notebook<W extends NotebookWatcher> extends WatchedResourc
     return p1 - p2;
   }
 
-  public followingStyleId(id: StyleId): StyleId {
+  public followingStyleId(id: CellId): CellId {
     // Returns the id of the style immediately after the top-level style specified.
     const i = this.pages[0].styleIds.indexOf(id);
     assert(i>=0);
@@ -276,13 +253,13 @@ export abstract class Notebook<W extends NotebookWatcher> extends WatchedResourc
     return this.pages[0].styleIds[i+1];
   }
 
-  public getStyle(id: StyleId): StyleObject {
+  public getStyle(id: CellId): StyleObject {
     const rval = this.styleMap[id];
     assert(rval, `Style ${id} doesn't exist.`);
     return rval;
   }
 
-  public getStyleThatMayNotExist(id: StyleId): StyleObject|undefined {
+  public getStyleThatMayNotExist(id: CellId): StyleObject|undefined {
     // TODO: Eliminate. Change usages to .findStyle.
     return this.styleMap[id];
   }
@@ -292,7 +269,7 @@ export abstract class Notebook<W extends NotebookWatcher> extends WatchedResourc
     return this.pages[0].styleIds.length == 0;
   }
 
-  public precedingStyleId(id: StyleId): StyleId {
+  public precedingStyleId(id: CellId): CellId {
     // Returns the id of the style immediately before the top-level style specified.
     const i = this.pages[0].styleIds.indexOf(id);
     assert(i>=0);
@@ -312,9 +289,9 @@ export abstract class Notebook<W extends NotebookWatcher> extends WatchedResourc
     }
   }
 
-  public topLevelStyleOrder(): StyleId[] {
-    // REVIEW: Return IterableIterator<StyleId>?
-    return this.pages.reduce((acc: StyleId[], page: Page)=>acc.concat(page.styleIds), []);
+  public topLevelStyleOrder(): CellId[] {
+    // REVIEW: Return IterableIterator<CellId>?
+    return this.pages.reduce((acc: CellId[], page: Page)=>acc.concat(page.styleIds), []);
   }
 
   public topLevelStyles(): StyleObject[] {
@@ -322,7 +299,7 @@ export abstract class Notebook<W extends NotebookWatcher> extends WatchedResourc
     return this.pages[0].styleIds.map(styleId=>this.getStyle(styleId));
   }
 
-  public stylePosition(id: StyleId): StyleOrdinalPosition {
+  public stylePosition(id: CellId): CellOrdinalPosition {
     return this.pages[0].styleIds.indexOf(id);
   }
 
@@ -388,7 +365,7 @@ export abstract class Notebook<W extends NotebookWatcher> extends WatchedResourc
     return rval;
   }
 
-  public hasStyleId(styleId: StyleId): boolean {
+  public hasStyleId(styleId: CellId): boolean {
     return this.styleMap.hasOwnProperty(styleId);
   }
 
@@ -427,8 +404,7 @@ export abstract class Notebook<W extends NotebookWatcher> extends WatchedResourc
   private styleToHtml(style: StyleObject): Html {
     // TODO: This is very inefficient as notebook.childStylesOf goes through *all* styles.
     const dataJson = (typeof style.data != 'undefined' ? escapeHtml(JSON.stringify(style.data)) : 'undefined' );
-    const roleSubrole = (style.subrole ? `${style.role}|${style.subrole}` : style.role);
-    const styleInfo = `S${style.id} ${roleSubrole} ${style.type} ${style.source}`
+    const styleInfo = `S${style.id} ${style.role} ${style.type} ${style.source}`
     if (dataJson.length<30) {
       return <Html>`<div><span class="leaf">${styleInfo} <tt>${dataJson}</tt></span></div>`;
     } else {
@@ -459,13 +435,13 @@ export abstract class Notebook<W extends NotebookWatcher> extends WatchedResourc
     this.styleMap = obj.styleMap;
   }
 
-  private insertCell(style: StyleObject, afterId?: StyleRelativePosition): void {
+  private insertCell(style: StyleObject, afterId?: CellRelativePosition): void {
 
     this.styleMap[style.id] = style;
     // Insert top-level styles in the style order.
-    if (!afterId || afterId===StylePosition.Top) {
+    if (!afterId || afterId===CellPosition.Top) {
       this.pages[0].styleIds.unshift(style.id);
-    } else if (afterId===StylePosition.Bottom) {
+    } else if (afterId===CellPosition.Bottom) {
       this.pages[0].styleIds.push(style.id);
     } else {
       const i = this.pages[0].styleIds.indexOf(afterId);
@@ -492,7 +468,6 @@ export function StyleInsertedFromNotebookChange(change: NotebookChange): CellIns
 
 export function styleMatchesPattern(style: StyleObject, options: FindStyleOptions): boolean {
   return    (!options.role || (typeof options.role == 'object' && </* TYPESCRIPT: */any>options.role instanceof RegExp ? (<RegExp>options.role).test(style.role) : style.role == options.role))
-         && (!options.subrole || style.subrole == options.subrole)
          && (!options.type || style.type == options.type)
          && (!options.source || style.source == options.source)
          && (!options.notSource || style.source != options.notSource);

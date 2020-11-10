@@ -156,7 +156,7 @@ router.post('/debug', async function(req: Request, res: Response, _next: NextFun
 //   return sym_table;
 // }
 
-// function formatSymTable(styleId: StyleId, symTable: SymbolTable): string /* TYPESCRIPT: HTML */ {
+// function formatSymTable(styleId: CellId, symTable: SymbolTable): string /* TYPESCRIPT: HTML */ {
 //   let html = `<table border="1"><tr><td colspan="2">Symbol Table for Style ${styleId}</td></tr>`
 //   for (const [ symbol, values ] of Object.entries(symTable)) {
 //     html += `<tr><td>${escapeHtml(symbol)}</td><td>${values.map(v=>escapeHtml(v.toString())).join("; ")}</td></tr>`;

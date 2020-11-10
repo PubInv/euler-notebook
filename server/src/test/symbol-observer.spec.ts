@@ -28,7 +28,7 @@ import 'mocha';
 
 import { /* FormulaCellData, */ PlainTextFormula } from "../shared/formula";
 import {
-  StyleObject, RelationshipObject, StyleId
+  StyleObject, RelationshipObject, CellId
 } from "../shared/notebook";
 import {
   NotebookChangeRequest, InsertCellRequest, StyleChangeRequest, MoveCellRequest, DeleteCellRequest,
@@ -670,7 +670,7 @@ function texformatOfLastThought(notebook : ServerNotebook) : string {
 
 // Note: i is allowed to be negative, to use the javascript
 // convention of negatives counting from the back of the array.
-function getThought(notebook: ServerNotebook, i: number): StyleId {
+function getThought(notebook: ServerNotebook, i: number): CellId {
 //  assert(i>=0);
   const tls = notebook.topLevelStyleOrder();
   const idx = (i < 0) ?  (tls.length + i) : i;

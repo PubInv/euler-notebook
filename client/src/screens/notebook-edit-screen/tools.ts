@@ -20,7 +20,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 // Requirements
 
 import { CssClass } from "../../shared/common";
-import { StyleId } from "../../shared/notebook";
+import { CellId } from "../../shared/notebook";
 
 import { HtmlElement } from "../../html-element";
 import { NotebookEditScreen } from ".";
@@ -54,7 +54,7 @@ export class Tools extends HtmlElement<'div'>{
     this.$elt.innerHTML = '';
   }
 
-  public render(_styleId: StyleId): void {
+  public render(_styleId: CellId): void {
     // const style = this.screen.notebook.getStyle(styleId);
 
 

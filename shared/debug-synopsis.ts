@@ -145,7 +145,7 @@ export function serverMessageSynopsis(msg: ServerMessage): string {
 }
 
 export function styleSynopsis(s: StyleObject, indentationLevel: number = 0): string {
-  return `${indentation(indentationLevel)}S${s.id} ${s.source} ${s.role}${s.subrole?`|${s.subrole}`:''} ${s.type} ${dataSynopsis(s.data)}`;
+  return `${indentation(indentationLevel)}S${s.id} ${s.source} ${s.role} ${s.type} ${dataSynopsis(s.data)}`;
 }
 
 // Helper Functions

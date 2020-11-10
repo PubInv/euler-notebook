@@ -27,7 +27,7 @@ const debug = debug1('client:formula-cell');
 import { CssClass, Html, assertFalse, PlainText, notImplemented } from "../../../../shared/common";
 import { StrokeData } from "../../../../shared/stylus";
 import { FormulaCellData, FormulaCellStylusData } from "../../../../shared/formula";
-import { StyleObject, NotebookChange, StyleSubrole } from "../../../../shared/notebook";
+import { StyleObject, NotebookChange } from "../../../../shared/notebook";
 
 import { $new, $outerSvg } from "../../../../dom";
 import { Content as CellContainer } from "..";
@@ -41,14 +41,6 @@ import { InputType } from "../../../../shared/cell";
 // Types
 
 // Constants
-
-const FORMULA_SUBROLE_PREFIX = new Map<StyleSubrole,Html>([
-  // IMPORTANT: Keep in sync with FORMULA_SUBROLE_OPTIONS
-  [ 'ASSUME', <Html>"<i>Assume</i>&nbsp;" ],
-  [ 'DEFINITION', <Html>"<i>Definition</i>&nbsp;" ],
-  [ 'PROVE', <Html>"<i>Prove </i>&nbsp;" ],
-  [ 'OTHER', <Html>"<i>Other </i>&nbsp;" ],
-]);
 
 // Class
 
@@ -201,7 +193,7 @@ export class FormulaCell extends CellBase {
     }
 
     if (panel) {
-      const prefixHtml = style.subrole ? FORMULA_SUBROLE_PREFIX.get(style.subrole!)! : <Html>'';
+      const prefixHtml = <Html>''; // LATER: Prefix may be something like, "Assume", or "Define", or "Prove" etc.,
       const $inputPanel = $new({
         tag: 'div',
         class: <CssClass>'formulaInput',

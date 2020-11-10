@@ -31,8 +31,8 @@ import { join } from "path";
 import { assert, assertFalse, ExpectedError, notImplemented, Timestamp } from "./shared/common";
 import { NotebookPath, NOTEBOOK_PATH_RE, NotebookName, FolderPath, NotebookEntry } from "./shared/folder";
 import {
-  Notebook, NotebookObject, NotebookChange, StyleObject, StyleRole, StyleType, StyleSource, StyleId,
-  CellMoved, StylePosition, VERSION,
+  Notebook, NotebookObject, NotebookChange, StyleObject, StyleRole, StyleType, StyleSource, CellId,
+  CellMoved, CellPosition, VERSION,
   CellInserted, CellDeleted, NotebookWatcher, StyleProperties,
 } from "./shared/notebook";
 import {
@@ -321,13 +321,13 @@ export class ServerNotebook extends Notebook<ServerNotebookWatcher> {
     return changes;
   }
 
-  public reserveId(): StyleId {
+  public reserveId(): CellId {
     const styleId = this.nextId++;
     this.reservedIds.add(styleId);
     return styleId;
   }
 
-  public async useTool(styleId: StyleId): Promise<NotebookChange[]> {
+  public async useTool(styleId: CellId): Promise<NotebookChange[]> {
     debug(`useTool ${styleId}`);
     assert(!this.terminated);
     notImplemented();
@@ -402,7 +402,7 @@ export class ServerNotebook extends Notebook<ServerNotebookWatcher> {
 
   // TODO: purge changes in queue that have been processed asynchronously.
   private ephemeral?: boolean;     // Not persisted to the filesystem.
-  private reservedIds: Set<StyleId>;
+  private reservedIds: Set<CellId>;
   private saving?: boolean;
 
   // Private Instance Property Functions
@@ -490,7 +490,7 @@ export class ServerNotebook extends Notebook<ServerNotebookWatcher> {
     const styleProps = request.styleProps;
     const afterId = request.hasOwnProperty('afterId') ? request.afterId : -1;
 
-    let id: StyleId;
+    let id: CellId;
     if (styleProps.id) {
       id = styleProps.id;
       if (!this.reservedIds.has(id)) { throw new Error(`Specified style ID is not reserved: ${id}`); }
@@ -506,7 +506,6 @@ export class ServerNotebook extends Notebook<ServerNotebookWatcher> {
       source,
       type: styleProps.type,
     };
-    if (styleProps.subrole) { style.subrole = styleProps.subrole; }
 
     const change: CellInserted =  { type: 'cellInserted', style, afterId };
     this.appendChange(source, change, rval);
@@ -527,7 +526,7 @@ export class ServerNotebook extends Notebook<ServerNotebookWatcher> {
     if (afterId == styleId) { throw new Error(`Style ${styleId} can't be moved after itself.`); }
 
     const style = this.getStyle(styleId);
-    const oldPosition: StylePosition = this.pages[0].styleIds.indexOf(style.id);
+    const oldPosition: CellPosition = this.pages[0].styleIds.indexOf(style.id);
     if (oldPosition < 0) { throw new Error(`Style ${styleId} can't be moved: not found in styleOrder array.`); }
 
     let oldAfterId: number;
@@ -535,7 +534,7 @@ export class ServerNotebook extends Notebook<ServerNotebookWatcher> {
     else if (oldPosition == this.pages[0].styleIds.length-1) { oldAfterId = -1; }
     else { oldAfterId = this.pages[0].styleIds[oldPosition-1]; }
 
-    let newPosition: StylePosition;
+    let newPosition: CellPosition;
     if (afterId == 0) { newPosition = 0; }
     else if (afterId == -1) { newPosition = this.pages[0].styleIds.length  - 1; }
     else {

@@ -26,7 +26,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 import { Content as CellContainer } from "../index";
 import { CssClass } from "../../../../shared/common";
-import { StyleObject, StyleId, NotebookChange } from "../../../../shared/notebook";
+import { StyleObject, CellId, NotebookChange } from "../../../../shared/notebook";
 import { Tools } from "../../tools";
 import { HtmlElement } from "../../../../html-element";
 import {
@@ -40,7 +40,7 @@ import { MoveCellRequest } from "../../../../shared/math-tablet-api";
 // Types
 
 interface CellDragData {
-  styleId: StyleId;
+  styleId: CellId;
 }
 
 // Constants
@@ -59,7 +59,7 @@ export abstract class CellBase extends HtmlElement<'div'>{
 
   // Instance Properties
 
-  public styleId: StyleId;
+  public styleId: CellId;
 
   // Instance Property Functions
 

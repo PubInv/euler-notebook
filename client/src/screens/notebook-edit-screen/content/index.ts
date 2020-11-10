@@ -27,7 +27,7 @@ const debug = debug1('client:notebook-edit-screen-content');
 
 import { CssClass, assert, Html, assertFalse, notImplemented } from "../../../shared/common";
 import {
-  StyleId, StyleObject, NotebookChange, StyleRelativePosition, StylePosition, StyleProperties,
+  CellId, StyleObject, NotebookChange, CellRelativePosition, CellPosition, StyleProperties,
 } from "../../../shared/notebook";
 import {
   DebugParams, DebugResults, DeleteCellRequest, InsertCellRequest,
@@ -127,7 +127,7 @@ export class Content extends HtmlElement<'div'>{
 
   // Public Instance Methods
 
-  public async deleteTopLevelStyle(styleId: StyleId): Promise<void> {
+  public async deleteTopLevelStyle(styleId: CellId): Promise<void> {
     await this.unselectAll();
     const changeRequest: DeleteCellRequest = { type: 'deleteCell', styleId: styleId };
     await this.sendUndoableChangeRequests([changeRequest]);
@@ -182,14 +182,14 @@ export class Content extends HtmlElement<'div'>{
     // WAS: this.screen.debugPopup.showContents(results.html);
   }
 
-  public async insertFigureCellBelow(afterId?: StyleRelativePosition): Promise<void> {
+  public async insertFigureCellBelow(afterId?: CellRelativePosition): Promise<void> {
     debug("Insert Formula Cell Below");
 
     // If cell to insert after is not specified, then insert below the last cell selected.
     // If no cells are selected, then insert at the end of the notebook.
     if (afterId === undefined) {
       if (this.lastCellSelected) { afterId = this.lastCellSelected.styleId; }
-      else { afterId = StylePosition.Bottom; }
+      else { afterId = CellPosition.Bottom; }
     }
 
     // TODO: We don't have all the information to insert the full cell (displaySvg, etc.)
@@ -207,7 +207,7 @@ export class Content extends HtmlElement<'div'>{
     // // const styleId = (<DeleteCellRequest>undoChangeRequest).styleId
   }
 
-  public async insertFormulaCellBelow(_afterId?: StyleRelativePosition): Promise<void> {
+  public async insertFormulaCellBelow(_afterId?: CellRelativePosition): Promise<void> {
     debug("Insert Formula Cell Below");
 
     notImplemented();
@@ -215,7 +215,7 @@ export class Content extends HtmlElement<'div'>{
     // // If no cells are selected, then insert at the end of the notebook.
     // if (afterId === undefined) {
     //   if (this.lastCellSelected) { afterId = this.lastCellSelected.styleId; }
-    //   else { afterId = StylePosition.Bottom; }
+    //   else { afterId = CellPosition.Bottom; }
     // }
 
     // const inputMode = userSettingsInstance.defaultInputMode;
@@ -232,14 +232,14 @@ export class Content extends HtmlElement<'div'>{
     // TODO: Set focus?
   }
 
-  public async insertTextCellBelow(afterId?: StyleRelativePosition): Promise<void> {
+  public async insertTextCellBelow(afterId?: CellRelativePosition): Promise<void> {
     debug("Insert Text Cell Below");
 
     // If cell to insert after is not specified, then insert below the last cell selected.
     // If no cells are selected, then insert at the end of the notebook.
     if (afterId === undefined) {
       if (this.lastCellSelected) { afterId = this.lastCellSelected.styleId; }
-      else { afterId = StylePosition.Bottom; }
+      else { afterId = CellPosition.Bottom; }
     }
 
     // TODO: We don't have all the information to insert the full cell (displaySvg, etc.)
@@ -275,11 +275,11 @@ export class Content extends HtmlElement<'div'>{
   //   // If cells are selected then in insert a keyboard input cell
   //   // above the last cell selected.
   //   // Otherwise, insert at the beginning of the notebook.
-  //   let afterId: StyleRelativePosition;
+  //   let afterId: CellRelativePosition;
   //   if (this.lastCellSelected) {
   //     const previousCell = this.previousCell(this.lastCellSelected);
-  //     afterId = previousCell ? previousCell.styleId : StylePosition.Top;
-  //   } else { afterId = StylePosition.Top; }
+  //     afterId = previousCell ? previousCell.styleId : CellPosition.Top;
+  //   } else { afterId = CellPosition.Top; }
   //   await this.insertKeyboardCellAndEdit(afterId);
   // }
 
@@ -287,9 +287,9 @@ export class Content extends HtmlElement<'div'>{
   //   debug("Insert Keyboard Cell Below");
   //   // If cells are selected then in insert a keyboard input cell below the last cell selected.
   //   // Otherwise, insert at the end of the notebook.
-  //   let afterId: StyleRelativePosition;
+  //   let afterId: CellRelativePosition;
   //   if (this.lastCellSelected) { afterId = this.lastCellSelected.styleId; }
-  //   else { afterId = StylePosition.Bottom; }
+  //   else { afterId = CellPosition.Bottom; }
   //   await this.insertKeyboardCellAndEdit(afterId);
   // }
 
@@ -310,7 +310,7 @@ export class Content extends HtmlElement<'div'>{
       return;
     }
     const nextNextCell = this.nextCell(nextCell);
-    const afterId = nextNextCell ? nextCell.styleId : StylePosition.Bottom;
+    const afterId = nextNextCell ? nextCell.styleId : CellPosition.Bottom;
 
     const request: MoveCellRequest = { type: 'moveCell', styleId, afterId };
     await this.sendUndoableChangeRequests([ request ]);
@@ -409,7 +409,7 @@ export class Content extends HtmlElement<'div'>{
 
   // Instance Methods
 
-  public createCell(style: StyleObject, afterId: StyleRelativePosition): CellBase {
+  public createCell(style: StyleObject, afterId: CellRelativePosition): CellBase {
     const cellView = createCell(this, style);
     this.cellViews.set(style.id, cellView);
     this.insertCell(cellView, afterId);
@@ -430,10 +430,10 @@ export class Content extends HtmlElement<'div'>{
     await this.sendUndoableChangeRequests(changeRequests);
   }
 
-  public insertCell(cellView: CellBase, afterId: StyleRelativePosition): void {
-    if (afterId == StylePosition.Top) {
+  public insertCell(cellView: CellBase, afterId: CellRelativePosition): void {
+    if (afterId == CellPosition.Top) {
       this.$elt.prepend(cellView.$elt);
-    } else if (afterId == StylePosition.Bottom) {
+    } else if (afterId == CellPosition.Bottom) {
       this.$elt.append(cellView.$elt);
     } else {
       const afterCell = this.cellViews.get(afterId);
@@ -442,7 +442,7 @@ export class Content extends HtmlElement<'div'>{
     }
   }
 
-  public async insertStyle(styleProps: StyleProperties, afterId: StyleRelativePosition = StylePosition.Bottom): Promise<void> {
+  public async insertStyle(styleProps: StyleProperties, afterId: CellRelativePosition = CellPosition.Bottom): Promise<void> {
     const changeRequest: InsertCellRequest = { type: 'insertCell', afterId, styleProps };
     await this.sendUndoableChangeRequests([ changeRequest ]);
   }
@@ -465,7 +465,7 @@ export class Content extends HtmlElement<'div'>{
     this.screen.sidebar.$trashButton.disabled = false;
   }
 
-  public useTool(id: StyleId): void {
+  public useTool(id: CellId): void {
     this.screen.notebook.useTool(id);
     this.setFocus();
   }
@@ -535,15 +535,15 @@ export class Content extends HtmlElement<'div'>{
 
   // Private Instance Properties
 
-  private cellViews: Map<StyleId, CellBase>;
-  private dirtyCells: Set<StyleId>;     // Style ids of top-level styles that need to be redrawn.
+  private cellViews: Map<CellId, CellBase>;
+  private dirtyCells: Set<CellId>;     // Style ids of top-level styles that need to be redrawn.
   private lastCellSelected?: CellBase;
   private topOfUndoStack: number;       // Index of the top of the stack. May not be the length of the undoStack array if there have been some undos.
   private undoStack: UndoEntry[];
 
   // Private Instance Property Functions
 
-  private cellViewFromId(cellId: StyleId): CellBase {
+  private cellViewFromId(cellId: CellId): CellBase {
     const rval = this.cellViews.get(cellId)!;
     assert(rval);
     return rval;
@@ -551,7 +551,7 @@ export class Content extends HtmlElement<'div'>{
 
   private cellViewFromElement($elt: HTMLDivElement): CellBase {
     // Strip 'C' prefix from cell ID to get the style id.
-    const styleId: StyleId = parseInt($elt.id.slice(1), 10);
+    const styleId: CellId = parseInt($elt.id.slice(1), 10);
     return this.cellViewFromId(styleId);
   }
 

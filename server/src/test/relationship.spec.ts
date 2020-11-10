@@ -27,7 +27,7 @@ import 'mocha';
 // import * as sinon from "sinon";
 
 import { FormulaCellData, PlainTextFormula } from "../shared/formula";
-import { StyleId, CellInserted, WolframExpression } from "../shared/notebook";
+import { CellId, CellInserted, WolframExpression } from "../shared/notebook";
 import { InsertCellRequest, StyleChangeRequest } from "../shared/math-tablet-api";
 import { ServerNotebook }  from "../server-notebook";
 
@@ -128,7 +128,7 @@ function wolframFormulaInsertRequest(plainTextFormula: PlainTextFormula): Insert
   return request;
 }
 
-function wolframFormulaChangeRequest(id: StyleId, wolframData: WolframExpression): StyleChangeRequest {
+function wolframFormulaChangeRequest(id: CellId, wolframData: WolframExpression): StyleChangeRequest {
   const request: StyleChangeRequest = { type: 'changeStyle', styleId: id, data: { wolframData } };
   return request;
 }
@@ -150,7 +150,7 @@ function wolframFormulaChangeRequest(id: StyleId, wolframData: WolframExpression
 // }
 
 // // This is likely to be needed, so I am retaining at the early stage of writing this file -rlr
-// function getThought(notebook : ServerNotebook,n : number) : StyleId {
+// function getThought(notebook : ServerNotebook,n : number) : CellId {
 //   const tls = notebook.topLevelStyleOrder();
 //   const thoughtId = tls.slice(n)[0];
 //   return thoughtId;

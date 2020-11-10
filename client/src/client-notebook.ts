@@ -22,7 +22,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 // Requirements
 
 import { OpenOptions } from "./shared/watched-resource";
-import { Notebook, NotebookChange, StyleId, NotebookWatcher } from "./shared/notebook";
+import { Notebook, NotebookChange, CellId, NotebookWatcher } from "./shared/notebook";
 import {
   ServerNotebookChangedMessage, NotebookChangeRequest, ClientNotebookChangeMessage, ClientNotebookUseToolMessage,
   ClientNotebookOpenMessage, ServerNotebookOpenedMessage, ServerNotebookMessage, ServerNotebookClosedMessage,
@@ -131,7 +131,7 @@ export class ClientNotebook extends Notebook<ClientNotebookWatcher> {
     }
   }
 
-  public useTool(id: StyleId): void {
+  public useTool(id: CellId): void {
     const msg: ClientNotebookUseToolMessage = { type: 'notebook', operation: 'useTool', path: this.path, styleId: id };
     appInstance.socket.sendMessage(msg);
   }
