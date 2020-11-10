@@ -25,10 +25,9 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 import * as debug1 from "debug";
 const debug = debug1('client:notebook-edit-screen-content');
 
+import { CellId, CellObject, CellRelativePosition, CellPosition, CellProperties } from "../../../shared/cell";
 import { CssClass, assert, Html, assertFalse, notImplemented } from "../../../shared/common";
-import {
-  CellId, CellObject, NotebookChange, CellRelativePosition, CellPosition, CellProperties,
-} from "../../../shared/notebook";
+import { NotebookChange } from "../../../shared/notebook";
 import {
   DebugParams, DebugResults, DeleteCellRequest, InsertCellRequest,
   MoveCellRequest, NotebookChangeRequest,

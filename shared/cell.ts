@@ -21,9 +21,28 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 import { LengthInPoints, PlainText, SvgMarkup } from "./common";
 import { StylusInput } from "./stylus";
-import { CellId } from "./notebook";
 
 // Types
+
+export type CellId = number;
+
+// Position of cell in the notebook.
+// Position 0 is the first cell of the notebook.
+export type CellOrdinalPosition = number;
+
+// Position a cell relative to another cell, or at the top or bottom of the notebook.
+export type CellRelativePosition = CellId | CellPosition;
+
+export const CELL_SOURCES = [
+  'SYSTEM',
+  'USER',
+] as const;
+export type CellSource = typeof CELL_SOURCES[number];
+
+export enum CellPosition {
+  Top = 0,
+  Bottom = -1,
+}
 
 export enum CellType {
   Formula = 1,
@@ -32,17 +51,32 @@ export enum CellType {
   Plot = 4,
 }
 
+export enum InputType {
+  None = 0,
+  Keyboard = 1,
+  Stylus = 2,
+}
+
 export interface CellData {
   type: CellType;
   height: LengthInPoints;
   displaySvg: SvgMarkup;
 }
 
-export enum InputType {
-  None = 0,
-  Keyboard = 1,
-  Stylus = 2,
+export interface CellMap {
+  [id: /* CellId */number]: CellObject;
 }
+
+export interface CellObject extends CellProperties {
+  id: CellId;
+  source: CellSource;
+}
+
+export interface CellProperties {
+  id?: CellId;
+  data: any;
+}
+
 
 // HERE TEMPORARILY:
 // Move them into their own files when they become classes.

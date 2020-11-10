@@ -19,7 +19,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 // Requirements
 
-import { CellObject } from "../../../../shared/notebook";
+import { CellObject } from "../../../../shared/cell";
 import { Content } from "..";
 
 import { CellBase } from "./cell-base";

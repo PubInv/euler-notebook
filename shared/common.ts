@@ -78,6 +78,10 @@ export function escapeHtml(str: string): Html {
             .replace(/</g, "&lt;");
 }
 
+// export function isEmptyOrSpaces(str: string) : boolean{
+//   return str === null || str.match(/^ *$/) !== null;
+// }
+
 export function newPromiseResolver<T>(): { promise: Promise<T>, resolver: PromiseResolver<T> } {
   let resolver: PromiseResolver<T>;
   const promise = new Promise<T>((resolve, reject)=>{ resolver = { resolve, reject }; });

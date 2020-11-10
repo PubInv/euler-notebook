@@ -28,12 +28,13 @@ import * as debug1 from "debug";
 // import { readdirSync, unlink, writeFileSync } from "fs"; // LATER: Eliminate synchronous file operations.
 import { join } from "path";
 
+import { CellObject, CellSource, CellId, CellPosition, CellProperties } from "./shared/cell";
 import { assert, assertFalse, ExpectedError, notImplemented, Timestamp } from "./shared/common";
 import { NotebookPath, NOTEBOOK_PATH_RE, NotebookName, FolderPath, NotebookEntry } from "./shared/folder";
 import {
-  Notebook, NotebookObject, NotebookChange, CellObject, CellSource, CellId,
-  CellMoved, CellPosition, VERSION,
-  CellInserted, CellDeleted, NotebookWatcher, CellProperties,
+  Notebook, NotebookObject, NotebookChange,
+  CellMoved, VERSION,
+  CellInserted, CellDeleted, NotebookWatcher,
 } from "./shared/notebook";
 import {
   NotebookChangeRequest, MoveCellRequest, InsertCellRequest,

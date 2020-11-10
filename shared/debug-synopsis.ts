@@ -21,9 +21,10 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 // Requirements
 
+import { CellObject } from "./cell";
 import { assertFalse } from './common';
 import { FolderChange } from './folder';
-import { Notebook, NotebookChange, CellObject } from './notebook';
+import { Notebook, NotebookChange, } from './notebook';
 import {
   ClientFolderMessage, ClientMessage, ClientNotebookMessage, FolderChangeRequest, NotebookChangeRequest,
   ServerFolderMessage, ServerMessage, ServerNotebookMessage,

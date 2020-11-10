@@ -21,12 +21,13 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 // Requirements
 
-import { OpenOptions } from "./shared/watched-resource";
-import { Notebook, NotebookChange, CellId, NotebookWatcher } from "./shared/notebook";
+import { CellId } from "./shared/cell";
+import { Notebook, NotebookChange, NotebookWatcher } from "./shared/notebook";
 import {
   ServerNotebookChangedMessage, NotebookChangeRequest, ClientNotebookChangeMessage, ClientNotebookUseToolMessage,
   ClientNotebookOpenMessage, ServerNotebookOpenedMessage, ServerNotebookMessage, ServerNotebookClosedMessage,
 } from "./shared/math-tablet-api";
+import { OpenOptions } from "./shared/watched-resource";
 
 import { appInstance } from "./app";
 import { NotebookName, NotebookPath } from "./shared/folder";

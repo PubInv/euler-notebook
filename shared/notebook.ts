@@ -20,9 +20,10 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 // Requirements
 
+import { CellSource, CellId, CellObject, CellRelativePosition, CellOrdinalPosition, CellMap, CellPosition } from "./cell";
 import { CssLength, CssSize, Html, assert, deepCopy, escapeHtml, ExpectedError } from "./common";
-import { WatchedResource, Watcher } from "./watched-resource";
 import { NOTEBOOK_NAME_RE, NotebookName, NotebookPath } from "./folder";
+import { WatchedResource, Watcher } from "./watched-resource";
 
 // Types
 
@@ -77,40 +78,6 @@ interface PageMargins {
   top: CssLength;
 }
 
-export type CellId = number;
-
-export interface CellMap {
-  [id: /* CellId */number]: CellObject;
-}
-
-export interface CellObject extends CellProperties {
-  id: CellId;
-  source: CellSource;
-}
-
-// Position of cell in the notebook.
-// Position 0 is the first cell of the notebook.
-export type CellOrdinalPosition = number;
-
-export interface CellProperties {
-  id?: CellId;
-  data: any;
-}
-
-// Position a cell relative to another cell, or at the top or bottom of the notebook.
-export type CellRelativePosition = CellId | CellPosition;
-
-export enum CellPosition {
-  Top = 0,
-  Bottom = -1,
-}
-
-export const CELL_SOURCES = [
-  'SYSTEM',
-  'USER',
-] as const;
-export type CellSource = typeof CELL_SOURCES[number];
-
 export type WolframExpression = '{WolframExpression}';
 
 // Constants
@@ -126,7 +93,7 @@ const DEFAULT_PAGE_CONFIG: PageConfig = {
   }
 }
 
-export const VERSION = "0.0.16";
+export const VERSION = "0.0.17";
 
 // Exported Class
 

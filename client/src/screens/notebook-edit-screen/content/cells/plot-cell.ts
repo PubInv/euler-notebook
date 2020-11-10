@@ -22,8 +22,9 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 import * as debug1 from "debug";
 const debug = debug1('client:formula-cell');
 
-import {  assertFalse, CssClass } from "../../../../shared/common";
-import { NotebookChange, CellObject } from "../../../../shared/notebook";
+import { CellObject } from "../../../../shared/cell";
+import { assertFalse, CssClass } from "../../../../shared/common";
+import { NotebookChange } from "../../../../shared/notebook";
 import { Content as CellContainer } from "..";
 
 import { CellBase } from "./cell-base";

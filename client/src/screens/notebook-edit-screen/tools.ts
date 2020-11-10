@@ -19,8 +19,8 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 // Requirements
 
+import { CellId } from "../../shared/cell";
 import { CssClass } from "../../shared/common";
-import { CellId } from "../../shared/notebook";
 
 import { HtmlElement } from "../../html-element";
 import { NotebookEditScreen } from ".";

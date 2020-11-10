@@ -22,9 +22,10 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 import * as debug1 from "debug";
 const debug = debug1('client:figure-cell');
 
+import { CellObject } from "../../../../shared/cell";
 import { CssClass, CssLength, assertFalse } from "../../../../shared/common";
 import { StylusInput } from "../../../../shared/stylus";
-import { CellObject, NotebookChange } from "../../../../shared/notebook";
+import { NotebookChange } from "../../../../shared/notebook";
 // import { StyleChangeRequest } from "../../../../shared/math-tablet-api";
 
 import { $svg, HtmlElementSpecification } from "../../../../dom";

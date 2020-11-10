@@ -24,10 +24,11 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 import * as debug1 from "debug";
 const debug = debug1('client:formula-cell');
 
+import { CellObject } from "../../../../shared/cell";
 import { CssClass, Html, assertFalse, PlainText, notImplemented } from "../../../../shared/common";
 import { StrokeData } from "../../../../shared/stylus";
 import { FormulaCellData, FormulaCellStylusData } from "../../../../shared/formula";
-import { CellObject, NotebookChange } from "../../../../shared/notebook";
+import { NotebookChange } from "../../../../shared/notebook";
 
 import { $new, $outerSvg } from "../../../../dom";
 import { Content as CellContainer } from "..";

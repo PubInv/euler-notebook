@@ -25,8 +25,10 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 // const debug = debug1('client:cell-base');
 
 import { Content as CellContainer } from "../index";
+
+import { CellObject, CellId } from "../../../../shared/cell";
 import { CssClass } from "../../../../shared/common";
-import { CellObject, CellId, NotebookChange } from "../../../../shared/notebook";
+import { NotebookChange } from "../../../../shared/notebook";
 import { Tools } from "../../tools";
 import { HtmlElement } from "../../../../html-element";
 import {

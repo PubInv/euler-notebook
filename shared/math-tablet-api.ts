@@ -22,22 +22,19 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 // Requirements
 
+import { CellProperties, CellId, CellRelativePosition } from "./cell";
 import { Html, PlainText } from "./common";
 import { FolderObject, FolderPath, NotebookPath, FolderName, NotebookName, FolderChange } from "./folder";
-import {
-  CellProperties, CellId, NotebookChange, NotebookObject, CellRelativePosition, WolframExpression
-} from "./notebook";
+import { NotebookChange, NotebookObject, WolframExpression } from "./notebook";
 
 // Types
 
-export type ImageData = string;
-export type MthMtcaData = string;
 export type RequestId = '{RequestId}';
-export type Symbol = string;
+export type Symbol = '{Symbol}';
 export type TexExpression = '{TexExpression}';
 
 export interface SymbolData {
-  name: string;
+  name: Symbol;
   value?: string;
 }
 
@@ -260,9 +257,4 @@ export interface DebugResults {
 export interface NameValuePair {
   name: string;
   value: string;
-}
-
-// REVIEW: Belongs somewhere else
-export function isEmptyOrSpaces(str: string) : boolean{
-  return str === null || str.match(/^ *$/) !== null;
 }
