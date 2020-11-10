@@ -29,7 +29,7 @@ import * as sinon from "sinon";
 import { EMPTY_SVG, Html, PlainText } from "../shared/common";
 import { EMPTY_FORMULA, FormulaCellData } from "../shared/formula";
 import { NotebookChange, CellInserted, StyleObject } from "../shared/notebook";
-import { NotebookChangeRequest, InsertCellRequest, StylePropertiesWithSubprops, ToolData } from "../shared/math-tablet-api";
+import { NotebookChangeRequest, InsertCellRequest, StyleProperties, ToolData } from "../shared/math-tablet-api";
 import { ServerNotebook, ObserverInstance }  from "../server-notebook";
 import { Config } from "../config";
 
@@ -107,7 +107,7 @@ describe("server notebook", function() {
         inputText: <PlainText>"",
         plainTextFormula: EMPTY_FORMULA,
       };
-      const styleProps: StylePropertiesWithSubprops = { role: 'FORMULA', type: 'FORMULA-DATA', data };
+      const styleProps: StyleProperties = { role: 'FORMULA', type: 'FORMULA-DATA', data };
       const insertRequest: InsertCellRequest = { type: 'insertCell', styleProps };
       const changeRequests = [insertRequest];
       await notebook.requestChanges('TEST', changeRequests);
@@ -128,7 +128,7 @@ describe("server notebook", function() {
         inputText: <PlainText>"",
         plainTextFormula: EMPTY_FORMULA,
       };
-      const styleProps: StylePropertiesWithSubprops = {
+      const styleProps: StyleProperties = {
         role: 'FORMULA',
         type: 'FORMULA-DATA',
         data: formulaData,

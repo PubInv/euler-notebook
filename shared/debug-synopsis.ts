@@ -117,7 +117,7 @@ export function notebookSynopsis(notebook: Notebook<any>): string {
   return notebook.topLevelStyleOrder()
   .map(styleId=>{
     const style = notebook.getStyle(styleId);
-    return styleSynopsisRecursive(notebook, style);
+    return styleSynopsis(style);
   })
   .join('');
 }
@@ -145,7 +145,7 @@ export function serverMessageSynopsis(msg: ServerMessage): string {
 }
 
 export function styleSynopsis(s: StyleObject, indentationLevel: number = 0): string {
-  return `${indentation(indentationLevel)}S${s.parentId?`${s.parentId}.`:''}${s.id} ${s.source} ${s.role}${s.subrole?`|${s.subrole}`:''} ${s.type} ${dataSynopsis(s.data)}`;
+  return `${indentation(indentationLevel)}S${s.id} ${s.source} ${s.role}${s.subrole?`|${s.subrole}`:''} ${s.type} ${dataSynopsis(s.data)}`;
 }
 
 // Helper Functions
@@ -220,16 +220,6 @@ function serverNotebookMessageSynopsis(msg: ServerNotebookMessage): string {
     case 'closed': rval += ` reason: ${msg.reason}`; break;
     case 'opened': break;
     default: assertFalse();
-  }
-  return rval;
-}
-
-function styleSynopsisRecursive(notebook: Notebook<any>, style: StyleObject, indentationLevel: number = 0): string {
-  // TODO: This is very inefficient as notebook.childStylesOf goes through *all* styles.
-  const childStyleObjects = Array.from(notebook.childStylesOf(style.id));
-  let rval = `${styleSynopsis(style, indentationLevel)}\n`;
-  for (const childStyle of childStyleObjects) {
-    rval += styleSynopsisRecursive(notebook, childStyle, indentationLevel+1)
   }
   return rval;
 }

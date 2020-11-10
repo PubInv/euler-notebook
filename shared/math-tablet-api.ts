@@ -69,14 +69,6 @@ export interface TransformationToolData {
   transformationName: string;
 }
 
-export interface StylePropertiesWithSubprops extends StyleProperties {
-  subprops?: StylePropertiesWithSubprops[]; // TODO: rename subprops=>substyles.
-  exclusiveChildTypeAndRole?: boolean;     // only one style of
-    // that type and meaning should exist for the parent. If this is added
-    // at the time the insertion request is made, the code to do the insertion
-    // should automatically remove all other such instances
-}
-
 // Folder Change Requests
 
 export type FolderChangeRequest =
@@ -128,9 +120,8 @@ export interface DeleteCellRequest {
 export interface InsertCellRequest {
   type: 'insertCell';
   afterId?: StyleRelativePosition;
-  parentId?: StyleId; // undefined or 0 means top-level.
   // TODO: rename styleProps => props
-  styleProps: StylePropertiesWithSubprops;
+  styleProps: StyleProperties;
   // type: 'insertCell';
   // cellType: CellType;
   // inputType: InputType;

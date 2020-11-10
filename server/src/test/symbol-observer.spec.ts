@@ -32,7 +32,7 @@ import {
 } from "../shared/notebook";
 import {
   NotebookChangeRequest, InsertCellRequest, StyleChangeRequest, MoveCellRequest, DeleteCellRequest,
-  StylePropertiesWithSubprops
+  StyleProperties
 } from "../shared/math-tablet-api";
 import { ServerNotebook }  from "../server-notebook";
 
@@ -85,7 +85,7 @@ describe("test symbol observer", function() {
       // Now we want to try to create two child requests,
       // and see that only one is created
       const fake_result = "4";
-      const styleProps1: StylePropertiesWithSubprops = {
+      const styleProps1: StyleProperties = {
         type: 'WOLFRAM-EXPRESSION',
         data: <string>fake_result,
         role: 'EVALUATION',
@@ -97,7 +97,7 @@ describe("test symbol observer", function() {
         styleProps: styleProps1,
       };
 
-      const styleProps2: StylePropertiesWithSubprops = {
+      const styleProps2: StyleProperties = {
         type: 'WOLFRAM-EXPRESSION',
         data: <string>fake_result,
         role: 'EVALUATION',

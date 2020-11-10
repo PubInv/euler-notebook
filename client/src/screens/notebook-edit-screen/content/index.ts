@@ -27,10 +27,10 @@ const debug = debug1('client:notebook-edit-screen-content');
 
 import { CssClass, assert, Html, assertFalse, notImplemented } from "../../../shared/common";
 import {
-  StyleId, StyleObject, NotebookChange, StyleRelativePosition, StylePosition,
+  StyleId, StyleObject, NotebookChange, StyleRelativePosition, StylePosition, StyleProperties,
 } from "../../../shared/notebook";
 import {
-  DebugParams, DebugResults, DeleteCellRequest, InsertCellRequest, StylePropertiesWithSubprops,
+  DebugParams, DebugResults, DeleteCellRequest, InsertCellRequest,
   MoveCellRequest, NotebookChangeRequest,
 } from "../../../shared/math-tablet-api";
 
@@ -124,13 +124,6 @@ export class Content extends HtmlElement<'div'>{
   public screen: NotebookEditScreen;
 
   // Public Instance Property Functions
-
-  public topLevelCellOf(style: StyleObject): CellBase {
-    for (; style.parentId; style = this.screen.notebook.getStyle(style.parentId));
-    const cell = this.cellViews.get(style.id);
-    assert(cell);
-    return cell!;
-  }
 
   // Public Instance Methods
 
@@ -449,7 +442,7 @@ export class Content extends HtmlElement<'div'>{
     }
   }
 
-  public async insertStyle(styleProps: StylePropertiesWithSubprops, afterId: StyleRelativePosition = StylePosition.Bottom): Promise<void> {
+  public async insertStyle(styleProps: StyleProperties, afterId: StyleRelativePosition = StylePosition.Bottom): Promise<void> {
     const changeRequest: InsertCellRequest = { type: 'insertCell', afterId, styleProps };
     await this.sendUndoableChangeRequests([ changeRequest ]);
   }
@@ -502,33 +495,18 @@ export class Content extends HtmlElement<'div'>{
         // If a substyle is deleted then mark the cell as dirty.
         // If a top-level style is deleted then remove the cell.
         const style = notebook.getStyle(change.style.id);
-        const topLevelStyle = notebook.topLevelStyleOf(style.id);
-        if (style.id != topLevelStyle.id) {
-          // REVIEW: Is there a way to tell what styles affect display?
-          this.dirtyCells.add(topLevelStyle.id);
-          this.cellViewFromId(topLevelStyle.id).onChange(change);
-        } else {
-          const cellView = this.cellViews.get(style.id);
-          assert(cellView);
-          this.deleteCell(cellView!);
-          this.dirtyCells.delete(style.id);
-        }
+        const cellView = this.cellViews.get(style.id);
+        assert(cellView);
+        this.deleteCell(cellView!);
+        this.dirtyCells.delete(style.id);
         break;
       }
       case 'cellInserted': {
-        if (!change.style.parentId) {
-          this.createCell(change.style, change.afterId!);
-        } else {
-          // REVIEW: Is there a way to tell what styles affect display?
-          const topLevelStyle = notebook.topLevelStyleOf(change.style.id);
-          this.dirtyCells.add(topLevelStyle.id);
-          this.cellViewFromId(topLevelStyle.id).onChange(change);
-        }
+        this.createCell(change.style, change.afterId!);
         break;
       }
       case 'cellMoved': {
         const style = notebook.getStyle(change.styleId);
-        assert(!style.parentId);
         const movedCell = this.cellViews.get(style.id);
         assert(movedCell);
         // Note: DOM methods ensure the element will be removed from

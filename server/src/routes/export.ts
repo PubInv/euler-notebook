@@ -81,7 +81,7 @@ async function onExportPage(req: Request, res: Response, next: NextFunction): Pr
 
     const notebook: ServerNotebook = await ServerNotebook.open(notebookPath, { mustExist: true });
     try {
-      const latex = await notebook.exportLatex();
+      const latex = "TODO: Not implemented." // await notebook.exportLatex();
 
       switch(exportFormat) {
         case 'latex':

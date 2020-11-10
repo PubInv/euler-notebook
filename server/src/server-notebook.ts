@@ -33,12 +33,12 @@ import { NotebookPath, NOTEBOOK_PATH_RE, NotebookName, FolderPath, NotebookEntry
 import {
   Notebook, NotebookObject, NotebookChange, StyleObject, StyleRole, StyleType, StyleSource, StyleId,
   CellMoved, StylePosition, VERSION,
-  CellInserted, CellDeleted, NotebookWatcher
+  CellInserted, CellDeleted, NotebookWatcher, StyleProperties,
 } from "./shared/notebook";
 import {
   NotebookChangeRequest, MoveCellRequest, InsertCellRequest,
   DeleteCellRequest,
-  StylePropertiesWithSubprops, TexExpression, ServerNotebookChangedMessage, ClientNotebookChangeMessage, ClientNotebookUseToolMessage, RequestId,
+  ServerNotebookChangedMessage, ClientNotebookChangeMessage, ClientNotebookUseToolMessage, RequestId,
 } from "./shared/math-tablet-api";
 import { notebookChangeRequestSynopsis, notebookChangeSynopsis } from "./shared/debug-synopsis";
 
@@ -57,17 +57,6 @@ const debug = debug1(`server:${MODULE}`);
 
 type AbsFilePath = string; // Absolute path to a file in the file system.
 
-export interface ObserverInstance {
-  onChangesAsync: (changes: NotebookChange[], startIndex: number, endIndex: number) => Promise<NotebookChangeRequest[]>;
-  onChangesSync: (changes: NotebookChange[], startIndex: number, endIndex: number) => NotebookChangeRequest[];
-  onClose: () => void;
-  useTool: (styleObject: StyleObject) => Promise<NotebookChangeRequest[]>;
-}
-
-export interface ObserverClass {
-  onOpen: (notebook: ServerNotebook)=>Promise<ObserverInstance>;
-}
-
 export interface OpenNotebookOptions extends OpenOptions<ServerNotebookWatcher> {
   ephemeral?: boolean;    // true iff notebook not persisted to the file system and disappears after last close.
 }
@@ -78,11 +67,6 @@ export interface RequestChangesOptions {
 
 export interface ServerNotebookWatcher extends NotebookWatcher {
   onChanged(msg: ServerNotebookChangedMessage): void;
-}
-
-interface StyleOrderMapping {
-  sid: StyleId;
-  tls: number;
 }
 
 // Constants
@@ -133,11 +117,6 @@ export class ServerNotebook extends Notebook<ServerNotebookWatcher> {
     await rmRaf(absPath); // TODO: Handle failure.
   }
 
-  public static deregisterObserver(source: StyleSource): void {
-    debug(`Deregistering observer: ${source}`);
-    this.observerClasses.delete(source);
-  }
-
   public static async move(path: NotebookPath, newPath: NotebookPath): Promise<NotebookEntry> {
     // Called by the containing ServerFolder when one of its notebooks is renamed.
 
@@ -149,11 +128,6 @@ export class ServerNotebook extends Notebook<ServerNotebookWatcher> {
     //         However, we don't expect random files to be floating around out notebook storage filesystem.
     await rename(oldAbsPath, newAbsPath);
     return { path: newPath, name: this.nameFromPath(newPath) }
-  }
-
-  public static registerObserver(source: StyleSource, observerClass: ObserverClass): void {
-    debug(`Registering observer: ${source}`);
-    this.observerClasses.set(source, observerClass);
   }
 
   public static open(path: NotebookPath, options: OpenNotebookOptions): Promise<ServerNotebook> {
@@ -180,58 +154,58 @@ export class ServerNotebook extends Notebook<ServerNotebookWatcher> {
     return absDirPathFromNotebookPath(this.path);
   }
 
-  public async exportLatex(): Promise<TexExpression> {
-    const ourPreamble = <TexExpression>`\\documentclass[12pt]{article}
-\\usepackage{amsmath}
-\\usepackage{amssymb}
-\\usepackage[normalem]{ulem}
-\\usepackage{graphicx}
-\\usepackage{epstopdf}
-\\epstopdfDeclareGraphicsRule{.gif}{png}{.png}{convert gif:#1 png:\\OutputFile}
-\\AppendGraphicsExtensions{.gif}
-\\begin{document}
-\\title{Magic Math Table}
-\\author{me}
-\\maketitle
-`;
-    const close = <TexExpression>`\\end{document}`;
+//   public async exportLatex(): Promise<TexExpression> {
+//     const ourPreamble = <TexExpression>`\\documentclass[12pt]{article}
+// \\usepackage{amsmath}
+// \\usepackage{amssymb}
+// \\usepackage[normalem]{ulem}
+// \\usepackage{graphicx}
+// \\usepackage{epstopdf}
+// \\epstopdfDeclareGraphicsRule{.gif}{png}{.png}{convert gif:#1 png:\\OutputFile}
+// \\AppendGraphicsExtensions{.gif}
+// \\begin{document}
+// \\title{Magic Math Table}
+// \\author{me}
+// \\maketitle
+// `;
+//     const close = <TexExpression>`\\end{document}`;
 
-    // Our basic approach is to apply a function to each
-    // top level style in order. This function will preferentially
-    // take the LaTeX if there is any.
-    function displayFormula(f : string) : string {
-      return `\\begin{align}\n ${f} \\end{align}\n`;
-    }
-    const tlso = this.topLevelStyleOrder();
-    const cells = [];
-    debug("TOP LEVEL",tlso);
-    for(const tls of tlso) {
-      var retLaTeX = "";
-      // REVIEW: Does this search need to be recursive?
-      const latex = this.findStyles({ type: 'TEX-EXPRESSION', recursive: true }, tls);
-      if (latex.length > 1) { // here we have to have some disambiguation
-        retLaTeX += "ambiguous: " +displayFormula(latex[0].data);
-      } else if (latex.length == 1) {  // here it is obvious, maybe...
-        retLaTeX += displayFormula(latex[0].data);
-      }
+//     // Our basic approach is to apply a function to each
+//     // top level style in order. This function will preferentially
+//     // take the LaTeX if there is any.
+//     function displayFormula(f : string) : string {
+//       return `\\begin{align}\n ${f} \\end{align}\n`;
+//     }
+//     const tlso = this.topLevelStyleOrder();
+//     const cells = [];
+//     debug("TOP LEVEL",tlso);
+//     for(const tls of tlso) {
+//       var retLaTeX = "";
+//       // REVIEW: Does this search need to be recursive?
+//       const latex = this.findStyles({ type: 'TEX-EXPRESSION' }, tls);
+//       if (latex.length > 1) { // here we have to have some disambiguation
+//         retLaTeX += "ambiguous: " +displayFormula(latex[0].data);
+//       } else if (latex.length == 1) {  // here it is obvious, maybe...
+//         retLaTeX += displayFormula(latex[0].data);
+//       }
 
 
-      // REVIEW: Does this search need to be recursive?
-      const image = this.findStyles({ type: 'IMAGE-URL', role: 'PLOT', recursive: true }, tls);
-      if (image.length > 0) {
-        const plot = image[0];
-        const apath = this.absoluteDirectoryPath();
-        // The notebook name is both a part of the plot.data,
-        // AND is a part of the absolute path. So we take only
-        // the final file name of local.data here.
-        const final = plot.data.split("/");
-        const graphics = `\\includegraphics{${apath}/${final[2]}}`;
-        retLaTeX += graphics;
-        retLaTeX += `\n`;
-        if (image.length > 1) {
-          retLaTeX += " more than one plot, not sure how to handle that";
-        }
-      }
+//       // REVIEW: Does this search need to be recursive?
+//       const image = this.findStyles({ type: 'IMAGE-URL', role: 'PLOT' }, tls);
+//       if (image.length > 0) {
+//         const plot = image[0];
+//         const apath = this.absoluteDirectoryPath();
+//         // The notebook name is both a part of the plot.data,
+//         // AND is a part of the absolute path. So we take only
+//         // the final file name of local.data here.
+//         const final = plot.data.split("/");
+//         const graphics = `\\includegraphics{${apath}/${final[2]}}`;
+//         retLaTeX += graphics;
+//         retLaTeX += `\n`;
+//         if (image.length > 1) {
+//           retLaTeX += " more than one plot, not sure how to handle that";
+//         }
+//       }
 
       // TODO: Handle embedded PNGS & SVGs.
       //       We started putting SVGs of plots, etc. inline
@@ -297,30 +271,13 @@ export class ServerNotebook extends Notebook<ServerNotebookWatcher> {
       //     retLaTeX += graphics;
       //   }
       // }
-      cells.push(retLaTeX);
-    }
+    //   cells.push(retLaTeX);
+    // }
 
-    const finalTeX = <TexExpression>(ourPreamble + cells.join('\n') + close);
-    debug("finalTeX", finalTeX);
-    return finalTeX;
-  }
-
-  // Find the def whose top level symbol appears just before this one.
-  public findLatestDefinitionEarlierThanThis(thoughtIndex : number,defs : StyleOrderMapping[]) : StyleId | null {
-    var curi = -1;
-    var curtlspos = -1;
-    for(var i = 0; i < defs.length; i++) {
-      var pos = this.topLevelStylePosition(defs[i].tls);
-      if ((pos < thoughtIndex) &&
-          (pos > curtlspos))
-      {
-        curtlspos = pos;
-        curi = i;
-      }
-    }
-    // Now we hope cur is the currect object...
-    return curi < 0 ? null : defs[curi].sid;
-  }
+  //   const finalTeX = <TexExpression>(ourPreamble + cells.join('\n') + close);
+  //   debug("finalTeX", finalTeX);
+  //   return finalTeX;
+  // }
 
   public toJSON(): NotebookObject {
     const rval: NotebookObject = {
@@ -331,37 +288,6 @@ export class ServerNotebook extends Notebook<ServerNotebookWatcher> {
       version: VERSION,
     }
     return rval;
-  }
-  // Now let's make this recursive
-  public toInformativeOfStyle(style: StyleObject) : string {
-    return this.toInformativeRec('',style);
-  }
-
-
-  public toInformativeRec(ind : string, style: StyleObject) : string {
-    const data = ((typeof style.data) === 'string')
-      ? style.data :
-      JSON.stringify(style.data);
-    const rep : string =   ind +`${style.parentId} -> ${style.id} [ ${style.type}, ${style.role}, ${style.source} ]
-${ind} + ${data}
-`;
-    const children =
-      this.findStyles({ recursive: false }, style.id)
-      .map(s=>{
-        return this.toInformativeRec(ind+"  ",s);
-      })
-      .join('');
-    return rep + children;
-  }
-
-  public toInformative() : string {
-    const style_rep : string = this.topLevelStyleOrder()
-      .map(styleId=>{
-        const style = this.getStyle(styleId);
-        return this.toInformativeOfStyle(style);
-      })
-      .join('');
-    return style_rep;
   }
 
   // Public Instance Methods
@@ -443,7 +369,6 @@ ${ind} + ${data}
   // Private Class Properties
 
   private static lastEphemeralPathTimestamp: Timestamp = 0;
-  private static observerClasses: Map<StyleSource, ObserverClass> = new Map();
 
   // Private Class Property Functions
 
@@ -539,7 +464,7 @@ ${ind} + ${data}
     // Assemble the undo change request before we delete anything
     // from the notebook.
     // TODO: gather substyles from the same source, etc.
-    const styleProps: StylePropertiesWithSubprops = {
+    const styleProps: StyleProperties = {
       type: style.type,
       role: style.role,
       data: style.data,
@@ -550,13 +475,6 @@ ${ind} + ${data}
       // TODO: parentId
       styleProps,
     };
-
-    // Delete substyles recursively
-    const substyles = this.childStylesOf(style.id);
-    for(const substyle of substyles) {
-      const request2: DeleteCellRequest = { type: 'deleteCell', styleId: substyle.id };
-      this.applyDeleteCellRequest(source, request2, rval);
-    }
 
     const change: CellDeleted = { type: 'cellDeleted', style };
     this.appendChange(source, change, rval);
@@ -569,7 +487,6 @@ ${ind} + ${data}
     request: InsertCellRequest,
     rval: NotebookChange[],
   ): DeleteCellRequest {
-    const parentId = request.parentId||0;
     const styleProps = request.styleProps;
     const afterId = request.hasOwnProperty('afterId') ? request.afterId : -1;
 
@@ -586,32 +503,13 @@ ${ind} + ${data}
       data: styleProps.data,
       id,
       role: styleProps.role,
-      parentId: parentId || 0,
       source,
       type: styleProps.type,
     };
     if (styleProps.subrole) { style.subrole = styleProps.subrole; }
 
-    // If exclusive flag is set then delete any other descendants that are of the same type and role.
-    // REVIEW: Does this search need to be recursive or can we limit it to children?
-    // TODO: Gather undo info for these delete requests.
-    if (styleProps.exclusiveChildTypeAndRole) {
-      const children = this.findStyles({ role: style.role, type: style.type, recursive: true }, parentId);
-      for (const child of children) {
-        const request2: DeleteCellRequest = { type: 'deleteCell', styleId: child.id };
-        this.applyDeleteCellRequest(source, request2, rval);
-      }
-    }
-
     const change: CellInserted =  { type: 'cellInserted', style, afterId };
     this.appendChange(source, change, rval);
-
-    if (styleProps.subprops) {
-      for (const substyleProps of styleProps.subprops) {
-        const request2: InsertCellRequest = { type: 'insertCell', parentId: style.id, styleProps: substyleProps };
-        this.applyInsertCellRequest(source, request2, rval);
-      }
-    }
 
     const undoChangeRequest: DeleteCellRequest = {
       type: 'deleteCell',
@@ -629,12 +527,6 @@ ${ind} + ${data}
     if (afterId == styleId) { throw new Error(`Style ${styleId} can't be moved after itself.`); }
 
     const style = this.getStyle(styleId);
-    if (style.parentId) {
-      // REVIEW: Why are we attempting to move substyles? Should be:
-      // throw new Error(`Attempting to move substyle ${styleId}`);
-      return undefined;
-    }
-
     const oldPosition: StylePosition = this.pages[0].styleIds.indexOf(style.id);
     if (oldPosition < 0) { throw new Error(`Style ${styleId} can't be moved: not found in styleOrder array.`); }
 

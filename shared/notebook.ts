@@ -33,7 +33,6 @@ export interface FindStyleOptions {
   source?: StyleSource;
   notSource?: StyleSource;
   type?: StyleType;
-  recursive?: boolean;
 }
 
 export type NotebookChange = CellDeleted | CellInserted | CellMoved;
@@ -121,7 +120,6 @@ export type StyleRole = typeof STYLE_ROLES[number];
 
 export interface StyleObject extends StyleProperties {
   id: StyleId;
-  parentId: StyleId; // 0 if top-level style.
   source: StyleSource;
 }
 
@@ -260,10 +258,6 @@ export abstract class Notebook<W extends NotebookWatcher> extends WatchedResourc
     return sortedIds.map(id=>this.getStyle(id));
   }
 
-  public childStylesOf(id: StyleId): StyleObject[] {
-    return this.allStyles().filter(s=>(s.parentId==id));
-  }
-
   public compareStylePositions(id1: StyleId, id2: StyleId): number {
     // Returns a negative number if style1 is before style2,
     // zero if they are the same styles,
@@ -298,10 +292,6 @@ export abstract class Notebook<W extends NotebookWatcher> extends WatchedResourc
     return this.pages[0].styleIds.length == 0;
   }
 
-  public isTopLevelStyle(id: StyleId): boolean {
-    return (this.getStyle(id).parentId == 0);
-  }
-
   public precedingStyleId(id: StyleId): StyleId {
     // Returns the id of the style immediately before the top-level style specified.
     const i = this.pages[0].styleIds.indexOf(id);
@@ -332,22 +322,8 @@ export abstract class Notebook<W extends NotebookWatcher> extends WatchedResourc
     return this.pages[0].styleIds.map(styleId=>this.getStyle(styleId));
   }
 
-  public topLevelStyleOf(id: StyleId): StyleObject {
-    let style = this.getStyle(id);
-    if (!style) { throw new Error(`Cannot find top-level style of style ${id}`); }
-    while (style.parentId) {
-      style = this.getStyle(style.parentId);
-    }
-    return style;
-  }
-
-  public topLevelStylePosition(id: StyleId): StyleOrdinalPosition {
-    // Return the order-dependent position of the top level thought
-    // this is attached to; this is used in "causal ordering".
-    // getThoughtIndex(A) < getThoughtIndex(B) implies A may not
-    // in anyway depend on B.
-    const top = this.topLevelStyleOf(id);
-    return this.pages[0].styleIds.indexOf(top.id);
+  public stylePosition(id: StyleId): StyleOrdinalPosition {
+    return this.pages[0].styleIds.indexOf(id);
   }
 
   // Public Instance Methods
@@ -382,19 +358,16 @@ export abstract class Notebook<W extends NotebookWatcher> extends WatchedResourc
     for (const change of changes) { this.applyChange(change, ownRequest); }
   }
 
-  public findStyle(
-    options: FindStyleOptions,
-    rootId?: StyleId,           // Search child styles of this style, otherwise top-level styles.
-  ): StyleObject|undefined {
+  public findStyle(options: FindStyleOptions): StyleObject|undefined {
     // REVIEW: If we don't need to throw on multiple matches, then we can terminate the search
     //         after we find the first match.
     // Like findStyles but expects to find zero or one matching style.
     // If it finds more than one matching style then it returns the first and outputs a warning.
-    const styles = this.findStyles(options, rootId);
+    const styles = this.findStyles(options);
     if (styles.length > 0) {
       if (styles.length > 1) {
         // TODO: On the server, this should use the logging system rather than console output.
-        console.warn(`More than one style found for ${rootId}/${JSON.stringify(options)}`);
+        console.warn(`More than one style found for ${JSON.stringify(options)}`);
       }
       return styles[0];
     } else {
@@ -404,16 +377,13 @@ export abstract class Notebook<W extends NotebookWatcher> extends WatchedResourc
 
   public findStyles(
     options: FindStyleOptions,
-    rootId?: StyleId,           // Search child styles of this style, otherwise top-level styles.
     rval: StyleObject[] = []
   ): StyleObject[] {
     // Option to throw if style not found.
-    const styles = rootId ? this.childStylesOf(rootId) : this.topLevelStyles();
+    const styles = this.topLevelStyles();
+    // REVIEW: Use filter with predicate instead of explicit loop.
     for (const style of styles) {
       if (styleMatchesPattern(style, options)) { rval.push(style); }
-      if (options.recursive) {
-        this.findStyles(options, style.id, rval);
-      }
     }
     return rval;
   }
@@ -424,12 +394,11 @@ export abstract class Notebook<W extends NotebookWatcher> extends WatchedResourc
 
   public hasStyle(
     options: FindStyleOptions,
-    rootId?: StyleId,           // Search child styles of this style, otherwise top-level styles.
   ): boolean {
     // Returns true iff findStyles with the same parameters would return a non-empty list.
     // OPTIMIZATION: Return true when we find the first matching style.
     // NOTE: We don't use 'findStyle' because that throws on multiple matches.
-    const styles = this.findStyles(options, rootId);
+    const styles = this.findStyles(options);
     return styles.length>0;
   }
 
@@ -457,19 +426,16 @@ export abstract class Notebook<W extends NotebookWatcher> extends WatchedResourc
 
   private styleToHtml(style: StyleObject): Html {
     // TODO: This is very inefficient as notebook.childStylesOf goes through *all* styles.
-    const childStyleObjects = Array.from(this.childStylesOf(style.id));
     const dataJson = (typeof style.data != 'undefined' ? escapeHtml(JSON.stringify(style.data)) : 'undefined' );
     const roleSubrole = (style.subrole ? `${style.role}|${style.subrole}` : style.role);
     const styleInfo = `S${style.id} ${roleSubrole} ${style.type} ${style.source}`
-    if (childStyleObjects.length == 0 && dataJson.length<30) {
+    if (dataJson.length<30) {
       return <Html>`<div><span class="leaf">${styleInfo} <tt>${dataJson}</tt></span></div>`;
     } else {
-      const stylesHtml = childStyleObjects.map(s=>this.styleToHtml(s)).join('');
-      const [ shortJsonTt, longJsonTt ] = dataJson.length<30 ? [` <tt>${dataJson}</tt>`, ''] : [ '', `<tt>${dataJson}</tt>` ];
       return <Html>`<div>
-  <span class="collapsed">${styleInfo}${shortJsonTt}</span>
-  <div class="nested" style="display:none">${longJsonTt}
-    ${stylesHtml}
+  <span class="collapsed">${styleInfo}</span>
+  <div class="nested" style="display:none">
+    <tt>${dataJson}</tt>
   </div>
 </div>`;
     }
@@ -478,13 +444,11 @@ export abstract class Notebook<W extends NotebookWatcher> extends WatchedResourc
   // Private Instance Methods
 
   private deleteCell(style: StyleObject): void {
+    assert(this.styleMap[style.id]);
     // If this is a top-level style then remove it from the top-level style order first.
-    if (!style.parentId) {
-      const i = this.pages[0].styleIds.indexOf(style.id);
-      if (i<0) { throw new Error(`Deleting unknown top-level style ${style.id}`); }
-      this.pages[0].styleIds.splice(i,1);
-    }
-    if (!this.styleMap[style.id]) { throw new Error(`Deleting unknown style ${style.id}`); }
+    const i = this.pages[0].styleIds.indexOf(style.id);
+    assert(i>=0);
+    this.pages[0].styleIds.splice(i,1);
     delete this.styleMap[style.id];
   }
 
@@ -499,27 +463,20 @@ export abstract class Notebook<W extends NotebookWatcher> extends WatchedResourc
 
     this.styleMap[style.id] = style;
     // Insert top-level styles in the style order.
-    if (!style.parentId) {
-      if (!afterId || afterId===StylePosition.Top) {
-        this.pages[0].styleIds.unshift(style.id);
-      } else if (afterId===StylePosition.Bottom) {
-        this.pages[0].styleIds.push(style.id);
-      } else {
-        const i = this.pages[0].styleIds.indexOf(afterId);
-        if (i<0) { throw new Error(`Cannot insert thought after unknown thought ${afterId}`); }
-        this.pages[0].styleIds.splice(i+1, 0, style.id);
-      }
+    if (!afterId || afterId===StylePosition.Top) {
+      this.pages[0].styleIds.unshift(style.id);
+    } else if (afterId===StylePosition.Bottom) {
+      this.pages[0].styleIds.push(style.id);
+    } else {
+      const i = this.pages[0].styleIds.indexOf(afterId);
+      if (i<0) { throw new Error(`Cannot insert thought after unknown thought ${afterId}`); }
+      this.pages[0].styleIds.splice(i+1, 0, style.id);
     }
   }
 
   private moveCell(change: CellMoved): void {
-    // Although questionable, executed a "moveStyle" on children
-    // of a top level style. However, only a move a top-level thought
-    // actually should be affected here.
-    if (this.isTopLevelStyle(change.styleId)) {
-      this.pages[0].styleIds.splice(change.oldPosition, 1);
-      this.pages[0].styleIds.splice(change.newPosition, 0, change.styleId);
-    }
+    this.pages[0].styleIds.splice(change.oldPosition, 1);
+    this.pages[0].styleIds.splice(change.newPosition, 0, change.styleId);
   }
 }
 
