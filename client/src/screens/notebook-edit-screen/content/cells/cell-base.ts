@@ -35,7 +35,7 @@ import {
 import { reportError } from "../../../../error-handler";
 import { assert, Html } from "../../../../shared/common";
 import { ResizerBar } from "../../../../components/resizer-bar";
-import { StyleMoveRequest } from "../../../../shared/math-tablet-api";
+import { MoveCellRequest } from "../../../../shared/math-tablet-api";
 
 // Types
 
@@ -249,8 +249,8 @@ export abstract class CellBase extends HtmlElement<'div'>{
     // If dragging down, then put dragged cell below the cell that was dropped on.
     // If dragging up, then put dragged cell above the cell that was dropped on.
     const afterId = c<0 ? this.styleId : this.container.screen.notebook.precedingStyleId(this.styleId);
-    const moveRequest: StyleMoveRequest = {
-      type: 'moveStyle',
+    const moveRequest: MoveCellRequest = {
+      type: 'moveCell',
       styleId: cellDragData.styleId,
       afterId,
     }

@@ -27,7 +27,7 @@ import { assert } from "chai";
 import 'mocha';
 
 import { StyleType, VERSION }  from "../shared/notebook";
-import { NotebookChangeRequest, StyleInsertRequest, StylePropertiesWithSubprops } from "../shared/math-tablet-api";
+import { NotebookChangeRequest, InsertCellRequest, StylePropertiesWithSubprops } from "../shared/math-tablet-api";
 import { ServerNotebook }  from "../server-notebook";
 
 import { ensureGlobalLoaded } from "./global";
@@ -104,7 +104,7 @@ async function createNotebookFromText(type: StyleType, text: string): Promise<Se
       inputText: <PlainText>s.trim()
     };
     const styleProps: StylePropertiesWithSubprops = { role: 'TEXT', type, data };
-    const rval: StyleInsertRequest = { type: 'insertStyle', styleProps }
+    const rval: InsertCellRequest = { type: 'insertCell', styleProps }
     return rval;
   });
   await td.requestChanges('TEST', changeRequests);

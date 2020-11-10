@@ -66,30 +66,24 @@ export class FigureCell extends CellBase {
     // Update the SVG display if it has changed.
 
     switch (change.type) {
-      case 'styleInserted': {
+      case 'cellInserted': {
         // Ignore. Not something that affects our display.
         break;
       }
-      case 'styleChanged': {
-        if (change.style.id == this.styleId) {
-          this.strokePanel!.updateStylusInput(change.style.data);
-          this.strokePanel!.updateSvgMarkup(change.style.data);
-        } else {
-          // Ignore. Not something that affects our display.
-        }
-        break;
-      }
-      case 'styleConverted': {
-        // Currently the styles that we use to update our display are never converted, so we
-        // do not handle that case.
-        assertFalse();
-        break;
-      }
-      case 'styleDeleted':
+      // case 'styleChanged': {
+      //   if (change.style.id == this.styleId) {
+      //     this.strokePanel!.updateStylusInput(change.style.data);
+      //     this.strokePanel!.updateSvgMarkup(change.style.data);
+      //   } else {
+      //     // Ignore. Not something that affects our display.
+      //   }
+      //   break;
+      // }
+      case 'cellDeleted':
         // Styles relevant to display of the figure are only deleted when the entire formula is deleted,
         // so we can ignore styleDeleted messages.
         break;
-      case 'styleMoved': assertFalse();
+      case 'cellMoved': assertFalse();
       default: assertFalse();
     }
   }

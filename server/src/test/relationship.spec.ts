@@ -27,8 +27,8 @@ import 'mocha';
 // import * as sinon from "sinon";
 
 import { FormulaCellData, PlainTextFormula } from "../shared/formula";
-import { StyleId, StyleInserted, WolframExpression } from "../shared/notebook";
-import { StyleInsertRequest, StyleChangeRequest } from "../shared/math-tablet-api";
+import { StyleId, CellInserted, WolframExpression } from "../shared/notebook";
+import { InsertCellRequest, StyleChangeRequest } from "../shared/math-tablet-api";
 import { ServerNotebook }  from "../server-notebook";
 
 import { ensureGlobalLoaded } from "./global";
@@ -68,8 +68,8 @@ describe("test relationships", function() {
 
       // Insert "old" formula 1
       const changes = await notebook.requestChange('TEST', wolframFormulaInsertRequest(OLD_F1));
-      const insertFormulaChange = changes.find(c=>c.type=='styleInserted' && c.style.role=='FORMULA');
-      const formula1Style = (<StyleInserted>insertFormulaChange).style;
+      const insertFormulaChange = changes.find(c=>c.type=='cellInserted' && c.style.role=='FORMULA');
+      const formula1Style = (<CellInserted>insertFormulaChange).style;
       // console.log("Old Formula 1:");
       // console.dir(formula1Style);
 
@@ -111,7 +111,7 @@ describe("test relationships", function() {
 
 // Helper Functions
 // TODO: This should probably be extended to respect the MTLExpression type
-function wolframFormulaInsertRequest(plainTextFormula: PlainTextFormula): StyleInsertRequest {
+function wolframFormulaInsertRequest(plainTextFormula: PlainTextFormula): InsertCellRequest {
   const data: FormulaCellData = {
     type: CellType.Formula,
     inputType: InputType.None,
@@ -120,8 +120,8 @@ function wolframFormulaInsertRequest(plainTextFormula: PlainTextFormula): StyleI
     inputText: <PlainText>plainTextFormula,
     plainTextFormula: plainTextFormula,
   };
-  const request: StyleInsertRequest = {
-    type: 'insertStyle',
+  const request: InsertCellRequest = {
+    type: 'insertCell',
     // styleProps: { role: 'REPRESENTATION', type: 'WOLFRAM-EXPRESSION', data },
     styleProps: { role: 'FORMULA', type: 'FORMULA-DATA', data: data },
   };

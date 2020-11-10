@@ -32,13 +32,13 @@ import { assert, assertFalse, ExpectedError, notImplemented, Timestamp } from ".
 import { NotebookPath, NOTEBOOK_PATH_RE, NotebookName, FolderPath, NotebookEntry } from "./shared/folder";
 import {
   Notebook, NotebookObject, NotebookChange, StyleObject, StyleRole, StyleType, StyleSource, StyleId,
-  StyleMoved, StylePosition, VERSION, StyleChanged,
-  StyleInserted, StyleDeleted, StyleConverted, NotebookWatcher
+  CellMoved, StylePosition, VERSION,
+  CellInserted, CellDeleted, NotebookWatcher
 } from "./shared/notebook";
 import {
-  NotebookChangeRequest, StyleMoveRequest, StyleInsertRequest, StyleChangeRequest,
-  StyleDeleteRequest,
-  StylePropertiesWithSubprops, TexExpression, StyleConvertRequest, ServerNotebookChangedMessage, ClientNotebookChangeMessage, ClientNotebookUseToolMessage, RequestId,
+  NotebookChangeRequest, MoveCellRequest, InsertCellRequest,
+  DeleteCellRequest,
+  StylePropertiesWithSubprops, TexExpression, ServerNotebookChangedMessage, ClientNotebookChangeMessage, ClientNotebookUseToolMessage, RequestId,
 } from "./shared/math-tablet-api";
 import { notebookChangeRequestSynopsis, notebookChangeSynopsis } from "./shared/debug-synopsis";
 
@@ -507,19 +507,13 @@ ${ind} + ${data}
       debug(`${source} change request: ${notebookChangeRequestSynopsis(changeRequest)}`);
       let undoChangeRequest: NotebookChangeRequest|undefined;
       switch(changeRequest.type) {
-        case 'changeStyle':
-          undoChangeRequest = this.applyChangeStyleRequest(source, changeRequest, rval);
+        case 'deleteCell':
+          undoChangeRequest = this.applyDeleteCellRequest(source, changeRequest, rval);
           break;
-        case 'convertStyle':
-          undoChangeRequest = this.applyConvertStyleRequest(source, changeRequest, rval);
+        case 'insertCell':
+          undoChangeRequest = this.applyInsertCellRequest(source, changeRequest, rval);
           break;
-        case 'deleteStyle':
-          undoChangeRequest = this.applyDeleteStyleRequest(source, changeRequest, rval);
-          break;
-        case 'insertStyle':
-          undoChangeRequest = this.applyInsertStyleRequest(source, changeRequest, rval);
-          break;
-        case 'moveStyle':
+        case 'moveCell':
           undoChangeRequest = this.applyMoveStyleRequest(source, changeRequest, rval);
           break;
         default:
@@ -534,52 +528,11 @@ ${ind} + ${data}
     return undoChangeRequests;
   }
 
-  private applyChangeStyleRequest(
+  private applyDeleteCellRequest(
     source: StyleSource,
-    request: StyleChangeRequest,
+    request: DeleteCellRequest,
     rval: NotebookChange[],
-  ): StyleChangeRequest {
-    const style = this.getStyle(request.styleId);
-    const previousData = style.data;
-    style.data = request.data;
-    const change: StyleChanged = { type: 'styleChanged', style, previousData };
-    this.appendChange(source, change, rval);
-    const undoChangeRequest: StyleChangeRequest = {
-      type: 'changeStyle',
-      styleId: style.id,
-      data: previousData,
-    }
-    return undoChangeRequest;
-  }
-
-  private applyConvertStyleRequest(
-    source: StyleSource,
-    request: StyleConvertRequest,
-    rval: NotebookChange[],
-  ): StyleConvertRequest {
-    const style = this.getStyle(request.styleId);
-    const previousRole = style.role;
-    const previousSubrole = style.subrole;
-    if (request.role) { style.role = request.role; }
-    if (request.subrole) { style.subrole = request.subrole; }
-    if (request.styleType) { style.type = request.styleType; }
-    if (request.data) { style.data = request.data; }
-    const change: StyleConverted = { type: 'styleConverted', styleId: style.id, role: request.role, subrole: request.subrole };
-    this.appendChange(source, change, rval);
-    const undoChangeRequest: StyleConvertRequest = {
-      type: 'convertStyle',
-      styleId: style.id,
-      role: previousRole,
-      subrole: previousSubrole,
-    }
-    return undoChangeRequest;
-  }
-
-  private applyDeleteStyleRequest(
-    source: StyleSource,
-    request: StyleDeleteRequest,
-    rval: NotebookChange[],
-  ): StyleInsertRequest|undefined {
+  ): InsertCellRequest|undefined {
 
     var style = this.getStyle(request.styleId);
 
@@ -591,8 +544,8 @@ ${ind} + ${data}
       role: style.role,
       data: style.data,
     };
-    const undoChangeRequest: StyleInsertRequest = {
-      type: 'insertStyle',
+    const undoChangeRequest: InsertCellRequest = {
+      type: 'insertCell',
       // TODO: afterId
       // TODO: parentId
       styleProps,
@@ -601,21 +554,21 @@ ${ind} + ${data}
     // Delete substyles recursively
     const substyles = this.childStylesOf(style.id);
     for(const substyle of substyles) {
-      const request2: StyleDeleteRequest = { type: 'deleteStyle', styleId: substyle.id };
-      this.applyDeleteStyleRequest(source, request2, rval);
+      const request2: DeleteCellRequest = { type: 'deleteCell', styleId: substyle.id };
+      this.applyDeleteCellRequest(source, request2, rval);
     }
 
-    const change: StyleDeleted = { type: 'styleDeleted', style };
+    const change: CellDeleted = { type: 'cellDeleted', style };
     this.appendChange(source, change, rval);
 
     return undoChangeRequest;
   }
 
-  private applyInsertStyleRequest(
+  private applyInsertCellRequest(
     source: StyleSource,
-    request: StyleInsertRequest,
+    request: InsertCellRequest,
     rval: NotebookChange[],
-  ): StyleDeleteRequest {
+  ): DeleteCellRequest {
     const parentId = request.parentId||0;
     const styleProps = request.styleProps;
     const afterId = request.hasOwnProperty('afterId') ? request.afterId : -1;
@@ -645,23 +598,23 @@ ${ind} + ${data}
     if (styleProps.exclusiveChildTypeAndRole) {
       const children = this.findStyles({ role: style.role, type: style.type, recursive: true }, parentId);
       for (const child of children) {
-        const request2: StyleDeleteRequest = { type: 'deleteStyle', styleId: child.id };
-        this.applyDeleteStyleRequest(source, request2, rval);
+        const request2: DeleteCellRequest = { type: 'deleteCell', styleId: child.id };
+        this.applyDeleteCellRequest(source, request2, rval);
       }
     }
 
-    const change: StyleInserted =  { type: 'styleInserted', style, afterId };
+    const change: CellInserted =  { type: 'cellInserted', style, afterId };
     this.appendChange(source, change, rval);
 
     if (styleProps.subprops) {
       for (const substyleProps of styleProps.subprops) {
-        const request2: StyleInsertRequest = { type: 'insertStyle', parentId: style.id, styleProps: substyleProps };
-        this.applyInsertStyleRequest(source, request2, rval);
+        const request2: InsertCellRequest = { type: 'insertCell', parentId: style.id, styleProps: substyleProps };
+        this.applyInsertCellRequest(source, request2, rval);
       }
     }
 
-    const undoChangeRequest: StyleDeleteRequest = {
-      type: 'deleteStyle',
+    const undoChangeRequest: DeleteCellRequest = {
+      type: 'deleteCell',
       styleId: style.id,
     }
     return undoChangeRequest;
@@ -669,9 +622,9 @@ ${ind} + ${data}
 
   private applyMoveStyleRequest(
     source: StyleSource,
-    request: StyleMoveRequest,
+    request: MoveCellRequest,
     rval: NotebookChange[],
-  ): StyleMoveRequest|undefined {
+  ): MoveCellRequest|undefined {
     const { styleId, afterId } = request;
     if (afterId == styleId) { throw new Error(`Style ${styleId} can't be moved after itself.`); }
 
@@ -699,11 +652,11 @@ ${ind} + ${data}
       if (oldPosition > newPosition) { newPosition++; }
     }
 
-    const change: StyleMoved = { type: 'styleMoved', styleId, afterId, oldPosition, newPosition };
+    const change: CellMoved = { type: 'cellMoved', styleId, afterId, oldPosition, newPosition };
     this.appendChange(source, change, rval);
 
-    const undoChangeRequest: StyleMoveRequest = {
-      type: 'moveStyle',
+    const undoChangeRequest: MoveCellRequest = {
+      type: 'moveCell',
       styleId: style.id,
       afterId: oldAfterId
     };
@@ -849,7 +802,7 @@ ${ind} + ${data}
   //   }
 
   //   const changeRequest: StyleInsertRequest = {
-  //     type: 'insertStyle',
+  //     type: 'insertCell',
   //     afterId: request.afterId,
   //     parentId: 0,
   //     styleProps: { role, type, data },

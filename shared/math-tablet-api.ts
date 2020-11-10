@@ -22,12 +22,10 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 // Requirements
 
-import { CellType, InputType } from "./cell";
 import { Html, PlainText } from "./common";
 import { FolderObject, FolderPath, NotebookPath, FolderName, NotebookName, FolderChange } from "./folder";
 import {
-  StyleProperties, StyleId, NotebookChange, NotebookObject, StyleRelativePosition,
-  StyleRole, StyleSubrole, StyleType, WolframExpression
+  StyleProperties, StyleId, NotebookChange, NotebookObject, StyleRelativePosition, WolframExpression
 } from "./notebook";
 
 // Types
@@ -118,20 +116,25 @@ export interface NotebookRenameRequest {
 // Notebook Change Requests
 
 export type NotebookChangeRequest =
+  DeleteCellRequest|
   InsertCellRequest|
   KeyboardInputRequest|
-  StylusInputRequest|
-  // LEGACY:
-  StyleChangeRequest|
-  StyleConvertRequest|
-  StyleDeleteRequest|
-  StyleInsertRequest|
-  StyleMoveRequest;
+  MoveCellRequest|
+  StylusInputRequest;
+export interface DeleteCellRequest {
+  type: 'deleteCell';
+  styleId: StyleId;
+}
 export interface InsertCellRequest {
   type: 'insertCell';
-  cellType: CellType;
-  inputType: InputType;
-  afterId: StyleRelativePosition;
+  afterId?: StyleRelativePosition;
+  parentId?: StyleId; // undefined or 0 means top-level.
+  // TODO: rename styleProps => props
+  styleProps: StylePropertiesWithSubprops;
+  // type: 'insertCell';
+  // cellType: CellType;
+  // inputType: InputType;
+  // afterId: StyleRelativePosition;
 }
 export interface KeyboardInputRequest {
   type: 'keyboardInputChange';
@@ -141,39 +144,15 @@ export interface KeyboardInputRequest {
   replacement: PlainText; // Replacement text.
   value: PlainText;          // Full value of input text, may be able to eliminate.
 }
+export interface MoveCellRequest {
+  type: 'moveCell';
+  styleId: StyleId;
+  afterId: StyleRelativePosition;
+}
 export interface StylusInputRequest {
   type: 'stylusInputChange';
   cellId: StyleId;
   // TODO: Stroke insert or delete info.
-}
-export interface StyleChangeRequest {
-  type: 'changeStyle';
-  styleId: StyleId;
-  data: any;
-}
-export interface StyleConvertRequest {
-  type: 'convertStyle';
-  styleId: StyleId;
-  role?: StyleRole;
-  subrole?: StyleSubrole;
-  styleType?: StyleType;
-  data?: any;
-}
-export interface StyleDeleteRequest {
-  type: 'deleteStyle';
-  styleId: StyleId;
-}
-export interface StyleInsertRequest {
-  type: 'insertStyle';
-  afterId?: StyleRelativePosition;
-  parentId?: StyleId; // undefined or 0 means top-level.
-  // TODO: rename styleProps => props
-  styleProps: StylePropertiesWithSubprops;
-}
-export interface StyleMoveRequest {
-  type: 'moveStyle';
-  styleId: StyleId;
-  afterId: StyleRelativePosition;
 }
 
 // Messages from the server

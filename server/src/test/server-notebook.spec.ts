@@ -28,8 +28,8 @@ import * as sinon from "sinon";
 
 import { EMPTY_SVG, Html, PlainText } from "../shared/common";
 import { EMPTY_FORMULA, FormulaCellData } from "../shared/formula";
-import { NotebookChange, StyleInserted, StyleObject } from "../shared/notebook";
-import { NotebookChangeRequest, StyleInsertRequest, StylePropertiesWithSubprops, ToolData } from "../shared/math-tablet-api";
+import { NotebookChange, CellInserted, StyleObject } from "../shared/notebook";
+import { NotebookChangeRequest, InsertCellRequest, StylePropertiesWithSubprops, ToolData } from "../shared/math-tablet-api";
 import { ServerNotebook, ObserverInstance }  from "../server-notebook";
 import { Config } from "../config";
 
@@ -108,7 +108,7 @@ describe("server notebook", function() {
         plainTextFormula: EMPTY_FORMULA,
       };
       const styleProps: StylePropertiesWithSubprops = { role: 'FORMULA', type: 'FORMULA-DATA', data };
-      const insertRequest: StyleInsertRequest = { type: 'insertStyle', styleProps };
+      const insertRequest: InsertCellRequest = { type: 'insertCell', styleProps };
       const changeRequests = [insertRequest];
       await notebook.requestChanges('TEST', changeRequests);
       assert(onChangesAsyncSpy.callCount>callCountAsync);
@@ -136,12 +136,12 @@ describe("server notebook", function() {
           { role: 'ATTRIBUTE', type: 'TOOL-DATA', data: toolData },
         ]
       };
-      const insertRequest: StyleInsertRequest = { type: 'insertStyle', styleProps };
+      const insertRequest: InsertCellRequest = { type: 'insertCell', styleProps };
       const changes = await notebook.requestChange('TEST', insertRequest);
 
       // Find the tool style that was inserted.
-      const insertToolChange = changes.find(c=>c.type=='styleInserted' && c.style.role=='ATTRIBUTE');
-      const toolStyle = (<StyleInserted>insertToolChange).style;
+      const insertToolChange = changes.find(c=>c.type=='cellInserted' && c.style.role=='ATTRIBUTE');
+      const toolStyle = (<CellInserted>insertToolChange).style;
 
       // Invoke the tool.
       const callCount = useToolSpy.callCount;

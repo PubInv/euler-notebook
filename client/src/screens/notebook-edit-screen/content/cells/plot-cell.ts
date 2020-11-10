@@ -22,7 +22,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 import * as debug1 from "debug";
 const debug = debug1('client:formula-cell');
 
-import { assert, assertFalse, CssClass } from "../../../../shared/common";
+import {  assertFalse, CssClass } from "../../../../shared/common";
 import { NotebookChange, StyleObject } from "../../../../shared/notebook";
 import { Content as CellContainer } from "..";
 
@@ -58,29 +58,23 @@ export class PlotCell extends CellBase {
     debug(`onChange: style ${this.styleId} ${notebookChangeSynopsis(change)}`);
 
     switch (change.type) {
-      case 'styleInserted': {
+      case 'cellInserted': {
         // Ignore. Not something we are interested in.
         break;
       }
-      case 'styleChanged': {
-        if (change.style.id == this.styleId) {
-          this.updateDisplayPanel(change.style);
-        } else {
-          // Ignore. Not something that affects our display.
-        }
-        break;
-      }
-      case 'styleConverted': {
-        // Currently the styles that we use to update our display are never converted, so we
-        // do not handle that case.
-        assert(change.styleId != this.styleId);
-        break;
-      }
-      case 'styleDeleted': {
+      // case 'styleChanged': {
+      //   if (change.style.id == this.styleId) {
+      //     this.updateDisplayPanel(change.style);
+      //   } else {
+      //     // Ignore. Not something that affects our display.
+      //   }
+      //   break;
+      // }
+      case 'cellDeleted': {
         // Ignore. Not something we are interested in.
         break;
       }
-      case 'styleMoved': assertFalse();
+      case 'cellMoved': assertFalse();
       default: assertFalse();
     }
   }
@@ -101,11 +95,11 @@ export class PlotCell extends CellBase {
     return $displayPanel;
   }
 
-  private updateDisplayPanel(style: StyleObject): void {
-    const $displayPanel = this.createDisplayPanel(style);
-    this.$displayPanel!.replaceWith($displayPanel);
-    this.$displayPanel = $displayPanel;
-  }
+  // private updateDisplayPanel(style: StyleObject): void {
+  //   const $displayPanel = this.createDisplayPanel(style);
+  //   this.$displayPanel!.replaceWith($displayPanel);
+  //   this.$displayPanel = $displayPanel;
+  // }
 
   // Private Event Handlers
 

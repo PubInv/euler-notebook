@@ -85,11 +85,9 @@ export function folderChangeSynopsis(change: FolderChange): string {
 export function notebookChangeRequestSynopsis(request: NotebookChangeRequest): string {
   let rval: string = request.type;
   switch(request.type) {
-    case 'changeStyle': rval += ` S${request.styleId} ${dataSynopsis(request.data)}`; break;
-    case 'convertStyle': rval += ` TBD`; break;
-    case 'deleteStyle': rval += ` S${request.styleId}`; break;
-    case 'insertStyle': rval += ` TBD`; break;
-    case 'moveStyle': rval += ` TBD`; break;
+    case 'deleteCell': rval += ` S${request.styleId}`; break;
+    case 'insertCell': rval += ` TBD`; break;
+    case 'moveCell': rval += ` TBD`; break;
     default: assertFalse();
   }
   return rval;
@@ -98,27 +96,15 @@ export function notebookChangeRequestSynopsis(request: NotebookChangeRequest): s
 export function notebookChangeSynopsis(change: NotebookChange): string {
   let rval: string = change.type;
   switch(change.type) {
-    case 'styleChanged': {
+    case 'cellDeleted': {
       rval += ` ${styleSynopsis(change.style)}`;
       break;
     }
-    case 'styleConverted': {
-      rval += ` ${change.styleId}`;
-      if (change.role) { rval += ` role->${change.role}`}
-      if (change.subrole) { rval += ` subrole->${change.subrole}`}
-      if (change.styleType) { rval += ` type->${change.styleType}`}
-      if (change.data) { rval += ` data->${dataSynopsis(change.data)}`; }
-      break;
-    }
-    case 'styleDeleted': {
+    case 'cellInserted': {
       rval += ` ${styleSynopsis(change.style)}`;
       break;
     }
-    case 'styleInserted': {
-      rval += ` ${styleSynopsis(change.style)}`;
-      break;
-    }
-    case 'styleMoved': {
+    case 'cellMoved': {
       rval += ` ${change.styleId} after ${change.afterId} ${change.oldPosition}->${change.newPosition}`;
       break;
     }

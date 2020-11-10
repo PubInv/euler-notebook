@@ -31,7 +31,7 @@ import {
   StyleObject, RelationshipObject, StyleId
 } from "../shared/notebook";
 import {
-  NotebookChangeRequest, StyleInsertRequest, StyleChangeRequest, StyleMoveRequest, StyleDeleteRequest,
+  NotebookChangeRequest, InsertCellRequest, StyleChangeRequest, MoveCellRequest, DeleteCellRequest,
   StylePropertiesWithSubprops
 } from "../shared/math-tablet-api";
 import { ServerNotebook }  from "../server-notebook";
@@ -57,7 +57,7 @@ const data: PlainTextFormula[] = [
   <PlainTextFormula>"Y = X^2"
 ];
 
-const insertRequest:StyleInsertRequest[] = insertWolframFormulas(data);
+const insertRequest:InsertCellRequest[] = insertWolframFormulas(data);
 
 // Unit Tests
 
@@ -91,8 +91,8 @@ describe("test symbol observer", function() {
         role: 'EVALUATION',
         exclusiveChildTypeAndRole: true,
       }
-      const cr1: StyleInsertRequest = {
-        type: 'insertStyle',
+      const cr1: InsertCellRequest = {
+        type: 'insertCell',
         parentId: style.id,
         styleProps: styleProps1,
       };
@@ -103,8 +103,8 @@ describe("test symbol observer", function() {
         role: 'EVALUATION',
         exclusiveChildTypeAndRole: true,
       }
-      const cr2: StyleInsertRequest = {
-        type: 'insertStyle',
+      const cr2: InsertCellRequest = {
+        type: 'insertCell',
         parentId: style.id,
         styleProps: styleProps2,
       };
@@ -161,7 +161,7 @@ describe("test symbol observer", function() {
       assert.deepEqual(style.type,'FORMULA-DATA');
 
       assert.equal(notebook.allRelationships().length,1);
-      const deleteReq : StyleDeleteRequest = { type: 'deleteStyle',
+      const deleteReq : DeleteCellRequest = { type: 'deleteCell',
                            styleId: style.id };
 
       await notebook.requestChange('TEST', deleteReq);
@@ -284,8 +284,8 @@ describe("test symbol observer", function() {
       const rd : RelationshipObject = notebook.allRelationships()[0];
       const toId = rd.toId;
 
-      const cr: StyleDeleteRequest = {
-        type: 'deleteStyle',
+      const cr: DeleteCellRequest = {
+        type: 'deleteCell',
         styleId: toId,
       };
       await serializeChangeRequests(notebook,[cr]);
@@ -363,7 +363,7 @@ describe("test symbol observer", function() {
       await serializeChangeRequests(notebook,insertRequests);
 
       const secondThoughtId = notebook.topLevelStyleOrder()[1];
-      const deleteRequest : StyleDeleteRequest = { type: 'deleteStyle',
+      const deleteRequest : DeleteCellRequest = { type: 'deleteCell',
                               styleId: secondThoughtId };
 
       await serializeChangeRequests(notebook,[deleteRequest]);
@@ -406,7 +406,7 @@ describe("test symbol observer", function() {
       for(var i = NUM-1; i > 1; i--) {
 
         let penultimate = getThought(notebook,-2);
-        const deleteRequest : StyleDeleteRequest = { type: 'deleteStyle',
+        const deleteRequest : DeleteCellRequest = { type: 'deleteCell',
                                                      styleId: penultimate };
 
         await serializeChangeRequests(notebook,[deleteRequest]);
@@ -444,7 +444,7 @@ describe("test symbol observer", function() {
 
 
      let penultimate = getThought(notebook,-2);
-      const moveRequest : StyleMoveRequest = { type: 'moveStyle',
+      const moveRequest : MoveCellRequest = { type: 'moveCell',
                                                  styleId: penultimate,
                                                  afterId: 0
                                                };
@@ -487,8 +487,8 @@ describe("test symbol observer", function() {
 
       // the goal here is to move Y = X^2 to the first position.
       let penultimate = getThought(notebook, -2);
-      const moveRequest: StyleMoveRequest = {
-        type: 'moveStyle',
+      const moveRequest: MoveCellRequest = {
+        type: 'moveCell',
         styleId: penultimate,
         afterId: 1
       };
@@ -625,7 +625,7 @@ async function serializeChangeRequests(notebook: ServerNotebook,
   }
 }
 
-function insertWolframFormulas(_wolframDatas: PlainTextFormula[]) : StyleInsertRequest[] {
+function insertWolframFormulas(_wolframDatas: PlainTextFormula[]) : InsertCellRequest[] {
   // TODO: Need to include displaySvg field in FormulaData.
   throw new Error("TODO:");
   // var reqs : StyleInsertRequest[] = [];
@@ -637,7 +637,7 @@ function insertWolframFormulas(_wolframDatas: PlainTextFormula[]) : StyleInsertR
   //     plainTextFormula: wolframData,
   //   };
   //   reqs.push({
-  //     type: 'insertStyle',
+  //     type: 'insertCell',
   //     styleProps: { role: 'FORMULA', type: 'FORMULA-DATA', data }
   //   });
   // }

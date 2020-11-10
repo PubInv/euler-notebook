@@ -36,36 +36,20 @@ export interface FindStyleOptions {
   recursive?: boolean;
 }
 
-export type NotebookChange =
-  StyleChanged|StyleConverted|StyleDeleted|StyleInserted|StyleMoved;
-export interface StyleChanged {
-  type: 'styleChanged';
-  // REVIEW: Only pass styleId and new data?
-  style: StyleObject;
-  previousData: any;
-}
-export interface StyleConverted {
-  type: 'styleConverted';
-  styleId: StyleId;
-  role?: StyleRole;
-  subrole?: StyleSubrole;
-  // TODO: Rename 'type' to 'action' and then 'styleType' to just 'type'.
-  styleType?: StyleType;
-  data?: any;
-}
-export interface StyleDeleted {
-  type: 'styleDeleted';
+export type NotebookChange = CellDeleted | CellInserted | CellMoved;
+export interface CellDeleted {
+  type: 'cellDeleted';
   // REVIEW: Only pass styleId?
   style: StyleObject;
 }
-export interface StyleInserted {
-  type: 'styleInserted';
+export interface CellInserted {
+  type: 'cellInserted';
   style: StyleObject;
   afterId?: StyleRelativePosition;
   // REVIEW: position?: StylePosition for top-level styles?
 }
-export interface StyleMoved {
-  type: 'styleMoved';
+export interface CellMoved {
+  type: 'cellMoved';
   styleId: StyleId;
   afterId: StyleRelativePosition;
   oldPosition: StyleOrdinalPosition;
@@ -375,17 +359,15 @@ export abstract class Notebook<W extends NotebookWatcher> extends WatchedResourc
     //         Then the styleChanged would not have to include "previousData"
     // Some change notifications are sent before the change is applied to the notebook so the watcher can
     // examine the style before it is modified.
-    const notifyBefore = (change.type == 'styleConverted' || change.type == 'styleDeleted');
+    const notifyBefore = change.type == 'cellDeleted';
     if (notifyBefore) {
       for (const watcher of this.watchers) { watcher.onChange(change, ownRequest); }
     }
 
     switch(change.type) {
-      case 'styleChanged':          this.changeStyle(change); break;
-      case 'styleConverted':        this.convertStyle(change); break;
-      case 'styleDeleted':          this.deleteStyle(change.style); break;
-      case 'styleInserted':         this.insertStyle(change.style, change.afterId); break;
-      case 'styleMoved':            this.moveStyle(change); break;
+      case 'cellDeleted':          this.deleteCell(change.style); break;
+      case 'cellInserted':         this.insertCell(change.style, change.afterId); break;
+      case 'cellMoved':            this.moveCell(change); break;
       default:
         throw new Error(`Applying unexpected change type: ${(<any>change).type}`);
     }
@@ -495,23 +477,7 @@ export abstract class Notebook<W extends NotebookWatcher> extends WatchedResourc
 
   // Private Instance Methods
 
-  private changeStyle(change: StyleChanged): void {
-    const styleId = change.style.id;
-    const style = this.getStyle(styleId);
-    // console.log(`Changing style ${styleId} data to ${JSON.stringify(change.style.data)}`); // BUGBUG
-    style.data = change.style.data;
-  }
-
-  private convertStyle(change: StyleConverted): void {
-    const style = this.getStyle(change.styleId);
-    if (!style) { throw new Error(`Converting unknown style ${change.styleId}`); }
-    if (change.role) { style.role = change.role; }
-    if (change.subrole) { style.subrole = change.subrole; }
-    if (change.styleType) { style.type = change.styleType; }
-    if (change.data) { style.data = change.data; }
-  }
-
-  private deleteStyle(style: StyleObject): void {
+  private deleteCell(style: StyleObject): void {
     // If this is a top-level style then remove it from the top-level style order first.
     if (!style.parentId) {
       const i = this.pages[0].styleIds.indexOf(style.id);
@@ -529,7 +495,7 @@ export abstract class Notebook<W extends NotebookWatcher> extends WatchedResourc
     this.styleMap = obj.styleMap;
   }
 
-  private insertStyle(style: StyleObject, afterId?: StyleRelativePosition): void {
+  private insertCell(style: StyleObject, afterId?: StyleRelativePosition): void {
 
     this.styleMap[style.id] = style;
     // Insert top-level styles in the style order.
@@ -546,7 +512,7 @@ export abstract class Notebook<W extends NotebookWatcher> extends WatchedResourc
     }
   }
 
-  private moveStyle(change: StyleMoved): void {
+  private moveCell(change: CellMoved): void {
     // Although questionable, executed a "moveStyle" on children
     // of a top level style. However, only a move a top-level thought
     // actually should be affected here.
@@ -561,9 +527,9 @@ export abstract class Notebook<W extends NotebookWatcher> extends WatchedResourc
 
 // Helper Functions
 
-export function StyleInsertedFromNotebookChange(change: NotebookChange): StyleInserted {
+export function StyleInsertedFromNotebookChange(change: NotebookChange): CellInserted {
   // TODO: Rename this function so it doesn't start with a capital letter.
-  if (change.type != 'styleInserted') { throw new Error("Not StyleInserted change."); }
+  if (change.type != 'cellInserted') { throw new Error("Not StyleInserted change."); }
   return change;
 }
 

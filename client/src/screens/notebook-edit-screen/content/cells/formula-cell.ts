@@ -24,7 +24,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 import * as debug1 from "debug";
 const debug = debug1('client:formula-cell');
 
-import { CssClass, Html, assertFalse, assert, PlainText, notImplemented } from "../../../../shared/common";
+import { CssClass, Html, assertFalse, PlainText, notImplemented } from "../../../../shared/common";
 import { StrokeData } from "../../../../shared/stylus";
 import { FormulaCellData, FormulaCellStylusData } from "../../../../shared/formula";
 import { StyleObject, NotebookChange, StyleSubrole } from "../../../../shared/notebook";
@@ -102,29 +102,25 @@ export class FormulaCell extends CellBase {
     // TODO: Do we deal with showing the Wolfram Evaluation values in the formula,
     //       and therefore deal with updating them here, or should we move their display to the tools panel?
     switch (change.type) {
-      case 'styleInserted': {
+      case 'cellInserted': {
         // Ignore. Not something we are interested in.
         break;
       }
-      case 'styleChanged': {
-        if (change.style.id == this.styleId) {
-          this.updateDisplayPanel(change.style);
-          this.updateInputPanelData(change.style);
-          this.updateInputPanelDrawing(change.style);
-        } else {
-          // Ignore. Not something we are interested in.
-        }
-        break;
-      }
-      case 'styleConverted': {
-        assertFalse();
-        break;
-      }
-      case 'styleDeleted': {
+      // case 'styleChanged': {
+      //   if (change.style.id == this.styleId) {
+      //     this.updateDisplayPanel(change.style);
+      //     this.updateInputPanelData(change.style);
+      //     this.updateInputPanelDrawing(change.style);
+      //   } else {
+      //     // Ignore. Not something we are interested in.
+      //   }
+      //   break;
+      // }
+      case 'cellDeleted': {
         // Ignore. Not something we are interested in.
         break;
       }
-      case 'styleMoved': assertFalse();
+      case 'cellMoved': assertFalse();
       default: assertFalse();
     }
     return false;
@@ -138,7 +134,9 @@ export class FormulaCell extends CellBase {
 
   private $displayPanel?: SVGSVGElement;
   private $inputPanel: HTMLDivElement|undefined;
+  // @ts-expect-error // TODO: value is never read error
   private keyboardPanel?: KeyboardPanel;
+  // @ts-expect-error // TODO: value is never read error
   private strokePanel?: StrokePanel;
 
   // Private Instance Methods
@@ -252,31 +250,31 @@ export class FormulaCell extends CellBase {
     return strokePanel;
   }
 
-  private updateDisplayPanel(style: StyleObject): void {
-    const $displayPanel = this.createDisplayPanel(style);
-    this.$displayPanel!.replaceWith($displayPanel);
-    this.$displayPanel = $displayPanel;
-  }
+  // private updateDisplayPanel(style: StyleObject): void {
+  //   const $displayPanel = this.createDisplayPanel(style);
+  //   this.$displayPanel!.replaceWith($displayPanel);
+  //   this.$displayPanel = $displayPanel;
+  // }
 
-  private updateInputPanelData(inputStyle: StyleObject): void {
-    switch(inputStyle.type) {
-      case 'STROKE-DATA':
-        assert(this.strokePanel);
-        this.strokePanel!.updateStylusInput(inputStyle.data);
-        break;
-      case 'TEX-EXPRESSION':
-      case 'WOLFRAM-EXPRESSION':
-        assert(this.keyboardPanel);
-        this.keyboardPanel!.updateText(inputStyle.data);
-        break;
-      default: assertFalse();
-    }
-  }
+  // private updateInputPanelData(inputStyle: StyleObject): void {
+  //   switch(inputStyle.type) {
+  //     case 'STROKE-DATA':
+  //       assert(this.strokePanel);
+  //       this.strokePanel!.updateStylusInput(inputStyle.data);
+  //       break;
+  //     case 'TEX-EXPRESSION':
+  //     case 'WOLFRAM-EXPRESSION':
+  //       assert(this.keyboardPanel);
+  //       this.keyboardPanel!.updateText(inputStyle.data);
+  //       break;
+  //     default: assertFalse();
+  //   }
+  // }
 
-  private updateInputPanelDrawing(svgRepStyle: StyleObject): void {
-    assert(this.strokePanel);
-    this.strokePanel!.updateSvgMarkup(svgRepStyle.data);
-  }
+  // private updateInputPanelDrawing(svgRepStyle: StyleObject): void {
+  //   assert(this.strokePanel);
+  //   this.strokePanel!.updateSvgMarkup(svgRepStyle.data);
+  // }
 
   // Private Event Handlers
 

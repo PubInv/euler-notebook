@@ -30,7 +30,7 @@ import 'mocha';
 // import * as sinon from "sinon";
 
 import { FormulaCellData, PlainTextFormula } from "../shared/formula";
-import { StyleInsertRequest, TexExpression } from "../shared/math-tablet-api";
+import { InsertCellRequest, TexExpression } from "../shared/math-tablet-api";
 import { ServerNotebook }  from "../server-notebook";
 
 import { ensureGlobalLoaded } from "./global";
@@ -74,8 +74,8 @@ describe("LaTeX export tests", function() {
 
 // Helper Functions
 
-function generateInsertRequests(inputs: PlainTextFormula[]) : StyleInsertRequest[] {
-  var reqs : StyleInsertRequest[] = [];
+function generateInsertRequests(inputs: PlainTextFormula[]) : InsertCellRequest[] {
+  var reqs : InsertCellRequest[] = [];
   for(const wolframData of inputs) {
     const formulaData: FormulaCellData = {
       type: CellType.Formula,
@@ -86,7 +86,7 @@ function generateInsertRequests(inputs: PlainTextFormula[]) : StyleInsertRequest
       plainTextFormula: wolframData,
     };
     reqs.push({
-      type: 'insertStyle',
+      type: 'insertCell',
       styleProps: {
         role: 'FORMULA',
         type: 'FORMULA-DATA',

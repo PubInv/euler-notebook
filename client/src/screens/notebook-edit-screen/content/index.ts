@@ -30,8 +30,8 @@ import {
   StyleId, StyleObject, NotebookChange, StyleRelativePosition, StylePosition,
 } from "../../../shared/notebook";
 import {
-  DebugParams, DebugResults, StyleDeleteRequest, StyleInsertRequest, StylePropertiesWithSubprops,
-  StyleMoveRequest, NotebookChangeRequest,
+  DebugParams, DebugResults, DeleteCellRequest, InsertCellRequest, StylePropertiesWithSubprops,
+  MoveCellRequest, NotebookChangeRequest,
 } from "../../../shared/math-tablet-api";
 
 import { CellBase } from "./cells/cell-base";
@@ -136,7 +136,7 @@ export class Content extends HtmlElement<'div'>{
 
   public async deleteTopLevelStyle(styleId: StyleId): Promise<void> {
     await this.unselectAll();
-    const changeRequest: StyleDeleteRequest = { type: 'deleteStyle', styleId: styleId };
+    const changeRequest: DeleteCellRequest = { type: 'deleteCell', styleId: styleId };
     await this.sendUndoableChangeRequests([changeRequest]);
   }
 
@@ -163,7 +163,7 @@ export class Content extends HtmlElement<'div'>{
   public async deleteSelectedCells(): Promise<void> {
     const cellViews = this.selectedCells();
     await this.unselectAll();
-    const changeRequests = cellViews.map<StyleDeleteRequest>(c=>({ type: 'deleteStyle', styleId: c.styleId }));
+    const changeRequests = cellViews.map<DeleteCellRequest>(c=>({ type: 'deleteCell', styleId: c.styleId }));
     await this.sendUndoableChangeRequests(changeRequests);
   }
 
@@ -209,9 +209,9 @@ export class Content extends HtmlElement<'div'>{
     //   stylusInput: deepCopy(EMPTY_STYLUS_INPUT),
     // }
     // const styleProps: StylePropertiesWithSubprops = { role: 'FIGURE', subrole: 'OTHER', type: 'NONE', data };
-    // const changeRequest: StyleInsertRequest = { type: 'insertStyle', afterId, styleProps };
+    // const changeRequest: InsertCellRequest = { type: 'insertCell', afterId, styleProps };
     // /* const undoChangeRequest = */ await this.sendUndoableChangeRequest(changeRequest);
-    // // const styleId = (<StyleDeleteRequest>undoChangeRequest).styleId
+    // // const styleId = (<DeleteCellRequest>undoChangeRequest).styleId
   }
 
   public async insertFormulaCellBelow(_afterId?: StyleRelativePosition): Promise<void> {
@@ -234,7 +234,7 @@ export class Content extends HtmlElement<'div'>{
     // };
 
     /* const undoChangeRequest = */ // await this.sendChangeRequest(changeRequest);
-    // const styleId = (<StyleDeleteRequest>undoChangeRequest).styleId;
+    // const styleId = (<DeleteCellRequest>undoChangeRequest).styleId;
 
     // TODO: Set focus?
   }
@@ -271,9 +271,9 @@ export class Content extends HtmlElement<'div'>{
     // const styleProps: StylePropertiesWithSubprops = { role: 'TEXT', type: 'NONE', data };
 
     // // Insert top-level style and wait for it to be inserted.
-    // const changeRequest: StyleInsertRequest = { type: 'insertStyle', afterId, styleProps };
+    // const changeRequest: InsertCellRequest = { type: 'insertCell', afterId, styleProps };
     // const undoChangeRequest = await this.sendUndoableChangeRequest(changeRequest);
-    // /* const styleId = */(<StyleDeleteRequest>undoChangeRequest).styleId;
+    // /* const styleId = */(<DeleteCellRequest>undoChangeRequest).styleId;
 
     // TODO: Set focus?
   }
@@ -319,7 +319,7 @@ export class Content extends HtmlElement<'div'>{
     const nextNextCell = this.nextCell(nextCell);
     const afterId = nextNextCell ? nextCell.styleId : StylePosition.Bottom;
 
-    const request: StyleMoveRequest = { type: 'moveStyle', styleId, afterId };
+    const request: MoveCellRequest = { type: 'moveCell', styleId, afterId };
     await this.sendUndoableChangeRequests([ request ]);
   }
 
@@ -342,7 +342,7 @@ export class Content extends HtmlElement<'div'>{
     const previousPreviousCell = this.previousCell(previousCell);
     const afterId = previousPreviousCell ? previousPreviousCell.styleId : /* top */ 0;
 
-    const request: StyleMoveRequest = { type: 'moveStyle', styleId, afterId };
+    const request: MoveCellRequest = { type: 'moveCell', styleId, afterId };
     await this.sendUndoableChangeRequests([ request ]);
   }
 
@@ -450,7 +450,7 @@ export class Content extends HtmlElement<'div'>{
   }
 
   public async insertStyle(styleProps: StylePropertiesWithSubprops, afterId: StyleRelativePosition = StylePosition.Bottom): Promise<void> {
-    const changeRequest: StyleInsertRequest = { type: 'insertStyle', afterId, styleProps };
+    const changeRequest: InsertCellRequest = { type: 'insertCell', afterId, styleProps };
     await this.sendUndoableChangeRequests([ changeRequest ]);
   }
 
@@ -485,20 +485,20 @@ export class Content extends HtmlElement<'div'>{
     // then mark add the cell to a list of cells to be redrawn.
     // If a cell is deleted or moved, then make that change immediately.
     switch (change.type) {
-      case 'styleChanged': {
-        // REVIEW: Is there a way to tell what styles affect display?
-        const topLevelStyleId = notebook.topLevelStyleOf(change.style.id).id;
-        this.dirtyCells.add(topLevelStyleId);
-        this.cellViewFromId(topLevelStyleId).onChange(change);
-        break;
-      }
-      case 'styleConverted': {
-        const topLevelStyleId = notebook.topLevelStyleOf(change.styleId).id;
-        this.dirtyCells.add(topLevelStyleId);
-        this.cellViewFromId(topLevelStyleId).onChange(change);
-        break;
-      }
-      case 'styleDeleted': {
+      // case 'styleChanged': {
+      //   // REVIEW: Is there a way to tell what styles affect display?
+      //   const topLevelStyleId = notebook.topLevelStyleOf(change.style.id).id;
+      //   this.dirtyCells.add(topLevelStyleId);
+      //   this.cellViewFromId(topLevelStyleId).onChange(change);
+      //   break;
+      // }
+      // case 'styleConverted': {
+      //   const topLevelStyleId = notebook.topLevelStyleOf(change.styleId).id;
+      //   this.dirtyCells.add(topLevelStyleId);
+      //   this.cellViewFromId(topLevelStyleId).onChange(change);
+      //   break;
+      // }
+      case 'cellDeleted': {
         // If a substyle is deleted then mark the cell as dirty.
         // If a top-level style is deleted then remove the cell.
         const style = notebook.getStyle(change.style.id);
@@ -515,7 +515,7 @@ export class Content extends HtmlElement<'div'>{
         }
         break;
       }
-      case 'styleInserted': {
+      case 'cellInserted': {
         if (!change.style.parentId) {
           this.createCell(change.style, change.afterId!);
         } else {
@@ -526,7 +526,7 @@ export class Content extends HtmlElement<'div'>{
         }
         break;
       }
-      case 'styleMoved': {
+      case 'cellMoved': {
         const style = notebook.getStyle(change.styleId);
         assert(!style.parentId);
         const movedCell = this.cellViews.get(style.id);
