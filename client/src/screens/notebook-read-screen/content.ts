@@ -138,7 +138,7 @@ export class Content extends HtmlElement<'div'>{
 
       let x: number = cssLength(leftMargin, 'pt');
       let y: number = cssLength(topMargin, 'pt');
-      for (const cellId of page.styleIds) {
+      for (const cellId of page.cellIds) {
 
         const style = this.screen.notebook.getStyle(cellId);
         const data = <CellData>style.data;

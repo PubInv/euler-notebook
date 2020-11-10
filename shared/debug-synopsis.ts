@@ -97,7 +97,7 @@ export function notebookChangeSynopsis(change: NotebookChange): string {
   let rval: string = change.type;
   switch(change.type) {
     case 'cellDeleted': {
-      rval += ` ${styleSynopsis(change.style)}`;
+      rval += ` S${change.cellId}`;
       break;
     }
     case 'cellInserted': {
@@ -145,7 +145,7 @@ export function serverMessageSynopsis(msg: ServerMessage): string {
 }
 
 export function styleSynopsis(s: StyleObject, indentationLevel: number = 0): string {
-  return `${indentation(indentationLevel)}S${s.id} ${s.source} ${s.role} ${s.type} ${dataSynopsis(s.data)}`;
+  return `${indentation(indentationLevel)}S${s.id} ${s.source} ${s.role} ${dataSynopsis(s.data)}`;
 }
 
 // Helper Functions

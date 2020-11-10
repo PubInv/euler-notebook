@@ -31,7 +31,7 @@ import { join } from "path";
 import { assert, assertFalse, ExpectedError, notImplemented, Timestamp } from "./shared/common";
 import { NotebookPath, NOTEBOOK_PATH_RE, NotebookName, FolderPath, NotebookEntry } from "./shared/folder";
 import {
-  Notebook, NotebookObject, NotebookChange, StyleObject, StyleRole, StyleType, StyleSource, CellId,
+  Notebook, NotebookObject, NotebookChange, StyleObject, StyleSource, CellId,
   CellMoved, CellPosition, VERSION,
   CellInserted, CellDeleted, NotebookWatcher, StyleProperties,
 } from "./shared/notebook";
@@ -465,7 +465,6 @@ export class ServerNotebook extends Notebook<ServerNotebookWatcher> {
     // from the notebook.
     // TODO: gather substyles from the same source, etc.
     const styleProps: StyleProperties = {
-      type: style.type,
       role: style.role,
       data: style.data,
     };
@@ -476,7 +475,7 @@ export class ServerNotebook extends Notebook<ServerNotebookWatcher> {
       styleProps,
     };
 
-    const change: CellDeleted = { type: 'cellDeleted', style };
+    const change: CellDeleted = { type: 'cellDeleted', cellId: style.id };
     this.appendChange(source, change, rval);
 
     return undoChangeRequest;
@@ -504,7 +503,6 @@ export class ServerNotebook extends Notebook<ServerNotebookWatcher> {
       id,
       role: styleProps.role,
       source,
-      type: styleProps.type,
     };
 
     const change: CellInserted =  { type: 'cellInserted', style, afterId };
@@ -526,19 +524,19 @@ export class ServerNotebook extends Notebook<ServerNotebookWatcher> {
     if (afterId == cellId) { throw new Error(`Style ${cellId} can't be moved after itself.`); }
 
     const style = this.getStyle(cellId);
-    const oldPosition: CellPosition = this.pages[0].styleIds.indexOf(style.id);
+    const oldPosition: CellPosition = this.pages[0].cellIds.indexOf(style.id);
     if (oldPosition < 0) { throw new Error(`Style ${cellId} can't be moved: not found in styleOrder array.`); }
 
     let oldAfterId: number;
     if (oldPosition == 0) { oldAfterId = 0; }
-    else if (oldPosition == this.pages[0].styleIds.length-1) { oldAfterId = -1; }
-    else { oldAfterId = this.pages[0].styleIds[oldPosition-1]; }
+    else if (oldPosition == this.pages[0].cellIds.length-1) { oldAfterId = -1; }
+    else { oldAfterId = this.pages[0].cellIds[oldPosition-1]; }
 
     let newPosition: CellPosition;
     if (afterId == 0) { newPosition = 0; }
-    else if (afterId == -1) { newPosition = this.pages[0].styleIds.length  - 1; }
+    else if (afterId == -1) { newPosition = this.pages[0].cellIds.length  - 1; }
     else {
-      newPosition = this.pages[0].styleIds.indexOf(afterId);
+      newPosition = this.pages[0].cellIds.indexOf(afterId);
       if (newPosition < 0) { throw new Error(`Style ${cellId} can't be moved: other style ${afterId} not found in styleOrder array.`); }
       if (oldPosition > newPosition) { newPosition++; }
     }
@@ -801,13 +799,6 @@ export class ServerNotebook extends Notebook<ServerNotebookWatcher> {
 export function absDirPathFromNotebookPath(path: NotebookPath): AbsDirectoryPath {
   const pathSegments = path.split('/').slice(1);  // slice removes leading slash
   return join(ROOT_DIR_PATH, ...pathSegments);
-}
-
-// TODO: Rewrite this to using findStyles
-export function assertHasStyle(styles: StyleObject[], type: StyleType, role: StyleRole, data: any): StyleObject {
-  const style = styles.find(s=>s.type==type && s.role==role && s.data==data);
-  assert(style);
-  return style!;
 }
 
 export function notebookPath(path: FolderPath, name: NotebookName): NotebookPath {

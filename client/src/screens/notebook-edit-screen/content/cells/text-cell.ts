@@ -117,22 +117,18 @@ export class TextCell extends CellBase {
     return $displayPanel;
   }
 
-  private createInputPanel(inputStyle: StyleObject): HTMLDivElement {
-    let panel: KeyboardPanel|StrokePanel;
-    switch(inputStyle.type) {
-      case 'PLAIN-TEXT': {
-        panel = this.keyboardPanel = this.createKeyboardSubpanel(inputStyle);
-        break;
-      }
-      case 'STROKE-DATA': {
-        panel = this.strokePanel = this.createStrokeSubpanel(inputStyle);
-        break;
-      }
-      default: assertFalse();
-    }
-    return panel.$elt;
+  private createInputPanel(_style: StyleObject): HTMLDivElement {
+    notImplemented();
+    // let panel: KeyboardPanel|StrokePanel;
+    // if (styleIsKeyboard) {
+    //   panel = this.keyboardPanel = this.createKeyboardSubpanel(style);
+    // } else {
+    //   panel = this.strokePanel = this.createStrokeSubpanel(style);
+    // }
+    // return panel.$elt;
   }
 
+  // @ts-expect-error // TODO:
   private createKeyboardSubpanel(style: StyleObject): KeyboardPanel {
     const data = <TextCellKeyboardData>style.data;
     const textChangeCallback: KeyboardCallbackFn = (_start: number, _end: number, _replacement: PlainText, _value: PlainText): void =>{
@@ -146,6 +142,7 @@ export class TextCell extends CellBase {
     return new KeyboardPanel(data.inputText, textChangeCallback);
   }
 
+  // @ts-expect-error // TODO:
   private createStrokeSubpanel(style: StyleObject): StrokePanel {
     const data = <TextCellStylusData>style.data;
     const strokePanel = new StrokePanel(data.stylusInput, data.displaySvg, async (_strokeData: StrokeData)=>{

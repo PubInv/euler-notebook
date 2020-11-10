@@ -22,6 +22,7 @@ import { assert } from "./shared/common";
 // Types
 
 export type InputMode = 'keyboard'|'stylus';
+// TODO: StyleType doesn't exist any more. Change these to something else?
 export type MathKeyboardInputFormat = 'TEX-EXPRESSION'|'WOLFRAM-EXPRESSION'; // Subset of StyleType.
 export type TextKeyboardInputFormat = 'PLAIN-TEXT'; // Subset of StyleType.
 

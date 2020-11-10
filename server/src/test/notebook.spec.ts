@@ -72,7 +72,7 @@ describe("notebook", function() {
           3: { data: "c", id: 3, role: "TEXT", parentId: 0, source: "TEST", type: "PLAIN-TEXT", }
         },
         pages: [
-          { styleIds: [ 1, 2, 3 ] },
+          { cellIds: [ 1, 2, 3 ] },
         ],
         version: VERSION,
       });

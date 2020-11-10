@@ -494,7 +494,7 @@ export class Content extends HtmlElement<'div'>{
       case 'cellDeleted': {
         // If a substyle is deleted then mark the cell as dirty.
         // If a top-level style is deleted then remove the cell.
-        const style = notebook.getStyle(change.style.id);
+        const style = notebook.getStyle(change.cellId);
         const cellView = this.cellViews.get(style.id);
         assert(cellView);
         this.deleteCell(cellView!);
