@@ -27,15 +27,6 @@ import { ServerNotebookCellChangedMessage } from "./math-tablet-api";
 
 // Types
 
-export interface FindRelationshipOptions {
-  // NOTE: toId and fromId are mutually "or". The ids and all other fields are "and".
-  dataflow?: boolean;
-  toId?: StyleId;
-  fromId?: StyleId;
-  role?: RelationshipRole;
-  source?: StyleSource;
-}
-
 export interface FindStyleOptions {
   // REVIEW: Rename this interface to FindStylePattern
   role?: StyleRole|RegExp;
@@ -47,17 +38,7 @@ export interface FindStyleOptions {
 }
 
 export type NotebookChange =
-  RelationshipDeleted|RelationshipInserted|
   StyleChanged|StyleConverted|StyleDeleted|StyleInserted|StyleMoved;
-export interface RelationshipDeleted {
-  type: 'relationshipDeleted';
-  // REVIEW: Only pass relationshipId?
-  relationship: RelationshipObject;
-}
-export interface RelationshipInserted {
-  type: 'relationshipInserted';
-  relationship: RelationshipObject;
-}
 export interface StyleChanged {
   type: 'styleChanged';
   // REVIEW: Only pass styleId and new data?
@@ -96,7 +77,6 @@ export interface NotebookObject {
   nextId: StyleId;
   pageConfig: PageConfig;
   pages: Page[];
-  relationshipMap: RelationshipMap;
   styleMap: StyleMap;
   version: string;
 }
@@ -121,54 +101,6 @@ interface PageMargins {
   right: CssLength;
   top: CssLength;
 }
-
-export type RelationshipId = number;
-
-export interface RelationshipObject extends RelationshipProperties {
-  // Some invariants are needed here:
-  // The first definition of a symbol does not create a relationship.
-  // The second mentions of a symbol creates a relationship attached
-  // (via source) to either the use or definition.
-  // Props may give this the role of DUPLICATE DEFINITION if that is true.
-  // It is critically that all of these respect the "top level thought order",
-  // not the style order, so that reordering thoughts has a role.
-  // Each symbol name creates a separate independent "channel" of that name.
-  id: RelationshipId;
-  source: StyleSource;
-  /* TODO: Legacy. Eliminate. */ fromId: StyleId;
-  /* TODO: Legacy. Eliminate. */ toId: StyleId;
-  inStyles: RelationshipStyle[];
-  outStyles: RelationshipStyle[];
-}
-
-export type RelationshipRole =
-  'SYMBOL-DEPENDENCY' |
-  'DUPLICATE-DEFINITION' |
-  'EQUIVALENCE' |
-  'TRANSFORMATION';
-
-export interface RelationshipMap {
-  [id: /* RelationshipId */number]: RelationshipObject;
-}
-
-export interface RelationshipProperties {
-  id?: StyleId;
-  role: RelationshipRole;
-  data?: any;
-  // REVIEW: Use role: DATAFLOW with a subrole instead of dataflow flag?
-  dataflow?: boolean;
-}
-
-export interface RelationshipStyle {
-  role: RelationshipStyleRole;
-  id: StyleId;
-}
-
-export type RelationshipStyleRole =
-  'LEGACY' |      // Legacy compatibility. TODO: remove
-  'OUTPUT-FORMULA' |
-  'TRANSFORMATION-TOOL';
-
 
 export type StyleId = number;
 
@@ -309,8 +241,6 @@ const DEFAULT_PAGE_CONFIG: PageConfig = {
   }
 }
 
-const RIGHT_ARROW_ENTITY = '&#x27A1;';
-
 export const VERSION = "0.0.16";
 
 // Exported Class
@@ -342,20 +272,8 @@ export abstract class Notebook<W extends NotebookWatcher> extends WatchedResourc
 
   // Public Instance Property Functions
 
-  public allRelationships(): RelationshipObject[] {
-    // REVIEW: Return an iterator?
-    // REVIEW: Does it matter whether we return relationships in sorted order or not?
-    //       This could be as simple as: return Object.values(this.relationshipMap);
-    //       Caller can sort if necessary.
-    const sortedIds: RelationshipId[] = Object.keys(this.relationshipMap).map(k=>parseInt(k,10)).sort();
-    return sortedIds.map(id=>this.relationshipMap[id]);
-  }
-
   public allStyles(): StyleObject[] {
     // REVIEW: Return an iterator?
-    // REVIEW: Does it matter whether we return relationships in sorted order or not?
-    //       This could be as simple as: return Object.values(this.relationshipMap);
-    //       Caller can sort if necessary.
     const sortedIds: StyleId[] = Object.keys(this.styleMap).map(k=>parseInt(k,10)).sort();
     return sortedIds.map(id=>this.getStyle(id));
   }
@@ -380,12 +298,6 @@ export abstract class Notebook<W extends NotebookWatcher> extends WatchedResourc
     assert(i>=0);
     if (i+1>=this.pages[0].styleIds.length) { return 0; }
     return this.pages[0].styleIds[i+1];
-  }
-
-  public getRelationship(id: RelationshipId): RelationshipObject {
-    const rval = this.relationshipMap[id];
-    assert(rval, `Relationship ${id} doesn't exist.`);
-    return rval;
   }
 
   public getStyle(id: StyleId): StyleObject {
@@ -414,10 +326,6 @@ export abstract class Notebook<W extends NotebookWatcher> extends WatchedResourc
     assert(i>=0);
     if (i<1) { return 0; }
     return this.pages[0].styleIds[i-1];
-  }
-
-  public relationshipsOf(id: StyleId): RelationshipObject[] {
-    return this.allRelationships().filter(r=>r.inStyles.find(rs=>rs.id == id) || r.outStyles.find(rs=>rs.id == id));
   }
 
   public toHtml(): Html {
@@ -468,15 +376,13 @@ export abstract class Notebook<W extends NotebookWatcher> extends WatchedResourc
     // REVEIW: Maybe all change notification should go out prior?
     //         Then the styleChanged would not have to include "previousData"
     // Some change notifications are sent before the change is applied to the notebook so the watcher can
-    // examine the style or relationship before it is modified.
-    const notifyBefore = (change.type == 'relationshipDeleted' || change.type == 'styleConverted' || change.type == 'styleDeleted');
+    // examine the style before it is modified.
+    const notifyBefore = (change.type == 'styleConverted' || change.type == 'styleDeleted');
     if (notifyBefore) {
       for (const watcher of this.watchers) { watcher.onChange(change, ownRequest); }
     }
 
     switch(change.type) {
-      case 'relationshipDeleted':   this.deleteRelationship(change.relationship); break;
-      case 'relationshipInserted':  this.insertRelationship(change.relationship); break;
       case 'styleChanged':          this.changeStyle(change); break;
       case 'styleConverted':        this.convertStyle(change); break;
       case 'styleDeleted':          this.deleteStyle(change.style); break;
@@ -494,31 +400,6 @@ export abstract class Notebook<W extends NotebookWatcher> extends WatchedResourc
 
   public applyChanges(changes: NotebookChange[], ownRequest: boolean): void {
     for (const change of changes) { this.applyChange(change, ownRequest); }
-  }
-
-  public deleteRelationship(relationship: RelationshipObject): void {
-    // REVIEW: Making this public for the purpose of error handling in server-notebook - rlr
-    // TODO: relationship may have already been deleted by another observer.
-    const id = relationship.id;
-    if (!this.relationshipMap[id]) { throw new Error(`Deleting unknown relationship ${id}`); }
-    delete this.relationshipMap[id];
-  }
-
-  public findRelationships(options: FindRelationshipOptions): RelationshipObject[] {
-    // TODO: Find relationships with styles of certain relationship roles.
-    const rval: RelationshipObject[] = [];
-    // REVIEW: Ideally, relationships would be stored in a Map, not an object,
-    //         so we could obtain an iterator over the values, and not have to
-    //         construct an intermediate array.
-    for (const relationship of <RelationshipObject[]>Object.values(this.relationshipMap)) {
-      if (typeof options.dataflow != 'undefined' && relationship.dataflow != options.dataflow) { continue; }
-      if (options.fromId && !relationship.inStyles.find(rs=>rs.id==options.fromId)) { continue; }
-      if (options.toId && !relationship.outStyles.find(rs=>rs.id==options.toId)) { continue; }
-      if (options.source && relationship.source != options.source) { continue; }
-      if (options.role && relationship.role != options.role) { continue; }
-      rval.push(relationship);
-    }
-    return rval;
   }
 
   public findStyle(
@@ -557,10 +438,6 @@ export abstract class Notebook<W extends NotebookWatcher> extends WatchedResourc
     return rval;
   }
 
-  public hasRelationshipId(relationshipId: RelationshipId): boolean {
-    return this.relationshipMap.hasOwnProperty(relationshipId);
-  }
-
   public hasStyleId(styleId: StyleId): boolean {
     return this.styleMap.hasOwnProperty(styleId);
   }
@@ -588,44 +465,31 @@ export abstract class Notebook<W extends NotebookWatcher> extends WatchedResourc
     super(path);
     this.nextId = 1;
     this.pages = [{ styleIds: []}];
-    this.relationshipMap = {};
     this.pageConfig = deepCopy(DEFAULT_PAGE_CONFIG),
     this.styleMap = {};
   }
 
   // Private Instance Properties
 
-  protected relationshipMap: RelationshipMap;
   protected styleMap: StyleMap;     // Mapping from style ids to style objects.
 
   // Private Instance Property Functions
 
-  private relationshipToHtml(relationship: RelationshipObject): Html {
-    const dataJson = (typeof relationship.data != 'undefined' ? escapeHtml(JSON.stringify(relationship.data)) : 'undefined' );
-    const inStylesHtml = relationship.inStyles.map(rs=>`${rs.role} ${rs.id}`).join(", ");
-    const outStylesHtml = relationship.outStyles.map(rs=>`${rs.role} ${rs.id}`).join(", ");
-    return <Html>`<div><span class="leaf">R${relationship.id} ${relationship.role} [${inStylesHtml} ${RIGHT_ARROW_ENTITY} ${outStylesHtml}] (${relationship.fromId} ${RIGHT_ARROW_ENTITY} ${relationship.toId}) ${dataJson}</span></div>`;
-  }
-
   private styleToHtml(style: StyleObject): Html {
     // TODO: This is very inefficient as notebook.childStylesOf goes through *all* styles.
     const childStyleObjects = Array.from(this.childStylesOf(style.id));
-    // TODO: This is very inefficient as notebook.relationshipOf goes through *all* relationships.
-    const relationshipObjects = Array.from(this.relationshipsOf(style.id));
     const dataJson = (typeof style.data != 'undefined' ? escapeHtml(JSON.stringify(style.data)) : 'undefined' );
     const roleSubrole = (style.subrole ? `${style.role}|${style.subrole}` : style.role);
     const styleInfo = `S${style.id} ${roleSubrole} ${style.type} ${style.source}`
-    if (childStyleObjects.length == 0 && relationshipObjects.length == 0 && dataJson.length<30) {
+    if (childStyleObjects.length == 0 && dataJson.length<30) {
       return <Html>`<div><span class="leaf">${styleInfo} <tt>${dataJson}</tt></span></div>`;
     } else {
       const stylesHtml = childStyleObjects.map(s=>this.styleToHtml(s)).join('');
-      const relationshipsHtml = relationshipObjects.map(r=>this.relationshipToHtml(r)).join('');
       const [ shortJsonTt, longJsonTt ] = dataJson.length<30 ? [` <tt>${dataJson}</tt>`, ''] : [ '', `<tt>${dataJson}</tt>` ];
       return <Html>`<div>
   <span class="collapsed">${styleInfo}${shortJsonTt}</span>
   <div class="nested" style="display:none">${longJsonTt}
     ${stylesHtml}
-    ${relationshipsHtml}
   </div>
 </div>`;
     }
@@ -664,12 +528,7 @@ export abstract class Notebook<W extends NotebookWatcher> extends WatchedResourc
     this.nextId = obj.nextId;
     this.pageConfig = obj.pageConfig;
     this.pages = obj.pages;
-    this.relationshipMap = obj.relationshipMap;
     this.styleMap = obj.styleMap;
-  }
-
-  private insertRelationship(relationship: RelationshipObject): void {
-    this.relationshipMap[relationship.id] = relationship;
   }
 
   private insertStyle(style: StyleObject, afterId?: StyleRelativePosition): void {

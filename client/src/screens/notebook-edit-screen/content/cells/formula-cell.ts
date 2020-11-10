@@ -104,12 +104,6 @@ export class FormulaCell extends CellBase {
     // TODO: Do we deal with showing the Wolfram Evaluation values in the formula,
     //       and therefore deal with updating them here, or should we move their display to the tools panel?
     switch (change.type) {
-      case 'relationshipDeleted':
-      case 'relationshipInserted': {
-        // TODO: Do we continue to show equivalent style relationships in the formula, and therefore deal with
-        //       updating them here, or should we move their display to the tools panel?
-        break;
-      }
       case 'styleInserted': {
         // Ignore. Not something we are interested in.
         break;

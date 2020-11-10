@@ -26,8 +26,8 @@ import { CellType, InputType } from "./cell";
 import { Html, LengthInPoints, PlainText, SvgMarkup } from "./common";
 import { FolderObject, FolderPath, NotebookPath, FolderName, NotebookName, FolderChange } from "./folder";
 import {
-  RelationshipProperties, StyleProperties, StyleId, NotebookChange, NotebookObject, StyleRelativePosition,
-  StyleRole, StyleSubrole, StyleType, RelationshipStyle, WolframExpression
+  StyleProperties, StyleId, NotebookChange, NotebookObject, StyleRelativePosition,
+  StyleRole, StyleSubrole, StyleType, WolframExpression
 } from "./notebook";
 
 // Types
@@ -71,14 +71,8 @@ export interface TransformationToolData {
   transformationName: string;
 }
 
-export interface RelationshipPropertiesMap {
-  [id: /* StyleId */number]: RelationshipProperties;
-}
-
 export interface StylePropertiesWithSubprops extends StyleProperties {
   subprops?: StylePropertiesWithSubprops[]; // TODO: rename subprops=>substyles.
-  relationsTo?: RelationshipPropertiesMap;
-  relationsFrom?: RelationshipPropertiesMap;
   exclusiveChildTypeAndRole?: boolean;     // only one style of
     // that type and meaning should exist for the parent. If this is added
     // at the time the insertion request is made, the code to do the insertion
@@ -151,26 +145,11 @@ export interface StylusInputRequest {
 
 export type NotebookChangeRequest =
   // LEGACY:
-  RelationshipDeleteRequest|
-  RelationshipInsertRequest|
   StyleChangeRequest|
   StyleConvertRequest|
   StyleDeleteRequest|
   StyleInsertRequest|
   StyleMoveRequest;
-export interface RelationshipDeleteRequest {
-  type: 'deleteRelationship';
-  // TODO: rename id => relationshipId
-  id: number;
-}
-export interface RelationshipInsertRequest {
-  type: 'insertRelationship';
-  fromId: StyleId;
-  inStyles: RelationshipStyle[];
-  toId: StyleId;
-  outStyles: RelationshipStyle[];
-  props: RelationshipProperties;
-}
 export interface StyleChangeRequest {
   type: 'changeStyle';
   styleId: StyleId;

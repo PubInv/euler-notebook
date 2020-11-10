@@ -490,21 +490,6 @@ export class Content extends HtmlElement<'div'>{
     // then mark add the cell to a list of cells to be redrawn.
     // If a cell is deleted or moved, then make that change immediately.
     switch (change.type) {
-      case 'relationshipDeleted':
-      case 'relationshipInserted': {
-        // REVIEW: Is there a way to tell what relationships affect display?
-        // REVIEW: This assumes both incoming and outgoing relationships can affect display.
-        //         Is that too conservative?
-        const fromTopLevelStyleId = notebook.topLevelStyleOf(change.relationship.fromId).id;
-        this.dirtyCells.add(fromTopLevelStyleId);
-        this.cellViewFromId(fromTopLevelStyleId).onChange(change);
-
-        const toTopLevelStyleId = notebook.topLevelStyleOf(change.relationship.toId).id;
-        this.dirtyCells.add(toTopLevelStyleId);
-        this.cellViewFromId(toTopLevelStyleId).onChange(change);
-
-        break;
-      }
       case 'styleChanged': {
         // REVIEW: Is there a way to tell what styles affect display?
         const topLevelStyleId = notebook.topLevelStyleOf(change.style.id).id;

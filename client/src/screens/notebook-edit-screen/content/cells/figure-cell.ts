@@ -70,11 +70,6 @@ export class FigureCell extends CellBase {
     // Update the SVG display if it has changed.
 
     switch (change.type) {
-      case 'relationshipDeleted':
-      case 'relationshipInserted': {
-        // Ignore. Not something that affects our display.
-        break;
-      }
       case 'styleInserted': {
         // Ignore. Not something that affects our display.
         break;

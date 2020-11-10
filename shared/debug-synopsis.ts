@@ -23,7 +23,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 import { assertFalse } from './common';
 import { FolderChange } from './folder';
-import { Notebook, NotebookChange, RelationshipObject, StyleObject } from './notebook';
+import { Notebook, NotebookChange, StyleObject } from './notebook';
 import {
   ClientFolderMessage, ClientMessage, ClientNotebookMessage, FolderChangeRequest, NotebookChangeRequest,
   ServerFolderMessage, ServerMessage, ServerNotebookMessage, ClientNotebookCellChangeMessage, NotebookCellChangeRequest,
@@ -97,11 +97,7 @@ export function notebookChangeRequestSynopsis(request: NotebookChangeRequest): s
   switch(request.type) {
     case 'changeStyle': rval += ` S${request.styleId} ${dataSynopsis(request.data)}`; break;
     case 'convertStyle': rval += ` TBD`; break;
-    case 'deleteRelationship': rval += ` R${request.id}`; break;
     case 'deleteStyle': rval += ` S${request.styleId}`; break;
-    case 'insertRelationship':
-      rval += ` ${request.type} ${request.fromId}->${request.toId} TBD: request.props`;
-      break;
     case 'insertStyle': rval += ` TBD`; break;
     case 'moveStyle': rval += ` TBD`; break;
     default: assertFalse();
@@ -112,14 +108,6 @@ export function notebookChangeRequestSynopsis(request: NotebookChangeRequest): s
 export function notebookChangeSynopsis(change: NotebookChange): string {
   let rval: string = change.type;
   switch(change.type) {
-    case 'relationshipDeleted': {
-      rval += ` ${relationshipSynopsis(change.relationship)}`;
-      break;
-    }
-    case 'relationshipInserted': {
-      rval += ` ${relationshipSynopsis(change.relationship)}`;
-      break;
-    }
     case 'styleChanged': {
       rval += ` ${styleSynopsis(change.style)}`;
       break;
@@ -237,10 +225,6 @@ function dataSynopsis(data: any): string {
 
 function indentation(indentationLevel: number): string { return ' '.repeat(indentationLevel*2); }
 
-function relationshipSynopsis(r: RelationshipObject, indentationLevel: number = 0): string {
-  return `${indentation(indentationLevel)}R${r.id} ${r.source} ${r.role} ${r.fromId}->${r.toId} ${dataSynopsis(r.data)}`;
-}
-
 function serverFolderMessageSynopsis(msg: ServerFolderMessage): string {
   let rval = `${msg.path} ${msg.operation} `;
   switch(msg.operation) {
@@ -276,14 +260,9 @@ function serverNotebookMessageSynopsis(msg: ServerNotebookMessage): string {
 function styleSynopsisRecursive(notebook: Notebook<any>, style: StyleObject, indentationLevel: number = 0): string {
   // TODO: This is very inefficient as notebook.childStylesOf goes through *all* styles.
   const childStyleObjects = Array.from(notebook.childStylesOf(style.id));
-  // TODO: This is very inefficient as notebook.relationshipOf goes through *all* relationships.
-  const relationshipObjects = Array.from(notebook.relationshipsOf(style.id));
   let rval = `${styleSynopsis(style, indentationLevel)}\n`;
   for (const childStyle of childStyleObjects) {
     rval += styleSynopsisRecursive(notebook, childStyle, indentationLevel+1)
-  }
-  for (const relationship of relationshipObjects) {
-    rval += relationshipSynopsis(relationship, indentationLevel+1);
   }
   return rval;
 }

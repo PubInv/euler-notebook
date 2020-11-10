@@ -35,12 +35,12 @@ import { TextCellKeyboardData, TextCellStylusData } from "./shared/cell";
 import { NotebookPath, NOTEBOOK_PATH_RE, NotebookName, FolderPath, NotebookEntry } from "./shared/folder";
 import {
   Notebook, NotebookObject, NotebookChange, StyleObject, StyleRole, StyleType, StyleSource, StyleId,
-  RelationshipObject, StyleMoved, StylePosition, VERSION, StyleChanged, RelationshipDeleted,
-  RelationshipInserted, StyleInserted, StyleDeleted, StyleConverted, NotebookWatcher, WolframExpression
+  StyleMoved, StylePosition, VERSION, StyleChanged,
+  StyleInserted, StyleDeleted, StyleConverted, NotebookWatcher
 } from "./shared/notebook";
 import {
   NotebookChangeRequest, StyleMoveRequest, StyleInsertRequest, StyleChangeRequest,
-  RelationshipDeleteRequest, StyleDeleteRequest, RelationshipInsertRequest, ClientNotebookCellChangeMessage,
+  StyleDeleteRequest, ClientNotebookCellChangeMessage,
   StylePropertiesWithSubprops, TexExpression, StyleConvertRequest, ServerNotebookChangedMessage, ClientNotebookChangeMessage, ClientNotebookUseToolMessage, RequestId,
   ServerNotebookCellChangedMessage,
   InsertCellRequest, KeyboardInputRequest, StylusInputRequest,
@@ -49,7 +49,6 @@ import { notebookChangeRequestSynopsis, notebookChangeSynopsis } from "./shared/
 
 import { ClientId } from "./server-socket";
 import { AbsDirectoryPath, ROOT_DIR_PATH, mkDir, readFile, rename, rmRaf, writeFile } from "./adapters/file-system";
-import { constructSubstitution } from "./adapters/wolframscript";
 import { OpenOptions } from "./shared/watched-resource";
 import { logError } from "./error-handler";
 import { CellType, FigureCellData, InputType, TextCellData } from "./shared/cell";
@@ -331,72 +330,11 @@ export class ServerNotebook extends Notebook<ServerNotebookWatcher> {
     return curi < 0 ? null : defs[curi].sid;
   }
 
-  // Return all StyleObjects which are Symbols for which
-  // there is a Symbol Dependency relationship with this
-  // object as the the target
-  // Note: The defintion is the "source" of the relationship
-  // and the "use" is "target" of the relationship.
-  public getSymbolStylesIDependOn(style:StyleObject): StyleObject[] {
-    // simplest way to do this is to iterate over all relationships,
-    // computing the source and target thoughts. If the target thought
-    // is the same as our ancestor thought, then we return the
-    // source style, which should be of type Symbol and role Definition.
-    const rs = this.allRelationships();
-    var symbolStyles: StyleObject[] = [];
-    const mp = this.topLevelStyleOf(style.id);
-    rs.forEach(r => {
-      try {
-        // TODO: I don't know why this can be an error....
-        // doing a catch here seems to make it work but this is a concurrency
-        // problem, one way or another...we should not have relationship
-        // that is not pointing to something, though of course concurrent
-        // operation makes this difficult.
-        const rp = this.topLevelStyleOf(r.toId);
-        if (rp.id == mp.id) {
-          // We are a user of this definition...
-          try {
-            symbolStyles.push(this.getStyle(r.fromId));
-          } catch (Error) {
-            // REVIEW: Proper error handling??
-            console.error(`GSSIDO Error: fromId ${r.fromId} missing (inner)`);
-            // console.error(this);
-            // I believe now what we have "reserve" ids
-            // It should always be possible to remove this relation.
-            // The danger here is that we are covering up where these are
-            // coming from! REVIEW - rlr
-            this.deleteRelationship(r);
-          }
-
-        }
-      } catch (Error) {
-        // REVIEW: Proper error handling??
-        console.error(`GSSIDO Errior: fromId ${r.fromId} missing (outer)`);
-        // console.error(this);
-        this.deleteRelationship(r);
-      }
-    });
-    return symbolStyles;
-  }
-
-  public getSymbolStylesThatDependOnMe(style:StyleObject): StyleObject[] {
-    const rs = this.allRelationships();
-    var symbolStyles: StyleObject[] = [];
-    rs.forEach(r => {
-      if (r.fromId == style.id) {
-        // REVIEW: The should not be any relationships that point to non-existent styles.
-        const toStyle = this.getStyleThatMayNotExist(r.toId);
-        if (toStyle) { symbolStyles.push(toStyle); }
-      }
-    });
-    return symbolStyles;
-  }
-
   public toJSON(): NotebookObject {
     const rval: NotebookObject = {
       nextId: this.nextId,
       pageConfig: this.pageConfig,
       pages: this.pages,
-      relationshipMap: this.relationshipMap,
       styleMap: this.styleMap,
       version: VERSION,
     }
@@ -438,150 +376,6 @@ ${ind} + ${data}
 
   public deRegisterObserver(source: StyleSource): void {
     this.observers.delete(source);
-  }
-
-  // This is intended to be used by tests; it is slightly
-  // inefficient. I think DEJ wants us to incrementally recompute everything,
-  // but especially in the presence of concurrency we need a standard to
-  // test against.
-  // The algorithm is straightforward:
-  // If we are "use", we create a relationship based on the last (in thought order)
-  // definition that matches our symbol.
-
-  // TODO: This is not handling equivalence relationships.
-  // For the purpose of testing we possibly have to deal with that.
-  public recomputeAllSymbolRelationships() : RelationshipObject[] {
-    // I am attempting here to code the most straight-forward and simplest
-    // algorithm I can think of without regard to performance.
-    // 1) Compute the set of all symbols in the notebook.
-    // 2) For each symbol s:
-    //    A) produce an array of all uses and defintions of that
-    // symbol (these will be style ids). Sort by top level thought order.
-    //    B) produce an array of all definitions of that symbol.
-    //  Sort by top level thought order.
-    //    C) Run a loop over uses, establishing a relation on the use
-    // to the most recent (thought order) definition
-    //    D) Run a a loop over definitions, starting from the second.
-    // Establish DUPLICATE-DEFINITION relationships
-    const tlso = this.topLevelStyleOrder();
-    const symbols : Set<string> = new Set<string>();
-
-    tlso.forEach( tls => {
-      // console.error("operating on tls:",tls);
-      // REVIEW: Does this search need to be recursive?
-      const syms = this.findStyles({ type: 'SYMBOL-DATA', recursive: true }, tls);
-      syms.forEach(sym => {
-        const s = sym.data.name;
-        symbols.add(s);
-      }
-                  );
-    });
-
-    return this.recomputeAllSymbolRelationshipsForSymbols(symbols);
-  }
-
-  public recomputeAllSymbolRelationshipsForSymbols(symbols: Set<string> ) : RelationshipObject[] {
-    interface SymbolToMap {
-      [key: string]: StyleOrderMapping[];
-    }
-    const uses : SymbolToMap = {};
-    const defs : SymbolToMap = {};
-
-    const tlso = this.topLevelStyleOrder();
-    tlso.forEach( tls => {
-      // console.error("operating on tls:",tls);
-      // REVIEW: Does this search need to be recursive?
-      const syms = this.findStyles({ type: 'SYMBOL-DATA', recursive: true }, tls);
-      syms.forEach(sym => {
-        const s = sym.data.name;
-        if (symbols.has(s)) {
-          if (sym.role == 'SYMBOL-USE') {
-            if (!(s in uses))
-              uses[s] = [];
-            uses[s].push({ sid: sym.id, tls: tls});
-          }
-          if (sym.role == 'SYMBOL-DEFINITION') {
-            if (!(s in defs))
-              defs[s] = [];
-            defs[s].push({ sid: sym.id, tls: tls});
-          }
-        }
-      });
-    });
-
-    const rs : RelationshipObject[] = [];
-
-
-    // Now hopefully defs and uses are maps of all symbols properly ordered...
-    // Build the symbol use relationships...
-    symbols.forEach( sym => {
-      const us = uses[sym];
-      const ds = defs[sym];
-      if (us) {
-        for(var i = 0; i < us.length; i++) {
-          const fromId : number | null =
-            this.findLatestDefinitionEarlierThanThis(
-              this.topLevelStylePosition(us[i].tls),
-              ds);
-
-
-          if (fromId) {
-            // console.error("fromId for i",fromId,us[i]);
-            // Since we are not at present injecting into the notebook,
-            // the id will remain -1.
-            const toId = us[i].sid;
-            var r : RelationshipObject = {
-              source: 'TEST',
-              id: -1,
-              fromId,
-              toId,
-              role: 'SYMBOL-DEPENDENCY',
-              inStyles: [ { role: 'LEGACY', id: fromId } ],
-              outStyles: [ { role: 'LEGACY', id: toId } ],
-            };
-            rs.push(r);
-          } else {
-            // REVIEW: Throw exception??
-            console.error("fromId not found:",us[i],ds);
-          }
-        }
-      }
-    });
-
-    // Now handle the duplicate definitions....
-    symbols.forEach( sym => {
-      const ds = defs[sym];
-
-      // TODO: this needs to be a key iteration, not a number iteration!
-      for(var i = 0; i < ds.length; i++) {
-        const fromId  : number | null =
-          this.findLatestDefinitionEarlierThanThis(
-            this.topLevelStylePosition(ds[i].tls),
-            ds);
-
-        // Since we are not at present injecting into the notebook,
-        // the id will remain -1.
-        if (fromId) {
-          const toId = ds[i].sid;
-          var r : RelationshipObject = {
-            source: 'TEST',
-            id: -1,
-            fromId,
-            toId,
-            role: 'DUPLICATE-DEFINITION',
-            inStyles: [ { role: 'LEGACY', id: fromId } ],
-            outStyles: [ { role: 'LEGACY', id: toId } ],
-        };
-          rs.push(r);
-        }
-      }
-    });
-
-    // console.error("RS = ",rs);
-    // Now I am not producing "EQIVALENCE" meanings...
-    // However, those are a function of evaluation, and so are quite different.
-    return rs;
-
   }
 
   public registerObserver(source: StyleSource, instance: ObserverInstance): void {
@@ -645,34 +439,6 @@ ${ind} + ${data}
     const styleId = this.nextId++;
     this.reservedIds.add(styleId);
     return styleId;
-  }
-
-  public substitutionExpression(text: WolframExpression, variables: string[], style: StyleObject) : [string[],string] {
-    // I think "variables" should be a parameter...
-    // That parameter will be different when used by
-    // SUBTRIVARIATE, and when used by EQUATION
-
-    // The parent of the TOOL/ATTRIBUTE style will be a WOLFRAM/EVALUATION style
-    const evaluationStyle = this.getStyle(style.parentId);
-
-    // We are only plottable if we make the normal substitutions...
-    const rs = this.getSymbolStylesIDependOn(evaluationStyle);
-    debug("RS", rs);
-
-    var cvariables  = [...variables];
-
-    const namevalues = rs.map(
-                              s => {
-                                cvariables = cvariables.filter(ele => (
-                                  ele != s.data.name));
-                                return { name: s.data.name,
-                                         value: s.data.value};
-                              });
-
-    const sub_expr =
-      constructSubstitution(text,
-                            namevalues);
-    return [cvariables,sub_expr];
   }
 
   public async useTool(styleId: StyleId): Promise<NotebookChange[]> {
@@ -826,14 +592,8 @@ ${ind} + ${data}
         case 'convertStyle':
           undoChangeRequest = this.applyConvertStyleRequest(source, changeRequest, rval);
           break;
-        case 'deleteRelationship':
-          undoChangeRequest = this.applyDeleteRelationshipRequest(source, changeRequest, rval);
-          break;
         case 'deleteStyle':
           undoChangeRequest = this.applyDeleteStyleRequest(source, changeRequest, rval);
-          break;
-        case 'insertRelationship':
-          undoChangeRequest = this.applyInsertRelationshipRequest(source, changeRequest, rval);
           break;
         case 'insertStyle':
           undoChangeRequest = this.applyInsertStyleRequest(source, changeRequest, rval);
@@ -894,26 +654,6 @@ ${ind} + ${data}
     return undoChangeRequest;
   }
 
-  private applyDeleteRelationshipRequest(
-    source: StyleSource,
-    request: RelationshipDeleteRequest,
-    rval: NotebookChange[],
-  ): RelationshipInsertRequest|undefined {
-    if (!this.hasRelationshipId(request.id)) { /* REVIEW/TODO emit warning */ return undefined; }
-    const relationship = this.getRelationship(request.id);
-    const change: RelationshipDeleted = { type: 'relationshipDeleted', relationship, };
-    this.appendChange(source, change, rval);
-    const undoChangeRequest: RelationshipInsertRequest = {
-      type: 'insertRelationship',
-      fromId: relationship.fromId,
-      toId: relationship.toId,
-      inStyles: [ { role: 'LEGACY', id: relationship.fromId } ],
-      outStyles: [ { role: 'LEGACY', id: relationship.toId } ],
-      props: { role: relationship.role },
-    }
-    return undoChangeRequest;
-  }
-
   private applyDeleteStyleRequest(
     source: StyleSource,
     request: StyleDeleteRequest,
@@ -924,7 +664,7 @@ ${ind} + ${data}
 
     // Assemble the undo change request before we delete anything
     // from the notebook.
-    // TODO: gather substyles and relationships from the same source, etc.
+    // TODO: gather substyles from the same source, etc.
     const styleProps: StylePropertiesWithSubprops = {
       type: style.type,
       role: style.role,
@@ -944,54 +684,9 @@ ${ind} + ${data}
       this.applyDeleteStyleRequest(source, request2, rval);
     }
 
-    // // Delete any relationships attached to this style.
-    // Note: We actually can't do this automatically.
-    // Although deleting a "from" or "to" style in a relationship
-    // certainly invalidates that relationship, we may need the
-    // relationship to compute how to "repair" or "reroute" the dependency
-    // const relationships = this.relationshipsOf(id);
-    // for(const relationship of relationships) {
-    //   changes.push(this.deleteRelationshipChange(relationship.id));
-    // }
-
     const change: StyleDeleted = { type: 'styleDeleted', style };
     this.appendChange(source, change, rval);
 
-    return undoChangeRequest;
-  }
-
-  private applyInsertRelationshipRequest(
-    source: StyleSource,
-    request: RelationshipInsertRequest,
-    rval: NotebookChange[],
-  ): RelationshipDeleteRequest {
-
-    const relationshipProps = request.props;
-
-    let id: StyleId;
-    if (relationshipProps.id) {
-      id = relationshipProps.id;
-      if (!this.reservedIds.has(id)) { throw new Error(`Specified relationship ID is not reserved: ${id}`); }
-      this.reservedIds.delete(id);
-    } else {
-      id = this.nextId++;
-    }
-
-    const relationship: RelationshipObject = {
-      id,
-      source,
-      fromId: request.fromId,
-      toId: request.toId,
-      inStyles: request.inStyles,   // REVIEW: Make a copy of the array?
-      outStyles: request.outStyles, // REVIEW: Make a copy of the array?
-      ...request.props,
-    };
-    const change: RelationshipInserted = { type: 'relationshipInserted', relationship };
-    this.appendChange(source, change, rval);
-    const undoChangeRequest: RelationshipDeleteRequest = {
-      type: 'deleteRelationship',
-      id: relationship.id,
-    };
     return undoChangeRequest;
   }
 
@@ -1041,38 +736,6 @@ ${ind} + ${data}
       for (const substyleProps of styleProps.subprops) {
         const request2: StyleInsertRequest = { type: 'insertStyle', parentId: style.id, styleProps: substyleProps };
         this.applyInsertStyleRequest(source, request2, rval);
-      }
-    }
-
-    if (styleProps.relationsFrom) {
-      for (const [idStr, props] of Object.entries(styleProps.relationsFrom)) {
-        const fromId = parseInt(idStr, 10);
-        const toId = style.id;
-        const request2: RelationshipInsertRequest = {
-          type: 'insertRelationship',
-          fromId,
-          toId,
-          inStyles: [ { role: 'LEGACY', id: fromId } ],
-          outStyles: [ { role: 'LEGACY', id: toId } ],
-          props
-        };
-        this.applyInsertRelationshipRequest(source, request2, rval);
-      }
-    }
-
-    if (styleProps.relationsTo) {
-      for (const [idStr, props] of Object.entries(styleProps.relationsTo)) {
-        const fromId = style.id;
-        const toId = parseInt(idStr, 10);
-        const request2: RelationshipInsertRequest = {
-          type: 'insertRelationship',
-          fromId,
-          toId ,
-          inStyles: [ { role: 'LEGACY', id: fromId } ],
-          outStyles: [ { role: 'LEGACY', id: toId } ],
-          props
-        };
-        this.applyInsertRelationshipRequest(source, request2, rval);
       }
     }
 

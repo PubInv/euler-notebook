@@ -78,11 +78,6 @@ export class TextCell extends CellBase {
     debug(`onChange: style ${this.styleId} ${notebookChangeSynopsis(change)}`);
 
     switch (change.type) {
-      case 'relationshipDeleted':
-      case 'relationshipInserted': {
-        // Ignore. Not something that affects our display.
-        break;
-      }
       case 'styleInserted': {
         // Ignore. Not something we are interested in.
         break;
