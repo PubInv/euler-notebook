@@ -115,7 +115,7 @@ export type NotebookChangeRequest =
   StylusInputRequest;
 export interface DeleteCellRequest {
   type: 'deleteCell';
-  styleId: CellId;
+  cellId: CellId;
 }
 export interface InsertCellRequest {
   type: 'insertCell';
@@ -137,7 +137,7 @@ export interface KeyboardInputRequest {
 }
 export interface MoveCellRequest {
   type: 'moveCell';
-  styleId: CellId;
+  cellId: CellId;
   afterId: CellRelativePosition;
 }
 export interface StylusInputRequest {
@@ -234,7 +234,7 @@ export interface ClientNotebookOpenMessage extends ClientNotebookMessageBase {
 }
 export interface ClientNotebookUseToolMessage extends ClientNotebookMessageBase {
   operation: 'useTool';
-  styleId: CellId;
+  cellId: CellId;
 }
 
 
@@ -247,7 +247,7 @@ export type ClientMessage = ClientFolderMessage|ClientNotebookMessage;
 export interface DebugParams {
   // /api/debug post JSON params
   notebookPath: NotebookPath;
-  styleId?: CellId;
+  cellId?: CellId;
 }
 
 export interface DebugResults {

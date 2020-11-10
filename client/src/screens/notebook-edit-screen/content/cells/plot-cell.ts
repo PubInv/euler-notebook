@@ -55,7 +55,7 @@ export class PlotCell extends CellBase {
   // ClientNotebookWatcher Methods
 
   public onChange(change: NotebookChange): void {
-    debug(`onChange: style ${this.styleId} ${notebookChangeSynopsis(change)}`);
+    debug(`onChange: style ${this.cellId} ${notebookChangeSynopsis(change)}`);
 
     switch (change.type) {
       case 'cellInserted': {
@@ -63,7 +63,7 @@ export class PlotCell extends CellBase {
         break;
       }
       // case 'styleChanged': {
-      //   if (change.style.id == this.styleId) {
+      //   if (change.style.id == this.cellId) {
       //     this.updateDisplayPanel(change.style);
       //   } else {
       //     // Ignore. Not something that affects our display.

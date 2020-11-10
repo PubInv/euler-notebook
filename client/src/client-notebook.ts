@@ -132,7 +132,7 @@ export class ClientNotebook extends Notebook<ClientNotebookWatcher> {
   }
 
   public useTool(id: CellId): void {
-    const msg: ClientNotebookUseToolMessage = { type: 'notebook', operation: 'useTool', path: this.path, styleId: id };
+    const msg: ClientNotebookUseToolMessage = { type: 'notebook', operation: 'useTool', path: this.path, cellId: id };
     appInstance.socket.sendMessage(msg);
   }
 

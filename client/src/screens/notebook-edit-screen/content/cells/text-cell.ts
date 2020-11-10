@@ -69,7 +69,7 @@ export class TextCell extends CellBase {
   // ClientNotebookWatcher Methods
 
   public onChange(change: NotebookChange): void {
-    debug(`onChange: style ${this.styleId} ${notebookChangeSynopsis(change)}`);
+    debug(`onChange: style ${this.cellId} ${notebookChangeSynopsis(change)}`);
 
     switch (change.type) {
       case 'cellInserted': {
@@ -77,7 +77,7 @@ export class TextCell extends CellBase {
         break;
       }
       // case 'styleChanged': {
-      //   if (change.style.id == this.styleId) {
+      //   if (change.style.id == this.cellId) {
       //     this.updateDisplayPanel(change.style);
       //     this.updateInputPanelData(change.style);
       //     this.updateInputPanelDrawing(change.style);
@@ -150,7 +150,7 @@ export class TextCell extends CellBase {
     const data = <TextCellStylusData>style.data;
     const strokePanel = new StrokePanel(data.stylusInput, data.displaySvg, async (_strokeData: StrokeData)=>{
       throw new Error("TODO: Just send stroke to server");
-      // const changeRequest: StyleChangeRequest = { type: 'changeStyle', styleId: style.id, data: strokeData };
+      // const changeRequest: StyleChangeRequest = { type: 'changeStyle', cellId: style.id, data: strokeData };
       // // TODO: We don't want to wait for *all* processing of the strokes to finish, just the svg update.
       // // TODO: Incremental changes.
       // await this.container.screen.notebook.sendChangeRequest(changeRequest);

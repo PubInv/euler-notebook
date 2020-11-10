@@ -49,10 +49,10 @@ router.post('/debug', async function(req: Request, res: Response, _next: NextFun
     const params: DebugParams = req.body;
     const notebook = await ServerNotebook.open(params.notebookPath, { mustExist: true });
     try {
-      // const styleId = params.styleId || notebook.topLevelStyleOrder().slice(-1)[0];
-      // const style = notebook.getStyle(styleId);
+      // const cellId = params.cellId || notebook.topLevelStyleOrder().slice(-1)[0];
+      // const style = notebook.getStyle(cellId);
       // var sym_table : SymbolTable  = await obtainFormulaeInContext(notebook, style);
-      // const html = formatSymTable(styleId, sym_table);
+      // const html = formatSymTable(cellId, sym_table);
       const html = "TODO: Not implemented.";
       const results: DebugResults = { html };
       res.json(results);
@@ -156,8 +156,8 @@ router.post('/debug', async function(req: Request, res: Response, _next: NextFun
 //   return sym_table;
 // }
 
-// function formatSymTable(styleId: CellId, symTable: SymbolTable): string /* TYPESCRIPT: HTML */ {
-//   let html = `<table border="1"><tr><td colspan="2">Symbol Table for Style ${styleId}</td></tr>`
+// function formatSymTable(cellId: CellId, symTable: SymbolTable): string /* TYPESCRIPT: HTML */ {
+//   let html = `<table border="1"><tr><td colspan="2">Symbol Table for Style ${cellId}</td></tr>`
 //   for (const [ symbol, values ] of Object.entries(symTable)) {
 //     html += `<tr><td>${escapeHtml(symbol)}</td><td>${values.map(v=>escapeHtml(v.toString())).join("; ")}</td></tr>`;
 //   }

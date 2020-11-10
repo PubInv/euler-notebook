@@ -40,7 +40,7 @@ import { MoveCellRequest } from "../../../../shared/math-tablet-api";
 // Types
 
 interface CellDragData {
-  styleId: CellId;
+  cellId: CellId;
 }
 
 // Constants
@@ -59,7 +59,7 @@ export abstract class CellBase extends HtmlElement<'div'>{
 
   // Instance Properties
 
-  public styleId: CellId;
+  public cellId: CellId;
 
   // Instance Property Functions
 
@@ -71,7 +71,7 @@ export abstract class CellBase extends HtmlElement<'div'>{
 
   public renderTools(tools: Tools): void {
     tools.clear();
-    tools.render(this.styleId);
+    tools.render(this.cellId);
   }
 
   public scrollIntoView(): void {
@@ -167,7 +167,7 @@ export abstract class CellBase extends HtmlElement<'div'>{
     this.$content = $content;
 
     this.container = container;
-    this.styleId = style.id;
+    this.cellId = style.id;
 
 
   }
@@ -187,7 +187,7 @@ export abstract class CellBase extends HtmlElement<'div'>{
   }
 
   private onDeleteCellButtonClicked(_event: MouseEvent): void {
-    this.container.deleteTopLevelStyle(this.styleId).catch(err=>{
+    this.container.deleteTopLevelStyle(this.cellId).catch(err=>{
       // TODO: Better handling of this error.
       reportError(err, <Html>"Error deleting cell");
     });
@@ -231,7 +231,7 @@ export abstract class CellBase extends HtmlElement<'div'>{
   private onDragStart(event: DragEvent): void {
     // console.log("Drag start");
     const cellDragData: CellDragData = {
-      styleId: this.styleId,
+      cellId: this.cellId,
     }
     // TODO: Other data types: LaTeX, SVG, text/plain, text/uri-list etc.
     setDragData(event, cellDragData);
@@ -241,17 +241,17 @@ export abstract class CellBase extends HtmlElement<'div'>{
   private onDrop(event: DragEvent): void {
     const cellDragData = getDragData(event);
     if (!cellDragData) { return; }
-    // console.log(`Dropped style ${cellDragData.styleId} onto style ${this.styleId}`);
+    // console.log(`Dropped style ${cellDragData.cellId} onto style ${this.cellId}`);
 
-    const c = this.container.screen.notebook.compareStylePositions(cellDragData.styleId, this.styleId);
+    const c = this.container.screen.notebook.compareStylePositions(cellDragData.cellId, this.cellId);
     if (c==0) { /* Dropped onto self */ return; }
 
     // If dragging down, then put dragged cell below the cell that was dropped on.
     // If dragging up, then put dragged cell above the cell that was dropped on.
-    const afterId = c<0 ? this.styleId : this.container.screen.notebook.precedingStyleId(this.styleId);
+    const afterId = c<0 ? this.cellId : this.container.screen.notebook.precedingStyleId(this.cellId);
     const moveRequest: MoveCellRequest = {
       type: 'moveCell',
-      styleId: cellDragData.styleId,
+      cellId: cellDragData.cellId,
       afterId,
     }
     this.container.editStyle([ moveRequest ])
@@ -262,7 +262,7 @@ export abstract class CellBase extends HtmlElement<'div'>{
   }
 
   private onInsertCellBelow(): void {
-    this.container.insertFigureCellBelow(this.styleId).catch(err=>{
+    this.container.insertFigureCellBelow(this.cellId).catch(err=>{
       // TODO: Better handling of this error.
       reportError(err, <Html>"Error inserting cell below");
     });

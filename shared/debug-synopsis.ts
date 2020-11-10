@@ -85,7 +85,7 @@ export function folderChangeSynopsis(change: FolderChange): string {
 export function notebookChangeRequestSynopsis(request: NotebookChangeRequest): string {
   let rval: string = request.type;
   switch(request.type) {
-    case 'deleteCell': rval += ` S${request.styleId}`; break;
+    case 'deleteCell': rval += ` S${request.cellId}`; break;
     case 'insertCell': rval += ` TBD`; break;
     case 'moveCell': rval += ` TBD`; break;
     default: assertFalse();
@@ -105,7 +105,7 @@ export function notebookChangeSynopsis(change: NotebookChange): string {
       break;
     }
     case 'cellMoved': {
-      rval += ` ${change.styleId} after ${change.afterId} ${change.oldPosition}->${change.newPosition}`;
+      rval += ` ${change.cellId} after ${change.afterId} ${change.oldPosition}->${change.newPosition}`;
       break;
     }
     default: assertFalse();
@@ -115,8 +115,8 @@ export function notebookChangeSynopsis(change: NotebookChange): string {
 
 export function notebookSynopsis(notebook: Notebook<any>): string {
   return notebook.topLevelStyleOrder()
-  .map(styleId=>{
-    const style = notebook.getStyle(styleId);
+  .map(cellId=>{
+    const style = notebook.getStyle(cellId);
     return styleSynopsis(style);
   })
   .join('');
@@ -175,7 +175,7 @@ function clientNotebookMessageSynopsis(msg: ClientNotebookMessage): string {
       break;
     case 'close': break;
     case 'open': break;
-    case 'useTool': rval += `style ${msg.styleId}`; break;
+    case 'useTool': rval += `style ${msg.cellId}`; break;
     default: assertFalse();
   }
   return rval;

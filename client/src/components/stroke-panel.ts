@@ -123,7 +123,7 @@ export class StrokePanel extends HtmlElement<'div'> {
   //     const data = <DrawingData>inputStyle.data;
   //     data.size.height = newHeightStr;
   //     // REVIEW: what if size is unchanged?
-  //     const changeRequest: StyleChangeRequest = { type: 'changeStyle', styleId: inputStyle.id, data };
+  //     const changeRequest: StyleChangeRequest = { type: 'changeStyle', cellId: inputStyle.id, data };
   //     this.view.editStyle([ changeRequest ])
   //     .catch((err: Error)=>{
   //       // TODO: What to do here?

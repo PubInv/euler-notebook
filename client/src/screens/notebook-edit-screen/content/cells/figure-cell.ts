@@ -61,7 +61,7 @@ export class FigureCell extends CellBase {
   // ClientNotebookWatcher Methods
 
   public onChange(change: NotebookChange): void {
-    debug(`onChange: style ${this.styleId} ${notebookChangeSynopsis(change)}`);
+    debug(`onChange: style ${this.cellId} ${notebookChangeSynopsis(change)}`);
 
     // Update the SVG display if it has changed.
 
@@ -71,7 +71,7 @@ export class FigureCell extends CellBase {
         break;
       }
       // case 'styleChanged': {
-      //   if (change.style.id == this.styleId) {
+      //   if (change.style.id == this.cellId) {
       //     this.strokePanel!.updateStylusInput(change.style.data);
       //     this.strokePanel!.updateSvgMarkup(change.style.data);
       //   } else {
@@ -107,7 +107,7 @@ export class FigureCell extends CellBase {
       data.displaySvg,
       async (_stylusInput: StylusInput)=>{
         throw new Error("TODO: Just send stroke to server");
-        // const changeRequest: StyleChangeRequest = { type: 'changeStyle', styleId: style.id, data: stylusInput };
+        // const changeRequest: StyleChangeRequest = { type: 'changeStyle', cellId: style.id, data: stylusInput };
         // // TODO: We don't want to wait for *all* processing of the strokes to finish, just the svg update.
         // // TODO: Incremental changes.
         // await this.container.screen.notebook.sendChangeRequest(changeRequest);
@@ -136,7 +136,7 @@ export class FigureCell extends CellBase {
     //   const data = <StrokeData>inputStyle.data;
     //   data.size.height = newHeightStr;
     //   // REVIEW: what if size is unchanged?
-    //   const changeRequest: StyleChangeRequest = { type: 'changeStyle', styleId: inputStyle.id, data };
+    //   const changeRequest: StyleChangeRequest = { type: 'changeStyle', cellId: inputStyle.id, data };
     //   this.container.editStyle([ changeRequest ])
     //   .catch((err: Error)=>{
     //     // TODO: What to do here?

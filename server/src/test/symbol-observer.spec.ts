@@ -162,7 +162,7 @@ describe("test symbol observer", function() {
 
       assert.equal(notebook.allRelationships().length,1);
       const deleteReq : DeleteCellRequest = { type: 'deleteCell',
-                           styleId: style.id };
+                           cellId: style.id };
 
       await notebook.requestChange('TEST', deleteReq);
       assert.equal(notebook.allRelationships().length,0);
@@ -220,7 +220,7 @@ describe("test symbol observer", function() {
 
       const cr: StyleChangeRequest = {
         type: 'changeStyle',
-        styleId: fromId,
+        cellId: fromId,
         data: { wolframData: "X = 5"},
       };
       await serializeChangeRequests(notebook,[cr]);
@@ -245,7 +245,7 @@ describe("test symbol observer", function() {
 
       const cr: StyleChangeRequest = {
         type: 'changeStyle',
-        styleId: fromId,
+        cellId: fromId,
         data: { wolframData: "X = 5"},
       };
       await serializeChangeRequests(notebook,[cr]);
@@ -286,7 +286,7 @@ describe("test symbol observer", function() {
 
       const cr: DeleteCellRequest = {
         type: 'deleteCell',
-        styleId: toId,
+        cellId: toId,
       };
       await serializeChangeRequests(notebook,[cr]);
       assert.equal(0,notebook.allRelationships().length);
@@ -364,7 +364,7 @@ describe("test symbol observer", function() {
 
       const secondThoughtId = notebook.topLevelStyleOrder()[1];
       const deleteRequest : DeleteCellRequest = { type: 'deleteCell',
-                              styleId: secondThoughtId };
+                              cellId: secondThoughtId };
 
       await serializeChangeRequests(notebook,[deleteRequest]);
 
@@ -407,7 +407,7 @@ describe("test symbol observer", function() {
 
         let penultimate = getThought(notebook,-2);
         const deleteRequest : DeleteCellRequest = { type: 'deleteCell',
-                                                     styleId: penultimate };
+                                                     cellId: penultimate };
 
         await serializeChangeRequests(notebook,[deleteRequest]);
 
@@ -445,7 +445,7 @@ describe("test symbol observer", function() {
 
      let penultimate = getThought(notebook,-2);
       const moveRequest : MoveCellRequest = { type: 'moveCell',
-                                                 styleId: penultimate,
+                                                 cellId: penultimate,
                                                  afterId: 0
                                                };
       await serializeChangeRequests(notebook,[moveRequest]);
@@ -489,7 +489,7 @@ describe("test symbol observer", function() {
       let penultimate = getThought(notebook, -2);
       const moveRequest: MoveCellRequest = {
         type: 'moveCell',
-        styleId: penultimate,
+        cellId: penultimate,
         afterId: 1
       };
 
@@ -526,7 +526,7 @@ describe("test symbol observer", function() {
 
       const cr: StyleChangeRequest = {
         type: 'changeStyle',
-        styleId: initialId,
+        cellId: initialId,
         data: { wolframData: data1[0] } ,
       };
 
@@ -550,7 +550,7 @@ describe("test symbol observer", function() {
       const initialId = topformula!.id;
       const cr: StyleChangeRequest = {
         type: 'changeStyle',
-        styleId: initialId,
+        cellId: initialId,
         data: { wolframData:  data1[0]},
       };
 
@@ -596,14 +596,14 @@ describe("test symbol observer", function() {
 
       const cr0: StyleChangeRequest = {
         type: 'changeStyle',
-        styleId: initialId,
+        cellId: initialId,
         data: data[2],
       };
       await serializeChangeRequests(notebook,[cr0]);
 
       const cr1: StyleChangeRequest = {
         type: 'changeStyle',
-        styleId: initialId,
+        cellId: initialId,
         data: data[3],
       };
       await serializeChangeRequests(notebook,[cr1]);

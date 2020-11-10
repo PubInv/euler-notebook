@@ -37,7 +37,7 @@ export interface FindStyleOptions {
 export type NotebookChange = CellDeleted | CellInserted | CellMoved;
 export interface CellDeleted {
   type: 'cellDeleted';
-  // REVIEW: Only pass styleId?
+  // REVIEW: Only pass cellId?
   style: StyleObject;
 }
 export interface CellInserted {
@@ -48,7 +48,7 @@ export interface CellInserted {
 }
 export interface CellMoved {
   type: 'cellMoved';
-  styleId: CellId;
+  cellId: CellId;
   afterId: CellRelativePosition;
   oldPosition: CellOrdinalPosition;
   newPosition: CellOrdinalPosition;
@@ -281,8 +281,8 @@ export abstract class Notebook<W extends NotebookWatcher> extends WatchedResourc
     if (this.isEmpty()) { return <Html>"<i>Notebook is empty.</i>"; }
     else {
       return <Html>this.topLevelStyleOrder()
-      .map(styleId=>{
-        const style = this.getStyle(styleId);
+      .map(cellId=>{
+        const style = this.getStyle(cellId);
         return this.styleToHtml(style);
       })
       .join('');
@@ -296,7 +296,7 @@ export abstract class Notebook<W extends NotebookWatcher> extends WatchedResourc
 
   public topLevelStyles(): StyleObject[] {
     // REVIEW: Return IterableIterator<StyleObjectd>?
-    return this.pages[0].styleIds.map(styleId=>this.getStyle(styleId));
+    return this.pages[0].styleIds.map(cellId=>this.getStyle(cellId));
   }
 
   public stylePosition(id: CellId): CellOrdinalPosition {
@@ -365,8 +365,8 @@ export abstract class Notebook<W extends NotebookWatcher> extends WatchedResourc
     return rval;
   }
 
-  public hasStyleId(styleId: CellId): boolean {
-    return this.styleMap.hasOwnProperty(styleId);
+  public hasStyleId(cellId: CellId): boolean {
+    return this.styleMap.hasOwnProperty(cellId);
   }
 
   public hasStyle(
@@ -452,7 +452,7 @@ export abstract class Notebook<W extends NotebookWatcher> extends WatchedResourc
 
   private moveCell(change: CellMoved): void {
     this.pages[0].styleIds.splice(change.oldPosition, 1);
-    this.pages[0].styleIds.splice(change.newPosition, 0, change.styleId);
+    this.pages[0].styleIds.splice(change.newPosition, 0, change.cellId);
   }
 }
 

@@ -322,18 +322,18 @@ export class ServerNotebook extends Notebook<ServerNotebookWatcher> {
   }
 
   public reserveId(): CellId {
-    const styleId = this.nextId++;
-    this.reservedIds.add(styleId);
-    return styleId;
+    const cellId = this.nextId++;
+    this.reservedIds.add(cellId);
+    return cellId;
   }
 
-  public async useTool(styleId: CellId): Promise<NotebookChange[]> {
-    debug(`useTool ${styleId}`);
+  public async useTool(cellId: CellId): Promise<NotebookChange[]> {
+    debug(`useTool ${cellId}`);
     assert(!this.terminated);
     notImplemented();
-    // const style = this.getStyle(styleId);
+    // const style = this.getStyle(cellId);
     // const source = style.source;
-    // if (!style) { throw new Error(`Notebook useTool style ID not found: ${styleId}`); }
+    // if (!style) { throw new Error(`Notebook useTool style ID not found: ${cellId}`); }
     // const observer = this.observers.get(source);
     // const changeRequests = await observer!.useTool(style);
     // const changes = await this.requestChanges(source, changeRequests);
@@ -360,7 +360,7 @@ export class ServerNotebook extends Notebook<ServerNotebookWatcher> {
   ): void {
     // TODO: pass request ID on responses to originatingWatcher.
     // TODO: options.client ID
-    this.useTool(msg.styleId);
+    this.useTool(msg.cellId);
   }
 
 
@@ -459,7 +459,7 @@ export class ServerNotebook extends Notebook<ServerNotebookWatcher> {
     rval: NotebookChange[],
   ): InsertCellRequest|undefined {
 
-    var style = this.getStyle(request.styleId);
+    var style = this.getStyle(request.cellId);
 
     // Assemble the undo change request before we delete anything
     // from the notebook.
@@ -512,7 +512,7 @@ export class ServerNotebook extends Notebook<ServerNotebookWatcher> {
 
     const undoChangeRequest: DeleteCellRequest = {
       type: 'deleteCell',
-      styleId: style.id,
+      cellId: style.id,
     }
     return undoChangeRequest;
   }
@@ -522,12 +522,12 @@ export class ServerNotebook extends Notebook<ServerNotebookWatcher> {
     request: MoveCellRequest,
     rval: NotebookChange[],
   ): MoveCellRequest|undefined {
-    const { styleId, afterId } = request;
-    if (afterId == styleId) { throw new Error(`Style ${styleId} can't be moved after itself.`); }
+    const { cellId: cellId, afterId } = request;
+    if (afterId == cellId) { throw new Error(`Style ${cellId} can't be moved after itself.`); }
 
-    const style = this.getStyle(styleId);
+    const style = this.getStyle(cellId);
     const oldPosition: CellPosition = this.pages[0].styleIds.indexOf(style.id);
-    if (oldPosition < 0) { throw new Error(`Style ${styleId} can't be moved: not found in styleOrder array.`); }
+    if (oldPosition < 0) { throw new Error(`Style ${cellId} can't be moved: not found in styleOrder array.`); }
 
     let oldAfterId: number;
     if (oldPosition == 0) { oldAfterId = 0; }
@@ -539,16 +539,16 @@ export class ServerNotebook extends Notebook<ServerNotebookWatcher> {
     else if (afterId == -1) { newPosition = this.pages[0].styleIds.length  - 1; }
     else {
       newPosition = this.pages[0].styleIds.indexOf(afterId);
-      if (newPosition < 0) { throw new Error(`Style ${styleId} can't be moved: other style ${afterId} not found in styleOrder array.`); }
+      if (newPosition < 0) { throw new Error(`Style ${cellId} can't be moved: other style ${afterId} not found in styleOrder array.`); }
       if (oldPosition > newPosition) { newPosition++; }
     }
 
-    const change: CellMoved = { type: 'cellMoved', styleId, afterId, oldPosition, newPosition };
+    const change: CellMoved = { type: 'cellMoved', cellId, afterId, oldPosition, newPosition };
     this.appendChange(source, change, rval);
 
     const undoChangeRequest: MoveCellRequest = {
       type: 'moveCell',
-      styleId: style.id,
+      cellId: style.id,
       afterId: oldAfterId
     };
     return undoChangeRequest;

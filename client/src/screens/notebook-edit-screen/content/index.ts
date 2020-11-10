@@ -112,8 +112,8 @@ export class Content extends HtmlElement<'div'>{
     this.topOfUndoStack = 0;
     this.undoStack = [];
 
-    for (const styleId of this.screen.notebook.topLevelStyleOrder()) {
-      const style = this.screen.notebook.getStyle(styleId);
+    for (const cellId of this.screen.notebook.topLevelStyleOrder()) {
+      const style = this.screen.notebook.getStyle(cellId);
       this.createCell(style, -1);
     }
 
@@ -127,9 +127,9 @@ export class Content extends HtmlElement<'div'>{
 
   // Public Instance Methods
 
-  public async deleteTopLevelStyle(styleId: CellId): Promise<void> {
+  public async deleteTopLevelStyle(cellId: CellId): Promise<void> {
     await this.unselectAll();
-    const changeRequest: DeleteCellRequest = { type: 'deleteCell', styleId: styleId };
+    const changeRequest: DeleteCellRequest = { type: 'deleteCell', cellId: cellId };
     await this.sendUndoableChangeRequests([changeRequest]);
   }
 
@@ -156,7 +156,7 @@ export class Content extends HtmlElement<'div'>{
   public async deleteSelectedCells(): Promise<void> {
     const cellViews = this.selectedCells();
     await this.unselectAll();
-    const changeRequests = cellViews.map<DeleteCellRequest>(c=>({ type: 'deleteCell', styleId: c.styleId }));
+    const changeRequests = cellViews.map<DeleteCellRequest>(c=>({ type: 'deleteCell', cellId: c.cellId }));
     await this.sendUndoableChangeRequests(changeRequests);
   }
 
@@ -165,8 +165,8 @@ export class Content extends HtmlElement<'div'>{
     // For when a developer needs a button to initiate a test action.
     console.log('Development Button Clicked!');
     const notebookPath = this.screen.notebook.path;
-    const styleId = this.lastCellSelected?.styleId;
-    const params: DebugParams = { notebookPath, styleId };
+    const cellId = this.lastCellSelected?.cellId;
+    const params: DebugParams = { notebookPath, cellId };
 
     const api = '/api/debug';
     const headers = new Headers();
@@ -188,7 +188,7 @@ export class Content extends HtmlElement<'div'>{
     // If cell to insert after is not specified, then insert below the last cell selected.
     // If no cells are selected, then insert at the end of the notebook.
     if (afterId === undefined) {
-      if (this.lastCellSelected) { afterId = this.lastCellSelected.styleId; }
+      if (this.lastCellSelected) { afterId = this.lastCellSelected.cellId; }
       else { afterId = CellPosition.Bottom; }
     }
 
@@ -204,7 +204,7 @@ export class Content extends HtmlElement<'div'>{
     // const styleProps: StylePropertiesWithSubprops = { role: 'FIGURE', subrole: 'OTHER', type: 'NONE', data };
     // const changeRequest: InsertCellRequest = { type: 'insertCell', afterId, styleProps };
     // /* const undoChangeRequest = */ await this.sendUndoableChangeRequest(changeRequest);
-    // // const styleId = (<DeleteCellRequest>undoChangeRequest).styleId
+    // // const cellId = (<DeleteCellRequest>undoChangeRequest).cellId
   }
 
   public async insertFormulaCellBelow(_afterId?: CellRelativePosition): Promise<void> {
@@ -214,7 +214,7 @@ export class Content extends HtmlElement<'div'>{
     // // If cell to insert after is not specified, then insert below the last cell selected.
     // // If no cells are selected, then insert at the end of the notebook.
     // if (afterId === undefined) {
-    //   if (this.lastCellSelected) { afterId = this.lastCellSelected.styleId; }
+    //   if (this.lastCellSelected) { afterId = this.lastCellSelected.cellId; }
     //   else { afterId = CellPosition.Bottom; }
     // }
 
@@ -227,7 +227,7 @@ export class Content extends HtmlElement<'div'>{
     // };
 
     /* const undoChangeRequest = */ // await this.sendChangeRequest(changeRequest);
-    // const styleId = (<DeleteCellRequest>undoChangeRequest).styleId;
+    // const cellId = (<DeleteCellRequest>undoChangeRequest).cellId;
 
     // TODO: Set focus?
   }
@@ -238,7 +238,7 @@ export class Content extends HtmlElement<'div'>{
     // If cell to insert after is not specified, then insert below the last cell selected.
     // If no cells are selected, then insert at the end of the notebook.
     if (afterId === undefined) {
-      if (this.lastCellSelected) { afterId = this.lastCellSelected.styleId; }
+      if (this.lastCellSelected) { afterId = this.lastCellSelected.cellId; }
       else { afterId = CellPosition.Bottom; }
     }
 
@@ -266,7 +266,7 @@ export class Content extends HtmlElement<'div'>{
     // // Insert top-level style and wait for it to be inserted.
     // const changeRequest: InsertCellRequest = { type: 'insertCell', afterId, styleProps };
     // const undoChangeRequest = await this.sendUndoableChangeRequest(changeRequest);
-    // /* const styleId = */(<DeleteCellRequest>undoChangeRequest).styleId;
+    // /* const cellId = */(<DeleteCellRequest>undoChangeRequest).cellId;
 
     // TODO: Set focus?
   }
@@ -278,7 +278,7 @@ export class Content extends HtmlElement<'div'>{
   //   let afterId: CellRelativePosition;
   //   if (this.lastCellSelected) {
   //     const previousCell = this.previousCell(this.lastCellSelected);
-  //     afterId = previousCell ? previousCell.styleId : CellPosition.Top;
+  //     afterId = previousCell ? previousCell.cellId : CellPosition.Top;
   //   } else { afterId = CellPosition.Top; }
   //   await this.insertKeyboardCellAndEdit(afterId);
   // }
@@ -288,7 +288,7 @@ export class Content extends HtmlElement<'div'>{
   //   // If cells are selected then in insert a keyboard input cell below the last cell selected.
   //   // Otherwise, insert at the end of the notebook.
   //   let afterId: CellRelativePosition;
-  //   if (this.lastCellSelected) { afterId = this.lastCellSelected.styleId; }
+  //   if (this.lastCellSelected) { afterId = this.lastCellSelected.cellId; }
   //   else { afterId = CellPosition.Bottom; }
   //   await this.insertKeyboardCellAndEdit(afterId);
   // }
@@ -302,7 +302,7 @@ export class Content extends HtmlElement<'div'>{
       // REVIEW: Beep or something?
       return;
     }
-    const styleId = this.lastCellSelected.styleId;
+    const cellId = this.lastCellSelected.cellId;
 
     const nextCell = this.nextCell(this.lastCellSelected);
     if (!nextCell) {
@@ -310,9 +310,9 @@ export class Content extends HtmlElement<'div'>{
       return;
     }
     const nextNextCell = this.nextCell(nextCell);
-    const afterId = nextNextCell ? nextCell.styleId : CellPosition.Bottom;
+    const afterId = nextNextCell ? nextCell.cellId : CellPosition.Bottom;
 
-    const request: MoveCellRequest = { type: 'moveCell', styleId, afterId };
+    const request: MoveCellRequest = { type: 'moveCell', cellId, afterId };
     await this.sendUndoableChangeRequests([ request ]);
   }
 
@@ -325,7 +325,7 @@ export class Content extends HtmlElement<'div'>{
       // REVIEW: Beep or something?
       return;
     }
-    const styleId = this.lastCellSelected.styleId;
+    const cellId = this.lastCellSelected.cellId;
 
     const previousCell = this.previousCell(this.lastCellSelected);
     if (!previousCell) {
@@ -333,9 +333,9 @@ export class Content extends HtmlElement<'div'>{
       return;
     }
     const previousPreviousCell = this.previousCell(previousCell);
-    const afterId = previousPreviousCell ? previousPreviousCell.styleId : /* top */ 0;
+    const afterId = previousPreviousCell ? previousPreviousCell.cellId : /* top */ 0;
 
-    const request: MoveCellRequest = { type: 'moveCell', styleId, afterId };
+    const request: MoveCellRequest = { type: 'moveCell', cellId, afterId };
     await this.sendUndoableChangeRequests([ request ]);
   }
 
@@ -421,7 +421,7 @@ export class Content extends HtmlElement<'div'>{
       delete this.lastCellSelected;
     }
     this.$elt.removeChild(cellView.$elt);
-    this.cellViews.delete(cellView.styleId);
+    this.cellViews.delete(cellView.cellId);
   }
 
   // REVIEW: Should be limited to changing a single style so this isn't used as backdoor
@@ -486,7 +486,7 @@ export class Content extends HtmlElement<'div'>{
       //   break;
       // }
       // case 'styleConverted': {
-      //   const topLevelStyleId = notebook.topLevelStyleOf(change.styleId).id;
+      //   const topLevelStyleId = notebook.topLevelStyleOf(change.cellId).id;
       //   this.dirtyCells.add(topLevelStyleId);
       //   this.cellViewFromId(topLevelStyleId).onChange(change);
       //   break;
@@ -506,7 +506,7 @@ export class Content extends HtmlElement<'div'>{
         break;
       }
       case 'cellMoved': {
-        const style = notebook.getStyle(change.styleId);
+        const style = notebook.getStyle(change.cellId);
         const movedCell = this.cellViews.get(style.id);
         assert(movedCell);
         // Note: DOM methods ensure the element will be removed from
@@ -521,8 +521,8 @@ export class Content extends HtmlElement<'div'>{
 
   public onChangesFinished(): void {
     // Redraw all of the cells that (may) have changed.
-    for (const styleId of this.dirtyCells) {
-      const cellView = this.cellViewFromId(styleId);
+    for (const cellId of this.dirtyCells) {
+      const cellView = this.cellViewFromId(cellId);
       cellView.onChangesFinished();
     }
     if (this.lastCellSelected) {
@@ -551,15 +551,15 @@ export class Content extends HtmlElement<'div'>{
 
   private cellViewFromElement($elt: HTMLDivElement): CellBase {
     // Strip 'C' prefix from cell ID to get the style id.
-    const styleId: CellId = parseInt($elt.id.slice(1), 10);
-    return this.cellViewFromId(styleId);
+    const cellId: CellId = parseInt($elt.id.slice(1), 10);
+    return this.cellViewFromId(cellId);
   }
 
   private firstCell(): CellBase | undefined {
     const styleOrder = this.screen.notebook.topLevelStyleOrder();
     if (styleOrder.length==0) { return undefined; }
-    const styleId = styleOrder[0];
-    const cellView = this.cellViewFromId(styleId);
+    const cellId = styleOrder[0];
+    const cellView = this.cellViewFromId(cellId);
     assert(cellView);
     return cellView;
   }

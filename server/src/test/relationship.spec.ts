@@ -129,7 +129,7 @@ function wolframFormulaInsertRequest(plainTextFormula: PlainTextFormula): Insert
 }
 
 function wolframFormulaChangeRequest(id: CellId, wolframData: WolframExpression): StyleChangeRequest {
-  const request: StyleChangeRequest = { type: 'changeStyle', styleId: id, data: { wolframData } };
+  const request: StyleChangeRequest = { type: 'changeStyle', cellId: id, data: { wolframData } };
   return request;
 }
 

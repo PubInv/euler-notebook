@@ -87,7 +87,7 @@ export class FormulaCell extends CellBase {
   // }
 
   public onChange(change: NotebookChange): boolean {
-    debug(`onChange: cell ${this.styleId} ${notebookChangeSynopsis(change)}`);
+    debug(`onChange: cell ${this.cellId} ${notebookChangeSynopsis(change)}`);
 
     // TODO: Changes that affect the prefix panel.
 
@@ -99,7 +99,7 @@ export class FormulaCell extends CellBase {
         break;
       }
       // case 'styleChanged': {
-      //   if (change.style.id == this.styleId) {
+      //   if (change.style.id == this.cellId) {
       //     this.updateDisplayPanel(change.style);
       //     this.updateInputPanelData(change.style);
       //     this.updateInputPanelDrawing(change.style);
@@ -231,7 +231,7 @@ export class FormulaCell extends CellBase {
     // Submit a notebook change request.
     const strokesChangeCallback = async (_strokeData: StrokeData)=>{
       throw new Error("TODO: Just send stroke to server");
-      // const changeRequest: StyleChangeRequest = { type: 'changeStyle', styleId: style.id, data: strokeData };
+      // const changeRequest: StyleChangeRequest = { type: 'changeStyle', cellId: style.id, data: strokeData };
       // // TODO: We don't want to wait for *all* processing of the strokes to finish, just the svg update.
       // // TODO: Incremental changes.
       // await this.container.screen.notebook.sendChangeRequest(changeRequest);

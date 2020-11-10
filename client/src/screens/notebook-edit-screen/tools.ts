@@ -55,7 +55,7 @@ export class Tools extends HtmlElement<'div'>{
   }
 
   public render(_styleId: CellId): void {
-    // const style = this.screen.notebook.getStyle(styleId);
+    // const style = this.screen.notebook.getStyle(cellId);
 
 
     // // Render the symbol table
