@@ -68,28 +68,28 @@ describe("test relationships", function() {
 
       // Insert "old" formula 1
       const changes = await notebook.requestChange('TEST', wolframFormulaInsertRequest(OLD_F1));
-      const insertFormulaChange = changes.find(c=>c.type=='cellInserted' && c.style.role=='FORMULA');
-      const formula1Style = (<CellInserted>insertFormulaChange).style;
+      const insertFormulaChange = changes.find(c=>c.type=='cellInserted' && c.cell.role=='FORMULA');
+      const formula1Style = (<CellInserted>insertFormulaChange).cell;
       // console.log("Old Formula 1:");
       // console.dir(formula1Style);
 
       // Use the "factor" tool on formula 1
-      const F1_algebra_tools = notebook.findStyles({ type: 'TOOL-DATA', source: 'ALGEBRAIC-TOOLS', recursive: true }, formula1Style.id);
+      const F1_algebra_tools = notebook.findCells({ type: 'TOOL-DATA', source: 'ALGEBRAIC-TOOLS', recursive: true }, formula1Style.id);
       const F1_factor_tool = F1_algebra_tools.find( e => e.data.name == "factor");
       await notebook.useTool(F1_factor_tool!.id);
 
       // Find formula 2 inserted by the tool.
-      const formula2Style = notebook.findStyles({ type: 'FORMULA-DATA', role: 'FORMULA' }).find(w => w.id != formula1Style.id)!;
+      const formula2Style = notebook.findCells({ type: 'FORMULA-DATA', role: 'FORMULA' }).find(w => w.id != formula1Style.id)!;
       // console.log("Old Formula 2:");
       // console.dir(formula2Style);
 
       // Use the "apart" tool on formula 2
-      const F2_algebra_tools = notebook.findStyles({ type: 'TOOL-DATA', source: 'ALGEBRAIC-TOOLS', recursive: true }, formula2Style!.id);
+      const F2_algebra_tools = notebook.findCells({ type: 'TOOL-DATA', source: 'ALGEBRAIC-TOOLS', recursive: true }, formula2Style!.id);
       const F2_apart_tool = F2_algebra_tools.find( e => e.data.name == "apart");
       await notebook.useTool(F2_apart_tool!.id);
 
       // Find formula 3 inserted by the tool.
-      const formula3Style = notebook.findStyles({ type: 'FORMULA-DATA', role: 'FORMULA' }).find(w => (w.id != formula1Style.id && w.id != formula2Style!.id))!;
+      const formula3Style = notebook.findCells({ type: 'FORMULA-DATA', role: 'FORMULA' }).find(w => (w.id != formula1Style.id && w.id != formula2Style!.id))!;
       // console.log("Old Formula 3:");
       // console.dir(formula3Style);
 

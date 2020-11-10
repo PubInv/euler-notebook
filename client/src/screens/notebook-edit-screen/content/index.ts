@@ -27,7 +27,7 @@ const debug = debug1('client:notebook-edit-screen-content');
 
 import { CssClass, assert, Html, assertFalse, notImplemented } from "../../../shared/common";
 import {
-  CellId, StyleObject, NotebookChange, CellRelativePosition, CellPosition, StyleProperties,
+  CellId, CellObject, NotebookChange, CellRelativePosition, CellPosition, CellProperties,
 } from "../../../shared/notebook";
 import {
   DebugParams, DebugResults, DeleteCellRequest, InsertCellRequest,
@@ -112,8 +112,8 @@ export class Content extends HtmlElement<'div'>{
     this.topOfUndoStack = 0;
     this.undoStack = [];
 
-    for (const cellId of this.screen.notebook.topLevelStyleOrder()) {
-      const style = this.screen.notebook.getStyle(cellId);
+    for (const cellId of this.screen.notebook.topLevelCellOrder()) {
+      const style = this.screen.notebook.getCell(cellId);
       this.createCell(style, -1);
     }
 
@@ -409,7 +409,7 @@ export class Content extends HtmlElement<'div'>{
 
   // Instance Methods
 
-  public createCell(style: StyleObject, afterId: CellRelativePosition): CellBase {
+  public createCell(style: CellObject, afterId: CellRelativePosition): CellBase {
     const cellView = createCell(this, style);
     this.cellViews.set(style.id, cellView);
     this.insertCell(cellView, afterId);
@@ -442,7 +442,7 @@ export class Content extends HtmlElement<'div'>{
     }
   }
 
-  public async insertStyle(styleProps: StyleProperties, afterId: CellRelativePosition = CellPosition.Bottom): Promise<void> {
+  public async insertStyle(styleProps: CellProperties, afterId: CellRelativePosition = CellPosition.Bottom): Promise<void> {
     const changeRequest: InsertCellRequest = { type: 'insertCell', afterId, styleProps };
     await this.sendUndoableChangeRequests([ changeRequest ]);
   }
@@ -494,7 +494,7 @@ export class Content extends HtmlElement<'div'>{
       case 'cellDeleted': {
         // If a substyle is deleted then mark the cell as dirty.
         // If a top-level style is deleted then remove the cell.
-        const style = notebook.getStyle(change.cellId);
+        const style = notebook.getCell(change.cellId);
         const cellView = this.cellViews.get(style.id);
         assert(cellView);
         this.deleteCell(cellView!);
@@ -502,11 +502,11 @@ export class Content extends HtmlElement<'div'>{
         break;
       }
       case 'cellInserted': {
-        this.createCell(change.style, change.afterId!);
+        this.createCell(change.cell, change.afterId!);
         break;
       }
       case 'cellMoved': {
-        const style = notebook.getStyle(change.cellId);
+        const style = notebook.getCell(change.cellId);
         const movedCell = this.cellViews.get(style.id);
         assert(movedCell);
         // Note: DOM methods ensure the element will be removed from
@@ -556,7 +556,7 @@ export class Content extends HtmlElement<'div'>{
   }
 
   private firstCell(): CellBase | undefined {
-    const styleOrder = this.screen.notebook.topLevelStyleOrder();
+    const styleOrder = this.screen.notebook.topLevelCellOrder();
     if (styleOrder.length==0) { return undefined; }
     const cellId = styleOrder[0];
     const cellView = this.cellViewFromId(cellId);

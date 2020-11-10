@@ -140,7 +140,7 @@ export class Content extends HtmlElement<'div'>{
       let y: number = cssLength(topMargin, 'pt');
       for (const cellId of page.cellIds) {
 
-        const style = this.screen.notebook.getStyle(cellId);
+        const style = this.screen.notebook.getCell(cellId);
         const data = <CellData>style.data;
 
         const $cellSvg = $outerSvg(data.displaySvg);

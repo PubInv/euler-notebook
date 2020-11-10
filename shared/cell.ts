@@ -55,7 +55,7 @@ export interface FigureCellData extends CellData {
 
 export interface PlotCellData extends CellData {
   type: CellType.Plot,
-  formulaStyleId: CellId,
+  formulaCellId: CellId,
   // LATER: Identify the symbols used in the plot for each axis, etc.
 }
 

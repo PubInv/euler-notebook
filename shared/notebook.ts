@@ -26,11 +26,9 @@ import { NOTEBOOK_NAME_RE, NotebookName, NotebookPath } from "./folder";
 
 // Types
 
-export interface FindStyleOptions {
-  // REVIEW: Rename this interface to FindStylePattern
-  role?: StyleRole|RegExp;
-  source?: StyleSource;
-  notSource?: StyleSource;
+export interface FindCellOptions {
+  source?: CellSource;
+  notSource?: CellSource;
 }
 
 export type NotebookChange = CellDeleted | CellInserted | CellMoved;
@@ -40,7 +38,7 @@ export interface CellDeleted {
 }
 export interface CellInserted {
   type: 'cellInserted';
-  style: StyleObject;
+  cell: CellObject;
   afterId?: CellRelativePosition;
 }
 export interface CellMoved {
@@ -55,7 +53,7 @@ export interface NotebookObject {
   nextId: CellId;
   pageConfig: PageConfig;
   pages: Page[];
-  styleMap: StyleMap;
+  cellMap: CellMap;
   version: string;
 }
 
@@ -81,55 +79,25 @@ interface PageMargins {
 
 export type CellId = number;
 
-export interface StyleMap {
-  [id: /* CellId */number]: StyleObject;
+export interface CellMap {
+  [id: /* CellId */number]: CellObject;
 }
 
-export const STYLE_ROLES = [
-  // Top level (cell) roles
-  'FIGURE',               // FigureCellData
-  'FORMULA',              // FormulaCellData
-  'PLOT',                 // PlotCellData
-  'TEXT',                 // TextCellData
-
-  'ATTRIBUTE',            // Generic attribute. Meaning implied by type.
-  'ERROR',                // An error message. Type should be text.
-  'EVALUATION',           // CAS evaluation of an expression.
-  'EVALUATION-ERROR',     // Error in CAS evaluation of an expression.
-  'EXPOSITION',           // A longer discussion or description.
-  'HANDWRITING',          // REVIEW: Used? Deprecate? Stroke information for the user's handwriting.
-  'QUADRATIC',            // DEPRECATED: A quadratic expression, presumably worth plotting.
-  'SIMPLIFICATION',       // CAS simplification of expression or equation.
-  'EQUATION',             // An equation
-  'EQUATION-SOLUTION',    // An equation
-  'EQUATION-DEFINITION',  // A simple equality relation defined
-  'SYMBOL',               // Symbols extracted from an expression.
-  'SYMBOL-DEFINITION',    // Definition of a symbol.
-  'SYMBOL-TABLE',         //
-  'SYMBOL-USE',           // Use of a symbol.
-  'DECORATION',           // Clearly indicates this is NOT the input but a decoration
-  'EQUIVALENT-CHECKS',    // Checking expression equivalence of with other styles
-  'UNIVARIATE-QUADRATIC', // A quadratic expression, presumably worth plotting.
-  'SUBTRIVARIATE',        // An expression in one or two variables presumable plottable.
-] as const;
-export type StyleRole = typeof STYLE_ROLES[number];
-
-export interface StyleObject extends StyleProperties {
+export interface CellObject extends CellProperties {
   id: CellId;
-  source: StyleSource;
+  source: CellSource;
 }
 
-// Position of style in the notebook.
-// Applies only to top-level styles.
+// Position of cell in the notebook.
 // Position 0 is the first cell of the notebook.
 export type CellOrdinalPosition = number;
 
-export interface StyleProperties {
+export interface CellProperties {
   id?: CellId;
   data: any;
-  role: StyleRole;
 }
 
+// Position a cell relative to another cell, or at the top or bottom of the notebook.
 export type CellRelativePosition = CellId | CellPosition;
 
 export enum CellPosition {
@@ -137,11 +105,11 @@ export enum CellPosition {
   Bottom = -1,
 }
 
-export const STYLE_SOURCES = [
+export const CELL_SOURCES = [
   'SYSTEM',
   'USER',
 ] as const;
-export type StyleSource = typeof STYLE_SOURCES[number];
+export type CellSource = typeof CELL_SOURCES[number];
 
 export type WolframExpression = '{WolframExpression}';
 
@@ -189,13 +157,13 @@ export abstract class Notebook<W extends NotebookWatcher> extends WatchedResourc
 
   // Public Instance Property Functions
 
-  public allStyles(): StyleObject[] {
+  public allCells(): CellObject[] {
     // REVIEW: Return an iterator?
-    const sortedIds: CellId[] = Object.keys(this.styleMap).map(k=>parseInt(k,10)).sort();
-    return sortedIds.map(id=>this.getStyle(id));
+    const sortedIds: CellId[] = Object.keys(this.cellMap).map(k=>parseInt(k,10)).sort();
+    return sortedIds.map(id=>this.getCell(id));
   }
 
-  public compareStylePositions(id1: CellId, id2: CellId): number {
+  public compareCellPositions(id1: CellId, id2: CellId): number {
     // Returns a negative number if style1 is before style2,
     // zero if they are the same styles,
     // or a positive number if style1 is after style2.
@@ -205,7 +173,7 @@ export abstract class Notebook<W extends NotebookWatcher> extends WatchedResourc
     return p1 - p2;
   }
 
-  public followingStyleId(id: CellId): CellId {
+  public followingCellId(id: CellId): CellId {
     // Returns the id of the style immediately after the top-level style specified.
     const i = this.pages[0].cellIds.indexOf(id);
     assert(i>=0);
@@ -213,15 +181,15 @@ export abstract class Notebook<W extends NotebookWatcher> extends WatchedResourc
     return this.pages[0].cellIds[i+1];
   }
 
-  public getStyle(id: CellId): StyleObject {
-    const rval = this.styleMap[id];
+  public getCell(id: CellId): CellObject {
+    const rval = this.cellMap[id];
     assert(rval, `Style ${id} doesn't exist.`);
     return rval;
   }
 
-  public getStyleThatMayNotExist(id: CellId): StyleObject|undefined {
+  public getCellThatMayNotExist(id: CellId): CellObject|undefined {
     // TODO: Eliminate. Change usages to .findStyle.
-    return this.styleMap[id];
+    return this.cellMap[id];
   }
 
   public isEmpty(): boolean {
@@ -229,7 +197,7 @@ export abstract class Notebook<W extends NotebookWatcher> extends WatchedResourc
     return this.pages[0].cellIds.length == 0;
   }
 
-  public precedingStyleId(id: CellId): CellId {
+  public precedingCellId(id: CellId): CellId {
     // Returns the id of the style immediately before the top-level style specified.
     const i = this.pages[0].cellIds.indexOf(id);
     assert(i>=0);
@@ -240,26 +208,27 @@ export abstract class Notebook<W extends NotebookWatcher> extends WatchedResourc
   public toHtml(): Html {
     if (this.isEmpty()) { return <Html>"<i>Notebook is empty.</i>"; }
     else {
-      return <Html>this.topLevelStyleOrder()
+      return <Html>this.topLevelCellOrder()
       .map(cellId=>{
-        const style = this.getStyle(cellId);
-        return this.styleToHtml(style);
+        const style = this.getCell(cellId);
+        return this.cellToHtml(style);
       })
       .join('');
     }
   }
 
-  public topLevelStyleOrder(): CellId[] {
+  public topLevelCellOrder(): CellId[] {
     // REVIEW: Return IterableIterator<CellId>?
     return this.pages.reduce((acc: CellId[], page: Page)=>acc.concat(page.cellIds), []);
   }
 
-  public topLevelStyles(): StyleObject[] {
+  public topLevelCells(): CellObject[] {
+    // REVIEW: This is just allCells now.
     // REVIEW: Return IterableIterator<StyleObjectd>?
-    return this.pages[0].cellIds.map(cellId=>this.getStyle(cellId));
+    return this.pages[0].cellIds.map(cellId=>this.getCell(cellId));
   }
 
-  public stylePosition(id: CellId): CellOrdinalPosition {
+  public cellPosition(id: CellId): CellOrdinalPosition {
     return this.pages[0].cellIds.indexOf(id);
   }
 
@@ -279,7 +248,7 @@ export abstract class Notebook<W extends NotebookWatcher> extends WatchedResourc
 
     switch(change.type) {
       case 'cellDeleted':          this.deleteCell(change.cellId); break;
-      case 'cellInserted':         this.insertCell(change.style, change.afterId); break;
+      case 'cellInserted':         this.insertCell(change.cell, change.afterId); break;
       case 'cellMoved':            this.moveCell(change); break;
       default:
         throw new Error(`Applying unexpected change type: ${(<any>change).type}`);
@@ -295,12 +264,12 @@ export abstract class Notebook<W extends NotebookWatcher> extends WatchedResourc
     for (const change of changes) { this.applyChange(change, ownRequest); }
   }
 
-  public findStyle(options: FindStyleOptions): StyleObject|undefined {
+  public findCell(options: FindCellOptions): CellObject|undefined {
     // REVIEW: If we don't need to throw on multiple matches, then we can terminate the search
     //         after we find the first match.
     // Like findStyles but expects to find zero or one matching style.
     // If it finds more than one matching style then it returns the first and outputs a warning.
-    const styles = this.findStyles(options);
+    const styles = this.findCells(options);
     if (styles.length > 0) {
       if (styles.length > 1) {
         // TODO: On the server, this should use the logging system rather than console output.
@@ -312,30 +281,30 @@ export abstract class Notebook<W extends NotebookWatcher> extends WatchedResourc
     }
   }
 
-  public findStyles(
-    options: FindStyleOptions,
-    rval: StyleObject[] = []
-  ): StyleObject[] {
+  public findCells(
+    options: FindCellOptions,
+    rval: CellObject[] = []
+  ): CellObject[] {
     // Option to throw if style not found.
-    const styles = this.topLevelStyles();
+    const styles = this.topLevelCells();
     // REVIEW: Use filter with predicate instead of explicit loop.
     for (const style of styles) {
-      if (styleMatchesPattern(style, options)) { rval.push(style); }
+      if (cellMatchesPattern(style, options)) { rval.push(style); }
     }
     return rval;
   }
 
-  public hasStyleId(cellId: CellId): boolean {
-    return this.styleMap.hasOwnProperty(cellId);
+  public hasCellId(cellId: CellId): boolean {
+    return this.cellMap.hasOwnProperty(cellId);
   }
 
-  public hasStyle(
-    options: FindStyleOptions,
+  public hasCell(
+    options: FindCellOptions,
   ): boolean {
     // Returns true iff findStyles with the same parameters would return a non-empty list.
     // OPTIMIZATION: Return true when we find the first matching style.
     // NOTE: We don't use 'findStyle' because that throws on multiple matches.
-    const styles = this.findStyles(options);
+    const styles = this.findCells(options);
     return styles.length>0;
   }
 
@@ -352,19 +321,19 @@ export abstract class Notebook<W extends NotebookWatcher> extends WatchedResourc
     this.nextId = 1;
     this.pages = [{ cellIds: []}];
     this.pageConfig = deepCopy(DEFAULT_PAGE_CONFIG),
-    this.styleMap = {};
+    this.cellMap = {};
   }
 
   // Private Instance Properties
 
-  protected styleMap: StyleMap;     // Mapping from style ids to style objects.
+  protected cellMap: CellMap;     // Mapping from style ids to style objects.
 
   // Private Instance Property Functions
 
-  private styleToHtml(style: StyleObject): Html {
+  private cellToHtml(cell: CellObject): Html {
     // TODO: This is very inefficient as notebook.childStylesOf goes through *all* styles.
-    const dataJson = (typeof style.data != 'undefined' ? escapeHtml(JSON.stringify(style.data)) : 'undefined' );
-    const styleInfo = `S${style.id} ${style.role} ${style.source}`
+    const dataJson = (typeof cell.data != 'undefined' ? escapeHtml(JSON.stringify(cell.data)) : 'undefined' );
+    const styleInfo = `S${cell.id} ${cell.source}`
     if (dataJson.length<30) {
       return <Html>`<div><span class="leaf">${styleInfo} <tt>${dataJson}</tt></span></div>`;
     } else {
@@ -380,24 +349,24 @@ export abstract class Notebook<W extends NotebookWatcher> extends WatchedResourc
   // Private Instance Methods
 
   private deleteCell(cellId: CellId): void {
-    assert(this.styleMap[cellId]);
+    assert(this.cellMap[cellId]);
     // If this is a top-level style then remove it from the top-level style order first.
     const i = this.pages[0].cellIds.indexOf(cellId);
     assert(i>=0);
     this.pages[0].cellIds.splice(i,1);
-    delete this.styleMap[cellId];
+    delete this.cellMap[cellId];
   }
 
   protected initializeFromObject(obj: NotebookObject): void {
     this.nextId = obj.nextId;
     this.pageConfig = obj.pageConfig;
     this.pages = obj.pages;
-    this.styleMap = obj.styleMap;
+    this.cellMap = obj.cellMap;
   }
 
-  private insertCell(style: StyleObject, afterId?: CellRelativePosition): void {
+  private insertCell(style: CellObject, afterId?: CellRelativePosition): void {
 
-    this.styleMap[style.id] = style;
+    this.cellMap[style.id] = style;
     // Insert top-level styles in the style order.
     if (!afterId || afterId===CellPosition.Top) {
       this.pages[0].cellIds.unshift(style.id);
@@ -420,14 +389,13 @@ export abstract class Notebook<W extends NotebookWatcher> extends WatchedResourc
 
 // Helper Functions
 
-export function StyleInsertedFromNotebookChange(change: NotebookChange): CellInserted {
+export function cellInsertedFromNotebookChange(change: NotebookChange): CellInserted {
   // TODO: Rename this function so it doesn't start with a capital letter.
   if (change.type != 'cellInserted') { throw new Error("Not StyleInserted change."); }
   return change;
 }
 
-export function styleMatchesPattern(style: StyleObject, options: FindStyleOptions): boolean {
-  return    (!options.role || (typeof options.role == 'object' && </* TYPESCRIPT: */any>options.role instanceof RegExp ? (<RegExp>options.role).test(style.role) : style.role == options.role))
-         && (!options.source || style.source == options.source)
-         && (!options.notSource || style.source != options.notSource);
+export function cellMatchesPattern(cell: CellObject, options: FindCellOptions): boolean {
+  return    (!options.source || cell.source == options.source)
+         && (!options.notSource || cell.source != options.notSource);
 }

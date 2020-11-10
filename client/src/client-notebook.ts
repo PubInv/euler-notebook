@@ -191,8 +191,8 @@ export class ClientNotebook extends Notebook<ClientNotebookWatcher> {
     // Apply changes to the notebook data structure, and notify the view of the change.
     // If the change is not a delete, then update the data structure first, then notify the view.
     // Otherwise, notify the view of the change, then update the data structure.
-    // (The view needs to trace the deleted style or relationship to the top-level style to
-    //  determine what cell to update. If the style has been deleted from the notebook already
+    // (The view needs to trace the deleted cell or relationship to the top-level cell to
+    //  determine what cell to update. If the cell has been deleted from the notebook already
     //  then it cannot do that.)
     for (const change of msg.changes) {
       this.applyChange(change, ownRequest);

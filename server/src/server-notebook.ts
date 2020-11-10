@@ -31,9 +31,9 @@ import { join } from "path";
 import { assert, assertFalse, ExpectedError, notImplemented, Timestamp } from "./shared/common";
 import { NotebookPath, NOTEBOOK_PATH_RE, NotebookName, FolderPath, NotebookEntry } from "./shared/folder";
 import {
-  Notebook, NotebookObject, NotebookChange, StyleObject, StyleSource, CellId,
+  Notebook, NotebookObject, NotebookChange, CellObject, CellSource, CellId,
   CellMoved, CellPosition, VERSION,
-  CellInserted, CellDeleted, NotebookWatcher, StyleProperties,
+  CellInserted, CellDeleted, NotebookWatcher, CellProperties,
 } from "./shared/notebook";
 import {
   NotebookChangeRequest, MoveCellRequest, InsertCellRequest,
@@ -284,7 +284,7 @@ export class ServerNotebook extends Notebook<ServerNotebookWatcher> {
       nextId: this.nextId,
       pageConfig: this.pageConfig,
       pages: this.pages,
-      styleMap: this.styleMap,
+      cellMap: this.cellMap,
       version: VERSION,
     }
     return rval;
@@ -293,14 +293,14 @@ export class ServerNotebook extends Notebook<ServerNotebookWatcher> {
   // Public Instance Methods
 
   public async requestChange(
-    source: StyleSource,
+    source: CellSource,
     changeRequest: NotebookChangeRequest,
   ): Promise<NotebookChange[]> {
     return this.requestChanges(source, [changeRequest]);
   }
 
   public async requestChanges(
-    source: StyleSource,
+    source: CellSource,
     changeRequests: NotebookChangeRequest[],
     originatingWatcher?: NotebookWatcher,
     requestId?: RequestId,
@@ -410,7 +410,7 @@ export class ServerNotebook extends Notebook<ServerNotebookWatcher> {
   // Private Instance Methods
 
   private appendChange(
-    source: StyleSource,
+    source: CellSource,
     change: NotebookChange,
     rval: NotebookChange[],
   ): void {
@@ -422,7 +422,7 @@ export class ServerNotebook extends Notebook<ServerNotebookWatcher> {
   }
 
   private applyRequestedChanges(
-    source: StyleSource,
+    source: CellSource,
     changeRequests: NotebookChangeRequest[],
     rval: NotebookChange[],
   ): NotebookChangeRequest[] {
@@ -454,18 +454,17 @@ export class ServerNotebook extends Notebook<ServerNotebookWatcher> {
   }
 
   private applyDeleteCellRequest(
-    source: StyleSource,
+    source: CellSource,
     request: DeleteCellRequest,
     rval: NotebookChange[],
   ): InsertCellRequest|undefined {
 
-    var style = this.getStyle(request.cellId);
+    var style = this.getCell(request.cellId);
 
     // Assemble the undo change request before we delete anything
     // from the notebook.
     // TODO: gather substyles from the same source, etc.
-    const styleProps: StyleProperties = {
-      role: style.role,
+    const styleProps: CellProperties = {
       data: style.data,
     };
     const undoChangeRequest: InsertCellRequest = {
@@ -482,7 +481,7 @@ export class ServerNotebook extends Notebook<ServerNotebookWatcher> {
   }
 
   private applyInsertCellRequest(
-    source: StyleSource,
+    source: CellSource,
     request: InsertCellRequest,
     rval: NotebookChange[],
   ): DeleteCellRequest {
@@ -498,14 +497,13 @@ export class ServerNotebook extends Notebook<ServerNotebookWatcher> {
       id = this.nextId++;
     }
 
-    const style: StyleObject = {
+    const style: CellObject = {
       data: styleProps.data,
       id,
-      role: styleProps.role,
       source,
     };
 
-    const change: CellInserted =  { type: 'cellInserted', style, afterId };
+    const change: CellInserted =  { type: 'cellInserted', cell: style, afterId };
     this.appendChange(source, change, rval);
 
     const undoChangeRequest: DeleteCellRequest = {
@@ -516,14 +514,14 @@ export class ServerNotebook extends Notebook<ServerNotebookWatcher> {
   }
 
   private applyMoveStyleRequest(
-    source: StyleSource,
+    source: CellSource,
     request: MoveCellRequest,
     rval: NotebookChange[],
   ): MoveCellRequest|undefined {
     const { cellId: cellId, afterId } = request;
     if (afterId == cellId) { throw new Error(`Style ${cellId} can't be moved after itself.`); }
 
-    const style = this.getStyle(cellId);
+    const style = this.getCell(cellId);
     const oldPosition: CellPosition = this.pages[0].cellIds.indexOf(style.id);
     if (oldPosition < 0) { throw new Error(`Style ${cellId} can't be moved: not found in styleOrder array.`); }
 

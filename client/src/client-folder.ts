@@ -232,9 +232,6 @@ export class ClientFolder extends Folder<ClientFolderWatcher> {
     // Apply changes to the notebook data structure, and notify the view of the change.
     // If the change is not a delete, then update the data structure first, then notify the view.
     // Otherwise, notify the view of the change, then update the data structure.
-    // (The view needs to trace the deleted style or relationship to the top-level style to
-    //  determine what cell to update. If the style has been deleted from the notebook already
-    //  then it cannot do that.)
     for (const change of msg.changes) {
       this.applyChange(change, ownRequest);
     }

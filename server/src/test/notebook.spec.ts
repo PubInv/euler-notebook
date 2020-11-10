@@ -66,7 +66,7 @@ describe("notebook", function() {
           }
         },
         relationshipMap: {},
-        styleMap: {
+        cellMap: {
           1: { data: "a", id: 1, role: "TEXT", parentId: 0, source: "TEST", type: "PLAIN-TEXT", },
           2: { data: "b", id: 2, role: "TEXT", parentId: 0, source: "TEST", type: "PLAIN-TEXT", },
           3: { data: "c", id: 3, role: "TEXT", parentId: 0, source: "TEST", type: "PLAIN-TEXT", }
@@ -80,11 +80,11 @@ describe("notebook", function() {
     });
 
     it("Retrieves styles with allStyles and getStyle", async function() {
-      const styles = notebook.allStyles();
+      const styles = notebook.allCells();
       assert.equal(styles.length, 3);
       assert.equal(styles[0].data, styleData[0]);
 
-      const styleObject = notebook.getStyle(styles[0].id);
+      const styleObject = notebook.getCell(styles[0].id);
       assert.equal(styleObject, styles[0]);
     });
 

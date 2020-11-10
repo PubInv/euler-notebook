@@ -24,7 +24,7 @@ const debug = debug1('client:text-cell');
 
 import { CssClass, assertFalse, PlainText, notImplemented } from "../../../../shared/common";
 import { StrokeData } from "../../../../shared/stylus";
-import { StyleObject, NotebookChange, } from "../../../../shared/notebook";
+import { CellObject, NotebookChange, } from "../../../../shared/notebook";
 // import { StyleChangeRequest } from "../../../../shared/math-tablet-api";
 
 import { $new, $outerSvg } from "../../../../dom";
@@ -34,7 +34,7 @@ import { StrokePanel } from "../../../../components/stroke-panel";
 import { Content as CellContainer } from "../index";
 
 import { CellBase } from "./cell-base";
-import { notebookChangeSynopsis, styleSynopsis } from "../../../../shared/debug-synopsis";
+import { notebookChangeSynopsis, cellSynopsis } from "../../../../shared/debug-synopsis";
 import { TextCellData, TextCellKeyboardData, TextCellStylusData } from "../../../../shared/cell";
 
 // Types
@@ -49,8 +49,8 @@ export class TextCell extends CellBase {
 
   // Public Constructor
 
-  public constructor(container: CellContainer, style: StyleObject) {
-    debug(`Constructing: ${styleSynopsis(style)}`);
+  public constructor(container: CellContainer, style: CellObject) {
+    debug(`Constructing: ${cellSynopsis(style)}`);
 
     const $content = $new({
       tag: 'div',
@@ -110,14 +110,14 @@ export class TextCell extends CellBase {
 
   // Private Instance Methods
 
-  private createDisplayPanel(style: StyleObject): SVGSVGElement {
+  private createDisplayPanel(style: CellObject): SVGSVGElement {
     const data = <TextCellData>style.data;
     const $displayPanel = $outerSvg<'svg'>(data.displaySvg);
     $displayPanel.classList.add('display');
     return $displayPanel;
   }
 
-  private createInputPanel(_style: StyleObject): HTMLDivElement {
+  private createInputPanel(_style: CellObject): HTMLDivElement {
     notImplemented();
     // let panel: KeyboardPanel|StrokePanel;
     // if (styleIsKeyboard) {
@@ -129,7 +129,7 @@ export class TextCell extends CellBase {
   }
 
   // @ts-expect-error // TODO:
-  private createKeyboardSubpanel(style: StyleObject): KeyboardPanel {
+  private createKeyboardSubpanel(style: CellObject): KeyboardPanel {
     const data = <TextCellKeyboardData>style.data;
     const textChangeCallback: KeyboardCallbackFn = (_start: number, _end: number, _replacement: PlainText, _value: PlainText): void =>{
       notImplemented();
@@ -143,7 +143,7 @@ export class TextCell extends CellBase {
   }
 
   // @ts-expect-error // TODO:
-  private createStrokeSubpanel(style: StyleObject): StrokePanel {
+  private createStrokeSubpanel(style: CellObject): StrokePanel {
     const data = <TextCellStylusData>style.data;
     const strokePanel = new StrokePanel(data.stylusInput, data.displaySvg, async (_strokeData: StrokeData)=>{
       throw new Error("TODO: Just send stroke to server");
@@ -155,13 +155,13 @@ export class TextCell extends CellBase {
     return strokePanel;
   }
 
-  // private updateDisplayPanel(style: StyleObject): void {
+  // private updateDisplayPanel(style: CellObject): void {
   //   const $displayPanel = this.createDisplayPanel(style);
   //   this.$displayPanel!.replaceWith($displayPanel);
   //   this.$displayPanel = $displayPanel;
   // }
 
-  // private updateInputPanelData(inputStyle: StyleObject): void {
+  // private updateInputPanelData(inputStyle: CellObject): void {
   //   switch(inputStyle.type) {
   //     case 'STROKE-DATA':
   //       assert(this.strokePanel);
@@ -175,7 +175,7 @@ export class TextCell extends CellBase {
   //   }
   // }
 
-  // private updateInputPanelDrawing(svgRepStyle: StyleObject): void {
+  // private updateInputPanelDrawing(svgRepStyle: CellObject): void {
   //   assert(this.strokePanel);
   //   this.strokePanel!.updateSvgMarkup(svgRepStyle.data);
   // }

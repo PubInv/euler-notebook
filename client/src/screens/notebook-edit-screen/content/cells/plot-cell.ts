@@ -23,7 +23,7 @@ import * as debug1 from "debug";
 const debug = debug1('client:formula-cell');
 
 import {  assertFalse, CssClass } from "../../../../shared/common";
-import { NotebookChange, StyleObject } from "../../../../shared/notebook";
+import { NotebookChange, CellObject } from "../../../../shared/notebook";
 import { Content as CellContainer } from "..";
 
 import { CellBase } from "./cell-base";
@@ -42,7 +42,7 @@ export class PlotCell extends CellBase {
 
   // Public Constructor
 
-  public  constructor(container: CellContainer, style: StyleObject) {
+  public  constructor(container: CellContainer, style: CellObject) {
     const contentSpec: HtmlElementSpecification<'div'> = {
       tag: 'div',
       classes: [ <CssClass>'plotCell', <CssClass>'content' ],
@@ -89,13 +89,13 @@ export class PlotCell extends CellBase {
 
   // Private Instance Methods
 
-  private createDisplayPanel(style: StyleObject): SVGSVGElement {
+  private createDisplayPanel(style: CellObject): SVGSVGElement {
     const $displayPanel = $outerSvg<'svg'>(style.data);
     $displayPanel.classList.add('display');
     return $displayPanel;
   }
 
-  // private updateDisplayPanel(style: StyleObject): void {
+  // private updateDisplayPanel(style: CellObject): void {
   //   const $displayPanel = this.createDisplayPanel(style);
   //   this.$displayPanel!.replaceWith($displayPanel);
   //   this.$displayPanel = $displayPanel;

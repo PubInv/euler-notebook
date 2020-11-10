@@ -19,7 +19,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 // Requirements
 
-import { StyleObject } from "../../../../shared/notebook";
+import { CellObject } from "../../../../shared/notebook";
 import { Content } from "..";
 
 import { CellBase } from "./cell-base";
@@ -32,16 +32,17 @@ import { TextCell } from "./text-cell";
 
 // Exports
 
-export function createCell(notebookView: Content, style: StyleObject): CellBase {
+export function createCell(notebookView: Content, cell: CellObject): CellBase {
 
   // If a style has a child of REPRESENTATION|INPUT/STROKES then use a stylus cell.
   let rval: CellBase;
-  switch(style.role) {
-    case 'FIGURE':   rval = new FigureCell(notebookView, style); break;
-    case 'FORMULA':  rval = new FormulaCell(notebookView, style); break;
-    case 'TEXT':     rval = new TextCell(notebookView, style); break;
-    case 'PLOT':     rval = new PlotCell(notebookView, style); break;
-    default: throw new Error(`Unknown top-level cell role: ${style.role}`);
+  const type: string = 'FIGURE'; // TODO:
+  switch(type) {
+    case 'FIGURE':   rval = new FigureCell(notebookView, cell); break;
+    case 'FORMULA':  rval = new FormulaCell(notebookView, cell); break;
+    case 'TEXT':     rval = new TextCell(notebookView, cell); break;
+    case 'PLOT':     rval = new PlotCell(notebookView, cell); break;
+    default: throw new Error(`Unknown top-level cell role: ${type}`);
   }
   return rval;
 }

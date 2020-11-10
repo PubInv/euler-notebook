@@ -25,7 +25,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 import { Html, PlainText } from "./common";
 import { FolderObject, FolderPath, NotebookPath, FolderName, NotebookName, FolderChange } from "./folder";
 import {
-  StyleProperties, CellId, NotebookChange, NotebookObject, CellRelativePosition, WolframExpression
+  CellProperties, CellId, NotebookChange, NotebookObject, CellRelativePosition, WolframExpression
 } from "./notebook";
 
 // Types
@@ -121,7 +121,7 @@ export interface InsertCellRequest {
   type: 'insertCell';
   afterId?: CellRelativePosition;
   // TODO: rename styleProps => props
-  styleProps: StyleProperties;
+  styleProps: CellProperties;
   // type: 'insertCell';
   // cellType: CellType;
   // inputType: InputType;

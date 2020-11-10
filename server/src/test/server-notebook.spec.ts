@@ -28,7 +28,7 @@ import * as sinon from "sinon";
 
 import { EMPTY_SVG, Html, PlainText } from "../shared/common";
 import { EMPTY_FORMULA, FormulaCellData } from "../shared/formula";
-import { NotebookChange, CellInserted, StyleObject } from "../shared/notebook";
+import { NotebookChange, CellInserted, CellObject } from "../shared/notebook";
 import { NotebookChangeRequest, InsertCellRequest, StyleProperties, ToolData } from "../shared/math-tablet-api";
 import { ServerNotebook, ObserverInstance }  from "../server-notebook";
 import { Config } from "../config";
@@ -46,7 +46,7 @@ class TestObserver implements ObserverInstance {
   async onChangesAsync(_changes: NotebookChange[], _startIndex: number, _endIndex: number): Promise<NotebookChangeRequest[]> { return []; }
   public onChangesSync(_changes: NotebookChange[], _startIndex: number, _endIndex: number): NotebookChangeRequest[] { return []; }
   onClose(): void { }
-  async useTool(_style: StyleObject): Promise<NotebookChangeRequest[]> { return []; }
+  async useTool(_style: CellObject): Promise<NotebookChangeRequest[]> { return []; }
 }
 
 // Unit Tests
@@ -62,7 +62,7 @@ describe("server notebook", function() {
     let onChangesAsyncSpy: sinon.SinonSpy<[NotebookChange[], number, number], Promise<NotebookChangeRequest[]>>;
     let onChangesSyncSpy: sinon.SinonSpy<[NotebookChange[], number, number], NotebookChangeRequest[]>;
     let onCloseSpy: sinon.SinonSpy<[], void>;
-    let useToolSpy: sinon.SinonSpy<[StyleObject], Promise<NotebookChangeRequest[]>>;
+    let useToolSpy: sinon.SinonSpy<[CellObject], Promise<NotebookChangeRequest[]>>;
 
     before("onOpen is called when notebook is created", async function(){
       // Register the observer
@@ -140,8 +140,8 @@ describe("server notebook", function() {
       const changes = await notebook.requestChange('TEST', insertRequest);
 
       // Find the tool style that was inserted.
-      const insertToolChange = changes.find(c=>c.type=='cellInserted' && c.style.role=='ATTRIBUTE');
-      const toolStyle = (<CellInserted>insertToolChange).style;
+      const insertToolChange = changes.find(c=>c.type=='cellInserted' && c.cell.role=='ATTRIBUTE');
+      const toolStyle = (<CellInserted>insertToolChange).cell;
 
       // Invoke the tool.
       const callCount = useToolSpy.callCount;

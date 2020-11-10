@@ -27,7 +27,7 @@ const debug = debug1('client:formula-cell');
 import { CssClass, Html, assertFalse, PlainText, notImplemented } from "../../../../shared/common";
 import { StrokeData } from "../../../../shared/stylus";
 import { FormulaCellData, FormulaCellStylusData } from "../../../../shared/formula";
-import { StyleObject, NotebookChange } from "../../../../shared/notebook";
+import { CellObject, NotebookChange } from "../../../../shared/notebook";
 
 import { $new, $outerSvg } from "../../../../dom";
 import { Content as CellContainer } from "..";
@@ -50,7 +50,7 @@ export class FormulaCell extends CellBase {
 
   // Public Constructor
 
-  public constructor(container: CellContainer, style: StyleObject) {
+  public constructor(container: CellContainer, style: CellObject) {
     debug(`Creating instance: style ${style.id}`);
 
     const $content = $new({
@@ -169,14 +169,14 @@ export class FormulaCell extends CellBase {
   //   return html;
   // }
 
-  private createDisplayPanel(style: StyleObject): SVGSVGElement {
+  private createDisplayPanel(style: CellObject): SVGSVGElement {
     const data: FormulaCellData = style.data;
     const $displayPanel = $outerSvg<'svg'>(data.displaySvg);
     $displayPanel.classList.add('display');
     return $displayPanel;
   }
 
-  private createInputPanel(style: StyleObject): HTMLDivElement|undefined {
+  private createInputPanel(style: CellObject): HTMLDivElement|undefined {
     let panel: KeyboardPanel|StrokePanel|undefined;
     const data = <FormulaCellData>style.data;
     switch(data.inputType) {
@@ -210,7 +210,7 @@ export class FormulaCell extends CellBase {
     }
   }
 
-  private createKeyboardSubpanel(style: StyleObject): KeyboardPanel {
+  private createKeyboardSubpanel(style: CellObject): KeyboardPanel {
     const data = <FormulaCellData>style.data;
     const textChangeCallback: KeyboardCallbackFn = (_start: number, _end: number, _replacement: PlainText, _value: PlainText): void=>{
       notImplemented();
@@ -223,7 +223,7 @@ export class FormulaCell extends CellBase {
     return new KeyboardPanel(data.inputText, textChangeCallback);
   }
 
-  private createStrokeSubpanel(style: StyleObject): StrokePanel {
+  private createStrokeSubpanel(style: CellObject): StrokePanel {
 
     const data = <FormulaCellStylusData>style.data;
 
@@ -242,13 +242,13 @@ export class FormulaCell extends CellBase {
     return strokePanel;
   }
 
-  // private updateDisplayPanel(style: StyleObject): void {
+  // private updateDisplayPanel(style: CellObject): void {
   //   const $displayPanel = this.createDisplayPanel(style);
   //   this.$displayPanel!.replaceWith($displayPanel);
   //   this.$displayPanel = $displayPanel;
   // }
 
-  // private updateInputPanelData(inputStyle: StyleObject): void {
+  // private updateInputPanelData(inputStyle: CellObject): void {
   //   switch(inputStyle.type) {
   //     case 'STROKE-DATA':
   //       assert(this.strokePanel);
@@ -263,7 +263,7 @@ export class FormulaCell extends CellBase {
   //   }
   // }
 
-  // private updateInputPanelDrawing(svgRepStyle: StyleObject): void {
+  // private updateInputPanelDrawing(svgRepStyle: CellObject): void {
   //   assert(this.strokePanel);
   //   this.strokePanel!.updateSvgMarkup(svgRepStyle.data);
   // }

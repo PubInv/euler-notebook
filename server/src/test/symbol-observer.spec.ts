@@ -28,7 +28,7 @@ import 'mocha';
 
 import { /* FormulaCellData, */ PlainTextFormula } from "../shared/formula";
 import {
-  StyleObject, RelationshipObject, CellId
+  CellObject, RelationshipObject, CellId
 } from "../shared/notebook";
 import {
   NotebookChangeRequest, InsertCellRequest, StyleChangeRequest, MoveCellRequest, DeleteCellRequest,
@@ -113,7 +113,7 @@ describe("test symbol observer", function() {
       // Now we want to assert that "style" has only one WOLFRAM EVALUATION
       // child.
       // REVIEW: Does this search need to be recursive?
-      const childEvaluation = notebook.findStyles({ type: 'WOLFRAM-EXPRESSION', role: 'EVALUATION', recursive: true }, style.id);
+      const childEvaluation = notebook.findCells({ type: 'WOLFRAM-EXPRESSION', role: 'EVALUATION', recursive: true }, style.id);
       assert(childEvaluation.length == 1,"There should be one evaluation, but there are:"+childEvaluation.length);
 
       // TODO: REPRESENTATION styles no longer exist.
@@ -130,8 +130,8 @@ describe("test symbol observer", function() {
       assert.deepEqual(style.type,'FORMULA-DATA');
       assert.equal(notebook.allRelationships().length,1);
       const r : RelationshipObject = notebook.allRelationships()[0];
-      const fromObj : StyleObject = notebook.topLevelStyleOf(r.fromId);
-      const toObj : StyleObject =  notebook.topLevelStyleOf(r.toId);
+      const fromObj : CellObject = notebook.topLevelStyleOf(r.fromId);
+      const toObj : CellObject =  notebook.topLevelStyleOf(r.toId);
       assert.equal(fromObj.data.wolframData,data[0]);
       assert.equal(toObj.data.wolframData,data[1]);
     });
@@ -146,8 +146,8 @@ describe("test symbol observer", function() {
 
       assert.equal(notebook.allRelationships().length,1);
       const r : RelationshipObject = notebook.allRelationships()[0];
-      const fromObj : StyleObject = notebook.topLevelStyleOf(r.fromId);
-      const toObj : StyleObject =  notebook.topLevelStyleOf(r.toId);
+      const fromObj : CellObject = notebook.topLevelStyleOf(r.fromId);
+      const toObj : CellObject =  notebook.topLevelStyleOf(r.toId);
 
       assert.equal(fromObj.data.wolframData,data[0]);
       assert.equal(toObj.data.wolframData,data[1]);
@@ -264,7 +264,7 @@ describe("test symbol observer", function() {
       // I really want a way to find this from the notebook....
       const initialId = 1;
       // REVIEW: Does this search need to be recursive?
-      const children = notebook.findStyles({ type: 'EQUATION-DATA', recursive: true }, initialId);
+      const children = notebook.findCells({ type: 'EQUATION-DATA', recursive: true }, initialId);
       assert.equal(1,children.length);
     });
 
@@ -323,14 +323,14 @@ describe("test symbol observer", function() {
 
       // To try to make this robust, we will specifically construct
       // the value. We also need to be able to get the last thought.
-      const lastThoughtId = notebook.topLevelStyleOrder().slice(-1)[0];
+      const lastThoughtId = notebook.topLevelCellOrder().slice(-1)[0];
 
       // now that we have the lastThought, we want to get the
       // LATEX type...
-      const lastThought = notebook.getStyle(lastThoughtId);
-      const lastSymbolDef = notebook.findStyles({ type: 'SYMBOL-DATA', role: 'SYMBOL-DEFINITION', recursive: true }, lastThought.id);
+      const lastThought = notebook.getCell(lastThoughtId);
+      const lastSymbolDef = notebook.findCells({ type: 'SYMBOL-DATA', role: 'SYMBOL-DEFINITION', recursive: true }, lastThought.id);
       // REVIEW: Does this search need to be recursive?
-      const children = notebook.findStyles({ type: 'TEX-EXPRESSION', recursive: true }, lastSymbolDef[0].id);
+      const children = notebook.findCells({ type: 'TEX-EXPRESSION', recursive: true }, lastSymbolDef[0].id);
       const texformatter = children[0];
       assert.equal('Y = 36',texformatter.data);
       const rels = notebook.recomputeAllSymbolRelationships();
@@ -347,7 +347,7 @@ describe("test symbol observer", function() {
 
       const rs = notebook.allRelationships();
       assert.equal(1,rs.length);
-      const defStyle = notebook.getStyle(rs[0].fromId);
+      const defStyle = notebook.getCell(rs[0].fromId);
       const U = notebook.getSymbolStylesThatDependOnMe(defStyle);
       assert.equal(1,U.length);
 
@@ -362,7 +362,7 @@ describe("test symbol observer", function() {
       const insertRequests = insertWolframFormulas(data);
       await serializeChangeRequests(notebook,insertRequests);
 
-      const secondThoughtId = notebook.topLevelStyleOrder()[1];
+      const secondThoughtId = notebook.topLevelCellOrder()[1];
       const deleteRequest : DeleteCellRequest = { type: 'deleteCell',
                               cellId: secondThoughtId };
 
@@ -377,14 +377,14 @@ describe("test symbol observer", function() {
 
       // To try to make this robust, we will specifically construct
       // the value. We also need to be able to get the last thought.
-      const lastThoughtId = notebook.topLevelStyleOrder().slice(-1)[0];
+      const lastThoughtId = notebook.topLevelCellOrder().slice(-1)[0];
 
       // now that we have the lastThought, we want to get the
       // LATEX type...
-      const lastThought = notebook.getStyle(lastThoughtId);
+      const lastThought = notebook.getCell(lastThoughtId);
 
-      const lastSymbolDef = notebook.findStyles({ type: 'SYMBOL-DATA', role: 'SYMBOL-DEFINITION', recursive: true }, lastThought.id);
-      const children = notebook.findStyles({ type: 'TEX-EXPRESSION', recursive: true }, lastSymbolDef[0].id);
+      const lastSymbolDef = notebook.findCells({ type: 'SYMBOL-DATA', role: 'SYMBOL-DEFINITION', recursive: true }, lastThought.id);
+      const children = notebook.findCells({ type: 'TEX-EXPRESSION', recursive: true }, lastSymbolDef[0].id);
 
 //      const texformatter = notebook.findStyle({ type: 'TEX-EXPRESSION', recursive: true}, lastThought.id);
       assert.equal('Y = 16',children[0]!.data);
@@ -518,7 +518,7 @@ describe("test symbol observer", function() {
       await serializeChangeRequests(notebook,changeRequests);
       // I really want a way to find this from the notebook....
 
-      const formulas = notebook.findStyles({ type: 'FORMULA-DATA', recursive: true });
+      const formulas = notebook.findCells({ type: 'FORMULA-DATA', recursive: true });
       assert.equal(formulas.length,2);
 
       const first_formula = formulas[0];
@@ -543,7 +543,7 @@ describe("test symbol observer", function() {
       const changeRequests = insertWolframFormulas(data0);
       await serializeChangeRequests(notebook,changeRequests);
 
-      const topformula = notebook.findStyle({ type: 'FORMULA-DATA', recursive: true});
+      const topformula = notebook.findCell({ type: 'FORMULA-DATA', recursive: true});
       if (!topformula) {
         assert.equal(true,false,"topformula not found");
       }
@@ -559,7 +559,7 @@ describe("test symbol observer", function() {
 
       // Now there should be only ONE EQUATION-DEFINITON attached to the single input!!!
       // REVIEW: Does this search need to be recursive?
-      const children = notebook.findStyles({ type: 'EQUATION-DATA', recursive: true }, initialId);
+      const children = notebook.findCells({ type: 'EQUATION-DATA', recursive: true }, initialId);
       assert.equal(1,children.length);
     });
 
@@ -607,7 +607,7 @@ describe("test symbol observer", function() {
         data: data[3],
       };
       await serializeChangeRequests(notebook,[cr1]);
-      const texformatter = notebook.findStyle({ type: 'TEX-EXPRESSION', recursive: true},
+      const texformatter = notebook.findCell({ type: 'TEX-EXPRESSION', recursive: true},
                                               initialId);
       assert.equal('x = 4',texformatter!.data);
     });
@@ -646,9 +646,9 @@ function insertWolframFormulas(_wolframDatas: PlainTextFormula[]) : InsertCellRe
 
 function constructMapRelations(notebook: ServerNotebook, rs: RelationshipObject[]): RelationshipStringObject[] {
   return rs.map(r => {
-    const frS = notebook.getStyle(r.fromId);
+    const frS = notebook.getCell(r.fromId);
     const frTS = notebook.topLevelStyleOf(frS.id);
-    const toS = notebook.getStyle(r.toId);
+    const toS = notebook.getCell(r.toId);
     const toTS = notebook.topLevelStyleOf(toS.id);
     return { from: frTS.data.wolframData, to: toTS.data.wolframData };
   });
@@ -662,8 +662,8 @@ function texformatOfLastThought(notebook : ServerNotebook) : string {
   // now that we have the lastThought, we want to get the
   // LATEX type...
 //  const lastThought = notebook.getStyle(lastThoughtId);
-  const lastSymbolDef = notebook.findStyles({ type: 'SYMBOL-DATA', role: 'SYMBOL-DEFINITION', recursive: true }, lastThoughtId);
-  const children = notebook.findStyles({ type: 'TEX-EXPRESSION', recursive: true }, lastSymbolDef[0].id);
+  const lastSymbolDef = notebook.findCells({ type: 'SYMBOL-DATA', role: 'SYMBOL-DEFINITION', recursive: true }, lastThoughtId);
+  const children = notebook.findCells({ type: 'TEX-EXPRESSION', recursive: true }, lastSymbolDef[0].id);
 
   return children[0]!.data;
 }
@@ -672,7 +672,7 @@ function texformatOfLastThought(notebook : ServerNotebook) : string {
 // convention of negatives counting from the back of the array.
 function getThought(notebook: ServerNotebook, i: number): CellId {
 //  assert(i>=0);
-  const tls = notebook.topLevelStyleOrder();
+  const tls = notebook.topLevelCellOrder();
   const idx = (i < 0) ?  (tls.length + i) : i;
   assert(i<tls.length);
   return tls[idx];

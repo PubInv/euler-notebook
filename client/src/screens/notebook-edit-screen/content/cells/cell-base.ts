@@ -26,7 +26,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 import { Content as CellContainer } from "../index";
 import { CssClass } from "../../../../shared/common";
-import { StyleObject, CellId, NotebookChange } from "../../../../shared/notebook";
+import { CellObject, CellId, NotebookChange } from "../../../../shared/notebook";
 import { Tools } from "../../tools";
 import { HtmlElement } from "../../../../html-element";
 import {
@@ -97,7 +97,7 @@ export abstract class CellBase extends HtmlElement<'div'>{
 
   protected constructor(
     container: CellContainer,
-    style: StyleObject,
+    style: CellObject,
     contentSpec: HtmlElementOrSpecification,
   ) {
 
@@ -243,12 +243,12 @@ export abstract class CellBase extends HtmlElement<'div'>{
     if (!cellDragData) { return; }
     // console.log(`Dropped style ${cellDragData.cellId} onto style ${this.cellId}`);
 
-    const c = this.container.screen.notebook.compareStylePositions(cellDragData.cellId, this.cellId);
+    const c = this.container.screen.notebook.compareCellPositions(cellDragData.cellId, this.cellId);
     if (c==0) { /* Dropped onto self */ return; }
 
     // If dragging down, then put dragged cell below the cell that was dropped on.
     // If dragging up, then put dragged cell above the cell that was dropped on.
-    const afterId = c<0 ? this.cellId : this.container.screen.notebook.precedingStyleId(this.cellId);
+    const afterId = c<0 ? this.cellId : this.container.screen.notebook.precedingCellId(this.cellId);
     const moveRequest: MoveCellRequest = {
       type: 'moveCell',
       cellId: cellDragData.cellId,

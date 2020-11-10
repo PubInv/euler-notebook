@@ -23,7 +23,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 import { assertFalse } from './common';
 import { FolderChange } from './folder';
-import { Notebook, NotebookChange, StyleObject } from './notebook';
+import { Notebook, NotebookChange, CellObject } from './notebook';
 import {
   ClientFolderMessage, ClientMessage, ClientNotebookMessage, FolderChangeRequest, NotebookChangeRequest,
   ServerFolderMessage, ServerMessage, ServerNotebookMessage,
@@ -101,7 +101,7 @@ export function notebookChangeSynopsis(change: NotebookChange): string {
       break;
     }
     case 'cellInserted': {
-      rval += ` ${styleSynopsis(change.style)}`;
+      rval += ` ${cellSynopsis(change.cell)}`;
       break;
     }
     case 'cellMoved': {
@@ -114,10 +114,10 @@ export function notebookChangeSynopsis(change: NotebookChange): string {
 }
 
 export function notebookSynopsis(notebook: Notebook<any>): string {
-  return notebook.topLevelStyleOrder()
+  return notebook.topLevelCellOrder()
   .map(cellId=>{
-    const style = notebook.getStyle(cellId);
-    return styleSynopsis(style);
+    const style = notebook.getCell(cellId);
+    return cellSynopsis(style);
   })
   .join('');
 }
@@ -144,8 +144,8 @@ export function serverMessageSynopsis(msg: ServerMessage): string {
   return rval;
 }
 
-export function styleSynopsis(s: StyleObject, indentationLevel: number = 0): string {
-  return `${indentation(indentationLevel)}S${s.id} ${s.source} ${s.role} ${dataSynopsis(s.data)}`;
+export function cellSynopsis(s: CellObject, indentationLevel: number = 0): string {
+  return `${indentation(indentationLevel)}S${s.id} ${s.source} ${dataSynopsis(s.data)}`;
 }
 
 // Helper Functions

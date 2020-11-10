@@ -24,7 +24,7 @@ const debug = debug1('client:figure-cell');
 
 import { CssClass, CssLength, assertFalse } from "../../../../shared/common";
 import { StylusInput } from "../../../../shared/stylus";
-import { StyleObject, NotebookChange } from "../../../../shared/notebook";
+import { CellObject, NotebookChange } from "../../../../shared/notebook";
 // import { StyleChangeRequest } from "../../../../shared/math-tablet-api";
 
 import { $svg, HtmlElementSpecification } from "../../../../dom";
@@ -46,7 +46,7 @@ export class FigureCell extends CellBase {
 
   // Public Constructor
 
-  public constructor(container: CellContainer, style: StyleObject) {
+  public constructor(container: CellContainer, style: CellObject) {
 
     const contentSpec: HtmlElementSpecification<'div'> = {
       tag: 'div',
@@ -100,7 +100,7 @@ export class FigureCell extends CellBase {
 
   // Private Instance Methods
 
-  private createInputPanel(style: StyleObject): void {
+  private createInputPanel(style: CellObject): void {
     const data: FigureCellData = style.data;
     this.strokePanel = new StrokePanel(
       data.stylusInput,
