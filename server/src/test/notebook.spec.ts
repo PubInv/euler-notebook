@@ -32,7 +32,7 @@ import { ServerNotebook }  from "../server-notebook";
 
 import { ensureGlobalLoaded } from "./global";
 import { CssLength, PlainText } from "../shared/common";
-import { CellType, InputType, TextCellData } from "../shared/cell";
+import { CellType, InputType, TextCellObject } from "../shared/cell";
 ensureGlobalLoaded();
 
 // Unit Tests
@@ -97,14 +97,14 @@ describe("notebook", function() {
 async function createNotebookFromText(type: StyleType, text: string): Promise<ServerNotebook> {
   const td = await ServerNotebook.openEphemeral();
   const changeRequests: NotebookChangeRequest[] = text.split(";").map(s=>{
-    const data: TextCellData = {
+    const data: TextCellObject = {
       type: CellType.Text,
       inputType: InputType.Keyboard,
       height: 72, // points
       inputText: <PlainText>s.trim()
     };
     const styleProps: StyleProperties = { role: 'TEXT', type, data };
-    const rval: InsertCellRequest = { type: 'insertCell', styleProps }
+    const rval: InsertCellRequest = { type: 'insertCell', cellObject: styleProps }
     return rval;
   });
   await td.requestChanges('TEST', changeRequests);

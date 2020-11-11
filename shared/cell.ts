@@ -57,52 +57,43 @@ export enum InputType {
   Stylus = 2,
 }
 
-export interface CellData {
+export interface CellObject {
+  id: CellId;
   type: CellType;
   height: LengthInPoints;
   displaySvg: SvgMarkup;
+  source: CellSource;
 }
 
 export interface CellMap {
   [id: /* CellId */number]: CellObject;
 }
 
-export interface CellObject extends CellProperties {
-  id: CellId;
-  source: CellSource;
-}
-
-export interface CellProperties {
-  id?: CellId;
-  data: any;
-}
-
-
 // HERE TEMPORARILY:
 // Move them into their own files when they become classes.
 
-export interface FigureCellData extends CellData {
+export interface FigureCellObject extends CellObject {
   type: CellType.Figure,
   inputType: InputType.Stylus,
   stylusInput: StylusInput,
 }
 
-export interface PlotCellData extends CellData {
+export interface PlotCellObject extends CellObject {
   type: CellType.Plot,
   formulaCellId: CellId,
   // LATER: Identify the symbols used in the plot for each axis, etc.
 }
 
-interface TextCellDataBase extends CellData {
+interface TextCellObjectBase extends CellObject {
   type: CellType.Text,
   inputText: PlainText,
 }
-export interface TextCellKeyboardData extends TextCellDataBase {
+export interface TextCellKeyboardObject extends TextCellObjectBase {
   inputType: InputType.Keyboard,
 }
-export interface TextCellStylusData extends TextCellDataBase {
+export interface TextCellStylusObject extends TextCellObjectBase {
   inputType: InputType.Stylus,
   stylusInput: StylusInput,
   stylusSvg: SvgMarkup,
 }
-export type TextCellData = TextCellKeyboardData | TextCellStylusData;
+export type TextCellObject = TextCellKeyboardObject | TextCellStylusObject;

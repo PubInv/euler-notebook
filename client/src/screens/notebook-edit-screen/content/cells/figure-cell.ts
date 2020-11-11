@@ -22,7 +22,6 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 import * as debug1 from "debug";
 const debug = debug1('client:figure-cell');
 
-import { CellObject } from "../../../../shared/cell";
 import { CssClass, CssLength, assertFalse } from "../../../../shared/common";
 import { StylusInput } from "../../../../shared/stylus";
 import { NotebookChange } from "../../../../shared/notebook";
@@ -35,7 +34,7 @@ import { Content as CellContainer } from "../index";
 
 import { CellBase } from "./cell-base";
 import { notebookChangeSynopsis } from "../../../../shared/debug-synopsis";
-import { FigureCellData } from "../../../../shared/cell";
+import { FigureCellObject } from "../../../../shared/cell";
 
 // Types
 
@@ -47,7 +46,7 @@ export class FigureCell extends CellBase {
 
   // Public Constructor
 
-  public constructor(container: CellContainer, style: CellObject) {
+  public constructor(container: CellContainer, style: FigureCellObject) {
 
     const contentSpec: HtmlElementSpecification<'div'> = {
       tag: 'div',
@@ -101,11 +100,10 @@ export class FigureCell extends CellBase {
 
   // Private Instance Methods
 
-  private createInputPanel(style: CellObject): void {
-    const data: FigureCellData = style.data;
+  private createInputPanel(cellObject: FigureCellObject): void {
     this.strokePanel = new StrokePanel(
-      data.stylusInput,
-      data.displaySvg,
+      cellObject.stylusInput,
+      cellObject.displaySvg,
       async (_stylusInput: StylusInput)=>{
         throw new Error("TODO: Just send stroke to server");
         // const changeRequest: StyleChangeRequest = { type: 'changeStyle', cellId: style.id, data: stylusInput };

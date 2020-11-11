@@ -22,7 +22,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 // Requirements
 
-import { CellProperties, CellId, CellRelativePosition } from "./cell";
+import { CellId, CellRelativePosition, CellObject } from "./cell";
 import { Html, PlainText } from "./common";
 import { FolderObject, FolderPath, NotebookPath, FolderName, NotebookName, FolderChange } from "./folder";
 import { NotebookChange, NotebookObject, WolframExpression } from "./notebook";
@@ -106,7 +106,7 @@ export interface NotebookRenameRequest {
 
 export type NotebookChangeRequest =
   DeleteCellRequest|
-  InsertCellRequest|
+  InsertCellRequest<any>|
   KeyboardInputRequest|
   MoveCellRequest|
   StylusInputRequest;
@@ -114,15 +114,10 @@ export interface DeleteCellRequest {
   type: 'deleteCell';
   cellId: CellId;
 }
-export interface InsertCellRequest {
+export interface InsertCellRequest<T extends CellObject> {
   type: 'insertCell';
-  afterId?: CellRelativePosition;
-  // TODO: rename styleProps => props
-  styleProps: CellProperties;
-  // type: 'insertCell';
-  // cellType: CellType;
-  // inputType: InputType;
-  // afterId: CellRelativePosition;
+  afterId: CellRelativePosition;
+  cellObject: T;
 }
 export interface KeyboardInputRequest {
   type: 'keyboardInputChange';

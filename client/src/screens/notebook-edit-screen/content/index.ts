@@ -25,7 +25,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 import * as debug1 from "debug";
 const debug = debug1('client:notebook-edit-screen-content');
 
-import { CellId, CellObject, CellRelativePosition, CellPosition, CellProperties } from "../../../shared/cell";
+import { CellId, CellObject, CellRelativePosition, CellPosition } from "../../../shared/cell";
 import { CssClass, assert, Html, assertFalse, notImplemented } from "../../../shared/common";
 import { NotebookChange } from "../../../shared/notebook";
 import {
@@ -112,8 +112,8 @@ export class Content extends HtmlElement<'div'>{
     this.undoStack = [];
 
     for (const cellId of this.screen.notebook.topLevelCellOrder()) {
-      const style = this.screen.notebook.getCell(cellId);
-      this.createCell(style, -1);
+      const cellObject = this.screen.notebook.getCell(cellId);
+      this.createCell(cellObject, -1);
     }
 
   }
@@ -441,8 +441,8 @@ export class Content extends HtmlElement<'div'>{
     }
   }
 
-  public async insertStyle(styleProps: CellProperties, afterId: CellRelativePosition = CellPosition.Bottom): Promise<void> {
-    const changeRequest: InsertCellRequest = { type: 'insertCell', afterId, styleProps };
+  public async insertStyle<T extends CellObject>(cellObject: T, afterId: CellRelativePosition = CellPosition.Bottom): Promise<void> {
+    const changeRequest: InsertCellRequest<T> = { type: 'insertCell', cellObject, afterId };
     await this.sendUndoableChangeRequests([ changeRequest ]);
   }
 
@@ -493,20 +493,20 @@ export class Content extends HtmlElement<'div'>{
       case 'cellDeleted': {
         // If a substyle is deleted then mark the cell as dirty.
         // If a top-level style is deleted then remove the cell.
-        const style = notebook.getCell(change.cellId);
-        const cellView = this.cellViews.get(style.id);
+        const cellObject = notebook.getCell(change.cellId);
+        const cellView = this.cellViews.get(cellObject.id);
         assert(cellView);
         this.deleteCell(cellView!);
-        this.dirtyCells.delete(style.id);
+        this.dirtyCells.delete(cellObject.id);
         break;
       }
       case 'cellInserted': {
-        this.createCell(change.cell, change.afterId!);
+        this.createCell(change.cellObject, change.afterId!);
         break;
       }
       case 'cellMoved': {
-        const style = notebook.getCell(change.cellId);
-        const movedCell = this.cellViews.get(style.id);
+        const cellObject = notebook.getCell(change.cellId);
+        const movedCell = this.cellViews.get(cellObject.id);
         assert(movedCell);
         // Note: DOM methods ensure the element will be removed from
         //       its current parent.

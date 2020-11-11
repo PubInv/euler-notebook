@@ -27,7 +27,7 @@ import 'mocha';
 import * as sinon from "sinon";
 
 import { EMPTY_SVG, Html, PlainText } from "../shared/common";
-import { EMPTY_FORMULA, FormulaCellData } from "../shared/formula";
+import { EMPTY_FORMULA, FormulaCellObject } from "../shared/formula";
 import { NotebookChange, CellInserted, CellObject } from "../shared/notebook";
 import { NotebookChangeRequest, InsertCellRequest, StyleProperties, ToolData } from "../shared/math-tablet-api";
 import { ServerNotebook, ObserverInstance }  from "../server-notebook";
@@ -99,7 +99,7 @@ describe("server notebook", function() {
     it("onChanges is called when style is inserted", async function(){
       const callCountAsync = onChangesAsyncSpy.callCount;
       const callCountSync = onChangesSyncSpy.callCount;
-      const data: FormulaCellData = {
+      const data: FormulaCellObject = {
         type: CellType.Formula,
         inputType: InputType.None,
         displaySvg: EMPTY_SVG,
@@ -108,7 +108,7 @@ describe("server notebook", function() {
         plainTextFormula: EMPTY_FORMULA,
       };
       const styleProps: StyleProperties = { role: 'FORMULA', type: 'FORMULA-DATA', data };
-      const insertRequest: InsertCellRequest = { type: 'insertCell', styleProps };
+      const insertRequest: InsertCellRequest = { type: 'insertCell', cellObject: styleProps };
       const changeRequests = [insertRequest];
       await notebook.requestChanges('TEST', changeRequests);
       assert(onChangesAsyncSpy.callCount>callCountAsync);
@@ -120,7 +120,7 @@ describe("server notebook", function() {
 
       // Insert a top-level style with a tool style attached.
       const toolData: ToolData = { name: 'test-tool', html: <Html>"Check Equivalences", data: "tool-data" };
-      const formulaData: FormulaCellData = {
+      const formulaData: FormulaCellObject = {
         type: CellType.Formula,
         inputType: InputType.None,
         displaySvg: EMPTY_SVG,
@@ -136,12 +136,12 @@ describe("server notebook", function() {
           { role: 'ATTRIBUTE', type: 'TOOL-DATA', data: toolData },
         ]
       };
-      const insertRequest: InsertCellRequest = { type: 'insertCell', styleProps };
+      const insertRequest: InsertCellRequest = { type: 'insertCell', cellObject: styleProps };
       const changes = await notebook.requestChange('TEST', insertRequest);
 
       // Find the tool style that was inserted.
-      const insertToolChange = changes.find(c=>c.type=='cellInserted' && c.cell.role=='ATTRIBUTE');
-      const toolStyle = (<CellInserted>insertToolChange).cell;
+      const insertToolChange = changes.find(c=>c.type=='cellInserted' && c.cellObject.role=='ATTRIBUTE');
+      const toolStyle = (<CellInserted>insertToolChange).cellObject;
 
       // Invoke the tool.
       const callCount = useToolSpy.callCount;

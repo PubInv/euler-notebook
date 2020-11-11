@@ -22,6 +22,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 import { CellSource, CellId, CellObject, CellRelativePosition, CellOrdinalPosition, CellMap, CellPosition } from "./cell";
 import { CssLength, CssSize, Html, assert, deepCopy, escapeHtml, ExpectedError } from "./common";
+import { cellSynopsis } from "./debug-synopsis";
 import { NOTEBOOK_NAME_RE, NotebookName, NotebookPath } from "./folder";
 import { WatchedResource, Watcher } from "./watched-resource";
 
@@ -39,7 +40,7 @@ export interface CellDeleted {
 }
 export interface CellInserted {
   type: 'cellInserted';
-  cell: CellObject;
+  cellObject: CellObject;
   afterId?: CellRelativePosition;
 }
 export interface CellMoved {
@@ -148,8 +149,8 @@ export abstract class Notebook<W extends NotebookWatcher> extends WatchedResourc
     return this.pages[0].cellIds[i+1];
   }
 
-  public getCell(id: CellId): CellObject {
-    const rval = this.cellMap[id];
+  public getCell<T extends CellObject>(id: CellId): T {
+    const rval = <T>this.cellMap[id];
     assert(rval, `Style ${id} doesn't exist.`);
     return rval;
   }
@@ -177,8 +178,8 @@ export abstract class Notebook<W extends NotebookWatcher> extends WatchedResourc
     else {
       return <Html>this.topLevelCellOrder()
       .map(cellId=>{
-        const style = this.getCell(cellId);
-        return this.cellToHtml(style);
+        const cellObject = this.getCell(cellId);
+        return this.cellToHtml(cellObject);
       })
       .join('');
     }
@@ -215,7 +216,7 @@ export abstract class Notebook<W extends NotebookWatcher> extends WatchedResourc
 
     switch(change.type) {
       case 'cellDeleted':          this.deleteCell(change.cellId); break;
-      case 'cellInserted':         this.insertCell(change.cell, change.afterId); break;
+      case 'cellInserted':         this.insertCell(change.cellObject, change.afterId); break;
       case 'cellMoved':            this.moveCell(change); break;
       default:
         throw new Error(`Applying unexpected change type: ${(<any>change).type}`);
@@ -253,10 +254,10 @@ export abstract class Notebook<W extends NotebookWatcher> extends WatchedResourc
     rval: CellObject[] = []
   ): CellObject[] {
     // Option to throw if style not found.
-    const styles = this.topLevelCells();
+    const cellObjects = this.topLevelCells();
     // REVIEW: Use filter with predicate instead of explicit loop.
-    for (const style of styles) {
-      if (cellMatchesPattern(style, options)) { rval.push(style); }
+    for (const cellObject of cellObjects) {
+      if (cellMatchesPattern(cellObject, options)) { rval.push(cellObject); }
     }
     return rval;
   }
@@ -299,18 +300,12 @@ export abstract class Notebook<W extends NotebookWatcher> extends WatchedResourc
 
   private cellToHtml(cell: CellObject): Html {
     // TODO: This is very inefficient as notebook.childStylesOf goes through *all* styles.
-    const dataJson = (typeof cell.data != 'undefined' ? escapeHtml(JSON.stringify(cell.data)) : 'undefined' );
-    const styleInfo = `S${cell.id} ${cell.source}`
-    if (dataJson.length<30) {
-      return <Html>`<div><span class="leaf">${styleInfo} <tt>${dataJson}</tt></span></div>`;
-    } else {
-      return <Html>`<div>
-  <span class="collapsed">${styleInfo}</span>
-  <div class="nested" style="display:none">
-    <tt>${dataJson}</tt>
-  </div>
+    return <Html>`<div>
+<span class="collapsed">S${cell.id} ${cell.type} ${cell.source}</span>
+<div class="nested" style="display:none">
+  <tt>${escapeHtml(cellSynopsis(cell))}</tt>
+</div>
 </div>`;
-    }
   }
 
   // Private Instance Methods

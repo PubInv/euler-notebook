@@ -28,7 +28,7 @@ import * as debug1 from "debug";
 // import { readdirSync, unlink, writeFileSync } from "fs"; // LATER: Eliminate synchronous file operations.
 import { join } from "path";
 
-import { CellObject, CellSource, CellId, CellPosition, CellProperties } from "./shared/cell";
+import { CellObject, CellSource, CellId, CellPosition } from "./shared/cell";
 import { assert, assertFalse, ExpectedError, notImplemented, Timestamp } from "./shared/common";
 import { NotebookPath, NOTEBOOK_PATH_RE, NotebookName, FolderPath, NotebookEntry } from "./shared/folder";
 import {
@@ -454,63 +454,39 @@ export class ServerNotebook extends Notebook<ServerNotebookWatcher> {
     return undoChangeRequests;
   }
 
-  private applyDeleteCellRequest(
+  private applyDeleteCellRequest<T extends CellObject>(
     source: CellSource,
     request: DeleteCellRequest,
     rval: NotebookChange[],
-  ): InsertCellRequest|undefined {
+  ): InsertCellRequest<T> {
 
-    var style = this.getCell(request.cellId);
+    var cellObject = this.getCell<T>(request.cellId);
 
     // Assemble the undo change request before we delete anything
     // from the notebook.
-    // TODO: gather substyles from the same source, etc.
-    const styleProps: CellProperties = {
-      data: style.data,
-    };
-    const undoChangeRequest: InsertCellRequest = {
+    const undoChangeRequest: InsertCellRequest<T> = {
       type: 'insertCell',
-      // TODO: afterId
-      // TODO: parentId
-      styleProps,
+      afterId: this.precedingCellId(cellObject.id),
+      cellObject,
     };
 
-    const change: CellDeleted = { type: 'cellDeleted', cellId: style.id };
+    const change: CellDeleted = { type: 'cellDeleted', cellId: cellObject.id };
     this.appendChange(source, change, rval);
 
     return undoChangeRequest;
   }
 
-  private applyInsertCellRequest(
+  private applyInsertCellRequest<T extends CellObject>(
     source: CellSource,
-    request: InsertCellRequest,
+    request: InsertCellRequest<T>,
     rval: NotebookChange[],
   ): DeleteCellRequest {
-    const styleProps = request.styleProps;
-    const afterId = request.hasOwnProperty('afterId') ? request.afterId : -1;
-
-    let id: CellId;
-    if (styleProps.id) {
-      id = styleProps.id;
-      if (!this.reservedIds.has(id)) { throw new Error(`Specified style ID is not reserved: ${id}`); }
-      this.reservedIds.delete(id);
-    } else {
-      id = this.nextId++;
-    }
-
-    const style: CellObject = {
-      data: styleProps.data,
-      id,
-      source,
-    };
-
-    const change: CellInserted =  { type: 'cellInserted', cell: style, afterId };
+    const cellObject = request.cellObject;
+    assert(cellObject.id == 0);
+    const cellId = cellObject.id = this.nextId++;
+    const change: CellInserted =  { type: 'cellInserted', cellObject, afterId: request.afterId };
     this.appendChange(source, change, rval);
-
-    const undoChangeRequest: DeleteCellRequest = {
-      type: 'deleteCell',
-      cellId: style.id,
-    }
+    const undoChangeRequest: DeleteCellRequest = { type: 'deleteCell', cellId };
     return undoChangeRequest;
   }
 

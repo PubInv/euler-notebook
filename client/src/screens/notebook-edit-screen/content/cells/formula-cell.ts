@@ -24,10 +24,9 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 import * as debug1 from "debug";
 const debug = debug1('client:formula-cell');
 
-import { CellObject } from "../../../../shared/cell";
 import { CssClass, Html, assertFalse, PlainText, notImplemented } from "../../../../shared/common";
 import { StrokeData } from "../../../../shared/stylus";
-import { FormulaCellData, FormulaCellStylusData } from "../../../../shared/formula";
+import { FormulaCellKeyboardObject, FormulaCellObject, FormulaCellStylusObject } from "../../../../shared/formula";
 import { NotebookChange } from "../../../../shared/notebook";
 
 import { $new, $outerSvg } from "../../../../dom";
@@ -51,20 +50,20 @@ export class FormulaCell extends CellBase {
 
   // Public Constructor
 
-  public constructor(container: CellContainer, style: CellObject) {
-    debug(`Creating instance: style ${style.id}`);
+  public constructor(container: CellContainer, cellObject: FormulaCellObject) {
+    debug(`Creating instance: style ${cellObject.id}`);
 
     const $content = $new({
       tag: 'div',
       classes: [ <CssClass>'content', <CssClass>'formulaCell' ],
     });
 
-    super(container, style, $content);
+    super(container, cellObject, $content);
 
-    this.$displayPanel = this.createDisplayPanel(style);
+    this.$displayPanel = this.createDisplayPanel(cellObject);
     this.$content.prepend(this.$displayPanel);
 
-    this.$inputPanel = this.createInputPanel(style);
+    this.$inputPanel = this.createInputPanel(cellObject);
     if (this.$inputPanel) {
       this.$content.append(this.$inputPanel);
     }
@@ -170,22 +169,20 @@ export class FormulaCell extends CellBase {
   //   return html;
   // }
 
-  private createDisplayPanel(style: CellObject): SVGSVGElement {
-    const data: FormulaCellData = style.data;
-    const $displayPanel = $outerSvg<'svg'>(data.displaySvg);
+  private createDisplayPanel(cellObject: FormulaCellObject): SVGSVGElement {
+    const $displayPanel = $outerSvg<'svg'>(cellObject.displaySvg);
     $displayPanel.classList.add('display');
     return $displayPanel;
   }
 
-  private createInputPanel(style: CellObject): HTMLDivElement|undefined {
+  private createInputPanel(cellObject: FormulaCellObject): HTMLDivElement|undefined {
     let panel: KeyboardPanel|StrokePanel|undefined;
-    const data = <FormulaCellData>style.data;
-    switch(data.inputType) {
+    switch(cellObject.inputType) {
       case InputType.Keyboard:
-        panel = this.keyboardPanel = this.createKeyboardSubpanel(style);
+        panel = this.keyboardPanel = this.createKeyboardSubpanel(cellObject);
         break;
       case InputType.Stylus:
-        panel = this.createStrokeSubpanel(style);
+        panel = this.createStrokeSubpanel(cellObject);
         break;
       case InputType.None:
         // Do nothing.
@@ -201,7 +198,7 @@ export class FormulaCell extends CellBase {
         children: [
           { tag: 'div', class: <CssClass>'prefixPanel', html: prefixHtml },
           panel.$elt,
-          { tag: 'div', class: <CssClass>'handlePanel', html: <Html>`(${style.id})` },
+          { tag: 'div', class: <CssClass>'handlePanel', html: <Html>`(${cellObject.id})` },
           { tag: 'div', class: <CssClass>'statusPanel', html: <Html>'&nbsp;' },
         ],
       });
@@ -211,8 +208,7 @@ export class FormulaCell extends CellBase {
     }
   }
 
-  private createKeyboardSubpanel(style: CellObject): KeyboardPanel {
-    const data = <FormulaCellData>style.data;
+  private createKeyboardSubpanel(cellObject: FormulaCellKeyboardObject): KeyboardPanel {
     const textChangeCallback: KeyboardCallbackFn = (_start: number, _end: number, _replacement: PlainText, _value: PlainText): void=>{
       notImplemented();
       // const changeRequest: KeyboardInputRequest = { type: 'keyboardInputChange', cellId: style.id, start, end, replacement, value, };
@@ -221,13 +217,10 @@ export class FormulaCell extends CellBase {
       //   logError(err, <Html>"Error sending keyboardInputChange from formula cell");
       // });
     }
-    return new KeyboardPanel(data.inputText, textChangeCallback);
+    return new KeyboardPanel(cellObject.inputText, textChangeCallback);
   }
 
-  private createStrokeSubpanel(style: CellObject): StrokePanel {
-
-    const data = <FormulaCellStylusData>style.data;
-
+  private createStrokeSubpanel(cellObject: FormulaCellStylusObject): StrokePanel {
     // Callback function for when strokes in the panel have changed.
     // Submit a notebook change request.
     const strokesChangeCallback = async (_strokeData: StrokeData)=>{
@@ -239,7 +232,7 @@ export class FormulaCell extends CellBase {
     };
 
     // Create the panel
-    const strokePanel = new StrokePanel(data.stylusInput, data.stylusSvg, strokesChangeCallback);
+    const strokePanel = new StrokePanel(cellObject.stylusInput, cellObject.stylusSvg, strokesChangeCallback);
     return strokePanel;
   }
 

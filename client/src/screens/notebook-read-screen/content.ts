@@ -25,7 +25,6 @@ import { $newSvg, $allSvg, $outerSvg, cssLength } from "../../dom";
 import { HtmlElement } from "../../html-element";
 
 import { Mode, NotebookReadScreen } from "./index";
-import { CellData } from "../../shared/cell";
 
 // Types
 
@@ -140,10 +139,9 @@ export class Content extends HtmlElement<'div'>{
       let y: number = cssLength(topMargin, 'pt');
       for (const cellId of page.cellIds) {
 
-        const style = this.screen.notebook.getCell(cellId);
-        const data = <CellData>style.data;
+        const cellObject = this.screen.notebook.getCell(cellId);
 
-        const $cellSvg = $outerSvg(data.displaySvg);
+        const $cellSvg = $outerSvg(cellObject.displaySvg);
         $cellSvg.setAttribute('x', `${x}pt`);
         $cellSvg.setAttribute('y', `${y}pt`);
         // TODO: translate SVG by (leftMargin, y);

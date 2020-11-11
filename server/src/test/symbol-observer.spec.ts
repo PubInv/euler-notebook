@@ -94,7 +94,7 @@ describe("test symbol observer", function() {
       const cr1: InsertCellRequest = {
         type: 'insertCell',
         parentId: style.id,
-        styleProps: styleProps1,
+        cellObject: styleProps1,
       };
 
       const styleProps2: StyleProperties = {
@@ -106,7 +106,7 @@ describe("test symbol observer", function() {
       const cr2: InsertCellRequest = {
         type: 'insertCell',
         parentId: style.id,
-        styleProps: styleProps2,
+        cellObject: styleProps2,
       };
       await notebook.requestChanges('TEST', [cr1,cr2]);
 

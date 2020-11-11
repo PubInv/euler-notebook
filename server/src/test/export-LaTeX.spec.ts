@@ -29,7 +29,7 @@ const latex = require('node-latex'); // REVIEW: why not import?
 import 'mocha';
 // import * as sinon from "sinon";
 
-import { FormulaCellData, PlainTextFormula } from "../shared/formula";
+import { FormulaCellObject, PlainTextFormula } from "../shared/formula";
 import { InsertCellRequest, TexExpression } from "../shared/math-tablet-api";
 import { ServerNotebook }  from "../server-notebook";
 
@@ -77,7 +77,7 @@ describe("LaTeX export tests", function() {
 function generateInsertRequests(inputs: PlainTextFormula[]) : InsertCellRequest[] {
   var reqs : InsertCellRequest[] = [];
   for(const wolframData of inputs) {
-    const formulaData: FormulaCellData = {
+    const formulaData: FormulaCellObject = {
       type: CellType.Formula,
       inputType: InputType.None,
       displaySvg: EMPTY_SVG,
@@ -87,7 +87,7 @@ function generateInsertRequests(inputs: PlainTextFormula[]) : InsertCellRequest[
     };
     reqs.push({
       type: 'insertCell',
-      styleProps: {
+      cellObject: {
         role: 'FORMULA',
         type: 'FORMULA-DATA',
         data: formulaData,

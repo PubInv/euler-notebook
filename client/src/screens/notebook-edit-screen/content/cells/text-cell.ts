@@ -22,7 +22,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 import * as debug1 from "debug";
 const debug = debug1('client:text-cell');
 
-import { CellObject } from "../../../../shared/cell";
+import { TextCellObject } from "../../../../shared/cell";
 import { CssClass, assertFalse, PlainText, notImplemented } from "../../../../shared/common";
 import { StrokeData } from "../../../../shared/stylus";
 import { NotebookChange, } from "../../../../shared/notebook";
@@ -36,7 +36,7 @@ import { Content as CellContainer } from "../index";
 
 import { CellBase } from "./cell-base";
 import { notebookChangeSynopsis, cellSynopsis } from "../../../../shared/debug-synopsis";
-import { TextCellData, TextCellKeyboardData, TextCellStylusData } from "../../../../shared/cell";
+import { TextCellKeyboardObject, TextCellStylusObject } from "../../../../shared/cell";
 
 // Types
 
@@ -50,7 +50,7 @@ export class TextCell extends CellBase {
 
   // Public Constructor
 
-  public constructor(container: CellContainer, style: CellObject) {
+  public constructor(container: CellContainer, style: TextCellObject) {
     debug(`Constructing: ${cellSynopsis(style)}`);
 
     const $content = $new({
@@ -111,14 +111,13 @@ export class TextCell extends CellBase {
 
   // Private Instance Methods
 
-  private createDisplayPanel(style: CellObject): SVGSVGElement {
-    const data = <TextCellData>style.data;
-    const $displayPanel = $outerSvg<'svg'>(data.displaySvg);
+  private createDisplayPanel(cellObject: TextCellObject): SVGSVGElement {
+    const $displayPanel = $outerSvg<'svg'>(cellObject.displaySvg);
     $displayPanel.classList.add('display');
     return $displayPanel;
   }
 
-  private createInputPanel(_style: CellObject): HTMLDivElement {
+  private createInputPanel(_cellObject: TextCellObject): HTMLDivElement {
     notImplemented();
     // let panel: KeyboardPanel|StrokePanel;
     // if (styleIsKeyboard) {
@@ -130,8 +129,7 @@ export class TextCell extends CellBase {
   }
 
   // @ts-expect-error // TODO:
-  private createKeyboardSubpanel(style: CellObject): KeyboardPanel {
-    const data = <TextCellKeyboardData>style.data;
+  private createKeyboardSubpanel(cellObject: TextCellKeyboardObject): KeyboardPanel {
     const textChangeCallback: KeyboardCallbackFn = (_start: number, _end: number, _replacement: PlainText, _value: PlainText): void =>{
       notImplemented();
       // const changeRequest: KeyboardInputRequest = { type: 'keyboardInputChange', cellId: style.id, start, end, replacement, value, };
@@ -140,13 +138,12 @@ export class TextCell extends CellBase {
       //   logError(err, <Html>"Error sending keyboardInputChange from text cell");
       // });
     }
-    return new KeyboardPanel(data.inputText, textChangeCallback);
+    return new KeyboardPanel(cellObject.inputText, textChangeCallback);
   }
 
   // @ts-expect-error // TODO:
-  private createStrokeSubpanel(style: CellObject): StrokePanel {
-    const data = <TextCellStylusData>style.data;
-    const strokePanel = new StrokePanel(data.stylusInput, data.displaySvg, async (_strokeData: StrokeData)=>{
+  private createStrokeSubpanel(cellObject: TextCellStylusObject): StrokePanel {
+    const strokePanel = new StrokePanel(cellObject.stylusInput, cellObject.displaySvg, async (_strokeData: StrokeData)=>{
       throw new Error("TODO: Just send stroke to server");
       // const changeRequest: StyleChangeRequest = { type: 'changeStyle', cellId: style.id, data: strokeData };
       // // TODO: We don't want to wait for *all* processing of the strokes to finish, just the svg update.

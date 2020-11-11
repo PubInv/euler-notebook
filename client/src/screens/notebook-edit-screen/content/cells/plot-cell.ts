@@ -90,8 +90,8 @@ export class PlotCell extends CellBase {
 
   // Private Instance Methods
 
-  private createDisplayPanel(style: CellObject): SVGSVGElement {
-    const $displayPanel = $outerSvg<'svg'>(style.data);
+  private createDisplayPanel(cellObject: CellObject): SVGSVGElement {
+    const $displayPanel = $outerSvg<'svg'>(cellObject.displaySvg);
     $displayPanel.classList.add('display');
     return $displayPanel;
   }

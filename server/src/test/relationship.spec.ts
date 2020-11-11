@@ -26,7 +26,7 @@ import { assert } from "chai";
 import 'mocha';
 // import * as sinon from "sinon";
 
-import { FormulaCellData, PlainTextFormula } from "../shared/formula";
+import { FormulaCellObject, PlainTextFormula } from "../shared/formula";
 import { CellId, CellInserted, WolframExpression } from "../shared/notebook";
 import { InsertCellRequest, StyleChangeRequest } from "../shared/math-tablet-api";
 import { ServerNotebook }  from "../server-notebook";
@@ -68,8 +68,8 @@ describe("test relationships", function() {
 
       // Insert "old" formula 1
       const changes = await notebook.requestChange('TEST', wolframFormulaInsertRequest(OLD_F1));
-      const insertFormulaChange = changes.find(c=>c.type=='cellInserted' && c.cell.role=='FORMULA');
-      const formula1Style = (<CellInserted>insertFormulaChange).cell;
+      const insertFormulaChange = changes.find(c=>c.type=='cellInserted' && c.cellObject.role=='FORMULA');
+      const formula1Style = (<CellInserted>insertFormulaChange).cellObject;
       // console.log("Old Formula 1:");
       // console.dir(formula1Style);
 
@@ -112,7 +112,7 @@ describe("test relationships", function() {
 // Helper Functions
 // TODO: This should probably be extended to respect the MTLExpression type
 function wolframFormulaInsertRequest(plainTextFormula: PlainTextFormula): InsertCellRequest {
-  const data: FormulaCellData = {
+  const data: FormulaCellObject = {
     type: CellType.Formula,
     inputType: InputType.None,
     displaySvg: EMPTY_SVG,
@@ -123,7 +123,7 @@ function wolframFormulaInsertRequest(plainTextFormula: PlainTextFormula): Insert
   const request: InsertCellRequest = {
     type: 'insertCell',
     // styleProps: { role: 'REPRESENTATION', type: 'WOLFRAM-EXPRESSION', data },
-    styleProps: { role: 'FORMULA', type: 'FORMULA-DATA', data: data },
+    cellObject: { role: 'FORMULA', type: 'FORMULA-DATA', data: data },
   };
   return request;
 }

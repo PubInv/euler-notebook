@@ -20,7 +20,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 // Requirements
 
 import { StylusInput } from "./stylus";
-import { CellData, CellType, InputType } from "./cell";
+import { CellObject, CellType, InputType } from "./cell";
 import { PlainText, SvgMarkup } from "./common";
 
 // Types
@@ -30,23 +30,23 @@ import { PlainText, SvgMarkup } from "./common";
 // except that we convert single equals to double equals.
 export type PlainTextFormula = '{PlainTextFormula}';
 
-interface FormulaCellDataBase extends CellData {
+interface FormulaCellObjectBase extends CellObject {
   type: CellType.Formula,
   inputText: PlainText;
   plainTextFormula: PlainTextFormula;
 }
-export interface FormulaCellKeyboardData extends FormulaCellDataBase {
+export interface FormulaCellKeyboardObject extends FormulaCellObjectBase {
   inputType: InputType.Keyboard,
 }
-export interface FormulaCellStylusData extends FormulaCellDataBase {
+export interface FormulaCellStylusObject extends FormulaCellObjectBase {
   inputType: InputType.Stylus,
   stylusInput: StylusInput,
   stylusSvg: SvgMarkup,
 }
-interface FormulaCellNoInputData extends FormulaCellDataBase {
+interface FormulaCellNoInputObject extends FormulaCellObjectBase {
   inputType: InputType.None,
 }
-export type FormulaCellData = FormulaCellKeyboardData | FormulaCellStylusData | FormulaCellNoInputData;
+export type FormulaCellObject = FormulaCellKeyboardObject | FormulaCellStylusObject | FormulaCellNoInputObject;
 
 // CONSTANTS
 

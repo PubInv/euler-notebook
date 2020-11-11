@@ -102,7 +102,7 @@ export function notebookChangeSynopsis(change: NotebookChange): string {
       break;
     }
     case 'cellInserted': {
-      rval += ` ${cellSynopsis(change.cell)}`;
+      rval += ` ${cellSynopsis(change.cellObject)}`;
       break;
     }
     case 'cellMoved': {
@@ -117,8 +117,8 @@ export function notebookChangeSynopsis(change: NotebookChange): string {
 export function notebookSynopsis(notebook: Notebook<any>): string {
   return notebook.topLevelCellOrder()
   .map(cellId=>{
-    const style = notebook.getCell(cellId);
-    return cellSynopsis(style);
+    const cellObject = notebook.getCell(cellId);
+    return cellSynopsis(cellObject);
   })
   .join('');
 }
@@ -145,8 +145,8 @@ export function serverMessageSynopsis(msg: ServerMessage): string {
   return rval;
 }
 
-export function cellSynopsis(s: CellObject, indentationLevel: number = 0): string {
-  return `${indentation(indentationLevel)}S${s.id} ${s.source} ${dataSynopsis(s.data)}`;
+export function cellSynopsis(cell: CellObject, indentationLevel: number = 0): string {
+  return `${indentation(indentationLevel)}S${cell.id} ${cell.type} ${cell.source} TODO: more data depending on type.`;
 }
 
 // Helper Functions
@@ -183,15 +183,6 @@ function clientNotebookMessageSynopsis(msg: ClientNotebookMessage): string {
 }
 
 
-function dataSynopsis(data: any): string {
-  if (typeof data == 'undefined') {
-    return 'undefined';
-  } else {
-    const json: string = JSON.stringify(data);
-    const abbreviatedJson = json.length<31 ? json : `${json.substr(0,30)}...`;
-    return `${abbreviatedJson}`;
-  }
-}
 
 function indentation(indentationLevel: number): string { return ' '.repeat(indentationLevel*2); }
 
