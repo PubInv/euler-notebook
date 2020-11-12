@@ -209,7 +209,7 @@ export class FormulaCell extends CellBase {
   }
 
   private createKeyboardSubpanel(cellObject: FormulaCellKeyboardObject): KeyboardPanel {
-    const textChangeCallback: KeyboardCallbackFn = (_start: number, _end: number, _replacement: PlainText, _value: PlainText): void=>{
+    const callbackFn: KeyboardCallbackFn = (_start: number, _end: number, _replacement: PlainText, _value: PlainText): void=>{
       notImplemented();
       // const changeRequest: KeyboardInputRequest = { type: 'keyboardInputChange', cellId: style.id, start, end, replacement, value, };
       // this.container.screen.notebook.sendCellChangeRequest(changeRequest)
@@ -217,14 +217,14 @@ export class FormulaCell extends CellBase {
       //   logError(err, <Html>"Error sending keyboardInputChange from formula cell");
       // });
     }
-    return new KeyboardPanel(cellObject.inputText, textChangeCallback);
+    return new KeyboardPanel(cellObject.inputText, callbackFn);
   }
 
   private createStrokeSubpanel(cellObject: FormulaCellStylusObject): StrokePanel {
     // Callback function for when strokes in the panel have changed.
     // Submit a notebook change request.
-    const strokesChangeCallback = async (_strokeData: StrokeData)=>{
-      throw new Error("TODO: Just send stroke to server");
+    const callbackFn = async (_strokeData: StrokeData)=>{
+      notImplemented();
       // const changeRequest: StyleChangeRequest = { type: 'changeStyle', cellId: style.id, data: strokeData };
       // // TODO: We don't want to wait for *all* processing of the strokes to finish, just the svg update.
       // // TODO: Incremental changes.
@@ -232,7 +232,7 @@ export class FormulaCell extends CellBase {
     };
 
     // Create the panel
-    const strokePanel = new StrokePanel(cellObject.stylusInput, cellObject.stylusSvg, strokesChangeCallback);
+    const strokePanel = new StrokePanel(cellObject.cssSize, cellObject.stylusInput, cellObject.stylusSvg, callbackFn);
     return strokePanel;
   }
 

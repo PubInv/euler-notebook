@@ -46,3 +46,15 @@ export interface StrokeGroup {
 }
 
 export type StylusInput = StrokeData;
+
+// Exported Functions
+
+export function emptyStylusInput(size: CssSize): StylusInput {
+  const rval: StylusInput = {
+    size,
+    strokeGroups: [{
+      strokes: [],
+    }],
+  };
+  return rval;
+}

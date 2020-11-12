@@ -229,7 +229,6 @@ export function $svg<K extends keyof SVGElementTagNameMap>(root: Element|Documen
 // }
 
 export function cssLength(length: CssLength, units: CssLengthUnits): number {
-  console.log(`${length} ends with ${units}???`)
   assert(length.endsWith(units)); // LATER: Allow unit conversions.
   return parseFloat(length);
 }

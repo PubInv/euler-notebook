@@ -46,8 +46,7 @@ export interface PromiseResolver<T> {
 // Constants
 
 const ASSERTION_FAILED_MSG = "Assertion failed.";
-
-export const EMPTY_SVG = <SvgMarkup>"<svg></svg>";
+export const POINTS_PER_INCH = 72;
 
 // Exported Functions
 
@@ -61,6 +60,10 @@ export function assertFalse( message?: string): never {
 
 export function deepCopy<T>(data: T): T {
   return JSON.parse(JSON.stringify(data));
+}
+
+export function emptySvg(cssSize: CssSize): SvgMarkup {
+  return <SvgMarkup>`<svg height="${cssSize.height}" width="${cssSize.width}"></svg>`;
 }
 
 export function errorMessageForUser(err: Error): Html {

@@ -33,14 +33,14 @@ export type PlainTextFormula = '{PlainTextFormula}';
 interface FormulaCellObjectBase extends CellObject {
   type: CellType.Formula,
   inputText: PlainText;
-  plainTextFormula: PlainTextFormula;
+  plainTextFormula: PlainTextFormula; // REVIEW: Does the client need this?
 }
 export interface FormulaCellKeyboardObject extends FormulaCellObjectBase {
   inputType: InputType.Keyboard,
 }
 export interface FormulaCellStylusObject extends FormulaCellObjectBase {
   inputType: InputType.Stylus,
-  stylusInput: StylusInput,
+  stylusInput: StylusInput, // REVIEW: Does the client need this?
   stylusSvg: SvgMarkup,
 }
 interface FormulaCellNoInputObject extends FormulaCellObjectBase {

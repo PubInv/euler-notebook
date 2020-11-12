@@ -22,7 +22,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 import * as debug1 from "debug";
 const debug = debug1('client:stroke-panel');
 
-import { CssClass, CssLength, SvgMarkup, assert, deepCopy } from "../shared/common";
+import { CssClass, SvgMarkup, assert, deepCopy, CssSize } from "../shared/common";
 import { StylusInput } from "../shared/stylus";
 
 import { $outerSvg, $newSvg, $svg } from "../dom";
@@ -49,6 +49,7 @@ export class StrokePanel extends HtmlElement<'div'> {
   // Public Constructor
 
   public constructor(
+    cssSize: CssSize,
     stylusInput: StylusInput,
     svgMarkup: SvgMarkup|undefined,
     strokeCallbackFn: StrokeCallbackFn,
@@ -57,10 +58,7 @@ export class StrokePanel extends HtmlElement<'div'> {
 
     // REVIEW: Why do we have to specify height here?
     const $svgPanel = svgMarkup ? $outerSvg<'svg'>(svgMarkup) : $newSvg<'svg'>({ tag: 'svg', class: <CssClass>'svgPanel', attrs: { height: stylusInput.size.height, width:stylusInput.size.width }});
-
-    const width = <CssLength>$svgPanel.getAttribute('width'); // REVIEW: Get computed value instead?
-    const height = <CssLength>$svgPanel.getAttribute('height');
-    const stylusDrawingPanel = new StylusDrawingPanel(width, height, (stroke)=>this.onStrokeComplete(stroke));
+    const stylusDrawingPanel = new StylusDrawingPanel(cssSize, (stroke)=>this.onStrokeComplete(stroke));
 
     super({
       tag: 'div',

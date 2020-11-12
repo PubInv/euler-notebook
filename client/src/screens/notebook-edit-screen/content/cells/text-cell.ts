@@ -22,7 +22,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 import * as debug1 from "debug";
 const debug = debug1('client:text-cell');
 
-import { TextCellObject } from "../../../../shared/cell";
+import { InputType, TextCellObject } from "../../../../shared/cell";
 import { CssClass, assertFalse, PlainText, notImplemented } from "../../../../shared/common";
 import { StrokeData } from "../../../../shared/stylus";
 import { NotebookChange, } from "../../../../shared/notebook";
@@ -64,7 +64,9 @@ export class TextCell extends CellBase {
     this.$content.prepend(this.$displayPanel);
 
     this.$inputPanel = this.createInputPanel(style);
-    this.$content.append(this.$inputPanel);
+    if (this.$inputPanel) {
+      this.$content.append(this.$inputPanel);
+    }
   }
 
   // ClientNotebookWatcher Methods
@@ -117,18 +119,23 @@ export class TextCell extends CellBase {
     return $displayPanel;
   }
 
-  private createInputPanel(_cellObject: TextCellObject): HTMLDivElement {
-    notImplemented();
-    // let panel: KeyboardPanel|StrokePanel;
-    // if (styleIsKeyboard) {
-    //   panel = this.keyboardPanel = this.createKeyboardSubpanel(style);
-    // } else {
-    //   panel = this.strokePanel = this.createStrokeSubpanel(style);
-    // }
-    // return panel.$elt;
+  private createInputPanel(cellObject: TextCellObject): HTMLDivElement|undefined {
+    let panel: KeyboardPanel|StrokePanel|undefined;
+    switch(cellObject.inputType) {
+      case InputType.Keyboard:
+        panel = this.keyboardPanel = this.createKeyboardSubpanel(cellObject);
+        break;
+      case InputType.Stylus:
+        panel = this.createStrokeSubpanel(cellObject);
+        break;
+      case InputType.None:
+        // Do nothing.
+        break;
+      default: assertFalse();
+    }
+    return panel && panel.$elt;
   }
 
-  // @ts-expect-error // TODO:
   private createKeyboardSubpanel(cellObject: TextCellKeyboardObject): KeyboardPanel {
     const textChangeCallback: KeyboardCallbackFn = (_start: number, _end: number, _replacement: PlainText, _value: PlainText): void =>{
       notImplemented();
@@ -141,15 +148,15 @@ export class TextCell extends CellBase {
     return new KeyboardPanel(cellObject.inputText, textChangeCallback);
   }
 
-  // @ts-expect-error // TODO:
   private createStrokeSubpanel(cellObject: TextCellStylusObject): StrokePanel {
-    const strokePanel = new StrokePanel(cellObject.stylusInput, cellObject.displaySvg, async (_strokeData: StrokeData)=>{
-      throw new Error("TODO: Just send stroke to server");
+    const callbackFn = async (_strokeData: StrokeData)=>{
+      notImplemented();
       // const changeRequest: StyleChangeRequest = { type: 'changeStyle', cellId: style.id, data: strokeData };
       // // TODO: We don't want to wait for *all* processing of the strokes to finish, just the svg update.
       // // TODO: Incremental changes.
       // await this.container.screen.notebook.sendChangeRequest(changeRequest);
-    });
+    };
+    const strokePanel = new StrokePanel(cellObject.cssSize, cellObject.stylusInput, cellObject.displaySvg, callbackFn);
     return strokePanel;
   }
 

@@ -22,7 +22,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 import * as debug1 from "debug";
 const debug = debug1('client:stylus-drawing-panel');
 
-import { Html, CssClass, CssLength } from "../shared/common";
+import { Html, CssClass, CssSize } from "../shared/common";
 
 import { SvgStroke } from "../svg-stroke";
 import { reportError } from "../error-handler";
@@ -54,14 +54,13 @@ export class StylusDrawingPanel extends SvgElement<'svg'> {
   // Public Constructor
 
   public constructor(
-    width: CssLength,
-    height: CssLength,
+    cssSize: CssSize,
     strokeCallbackFn: StrokeCallbackFn,
   ) {
     debug(`Creating instance`)
     super({
       tag: 'svg',
-      attrs: { height, width },
+      attrs: { height: cssSize.height, width: cssSize.width },
       class: <CssClass>'stylusDrawingPanel',
       listeners: {
         pointercancel:  e=>this.onPointerCancel(e),

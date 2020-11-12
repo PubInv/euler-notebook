@@ -25,8 +25,8 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 import * as debug1 from "debug";
 const debug = debug1('client:notebook-edit-screen-content');
 
-import { CellId, CellObject, CellRelativePosition, CellPosition } from "../../../shared/cell";
-import { CssClass, assert, Html, assertFalse, notImplemented } from "../../../shared/common";
+import { CellId, CellObject, CellRelativePosition, CellPosition, CellType, InputType, TextCellObject, FigureCellObject } from "../../../shared/cell";
+import { CssClass, assert, Html, assertFalse, notImplemented, emptySvg, PlainText, POINTS_PER_INCH, CssSize, CssLength } from "../../../shared/common";
 import { NotebookChange } from "../../../shared/notebook";
 import {
   DebugParams, DebugResults, DeleteCellRequest, InsertCellRequest,
@@ -38,6 +38,9 @@ import { createCell } from "./cells/index";
 import { HtmlElement } from "../../../html-element";
 import { NotebookEditScreen } from "..";
 import { reportError } from "../../../error-handler";
+import { userSettingsInstance } from "../../../user-settings";
+import { EMPTY_FORMULA, FormulaCellObject } from "../../../shared/formula";
+import { emptyStylusInput } from "../../../shared/stylus";
 
 // Types
 
@@ -182,6 +185,40 @@ export class Content extends HtmlElement<'div'>{
   }
 
   public async insertFigureCellBelow(afterId?: CellRelativePosition): Promise<void> {
+    debug("Insert Figure Cell Below");
+
+    // If cell to insert after is not specified, then insert below the last cell selected.
+    // If no cells are selected, then insert at the end of the notebook.
+    if (afterId === undefined) {
+      if (this.lastCellSelected) { afterId = this.lastCellSelected.cellId; }
+      else { afterId = CellPosition.Bottom; }
+    }
+
+    const cssSize: CssSize = {
+      height: <CssLength>`${2*POINTS_PER_INCH}pt`,
+      width: <CssLength>`${6.5*POINTS_PER_INCH}pt`,
+    }
+    let changeRequest: InsertCellRequest<FigureCellObject>;
+      changeRequest = {
+        type: 'insertCell',
+        cellObject: {
+          id: 0,
+          type: CellType.Figure,
+          inputType: InputType.Stylus,
+          cssSize,
+          displaySvg: emptySvg(cssSize),
+          source: 'USER',
+          stylusInput: emptyStylusInput(cssSize),
+        },
+        afterId,
+      };
+    /* const undoChangeRequest = */await this.screen.notebook.sendChangeRequest(changeRequest);
+    // const cellId = (<DeleteCellRequest>undoChangeRequest).cellId;
+
+    // TODO: Set focus?
+  }
+
+  public async insertFormulaCellBelow(afterId?: CellRelativePosition): Promise<void> {
     debug("Insert Formula Cell Below");
 
     // If cell to insert after is not specified, then insert below the last cell selected.
@@ -191,41 +228,46 @@ export class Content extends HtmlElement<'div'>{
       else { afterId = CellPosition.Bottom; }
     }
 
-    // TODO: We don't have all the information to insert the full cell (displaySvg, etc.)
-    //       We need a change that specifically inserts a figure with partial data.
-    throw new Error("TODO:");
-    // const data: FigureCellData = {
-    //   type: CellType.Figure,
-    //   inputType: InputType.Stylus,
-    //   height: 72, // points
-    //   stylusInput: deepCopy(EMPTY_STYLUS_INPUT),
-    // }
-    // const styleProps: StylePropertiesWithSubprops = { role: 'FIGURE', subrole: 'OTHER', type: 'NONE', data };
-    // const changeRequest: InsertCellRequest = { type: 'insertCell', afterId, styleProps };
-    // /* const undoChangeRequest = */ await this.sendUndoableChangeRequest(changeRequest);
-    // // const cellId = (<DeleteCellRequest>undoChangeRequest).cellId
-  }
-
-  public async insertFormulaCellBelow(_afterId?: CellRelativePosition): Promise<void> {
-    debug("Insert Formula Cell Below");
-
-    notImplemented();
-    // // If cell to insert after is not specified, then insert below the last cell selected.
-    // // If no cells are selected, then insert at the end of the notebook.
-    // if (afterId === undefined) {
-    //   if (this.lastCellSelected) { afterId = this.lastCellSelected.cellId; }
-    //   else { afterId = CellPosition.Bottom; }
-    // }
-
-    // const inputMode = userSettingsInstance.defaultInputMode;
-    // const changeRequest: InsertCellRequest = {
-    //   type: 'insertCell',
-    //   cellType: CellType.Formula,
-    //   inputType: (inputMode=='keyboard' ? InputType.Keyboard : InputType.Stylus),
-    //   afterId,
-    // };
-
-    /* const undoChangeRequest = */ // await this.sendChangeRequest(changeRequest);
+    const cssSize: CssSize = {
+      height: <CssLength>`${1*POINTS_PER_INCH}pt`,
+      width: <CssLength>`${6.5*POINTS_PER_INCH}pt`,
+    }
+    let changeRequest: InsertCellRequest<FormulaCellObject>;
+    const inputMode = userSettingsInstance.defaultInputMode;
+    if (inputMode == 'keyboard') {
+      changeRequest = {
+        type: 'insertCell',
+        cellObject: {
+          id: 0,
+          type: CellType.Formula,
+          inputText: <PlainText>"",
+          cssSize,
+          displaySvg: emptySvg(cssSize),
+          inputType: InputType.Keyboard,
+          plainTextFormula: EMPTY_FORMULA,
+          source: 'USER',
+        },
+        afterId,
+      };
+    } else {
+      changeRequest = {
+        type: 'insertCell',
+        cellObject: {
+          id: 0,
+          type: CellType.Formula,
+          inputType: InputType.Stylus,
+          displaySvg: emptySvg(cssSize),
+          cssSize,
+          inputText: <PlainText>"",
+          plainTextFormula: EMPTY_FORMULA,
+          source: 'USER',
+          stylusInput: emptyStylusInput(cssSize),
+          stylusSvg: emptySvg(cssSize),
+        },
+        afterId,
+      };
+    }
+    /* const undoChangeRequest = */await this.screen.notebook.sendChangeRequest(changeRequest);
     // const cellId = (<DeleteCellRequest>undoChangeRequest).cellId;
 
     // TODO: Set focus?
@@ -241,56 +283,48 @@ export class Content extends HtmlElement<'div'>{
       else { afterId = CellPosition.Bottom; }
     }
 
-    // TODO: We don't have all the information to insert the full cell (displaySvg, etc.)
-    //       We need a change that specifically inserts a text with partial data.
-    throw new Error("TODO:");
-    // const inputMode = userSettingsInstance.defaultInputMode;
-    // const data: TextCellData = (inputMode=='keyboard' ?
-    //   {
-    //     type: CellType.Text,
-    //     inputType: InputType.Keyboard,
-    //     height: 72, // points
-    //     plainText: <PlainText>'',
-    //   } :
-    //   {
-    //     type: CellType.Text,
-    //     inputType: InputType.Stylus,
-    //     height: 72, // points
-    //     plainText: <PlainText>'',
-    //     stylusInput: deepCopy(EMPTY_STYLUS_INPUT),
-    //   }
-    // );
-    // const styleProps: StylePropertiesWithSubprops = { role: 'TEXT', type: 'NONE', data };
-
-    // // Insert top-level style and wait for it to be inserted.
-    // const changeRequest: InsertCellRequest = { type: 'insertCell', afterId, styleProps };
-    // const undoChangeRequest = await this.sendUndoableChangeRequest(changeRequest);
-    // /* const cellId = */(<DeleteCellRequest>undoChangeRequest).cellId;
+    const cssSize: CssSize = {
+      height: <CssLength>`${1*POINTS_PER_INCH}pt`,
+      width: <CssLength>`${6.5*POINTS_PER_INCH}pt`,
+    }
+    const inputMode = userSettingsInstance.defaultInputMode;
+    let changeRequest: InsertCellRequest<TextCellObject>;
+    if (inputMode == 'keyboard') {
+      changeRequest = {
+        type: 'insertCell',
+        cellObject: {
+          id: 0,
+          type: CellType.Text,
+          inputType: InputType.Keyboard,
+          cssSize,
+          displaySvg: emptySvg(cssSize),
+          inputText: <PlainText>"",
+          source: 'USER',
+        },
+        afterId,
+      };
+    } else {
+      changeRequest = {
+        type: 'insertCell',
+        cellObject: {
+          id: 0,
+          type: CellType.Text,
+          inputType: InputType.Stylus,
+          cssSize,
+          displaySvg: emptySvg(cssSize),
+          inputText: <PlainText>"",
+          source: 'USER',
+          stylusInput: emptyStylusInput(cssSize),
+          stylusSvg: emptySvg(cssSize),
+        },
+        afterId,
+      };
+    }
+    /* const undoChangeRequest = */await this.screen.notebook.sendChangeRequest(changeRequest);
+    // const cellId = (<DeleteCellRequest>undoChangeRequest).cellId;
 
     // TODO: Set focus?
   }
-
-  // public async insertKeyboardCellAbove(): Promise<void> {
-  //   // If cells are selected then in insert a keyboard input cell
-  //   // above the last cell selected.
-  //   // Otherwise, insert at the beginning of the notebook.
-  //   let afterId: CellRelativePosition;
-  //   if (this.lastCellSelected) {
-  //     const previousCell = this.previousCell(this.lastCellSelected);
-  //     afterId = previousCell ? previousCell.cellId : CellPosition.Top;
-  //   } else { afterId = CellPosition.Top; }
-  //   await this.insertKeyboardCellAndEdit(afterId);
-  // }
-
-  // public async insertKeyboardCellBelow(): Promise<void> {
-  //   debug("Insert Keyboard Cell Below");
-  //   // If cells are selected then in insert a keyboard input cell below the last cell selected.
-  //   // Otherwise, insert at the end of the notebook.
-  //   let afterId: CellRelativePosition;
-  //   if (this.lastCellSelected) { afterId = this.lastCellSelected.cellId; }
-  //   else { afterId = CellPosition.Bottom; }
-  //   await this.insertKeyboardCellAndEdit(afterId);
-  // }
 
   public async moveSelectionDown(): Promise<void> {
     // TODO: contiguous multiple selection

@@ -101,17 +101,14 @@ export class FigureCell extends CellBase {
   // Private Instance Methods
 
   private createInputPanel(cellObject: FigureCellObject): void {
-    this.strokePanel = new StrokePanel(
-      cellObject.stylusInput,
-      cellObject.displaySvg,
-      async (_stylusInput: StylusInput)=>{
-        throw new Error("TODO: Just send stroke to server");
-        // const changeRequest: StyleChangeRequest = { type: 'changeStyle', cellId: style.id, data: stylusInput };
-        // // TODO: We don't want to wait for *all* processing of the strokes to finish, just the svg update.
-        // // TODO: Incremental changes.
-        // await this.container.screen.notebook.sendChangeRequest(changeRequest);
-      },
-    );
+    const callbackFn = async (_stylusInput: StylusInput)=>{
+      throw new Error("TODO: Just send stroke to server");
+      // const changeRequest: StyleChangeRequest = { type: 'changeStyle', cellId: style.id, data: stylusInput };
+      // // TODO: We don't want to wait for *all* processing of the strokes to finish, just the svg update.
+      // // TODO: Incremental changes.
+      // await this.container.screen.notebook.sendChangeRequest(changeRequest);
+    };
+    this.strokePanel = new StrokePanel(cellObject.cssSize, cellObject.stylusInput, cellObject.displaySvg, callbackFn);
     this.$content.appendChild(this.strokePanel.$elt);
   }
 

@@ -19,7 +19,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 // Requirements
 
-import { LengthInPoints, PlainText, SvgMarkup } from "./common";
+import { CssSize, PlainText, SvgMarkup } from "./common";
 import { StylusInput } from "./stylus";
 
 // Types
@@ -60,7 +60,7 @@ export enum InputType {
 export interface CellObject {
   id: CellId;
   type: CellType;
-  height: LengthInPoints;
+  cssSize: CssSize;
   displaySvg: SvgMarkup;
   source: CellSource;
 }
@@ -96,4 +96,7 @@ export interface TextCellStylusObject extends TextCellObjectBase {
   stylusInput: StylusInput,
   stylusSvg: SvgMarkup,
 }
-export type TextCellObject = TextCellKeyboardObject | TextCellStylusObject;
+interface TextCellNoInputObject extends TextCellObjectBase {
+  inputType: InputType.None,
+}
+export type TextCellObject = TextCellKeyboardObject | TextCellStylusObject | TextCellNoInputObject;
