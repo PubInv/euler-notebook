@@ -22,8 +22,8 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 import * as debug1 from "debug";
 const debug = debug1('client:stroke-panel');
 
-import { CssClass, SvgMarkup, assert, deepCopy, CssSize } from "../shared/common";
-import { StylusInput } from "../shared/stylus";
+import { CssClass, SvgMarkup, assert, CssSize } from "../shared/common";
+import { Stroke } from "../shared/stylus";
 
 import { $outerSvg, $newSvg, $svg } from "../dom";
 
@@ -36,7 +36,7 @@ import { HtmlElement } from "../html-element";
 
 // Types
 
-type StrokeCallbackFn = (stylusInput: StylusInput)=>Promise<void>;
+export type StrokeCallbackFn = (stroke: Stroke)=>Promise<void>;
 
 // Constants
 
@@ -50,14 +50,13 @@ export class StrokePanel extends HtmlElement<'div'> {
 
   public constructor(
     cssSize: CssSize,
-    stylusInput: StylusInput,
     svgMarkup: SvgMarkup|undefined,
     strokeCallbackFn: StrokeCallbackFn,
   ) {
     debug(`Creating instance ${svgMarkup?'with':'without'} SVG markup.`);
 
     // REVIEW: Why do we have to specify height here?
-    const $svgPanel = svgMarkup ? $outerSvg<'svg'>(svgMarkup) : $newSvg<'svg'>({ tag: 'svg', class: <CssClass>'svgPanel', attrs: { height: stylusInput.size.height, width:stylusInput.size.width }});
+    const $svgPanel = svgMarkup ? $outerSvg<'svg'>(svgMarkup) : $newSvg<'svg'>({ tag: 'svg', class: <CssClass>'svgPanel', attrs: { height: cssSize.height, width: cssSize.width }});
     const stylusDrawingPanel = new StylusDrawingPanel(cssSize, (stroke)=>this.onStrokeComplete(stroke));
 
     super({
@@ -72,17 +71,12 @@ export class StrokePanel extends HtmlElement<'div'> {
     this.$svgPanel = $svgPanel;
     this.strokeCallbackFn = strokeCallbackFn;
     // REVIEW: Is stylusInput updated in-place?
-    this.stylusInput = deepCopy(stylusInput);
   }
 
   // Public Instance Properties
 
 
   // Public Instance Methods
-
-  public updateStylusInput(stylusInput: StylusInput): void {
-    this.stylusInput = deepCopy(stylusInput);
-  }
 
   public updateSvgMarkup(markup: SvgMarkup): void {
     debug(`Updating SVG markup`);
@@ -97,7 +91,6 @@ export class StrokePanel extends HtmlElement<'div'> {
 
   private $svgPanel: SVGSVGElement|undefined;
   private strokeCallbackFn: StrokeCallbackFn;
-  private stylusInput: StylusInput;
 
   // Private Instance Property Functions
 
@@ -133,10 +126,8 @@ export class StrokePanel extends HtmlElement<'div'> {
   private async onStrokeComplete(stroke: SvgStroke): Promise<void> {
     // TODO: What if socket to server is closed? We'll just accumulate strokes that will never get saved.
     //       How do we handle offline operation?
-    // TODO: Incremental change request.
-    this.stylusInput.strokeGroups[0].strokes.push(stroke.data);
     debug(`Calling stroke callback function`);
-    return this.strokeCallbackFn(this.stylusInput);
+    return this.strokeCallbackFn(stroke.data);
   }
 }
 

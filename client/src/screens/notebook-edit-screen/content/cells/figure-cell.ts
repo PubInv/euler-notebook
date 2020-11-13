@@ -22,19 +22,21 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 import * as debug1 from "debug";
 const debug = debug1('client:figure-cell');
 
-import { CssClass, CssLength, assertFalse } from "../../../../shared/common";
-import { StylusInput } from "../../../../shared/stylus";
+import { CssClass, CssLength, assertFalse, Html } from "../../../../shared/common";
+import { Stroke, StrokePosition } from "../../../../shared/stylus";
 import { NotebookChange } from "../../../../shared/notebook";
 // import { StyleChangeRequest } from "../../../../shared/math-tablet-api";
 
 import { $svg, HtmlElementSpecification } from "../../../../dom";
-import { StrokePanel } from "../../../../components/stroke-panel";
+import { StrokeCallbackFn, StrokePanel } from "../../../../components/stroke-panel";
 
 import { Content as CellContainer } from "../index";
 
 import { CellBase } from "./cell-base";
 import { notebookChangeSynopsis } from "../../../../shared/debug-synopsis";
 import { FigureCellObject } from "../../../../shared/cell";
+import { InsertStrokeRequest } from "../../../../shared/math-tablet-api";
+import { logError } from "../../../../error-handler";
 
 // Types
 
@@ -53,7 +55,8 @@ export class FigureCell extends CellBase {
       classes: [ <CssClass>'content', <CssClass>'figureCell' ],
     };
     super(container, style, contentSpec);
-    this.createInputPanel(style);
+    this.$inputPanel = this.createInputPanel(style);
+    this.$content.append(this.$inputPanel);
   }
 
   // Public Instance Methods
@@ -94,22 +97,32 @@ export class FigureCell extends CellBase {
 
   // Private Instance Properties
 
+  private $inputPanel: HTMLDivElement;
+  // @ts-expect-error // TODO: value is never read error
   private strokePanel?: StrokePanel;
 
   // Private Instance Property Functions
 
   // Private Instance Methods
 
-  private createInputPanel(cellObject: FigureCellObject): void {
-    const callbackFn = async (_stylusInput: StylusInput)=>{
-      throw new Error("TODO: Just send stroke to server");
-      // const changeRequest: StyleChangeRequest = { type: 'changeStyle', cellId: style.id, data: stylusInput };
-      // // TODO: We don't want to wait for *all* processing of the strokes to finish, just the svg update.
-      // // TODO: Incremental changes.
-      // await this.container.screen.notebook.sendChangeRequest(changeRequest);
+  private createInputPanel(cellObject: FigureCellObject): HTMLDivElement {
+    const panel = this.strokePanel = this.createStrokeSubpanel(cellObject);
+    return panel.$elt;
+  }
+
+  private createStrokeSubpanel(cellObject: FigureCellObject): StrokePanel {
+    const callbackFn: StrokeCallbackFn = async (stroke: Stroke)=>{
+      const changeRequest: InsertStrokeRequest = { type: 'insertStroke', cellId: cellObject.id, stroke, afterId: StrokePosition.Bottom };
+      // TODO: Remove tentative stroke from subpanel.
+      await this.container.screen.notebook.sendChangeRequest(changeRequest)
+      .catch(err=>{
+        // REVIEW: Proper way to handle this error?
+        logError(err, <Html>"Error sending stroke from formula cell");
+      });
     };
-    this.strokePanel = new StrokePanel(cellObject.cssSize, cellObject.stylusInput, cellObject.displaySvg, callbackFn);
-    this.$content.appendChild(this.strokePanel.$elt);
+    // Create the panel
+    const strokePanel = new StrokePanel(cellObject.cssSize, cellObject.displaySvg, callbackFn);
+    return strokePanel;
   }
 
   // Private Instance Event Handlers

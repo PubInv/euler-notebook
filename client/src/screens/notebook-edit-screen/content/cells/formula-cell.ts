@@ -25,7 +25,7 @@ import * as debug1 from "debug";
 const debug = debug1('client:formula-cell');
 
 import { CssClass, Html, assertFalse, PlainText, notImplemented } from "../../../../shared/common";
-import { StrokeData } from "../../../../shared/stylus";
+import { Stroke, StrokePosition } from "../../../../shared/stylus";
 import { FormulaCellKeyboardObject, FormulaCellObject, FormulaCellStylusObject } from "../../../../shared/formula";
 import { NotebookChange } from "../../../../shared/notebook";
 
@@ -34,9 +34,11 @@ import { Content as CellContainer } from "..";
 
 import { CellBase } from "./cell-base";
 import { KeyboardCallbackFn, KeyboardPanel } from "../../../../components/keyboard-panel";
-import { StrokePanel } from "../../../../components/stroke-panel";
+import { StrokeCallbackFn, StrokePanel } from "../../../../components/stroke-panel";
 import { notebookChangeSynopsis } from "../../../../shared/debug-synopsis";
 import { InputType } from "../../../../shared/cell";
+import { InsertStrokeRequest } from "../../../../shared/math-tablet-api";
+import { logError } from "../../../../error-handler";
 
 // Types
 
@@ -182,7 +184,7 @@ export class FormulaCell extends CellBase {
         panel = this.keyboardPanel = this.createKeyboardSubpanel(cellObject);
         break;
       case InputType.Stylus:
-        panel = this.createStrokeSubpanel(cellObject);
+        panel = this.strokePanel = this.createStrokeSubpanel(cellObject);
         break;
       case InputType.None:
         // Do nothing.
@@ -214,6 +216,7 @@ export class FormulaCell extends CellBase {
       // const changeRequest: KeyboardInputRequest = { type: 'keyboardInputChange', cellId: style.id, start, end, replacement, value, };
       // this.container.screen.notebook.sendCellChangeRequest(changeRequest)
       // .catch(err=>{
+      // // REVIEW: Proper way to handle this error?
       //   logError(err, <Html>"Error sending keyboardInputChange from formula cell");
       // });
     }
@@ -221,18 +224,16 @@ export class FormulaCell extends CellBase {
   }
 
   private createStrokeSubpanel(cellObject: FormulaCellStylusObject): StrokePanel {
-    // Callback function for when strokes in the panel have changed.
-    // Submit a notebook change request.
-    const callbackFn = async (_strokeData: StrokeData)=>{
-      notImplemented();
-      // const changeRequest: StyleChangeRequest = { type: 'changeStyle', cellId: style.id, data: strokeData };
-      // // TODO: We don't want to wait for *all* processing of the strokes to finish, just the svg update.
-      // // TODO: Incremental changes.
-      // await this.container.screen.notebook.sendChangeRequest(changeRequest);
+    const callbackFn: StrokeCallbackFn = async (stroke: Stroke)=>{
+      const changeRequest: InsertStrokeRequest = { type: 'insertStroke', cellId: cellObject.id, stroke, afterId: StrokePosition.Bottom };
+      await this.container.screen.notebook.sendChangeRequest(changeRequest)
+      .catch(err=>{
+        // REVIEW: Proper way to handle this error?
+        logError(err, <Html>"Error sending stroke from formula cell");
+      });
     };
-
     // Create the panel
-    const strokePanel = new StrokePanel(cellObject.cssSize, cellObject.stylusInput, cellObject.stylusSvg, callbackFn);
+    const strokePanel = new StrokePanel(cellObject.cssSize, cellObject.stylusSvg, callbackFn);
     return strokePanel;
   }
 

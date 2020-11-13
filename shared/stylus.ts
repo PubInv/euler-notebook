@@ -24,6 +24,15 @@ import { CssSize } from "./common";
 
 // Types
 
+export type StrokeId = number;
+
+export type StrokeRelativePosition = StrokeId | StrokePosition;
+
+export enum StrokePosition {
+  Top = 0,
+  Bottom = -1,
+}
+
 export interface Stroke {
   // id?: string;
   // p?: number[];

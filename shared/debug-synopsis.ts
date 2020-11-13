@@ -86,9 +86,11 @@ export function folderChangeSynopsis(change: FolderChange): string {
 export function notebookChangeRequestSynopsis(request: NotebookChangeRequest): string {
   let rval: string = request.type;
   switch(request.type) {
-    case 'deleteCell': rval += ` S${request.cellId}`; break;
+    case 'deleteCell': rval += ` C${request.cellId}`; break;
+    case 'deleteStroke': rval += ` C${request.cellId} S${request.strokeId}`; break;
     case 'insertCell': rval += ` TBD`; break;
-    case 'moveCell': rval += ` TBD`; break;
+    case 'insertStroke': rval += ` C${request.cellId} TODO`; break;
+    case 'moveCell': rval += ` C${request.cellId} A${request.afterId}`; break;
     default: assertFalse();
   }
   return rval;
@@ -98,7 +100,7 @@ export function notebookChangeSynopsis(change: NotebookChange): string {
   let rval: string = change.type;
   switch(change.type) {
     case 'cellDeleted': {
-      rval += ` S${change.cellId}`;
+      rval += ` C${change.cellId}`;
       break;
     }
     case 'cellInserted': {
@@ -107,6 +109,14 @@ export function notebookChangeSynopsis(change: NotebookChange): string {
     }
     case 'cellMoved': {
       rval += ` ${change.cellId} after ${change.afterId} ${change.oldPosition}->${change.newPosition}`;
+      break;
+    }
+    case 'strokeInserted': {
+      rval += ` TODO:`;
+      break;
+    }
+    case 'strokeDeleted': {
+      rval += ` TODO:`;
       break;
     }
     default: assertFalse();
@@ -146,7 +156,7 @@ export function serverMessageSynopsis(msg: ServerMessage): string {
 }
 
 export function cellSynopsis(cell: CellObject, indentationLevel: number = 0): string {
-  return `${indentation(indentationLevel)}S${cell.id} ${cell.type} ${cell.source} TODO: more data depending on type.`;
+  return `${indentation(indentationLevel)}C${cell.id} ${cell.type} ${cell.source} TODO: more data depending on type.`;
 }
 
 // Helper Functions

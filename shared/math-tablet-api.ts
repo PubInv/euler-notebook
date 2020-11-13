@@ -26,6 +26,7 @@ import { CellId, CellRelativePosition, CellObject } from "./cell";
 import { Html, PlainText } from "./common";
 import { FolderObject, FolderPath, NotebookPath, FolderName, NotebookName, FolderChange } from "./folder";
 import { NotebookChange, NotebookObject, WolframExpression } from "./notebook";
+import { Stroke, StrokeId, StrokeRelativePosition } from "./stylus";
 
 // Types
 
@@ -106,18 +107,30 @@ export interface NotebookRenameRequest {
 
 export type NotebookChangeRequest =
   DeleteCellRequest|
+  DeleteStrokeRequest|
   InsertCellRequest<any>|
+  InsertStrokeRequest|
   KeyboardInputRequest|
-  MoveCellRequest|
-  StylusInputRequest;
+  MoveCellRequest;
 export interface DeleteCellRequest {
   type: 'deleteCell';
   cellId: CellId;
+}
+export interface DeleteStrokeRequest {
+  type: 'deleteStroke';
+  cellId: CellId;
+  strokeId: StrokeId;
 }
 export interface InsertCellRequest<T extends CellObject> {
   type: 'insertCell';
   afterId: CellRelativePosition;
   cellObject: T;
+}
+export interface InsertStrokeRequest {
+  type: 'insertStroke';
+  cellId: CellId;
+  stroke: Stroke;
+  afterId: StrokeRelativePosition;
 }
 export interface KeyboardInputRequest {
   type: 'keyboardInputChange';
@@ -132,10 +145,10 @@ export interface MoveCellRequest {
   cellId: CellId;
   afterId: CellRelativePosition;
 }
-export interface StylusInputRequest {
-  type: 'stylusInputChange';
+export interface RemoveStrokeRequest {
+  type: 'removedStroke';
   cellId: CellId;
-  // TODO: Stroke insert or delete info.
+  strokeId: StrokeId;
 }
 
 // Messages from the server

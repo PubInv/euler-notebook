@@ -209,6 +209,7 @@ export class Content extends HtmlElement<'div'>{
           displaySvg: emptySvg(cssSize),
           source: 'USER',
           stylusInput: emptyStylusInput(cssSize),
+          stylusSvg: emptySvg(cssSize),
         },
         afterId,
       };
@@ -258,7 +259,6 @@ export class Content extends HtmlElement<'div'>{
           inputType: InputType.Stylus,
           displaySvg: emptySvg(cssSize),
           cssSize,
-          inputText: <PlainText>"",
           plainTextFormula: EMPTY_FORMULA,
           source: 'USER',
           stylusInput: emptyStylusInput(cssSize),
@@ -312,7 +312,6 @@ export class Content extends HtmlElement<'div'>{
           inputType: InputType.Stylus,
           cssSize,
           displaySvg: emptySvg(cssSize),
-          inputText: <PlainText>"",
           source: 'USER',
           stylusInput: emptyStylusInput(cssSize),
           stylusSvg: emptySvg(cssSize),

@@ -34,12 +34,12 @@ import { NotebookPath, NOTEBOOK_PATH_RE, NotebookName, FolderPath, NotebookEntry
 import {
   Notebook, NotebookObject, NotebookChange,
   CellMoved, VERSION,
-  CellInserted, CellDeleted, NotebookWatcher,
+  CellInserted, CellDeleted, NotebookWatcher, StrokeInserted,
 } from "./shared/notebook";
 import {
   NotebookChangeRequest, MoveCellRequest, InsertCellRequest,
   DeleteCellRequest,
-  ServerNotebookChangedMessage, ClientNotebookChangeMessage, ClientNotebookUseToolMessage, RequestId,
+  ServerNotebookChangedMessage, ClientNotebookChangeMessage, ClientNotebookUseToolMessage, RequestId, InsertStrokeRequest, DeleteStrokeRequest,
 } from "./shared/math-tablet-api";
 import { notebookChangeRequestSynopsis, notebookChangeSynopsis } from "./shared/debug-synopsis";
 
@@ -47,6 +47,7 @@ import { ClientId } from "./server-socket";
 import { AbsDirectoryPath, ROOT_DIR_PATH, mkDir, readFile, rename, rmRaf, writeFile } from "./adapters/file-system";
 import { OpenOptions } from "./shared/watched-resource";
 import { logError } from "./error-handler";
+import { StrokeId } from "./shared/stylus";
 
 
 // const svg2img = require('svg2img');
@@ -439,6 +440,9 @@ export class ServerNotebook extends Notebook<ServerNotebookWatcher> {
         case 'insertCell':
           undoChangeRequest = this.applyInsertCellRequest(source, changeRequest, rval);
           break;
+        case 'insertStroke':
+          undoChangeRequest = this.applyInsertStrokeRequest(source, changeRequest, rval);
+          break;
         case 'moveCell':
           undoChangeRequest = this.applyMoveStyleRequest(source, changeRequest, rval);
           break;
@@ -460,7 +464,7 @@ export class ServerNotebook extends Notebook<ServerNotebookWatcher> {
     rval: NotebookChange[],
   ): InsertCellRequest<T> {
 
-    var cellObject = this.getCell<T>(request.cellId);
+    const cellObject = this.getCell<T>(request.cellId);
 
     // Assemble the undo change request before we delete anything
     // from the notebook.
@@ -487,6 +491,23 @@ export class ServerNotebook extends Notebook<ServerNotebookWatcher> {
     const change: CellInserted =  { type: 'cellInserted', cellObject, afterId: request.afterId };
     this.appendChange(source, change, rval);
     const undoChangeRequest: DeleteCellRequest = { type: 'deleteCell', cellId };
+    return undoChangeRequest;
+  }
+
+  private applyInsertStrokeRequest<T extends CellObject>(
+    source: CellSource,
+    request: InsertStrokeRequest,
+    rval: NotebookChange[],
+  ): DeleteStrokeRequest {
+    const cellId = request.cellId;
+    const cellObject = this.getCell<T>(request.cellId);
+    const strokeId: StrokeId = -1; //BUGBUG;
+
+    const undoChangeRequest: DeleteStrokeRequest = { type: 'deleteStroke', cellId, strokeId };
+
+    const change: StrokeInserted = { type: 'strokeInserted', cellId: cellObject.id, strokeId: strokeId, stroke: request.stroke };
+    this.appendChange(source, change, rval);
+
     return undoChangeRequest;
   }
 

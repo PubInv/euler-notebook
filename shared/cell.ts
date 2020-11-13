@@ -65,6 +65,17 @@ export interface CellObject {
   source: CellSource;
 }
 
+export interface KeyboardCellObject {
+  inputType: InputType.Keyboard,
+  inputText: PlainText,
+}
+
+export interface StylusCellObject {
+  inputType: InputType.Stylus,
+  stylusInput: StylusInput, // REVIEW: Does client need this structure?
+  stylusSvg: SvgMarkup
+}
+
 export interface CellMap {
   [id: /* CellId */number]: CellObject;
 }
@@ -72,11 +83,10 @@ export interface CellMap {
 // HERE TEMPORARILY:
 // Move them into their own files when they become classes.
 
-export interface FigureCellObject extends CellObject {
+export interface FigureCellStylusObject extends CellObject, StylusCellObject {
   type: CellType.Figure,
-  inputType: InputType.Stylus,
-  stylusInput: StylusInput,
 }
+export type FigureCellObject = FigureCellStylusObject;
 
 export interface PlotCellObject extends CellObject {
   type: CellType.Plot,
@@ -84,19 +94,14 @@ export interface PlotCellObject extends CellObject {
   // LATER: Identify the symbols used in the plot for each axis, etc.
 }
 
-interface TextCellObjectBase extends CellObject {
+export interface TextCellKeyboardObject extends CellObject, KeyboardCellObject {
   type: CellType.Text,
-  inputText: PlainText,
 }
-export interface TextCellKeyboardObject extends TextCellObjectBase {
-  inputType: InputType.Keyboard,
+export interface TextCellStylusObject extends CellObject, StylusCellObject {
+  type: CellType.Text,
 }
-export interface TextCellStylusObject extends TextCellObjectBase {
-  inputType: InputType.Stylus,
-  stylusInput: StylusInput,
-  stylusSvg: SvgMarkup,
-}
-interface TextCellNoInputObject extends TextCellObjectBase {
+interface TextCellNoInputObject extends CellObject {
+  type: CellType.Text,
   inputType: InputType.None,
 }
 export type TextCellObject = TextCellKeyboardObject | TextCellStylusObject | TextCellNoInputObject;

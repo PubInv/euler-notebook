@@ -19,9 +19,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 // Requirements
 
-import { StylusInput } from "./stylus";
-import { CellObject, CellType, InputType } from "./cell";
-import { PlainText, SvgMarkup } from "./common";
+import { CellObject, CellType, InputType, KeyboardCellObject, StylusCellObject } from "./cell";
 
 // Types
 
@@ -30,20 +28,18 @@ import { PlainText, SvgMarkup } from "./common";
 // except that we convert single equals to double equals.
 export type PlainTextFormula = '{PlainTextFormula}';
 
-interface FormulaCellObjectBase extends CellObject {
-  type: CellType.Formula,
-  inputText: PlainText;
+interface MathCellObject {
   plainTextFormula: PlainTextFormula; // REVIEW: Does the client need this?
 }
-export interface FormulaCellKeyboardObject extends FormulaCellObjectBase {
-  inputType: InputType.Keyboard,
+
+export interface FormulaCellKeyboardObject extends CellObject, KeyboardCellObject, MathCellObject {
+  type: CellType.Formula,
 }
-export interface FormulaCellStylusObject extends FormulaCellObjectBase {
-  inputType: InputType.Stylus,
-  stylusInput: StylusInput, // REVIEW: Does the client need this?
-  stylusSvg: SvgMarkup,
+export interface FormulaCellStylusObject extends CellObject, StylusCellObject, MathCellObject {
+  type: CellType.Formula,
 }
-interface FormulaCellNoInputObject extends FormulaCellObjectBase {
+interface FormulaCellNoInputObject extends CellObject, MathCellObject {
+  type: CellType.Formula,
   inputType: InputType.None,
 }
 export type FormulaCellObject = FormulaCellKeyboardObject | FormulaCellStylusObject | FormulaCellNoInputObject;

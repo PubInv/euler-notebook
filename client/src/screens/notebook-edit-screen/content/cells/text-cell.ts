@@ -23,20 +23,22 @@ import * as debug1 from "debug";
 const debug = debug1('client:text-cell');
 
 import { InputType, TextCellObject } from "../../../../shared/cell";
-import { CssClass, assertFalse, PlainText, notImplemented } from "../../../../shared/common";
-import { StrokeData } from "../../../../shared/stylus";
+import { CssClass, assertFalse, PlainText, notImplemented, Html } from "../../../../shared/common";
+import { Stroke, StrokePosition } from "../../../../shared/stylus";
 import { NotebookChange, } from "../../../../shared/notebook";
 // import { StyleChangeRequest } from "../../../../shared/math-tablet-api";
 
 import { $new, $outerSvg } from "../../../../dom";
 import { KeyboardCallbackFn, KeyboardPanel } from "../../../../components/keyboard-panel";
-import { StrokePanel } from "../../../../components/stroke-panel";
+import { StrokeCallbackFn, StrokePanel } from "../../../../components/stroke-panel";
 
 import { Content as CellContainer } from "../index";
 
 import { CellBase } from "./cell-base";
 import { notebookChangeSynopsis, cellSynopsis } from "../../../../shared/debug-synopsis";
 import { TextCellKeyboardObject, TextCellStylusObject } from "../../../../shared/cell";
+import { InsertStrokeRequest } from "../../../../shared/math-tablet-api";
+import { logError } from "../../../../error-handler";
 
 // Types
 
@@ -149,14 +151,15 @@ export class TextCell extends CellBase {
   }
 
   private createStrokeSubpanel(cellObject: TextCellStylusObject): StrokePanel {
-    const callbackFn = async (_strokeData: StrokeData)=>{
-      notImplemented();
-      // const changeRequest: StyleChangeRequest = { type: 'changeStyle', cellId: style.id, data: strokeData };
-      // // TODO: We don't want to wait for *all* processing of the strokes to finish, just the svg update.
-      // // TODO: Incremental changes.
-      // await this.container.screen.notebook.sendChangeRequest(changeRequest);
+    const callbackFn: StrokeCallbackFn = async (stroke: Stroke)=>{
+      const changeRequest: InsertStrokeRequest = { type: 'insertStroke', cellId: cellObject.id, stroke, afterId: StrokePosition.Bottom };
+      await this.container.screen.notebook.sendChangeRequest(changeRequest)
+      .catch(err=>{
+        // REVIEW: Proper way to handle this error?
+        logError(err, <Html>"Error sending stroke from text cell");
+      });
     };
-    const strokePanel = new StrokePanel(cellObject.cssSize, cellObject.stylusInput, cellObject.displaySvg, callbackFn);
+    const strokePanel = new StrokePanel(cellObject.cssSize, cellObject.displaySvg, callbackFn);
     return strokePanel;
   }
 

@@ -21,9 +21,10 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 // Requirements
 
 import { CellSource, CellId, CellObject, CellRelativePosition, CellOrdinalPosition, CellMap, CellPosition } from "./cell";
-import { CssLength, CssSize, Html, assert, deepCopy, escapeHtml, ExpectedError } from "./common";
+import { CssLength, CssSize, Html, assert, deepCopy, escapeHtml, ExpectedError, assertFalse, notImplemented } from "./common";
 import { cellSynopsis } from "./debug-synopsis";
 import { NOTEBOOK_NAME_RE, NotebookName, NotebookPath } from "./folder";
+import { Stroke, StrokeId } from "./stylus";
 import { WatchedResource, Watcher } from "./watched-resource";
 
 // Types
@@ -33,7 +34,7 @@ export interface FindCellOptions {
   notSource?: CellSource;
 }
 
-export type NotebookChange = CellDeleted | CellInserted | CellMoved;
+export type NotebookChange = CellDeleted | CellInserted | CellMoved | StrokeInserted | StrokeDeleted;
 export interface CellDeleted {
   type: 'cellDeleted';
   cellId: CellId;
@@ -49,6 +50,17 @@ export interface CellMoved {
   afterId: CellRelativePosition;
   oldPosition: CellOrdinalPosition;
   newPosition: CellOrdinalPosition;
+}
+export interface StrokeDeleted {
+  type: 'strokeDeleted';
+  cellId: CellId;
+  strokeId: StrokeId;
+}
+export interface StrokeInserted {
+  type: 'strokeInserted';
+  cellId: CellId;
+  strokeId: StrokeId;
+  stroke: Stroke;
 }
 
 export interface NotebookObject {
@@ -204,27 +216,14 @@ export abstract class Notebook<W extends NotebookWatcher> extends WatchedResourc
 
   public applyChange(change: NotebookChange, ownRequest: boolean): void {
     assert(change);
-
-    // REVEIW: Maybe all change notification should go out prior?
-    //         Then the styleChanged would not have to include "previousData"
-    // Some change notifications are sent before the change is applied to the notebook so the watcher can
-    // examine the style before it is modified.
-    const notifyBefore = change.type == 'cellDeleted';
-    if (notifyBefore) {
-      for (const watcher of this.watchers) { watcher.onChange(change, ownRequest); }
-    }
-
+    for (const watcher of this.watchers) { watcher.onChange(change, ownRequest); }
     switch(change.type) {
-      case 'cellDeleted':          this.deleteCell(change.cellId); break;
-      case 'cellInserted':         this.insertCell(change.cellObject, change.afterId); break;
-      case 'cellMoved':            this.moveCell(change); break;
-      default:
-        throw new Error(`Applying unexpected change type: ${(<any>change).type}`);
-    }
-
-    // Send change notifications that are supposed to go out *after* the change has been applied.
-    if (!notifyBefore) {
-      for (const watcher of this.watchers) { watcher.onChange(change, ownRequest); }
+      case 'cellDeleted': this.deleteCell(change); break;
+      case 'cellInserted': this.insertCell(change); break;
+      case 'cellMoved': this.moveCell(change); break;
+      case 'strokeInserted': this.insertStroke(change); break;
+      case 'strokeDeleted': this.deleteStroke(change); break;
+      default: assertFalse();
     }
   }
 
@@ -310,7 +309,18 @@ export abstract class Notebook<W extends NotebookWatcher> extends WatchedResourc
 
   // Private Instance Methods
 
-  private deleteCell(cellId: CellId): void {
+  protected initializeFromObject(obj: NotebookObject): void {
+    this.nextId = obj.nextId;
+    this.pageConfig = obj.pageConfig;
+    this.pages = obj.pages;
+    this.cellMap = obj.cellMap;
+  }
+
+  // Change Application Methods.
+  // DO NOT CALL DIRECTLY!
+
+  private deleteCell(change: CellDeleted): void {
+    const cellId = change.cellId;
     assert(this.cellMap[cellId]);
     // If this is a top-level style then remove it from the top-level style order first.
     const i = this.pages[0].cellIds.indexOf(cellId);
@@ -319,32 +329,35 @@ export abstract class Notebook<W extends NotebookWatcher> extends WatchedResourc
     delete this.cellMap[cellId];
   }
 
-  protected initializeFromObject(obj: NotebookObject): void {
-    this.nextId = obj.nextId;
-    this.pageConfig = obj.pageConfig;
-    this.pages = obj.pages;
-    this.cellMap = obj.cellMap;
+  private deleteStroke(_change: StrokeDeleted): void {
+    notImplemented();
   }
 
-  private insertCell(style: CellObject, afterId?: CellRelativePosition): void {
-
-    this.cellMap[style.id] = style;
+  private insertCell(change: CellInserted): void {
+    const cellObject = change.cellObject;
+    const afterId = change.afterId;
+    this.cellMap[cellObject.id] = cellObject;
     // Insert top-level styles in the style order.
     if (!afterId || afterId===CellPosition.Top) {
-      this.pages[0].cellIds.unshift(style.id);
+      this.pages[0].cellIds.unshift(cellObject.id);
     } else if (afterId===CellPosition.Bottom) {
-      this.pages[0].cellIds.push(style.id);
+      this.pages[0].cellIds.push(cellObject.id);
     } else {
       const i = this.pages[0].cellIds.indexOf(afterId);
       if (i<0) { throw new Error(`Cannot insert thought after unknown thought ${afterId}`); }
-      this.pages[0].cellIds.splice(i+1, 0, style.id);
+      this.pages[0].cellIds.splice(i+1, 0, cellObject.id);
     }
+  }
+
+  private insertStroke(_change: StrokeInserted): void {
+    notImplemented();
   }
 
   private moveCell(change: CellMoved): void {
     this.pages[0].cellIds.splice(change.oldPosition, 1);
     this.pages[0].cellIds.splice(change.newPosition, 0, change.cellId);
   }
+
 }
 
 // Helper Classes
