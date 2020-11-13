@@ -29,9 +29,10 @@ import { CellId, CellObject, CellRelativePosition, CellPosition, CellType, Input
 import { CssClass, assert, Html, assertFalse, notImplemented, emptySvg, PlainText, POINTS_PER_INCH, CssSize, CssLength } from "../../../shared/common";
 import { NotebookChange } from "../../../shared/notebook";
 import {
-  DebugParams, DebugResults, DeleteCellRequest, InsertCellRequest,
+  DeleteCellRequest, InsertCellRequest,
   MoveCellRequest, NotebookChangeRequest,
-} from "../../../shared/math-tablet-api";
+} from "../../../shared/client-requests";
+import { DebugParams, DebugResults, } from "../../../shared/api-calls";
 
 import { CellBase } from "./cells/cell-base";
 import { createCell } from "./cells/index";

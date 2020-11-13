@@ -26,19 +26,19 @@ import { InputType, TextCellObject } from "../../../../shared/cell";
 import { CssClass, assertFalse, PlainText, notImplemented, Html } from "../../../../shared/common";
 import { Stroke, StrokePosition } from "../../../../shared/stylus";
 import { NotebookChange, } from "../../../../shared/notebook";
-// import { StyleChangeRequest } from "../../../../shared/math-tablet-api";
+import { notebookChangeSynopsis, cellSynopsis } from "../../../../shared/debug-synopsis";
+import { TextCellKeyboardObject, TextCellStylusObject } from "../../../../shared/cell";
+import { InsertStrokeRequest } from "../../../../shared/client-requests";
 
 import { $new, $outerSvg } from "../../../../dom";
+import { logError } from "../../../../error-handler";
+
 import { KeyboardCallbackFn, KeyboardPanel } from "../../../../components/keyboard-panel";
 import { StrokeCallbackFn, StrokePanel } from "../../../../components/stroke-panel";
 
 import { Content as CellContainer } from "../index";
 
 import { CellBase } from "./cell-base";
-import { notebookChangeSynopsis, cellSynopsis } from "../../../../shared/debug-synopsis";
-import { TextCellKeyboardObject, TextCellStylusObject } from "../../../../shared/cell";
-import { InsertStrokeRequest } from "../../../../shared/math-tablet-api";
-import { logError } from "../../../../error-handler";
 
 // Types
 

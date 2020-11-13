@@ -33,7 +33,7 @@ import { LiteAdaptor, liteAdaptor } from "mathjax-full/js/adaptors/liteAdaptor.j
 import { RegisterHTMLHandler } from "mathjax-full/js/handlers/html.js";
 
 import { assert } from "../shared/common";
-import { TexExpression } from "../shared/math-tablet-api";
+import { TexExpression } from "../shared/formula";
 
 const MODULE = __filename.split(/[/\\]/).slice(-1)[0].slice(0,-3);
 const debug = debug1(`server:${MODULE}`);

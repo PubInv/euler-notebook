@@ -23,9 +23,12 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 import { Folder, FolderPath, NotebookName, FolderName, FolderChange, FolderCreated, NotebookCreated, FolderEntry, NotebookEntry, FolderRenamed, NotebookRenamed, FolderDeleted, NotebookDeleted, FolderWatcher } from "./shared/folder";
 import {
-  FolderChangeRequest, ClientFolderChangeMessage, ServerFolderChangedMessage, ClientFolderOpenMessage,
-  ServerFolderMessage, ServerFolderOpenedMessage, ServerFolderClosedMessage, FolderCreateRequest, NotebookCreateRequest, FolderDeleteRequest, NotebookDeleteRequest, FolderRenameRequest, NotebookRenameRequest
-} from "./shared/math-tablet-api";
+  FolderChangeRequest, ClientFolderChangeMessage, FolderOpenRequest,
+  FolderCreateRequest, NotebookCreateRequest, FolderDeleteRequest, NotebookDeleteRequest, FolderRenameRequest, NotebookRenameRequest
+} from "./shared/client-requests";
+import {
+  FolderChangedResponse, FolderResponse, FolderOpenedResponse, FolderClosedResponse,
+} from "./shared/server-responses"
 
 import { appInstance } from "./app";
 import { assert, assertFalse } from "./shared/common";
@@ -62,7 +65,7 @@ export class ClientFolder extends Folder<ClientFolderWatcher> {
 
   // Class Event Handlers
 
-  public static smMessage(msg: ServerFolderMessage, ownRequest: boolean): void {
+  public static smMessage(msg: FolderResponse, ownRequest: boolean): void {
     // A folder message was received from the server.
     switch(msg.operation) {
       case 'changed': this.smChanged(msg, ownRequest); break;
@@ -137,13 +140,13 @@ export class ClientFolder extends Folder<ClientFolderWatcher> {
 
   // Private Class Event Handlers
 
-  private static smChanged(msg: ServerFolderChangedMessage, ownRequest: boolean): void {
+  private static smChanged(msg: FolderChangedResponse, ownRequest: boolean): void {
     // A change message has come in that was not from our own change request.
     const instance = this.getInstance(msg.path);
     instance.smChanged(msg, ownRequest);
   }
 
-  private static smClosed(msg: ServerFolderClosedMessage, _ownRequest: boolean): void {
+  private static smClosed(msg: FolderClosedResponse, _ownRequest: boolean): void {
     // Message from the server that the folder has been closed by the server.
     // For example, if the folder was deleted or moved.
     const had = this.close(msg.path, msg.reason);
@@ -193,8 +196,8 @@ export class ClientFolder extends Folder<ClientFolderWatcher> {
   }
 
   protected async initialize(_options: OpenFolderOptions): Promise<void> {
-    const message: ClientFolderOpenMessage = { type: 'folder', operation: 'open', path: this.path };
-    const responseMessages = await appInstance.socket.sendRequest<ServerFolderOpenedMessage>(message);
+    const message: FolderOpenRequest = { type: 'folder', operation: 'open', path: this.path };
+    const responseMessages = await appInstance.socket.sendRequest<FolderOpenedResponse>(message);
     assert(responseMessages.length == 1);
     Folder.validateObject(responseMessages[0].obj);
     this.initializeFromObject(responseMessages[0].obj);
@@ -215,7 +218,7 @@ export class ClientFolder extends Folder<ClientFolderWatcher> {
       path: this.path,
       changeRequests,
     }
-    const responseMessages = await appInstance.socket.sendRequest<ServerFolderChangedMessage>(msg);
+    const responseMessages = await appInstance.socket.sendRequest<FolderChangedResponse>(msg);
     assert(responseMessages.length == 1); // If
     return responseMessages[0].changes;
   }
@@ -226,7 +229,7 @@ export class ClientFolder extends Folder<ClientFolderWatcher> {
 
   // Private Event Handlers
 
-  private smChanged(msg: ServerFolderChangedMessage, ownRequest: boolean): void {
+  private smChanged(msg: FolderChangedResponse, ownRequest: boolean): void {
     // Message from the server indicating the folder has changed.
 
     // Apply changes to the notebook data structure, and notify the view of the change.

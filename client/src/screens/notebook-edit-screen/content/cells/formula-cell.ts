@@ -28,6 +28,9 @@ import { CssClass, Html, assertFalse, PlainText, notImplemented } from "../../..
 import { Stroke, StrokePosition } from "../../../../shared/stylus";
 import { FormulaCellKeyboardObject, FormulaCellObject, FormulaCellStylusObject } from "../../../../shared/formula";
 import { NotebookChange } from "../../../../shared/notebook";
+import { notebookChangeSynopsis } from "../../../../shared/debug-synopsis";
+import { InputType } from "../../../../shared/cell";
+import { InsertStrokeRequest } from "../../../../shared/client-requests";
 
 import { $new, $outerSvg } from "../../../../dom";
 import { Content as CellContainer } from "..";
@@ -35,9 +38,6 @@ import { Content as CellContainer } from "..";
 import { CellBase } from "./cell-base";
 import { KeyboardCallbackFn, KeyboardPanel } from "../../../../components/keyboard-panel";
 import { StrokeCallbackFn, StrokePanel } from "../../../../components/stroke-panel";
-import { notebookChangeSynopsis } from "../../../../shared/debug-synopsis";
-import { InputType } from "../../../../shared/cell";
-import { InsertStrokeRequest } from "../../../../shared/math-tablet-api";
 import { logError } from "../../../../error-handler";
 
 // Types

@@ -25,18 +25,17 @@ const debug = debug1('client:figure-cell');
 import { CssClass, CssLength, assertFalse, Html } from "../../../../shared/common";
 import { Stroke, StrokePosition } from "../../../../shared/stylus";
 import { NotebookChange } from "../../../../shared/notebook";
-// import { StyleChangeRequest } from "../../../../shared/math-tablet-api";
+import { notebookChangeSynopsis } from "../../../../shared/debug-synopsis";
+import { FigureCellObject } from "../../../../shared/cell";
+import { InsertStrokeRequest } from "../../../../shared/client-requests";
 
 import { $svg, HtmlElementSpecification } from "../../../../dom";
+import { logError } from "../../../../error-handler";
 import { StrokeCallbackFn, StrokePanel } from "../../../../components/stroke-panel";
 
 import { Content as CellContainer } from "../index";
 
 import { CellBase } from "./cell-base";
-import { notebookChangeSynopsis } from "../../../../shared/debug-synopsis";
-import { FigureCellObject } from "../../../../shared/cell";
-import { InsertStrokeRequest } from "../../../../shared/math-tablet-api";
-import { logError } from "../../../../error-handler";
 
 // Types
 

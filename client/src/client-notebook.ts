@@ -24,9 +24,12 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 import { CellId } from "./shared/cell";
 import { Notebook, NotebookChange, NotebookWatcher } from "./shared/notebook";
 import {
-  ServerNotebookChangedMessage, NotebookChangeRequest, ClientNotebookChangeMessage, ClientNotebookUseToolMessage,
-  ClientNotebookOpenMessage, ServerNotebookOpenedMessage, ServerNotebookMessage, ServerNotebookClosedMessage,
-} from "./shared/math-tablet-api";
+  NotebookChangeRequest, ClientNotebookChangeMessage, NotebookUseToolRequest,
+  NotebookOpenRequest,
+} from "./shared/client-requests";
+import {
+  NotebookChangedResponse, NotebookOpenedResponse, NotebookResponse, NotebookClosedResponse,
+} from "./shared/server-responses";
 import { OpenOptions } from "./shared/watched-resource";
 
 import { appInstance } from "./app";
@@ -67,7 +70,7 @@ export class ClientNotebook extends Notebook<ClientNotebookWatcher> {
 
   // Class Event Handlers
 
-  public static smMessage(msg: ServerNotebookMessage, ownRequest: boolean): void {
+  public static smMessage(msg: NotebookResponse, ownRequest: boolean): void {
     // A notebook message was received from the server.
     switch(msg.operation) {
       case 'changed': this.smChanged(msg, ownRequest); break;
@@ -112,7 +115,7 @@ export class ClientNotebook extends Notebook<ClientNotebookWatcher> {
       path: this.path,
       changeRequests,
     }
-    const responseMessages = await appInstance.socket.sendRequest<ServerNotebookChangedMessage>(msg);
+    const responseMessages = await appInstance.socket.sendRequest<NotebookChangedResponse>(msg);
     assert(responseMessages.length>=1);
     if (responseMessages.length == 1) {
       const responseMessage = responseMessages[0];
@@ -133,7 +136,7 @@ export class ClientNotebook extends Notebook<ClientNotebookWatcher> {
   }
 
   public useTool(id: CellId): void {
-    const msg: ClientNotebookUseToolMessage = { type: 'notebook', operation: 'useTool', path: this.path, cellId: id };
+    const msg: NotebookUseToolRequest = { type: 'notebook', operation: 'useTool', path: this.path, cellId: id };
     appInstance.socket.sendMessage(msg);
   }
 
@@ -149,13 +152,13 @@ export class ClientNotebook extends Notebook<ClientNotebookWatcher> {
 
   // Private Class Event Handlers
 
-  private static smChanged(msg: ServerNotebookChangedMessage, ownRequest: boolean): void {
+  private static smChanged(msg: NotebookChangedResponse, ownRequest: boolean): void {
     // Message from the server that the notebook has changed.
     const instance = this.getInstance(msg.path);
     instance.smChanged(msg, ownRequest);
   }
 
-  private static smClosed(msg: ServerNotebookClosedMessage, _ownRequest: boolean): void {
+  private static smClosed(msg: NotebookClosedResponse, _ownRequest: boolean): void {
     // Message from the server that the notebook has been closed by the server.
     // For example, if the notebook was deleted or moved.
     const had = this.close(msg.path, msg.reason);
@@ -173,8 +176,8 @@ export class ClientNotebook extends Notebook<ClientNotebookWatcher> {
   // Private Instance Methods
 
   protected async initialize(_options: OpenNotebookOptions): Promise<void> {
-    const message: ClientNotebookOpenMessage = { type: 'notebook', operation: 'open', path: this.path };
-    const responseMessages = await appInstance.socket.sendRequest<ServerNotebookOpenedMessage>(message);
+    const message: NotebookOpenRequest = { type: 'notebook', operation: 'open', path: this.path };
+    const responseMessages = await appInstance.socket.sendRequest<NotebookOpenedResponse>(message);
     assert(responseMessages.length == 1);
     Notebook.validateObject(responseMessages[0].obj);
     this.initializeFromObject(responseMessages[0].obj);
@@ -186,7 +189,7 @@ export class ClientNotebook extends Notebook<ClientNotebookWatcher> {
 
   // Private Event Handlers
 
-  private smChanged(msg: ServerNotebookChangedMessage, ownRequest: boolean): void {
+  private smChanged(msg: NotebookChangedResponse, ownRequest: boolean): void {
     // Message from the server indicating this notebook has changed.
 
     // Apply changes to the notebook data structure, and notify the view of the change.

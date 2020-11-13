@@ -39,8 +39,9 @@ import {
 import {
   NotebookChangeRequest, MoveCellRequest, InsertCellRequest,
   DeleteCellRequest,
-  ServerNotebookChangedMessage, ClientNotebookChangeMessage, ClientNotebookUseToolMessage, RequestId, InsertStrokeRequest, DeleteStrokeRequest,
-} from "./shared/math-tablet-api";
+  ClientNotebookChangeMessage, NotebookUseToolRequest, RequestId, InsertStrokeRequest, DeleteStrokeRequest,
+} from "./shared/client-requests";
+import { NotebookChangedResponse, } from "./shared/server-responses";
 import { notebookChangeRequestSynopsis, notebookChangeSynopsis } from "./shared/debug-synopsis";
 
 import { ClientId } from "./server-socket";
@@ -68,7 +69,7 @@ export interface RequestChangesOptions {
 }
 
 export interface ServerNotebookWatcher extends NotebookWatcher {
-  onChanged(msg: ServerNotebookChangedMessage): void;
+  onChanged(msg: NotebookChangedResponse): void;
 }
 
 // Constants
@@ -358,7 +359,7 @@ export class ServerNotebook extends Notebook<ServerNotebookWatcher> {
 
   public onNotebookUseToolMessage(
     _originatingWatcher: NotebookWatcher,
-    msg: ClientNotebookUseToolMessage,
+    msg: NotebookUseToolRequest,
   ): void {
     // TODO: pass request ID on responses to originatingWatcher.
     // TODO: options.client ID
@@ -437,6 +438,9 @@ export class ServerNotebook extends Notebook<ServerNotebookWatcher> {
         case 'deleteCell':
           undoChangeRequest = this.applyDeleteCellRequest(source, changeRequest, rval);
           break;
+        case 'deleteStroke':
+          undoChangeRequest = this.applyDeleteStrokeRequest(source, changeRequest, rval);
+          break;
         case 'insertCell':
           undoChangeRequest = this.applyInsertCellRequest(source, changeRequest, rval);
           break;
@@ -477,6 +481,20 @@ export class ServerNotebook extends Notebook<ServerNotebookWatcher> {
     const change: CellDeleted = { type: 'cellDeleted', cellId: cellObject.id };
     this.appendChange(source, change, rval);
 
+    return undoChangeRequest;
+  }
+
+  private applyDeleteStrokeRequest<T extends CellObject>(
+    source: CellSource,
+    request: DeleteStrokeRequest,
+    rval: NotebookChange[],
+  ): InsertCellRequest<T> {
+    const cellId = request.cellId;
+    const cellObject = this.getCell<T>(request.cellId);
+    const afterId = CellPosition.Bottom;  // TODO: Get the ID of the cell preceding us.
+    const change: CellDeleted =  { type: 'cellDeleted', cellId };
+    this.appendChange(source, change, rval);
+    const undoChangeRequest: InsertCellRequest<T> = { type: 'insertCell', cellObject, afterId };
     return undoChangeRequest;
   }
 
@@ -579,7 +597,7 @@ export class ServerNotebook extends Notebook<ServerNotebookWatcher> {
       // const isTrackingClient = (clientId == options.clientId);
       // const requestId = isTrackingClient ? <RequestId>'TODO:' : undefined;
       //socket.notifyNotebookChanged(this.path, changes, undoChangeRequests, requestId, complete);
-      const msg: ServerNotebookChangedMessage = {
+      const msg: NotebookChangedResponse = {
         type: 'notebook',
         path: this.path,
         operation: 'changed',

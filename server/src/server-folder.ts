@@ -31,7 +31,8 @@ import {
   Folder, FolderEntry, FolderName, FolderObject, FolderPath, FOLDER_PATH_RE, NotebookEntry,
   NotebookName, NotebookPath, FolderChange, FolderWatcher,
 } from "./shared/folder";
-import { ClientFolderChangeMessage, ServerFolderChangedMessage } from "./shared/math-tablet-api";
+import { ClientFolderChangeMessage } from "./shared/client-requests";
+import { FolderChangedResponse } from "./shared/server-responses";
 
 import { AbsDirectoryPath, ROOT_DIR_PATH, dirStat, mkDir, readDir, rename, rmDir } from "./adapters/file-system";
 import { ServerNotebook, notebookPath } from "./server-notebook";
@@ -49,7 +50,7 @@ export interface OpenFolderOptions extends OpenOptions<ServerFolderWatcher> {
 }
 
 export interface ServerFolderWatcher extends FolderWatcher {
-  onChanged(msg: ServerFolderChangedMessage): void;
+  onChanged(msg: FolderChangedResponse): void;
 }
 
 // Exported Class
@@ -119,7 +120,7 @@ export class ServerFolder extends Folder<ServerFolderWatcher> {
   public async onFolderChangeMessage(
     originatingWatcher: ServerFolderWatcher,
     msg: ClientFolderChangeMessage
-  ): Promise<ServerFolderChangedMessage> {
+  ): Promise<FolderChangedResponse> {
     // TODO: Undo?
     assert(!this.terminated);
 
@@ -186,7 +187,7 @@ export class ServerFolder extends Folder<ServerFolderWatcher> {
       this.applyChange(change, false);
       changes.push(change);
     }
-    const response: ServerFolderChangedMessage = { type: 'folder', operation: 'changed', path: this.path, changes, complete: true };
+    const response: FolderChangedResponse = { type: 'folder', operation: 'changed', path: this.path, changes, complete: true };
 
     // Notify other watchers
     for (const watcher of this.watchers) {

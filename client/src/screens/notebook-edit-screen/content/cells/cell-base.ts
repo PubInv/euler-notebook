@@ -24,20 +24,22 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 // import * as debug1 from "debug";
 // const debug = debug1('client:cell-base');
 
-import { Content as CellContainer } from "../index";
-
 import { CellObject, CellId } from "../../../../shared/cell";
-import { CssClass } from "../../../../shared/common";
+import { assert, Html, CssClass } from "../../../../shared/common";
 import { NotebookChange } from "../../../../shared/notebook";
-import { Tools } from "../../tools";
+import { MoveCellRequest } from "../../../../shared/client-requests";
+
 import { HtmlElement } from "../../../../html-element";
 import {
   $new, CLOSE_X_ENTITY, ElementId, HtmlElementOrSpecification, HtmlElementSpecification
 } from "../../../../dom";
 import { reportError } from "../../../../error-handler";
-import { assert, Html } from "../../../../shared/common";
+
+import { Tools } from "../../tools";
 import { ResizerBar } from "../../../../components/resizer-bar";
-import { MoveCellRequest } from "../../../../shared/math-tablet-api";
+
+import { Content as CellContainer } from "../index";
+
 
 // Types
 

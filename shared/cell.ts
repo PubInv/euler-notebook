@@ -19,7 +19,8 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 // Requirements
 
-import { CssSize, PlainText, SvgMarkup } from "./common";
+import { CssSize, Html, PlainText, SvgMarkup } from "./common";
+import { TexExpression, WolframExpression } from "./formula";
 import { StylusInput } from "./stylus";
 
 // Types
@@ -65,12 +66,12 @@ export interface CellObject {
   source: CellSource;
 }
 
-export interface KeyboardCellObject {
+export interface KeyboardCellObject extends CellObject {
   inputType: InputType.Keyboard,
   inputText: PlainText,
 }
 
-export interface StylusCellObject {
+export interface StylusCellObject extends CellObject {
   inputType: InputType.Stylus,
   stylusInput: StylusInput, // REVIEW: Does client need this structure?
   stylusSvg: SvgMarkup
@@ -83,7 +84,7 @@ export interface CellMap {
 // HERE TEMPORARILY:
 // Move them into their own files when they become classes.
 
-export interface FigureCellStylusObject extends CellObject, StylusCellObject {
+export interface FigureCellStylusObject extends StylusCellObject {
   type: CellType.Figure,
 }
 export type FigureCellObject = FigureCellStylusObject;
@@ -94,10 +95,10 @@ export interface PlotCellObject extends CellObject {
   // LATER: Identify the symbols used in the plot for each axis, etc.
 }
 
-export interface TextCellKeyboardObject extends CellObject, KeyboardCellObject {
+export interface TextCellKeyboardObject extends KeyboardCellObject {
   type: CellType.Text,
 }
-export interface TextCellStylusObject extends CellObject, StylusCellObject {
+export interface TextCellStylusObject extends StylusCellObject {
   type: CellType.Text,
 }
 interface TextCellNoInputObject extends CellObject {
@@ -105,3 +106,38 @@ interface TextCellNoInputObject extends CellObject {
   inputType: InputType.None,
 }
 export type TextCellObject = TextCellKeyboardObject | TextCellStylusObject | TextCellNoInputObject;
+
+// LEGACY??
+
+export type Symbol = '{Symbol}';
+
+export interface SymbolData {
+  name: Symbol;
+  value?: string;
+}
+
+export interface SymbolTable {
+  [symbol: string]: SymbolConstraints;
+}
+
+export type SymbolConstraint = WolframExpression;
+export type SymbolConstraints = SymbolConstraint[];
+
+
+export type ToolName = string;
+export interface ToolData {
+  name: ToolName;
+  // REVIEW: This is a sum type, not a product type.
+  //         i.e. we use either the html field or the tex field but never both.
+  html?: Html;
+  tex?: TexExpression;
+  data?: any; // Black-box info that gets passed back to tool creator when tool is used.
+  origin_id?: number;
+}
+
+export interface TransformationToolData {
+  transformation: WolframExpression;
+  output: WolframExpression;
+  transformationName: string;
+}
+

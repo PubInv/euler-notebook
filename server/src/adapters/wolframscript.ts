@@ -25,9 +25,7 @@ import * as debug1 from "debug";
 const MODULE = __filename.split(/[/\\]/).slice(-1)[0].slice(0,-3);
 const debug = debug1(`server:${MODULE}`);
 
-import { PlainTextFormula } from "../shared/formula";
-import { WolframExpression } from "../shared/notebook";
-import { TexExpression } from "../shared/math-tablet-api";
+import { PlainTextFormula, TexExpression, WolframExpression } from "../shared/formula";
 
 import { WolframScriptConfig } from "../config";
 import { logWarning } from "../error-handler";

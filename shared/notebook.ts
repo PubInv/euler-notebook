@@ -20,7 +20,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 // Requirements
 
-import { CellSource, CellId, CellObject, CellRelativePosition, CellOrdinalPosition, CellMap, CellPosition } from "./cell";
+import { CellSource, CellId, CellObject, CellRelativePosition, CellOrdinalPosition, CellMap, CellPosition, InputType, StylusCellObject } from "./cell";
 import { CssLength, CssSize, Html, assert, deepCopy, escapeHtml, ExpectedError, assertFalse, notImplemented } from "./common";
 import { cellSynopsis } from "./debug-synopsis";
 import { NOTEBOOK_NAME_RE, NotebookName, NotebookPath } from "./folder";
@@ -90,8 +90,6 @@ interface PageMargins {
   right: CssLength;
   top: CssLength;
 }
-
-export type WolframExpression = '{WolframExpression}';
 
 // Constants
 
@@ -349,7 +347,10 @@ export abstract class Notebook<W extends NotebookWatcher> extends WatchedResourc
     }
   }
 
-  private insertStroke(_change: StrokeInserted): void {
+  private insertStroke(change: StrokeInserted): void {
+    const cellObject = this.getCell<StylusCellObject>(change.cellId);
+    assert(cellObject.inputType == InputType.Stylus);
+    cellObject.stylusInput.strokeGroups[0].strokes.push(change.stroke);
     notImplemented();
   }
 

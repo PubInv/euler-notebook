@@ -27,7 +27,8 @@ const debug = debug1('client:client-socket');
 
 import { assert, Html, PromiseResolver, Timestamp, newPromiseResolver, assertFalse, ExpectedError } from "./shared/common";
 import { clientMessageSynopsis, serverMessageSynopsis } from "./shared/debug-synopsis";
-import { ClientMessage, ServerMessage, ServerMessageBase, RequestId } from "./shared/math-tablet-api";
+import { ClientRequest, RequestId } from "./shared/client-requests";
+import { ResponseBase, ServerResponse, } from "./shared/server-responses";
 
 import { messageDisplayInstance } from "./message-display";
 import { ClientFolder } from "./client-folder";
@@ -37,11 +38,11 @@ import { reportError } from "./error-handler";
 // Types
 
 type ConnectResolver = PromiseResolver<ClientSocket>;
-type RequestResolver = PromiseResolver<ServerMessage[]>;
+type RequestResolver = PromiseResolver<ServerResponse[]>;
 
 interface RequestInfo {
   resolver: RequestResolver;
-  intermediateResults?: ServerMessage[];
+  intermediateResults?: ServerResponse[];
 }
 
 // Class
@@ -68,7 +69,7 @@ export class ClientSocket {
     return <RequestId>`r${ts.toString(16)}`;
   }
 
-  public sendMessage(msg: ClientMessage): void {
+  public sendMessage(msg: ClientRequest): void {
     debug(`Sent: ${clientMessageSynopsis(msg)}`)
     const json = JSON.stringify(msg);
     try {
@@ -79,7 +80,7 @@ export class ClientSocket {
     }
   }
 
-  public sendRequest<T extends ServerMessageBase>(msg: ClientMessage): Promise<T[]> {
+  public sendRequest<T extends ResponseBase>(msg: ClientRequest): Promise<T[]> {
     // REVIEW: ServerMessage subtype that has the messages that could be the response to a request?
     const requestId = msg.requestId = this.generateRequestId();
     const { promise, resolver } = newPromiseResolver<T[]>();
@@ -144,7 +145,7 @@ export class ClientSocket {
   private onWsMessage(event: MessageEvent): void {
     // REVIEW: Other clients will not get message if one client set a request ID.
     try {
-      const msg: ServerMessage = JSON.parse(event.data);
+      const msg: ServerResponse = JSON.parse(event.data);
       debug(`Recd: ${serverMessageSynopsis(msg)}`);
 
       const requestId = msg.requestId;

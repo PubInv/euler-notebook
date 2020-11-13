@@ -27,15 +27,17 @@ import { CellObject, CellType, InputType, KeyboardCellObject, StylusCellObject }
 // Currently, it is the same as WolframExpression
 // except that we convert single equals to double equals.
 export type PlainTextFormula = '{PlainTextFormula}';
+export type TexExpression = '{TexExpression}';
+export type WolframExpression = '{WolframExpression}';
 
 interface MathCellObject {
   plainTextFormula: PlainTextFormula; // REVIEW: Does the client need this?
 }
 
-export interface FormulaCellKeyboardObject extends CellObject, KeyboardCellObject, MathCellObject {
+export interface FormulaCellKeyboardObject extends KeyboardCellObject, MathCellObject {
   type: CellType.Formula,
 }
-export interface FormulaCellStylusObject extends CellObject, StylusCellObject, MathCellObject {
+export interface FormulaCellStylusObject extends StylusCellObject, MathCellObject {
   type: CellType.Formula,
 }
 interface FormulaCellNoInputObject extends CellObject, MathCellObject {

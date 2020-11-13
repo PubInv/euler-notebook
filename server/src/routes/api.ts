@@ -25,7 +25,7 @@ const debug = debug1(`server:${MODULE}`);
 
 import { NextFunction, Request, Response, Router } from "express";
 
-import { DebugParams, DebugResults } from "../shared/math-tablet-api";
+import { DebugParams, DebugResults } from "../shared/api-calls";
 
 import { ServerNotebook } from "../server-notebook";
 

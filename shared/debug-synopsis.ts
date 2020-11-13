@@ -26,13 +26,12 @@ import { assertFalse } from './common';
 import { FolderChange } from './folder';
 import { Notebook, NotebookChange, } from './notebook';
 import {
-  ClientFolderMessage, ClientMessage, ClientNotebookMessage, FolderChangeRequest, NotebookChangeRequest,
-  ServerFolderMessage, ServerMessage, ServerNotebookMessage,
-} from './math-tablet-api';
-
+  FolderRequest, ClientRequest, NotebookRequest, FolderChangeRequest, NotebookChangeRequest,
+} from './client-requests';
+import { FolderResponse, ServerResponse, NotebookResponse } from "./server-responses";
 // Exported Functions
 
-export function clientMessageSynopsis(msg: ClientMessage): string {
+export function clientMessageSynopsis(msg: ClientRequest): string {
   let rval = `${msg.requestId?`${msg.requestId} `:''}${msg.type} `;
 
   switch (msg.type) {
@@ -133,7 +132,7 @@ export function notebookSynopsis(notebook: Notebook<any>): string {
   .join('');
 }
 
-export function serverMessageSynopsis(msg: ServerMessage): string {
+export function serverMessageSynopsis(msg: ServerResponse): string {
   let rval = `${msg.requestId?`${msg.requestId} `:''}${msg.type} `;
 
   switch (msg.type) {
@@ -142,11 +141,11 @@ export function serverMessageSynopsis(msg: ServerMessage): string {
       break;
     }
     case 'folder': {
-      rval += serverFolderMessageSynopsis(msg);
+      rval += FolderResponseSynopsis(msg);
       break;
     }
     case 'notebook': {
-      rval += serverNotebookMessageSynopsis(msg);
+      rval += NotebookResponseSynopsis(msg);
       break;
     }
     default: assertFalse();
@@ -161,7 +160,7 @@ export function cellSynopsis(cell: CellObject, indentationLevel: number = 0): st
 
 // Helper Functions
 
-function clientFolderMessageSynopsis(msg: ClientFolderMessage): string {
+function clientFolderMessageSynopsis(msg: FolderRequest): string {
   let rval = `${msg.path} ${msg.operation}`;
   switch(msg.operation) {
     case 'change':
@@ -176,7 +175,7 @@ function clientFolderMessageSynopsis(msg: ClientFolderMessage): string {
   return rval;
 }
 
-function clientNotebookMessageSynopsis(msg: ClientNotebookMessage): string {
+function clientNotebookMessageSynopsis(msg: NotebookRequest): string {
   let rval = `${msg.path} ${msg.operation}`;
   switch(msg.operation) {
     case 'change':
@@ -196,7 +195,7 @@ function clientNotebookMessageSynopsis(msg: ClientNotebookMessage): string {
 
 function indentation(indentationLevel: number): string { return ' '.repeat(indentationLevel*2); }
 
-function serverFolderMessageSynopsis(msg: ServerFolderMessage): string {
+function FolderResponseSynopsis(msg: FolderResponse): string {
   let rval = `${msg.path} ${msg.operation} `;
   switch(msg.operation) {
     case 'changed':
@@ -211,7 +210,7 @@ function serverFolderMessageSynopsis(msg: ServerFolderMessage): string {
   return rval;
 }
 
-function serverNotebookMessageSynopsis(msg: ServerNotebookMessage): string {
+function NotebookResponseSynopsis(msg: NotebookResponse) {
   let rval = `${msg.path} ${msg.operation} `;
   switch(msg.operation) {
     case 'changed':

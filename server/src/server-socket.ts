@@ -29,12 +29,16 @@ import * as WebSocket from "ws";
 import { assert, PromiseResolver, errorMessageForUser } from "./shared/common";
 import { NotebookPath, FolderPath, FolderObject, FolderChange } from "./shared/folder";
 import {
-  ClientMessage, ServerMessage, ServerErrorMessage, ClientFolderChangeMessage, ClientFolderOpenMessage,
-  ClientNotebookChangeMessage, ClientNotebookOpenMessage, ClientNotebookUseToolMessage,
-  ServerNotebookChangedMessage, NotebookChangeRequest, RequestId, ServerFolderChangedMessage,
-  ClientFolderCloseMessage, ServerFolderClosedMessage, ServerFolderOpenedMessage,
-  ServerNotebookClosedMessage, ClientNotebookCloseMessage, ServerNotebookOpenedMessage,
-} from "./shared/math-tablet-api";
+  ClientRequest, ClientFolderChangeMessage, FolderOpenRequest,
+  ClientNotebookChangeMessage, NotebookOpenRequest, NotebookUseToolRequest,
+  NotebookChangeRequest, RequestId,
+  FolderCloseRequest,
+  NotebookCloseRequests,
+} from "./shared/client-requests";
+import {
+  ServerResponse, ErrorResponse, NotebookChangedResponse, FolderChangedResponse,
+  FolderClosedResponse, FolderOpenedResponse, NotebookClosedResponse, NotebookOpenedResponse,
+} from "./shared/server-responses";
 import { NotebookChange, NotebookObject, NotebookWatcher as ServerNotebookWatcher } from "./shared/notebook";
 
 import { logError, logWarning } from "./error-handler";
@@ -150,7 +154,7 @@ export class ServerSocket {
   ): void {
     // ServerNotebook is notifying us that there are changes to the notebook.
     assert(this.notebookWatchers.get(path))
-    const msg: ServerNotebookChangedMessage = { type: 'notebook', operation: 'changed', path, changes, complete, requestId, undoChangeRequests };
+    const msg: NotebookChangedResponse = { type: 'notebook', operation: 'changed', path, changes, complete, requestId, undoChangeRequests };
     this.sendMessage(msg);
   }
 
@@ -166,7 +170,7 @@ export class ServerSocket {
     assert(had);
   }
 
-  public sendMessage(msg: ServerMessage): void {
+  public sendMessage(msg: ServerResponse): void {
     // Should only be called by our watchers.
 
     debug(`Sent: ${this.id} ${serverMessageSynopsis(msg)}`);
@@ -250,21 +254,21 @@ export class ServerSocket {
     this.sendMessage(replyMsg);
   }
 
-  private cmFolderCloseMessage(msg: ClientFolderCloseMessage): void {
+  private cmFolderCloseMessage(msg: FolderCloseRequest): void {
     this.closeFolder(msg.path, false);
   }
 
-  private async cmFolderOpenMessage(msg: ClientFolderOpenMessage): Promise<void> {
+  private async cmFolderOpenMessage(msg: FolderOpenRequest): Promise<void> {
     // REVIEW: Check that the open folder message is not a duplicate?
     const path = msg.path;
     assert(!this.folderWatchers.get(path));
     const { watcher, obj } = await FolderWatcher.open(this, msg);
     this.folderWatchers.set(path, watcher);
-    const response: ServerFolderOpenedMessage = { requestId: msg.requestId, type: 'folder', operation: 'opened', path, obj, complete: true };
+    const response: FolderOpenedResponse = { requestId: msg.requestId, type: 'folder', operation: 'opened', path, obj, complete: true };
     this.sendMessage(response);
   }
 
-  private async cmMessage(msg: ClientMessage): Promise<void> {
+  private async cmMessage(msg: ClientRequest): Promise<void> {
     debug(`Recd: ${this.id} ${clientMessageSynopsis(msg)}`);
     // console.dir(msg, { depth: null });
     switch(msg.type) {
@@ -295,21 +299,21 @@ export class ServerSocket {
     watcher.onNotebookChangeMessage(msg);
   }
 
-  private cmNotebookCloseMessage(msg: ClientNotebookCloseMessage): void {
+  private cmNotebookCloseMessage(msg: NotebookCloseRequests): void {
     this.closeNotebook(msg.path, false);
   }
 
-  private async cmNotebookOpenMessage(msg: ClientNotebookOpenMessage): Promise<void> {
+  private async cmNotebookOpenMessage(msg: NotebookOpenRequest): Promise<void> {
     // REVIEW: Check that the open folder message is not a duplicate?
     const path = msg.path;
     assert(!this.notebookWatchers.get(path));
     const { watcher, obj } = await NotebookWatcher.open(this, msg);
     this.notebookWatchers.set(path, watcher);
-    const response: ServerNotebookOpenedMessage = { requestId: msg.requestId, type: 'notebook', operation: 'opened', path, obj, complete: true };
+    const response: NotebookOpenedResponse = { requestId: msg.requestId, type: 'notebook', operation: 'opened', path, obj, complete: true };
     this.sendMessage(response);
   }
 
-  private cmNotebookUseToolMessage(msg: ClientNotebookUseToolMessage): void {
+  private cmNotebookUseToolMessage(msg: NotebookUseToolRequest): void {
     const watcher = this.notebookWatchers.get(msg.path)!;
     assert(watcher);
     watcher.onNotebookUseToolMessage(msg);
@@ -343,7 +347,7 @@ export class ServerSocket {
   }
 
   private wsMessage(_ws: WebSocket, message: WebSocket.Data): void {
-    let msg: ClientMessage;
+    let msg: ClientRequest;
     try {
       msg = JSON.parse(message.toString());
     } catch(err) {
@@ -353,7 +357,7 @@ export class ServerSocket {
     this.cmMessage(msg).catch(err=>{
       logError(err, `Client Socket: unexpected error processing client ${msg.type}/${msg.operation} message.`);
       if (msg.requestId) {
-        const response: ServerErrorMessage = {
+        const response: ErrorResponse = {
           requestId: msg.requestId,
           type: 'error',
           message: errorMessageForUser(err),
@@ -374,7 +378,7 @@ class FolderWatcher implements ServerFolderWatcher {
 
   public static async open(
     socket: ServerSocket,
-    msg: ClientFolderOpenMessage
+    msg: FolderOpenRequest
   ): Promise<{ watcher: FolderWatcher, obj: FolderObject }> {
     const watcher = new this(socket);
     const folder = watcher.folder = await ServerFolder.open(msg.path, { mustExist: true, watcher });
@@ -397,14 +401,14 @@ class FolderWatcher implements ServerFolderWatcher {
 
   public onChange(_change: FolderChange): void {}
 
-  public onChanged(msg: ServerFolderChangedMessage): void {
+  public onChanged(msg: FolderChangedResponse): void {
     // ServerFolder is notifying us that the batch of changes is complete.
     this.socket.sendMessage(msg);
   }
 
   public onClosed(reason: string): void {
     // ServerFolder is notifying us that the folder is being closed on the server end.
-    const msg: ServerFolderClosedMessage = { type: 'folder', operation: 'closed', path: this.folder.path, reason, complete: true };
+    const msg: FolderClosedResponse = { type: 'folder', operation: 'closed', path: this.folder.path, reason, complete: true };
     this.socket.sendMessage(msg);
     this.socket.removeFolderWatcher(this.folder.path);
     // TODO: Remove from folderWatchers?
@@ -412,7 +416,7 @@ class FolderWatcher implements ServerFolderWatcher {
 
   // Event Handlers
 
-  public async onFolderChangeMessage(msg: ClientFolderChangeMessage): Promise<ServerFolderChangedMessage> {
+  public async onFolderChangeMessage(msg: ClientFolderChangeMessage): Promise<FolderChangedResponse> {
     return await this.folder.onFolderChangeMessage(this, msg);
   }
 
@@ -435,7 +439,7 @@ class NotebookWatcher implements ServerNotebookWatcher {
 
   public static async open(
     socket: ServerSocket,
-    msg: ClientNotebookOpenMessage
+    msg: NotebookOpenRequest
   ): Promise<{ watcher: NotebookWatcher, obj: NotebookObject }> {
     const watcher = new this(socket);
     const notebook = watcher.notebook = await ServerNotebook.open(msg.path, { mustExist: true, watcher });
@@ -458,14 +462,14 @@ class NotebookWatcher implements ServerNotebookWatcher {
 
   public onChange(_change: NotebookChange): void { };
 
-  public onChanged(msg: ServerNotebookChangedMessage): void {
+  public onChanged(msg: NotebookChangedResponse): void {
     // ServerNotebook is notifying us that the batch of changes is complete.
     this.socket.sendMessage(msg);
   }
 
   public onClosed(reason: string): void {
     // ServerNotebook is notifying us that the folder is being closed on the server end.
-    const msg: ServerNotebookClosedMessage = { type: 'notebook', operation: 'closed', path: this.notebook.path, reason, complete: true };
+    const msg: NotebookClosedResponse = { type: 'notebook', operation: 'closed', path: this.notebook.path, reason, complete: true };
     this.socket.sendMessage(msg);
     this.socket.removeNotebookWatcher(this.notebook.path);
     // TODO: Remove from folderWatchers?
@@ -478,7 +482,7 @@ class NotebookWatcher implements ServerNotebookWatcher {
     this.notebook.onNotebookChangeMessage(this, msg);
   }
 
-  public onNotebookUseToolMessage(msg: ClientNotebookUseToolMessage): void {
+  public onNotebookUseToolMessage(msg: NotebookUseToolRequest): void {
     // .requestChanges('USER', msg.changeRequests, options);
     this.notebook.onNotebookUseToolMessage(this, msg);
   }
