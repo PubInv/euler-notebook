@@ -143,7 +143,7 @@ export class ServerSocket {
   // ): void {
   //   // ServerNotebook is notifying us that there are changes to the notebook.
   //   assert(this.notebookWatchers.get(path))
-  //   const msg: NotebookChangedResponse = { type: 'notebook', operation: 'changed', path, changes, complete, requestId, undoChangeRequests };
+  //   const msg: NotebookChangedResponse = { type: 'notebook', operation: 'updated', path, changes, complete, requestId, undoChangeRequests };
   //   this.sendMessage(msg);
   // }
 

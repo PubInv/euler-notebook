@@ -125,32 +125,26 @@ export interface NotebookRenameRequest {
 
 export type NotebookChangeRequest =
   AddStroke |
-  DeleteCellRequest|
-  DeleteStrokeRequest|
-  InsertCellRequest<any>|
-  KeyboardInputRequest|
-  MoveCellRequest|
-  RemoveStrokeRequest;
+  DeleteCell|
+  InsertCell<any>|
+  ChangeText|
+  MoveCell|
+  RemoveStroke;
 export interface AddStroke {
   type: 'addStroke';
   cellId: CellId;
   stroke: Stroke;
 }
-export interface DeleteCellRequest {
+export interface DeleteCell {
   type: 'deleteCell';
   cellId: CellId;
 }
-export interface DeleteStrokeRequest {
-  type: 'deleteStroke';
-  cellId: CellId;
-  strokeId: StrokeId;
-}
-export interface InsertCellRequest<T extends CellObject> {
+export interface InsertCell<T extends CellObject> {
   type: 'insertCell';
   afterId: CellRelativePosition;
   cellObject: T;
 }
-export interface KeyboardInputRequest {
+export interface ChangeText {
   type: 'keyboardInputChange';
   cellId: CellId;
   start: number;          // 0-based index of first character to replace.
@@ -158,13 +152,13 @@ export interface KeyboardInputRequest {
   replacement: PlainText; // Replacement text.
   value: PlainText;          // Full value of input text, may be able to eliminate.
 }
-export interface MoveCellRequest {
+export interface MoveCell {
   type: 'moveCell';
   cellId: CellId;
   afterId: CellRelativePosition;
 }
-export interface RemoveStrokeRequest {
-  type: 'removedStroke';
+export interface RemoveStroke {
+  type: 'removeStroke';
   cellId: CellId;
   strokeId: StrokeId;
 }

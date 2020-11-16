@@ -22,12 +22,12 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 // Requirements
 
 import { CellId } from "./shared/cell";
-import { Notebook, NotebookChange, NotebookWatcher } from "./shared/notebook";
+import { Notebook, NotebookWatcher } from "./shared/notebook";
 import {
   NotebookChangeRequest, ChangeNotebook, UseTool,
   OpenNotebook,
 } from "./shared/client-requests";
-import { NotebookChanged, NotebookOpened, NotebookResponse, NotebookClosed } from "./shared/server-responses";
+import { NotebookUpdated, NotebookOpened, NotebookResponse, NotebookClosed, NotebookUpdate } from "./shared/server-responses";
 import { OpenOptions } from "./shared/watched-resource";
 
 import { appInstance } from "./app";
@@ -43,7 +43,7 @@ export interface ClientNotebookWatcher extends NotebookWatcher {
 export type OpenNotebookOptions = OpenOptions<ClientNotebookWatcher>;
 
 interface ChangeRequestResults {
-  changes: NotebookChange[];
+  changes: NotebookUpdate[];
   undoChangeRequests?: NotebookChangeRequest[];
 }
 
@@ -71,7 +71,7 @@ export class ClientNotebook extends Notebook<ClientNotebookWatcher> {
   public static smMessage(msg: NotebookResponse, ownRequest: boolean): void {
     // A notebook message was received from the server.
     switch(msg.operation) {
-      case 'changed': this.smChanged(msg, ownRequest); break;
+      case 'updated': this.smUpdated(msg, ownRequest); break;
       case 'closed':  this.smClosed(msg, ownRequest); break;
       case 'opened':  break; // Nothing to do. Opened response is handled when request promise is resolved.
       default: assertFalse();
@@ -113,18 +113,18 @@ export class ClientNotebook extends Notebook<ClientNotebookWatcher> {
       path: this.path,
       changeRequests,
     }
-    const responseMessages = await appInstance.socket.sendRequest<NotebookChanged>(msg);
+    const responseMessages = await appInstance.socket.sendRequest<NotebookUpdated>(msg);
     assert(responseMessages.length>=1);
     if (responseMessages.length == 1) {
       const responseMessage = responseMessages[0];
-      return { changes: responseMessage.changes, undoChangeRequests: responseMessage.undoChangeRequests };
+      return { changes: responseMessage.updates, undoChangeRequests: responseMessage.undoChangeRequests };
     } else {
       const rval: ChangeRequestResults = {
         changes: [],
         undoChangeRequests: [],
       };
       for (const responseMessage of responseMessages) {
-        rval.changes.push(...responseMessage.changes);
+        rval.changes.push(...responseMessage.updates);
         if (responseMessage.undoChangeRequests) {
           rval.undoChangeRequests!.push(...responseMessage.undoChangeRequests);
         }
@@ -150,7 +150,7 @@ export class ClientNotebook extends Notebook<ClientNotebookWatcher> {
 
   // Private Class Event Handlers
 
-  private static smChanged(msg: NotebookChanged, ownRequest: boolean): void {
+  private static smUpdated(msg: NotebookUpdated, ownRequest: boolean): void {
     // Message from the server that the notebook has changed.
     const instance = this.getInstance(msg.path);
     instance.smChanged(msg, ownRequest);
@@ -187,7 +187,7 @@ export class ClientNotebook extends Notebook<ClientNotebookWatcher> {
 
   // Private Event Handlers
 
-  private smChanged(msg: NotebookChanged, ownRequest: boolean): void {
+  private smChanged(msg: NotebookUpdated, ownRequest: boolean): void {
     // Message from the server indicating this notebook has changed.
 
     // Apply changes to the notebook data structure, and notify the view of the change.
@@ -196,14 +196,15 @@ export class ClientNotebook extends Notebook<ClientNotebookWatcher> {
     // (The view needs to trace the deleted cell or relationship to the top-level cell to
     //  determine what cell to update. If the cell has been deleted from the notebook already
     //  then it cannot do that.)
-    for (const change of msg.changes) {
-      this.applyChange(change, ownRequest);
+    for (const change of msg.updates) {
+      for (const watcher of this.watchers) {
+        watcher.onChange(change, ownRequest);
+      }
     }
 
     for (const watcher of this.watchers) {
       watcher.onChangesFinished(ownRequest);
     }
   }
-
 
 }

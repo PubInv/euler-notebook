@@ -26,8 +26,8 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 import { CellObject, CellId } from "../../../../shared/cell";
 import { assert, Html, CssClass } from "../../../../shared/common";
-import { NotebookChange } from "../../../../shared/notebook";
-import { MoveCellRequest } from "../../../../shared/client-requests";
+import { NotebookUpdate } from "../../../../shared/server-responses";
+import { MoveCell } from "../../../../shared/client-requests";
 
 import { HtmlElement } from "../../../../html-element";
 import {
@@ -92,7 +92,7 @@ export abstract class CellBase extends HtmlElement<'div'>{
 
   // Overridable ClientNotebookWatcher Methods
 
-  public abstract onChange(change: NotebookChange): void;
+  public abstract onChange(change: NotebookUpdate): void;
   public abstract onChangesFinished(): void;
 
   // PRIVATE
@@ -253,7 +253,7 @@ export abstract class CellBase extends HtmlElement<'div'>{
     // If dragging down, then put dragged cell below the cell that was dropped on.
     // If dragging up, then put dragged cell above the cell that was dropped on.
     const afterId = c<0 ? this.cellId : this.container.screen.notebook.precedingCellId(this.cellId);
-    const moveRequest: MoveCellRequest = {
+    const moveRequest: MoveCell = {
       type: 'moveCell',
       cellId: cellDragData.cellId,
       afterId,

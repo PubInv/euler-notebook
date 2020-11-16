@@ -25,7 +25,7 @@ const debug = debug1('client:text-cell');
 import { InputType, TextCellObject } from "../../../../shared/cell";
 import { CssClass, assertFalse, PlainText, notImplemented, Html } from "../../../../shared/common";
 import { Stroke } from "../../../../shared/stylus";
-import { NotebookChange, } from "../../../../shared/notebook";
+import { NotebookUpdate, } from "../../../../shared/server-responses";
 import { notebookChangeSynopsis, cellSynopsis } from "../../../../shared/debug-synopsis";
 import { TextCellKeyboardObject, TextCellStylusObject } from "../../../../shared/cell";
 import { AddStroke } from "../../../../shared/client-requests";
@@ -73,7 +73,7 @@ export class TextCell extends CellBase {
 
   // ClientNotebookWatcher Methods
 
-  public onChange(change: NotebookChange): void {
+  public onChange(change: NotebookUpdate): void {
     debug(`onChange: style ${this.cellId} ${notebookChangeSynopsis(change)}`);
 
     switch (change.type) {

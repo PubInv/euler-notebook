@@ -28,20 +28,22 @@ import * as debug1 from "debug";
 // import { readdirSync, unlink, writeFileSync } from "fs"; // LATER: Eliminate synchronous file operations.
 import { join } from "path";
 
-import { CellObject, CellSource, CellId, CellPosition } from "./shared/cell";
+import { CellObject, CellSource, CellId, CellPosition, StylusCellObject, InputType } from "./shared/cell";
 import { assert, assertFalse, ExpectedError, notImplemented, Timestamp } from "./shared/common";
 import { NotebookPath, NOTEBOOK_PATH_RE, NotebookName, FolderPath, NotebookEntry } from "./shared/folder";
 import {
-  Notebook, NotebookObject, NotebookChange,
-  CellMoved, VERSION,
-  CellInserted, CellDeleted, NotebookWatcher, StrokeInserted,
+  Notebook, NotebookObject,
+  VERSION,
+  NotebookWatcher,
 } from "./shared/notebook";
 import {
-  NotebookChangeRequest, MoveCellRequest, InsertCellRequest,
-  DeleteCellRequest,
-  ChangeNotebook, UseTool, RequestId, AddStroke, DeleteStrokeRequest, NotebookRequest, OpenNotebook, CloseNotebook,
+  NotebookChangeRequest, MoveCell, InsertCell, DeleteCell,
+  ChangeNotebook, UseTool, RequestId, AddStroke, RemoveStroke, NotebookRequest, OpenNotebook, CloseNotebook,
 } from "./shared/client-requests";
-import { NotebookChanged, NotebookOpened, NotebookResponse, } from "./shared/server-responses";
+import {
+  NotebookUpdated, NotebookOpened, NotebookResponse, NotebookUpdate,
+  CellMoved, CellInserted, CellDeleted, StrokeInserted, StrokeDeleted,
+} from "./shared/server-responses";
 import { notebookChangeRequestSynopsis, notebookChangeSynopsis } from "./shared/debug-synopsis";
 import { StrokeId } from "./shared/stylus";
 import { OpenOptions } from "./shared/watched-resource";
@@ -69,7 +71,7 @@ export interface RequestChangesOptions {
 }
 
 export interface ServerNotebookWatcher extends NotebookWatcher {
-  onChanged(msg: NotebookChanged): void;
+  onChanged(msg: NotebookUpdated): void;
 }
 
 // Constants
@@ -317,7 +319,7 @@ export class ServerNotebook extends Notebook<ServerNotebookWatcher> {
   public async requestChange(
     source: CellSource,
     changeRequest: NotebookChangeRequest,
-  ): Promise<NotebookChange[]> {
+  ): Promise<NotebookUpdate[]> {
     return this.requestChanges(source, [changeRequest]);
   }
 
@@ -326,12 +328,12 @@ export class ServerNotebook extends Notebook<ServerNotebookWatcher> {
     changeRequests: NotebookChangeRequest[],
     originatingSocket?: ServerSocket,
     requestId?: RequestId,
-  ): Promise<NotebookChange[]> {
+  ): Promise<NotebookUpdate[]> {
     assert(!this.terminated);
     debug(`Requested changes: ${changeRequests.length}`);
 
     // Make the requested changes to the notebook.
-    const changes: NotebookChange[] = [];
+    const changes: NotebookUpdate[] = [];
     const undoChangeRequests = this.applyRequestedChanges(source, changeRequests, changes);
 
     this.notifyWatchersOfChanges(changes, undoChangeRequests, false, originatingSocket, requestId);
@@ -400,8 +402,8 @@ export class ServerNotebook extends Notebook<ServerNotebookWatcher> {
 
   private appendChange(
     source: CellSource,
-    change: NotebookChange,
-    rval: NotebookChange[],
+    change: NotebookUpdate,
+    rval: NotebookUpdate[],
   ): void {
     debug(`${source} change: ${notebookChangeSynopsis(change)}`);
     this.applyChange(change, false);
@@ -410,10 +412,21 @@ export class ServerNotebook extends Notebook<ServerNotebookWatcher> {
     rval.push(change);
   }
 
+  private applyChange(change: NotebookUpdate, _ownRequest: boolean): void {
+    switch(change.type) {
+      case 'cellDeleted': this.doDeleteCell(change); break;
+      case 'cellInserted': this.doInsertCell(change); break;
+      case 'cellMoved': this.doMoveCell(change); break;
+      case 'strokeInserted': this.doInsertStroke(change); break;
+      case 'strokeDeleted': this.doDeleteStroke(change); break;
+      default: assertFalse();
+    }
+  }
+
   private applyRequestedChanges(
     source: CellSource,
     changeRequests: NotebookChangeRequest[],
-    rval: NotebookChange[],
+    rval: NotebookUpdate[],
   ): NotebookChangeRequest[] {
     const undoChangeRequests: NotebookChangeRequest[] = [];
     for (const changeRequest of changeRequests) {
@@ -427,14 +440,14 @@ export class ServerNotebook extends Notebook<ServerNotebookWatcher> {
         case 'deleteCell':
           undoChangeRequest = this.applyDeleteCellRequest(source, changeRequest, rval);
           break;
-        case 'deleteStroke':
-          undoChangeRequest = this.applyDeleteStrokeRequest(source, changeRequest, rval);
-          break;
         case 'insertCell':
           undoChangeRequest = this.applyInsertCellRequest(source, changeRequest, rval);
           break;
         case 'moveCell':
           undoChangeRequest = this.applyMoveStyleRequest(source, changeRequest, rval);
+          break;
+        case 'removeStroke':
+          undoChangeRequest = this.applyRemoveStrokeRequest(source, changeRequest, rval);
           break;
         default:
           assertFalse();
@@ -451,13 +464,13 @@ export class ServerNotebook extends Notebook<ServerNotebookWatcher> {
   private applyAddStrokeRequest<T extends CellObject>(
     source: CellSource,
     request: AddStroke,
-    rval: NotebookChange[],
-  ): DeleteStrokeRequest {
+    rval: NotebookUpdate[],
+  ): RemoveStroke {
     const cellId = request.cellId;
     const cellObject = this.getCell<T>(request.cellId);
     const strokeId: StrokeId = -1; //BUGBUG;
 
-    const undoChangeRequest: DeleteStrokeRequest = { type: 'deleteStroke', cellId, strokeId };
+    const undoChangeRequest: RemoveStroke = { type: 'removeStroke', cellId, strokeId };
 
     const change: StrokeInserted = { type: 'strokeInserted', cellId: cellObject.id, strokeId: strokeId, stroke: request.stroke };
     this.appendChange(source, change, rval);
@@ -467,15 +480,15 @@ export class ServerNotebook extends Notebook<ServerNotebookWatcher> {
 
   private applyDeleteCellRequest<T extends CellObject>(
     source: CellSource,
-    request: DeleteCellRequest,
-    rval: NotebookChange[],
-  ): InsertCellRequest<T> {
+    request: DeleteCell,
+    rval: NotebookUpdate[],
+  ): InsertCell<T> {
 
     const cellObject = this.getCell<T>(request.cellId);
 
     // Assemble the undo change request before we delete anything
     // from the notebook.
-    const undoChangeRequest: InsertCellRequest<T> = {
+    const undoChangeRequest: InsertCell<T> = {
       type: 'insertCell',
       afterId: this.precedingCellId(cellObject.id),
       cellObject,
@@ -487,39 +500,39 @@ export class ServerNotebook extends Notebook<ServerNotebookWatcher> {
     return undoChangeRequest;
   }
 
-  private applyDeleteStrokeRequest<T extends CellObject>(
+  private applyRemoveStrokeRequest<T extends CellObject>(
     source: CellSource,
-    request: DeleteStrokeRequest,
-    rval: NotebookChange[],
-  ): InsertCellRequest<T> {
+    request: RemoveStroke,
+    rval: NotebookUpdate[],
+  ): InsertCell<T> {
     const cellId = request.cellId;
     const cellObject = this.getCell<T>(request.cellId);
     const afterId = CellPosition.Bottom;  // TODO: Get the ID of the cell preceding us.
     const change: CellDeleted =  { type: 'cellDeleted', cellId };
     this.appendChange(source, change, rval);
-    const undoChangeRequest: InsertCellRequest<T> = { type: 'insertCell', cellObject, afterId };
+    const undoChangeRequest: InsertCell<T> = { type: 'insertCell', cellObject, afterId };
     return undoChangeRequest;
   }
 
   private applyInsertCellRequest<T extends CellObject>(
     source: CellSource,
-    request: InsertCellRequest<T>,
-    rval: NotebookChange[],
-  ): DeleteCellRequest {
+    request: InsertCell<T>,
+    rval: NotebookUpdate[],
+  ): DeleteCell {
     const cellObject = request.cellObject;
     assert(cellObject.id == 0);
     const cellId = cellObject.id = this.nextId++;
     const change: CellInserted =  { type: 'cellInserted', cellObject, afterId: request.afterId };
     this.appendChange(source, change, rval);
-    const undoChangeRequest: DeleteCellRequest = { type: 'deleteCell', cellId };
+    const undoChangeRequest: DeleteCell = { type: 'deleteCell', cellId };
     return undoChangeRequest;
   }
 
   private applyMoveStyleRequest(
     source: CellSource,
-    request: MoveCellRequest,
-    rval: NotebookChange[],
-  ): MoveCellRequest|undefined {
+    request: MoveCell,
+    rval: NotebookUpdate[],
+  ): MoveCell|undefined {
     const { cellId: cellId, afterId } = request;
     if (afterId == cellId) { throw new Error(`Style ${cellId} can't be moved after itself.`); }
 
@@ -544,12 +557,57 @@ export class ServerNotebook extends Notebook<ServerNotebookWatcher> {
     const change: CellMoved = { type: 'cellMoved', cellId, afterId, oldPosition, newPosition };
     this.appendChange(source, change, rval);
 
-    const undoChangeRequest: MoveCellRequest = {
+    const undoChangeRequest: MoveCell = {
       type: 'moveCell',
       cellId: style.id,
       afterId: oldAfterId
     };
     return undoChangeRequest;
+  }
+
+  // Change Application Methods.
+  // DO NOT CALL DIRECTLY!
+
+  private doDeleteCell(change: CellDeleted): void {
+    const cellId = change.cellId;
+    assert(this.cellMap[cellId]);
+    // If this is a top-level style then remove it from the top-level style order first.
+    const i = this.pages[0].cellIds.indexOf(cellId);
+    assert(i>=0);
+    this.pages[0].cellIds.splice(i,1);
+    delete this.cellMap[cellId];
+  }
+
+  private doDeleteStroke(_change: StrokeDeleted): void {
+    notImplemented();
+  }
+
+  private doInsertCell(change: CellInserted): void {
+    const cellObject = change.cellObject;
+    const afterId = change.afterId;
+    this.cellMap[cellObject.id] = cellObject;
+    // Insert top-level styles in the style order.
+    if (!afterId || afterId===CellPosition.Top) {
+      this.pages[0].cellIds.unshift(cellObject.id);
+    } else if (afterId===CellPosition.Bottom) {
+      this.pages[0].cellIds.push(cellObject.id);
+    } else {
+      const i = this.pages[0].cellIds.indexOf(afterId);
+      if (i<0) { throw new Error(`Cannot insert thought after unknown thought ${afterId}`); }
+      this.pages[0].cellIds.splice(i+1, 0, cellObject.id);
+    }
+  }
+
+  private doInsertStroke(change: StrokeInserted): void {
+    const cellObject = this.getCell<StylusCellObject>(change.cellId);
+    assert(cellObject.inputType == InputType.Stylus);
+    cellObject.stylusInput.strokeGroups[0].strokes.push(change.stroke);
+    notImplemented();
+  }
+
+  private doMoveCell(change: CellMoved): void {
+    this.pages[0].cellIds.splice(change.oldPosition, 1);
+    this.pages[0].cellIds.splice(change.newPosition, 0, change.cellId);
   }
 
   protected async initialize(options: OpenNotebookOptions): Promise<void> {
@@ -572,17 +630,17 @@ export class ServerNotebook extends Notebook<ServerNotebookWatcher> {
   }
 
   private notifyWatchersOfChanges(
-    changes: NotebookChange[],
+    changes: NotebookUpdate[],
     undoChangeRequests: NotebookChangeRequest[]|undefined,
     complete?: boolean,
     originatingSocket?: ServerSocket,
     requestId?: RequestId,
   ): void {
-    const update: NotebookChanged = {
+    const update: NotebookUpdated = {
       type: 'notebook',
       path: this.path,
-      operation: 'changed',
-      changes,
+      operation: 'updated',
+      updates: changes,
       undoChangeRequests, // TODO: Only undo for initiating client.
     }
     if (complete) {

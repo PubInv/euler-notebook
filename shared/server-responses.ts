@@ -22,9 +22,11 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 // Requirements
 
+import { CellId, CellObject, CellOrdinalPosition, CellRelativePosition } from "./cell";
 import { RequestId, NotebookChangeRequest } from "./client-requests";
-import { FolderObject, FolderPath, NotebookPath, FolderChange } from "./folder";
-import { NotebookChange, NotebookObject } from "./notebook";
+import { FolderObject, FolderPath, NotebookPath, FolderEntry, FolderName, NotebookEntry, NotebookName } from "./folder";
+import { NotebookObject } from "./notebook";
+import { Stroke, StrokeId } from "./stylus";
 
 // Types
 
@@ -42,16 +44,12 @@ export interface ErrorResponse extends ResponseBase {
 }
 
 export type FolderResponse =
-  FolderChanged |
   FolderClosed |
-  FolderOpened;
+  FolderOpened |
+  FolderUpdated;
 export interface FolderResponseBase extends ResponseBase {
   type: 'folder',
   path: FolderPath,
-}
-export interface FolderChanged extends FolderResponseBase {
-  operation: 'changed';
-  changes: FolderChange[];
 }
 export interface FolderClosed extends FolderResponseBase {
   operation: 'closed';
@@ -61,19 +59,18 @@ export interface FolderOpened extends FolderResponseBase {
   operation: 'opened';
   obj: FolderObject;
 }
+export interface FolderUpdated extends FolderResponseBase {
+  operation: 'updated';
+  updates: FolderUpdate[];
+}
 
 export type NotebookResponse =
-  NotebookChanged |
+  NotebookUpdated |
   NotebookClosed |
   NotebookOpened;
 interface NotebookResponseBase extends ResponseBase {
   type: 'notebook',
   path: NotebookPath,
-}
-export interface NotebookChanged extends NotebookResponseBase {
-  operation: 'changed';
-  changes: NotebookChange[];
-  undoChangeRequests?: NotebookChangeRequest[];
 }
 export interface NotebookClosed extends NotebookResponseBase {
   operation: 'closed';
@@ -83,4 +80,69 @@ export interface NotebookOpened extends NotebookResponseBase {
   operation: 'opened';
   obj: NotebookObject;
 }
+export interface NotebookUpdated extends NotebookResponseBase {
+  operation: 'updated';
+  updates: NotebookUpdate[];
+  undoChangeRequests?: NotebookChangeRequest[];
+}
 
+// Folder Updates
+
+export type FolderUpdate = FolderCreated|FolderDeleted|FolderRenamed|NotebookCreated|NotebookDeleted|NotebookRenamed;
+export interface FolderCreated {
+  type: 'folderCreated';
+  entry: FolderEntry;
+}
+export interface FolderDeleted {
+  type: 'folderDeleted';
+  entry: FolderEntry;
+}
+export interface FolderRenamed {
+  type: 'folderRenamed';
+  entry: FolderEntry;
+  oldName: FolderName;
+}
+export interface NotebookCreated {
+  type: 'notebookCreated';
+  entry: NotebookEntry;
+}
+export interface NotebookDeleted {
+  type: 'notebookDeleted';
+  entry: NotebookEntry;
+}
+export interface NotebookRenamed {
+  type: 'notebookRenamed';
+  entry: NotebookEntry;
+  oldName: NotebookName;
+}
+
+// Notebook Updates
+
+export type NotebookUpdate = CellDeleted | CellInserted | CellMoved | StrokeInserted | StrokeDeleted;
+export interface CellDeleted {
+  type: 'cellDeleted';
+  cellId: CellId;
+}
+export interface CellInserted {
+  type: 'cellInserted';
+  cellObject: CellObject;
+  afterId?: CellRelativePosition;
+}
+export interface CellMoved {
+  type: 'cellMoved';
+  cellId: CellId;
+  afterId: CellRelativePosition;
+  oldPosition: CellOrdinalPosition;
+  newPosition: CellOrdinalPosition;
+}
+export interface StrokeDeleted {
+  type: 'strokeDeleted';
+  cellId: CellId;
+  strokeId: StrokeId;
+}
+export interface StrokeInserted {
+  type: 'strokeInserted';
+  cellId: CellId;
+  strokeId: StrokeId;
+  stroke: Stroke;
+}

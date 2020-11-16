@@ -20,11 +20,11 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 // Requirements
 
-import { CellSource, CellId, CellObject, CellRelativePosition, CellOrdinalPosition, CellMap, CellPosition, InputType, StylusCellObject } from "./cell";
-import { CssLength, CssSize, Html, assert, deepCopy, escapeHtml, ExpectedError, assertFalse, notImplemented } from "./common";
+import { CellSource, CellId, CellObject, CellOrdinalPosition, CellMap } from "./cell";
+import { CssLength, CssSize, Html, assert, deepCopy, escapeHtml, ExpectedError } from "./common";
 import { cellSynopsis } from "./debug-synopsis";
 import { NOTEBOOK_NAME_RE, NotebookName, NotebookPath } from "./folder";
-import { Stroke, StrokeId } from "./stylus";
+import { CellInserted, NotebookUpdate } from "./server-responses";
 import { WatchedResource, Watcher } from "./watched-resource";
 
 // Types
@@ -32,35 +32,6 @@ import { WatchedResource, Watcher } from "./watched-resource";
 export interface FindCellOptions {
   source?: CellSource;
   notSource?: CellSource;
-}
-
-export type NotebookChange = CellDeleted | CellInserted | CellMoved | StrokeInserted | StrokeDeleted;
-export interface CellDeleted {
-  type: 'cellDeleted';
-  cellId: CellId;
-}
-export interface CellInserted {
-  type: 'cellInserted';
-  cellObject: CellObject;
-  afterId?: CellRelativePosition;
-}
-export interface CellMoved {
-  type: 'cellMoved';
-  cellId: CellId;
-  afterId: CellRelativePosition;
-  oldPosition: CellOrdinalPosition;
-  newPosition: CellOrdinalPosition;
-}
-export interface StrokeDeleted {
-  type: 'strokeDeleted';
-  cellId: CellId;
-  strokeId: StrokeId;
-}
-export interface StrokeInserted {
-  type: 'strokeInserted';
-  cellId: CellId;
-  strokeId: StrokeId;
-  stroke: Stroke;
 }
 
 export interface NotebookObject {
@@ -72,7 +43,7 @@ export interface NotebookObject {
 }
 
 export interface NotebookWatcher extends Watcher {
-  onChange(change: NotebookChange, ownRequest: boolean): void;
+  onChange(change: NotebookUpdate, ownRequest: boolean): void;
 }
 
 interface Page {
@@ -212,23 +183,6 @@ export abstract class Notebook<W extends NotebookWatcher> extends WatchedResourc
 
   // Public Instance Methods
 
-  public applyChange(change: NotebookChange, ownRequest: boolean): void {
-    assert(change);
-    for (const watcher of this.watchers) { watcher.onChange(change, ownRequest); }
-    switch(change.type) {
-      case 'cellDeleted': this.deleteCell(change); break;
-      case 'cellInserted': this.insertCell(change); break;
-      case 'cellMoved': this.moveCell(change); break;
-      case 'strokeInserted': this.insertStroke(change); break;
-      case 'strokeDeleted': this.deleteStroke(change); break;
-      default: assertFalse();
-    }
-  }
-
-  public applyChanges(changes: NotebookChange[], ownRequest: boolean): void {
-    for (const change of changes) { this.applyChange(change, ownRequest); }
-  }
-
   public findCell(options: FindCellOptions): CellObject|undefined {
     // REVIEW: If we don't need to throw on multiple matches, then we can terminate the search
     //         after we find the first match.
@@ -314,58 +268,13 @@ export abstract class Notebook<W extends NotebookWatcher> extends WatchedResourc
     this.cellMap = obj.cellMap;
   }
 
-  // Change Application Methods.
-  // DO NOT CALL DIRECTLY!
-
-  private deleteCell(change: CellDeleted): void {
-    const cellId = change.cellId;
-    assert(this.cellMap[cellId]);
-    // If this is a top-level style then remove it from the top-level style order first.
-    const i = this.pages[0].cellIds.indexOf(cellId);
-    assert(i>=0);
-    this.pages[0].cellIds.splice(i,1);
-    delete this.cellMap[cellId];
-  }
-
-  private deleteStroke(_change: StrokeDeleted): void {
-    notImplemented();
-  }
-
-  private insertCell(change: CellInserted): void {
-    const cellObject = change.cellObject;
-    const afterId = change.afterId;
-    this.cellMap[cellObject.id] = cellObject;
-    // Insert top-level styles in the style order.
-    if (!afterId || afterId===CellPosition.Top) {
-      this.pages[0].cellIds.unshift(cellObject.id);
-    } else if (afterId===CellPosition.Bottom) {
-      this.pages[0].cellIds.push(cellObject.id);
-    } else {
-      const i = this.pages[0].cellIds.indexOf(afterId);
-      if (i<0) { throw new Error(`Cannot insert thought after unknown thought ${afterId}`); }
-      this.pages[0].cellIds.splice(i+1, 0, cellObject.id);
-    }
-  }
-
-  private insertStroke(change: StrokeInserted): void {
-    const cellObject = this.getCell<StylusCellObject>(change.cellId);
-    assert(cellObject.inputType == InputType.Stylus);
-    cellObject.stylusInput.strokeGroups[0].strokes.push(change.stroke);
-    notImplemented();
-  }
-
-  private moveCell(change: CellMoved): void {
-    this.pages[0].cellIds.splice(change.oldPosition, 1);
-    this.pages[0].cellIds.splice(change.newPosition, 0, change.cellId);
-  }
-
 }
 
 // Helper Classes
 
 // Helper Functions
 
-export function cellInsertedFromNotebookChange(change: NotebookChange): CellInserted {
+export function cellInsertedFromNotebookChange(change: NotebookUpdate): CellInserted {
   // TODO: Rename this function so it doesn't start with a capital letter.
   if (change.type != 'cellInserted') { throw new Error("Not StyleInserted change."); }
   return change;

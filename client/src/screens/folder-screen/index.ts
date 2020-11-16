@@ -22,12 +22,15 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 // Requirements
 
 import { CssClass, Html } from "../../shared/common";
-import { FolderPath, FolderChange } from "../../shared/folder";
-import { Content } from "./content";
-import { Sidebar } from "./sidebar";
+import { FolderPath } from "../../shared/folder";
+import { FolderUpdate } from "../../shared/server-responses";
+
 import { ScreenBase } from "../screen-base";
 import { ClientFolder, ClientFolderWatcher, OpenFolderOptions } from "../../client-folder";
 import { reportError } from "../../error-handler";
+
+import { Content } from "./content";
+import { Sidebar } from "./sidebar";
 
 // Types
 
@@ -78,7 +81,7 @@ export class FolderScreen extends ScreenBase implements ClientFolderWatcher {
 
   // ClientFolderWatcher Methods
 
-  public onChange(change: FolderChange): void {
+  public onChange(change: FolderUpdate): void {
     this.view.onChange(change);
   }
 

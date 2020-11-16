@@ -27,7 +27,7 @@ const debug = debug1('client:formula-cell');
 import { CssClass, Html, assertFalse, PlainText, notImplemented } from "../../../../shared/common";
 import { Stroke } from "../../../../shared/stylus";
 import { FormulaCellKeyboardObject, FormulaCellObject, FormulaCellStylusObject } from "../../../../shared/formula";
-import { NotebookChange } from "../../../../shared/notebook";
+import { NotebookUpdate } from "../../../../shared/server-responses";
 import { notebookChangeSynopsis } from "../../../../shared/debug-synopsis";
 import { InputType } from "../../../../shared/cell";
 import { AddStroke } from "../../../../shared/client-requests";
@@ -88,7 +88,7 @@ export class FormulaCell extends CellBase {
 
   // }
 
-  public onChange(change: NotebookChange): boolean {
+  public onChange(change: NotebookUpdate): boolean {
     debug(`onChange: cell ${this.cellId} ${notebookChangeSynopsis(change)}`);
 
     // TODO: Changes that affect the prefix panel.

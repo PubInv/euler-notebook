@@ -22,7 +22,8 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 // TODO: When another user makes a change show an indicator of what user made the change.
 
 import { CssClass, assertFalse } from "../../../shared/common";
-import { FolderChange, FolderName, NotebookName } from "../../../shared/folder";
+import { FolderName, NotebookName } from "../../../shared/folder";
+import { FolderUpdate } from "../../../shared/server-responses";
 
 import { FolderScreen } from "..";
 import { HtmlElement } from "../../../html-element";
@@ -57,7 +58,7 @@ export class Content extends HtmlElement<'div'> {
 
   // ClientFolder Watcher Methods
 
-  public onChange(change: FolderChange): void {
+  public onChange(change: FolderUpdate): void {
     switch(change.type) {
       case 'folderCreated':   this.foldersList.addEntry(this.screen.folder, change.entry);     break;
       case 'folderDeleted':   this.foldersList.removeEntry(change.entry);                      break;

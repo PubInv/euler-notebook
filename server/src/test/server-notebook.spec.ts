@@ -28,7 +28,7 @@ import * as sinon from "sinon";
 
 import { EMPTY_SVG, Html, PlainText } from "../shared/common";
 import { EMPTY_FORMULA, FormulaCellObject } from "../shared/formula";
-import { NotebookChange, CellInserted, CellObject } from "../shared/notebook";
+import { NotebookUpdate, CellInserted, CellObject } from "../shared/notebook";
 import { NotebookChangeRequest, InsertCellRequest, StyleProperties, ToolData } from "../shared/math-tablet-api";
 import { ServerNotebook, ObserverInstance }  from "../server-notebook";
 import { Config } from "../config";
@@ -43,8 +43,8 @@ class TestObserver implements ObserverInstance {
   static async initialize(_config: Config): Promise<void> { }
   static async onOpen(_notebook: ServerNotebook): Promise<TestObserver> { return new this(); }
   constructor() {}
-  async onChangesAsync(_changes: NotebookChange[], _startIndex: number, _endIndex: number): Promise<NotebookChangeRequest[]> { return []; }
-  public onChangesSync(_changes: NotebookChange[], _startIndex: number, _endIndex: number): NotebookChangeRequest[] { return []; }
+  async onChangesAsync(_changes: NotebookUpdate[], _startIndex: number, _endIndex: number): Promise<NotebookChangeRequest[]> { return []; }
+  public onChangesSync(_changes: NotebookUpdate[], _startIndex: number, _endIndex: number): NotebookChangeRequest[] { return []; }
   onClose(): void { }
   async useTool(_style: CellObject): Promise<NotebookChangeRequest[]> { return []; }
 }
@@ -59,8 +59,8 @@ describe("server notebook", function() {
     let observer: TestObserver;
 
     const onOpenSpy: sinon.SinonSpy<[ServerNotebook], Promise<ObserverInstance>> = sinon.spy(TestObserver, 'onOpen');
-    let onChangesAsyncSpy: sinon.SinonSpy<[NotebookChange[], number, number], Promise<NotebookChangeRequest[]>>;
-    let onChangesSyncSpy: sinon.SinonSpy<[NotebookChange[], number, number], NotebookChangeRequest[]>;
+    let onChangesAsyncSpy: sinon.SinonSpy<[NotebookUpdate[], number, number], Promise<NotebookChangeRequest[]>>;
+    let onChangesSyncSpy: sinon.SinonSpy<[NotebookUpdate[], number, number], NotebookChangeRequest[]>;
     let onCloseSpy: sinon.SinonSpy<[], void>;
     let useToolSpy: sinon.SinonSpy<[CellObject], Promise<NotebookChangeRequest[]>>;
 

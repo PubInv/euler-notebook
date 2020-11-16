@@ -20,7 +20,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 // Requirements
 
 import { CssClass, Html, escapeHtml } from "../../shared/common";
-import { NotebookChange } from "../../shared/notebook";
+import { NotebookUpdate } from "../../shared/server-responses";
 import { NotebookPath } from "../../shared/folder";
 
 import { ClientNotebook, OpenNotebookOptions } from "../../client-notebook";
@@ -88,7 +88,7 @@ export class NotebookReadScreen extends ScreenBase {
 
   // Notebook Watcher Methods
 
-  public onChange(_change: NotebookChange): void {
+  public onChange(_change: NotebookUpdate): void {
     // TODO:
   }
 

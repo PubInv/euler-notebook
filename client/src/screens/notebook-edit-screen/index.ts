@@ -24,8 +24,8 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 import { CssClass, Html, escapeHtml } from "../../shared/common";
 import { NotebookPath } from "../../shared/folder";
-import { NotebookChange, NotebookWatcher } from "../../shared/notebook";
-
+import { NotebookWatcher } from "../../shared/notebook";
+import { NotebookUpdate } from "../../shared/server-responses";
 import { DebugPopup } from "./debug-popup";
 import { reportError } from "../../error-handler";
 import { Content } from "./content";
@@ -88,7 +88,7 @@ export class NotebookEditScreen extends ScreenBase implements NotebookWatcher {
 
   // ClientNotebookWatcher Methods
 
-  public onChange(change: NotebookChange): void {
+  public onChange(change: NotebookUpdate): void {
     this.content.onChange(change);
   }
 

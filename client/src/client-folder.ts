@@ -21,12 +21,15 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 // Requirements
 
-import { Folder, FolderPath, NotebookName, FolderName, FolderChange, FolderCreated, NotebookCreated, FolderEntry, NotebookEntry, FolderRenamed, NotebookRenamed, FolderDeleted, NotebookDeleted, FolderWatcher } from "./shared/folder";
+import { Folder, FolderPath, NotebookName, FolderName, FolderEntry, NotebookEntry, FolderWatcher } from "./shared/folder";
 import {
   FolderChangeRequest, ChangeFolder, OpenFolder,
   FolderCreateRequest, NotebookCreateRequest, FolderDeleteRequest, NotebookDeleteRequest, FolderRenameRequest, NotebookRenameRequest
 } from "./shared/client-requests";
-import { FolderChanged, FolderResponse, FolderOpened, FolderClosed } from "./shared/server-responses"
+import {
+  FolderUpdated, FolderResponse, FolderOpened, FolderClosed,
+  FolderUpdate, FolderCreated, NotebookCreated, FolderRenamed, NotebookRenamed, FolderDeleted, NotebookDeleted,
+} from "./shared/server-responses"
 
 import { appInstance } from "./app";
 import { assert, assertFalse } from "./shared/common";
@@ -66,7 +69,7 @@ export class ClientFolder extends Folder<ClientFolderWatcher> {
   public static smMessage(msg: FolderResponse, ownRequest: boolean): void {
     // A folder message was received from the server.
     switch(msg.operation) {
-      case 'changed': this.smChanged(msg, ownRequest); break;
+      case 'updated': this.smUpdated(msg, ownRequest); break;
       case 'closed':  this.smClosed(msg, ownRequest); break;
       case 'opened':
         // Nothing to do. Opened response is handled when request promise is resolved.
@@ -138,17 +141,17 @@ export class ClientFolder extends Folder<ClientFolderWatcher> {
 
   // Private Class Event Handlers
 
-  private static smChanged(msg: FolderChanged, ownRequest: boolean): void {
-    // A change message has come in that was not from our own change request.
-    const instance = this.getInstance(msg.path);
-    instance.smChanged(msg, ownRequest);
-  }
-
   private static smClosed(msg: FolderClosed, _ownRequest: boolean): void {
     // Message from the server that the folder has been closed by the server.
     // For example, if the folder was deleted or moved.
     const had = this.close(msg.path, msg.reason);
     assert(had);
+  }
+
+  private static smUpdated(msg: FolderUpdated, ownRequest: boolean): void {
+    // A change message has come in that was not from our own change request.
+    const instance = this.getInstance(msg.path);
+    instance.smChanged(msg, ownRequest);
   }
 
   // Private Constructor
@@ -201,13 +204,13 @@ export class ClientFolder extends Folder<ClientFolderWatcher> {
     this.initializeFromObject(responseMessages[0].obj);
   }
 
-  private async sendChangeRequest<T extends FolderChange>(changeRequest: FolderChangeRequest): Promise<T> {
+  private async sendChangeRequest<T extends FolderUpdate>(changeRequest: FolderChangeRequest): Promise<T> {
     const changes = await this.sendChangeRequests([ changeRequest ]);
     assert(changes.length == 1);
     return <T>changes[0];
   }
 
-  private async sendChangeRequests(changeRequests: FolderChangeRequest[]): Promise<FolderChange[]> {
+  private async sendChangeRequests(changeRequests: FolderChangeRequest[]): Promise<FolderUpdate[]> {
     assert(!this.terminated);
     assert(changeRequests.length>0);
     const msg: ChangeFolder = {
@@ -216,9 +219,9 @@ export class ClientFolder extends Folder<ClientFolderWatcher> {
       path: this.path,
       changeRequests,
     }
-    const responseMessages = await appInstance.socket.sendRequest<FolderChanged>(msg);
+    const responseMessages = await appInstance.socket.sendRequest<FolderUpdated>(msg);
     assert(responseMessages.length == 1); // If
-    return responseMessages[0].changes;
+    return responseMessages[0].updates;
   }
 
   protected terminate(reason: string): void {
@@ -227,13 +230,13 @@ export class ClientFolder extends Folder<ClientFolderWatcher> {
 
   // Private Event Handlers
 
-  private smChanged(msg: FolderChanged, ownRequest: boolean): void {
+  private smChanged(msg: FolderUpdated, ownRequest: boolean): void {
     // Message from the server indicating the folder has changed.
 
     // Apply changes to the notebook data structure, and notify the view of the change.
     // If the change is not a delete, then update the data structure first, then notify the view.
     // Otherwise, notify the view of the change, then update the data structure.
-    for (const change of msg.changes) {
+    for (const change of msg.updates) {
       this.applyChange(change, ownRequest);
     }
 

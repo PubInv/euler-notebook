@@ -24,7 +24,7 @@ const debug = debug1('client:figure-cell');
 
 import { CssClass, CssLength, assertFalse, Html } from "../../../../shared/common";
 import { Stroke } from "../../../../shared/stylus";
-import { NotebookChange } from "../../../../shared/notebook";
+import { NotebookUpdate } from "../../../../shared/server-responses";
 import { notebookChangeSynopsis } from "../../../../shared/debug-synopsis";
 import { FigureCellObject } from "../../../../shared/cell";
 import { AddStroke } from "../../../../shared/client-requests";
@@ -62,7 +62,7 @@ export class FigureCell extends CellBase {
 
   // ClientNotebookWatcher Methods
 
-  public onChange(change: NotebookChange): void {
+  public onChange(change: NotebookUpdate): void {
     debug(`onChange: style ${this.cellId} ${notebookChangeSynopsis(change)}`);
 
     // Update the SVG display if it has changed.
@@ -116,7 +116,7 @@ export class FigureCell extends CellBase {
       await this.container.screen.notebook.sendChangeRequest(changeRequest)
       .catch(err=>{
         // REVIEW: Proper way to handle this error?
-        logError(err, <Html>"Error sending stroke from formula cell");
+        logError(err, <Html>"Error sending stroke from figure cell");
       });
     };
     // Create the panel

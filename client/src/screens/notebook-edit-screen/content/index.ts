@@ -27,11 +27,8 @@ const debug = debug1('client:notebook-edit-screen-content');
 
 import { CellId, CellObject, CellRelativePosition, CellPosition, CellType, InputType, TextCellObject, FigureCellObject } from "../../../shared/cell";
 import { CssClass, assert, Html, assertFalse, notImplemented, emptySvg, PlainText, POINTS_PER_INCH, CssSize, CssLength } from "../../../shared/common";
-import { NotebookChange } from "../../../shared/notebook";
-import {
-  DeleteCellRequest, InsertCellRequest,
-  MoveCellRequest, NotebookChangeRequest,
-} from "../../../shared/client-requests";
+import { DeleteCell, InsertCell, MoveCell, NotebookChangeRequest, } from "../../../shared/client-requests";
+import { NotebookUpdate } from "../../../shared/server-responses";
 import { DebugParams, DebugResults, } from "../../../shared/api-calls";
 
 import { CellBase } from "./cells/cell-base";
@@ -132,7 +129,7 @@ export class Content extends HtmlElement<'div'>{
 
   public async deleteTopLevelStyle(cellId: CellId): Promise<void> {
     await this.unselectAll();
-    const changeRequest: DeleteCellRequest = { type: 'deleteCell', cellId: cellId };
+    const changeRequest: DeleteCell = { type: 'deleteCell', cellId: cellId };
     await this.sendUndoableChangeRequests([changeRequest]);
   }
 
@@ -159,7 +156,7 @@ export class Content extends HtmlElement<'div'>{
   public async deleteSelectedCells(): Promise<void> {
     const cellViews = this.selectedCells();
     await this.unselectAll();
-    const changeRequests = cellViews.map<DeleteCellRequest>(c=>({ type: 'deleteCell', cellId: c.cellId }));
+    const changeRequests = cellViews.map<DeleteCell>(c=>({ type: 'deleteCell', cellId: c.cellId }));
     await this.sendUndoableChangeRequests(changeRequests);
   }
 
@@ -199,7 +196,7 @@ export class Content extends HtmlElement<'div'>{
       height: <CssLength>`${2*POINTS_PER_INCH}pt`,
       width: <CssLength>`${6.5*POINTS_PER_INCH}pt`,
     }
-    let changeRequest: InsertCellRequest<FigureCellObject>;
+    let changeRequest: InsertCell<FigureCellObject>;
       changeRequest = {
         type: 'insertCell',
         cellObject: {
@@ -234,7 +231,7 @@ export class Content extends HtmlElement<'div'>{
       height: <CssLength>`${1*POINTS_PER_INCH}pt`,
       width: <CssLength>`${6.5*POINTS_PER_INCH}pt`,
     }
-    let changeRequest: InsertCellRequest<FormulaCellObject>;
+    let changeRequest: InsertCell<FormulaCellObject>;
     const inputMode = userSettingsInstance.defaultInputMode;
     if (inputMode == 'keyboard') {
       changeRequest = {
@@ -289,7 +286,7 @@ export class Content extends HtmlElement<'div'>{
       width: <CssLength>`${6.5*POINTS_PER_INCH}pt`,
     }
     const inputMode = userSettingsInstance.defaultInputMode;
-    let changeRequest: InsertCellRequest<TextCellObject>;
+    let changeRequest: InsertCell<TextCellObject>;
     if (inputMode == 'keyboard') {
       changeRequest = {
         type: 'insertCell',
@@ -345,7 +342,7 @@ export class Content extends HtmlElement<'div'>{
     const nextNextCell = this.nextCell(nextCell);
     const afterId = nextNextCell ? nextCell.cellId : CellPosition.Bottom;
 
-    const request: MoveCellRequest = { type: 'moveCell', cellId, afterId };
+    const request: MoveCell = { type: 'moveCell', cellId, afterId };
     await this.sendUndoableChangeRequests([ request ]);
   }
 
@@ -368,7 +365,7 @@ export class Content extends HtmlElement<'div'>{
     const previousPreviousCell = this.previousCell(previousCell);
     const afterId = previousPreviousCell ? previousPreviousCell.cellId : /* top */ 0;
 
-    const request: MoveCellRequest = { type: 'moveCell', cellId, afterId };
+    const request: MoveCell = { type: 'moveCell', cellId, afterId };
     await this.sendUndoableChangeRequests([ request ]);
   }
 
@@ -476,7 +473,7 @@ export class Content extends HtmlElement<'div'>{
   }
 
   public async insertStyle<T extends CellObject>(cellObject: T, afterId: CellRelativePosition = CellPosition.Bottom): Promise<void> {
-    const changeRequest: InsertCellRequest<T> = { type: 'insertCell', cellObject, afterId };
+    const changeRequest: InsertCell<T> = { type: 'insertCell', cellObject, afterId };
     await this.sendUndoableChangeRequests([ changeRequest ]);
   }
 
@@ -505,7 +502,7 @@ export class Content extends HtmlElement<'div'>{
 
   // ClientNotebookWatcher Methods
 
-  public onChange(change: NotebookChange): void {
+  public onChange(change: NotebookUpdate): void {
     const notebook = this.screen.notebook;
     // If a change would (or might) modify the display of a cell,
     // then mark add the cell to a list of cells to be redrawn.

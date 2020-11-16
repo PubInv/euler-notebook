@@ -20,6 +20,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 // Requirements
 
 import { assert, notImplemented, assertFalse } from "./common";
+import { FolderUpdate } from "./server-responses";
 import { Watcher, WatchedResource } from "./watched-resource";
 
 // Types
@@ -48,34 +49,6 @@ export interface Entry<N,P> {
 
 export type FolderEntry = Entry<FolderName, FolderPath>;
 
-export type FolderChange = FolderCreated|FolderDeleted|FolderRenamed|NotebookCreated|NotebookDeleted|NotebookRenamed;
-export interface FolderCreated {
-  type: 'folderCreated';
-  entry: FolderEntry;
-}
-export interface FolderDeleted {
-  type: 'folderDeleted';
-  entry: FolderEntry;
-}
-export interface FolderRenamed {
-  type: 'folderRenamed';
-  entry: FolderEntry;
-  oldName: FolderName;
-}
-export interface NotebookCreated {
-  type: 'notebookCreated';
-  entry: NotebookEntry;
-}
-export interface NotebookDeleted {
-  type: 'notebookDeleted';
-  entry: NotebookEntry;
-}
-export interface NotebookRenamed {
-  type: 'notebookRenamed';
-  entry: NotebookEntry;
-  oldName: NotebookName;
-}
-
 export interface FolderObject {
   path: FolderPath;
   notebooks: NotebookEntry[];
@@ -83,7 +56,7 @@ export interface FolderObject {
 }
 
 export interface FolderWatcher extends Watcher {
-  onChange(change: FolderChange, ownRequest: boolean): void;
+  onChange(change: FolderUpdate, ownRequest: boolean): void;
 }
 
 // An entry in a list of notebooks.
@@ -160,7 +133,7 @@ export abstract class Folder<W extends FolderWatcher> extends WatchedResource<Fo
 
   // Public Instance Methods
 
-  public applyChange(change: FolderChange, ownRequest: boolean): void {
+  public applyChange(change: FolderUpdate, ownRequest: boolean): void {
     // Send deletion change notifications.
     // Deletion change notifications are sent before the change happens so the watcher can
     // examine the style or relationship being deleted before it disappears from the notebook.

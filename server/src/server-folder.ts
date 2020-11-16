@@ -29,10 +29,10 @@ import { join } from "path";
 import { assert, notImplemented } from "./shared/common";
 import {
   Folder, FolderEntry, FolderName, FolderObject, FolderPath, FOLDER_PATH_RE, NotebookEntry,
-  NotebookName, NotebookPath, FolderChange, FolderWatcher,
+  NotebookName, NotebookPath, FolderWatcher,
 } from "./shared/folder";
 import { ChangeFolder, CloseFolder, FolderRequest, OpenFolder, RequestId } from "./shared/client-requests";
-import { FolderChanged, FolderOpened, FolderResponse } from "./shared/server-responses";
+import { FolderUpdated, FolderOpened, FolderResponse, FolderUpdate } from "./shared/server-responses";
 
 import { AbsDirectoryPath, ROOT_DIR_PATH, dirStat, mkDir, readDir, rename, rmDir } from "./adapters/file-system";
 import { ServerNotebook, notebookPath } from "./server-notebook";
@@ -51,7 +51,7 @@ export interface OpenFolderOptions extends OpenOptions<ServerFolderWatcher> {
 }
 
 export interface ServerFolderWatcher extends FolderWatcher {
-  onChanged(msg: FolderChanged): void;
+  onChanged(msg: FolderUpdated): void;
 }
 
 // Exported Class
@@ -261,10 +261,10 @@ export class ServerFolder extends Folder<ServerFolderWatcher> {
   private async onChangeRequest(socket: ServerSocket, request: ChangeFolder): Promise<void> {
     // TODO: Undo?
 
-    const changes: FolderChange[] = [];
+    const changes: FolderUpdate[] = [];
     assert(request.changeRequests.length>0);
     for (const changeRequest of request.changeRequests) {
-      let change: FolderChange;
+      let change: FolderUpdate;
       switch (changeRequest.type) {
         case 'createFolder': {
           const name = changeRequest.name;
@@ -324,7 +324,7 @@ export class ServerFolder extends Folder<ServerFolderWatcher> {
       this.applyChange(change, false);
       changes.push(change);
     }
-    const update: FolderChanged = { type: 'folder', operation: 'changed', path: this.path, changes, complete: true };
+    const update: FolderUpdated = { type: 'folder', operation: 'updated', path: this.path, updates: changes, complete: true };
     this.sendUpdateToAllSockets(update, socket, request.requestId);
   }
 

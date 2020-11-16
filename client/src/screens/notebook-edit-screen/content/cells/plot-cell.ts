@@ -24,7 +24,7 @@ const debug = debug1('client:formula-cell');
 
 import { CellObject } from "../../../../shared/cell";
 import { assertFalse, CssClass } from "../../../../shared/common";
-import { NotebookChange } from "../../../../shared/notebook";
+import { NotebookUpdate } from "../../../../shared/server-responses";
 import { Content as CellContainer } from "..";
 
 import { CellBase } from "./cell-base";
@@ -55,7 +55,7 @@ export class PlotCell extends CellBase {
 
   // ClientNotebookWatcher Methods
 
-  public onChange(change: NotebookChange): void {
+  public onChange(change: NotebookUpdate): void {
     debug(`onChange: style ${this.cellId} ${notebookChangeSynopsis(change)}`);
 
     switch (change.type) {

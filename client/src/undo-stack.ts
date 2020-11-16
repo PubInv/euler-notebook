@@ -26,7 +26,8 @@ import { Html } from "./shared/common";
 
 // Types
 
-export interface NotebookChange {
+// TODO: This name conflicts!
+export interface NotebookUpdate {
   'type': string;
   'do': ()=>Promise<void>;
   undo: ()=>Promise<void>;
@@ -47,7 +48,7 @@ export class UndoStack {
 
   // Instance Methods
 
-  public async addChange(change: NotebookChange): Promise<void> {
+  public async addChange(change: NotebookUpdate): Promise<void> {
 
     // Remove any changes beyond the current point on the undo stack,
     if (this.top < this.stack.length) {
@@ -83,7 +84,7 @@ export class UndoStack {
 
   private $redoButton: HTMLButtonElement;
   private $undoButton: HTMLButtonElement;
-  private stack: NotebookChange[];
+  private stack: NotebookUpdate[];
   private top: number;          // Index of the top of the stack. May not be the length of the array if there have been some undos.
 
   // Private Event Handlers

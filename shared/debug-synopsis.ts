@@ -23,12 +23,11 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 import { CellObject } from "./cell";
 import { assertFalse } from './common';
-import { FolderChange } from './folder';
-import { Notebook, NotebookChange, } from './notebook';
+import { Notebook } from './notebook';
 import {
   FolderRequest, ClientRequest, NotebookRequest, FolderChangeRequest, NotebookChangeRequest,
 } from './client-requests';
-import { FolderResponse, ServerResponse, NotebookResponse } from "./server-responses";
+import { FolderResponse, FolderUpdate, ServerResponse, NotebookResponse, NotebookUpdate } from "./server-responses";
 // Exported Functions
 
 export function clientMessageSynopsis(msg: ClientRequest): string {
@@ -56,7 +55,7 @@ export function folderChangeRequestSynopsis(request: FolderChangeRequest): strin
   return rval;
 }
 
-export function folderChangeSynopsis(change: FolderChange): string {
+export function folderChangeSynopsis(change: FolderUpdate): string {
   let rval: string = change.type;
   switch(change.type) {
     case 'folderCreated':
@@ -85,16 +84,18 @@ export function folderChangeSynopsis(change: FolderChange): string {
 export function notebookChangeRequestSynopsis(request: NotebookChangeRequest): string {
   let rval: string = request.type;
   switch(request.type) {
+    case 'addStroke': rval +=  ` C${request.cellId} S${JSON.stringify(request.stroke)}`; break;
     case 'deleteCell': rval += ` C${request.cellId}`; break;
-    case 'deleteStroke': rval += ` C${request.cellId} S${request.strokeId}`; break;
-    case 'insertCell': rval += ` TBD`; break;
+    case 'insertCell': rval += ` TODO:`; break;
+    case 'keyboardInputChange': rval += ` TODO:`; break;
     case 'moveCell': rval += ` C${request.cellId} A${request.afterId}`; break;
+    case 'removeStroke': rval += ` C${request.cellId} S${request.strokeId}`; break;
     default: assertFalse();
   }
   return rval;
 }
 
-export function notebookChangeSynopsis(change: NotebookChange): string {
+export function notebookChangeSynopsis(change: NotebookUpdate): string {
   let rval: string = change.type;
   switch(change.type) {
     case 'cellDeleted': {
@@ -197,8 +198,8 @@ function indentation(indentationLevel: number): string { return ' '.repeat(inden
 function FolderResponseSynopsis(msg: FolderResponse): string {
   let rval = `${msg.path} ${msg.operation} `;
   switch(msg.operation) {
-    case 'changed':
-      for (const change of msg.changes) {
+    case 'updated':
+      for (const change of msg.updates) {
         rval += `${folderChangeSynopsis(change)}; `;
       }
       break;
@@ -212,8 +213,8 @@ function FolderResponseSynopsis(msg: FolderResponse): string {
 function NotebookResponseSynopsis(msg: NotebookResponse) {
   let rval = `${msg.path} ${msg.operation} `;
   switch(msg.operation) {
-    case 'changed':
-      for (const change of msg.changes) {
+    case 'updated':
+      for (const change of msg.updates) {
         rval += `${notebookChangeSynopsis(change)}; `;
       }
       break;
