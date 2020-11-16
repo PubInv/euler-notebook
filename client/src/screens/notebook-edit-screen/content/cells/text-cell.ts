@@ -24,11 +24,11 @@ const debug = debug1('client:text-cell');
 
 import { InputType, TextCellObject } from "../../../../shared/cell";
 import { CssClass, assertFalse, PlainText, notImplemented, Html } from "../../../../shared/common";
-import { Stroke, StrokePosition } from "../../../../shared/stylus";
+import { Stroke } from "../../../../shared/stylus";
 import { NotebookChange, } from "../../../../shared/notebook";
 import { notebookChangeSynopsis, cellSynopsis } from "../../../../shared/debug-synopsis";
 import { TextCellKeyboardObject, TextCellStylusObject } from "../../../../shared/cell";
-import { InsertStrokeRequest } from "../../../../shared/client-requests";
+import { AddStroke } from "../../../../shared/client-requests";
 
 import { $new, $outerSvg } from "../../../../dom";
 import { logError } from "../../../../error-handler";
@@ -152,7 +152,7 @@ export class TextCell extends CellBase {
 
   private createStrokeSubpanel(cellObject: TextCellStylusObject): StrokePanel {
     const callbackFn: StrokeCallbackFn = async (stroke: Stroke)=>{
-      const changeRequest: InsertStrokeRequest = { type: 'insertStroke', cellId: cellObject.id, stroke, afterId: StrokePosition.Bottom };
+      const changeRequest: AddStroke = { type: 'addStroke', cellId: cellObject.id, stroke };
       await this.container.screen.notebook.sendChangeRequest(changeRequest)
       .catch(err=>{
         // REVIEW: Proper way to handle this error?

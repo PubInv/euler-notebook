@@ -24,12 +24,10 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 import { CellId } from "./shared/cell";
 import { Notebook, NotebookChange, NotebookWatcher } from "./shared/notebook";
 import {
-  NotebookChangeRequest, ClientNotebookChangeMessage, NotebookUseToolRequest,
-  NotebookOpenRequest,
+  NotebookChangeRequest, ChangeNotebook, UseTool,
+  OpenNotebook,
 } from "./shared/client-requests";
-import {
-  NotebookChangedResponse, NotebookOpenedResponse, NotebookResponse, NotebookClosedResponse,
-} from "./shared/server-responses";
+import { NotebookChanged, NotebookOpened, NotebookResponse, NotebookClosed } from "./shared/server-responses";
 import { OpenOptions } from "./shared/watched-resource";
 
 import { appInstance } from "./app";
@@ -109,13 +107,13 @@ export class ClientNotebook extends Notebook<ClientNotebookWatcher> {
   public async sendChangeRequests(changeRequests: NotebookChangeRequest[]): Promise<ChangeRequestResults> {
     assert(!this.terminated);
     assert(changeRequests.length>0);
-    const msg: ClientNotebookChangeMessage = {
+    const msg: ChangeNotebook = {
       type: 'notebook',
       operation: 'change',
       path: this.path,
       changeRequests,
     }
-    const responseMessages = await appInstance.socket.sendRequest<NotebookChangedResponse>(msg);
+    const responseMessages = await appInstance.socket.sendRequest<NotebookChanged>(msg);
     assert(responseMessages.length>=1);
     if (responseMessages.length == 1) {
       const responseMessage = responseMessages[0];
@@ -136,7 +134,7 @@ export class ClientNotebook extends Notebook<ClientNotebookWatcher> {
   }
 
   public useTool(id: CellId): void {
-    const msg: NotebookUseToolRequest = { type: 'notebook', operation: 'useTool', path: this.path, cellId: id };
+    const msg: UseTool = { type: 'notebook', operation: 'useTool', path: this.path, cellId: id };
     appInstance.socket.sendMessage(msg);
   }
 
@@ -152,13 +150,13 @@ export class ClientNotebook extends Notebook<ClientNotebookWatcher> {
 
   // Private Class Event Handlers
 
-  private static smChanged(msg: NotebookChangedResponse, ownRequest: boolean): void {
+  private static smChanged(msg: NotebookChanged, ownRequest: boolean): void {
     // Message from the server that the notebook has changed.
     const instance = this.getInstance(msg.path);
     instance.smChanged(msg, ownRequest);
   }
 
-  private static smClosed(msg: NotebookClosedResponse, _ownRequest: boolean): void {
+  private static smClosed(msg: NotebookClosed, _ownRequest: boolean): void {
     // Message from the server that the notebook has been closed by the server.
     // For example, if the notebook was deleted or moved.
     const had = this.close(msg.path, msg.reason);
@@ -176,8 +174,8 @@ export class ClientNotebook extends Notebook<ClientNotebookWatcher> {
   // Private Instance Methods
 
   protected async initialize(_options: OpenNotebookOptions): Promise<void> {
-    const message: NotebookOpenRequest = { type: 'notebook', operation: 'open', path: this.path };
-    const responseMessages = await appInstance.socket.sendRequest<NotebookOpenedResponse>(message);
+    const message: OpenNotebook = { type: 'notebook', operation: 'open', path: this.path };
+    const responseMessages = await appInstance.socket.sendRequest<NotebookOpened>(message);
     assert(responseMessages.length == 1);
     Notebook.validateObject(responseMessages[0].obj);
     this.initializeFromObject(responseMessages[0].obj);
@@ -189,7 +187,7 @@ export class ClientNotebook extends Notebook<ClientNotebookWatcher> {
 
   // Private Event Handlers
 
-  private smChanged(msg: NotebookChangedResponse, ownRequest: boolean): void {
+  private smChanged(msg: NotebookChanged, ownRequest: boolean): void {
     // Message from the server indicating this notebook has changed.
 
     // Apply changes to the notebook data structure, and notify the view of the change.

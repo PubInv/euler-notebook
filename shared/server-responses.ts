@@ -28,7 +28,7 @@ import { NotebookChange, NotebookObject } from "./notebook";
 
 // Types
 
-// Messages from the server
+// Server Responses
 
 export type ServerResponse = ErrorResponse|FolderResponse|NotebookResponse;
 export interface ResponseBase {
@@ -42,44 +42,44 @@ export interface ErrorResponse extends ResponseBase {
 }
 
 export type FolderResponse =
-  FolderChangedResponse |
-  FolderClosedResponse |
-  FolderOpenedResponse;
+  FolderChanged |
+  FolderClosed |
+  FolderOpened;
 export interface FolderResponseBase extends ResponseBase {
   type: 'folder',
   path: FolderPath,
 }
-export interface FolderChangedResponse extends FolderResponseBase {
+export interface FolderChanged extends FolderResponseBase {
   operation: 'changed';
   changes: FolderChange[];
 }
-export interface FolderClosedResponse extends FolderResponseBase {
+export interface FolderClosed extends FolderResponseBase {
   operation: 'closed';
   reason: string;
 }
-export interface FolderOpenedResponse extends FolderResponseBase {
+export interface FolderOpened extends FolderResponseBase {
   operation: 'opened';
   obj: FolderObject;
 }
 
 export type NotebookResponse =
-  NotebookChangedResponse |
-  NotebookClosedResponse |
-  NotebookOpenedResponse;
+  NotebookChanged |
+  NotebookClosed |
+  NotebookOpened;
 interface NotebookResponseBase extends ResponseBase {
   type: 'notebook',
   path: NotebookPath,
 }
-export interface NotebookChangedResponse extends NotebookResponseBase {
+export interface NotebookChanged extends NotebookResponseBase {
   operation: 'changed';
   changes: NotebookChange[];
   undoChangeRequests?: NotebookChangeRequest[];
 }
-export interface NotebookClosedResponse extends NotebookResponseBase {
+export interface NotebookClosed extends NotebookResponseBase {
   operation: 'closed';
   reason: string;
 }
-export interface NotebookOpenedResponse extends NotebookResponseBase {
+export interface NotebookOpened extends NotebookResponseBase {
   operation: 'opened';
   obj: NotebookObject;
 }

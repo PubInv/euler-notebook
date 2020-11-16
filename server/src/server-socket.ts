@@ -27,22 +27,11 @@ import * as WebSocket from "ws";
 
 // TODO: Handle websocket lifecycle: closing, unexpected disconnects, errors, etc.
 import { assert, PromiseResolver, errorMessageForUser } from "./shared/common";
-import { NotebookPath, FolderPath, FolderObject, FolderChange } from "./shared/folder";
-import {
-  ClientRequest, ClientFolderChangeMessage, FolderOpenRequest,
-  ClientNotebookChangeMessage, NotebookOpenRequest, NotebookUseToolRequest,
-  NotebookChangeRequest, RequestId,
-  FolderCloseRequest,
-  NotebookCloseRequests,
-} from "./shared/client-requests";
-import {
-  ServerResponse, ErrorResponse, NotebookChangedResponse, FolderChangedResponse,
-  FolderClosedResponse, FolderOpenedResponse, NotebookClosedResponse, NotebookOpenedResponse,
-} from "./shared/server-responses";
-import { NotebookChange, NotebookObject, NotebookWatcher as ServerNotebookWatcher } from "./shared/notebook";
+import { ClientRequest, } from "./shared/client-requests";
+import { ServerResponse, ErrorResponse, } from "./shared/server-responses";
 
 import { logError, logWarning } from "./error-handler";
-import { ServerFolder, ServerFolderWatcher } from "./server-folder";
+import { ServerFolder } from "./server-folder";
 import { ServerNotebook } from "./server-notebook";
 import { clientMessageSynopsis, serverMessageSynopsis } from "./shared/debug-synopsis";
 
@@ -53,13 +42,13 @@ const debug = debug1(`server:${MODULE}`);
 
 export type ClientId = string;
 
-interface FolderWatchersObject {
-  [ path: /* TYPESCRIPT: FolderPath */string ]: FolderWatcher;
-}
+// interface FolderWatchersObject {
+//   [ path: /* TYPESCRIPT: FolderPath */string ]: FolderWatcher;
+// }
 
-interface NotebookWatchersObject {
-  [ path: /* TYPESCRIPT: FolderPath */string ]: NotebookWatcher;
-}
+// interface NotebookWatchersObject {
+//   [ path: /* TYPESCRIPT: FolderPath */string ]: NotebookWatcher;
+// }
 
 // Constants
 
@@ -97,17 +86,17 @@ export class ServerSocket {
 
   // Public Instance Methods
 
-  public get allFolderWatchers(): FolderWatchersObject {
-    const rval: FolderWatchersObject = {};
-    for (const [key, val] of this.folderWatchers.entries()) { rval[key] = val; }
-    return rval;
-  }
+  // public get allFolderWatchers(): FolderWatchersObject {
+  //   const rval: FolderWatchersObject = {};
+  //   for (const [key, val] of this.folderWatchers.entries()) { rval[key] = val; }
+  //   return rval;
+  // }
 
-  public get allNotebookWatchers(): NotebookWatchersObject {
-    const rval: NotebookWatchersObject = {};
-    for (const [key, val] of this.notebookWatchers.entries()) { rval[key] = val; }
-    return rval;
-  }
+  // public get allNotebookWatchers(): NotebookWatchersObject {
+  //   const rval: NotebookWatchersObject = {};
+  //   for (const [key, val] of this.notebookWatchers.entries()) { rval[key] = val; }
+  //   return rval;
+  // }
 
   public close(code?: number, reason?: string): Promise<void> {
     // See https://github.com/Luka967/websocket-close-codes.
@@ -115,9 +104,9 @@ export class ServerSocket {
     //         and never receive a 'close' event? (e.g. get 'error' event instead.)
     if (!this.closePromise) {
       if (this.socket.readyState != WebSocket.CLOSED) {
-        const notify = (this.socket.readyState == WebSocket.OPEN);
-        this.closeAllNotebooks(notify);
-        this.closeAllFolders(notify);
+        // const notify = (this.socket.readyState == WebSocket.OPEN);
+        ServerNotebook.onSocketClosed(this);
+        ServerFolder.onSocketClosed(this);
         this.closePromise = new Promise((resolve, reject)=>{ this.closeResolver = { resolve, reject }; });
         if (this.socket.readyState != WebSocket.CLOSING) {
           debug(`Socket closing: ${this.id}`);
@@ -137,38 +126,38 @@ export class ServerSocket {
     return this.closePromise;
   }
 
-  public closeNotebook(path: NotebookPath, notify: boolean): void {
-    assert(!notify);  // REVIEW: Why have the parameter if it can only be false?
-    const watcher = this.notebookWatchers.get(path)!;
-    assert(watcher);
-    this.notebookWatchers.delete(path);
-    watcher.close();
-  }
+  // public closeNotebook(path: NotebookPath, notify: boolean): void {
+  //   assert(!notify);  // REVIEW: Why have the parameter if it can only be false?
+  //   const watcher = this.notebookWatchers.get(path)!;
+  //   assert(watcher);
+  //   this.notebookWatchers.delete(path);
+  //   watcher.close();
+  // }
 
-  public notifyNotebookChanged(
-    path: NotebookPath,
-    changes: NotebookChange[],
-    undoChangeRequests: NotebookChangeRequest[]|undefined,
-    requestId?: RequestId,
-    complete?: boolean,
-  ): void {
-    // ServerNotebook is notifying us that there are changes to the notebook.
-    assert(this.notebookWatchers.get(path))
-    const msg: NotebookChangedResponse = { type: 'notebook', operation: 'changed', path, changes, complete, requestId, undoChangeRequests };
-    this.sendMessage(msg);
-  }
+  // public notifyNotebookChanged(
+  //   path: NotebookPath,
+  //   changes: NotebookChange[],
+  //   undoChangeRequests: NotebookChangeRequest[]|undefined,
+  //   requestId?: RequestId,
+  //   complete?: boolean,
+  // ): void {
+  //   // ServerNotebook is notifying us that there are changes to the notebook.
+  //   assert(this.notebookWatchers.get(path))
+  //   const msg: NotebookChangedResponse = { type: 'notebook', operation: 'changed', path, changes, complete, requestId, undoChangeRequests };
+  //   this.sendMessage(msg);
+  // }
 
-  public removeFolderWatcher(path: FolderPath): void {
-    // Called by watcher when the folder is closed from the server side.
-    const had = this.folderWatchers.delete(path);
-    assert(had);
-  }
+  // public removeFolderWatcher(path: FolderPath): void {
+  //   // Called by watcher when the folder is closed from the server side.
+  //   const had = this.folderWatchers.delete(path);
+  //   assert(had);
+  // }
 
-  public removeNotebookWatcher(path: NotebookPath): void {
-    // Called by watcher when the notebook is closed from the server side.
-    const had = this.notebookWatchers.delete(path);
-    assert(had);
-  }
+  // public removeNotebookWatcher(path: NotebookPath): void {
+  //   // Called by watcher when the notebook is closed from the server side.
+  //   const had = this.notebookWatchers.delete(path);
+  //   assert(had);
+  // }
 
   public sendMessage(msg: ServerResponse): void {
     // Should only be called by our watchers.
@@ -211,8 +200,8 @@ export class ServerSocket {
     debug(`Constructor`)
     this.id = id;
     this.socket = ws;
-    this.folderWatchers = new Map();
-    this.notebookWatchers = new Map();
+    // this.folderWatchers = new Map();
+    // this.notebookWatchers = new Map();
     ws.on('close', (code: number, reason: string) => this.wsClose(ws, code, reason))
     ws.on('error', (err: Error) => this.wsError(ws, err))
     ws.on('message', (message: string) => this.wsMessage(ws, message));
@@ -222,113 +211,49 @@ export class ServerSocket {
 
   private closePromise?: Promise<void>;
   private closeResolver?: PromiseResolver<void>;
-  private folderWatchers: Map<FolderPath, FolderWatcher>
-  private notebookWatchers: Map<NotebookPath, NotebookWatcher>;
+  // private folderWatchers: Map<FolderPath, FolderWatcher>
+  // private notebookWatchers: Map<NotebookPath, NotebookWatcher>;
   private socket: WebSocket;
 
   // Private Instance Methods
 
-  private closeAllFolders(notify: boolean): void {
-    for (const path of this.folderWatchers.keys()) { this.closeFolder(path, notify); }
-  }
+  // private closeAllFolders(notify: boolean): void {
+  //   for (const path of this.folderWatchers.keys()) { this.closeFolder(path, notify); }
+  // }
 
-  private closeFolder(path: FolderPath, notify: boolean): void {
-    assert(!notify);  // REVIEW: Why have the parameter if it can only be false?
-    const watcher = this.folderWatchers.get(path)!;
-    assert(watcher);
-    this.folderWatchers.delete(path);
-    watcher.close();
-  }
+  // private closeFolder(path: FolderPath, notify: boolean): void {
+  //   assert(!notify);  // REVIEW: Why have the parameter if it can only be false?
+  //   const watcher = this.folderWatchers.get(path)!;
+  //   assert(watcher);
+  //   this.folderWatchers.delete(path);
+  //   watcher.close();
+  // }
 
-  private closeAllNotebooks(notify: boolean): void {
-    for (const path of this.notebookWatchers.keys()) { this.closeNotebook(path, notify); }
-  }
+  // private closeAllNotebooks(notify: boolean): void {
+  //   for (const path of this.notebookWatchers.keys()) { this.closeNotebook(path, notify); }
+  // }
 
   // Private Instance Event Handlers
 
-  private async cmFolderChangeMessage(msg: ClientFolderChangeMessage): Promise<void> {
-    const watcher = this.folderWatchers.get(msg.path)!;
-    assert(watcher);
-    const replyMsg = await watcher.onFolderChangeMessage(msg);
-    replyMsg.requestId = msg.requestId;
-    this.sendMessage(replyMsg);
-  }
-
-  private cmFolderCloseMessage(msg: FolderCloseRequest): void {
-    this.closeFolder(msg.path, false);
-  }
-
-  private async cmFolderOpenMessage(msg: FolderOpenRequest): Promise<void> {
-    // REVIEW: Check that the open folder message is not a duplicate?
-    const path = msg.path;
-    assert(!this.folderWatchers.get(path));
-    const { watcher, obj } = await FolderWatcher.open(this, msg);
-    this.folderWatchers.set(path, watcher);
-    const response: FolderOpenedResponse = { requestId: msg.requestId, type: 'folder', operation: 'opened', path, obj, complete: true };
-    this.sendMessage(response);
-  }
-
-  private async cmMessage(msg: ClientRequest): Promise<void> {
+  private async onClientRequest(msg: ClientRequest): Promise<void> {
     debug(`Recd: ${this.id} ${clientMessageSynopsis(msg)}`);
-    // console.dir(msg, { depth: null });
     switch(msg.type) {
-      case 'folder':
-        switch(msg.operation) {
-          case 'change': await this.cmFolderChangeMessage(msg); break;
-          case 'close':  this.cmFolderCloseMessage(msg); break;
-          case 'open': await this.cmFolderOpenMessage(msg); break;
-          default: assert(false); break;
-        }
-        break;
-      case 'notebook':
-        switch(msg.operation) {
-          case 'change': this.cmNotebookChangeMessage(msg); break;
-          case 'close':  this.cmNotebookCloseMessage(msg); break;
-          case 'open': await this.cmNotebookOpenMessage(msg); break;
-          case 'useTool': this.cmNotebookUseToolMessage(msg); break;
-          default: assert(false); break;
-        }
-        break;
+      case 'folder': ServerFolder.onClientRequest(this, msg); break;
+      case 'notebook': ServerNotebook.onClientRequest(this, msg); break;
       default: assert(false); break;
     }
-  }
-
-  private cmNotebookChangeMessage(msg: ClientNotebookChangeMessage): void {
-    const watcher = this.notebookWatchers.get(msg.path)!;
-    assert(watcher);
-    watcher.onNotebookChangeMessage(msg);
-  }
-
-  private cmNotebookCloseMessage(msg: NotebookCloseRequests): void {
-    this.closeNotebook(msg.path, false);
-  }
-
-  private async cmNotebookOpenMessage(msg: NotebookOpenRequest): Promise<void> {
-    // REVIEW: Check that the open folder message is not a duplicate?
-    const path = msg.path;
-    assert(!this.notebookWatchers.get(path));
-    const { watcher, obj } = await NotebookWatcher.open(this, msg);
-    this.notebookWatchers.set(path, watcher);
-    const response: NotebookOpenedResponse = { requestId: msg.requestId, type: 'notebook', operation: 'opened', path, obj, complete: true };
-    this.sendMessage(response);
-  }
-
-  private cmNotebookUseToolMessage(msg: NotebookUseToolRequest): void {
-    const watcher = this.notebookWatchers.get(msg.path)!;
-    assert(watcher);
-    watcher.onNotebookUseToolMessage(msg);
   }
 
   private wsClose(_ws: WebSocket, code: number, reason: string): void {
     try {
       // Normal close appears to be code 1001, reason empty string.
       if (this.closeResolver) {
-        debug(`Socket closed by server: ${code} '${reason}' ${this.notebookWatchers.size}`);
+        debug(`Socket closed by server: ${code} '${reason}'`);
         this.closeResolver.resolve();
       } else {
-        debug(`Socket closed by client: ${code} '${reason}' ${this.notebookWatchers.size}`);
-        this.closeAllFolders(false);
-        this.closeAllNotebooks(false);
+        debug(`Socket closed by client: ${code} '${reason}'`);
+        ServerFolder.onSocketClosed(this);
+        ServerNotebook.onSocketClosed(this);
       }
       ServerSocket.instanceMap.delete(this.id);
     } catch(err) {
@@ -354,7 +279,7 @@ export class ServerSocket {
       logError(err, `Client Socket: invalid JSON in message received from client.`);
       return;
     }
-    this.cmMessage(msg).catch(err=>{
+    this.onClientRequest(msg).catch(err=>{
       logError(err, `Client Socket: unexpected error processing client ${msg.type}/${msg.operation} message.`);
       if (msg.requestId) {
         const response: ErrorResponse = {
@@ -370,134 +295,134 @@ export class ServerSocket {
 
 }
 
-// Helper Classes
+// // Helper Classes
 
-class FolderWatcher implements ServerFolderWatcher {
+// class FolderWatcher implements ServerFolderWatcher {
 
-  // Public Class Methods
+//   // Public Class Methods
 
-  public static async open(
-    socket: ServerSocket,
-    msg: FolderOpenRequest
-  ): Promise<{ watcher: FolderWatcher, obj: FolderObject }> {
-    const watcher = new this(socket);
-    const folder = watcher.folder = await ServerFolder.open(msg.path, { mustExist: true, watcher });
-    const obj = folder.toJSON();
-    return { watcher, obj };
-  }
+//   public static async open(
+//     socket: ServerSocket,
+//     msg: OpenFolder
+//   ): Promise<{ watcher: FolderWatcher, obj: FolderObject }> {
+//     const watcher = new this(socket);
+//     const folder = watcher.folder = await ServerFolder.open(msg.path, { mustExist: true, watcher });
+//     const obj = folder.toJSON();
+//     return { watcher, obj };
+//   }
 
-  // Public Instance Properties
+//   // Public Instance Properties
 
-  public folder!: ServerFolder;
-  public socket: ServerSocket;
+//   public folder!: ServerFolder;
+//   public socket: ServerSocket;
 
-  // Public Instance Methods
+//   // Public Instance Methods
 
-  public close(): void {
-    this.folder.close(this);
-  }
+//   public close(): void {
+//     this.folder.close(this);
+//   }
 
-  // ServerFolderWatcher Interface
+//   // ServerFolderWatcher Interface
 
-  public onChange(_change: FolderChange): void {}
+//   public onChange(_change: FolderChange): void {}
 
-  public onChanged(msg: FolderChangedResponse): void {
-    // ServerFolder is notifying us that the batch of changes is complete.
-    this.socket.sendMessage(msg);
-  }
+//   public onChanged(msg: FolderChangedResponse): void {
+//     // ServerFolder is notifying us that the batch of changes is complete.
+//     this.socket.sendMessage(msg);
+//   }
 
-  public onClosed(reason: string): void {
-    // ServerFolder is notifying us that the folder is being closed on the server end.
-    const msg: FolderClosedResponse = { type: 'folder', operation: 'closed', path: this.folder.path, reason, complete: true };
-    this.socket.sendMessage(msg);
-    this.socket.removeFolderWatcher(this.folder.path);
-    // TODO: Remove from folderWatchers?
-  }
+//   public onClosed(reason: string): void {
+//     // ServerFolder is notifying us that the folder is being closed on the server end.
+//     const msg: FolderClosedResponse = { type: 'folder', operation: 'closed', path: this.folder.path, reason, complete: true };
+//     this.socket.sendMessage(msg);
+//     this.socket.removeFolderWatcher(this.folder.path);
+//     // TODO: Remove from folderWatchers?
+//   }
 
-  // Event Handlers
+//   // Event Handlers
 
-  public async onFolderChangeMessage(msg: ClientFolderChangeMessage): Promise<FolderChangedResponse> {
-    return await this.folder.onFolderChangeMessage(this, msg);
-  }
+//   public async onFolderChangeMessage(msg: ChangeFolder): Promise<FolderChangedResponse> {
+//     return await this.folder.onFolderChangeMessage(this, msg);
+//   }
 
-  // --- PRIVATE ---
+//   // --- PRIVATE ---
 
-  // Private Constructor
+//   // Private Constructor
 
-  private constructor(socket: ServerSocket) {
-    // this.folder assigned asynchronously in 'open'.
-    this.socket = socket;
-  }
+//   private constructor(socket: ServerSocket) {
+//     // this.folder assigned asynchronously in 'open'.
+//     this.socket = socket;
+//   }
 
-  // Private Instance Properties
+//   // Private Instance Properties
 
-}
+// }
 
-class NotebookWatcher implements ServerNotebookWatcher {
+// class NotebookWatcher implements ServerNotebookWatcher {
 
-  // Public Class Methods
+//   // Public Class Methods
 
-  public static async open(
-    socket: ServerSocket,
-    msg: NotebookOpenRequest
-  ): Promise<{ watcher: NotebookWatcher, obj: NotebookObject }> {
-    const watcher = new this(socket);
-    const notebook = watcher.notebook = await ServerNotebook.open(msg.path, { mustExist: true, watcher });
-    const obj = notebook.toJSON();
-    return { watcher, obj };
-  }
+//   public static async open(
+//     socket: ServerSocket,
+//     msg: OpenNotebook
+//   ): Promise<{ watcher: NotebookWatcher, obj: NotebookObject }> {
+//     const watcher = new this(socket);
+//     const notebook = watcher.notebook = await ServerNotebook.open(msg.path, { mustExist: true, watcher });
+//     const obj = notebook.toJSON();
+//     return { watcher, obj };
+//   }
 
-  // Public Instance Properties
+//   // Public Instance Properties
 
-  public notebook!: ServerNotebook;
-  public socket: ServerSocket;
+//   public notebook!: ServerNotebook;
+//   public socket: ServerSocket;
 
-  // Public Instance Methods
+//   // Public Instance Methods
 
-  public close(): void {
-    this.notebook.close(this);
-  }
+//   public close(): void {
+//     this.notebook.close(this);
+//   }
 
-  // ServerNotebookWatcher Interface
+//   // ServerNotebookWatcher Interface
 
-  public onChange(_change: NotebookChange): void { };
+//   public onChange(_change: NotebookChange): void { };
 
-  public onChanged(msg: NotebookChangedResponse): void {
-    // ServerNotebook is notifying us that the batch of changes is complete.
-    this.socket.sendMessage(msg);
-  }
+//   public onChanged(msg: NotebookChangedResponse): void {
+//     // ServerNotebook is notifying us that the batch of changes is complete.
+//     this.socket.sendMessage(msg);
+//   }
 
-  public onClosed(reason: string): void {
-    // ServerNotebook is notifying us that the folder is being closed on the server end.
-    const msg: NotebookClosedResponse = { type: 'notebook', operation: 'closed', path: this.notebook.path, reason, complete: true };
-    this.socket.sendMessage(msg);
-    this.socket.removeNotebookWatcher(this.notebook.path);
-    // TODO: Remove from folderWatchers?
-  }
+//   public onClosed(reason: string): void {
+//     // ServerNotebook is notifying us that the folder is being closed on the server end.
+//     const msg: NotebookClosedResponse = { type: 'notebook', operation: 'closed', path: this.notebook.path, reason, complete: true };
+//     this.socket.sendMessage(msg);
+//     this.socket.removeNotebookWatcher(this.notebook.path);
+//     // TODO: Remove from folderWatchers?
+//   }
 
-  // Event Handlers
+//   // Event Handlers
 
-  public onNotebookChangeMessage(msg: ClientNotebookChangeMessage): void {
-    // .requestChanges('USER', msg.changeRequests, options);
-    this.notebook.onNotebookChangeMessage(this, msg);
-  }
+//   public onNotebookChangeMessage(msg: ChangeNotebook): void {
+//     // .requestChanges('USER', msg.changeRequests, options);
+//     this.notebook.onNotebookChangeMessage(this, msg);
+//   }
 
-  public onNotebookUseToolMessage(msg: NotebookUseToolRequest): void {
-    // .requestChanges('USER', msg.changeRequests, options);
-    this.notebook.onNotebookUseToolMessage(this, msg);
-  }
+//   public onNotebookUseToolMessage(msg: UseTool): void {
+//     // .requestChanges('USER', msg.changeRequests, options);
+//     this.notebook.onNotebookUseToolMessage(this, msg);
+//   }
 
-  // --- PRIVATE ---
+//   // --- PRIVATE ---
 
-  // Private Constructor
+//   // Private Constructor
 
-  private constructor(socket: ServerSocket) {
-    // this.folder assigned asynchronously in 'open'.
-    this.socket = socket;
-  }
+//   private constructor(socket: ServerSocket) {
+//     // this.folder assigned asynchronously in 'open'.
+//     this.socket = socket;
+//   }
 
-  // Private Instance Properties
+//   // Private Instance Properties
 
-}
+// }
 
 // Helper Functions

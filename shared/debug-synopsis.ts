@@ -88,7 +88,6 @@ export function notebookChangeRequestSynopsis(request: NotebookChangeRequest): s
     case 'deleteCell': rval += ` C${request.cellId}`; break;
     case 'deleteStroke': rval += ` C${request.cellId} S${request.strokeId}`; break;
     case 'insertCell': rval += ` TBD`; break;
-    case 'insertStroke': rval += ` C${request.cellId} TODO`; break;
     case 'moveCell': rval += ` C${request.cellId} A${request.afterId}`; break;
     default: assertFalse();
   }

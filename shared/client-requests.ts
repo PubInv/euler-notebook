@@ -24,14 +24,68 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 import { CellId, CellRelativePosition, CellObject } from "./cell";
 import { PlainText } from "./common";
-import { FolderPath, NotebookPath, FolderName, NotebookName } from "./folder";
-import { Stroke, StrokeId, StrokeRelativePosition } from "./stylus";
+import { FolderPath, NotebookPath, FolderName, NotebookName, } from "./folder";
+import { Stroke, StrokeId } from "./stylus";
 
 // Types
 
 export type RequestId = '{RequestId}';
 
-// Folder Change Requests
+export type ClientRequest = FolderRequest|NotebookRequest;
+interface RequestBase {
+  requestId?: RequestId; // TYPESCRIPT: always added on at the end before sending. How to capture this?
+}
+
+// Client Folder Requests
+
+export type FolderRequest =
+  ChangeFolder |
+  CloseFolder |
+  OpenFolder;
+interface FolderRequestBase extends RequestBase {
+  type: 'folder';
+  path: FolderPath;
+}
+export interface ChangeFolder extends FolderRequestBase {
+  operation: 'change';
+  changeRequests: FolderChangeRequest[];
+}
+export interface CloseFolder extends FolderRequestBase {
+  operation: 'close';
+  reason: string;
+}
+export interface OpenFolder extends FolderRequestBase {
+  operation: 'open';
+}
+
+// Client Notebook Requests
+
+export type NotebookRequest =
+  ChangeNotebook |
+  CloseNotebook |
+  OpenNotebook |
+  UseTool;
+interface NotebookRequestBase extends RequestBase {
+  type: 'notebook';
+  path: NotebookPath;
+}
+export interface ChangeNotebook extends NotebookRequestBase {
+  operation: 'change';
+  changeRequests: NotebookChangeRequest[];
+}
+export interface CloseNotebook extends NotebookRequestBase {
+  operation: 'close';
+  reason: string;
+}
+export interface OpenNotebook extends NotebookRequestBase {
+  operation: 'open';
+}
+export interface UseTool extends NotebookRequestBase {
+  operation: 'useTool';
+  cellId: CellId;
+}
+
+// Client Folder Change Requests
 
 export type FolderChangeRequest =
   FolderCreateRequest|
@@ -67,15 +121,21 @@ export interface NotebookRenameRequest {
   newName: NotebookName;
 }
 
-// Notebook Change Requests
+// Client Notebook Change Requests
 
 export type NotebookChangeRequest =
+  AddStroke |
   DeleteCellRequest|
   DeleteStrokeRequest|
   InsertCellRequest<any>|
-  InsertStrokeRequest|
   KeyboardInputRequest|
-  MoveCellRequest;
+  MoveCellRequest|
+  RemoveStrokeRequest;
+export interface AddStroke {
+  type: 'addStroke';
+  cellId: CellId;
+  stroke: Stroke;
+}
 export interface DeleteCellRequest {
   type: 'deleteCell';
   cellId: CellId;
@@ -89,12 +149,6 @@ export interface InsertCellRequest<T extends CellObject> {
   type: 'insertCell';
   afterId: CellRelativePosition;
   cellObject: T;
-}
-export interface InsertStrokeRequest {
-  type: 'insertStroke';
-  cellId: CellId;
-  stroke: Stroke;
-  afterId: StrokeRelativePosition;
 }
 export interface KeyboardInputRequest {
   type: 'keyboardInputChange';
@@ -114,55 +168,3 @@ export interface RemoveStrokeRequest {
   cellId: CellId;
   strokeId: StrokeId;
 }
-
-
-// Messages from the client
-
-export type ClientRequest = FolderRequest|NotebookRequest;
-interface RequestBase {
-  requestId?: RequestId; // TYPESCRIPT: always added on at the end before sending. How to capture this?
-}
-
-export type FolderRequest =
-  ClientFolderChangeMessage |
-  FolderCloseRequest |
-  FolderOpenRequest;
-interface FolderRequestBase extends RequestBase {
-  type: 'folder';
-  path: FolderPath;
-}
-export interface ClientFolderChangeMessage extends FolderRequestBase {
-  operation: 'change';
-  changeRequests: FolderChangeRequest[];
-}
-export interface FolderCloseRequest extends FolderRequestBase {
-  operation: 'close';
-}
-export interface FolderOpenRequest extends FolderRequestBase {
-  operation: 'open';
-}
-
-export type NotebookRequest =
-  ClientNotebookChangeMessage |
-  NotebookCloseRequests |
-  NotebookOpenRequest |
-  NotebookUseToolRequest;
-interface NotebookRequestBase extends RequestBase {
-  type: 'notebook';
-  path: NotebookPath;
-}
-export interface ClientNotebookChangeMessage extends NotebookRequestBase {
-  operation: 'change';
-  changeRequests: NotebookChangeRequest[];
-}
-export interface NotebookCloseRequests extends NotebookRequestBase {
-  operation: 'close';
-}
-export interface NotebookOpenRequest extends NotebookRequestBase {
-  operation: 'open';
-}
-export interface NotebookUseToolRequest extends NotebookRequestBase {
-  operation: 'useTool';
-  cellId: CellId;
-}
-

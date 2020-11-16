@@ -39,16 +39,16 @@ import {
 import {
   NotebookChangeRequest, MoveCellRequest, InsertCellRequest,
   DeleteCellRequest,
-  ClientNotebookChangeMessage, NotebookUseToolRequest, RequestId, InsertStrokeRequest, DeleteStrokeRequest,
+  ChangeNotebook, UseTool, RequestId, AddStroke, DeleteStrokeRequest, NotebookRequest, OpenNotebook, CloseNotebook,
 } from "./shared/client-requests";
-import { NotebookChangedResponse, } from "./shared/server-responses";
+import { NotebookChanged, NotebookOpened, NotebookResponse, } from "./shared/server-responses";
 import { notebookChangeRequestSynopsis, notebookChangeSynopsis } from "./shared/debug-synopsis";
-
-import { ClientId } from "./server-socket";
-import { AbsDirectoryPath, ROOT_DIR_PATH, mkDir, readFile, rename, rmRaf, writeFile } from "./adapters/file-system";
-import { OpenOptions } from "./shared/watched-resource";
-import { logError } from "./error-handler";
 import { StrokeId } from "./shared/stylus";
+import { OpenOptions } from "./shared/watched-resource";
+
+import { ServerSocket, ClientId } from "./server-socket";
+import { AbsDirectoryPath, ROOT_DIR_PATH, mkDir, readFile, rename, rmRaf, writeFile } from "./adapters/file-system";
+import { logError } from "./error-handler";
 
 
 // const svg2img = require('svg2img');
@@ -69,7 +69,7 @@ export interface RequestChangesOptions {
 }
 
 export interface ServerNotebookWatcher extends NotebookWatcher {
-  onChanged(msg: NotebookChangedResponse): void;
+  onChanged(msg: NotebookChanged): void;
 }
 
 // Constants
@@ -148,6 +148,25 @@ export class ServerNotebook extends Notebook<ServerNotebookWatcher> {
   }
 
   // Public Class Event Handlers
+
+  public static async onClientRequest(socket: ServerSocket, msg: NotebookRequest): Promise<void> {
+    // Called by ServerSocket when a client sends a notebook request.
+    let instance = </* TYPESCRIPT: shouldn't have to cast. */ServerNotebook>this.instanceMap.get(msg.path);
+    if (!instance && msg.operation == 'open') {
+      instance = await this.open(msg.path, { mustExist: true });
+    }
+    assert(instance);
+    await instance.onClientRequest(socket, msg);
+  }
+
+  public static onSocketClosed(socket: ServerSocket): void {
+    // REVIEW: If the server has a large number of notebook instances, then
+    //         we may want to create a map from sockets to lists of notebook instances
+    //         so we can handle this more efficiently.
+    for (const instance of this.allInstances) {
+      instance.onSocketClosed(socket);
+    }
+  }
 
   // Public Instance Properties
 
@@ -305,7 +324,7 @@ export class ServerNotebook extends Notebook<ServerNotebookWatcher> {
   public async requestChanges(
     source: CellSource,
     changeRequests: NotebookChangeRequest[],
-    originatingWatcher?: NotebookWatcher,
+    originatingSocket?: ServerSocket,
     requestId?: RequestId,
   ): Promise<NotebookChange[]> {
     assert(!this.terminated);
@@ -315,7 +334,7 @@ export class ServerNotebook extends Notebook<ServerNotebookWatcher> {
     const changes: NotebookChange[] = [];
     const undoChangeRequests = this.applyRequestedChanges(source, changeRequests, changes);
 
-    this.notifyWatchersOfChanges(changes, undoChangeRequests, false, originatingWatcher, requestId);
+    this.notifyWatchersOfChanges(changes, undoChangeRequests, false, originatingSocket, requestId);
 
     // REVIEW: If other batches of changes are being processed at the same time?
     // LATER: Set/restart a timer for the save so we save only once when the document reaches a quiescent state.
@@ -330,42 +349,7 @@ export class ServerNotebook extends Notebook<ServerNotebookWatcher> {
     return cellId;
   }
 
-  public async useTool(cellId: CellId): Promise<NotebookChange[]> {
-    debug(`useTool ${cellId}`);
-    assert(!this.terminated);
-    notImplemented();
-    // const style = this.getStyle(cellId);
-    // const source = style.source;
-    // if (!style) { throw new Error(`Notebook useTool style ID not found: ${cellId}`); }
-    // const observer = this.observers.get(source);
-    // const changeRequests = await observer!.useTool(style);
-    // const changes = await this.requestChanges(source, changeRequests);
-    // return changes;
-  }
-
   // Public Event Handlers
-
-  public onNotebookChangeMessage(
-    originatingWatcher: NotebookWatcher,
-    msg: ClientNotebookChangeMessage,
-  ): void {
-    assert(!this.terminated);
-    this.requestChanges('USER', msg.changeRequests, originatingWatcher, msg.requestId)
-    .catch(err=>{
-      // REVIEW: Proper error handling?
-      logError(err, "Error processing client notebook change message.");
-    });
-  }
-
-  public onNotebookUseToolMessage(
-    _originatingWatcher: NotebookWatcher,
-    msg: NotebookUseToolRequest,
-  ): void {
-    // TODO: pass request ID on responses to originatingWatcher.
-    // TODO: options.client ID
-    this.useTool(msg.cellId);
-  }
-
 
   // --- PRIVATE ---
 
@@ -399,6 +383,7 @@ export class ServerNotebook extends Notebook<ServerNotebookWatcher> {
     super(path);
     this.ephemeral = options.ephemeral;
     this.reservedIds = new Set();
+    this.sockets = new Set<ServerSocket>();
   }
 
   // Private Instance Properties
@@ -407,6 +392,7 @@ export class ServerNotebook extends Notebook<ServerNotebookWatcher> {
   private ephemeral?: boolean;     // Not persisted to the filesystem.
   private reservedIds: Set<CellId>;
   private saving?: boolean;
+  private sockets: Set<ServerSocket>;
 
   // Private Instance Property Functions
 
@@ -435,6 +421,9 @@ export class ServerNotebook extends Notebook<ServerNotebookWatcher> {
       debug(`${source} change request: ${notebookChangeRequestSynopsis(changeRequest)}`);
       let undoChangeRequest: NotebookChangeRequest|undefined;
       switch(changeRequest.type) {
+        case 'addStroke':
+          undoChangeRequest = this.applyAddStrokeRequest(source, changeRequest, rval);
+          break;
         case 'deleteCell':
           undoChangeRequest = this.applyDeleteCellRequest(source, changeRequest, rval);
           break;
@@ -443,9 +432,6 @@ export class ServerNotebook extends Notebook<ServerNotebookWatcher> {
           break;
         case 'insertCell':
           undoChangeRequest = this.applyInsertCellRequest(source, changeRequest, rval);
-          break;
-        case 'insertStroke':
-          undoChangeRequest = this.applyInsertStrokeRequest(source, changeRequest, rval);
           break;
         case 'moveCell':
           undoChangeRequest = this.applyMoveStyleRequest(source, changeRequest, rval);
@@ -460,6 +446,23 @@ export class ServerNotebook extends Notebook<ServerNotebookWatcher> {
 
     }
     return undoChangeRequests;
+  }
+
+  private applyAddStrokeRequest<T extends CellObject>(
+    source: CellSource,
+    request: AddStroke,
+    rval: NotebookChange[],
+  ): DeleteStrokeRequest {
+    const cellId = request.cellId;
+    const cellObject = this.getCell<T>(request.cellId);
+    const strokeId: StrokeId = -1; //BUGBUG;
+
+    const undoChangeRequest: DeleteStrokeRequest = { type: 'deleteStroke', cellId, strokeId };
+
+    const change: StrokeInserted = { type: 'strokeInserted', cellId: cellObject.id, strokeId: strokeId, stroke: request.stroke };
+    this.appendChange(source, change, rval);
+
+    return undoChangeRequest;
   }
 
   private applyDeleteCellRequest<T extends CellObject>(
@@ -509,23 +512,6 @@ export class ServerNotebook extends Notebook<ServerNotebookWatcher> {
     const change: CellInserted =  { type: 'cellInserted', cellObject, afterId: request.afterId };
     this.appendChange(source, change, rval);
     const undoChangeRequest: DeleteCellRequest = { type: 'deleteCell', cellId };
-    return undoChangeRequest;
-  }
-
-  private applyInsertStrokeRequest<T extends CellObject>(
-    source: CellSource,
-    request: InsertStrokeRequest,
-    rval: NotebookChange[],
-  ): DeleteStrokeRequest {
-    const cellId = request.cellId;
-    const cellObject = this.getCell<T>(request.cellId);
-    const strokeId: StrokeId = -1; //BUGBUG;
-
-    const undoChangeRequest: DeleteStrokeRequest = { type: 'deleteStroke', cellId, strokeId };
-
-    const change: StrokeInserted = { type: 'strokeInserted', cellId: cellObject.id, strokeId: strokeId, stroke: request.stroke };
-    this.appendChange(source, change, rval);
-
     return undoChangeRequest;
   }
 
@@ -589,29 +575,20 @@ export class ServerNotebook extends Notebook<ServerNotebookWatcher> {
     changes: NotebookChange[],
     undoChangeRequests: NotebookChangeRequest[]|undefined,
     complete?: boolean,
-    originatingWatcher?: NotebookWatcher,
+    originatingSocket?: ServerSocket,
     requestId?: RequestId,
   ): void {
-    for (const watcher of this.watchers) {
-      // TODO: Include request ID for message to initiating client.
-      // const isTrackingClient = (clientId == options.clientId);
-      // const requestId = isTrackingClient ? <RequestId>'TODO:' : undefined;
-      //socket.notifyNotebookChanged(this.path, changes, undoChangeRequests, requestId, complete);
-      const msg: NotebookChangedResponse = {
-        type: 'notebook',
-        path: this.path,
-        operation: 'changed',
-        changes,
-        undoChangeRequests, // TODO: Only undo for initiating client.
-      }
-      if (complete) {
-        msg.complete = true;
-      }
-      if (watcher == originatingWatcher && requestId) {
-        msg.requestId = requestId;
-      }
-      watcher.onChanged(msg);
-    };
+    const update: NotebookChanged = {
+      type: 'notebook',
+      path: this.path,
+      operation: 'changed',
+      changes,
+      undoChangeRequests, // TODO: Only undo for initiating client.
+    }
+    if (complete) {
+      update.complete = true;
+    }
+    this.sendUpdateToAllSockets(update, originatingSocket, requestId);
   }
 
   // private processInsertCellRequest(
@@ -760,10 +737,19 @@ export class ServerNotebook extends Notebook<ServerNotebookWatcher> {
   //   notImplemented();
   // }
 
-  // Do not call this directly.
-  // Changes to the document should result in calls to notifyChange,
-  // which will schedule a save, eventually getting here.
+  private removeSocket(socket: ServerSocket): void {
+    const hadSocket = this.sockets.delete(socket);
+    assert(hadSocket);
+    if (this.sockets.size == 0) {
+      // TODO: purge this notebook immediately or set a timer to purge it in the near future.
+      notImplemented();
+    }
+  }
+
   private async save(): Promise<void> {
+    // Do not call this directly.
+    // Changes to the document should result in calls to notifyChange,
+    // which will schedule a save, eventually getting here.
 
     // "Ephemeral" notebooks are not persisted in the filesystem.
     if (this.ephemeral) { return; }
@@ -777,6 +763,16 @@ export class ServerNotebook extends Notebook<ServerNotebookWatcher> {
     const filePath = absFilePathFromNotebookPath(this.path);
     await writeFile(filePath, json, NOTEBOOK_ENCODING)
     this.saving = false;
+  }
+
+  private sendUpdateToAllSockets(update: NotebookResponse, originatingSocket?: ServerSocket, requestId?: RequestId): void {
+    for (const socket of this.sockets) {
+      if (socket === originatingSocket) {
+        socket.sendMessage({ requestId, ...update });
+      } else {
+        socket.sendMessage(update);
+      }
+    }
   }
 
   protected terminate(reason: string): void {
@@ -806,6 +802,68 @@ export class ServerNotebook extends Notebook<ServerNotebookWatcher> {
 
     await this.save();
   }
+
+  // Private Event Handlers
+
+  private async onClientRequest(socket: ServerSocket, msg: NotebookRequest): Promise<void> {
+    assert(!this.terminated);
+    switch(msg.operation) {
+      case 'change': this.onChangeRequest(socket, msg); break;
+      case 'close':  this.onCloseRequest(socket, msg); break;
+      case 'open':  this.onOpenRequest(socket, msg); break;
+      case 'useTool': this.onUseToolRequest(socket, msg); break;
+      default: assert(false); break;
+    }
+  }
+
+  private onSocketClosed(socket: ServerSocket): void {
+    if (this.sockets.has(socket)) {
+      this.removeSocket(socket);
+    }
+  }
+
+  // Client Message Event Handlers
+
+  private onChangeRequest(socket: ServerSocket, msg: ChangeNotebook): void {
+    this.requestChanges('USER', msg.changeRequests, socket, msg.requestId)
+    .catch(err=>{
+      // REVIEW: Proper error handling?
+      logError(err, "Error processing client notebook change message.");
+    });
+  }
+
+  private onCloseRequest(socket: ServerSocket, _msg: CloseNotebook): void {
+    assert(this.sockets.has(socket));
+    this.removeSocket(socket);
+    // NOTE: No response is expected for a close request.
+  }
+
+  private onOpenRequest(socket: ServerSocket, msg: OpenNotebook): void {
+    this.sockets.add(socket);
+    const obj = this.toJSON();
+    const response: NotebookOpened = {
+      requestId: msg.requestId,
+      type: 'notebook',
+      operation: 'opened',
+      path: this.path,
+      obj,
+      complete: true
+    };
+    socket.sendMessage(response);
+  }
+
+  private onUseToolRequest(_socket: ServerSocket, _msg: UseTool): void {
+    // debug(`useTool ${cellId}`);
+    notImplemented();
+    // const style = this.getStyle(cellId);
+    // const source = style.source;
+    // if (!style) { throw new Error(`Notebook useTool style ID not found: ${cellId}`); }
+    // const observer = this.observers.get(source);
+    // const changeRequests = await observer!.useTool(style);
+    // const changes = await this.requestChanges(source, changeRequests);
+    // return changes;
+  }
+
 }
 
 // Exported Functions

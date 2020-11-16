@@ -26,18 +26,19 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 import * as debug1 from "debug";
 import { join } from "path";
 
-import { assert } from "./shared/common";
+import { assert, notImplemented } from "./shared/common";
 import {
   Folder, FolderEntry, FolderName, FolderObject, FolderPath, FOLDER_PATH_RE, NotebookEntry,
   NotebookName, NotebookPath, FolderChange, FolderWatcher,
 } from "./shared/folder";
-import { ClientFolderChangeMessage } from "./shared/client-requests";
-import { FolderChangedResponse } from "./shared/server-responses";
+import { ChangeFolder, CloseFolder, FolderRequest, OpenFolder, RequestId } from "./shared/client-requests";
+import { FolderChanged, FolderOpened, FolderResponse } from "./shared/server-responses";
 
 import { AbsDirectoryPath, ROOT_DIR_PATH, dirStat, mkDir, readDir, rename, rmDir } from "./adapters/file-system";
 import { ServerNotebook, notebookPath } from "./server-notebook";
 import { OpenOptions } from "./shared/watched-resource";
 import { logWarning } from "./error-handler";
+import { ServerSocket } from "./server-socket";
 
 const MODULE = __filename.split(/[/\\]/).slice(-1)[0].slice(0,-3);
 const debug = debug1(`server:${MODULE}`);
@@ -50,7 +51,7 @@ export interface OpenFolderOptions extends OpenOptions<ServerFolderWatcher> {
 }
 
 export interface ServerFolderWatcher extends FolderWatcher {
-  onChanged(msg: FolderChangedResponse): void;
+  onChanged(msg: FolderChanged): void;
 }
 
 // Exported Class
@@ -111,22 +112,158 @@ export class ServerFolder extends Folder<ServerFolderWatcher> {
     if (!this.isValidFolderName(name)) { throw new Error(`Invalid folder name: ${name}`); }
   }
 
-  // Class Event Handlers
+  // Public Class Event Handlers
+
+  public static async onClientRequest(socket: ServerSocket, msg: FolderRequest): Promise<void> {
+    // Called by ServerSocket when a client sends a folder request.
+    let instance = </* TYPESCRIPT: shouldn't have to cast. */ServerFolder>this.instanceMap.get(msg.path);
+    if (!instance && msg.operation == 'open') {
+      instance = await this.open(msg.path, { mustExist: true });
+    }
+    assert(instance);
+    await instance.onClientRequest(socket, msg);
+  }
+
+  public static onSocketClosed(socket: ServerSocket): void {
+    // REVIEW: If the server has a large number of folder instances, then
+    //         we may want to create a map from sockets to lists of folder instances
+    //         so we can handle this more efficiently.
+    for (const instance of this.allInstances) {
+      instance.onSocketClosed(socket);
+    }
+  }
 
   // Public Instance Methods
 
-  // Event Handlers
+  // Public Event Handlers
 
-  public async onFolderChangeMessage(
-    originatingWatcher: ServerFolderWatcher,
-    msg: ClientFolderChangeMessage
-  ): Promise<FolderChangedResponse> {
-    // TODO: Undo?
+  // --- PRIVATE ---
+
+  // Private Class Properties
+
+  // Private Class Property Functions
+
+  protected static getInstance(path: FolderPath): ServerFolder {
+    return <ServerFolder>super.getInstance(path);
+  }
+
+  // Private Class Methods
+
+  // Private Class Event Handlers
+
+  // Private Constructor
+
+  private constructor(path: FolderPath, _options: OpenFolderOptions) {
+    super(path);
+    this.sockets = new Set<ServerSocket>();
+  }
+
+  // Private Instance Properties
+
+  private sockets: Set<ServerSocket>;
+
+  // Private Instance Property Functions
+
+  // Private Instance Methods
+
+  protected async initialize(options: OpenFolderOptions): Promise<void> {
+    if (options.mustExist) {
+      const absPath = absDirPathFromFolderPath(this.path);
+      debug(`Opening folder from filesystem: "${absPath}"`)
+      const listings = await readDir(absPath);
+      const notebooks: NotebookEntry[] = [];
+      const folders: FolderEntry[] = [];
+
+      const suffix = ServerNotebook.NOTEBOOK_DIR_SUFFIX;
+      const suffixLen = suffix.length;
+
+      for (const listing of listings) {
+
+        // Skip hidden files and folders
+        if (listing.startsWith(".")) { /* skip hidden */ continue; }
+
+        // Skip non-directories
+        const stats = await(dirStat(join(absPath, listing)));
+        if (!stats.isDirectory()) { continue; }
+
+        // Notebooks are directories that end with .mtnb.
+        // Folders are all other directories.
+        if (listing.endsWith(suffix)) {
+          const nameWithoutSuffix: NotebookName = <NotebookName>listing.slice(0, -suffixLen);
+          if (!ServerNotebook.isValidNotebookName(nameWithoutSuffix)) {
+            logWarning(MODULE, `Skipping notebook with invalid name: '${listing}'`);
+            continue;
+          }
+          notebooks.push({ name: nameWithoutSuffix, path: <NotebookPath>`${this.path}${listing}` })
+        } else {
+          if (!ServerFolder.isValidFolderName(<FolderName>listing)) {
+            logWarning(MODULE, `Skipping folder with invalid name: '${listing}'`);
+            continue;
+          }
+          folders.push({ name: <FolderName>listing, path: <FolderPath>`${this.path}${listing}/` })
+        }
+      }
+
+      const obj: FolderObject = {
+        path: this.path,
+        folders,
+        notebooks,
+      };
+      this.initializeFromObject(obj);
+    } else {
+      assert(false);
+    }
+  }
+
+  private removeSocket(socket: ServerSocket): void {
+    const hadSocket = this.sockets.delete(socket);
+    assert(hadSocket);
+    if (this.sockets.size == 0) {
+      // TODO: purge this folder immediately or set a timer to purge it in the near future.
+      notImplemented();
+    }
+  }
+
+  private sendUpdateToAllSockets(update: FolderResponse, originatingSocket?: ServerSocket, requestId?: RequestId): void {
+    for (const socket of this.sockets) {
+      if (socket === originatingSocket) {
+        socket.sendMessage({ requestId, ...update });
+      } else {
+        socket.sendMessage(update);
+      }
+    }
+  }
+
+  protected terminate(reason: string): void {
+    super.terminate(reason);
+  }
+
+  // Private Instance Event Handlers
+
+  private async onClientRequest(socket: ServerSocket, msg: FolderRequest): Promise<void> {
     assert(!this.terminated);
+    switch(msg.operation) {
+      case 'change': this.onChangeRequest(socket, msg); break;
+      case 'close':  this.onCloseRequest(socket, msg); break;
+      case 'open':  this.onOpenRequest(socket, msg); break;
+      default: assert(false); break;
+    }
+  }
+
+  private onSocketClosed(socket: ServerSocket): void {
+    if (this.sockets.has(socket)) {
+      this.removeSocket(socket);
+    }
+  }
+
+  // Client Message Event Handlers
+
+  private async onChangeRequest(socket: ServerSocket, request: ChangeFolder): Promise<void> {
+    // TODO: Undo?
 
     const changes: FolderChange[] = [];
-    assert(msg.changeRequests.length>0);
-    for (const changeRequest of msg.changeRequests) {
+    assert(request.changeRequests.length>0);
+    for (const changeRequest of request.changeRequests) {
       let change: FolderChange;
       switch (changeRequest.type) {
         case 'createFolder': {
@@ -187,94 +324,28 @@ export class ServerFolder extends Folder<ServerFolderWatcher> {
       this.applyChange(change, false);
       changes.push(change);
     }
-    const response: FolderChangedResponse = { type: 'folder', operation: 'changed', path: this.path, changes, complete: true };
-
-    // Notify other watchers
-    for (const watcher of this.watchers) {
-      if (watcher === originatingWatcher) { continue; }
-      watcher.onChanged(response);
-    }
-
-    return response;
+    const update: FolderChanged = { type: 'folder', operation: 'changed', path: this.path, changes, complete: true };
+    this.sendUpdateToAllSockets(update, socket, request.requestId);
   }
 
-  // --- PRIVATE ---
-
-  // Private Class Properties
-
-  // Private Class Property Functions
-
-  protected static getInstance(path: FolderPath): ServerFolder {
-    return <ServerFolder>super.getInstance(path);
+  private onCloseRequest(socket: ServerSocket, _msg: CloseFolder): void {
+    assert(this.sockets.has(socket));
+    this.removeSocket(socket);
+    // NOTE: No response is expected for a close request.
   }
 
-  // Private Class Methods
-
-  // Private Class Event Handlers
-
-  // Private Constructor
-
-  private constructor(path: FolderPath, _options: OpenFolderOptions) {
-    super(path);
-  }
-
-  // Private Instance Properties
-
-  // Private Instance Property Functions
-
-  // Private Instance Methods
-
-  protected async initialize(options: OpenFolderOptions): Promise<void> {
-    if (options.mustExist) {
-      const absPath = absDirPathFromFolderPath(this.path);
-      debug(`Opening folder from filesystem: "${absPath}"`)
-      const listings = await readDir(absPath);
-      const notebooks: NotebookEntry[] = [];
-      const folders: FolderEntry[] = [];
-
-      const suffix = ServerNotebook.NOTEBOOK_DIR_SUFFIX;
-      const suffixLen = suffix.length;
-
-      for (const listing of listings) {
-
-        // Skip hidden files and folders
-        if (listing.startsWith(".")) { /* skip hidden */ continue; }
-
-        // Skip non-directories
-        const stats = await(dirStat(join(absPath, listing)));
-        if (!stats.isDirectory()) { continue; }
-
-        // Notebooks are directories that end with .mtnb.
-        // Folders are all other directories.
-        if (listing.endsWith(suffix)) {
-          const nameWithoutSuffix: NotebookName = <NotebookName>listing.slice(0, -suffixLen);
-          if (!ServerNotebook.isValidNotebookName(nameWithoutSuffix)) {
-            logWarning(MODULE, `Skipping notebook with invalid name: '${listing}'`);
-            continue;
-          }
-          notebooks.push({ name: nameWithoutSuffix, path: <NotebookPath>`${this.path}${listing}` })
-        } else {
-          if (!ServerFolder.isValidFolderName(<FolderName>listing)) {
-            logWarning(MODULE, `Skipping folder with invalid name: '${listing}'`);
-            continue;
-          }
-          folders.push({ name: <FolderName>listing, path: <FolderPath>`${this.path}${listing}/` })
-        }
-      }
-
-      const obj: FolderObject = {
-        path: this.path,
-        folders,
-        notebooks,
-      };
-      this.initializeFromObject(obj);
-    } else {
-      assert(false);
-    }
-  }
-
-  protected terminate(reason: string): void {
-    super.terminate(reason);
+  private onOpenRequest(socket: ServerSocket, msg: OpenFolder): void {
+    this.sockets.add(socket);
+    const obj = this.toJSON();
+    const response: FolderOpened = {
+      requestId: msg.requestId,
+      type: 'folder',
+      operation: 'opened',
+      path: this.path,
+      obj,
+      complete: true
+    };
+    socket.sendMessage(response);
   }
 
 }

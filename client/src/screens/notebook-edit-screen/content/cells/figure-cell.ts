@@ -23,11 +23,11 @@ import * as debug1 from "debug";
 const debug = debug1('client:figure-cell');
 
 import { CssClass, CssLength, assertFalse, Html } from "../../../../shared/common";
-import { Stroke, StrokePosition } from "../../../../shared/stylus";
+import { Stroke } from "../../../../shared/stylus";
 import { NotebookChange } from "../../../../shared/notebook";
 import { notebookChangeSynopsis } from "../../../../shared/debug-synopsis";
 import { FigureCellObject } from "../../../../shared/cell";
-import { InsertStrokeRequest } from "../../../../shared/client-requests";
+import { AddStroke } from "../../../../shared/client-requests";
 
 import { $svg, HtmlElementSpecification } from "../../../../dom";
 import { logError } from "../../../../error-handler";
@@ -111,7 +111,7 @@ export class FigureCell extends CellBase {
 
   private createStrokeSubpanel(cellObject: FigureCellObject): StrokePanel {
     const callbackFn: StrokeCallbackFn = async (stroke: Stroke)=>{
-      const changeRequest: InsertStrokeRequest = { type: 'insertStroke', cellId: cellObject.id, stroke, afterId: StrokePosition.Bottom };
+      const changeRequest: AddStroke = { type: 'addStroke', cellId: cellObject.id, stroke };
       // TODO: Remove tentative stroke from subpanel.
       await this.container.screen.notebook.sendChangeRequest(changeRequest)
       .catch(err=>{

@@ -23,12 +23,10 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 import { Folder, FolderPath, NotebookName, FolderName, FolderChange, FolderCreated, NotebookCreated, FolderEntry, NotebookEntry, FolderRenamed, NotebookRenamed, FolderDeleted, NotebookDeleted, FolderWatcher } from "./shared/folder";
 import {
-  FolderChangeRequest, ClientFolderChangeMessage, FolderOpenRequest,
+  FolderChangeRequest, ChangeFolder, OpenFolder,
   FolderCreateRequest, NotebookCreateRequest, FolderDeleteRequest, NotebookDeleteRequest, FolderRenameRequest, NotebookRenameRequest
 } from "./shared/client-requests";
-import {
-  FolderChangedResponse, FolderResponse, FolderOpenedResponse, FolderClosedResponse,
-} from "./shared/server-responses"
+import { FolderChanged, FolderResponse, FolderOpened, FolderClosed } from "./shared/server-responses"
 
 import { appInstance } from "./app";
 import { assert, assertFalse } from "./shared/common";
@@ -140,13 +138,13 @@ export class ClientFolder extends Folder<ClientFolderWatcher> {
 
   // Private Class Event Handlers
 
-  private static smChanged(msg: FolderChangedResponse, ownRequest: boolean): void {
+  private static smChanged(msg: FolderChanged, ownRequest: boolean): void {
     // A change message has come in that was not from our own change request.
     const instance = this.getInstance(msg.path);
     instance.smChanged(msg, ownRequest);
   }
 
-  private static smClosed(msg: FolderClosedResponse, _ownRequest: boolean): void {
+  private static smClosed(msg: FolderClosed, _ownRequest: boolean): void {
     // Message from the server that the folder has been closed by the server.
     // For example, if the folder was deleted or moved.
     const had = this.close(msg.path, msg.reason);
@@ -196,8 +194,8 @@ export class ClientFolder extends Folder<ClientFolderWatcher> {
   }
 
   protected async initialize(_options: OpenFolderOptions): Promise<void> {
-    const message: FolderOpenRequest = { type: 'folder', operation: 'open', path: this.path };
-    const responseMessages = await appInstance.socket.sendRequest<FolderOpenedResponse>(message);
+    const message: OpenFolder = { type: 'folder', operation: 'open', path: this.path };
+    const responseMessages = await appInstance.socket.sendRequest<FolderOpened>(message);
     assert(responseMessages.length == 1);
     Folder.validateObject(responseMessages[0].obj);
     this.initializeFromObject(responseMessages[0].obj);
@@ -212,13 +210,13 @@ export class ClientFolder extends Folder<ClientFolderWatcher> {
   private async sendChangeRequests(changeRequests: FolderChangeRequest[]): Promise<FolderChange[]> {
     assert(!this.terminated);
     assert(changeRequests.length>0);
-    const msg: ClientFolderChangeMessage = {
+    const msg: ChangeFolder = {
       type: 'folder',
       operation: 'change',
       path: this.path,
       changeRequests,
     }
-    const responseMessages = await appInstance.socket.sendRequest<FolderChangedResponse>(msg);
+    const responseMessages = await appInstance.socket.sendRequest<FolderChanged>(msg);
     assert(responseMessages.length == 1); // If
     return responseMessages[0].changes;
   }
@@ -229,7 +227,7 @@ export class ClientFolder extends Folder<ClientFolderWatcher> {
 
   // Private Event Handlers
 
-  private smChanged(msg: FolderChangedResponse, ownRequest: boolean): void {
+  private smChanged(msg: FolderChanged, ownRequest: boolean): void {
     // Message from the server indicating the folder has changed.
 
     // Apply changes to the notebook data structure, and notify the view of the change.

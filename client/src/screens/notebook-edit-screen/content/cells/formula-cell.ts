@@ -25,12 +25,12 @@ import * as debug1 from "debug";
 const debug = debug1('client:formula-cell');
 
 import { CssClass, Html, assertFalse, PlainText, notImplemented } from "../../../../shared/common";
-import { Stroke, StrokePosition } from "../../../../shared/stylus";
+import { Stroke } from "../../../../shared/stylus";
 import { FormulaCellKeyboardObject, FormulaCellObject, FormulaCellStylusObject } from "../../../../shared/formula";
 import { NotebookChange } from "../../../../shared/notebook";
 import { notebookChangeSynopsis } from "../../../../shared/debug-synopsis";
 import { InputType } from "../../../../shared/cell";
-import { InsertStrokeRequest } from "../../../../shared/client-requests";
+import { AddStroke } from "../../../../shared/client-requests";
 
 import { $new, $outerSvg } from "../../../../dom";
 import { Content as CellContainer } from "..";
@@ -225,7 +225,7 @@ export class FormulaCell extends CellBase {
 
   private createStrokeSubpanel(cellObject: FormulaCellStylusObject): StrokePanel {
     const callbackFn: StrokeCallbackFn = async (stroke: Stroke)=>{
-      const changeRequest: InsertStrokeRequest = { type: 'insertStroke', cellId: cellObject.id, stroke, afterId: StrokePosition.Bottom };
+      const changeRequest: AddStroke = { type: 'addStroke', cellId: cellObject.id, stroke };
       await this.container.screen.notebook.sendChangeRequest(changeRequest)
       .catch(err=>{
         // REVIEW: Proper way to handle this error?
