@@ -22,43 +22,67 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 import * as debug1 from "debug";
 const debug = debug1('client:formula-cell');
 
-import { CellObject } from "../shared/cell";
+import { CellObject, PlotCellObject } from "../shared/cell";
 import { assertFalse, CssClass } from "../shared/common";
 import { NotebookUpdate } from "../shared/server-responses";
-import { Content as CellContainer } from "../screens/notebook-edit-screen/content";
 
-import { CellBase } from "./cell-base";
+import { CellEditView, ClientCell } from ".";
 import { $outerSvg, HtmlElementSpecification } from "../dom";
 import { notebookChangeSynopsis } from "../shared/debug-synopsis";
+import { ClientNotebook } from "../client-notebook";
 
 // Types
 
 // Constants
 
-// Class
+// Exported Class
 
-export class PlotCell extends CellBase {
+export class PlotClientCell extends ClientCell<PlotCellObject> {
+
+  // Public Constructor
+
+  public constructor(notebook: ClientNotebook, obj: PlotCellObject) {
+    super(notebook, obj);
+  }
+
+  // Public Instance Methods
+
+  public createEditView(): PlotCellEditView {
+    const instance = new PlotCellEditView(this);
+    this.views.add(instance);
+    return instance;
+  };
+
+  public onUpdate(update: NotebookUpdate, ownRequest: boolean): void {
+    super.onUpdate(update, ownRequest);
+  };
+
+}
+
+// Exported Class
+
+export class PlotCellEditView extends CellEditView<PlotCellObject> {
 
   // Public Class Methods
 
   // Public Constructor
 
-  public  constructor(container: CellContainer, style: CellObject) {
+  public  constructor(cell: PlotClientCell) {
     const contentSpec: HtmlElementSpecification<'div'> = {
       tag: 'div',
       classes: [ <CssClass>'plotCell', <CssClass>'content' ],
     };
-    super(container, style, contentSpec);
-    this.$displayPanel = this.createDisplayPanel(style);
+    super(cell, contentSpec);
+    this.$displayPanel = this.createDisplayPanel(cell.obj);
     this.$content.prepend(this.$displayPanel);
   }
 
   // ClientNotebookWatcher Methods
 
-  public onChange(change: NotebookUpdate): void {
-    debug(`onChange: style ${this.cellId} ${notebookChangeSynopsis(change)}`);
+  public onUpdate(update: NotebookUpdate): void {
+    debug(`onChange: style ${this.id} ${notebookChangeSynopsis(update)}`);
 
-    switch (change.type) {
+    switch (update.type) {
       case 'cellInserted': {
         // Ignore. Not something we are interested in.
         break;

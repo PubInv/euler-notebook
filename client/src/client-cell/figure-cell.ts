@@ -33,28 +33,51 @@ import { $svg, HtmlElementSpecification } from "../dom";
 import { logError } from "../error-handler";
 import { StrokeCallbackFn, StrokePanel } from "../components/stroke-panel";
 
-import { Content as CellContainer } from "../screens/notebook-edit-screen/content";
-
-import { CellBase } from "./cell-base";
+import { CellEditView, ClientCell } from "./index";
+import { ClientNotebook } from "../client-notebook";
 
 // Types
 
 // Exported Class
 
-export class FigureCell extends CellBase {
+export class FigureClientCell extends ClientCell<FigureCellObject> {
+
+  // Public Constructor
+
+  public constructor(notebook: ClientNotebook, obj: FigureCellObject) {
+    super(notebook, obj);
+  }
+
+  // Public Instance Methods
+
+  public createEditView(): FigureCellEditView {
+    const instance = new FigureCellEditView(this);
+    this.views.add(instance);
+    return instance;
+  };
+
+  public onUpdate(update: NotebookUpdate, ownRequest: boolean): void {
+    super.onUpdate(update, ownRequest);
+  };
+
+}
+
+// Exported Class
+
+export class FigureCellEditView extends CellEditView<FigureCellObject> {
 
   // Public Class Methods
 
   // Public Constructor
 
-  public constructor(container: CellContainer, style: FigureCellObject) {
+  public constructor(cell: FigureClientCell) {
 
     const contentSpec: HtmlElementSpecification<'div'> = {
       tag: 'div',
       classes: [ <CssClass>'content', <CssClass>'figureCell' ],
     };
-    super(container, style, contentSpec);
-    this.$inputPanel = this.createInputPanel(style);
+    super(cell, contentSpec);
+    this.$inputPanel = this.createInputPanel();
     this.$content.append(this.$inputPanel);
   }
 
@@ -62,12 +85,12 @@ export class FigureCell extends CellBase {
 
   // ClientNotebookWatcher Methods
 
-  public onChange(change: NotebookUpdate): void {
-    debug(`onChange: style ${this.cellId} ${notebookChangeSynopsis(change)}`);
+  public onUpdate(update: NotebookUpdate): void {
+    debug(`onChange: style ${this.id} ${notebookChangeSynopsis(update)}`);
 
     // Update the SVG display if it has changed.
 
-    switch (change.type) {
+    switch (update.type) {
       case 'cellInserted': {
         // Ignore. Not something that affects our display.
         break;
@@ -102,8 +125,8 @@ export class FigureCell extends CellBase {
 
   // Private Instance Methods
 
-  private createInputPanel(cellObject: FigureCellObject): HTMLDivElement {
-    const panel = this.strokePanel = this.createStrokeSubpanel(cellObject);
+  private createInputPanel(): HTMLDivElement {
+    const panel = this.strokePanel = this.createStrokeSubpanel(this.cell.obj);
     return panel.$elt;
   }
 
@@ -111,7 +134,7 @@ export class FigureCell extends CellBase {
     const callbackFn: StrokeCallbackFn = async (stroke: Stroke)=>{
       const changeRequest: AddStroke = { type: 'addStroke', cellId: cellObject.id, stroke };
       // TODO: Remove tentative stroke from subpanel.
-      await this.container.screen.notebook.sendChangeRequest(changeRequest)
+      await this.cell.sendChangeRequest(changeRequest)
       .catch(err=>{
         // REVIEW: Proper way to handle this error?
         logError(err, <Html>"Error sending stroke from figure cell");

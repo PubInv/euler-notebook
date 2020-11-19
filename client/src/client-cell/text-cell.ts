@@ -25,7 +25,7 @@ const debug = debug1('client:text-cell');
 import { InputType, TextCellObject } from "../shared/cell";
 import { CssClass, assertFalse, PlainText, notImplemented, Html } from "../shared/common";
 import { Stroke } from "../shared/stylus";
-import { NotebookUpdate, } from "../shared/server-responses";
+import { NotebookUpdate } from "../shared/server-responses";
 import { notebookChangeSynopsis, cellSynopsis } from "../shared/debug-synopsis";
 import { TextCellKeyboardObject, TextCellStylusObject } from "../shared/cell";
 import { AddStroke } from "../shared/client-requests";
@@ -36,36 +36,59 @@ import { logError } from "../error-handler";
 import { KeyboardCallbackFn, KeyboardPanel } from "../components/keyboard-panel";
 import { StrokeCallbackFn, StrokePanel } from "../components/stroke-panel";
 
-import { Content as CellContainer } from "../screens/notebook-edit-screen/content";
-
-import { CellBase } from "./cell-base";
+import { CellEditView, ClientCell } from "./index";
+import { ClientNotebook } from "../client-notebook";
 
 // Types
 
 // Constants
 
-// Class
+// Exported Class
 
-export class TextCell extends CellBase {
+export class TextClientCell extends ClientCell<TextCellObject> {
+
+  // Public Constructor
+
+  public constructor(notebook: ClientNotebook, obj: TextCellObject) {
+    super(notebook, obj);
+  }
+
+  // Public Instance Methods
+
+  public createEditView(): CellEditView<TextCellObject> {
+    const instance = new TextCellEditView(this);
+    this.views.add(instance);
+    return instance;
+  };
+
+  public onUpdate(update: NotebookUpdate, ownRequest: boolean): void {
+    super.onUpdate(update, ownRequest);
+  };
+
+}
+
+// Exported Class
+
+export class TextCellEditView extends CellEditView<TextCellObject> {
 
   // Public Class Methods
 
   // Public Constructor
 
-  public constructor(container: CellContainer, style: TextCellObject) {
-    debug(`Constructing: ${cellSynopsis(style)}`);
+  public constructor(cell: TextClientCell) {
+    debug(`Constructing: ${cellSynopsis(cell.obj)}`);
 
     const $content = $new({
       tag: 'div',
       classes: [ <CssClass>'content', <CssClass>'textCell' ],
     });
 
-    super(container, style, $content);
+    super(cell, $content);
 
-    this.$displayPanel = this.createDisplayPanel(style);
+    this.$displayPanel = this.createDisplayPanel(cell.obj);
     this.$content.prepend(this.$displayPanel);
 
-    this.$inputPanel = this.createInputPanel(style);
+    this.$inputPanel = this.createInputPanel(cell.obj);
     if (this.$inputPanel) {
       this.$content.append(this.$inputPanel);
     }
@@ -73,10 +96,10 @@ export class TextCell extends CellBase {
 
   // ClientNotebookWatcher Methods
 
-  public onChange(change: NotebookUpdate): void {
-    debug(`onChange: style ${this.cellId} ${notebookChangeSynopsis(change)}`);
+  public onUpdate(update: NotebookUpdate, _ownRequest: boolean): void {
+    debug(`onChange: style ${this.id} ${notebookChangeSynopsis(update)}`);
 
-    switch (change.type) {
+    switch (update.type) {
       case 'cellInserted': {
         // Ignore. Not something we are interested in.
         break;
@@ -151,7 +174,7 @@ export class TextCell extends CellBase {
   private createStrokeSubpanel(cellObject: TextCellStylusObject): StrokePanel {
     const callbackFn: StrokeCallbackFn = async (stroke: Stroke)=>{
       const changeRequest: AddStroke = { type: 'addStroke', cellId: cellObject.id, stroke };
-      await this.container.screen.notebook.sendChangeRequest(changeRequest)
+      await this.cell.sendChangeRequest(changeRequest)
       .catch(err=>{
         // REVIEW: Proper way to handle this error?
         logError(err, <Html>"Error sending stroke from text cell");

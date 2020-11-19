@@ -33,39 +33,64 @@ import { InputType } from "../shared/cell";
 import { AddStroke } from "../shared/client-requests";
 
 import { $new, $outerSvg } from "../dom";
-import { Content as CellContainer } from "../screens/notebook-edit-screen/content";
 
-import { CellBase } from "./cell-base";
 import { KeyboardCallbackFn, KeyboardPanel } from "../components/keyboard-panel";
 import { StrokeCallbackFn, StrokePanel } from "../components/stroke-panel";
 import { logError } from "../error-handler";
+
+import { CellEditView, ClientCell } from "./index";
+import { ClientNotebook } from "../client-notebook";
 
 // Types
 
 // Constants
 
-// Class
+// Exported Class
 
-export class FormulaCell extends CellBase {
+export class FormulaClientCell extends ClientCell<FormulaCellObject> {
+
+  // Public Constructor
+
+  public constructor(notebook: ClientNotebook, obj: FormulaCellObject) {
+    super(notebook, obj);
+  }
+
+  // Public Instance Methods
+
+  public createEditView(): FormulaCellEditView {
+    const instance = new FormulaCellEditView(this);
+    this.views.add(instance);
+    return instance;
+  };
+
+  public onUpdate(update: NotebookUpdate, ownRequest: boolean): void {
+    super.onUpdate(update, ownRequest);
+  };
+
+}
+
+// Exported Class
+
+export class FormulaCellEditView extends CellEditView<FormulaCellObject> {
 
   // Public Class Methods
 
   // Public Constructor
 
-  public constructor(container: CellContainer, cellObject: FormulaCellObject) {
-    debug(`Creating instance: style ${cellObject.id}`);
+  public constructor(cell: FormulaClientCell) {
+    debug(`Creating instance: style ${cell.obj.id}`);
 
     const $content = $new({
       tag: 'div',
       classes: [ <CssClass>'content', <CssClass>'formulaCell' ],
     });
 
-    super(container, cellObject, $content);
+    super(cell, $content);
 
-    this.$displayPanel = this.createDisplayPanel(cellObject);
+    this.$displayPanel = this.createDisplayPanel(cell.obj);
     this.$content.prepend(this.$displayPanel);
 
-    this.$inputPanel = this.createInputPanel(cellObject);
+    this.$inputPanel = this.createInputPanel(cell.obj);
     if (this.$inputPanel) {
       this.$content.append(this.$inputPanel);
     }
@@ -88,14 +113,14 @@ export class FormulaCell extends CellBase {
 
   // }
 
-  public onChange(change: NotebookUpdate): boolean {
-    debug(`onChange: cell ${this.cellId} ${notebookChangeSynopsis(change)}`);
+  public onUpdate(update: NotebookUpdate): boolean {
+    debug(`onChange: cell ${this.id} ${notebookChangeSynopsis(update)}`);
 
     // TODO: Changes that affect the prefix panel.
 
     // TODO: Do we deal with showing the Wolfram Evaluation values in the formula,
     //       and therefore deal with updating them here, or should we move their display to the tools panel?
-    switch (change.type) {
+    switch (update.type) {
       case 'cellInserted': {
         // Ignore. Not something we are interested in.
         break;
@@ -224,7 +249,7 @@ export class FormulaCell extends CellBase {
   private createStrokeSubpanel(cellObject: FormulaCellStylusObject): StrokePanel {
     const callbackFn: StrokeCallbackFn = async (stroke: Stroke)=>{
       const changeRequest: AddStroke = { type: 'addStroke', cellId: cellObject.id, stroke };
-      await this.container.screen.notebook.sendChangeRequest(changeRequest)
+      await this.cell.sendChangeRequest(changeRequest)
       .catch(err=>{
         // REVIEW: Proper way to handle this error?
         logError(err, <Html>"Error sending stroke from formula cell");

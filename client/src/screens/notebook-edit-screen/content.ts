@@ -31,8 +31,8 @@ import { DeleteCell, InsertCell, MoveCell, NotebookChangeRequest, } from "../../
 import { NotebookUpdate } from "../../shared/server-responses";
 import { DebugParams } from "../../shared/api-calls";
 
-import { CellBase } from "../../client-cell/cell-base";
-import { createCell } from "../../client-cell/index";
+import { CellEditView } from "../../client-cell";
+import { createCell } from "../../client-cell/instantiator";
 import { HtmlElement } from "../../html-element";
 import { NotebookEditScreen } from ".";
 import { reportError } from "../../error-handler";
@@ -156,7 +156,7 @@ export class Content extends HtmlElement<'div'>{
   public async deleteSelectedCells(): Promise<void> {
     const cellViews = this.selectedCells();
     await this.unselectAll();
-    const changeRequests = cellViews.map<DeleteCell>(c=>({ type: 'deleteCell', cellId: c.cellId }));
+    const changeRequests = cellViews.map<DeleteCell>(c=>({ type: 'deleteCell', cellId: c.id }));
     await this.sendUndoableChangeRequests(changeRequests);
   }
 
@@ -164,8 +164,9 @@ export class Content extends HtmlElement<'div'>{
     // This code is executed when the user presses the underwear button in the sidebar.
     // For when a developer needs a button to initiate a test action.
     console.log('Development Button Clicked!');
+    if (!this.lastCellSelected) { return; /* TODO: warning that no cell selected. */}
     const notebookPath = this.screen.notebook.path;
-    const cellId = this.lastCellSelected?.cellId;
+    const cellId = this.lastCellSelected?.id;
     const params: DebugParams = { notebookPath, cellId };
     /* const results = */ await apiDebug(params);
     notImplemented();
@@ -178,7 +179,7 @@ export class Content extends HtmlElement<'div'>{
     // If cell to insert after is not specified, then insert below the last cell selected.
     // If no cells are selected, then insert at the end of the notebook.
     if (afterId === undefined) {
-      if (this.lastCellSelected) { afterId = this.lastCellSelected.cellId; }
+      if (this.lastCellSelected) { afterId = this.lastCellSelected.id; }
       else { afterId = CellPosition.Bottom; }
     }
 
@@ -213,7 +214,7 @@ export class Content extends HtmlElement<'div'>{
     // If cell to insert after is not specified, then insert below the last cell selected.
     // If no cells are selected, then insert at the end of the notebook.
     if (afterId === undefined) {
-      if (this.lastCellSelected) { afterId = this.lastCellSelected.cellId; }
+      if (this.lastCellSelected) { afterId = this.lastCellSelected.id; }
       else { afterId = CellPosition.Bottom; }
     }
 
@@ -267,7 +268,7 @@ export class Content extends HtmlElement<'div'>{
     // If cell to insert after is not specified, then insert below the last cell selected.
     // If no cells are selected, then insert at the end of the notebook.
     if (afterId === undefined) {
-      if (this.lastCellSelected) { afterId = this.lastCellSelected.cellId; }
+      if (this.lastCellSelected) { afterId = this.lastCellSelected.id; }
       else { afterId = CellPosition.Bottom; }
     }
 
@@ -322,7 +323,7 @@ export class Content extends HtmlElement<'div'>{
       // REVIEW: Beep or something?
       return;
     }
-    const cellId = this.lastCellSelected.cellId;
+    const cellId = this.lastCellSelected.id;
 
     const nextCell = this.nextCell(this.lastCellSelected);
     if (!nextCell) {
@@ -330,7 +331,7 @@ export class Content extends HtmlElement<'div'>{
       return;
     }
     const nextNextCell = this.nextCell(nextCell);
-    const afterId = nextNextCell ? nextCell.cellId : CellPosition.Bottom;
+    const afterId = nextNextCell ? nextCell.id : CellPosition.Bottom;
 
     const request: MoveCell = { type: 'moveCell', cellId, afterId };
     await this.sendUndoableChangeRequests([ request ]);
@@ -345,7 +346,7 @@ export class Content extends HtmlElement<'div'>{
       // REVIEW: Beep or something?
       return;
     }
-    const cellId = this.lastCellSelected.cellId;
+    const cellId = this.lastCellSelected.id;
 
     const previousCell = this.previousCell(this.lastCellSelected);
     if (!previousCell) {
@@ -353,7 +354,7 @@ export class Content extends HtmlElement<'div'>{
       return;
     }
     const previousPreviousCell = this.previousCell(previousCell);
-    const afterId = previousPreviousCell ? previousPreviousCell.cellId : /* top */ 0;
+    const afterId = previousPreviousCell ? previousPreviousCell.id : /* top */ 0;
 
     const request: MoveCell = { type: 'moveCell', cellId, afterId };
     await this.sendUndoableChangeRequests([ request ]);
@@ -429,19 +430,20 @@ export class Content extends HtmlElement<'div'>{
 
   // Instance Methods
 
-  public createCell(style: CellObject, afterId: CellRelativePosition): CellBase {
-    const cellView = createCell(this, style);
-    this.cellViews.set(style.id, cellView);
+  public createCell<O extends CellObject>(obj: O, afterId: CellRelativePosition): CellEditView<O> {
+    const cell = createCell<O>(this.screen.notebook, obj)
+    const cellView = cell.createEditView();
+    this.cellViews.set(obj.id, cellView);
     this.insertCell(cellView, afterId);
     return cellView;
   }
 
-  public deleteCell(cellView: CellBase): void {
+  public deleteCell(cellView: CellEditView<any>): void {
     if (cellView == this.lastCellSelected) {
       delete this.lastCellSelected;
     }
     this.$elt.removeChild(cellView.$elt);
-    this.cellViews.delete(cellView.cellId);
+    this.cellViews.delete(cellView.id);
   }
 
   // REVIEW: Should be limited to changing a single style so this isn't used as backdoor
@@ -450,7 +452,7 @@ export class Content extends HtmlElement<'div'>{
     await this.sendUndoableChangeRequests(changeRequests);
   }
 
-  public insertCell(cellView: CellBase, afterId: CellRelativePosition): void {
+  public insertCell(cellView: CellEditView<any>, afterId: CellRelativePosition): void {
     if (afterId == CellPosition.Top) {
       this.$elt.prepend(cellView.$elt);
     } else if (afterId == CellPosition.Bottom) {
@@ -468,7 +470,7 @@ export class Content extends HtmlElement<'div'>{
   }
 
   public selectCell(
-    cellView: CellBase,
+    cellView: CellEditView<any>,
     rangeExtending?: boolean, // Extending selection by a contiguous range.
     indivExtending?: boolean, // Extending selection by an individual cell, possibly non-contiguous.
   ): void {
@@ -547,47 +549,47 @@ export class Content extends HtmlElement<'div'>{
 
   // Private Instance Properties
 
-  private cellViews: Map<CellId, CellBase>;
-  private lastCellSelected?: CellBase;
+  private cellViews: Map<CellId, CellEditView<any>>;
+  private lastCellSelected?: CellEditView<any>;
   private topOfUndoStack: number;       // Index of the top of the stack. May not be the length of the undoStack array if there have been some undos.
   private undoStack: UndoEntry[];
 
   // Private Instance Property Functions
 
-  private cellViewFromId(cellId: CellId): CellBase {
+  private cellViewFromId<O extends CellObject>(cellId: CellId): CellEditView<O> {
     const rval = this.cellViews.get(cellId)!;
     assert(rval);
     return rval;
   }
 
-  private cellViewFromElement($elt: HTMLDivElement): CellBase {
+  private cellViewFromElement<O extends CellObject>($elt: HTMLDivElement): CellEditView<O> {
     // Strip 'C' prefix from cell ID to get the style id.
     const cellId: CellId = parseInt($elt.id.slice(1), 10);
     return this.cellViewFromId(cellId);
   }
 
-  private firstCell(): CellBase | undefined {
+  private firstCell<O extends CellObject>(): CellEditView<O> | undefined {
     const $elt = <HTMLDivElement|null>this.$elt.firstElementChild;
     return $elt ? this.cellViewFromElement($elt) : undefined;
   }
 
-  private lastCell(): CellBase | undefined {
+  private lastCell<O extends CellObject>(): CellEditView<O> | undefined {
     const $elt = <HTMLDivElement|null>this.$elt.lastElementChild;
     return $elt ? this.cellViewFromElement($elt) : undefined;
   }
 
-  private nextCell(cellView: CellBase): CellBase | undefined {
+  private nextCell<O extends CellObject>(cellView: CellEditView<any>): CellEditView<O> | undefined {
     const $elt = <HTMLDivElement|null>cellView.$elt.nextElementSibling;
     return $elt ? this.cellViewFromElement($elt) : undefined;
   }
 
-  private previousCell(cellView: CellBase): CellBase | undefined {
+  private previousCell<O extends CellObject>(cellView: CellEditView<any>): CellEditView<O> | undefined {
     const $elt = <HTMLDivElement|null>cellView.$elt.previousElementSibling;
     return $elt ? this.cellViewFromElement($elt) : undefined;
   }
 
-  private selectedCells(): CellBase[] {
-    const rval: CellBase[] = [];
+  private selectedCells(): CellEditView<any>[] {
+    const rval: CellEditView<any>[] = [];
     for (const cellView of this.cellViews.values()) {
       if (cellView.isSelected()) { rval.push(cellView); }
     }

@@ -40,7 +40,7 @@ export interface ClientNotebookWatcher {
   onClosed(reason: string): void;
 }
 
-interface ChangeRequestResults {
+export interface ChangeRequestResults {
   changes: NotebookUpdate[];
   undoChangeRequests?: NotebookChangeRequest[];
 }
