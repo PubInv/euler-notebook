@@ -25,21 +25,21 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 import * as debug1 from "debug";
 const debug = debug1('client:notebook-edit-screen-content');
 
-import { CellId, CellObject, CellRelativePosition, CellPosition, CellType, InputType, TextCellObject, FigureCellObject } from "../../../shared/cell";
-import { CssClass, assert, Html, assertFalse, notImplemented, emptySvg, PlainText, POINTS_PER_INCH, CssSize, CssLength } from "../../../shared/common";
-import { DeleteCell, InsertCell, MoveCell, NotebookChangeRequest, } from "../../../shared/client-requests";
-import { NotebookUpdate } from "../../../shared/server-responses";
-import { DebugParams } from "../../../shared/api-calls";
+import { CellId, CellObject, CellRelativePosition, CellPosition, CellType, InputType, TextCellObject, FigureCellObject } from "../../shared/cell";
+import { CssClass, assert, Html, assertFalse, notImplemented, emptySvg, PlainText, POINTS_PER_INCH, CssSize, CssLength } from "../../shared/common";
+import { DeleteCell, InsertCell, MoveCell, NotebookChangeRequest, } from "../../shared/client-requests";
+import { NotebookUpdate } from "../../shared/server-responses";
+import { DebugParams } from "../../shared/api-calls";
 
-import { CellBase } from "./cells/cell-base";
-import { createCell } from "./cells/index";
-import { HtmlElement } from "../../../html-element";
-import { NotebookEditScreen } from "..";
-import { reportError } from "../../../error-handler";
-import { userSettingsInstance } from "../../../user-settings";
-import { EMPTY_FORMULA, FormulaCellObject } from "../../../shared/formula";
-import { emptyStylusInput } from "../../../shared/stylus";
-import { apiDebug } from "../../../api";
+import { CellBase } from "../../client-cell/cell-base";
+import { createCell } from "../../client-cell/index";
+import { HtmlElement } from "../../html-element";
+import { NotebookEditScreen } from ".";
+import { reportError } from "../../error-handler";
+import { userSettingsInstance } from "../../user-settings";
+import { EMPTY_FORMULA, FormulaCellObject } from "../../shared/formula";
+import { emptyStylusInput } from "../../shared/stylus";
+import { apiDebug } from "../../api";
 
 // Types
 

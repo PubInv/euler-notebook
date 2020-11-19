@@ -19,16 +19,16 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 // Requirements
 
-import { CellObject, CellType, FigureCellObject, PlotCellObject, TextCellObject } from "../../../../shared/cell";
-import { Content } from "..";
+import { CellObject, CellType, FigureCellObject, PlotCellObject, TextCellObject } from "../shared/cell";
+import { Content } from "../screens/notebook-edit-screen/content";
 
 import { CellBase } from "./cell-base";
 import { FormulaCell } from "./formula-cell";
 import { FigureCell } from "./figure-cell";
 import { PlotCell } from "./plot-cell";
 import { TextCell } from "./text-cell";
-import { FormulaCellObject } from "../../../../shared/formula";
-import { assertFalse } from "../../../../shared/common";
+import { FormulaCellObject } from "../shared/formula";
+import { assertFalse } from "../shared/common";
 
 // Constants
 

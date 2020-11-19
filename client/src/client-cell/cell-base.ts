@@ -24,21 +24,21 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 // import * as debug1 from "debug";
 // const debug = debug1('client:cell-base');
 
-import { CellObject, CellId } from "../../../../shared/cell";
-import { assert, Html, CssClass, notImplemented } from "../../../../shared/common";
-import { NotebookUpdate } from "../../../../shared/server-responses";
+import { CellObject, CellId } from "../shared/cell";
+import { assert, Html, CssClass, notImplemented } from "../shared/common";
+import { NotebookUpdate } from "../shared/server-responses";
 // import { MoveCell } from "../../../../shared/client-requests";
 
-import { HtmlElement } from "../../../../html-element";
+import { HtmlElement } from "../html-element";
 import {
   $new, CLOSE_X_ENTITY, ElementId, HtmlElementOrSpecification, HtmlElementSpecification
-} from "../../../../dom";
-import { reportError } from "../../../../error-handler";
+} from "../dom";
+import { reportError } from "../error-handler";
 
-import { Tools } from "../../tools";
-import { ResizerBar } from "../../../../components/resizer-bar";
+import { Tools } from "../screens/notebook-edit-screen/tools";
+import { ResizerBar } from "../components/resizer-bar";
 
-import { Content as CellContainer } from "../index";
+import { Content as CellContainer } from "../screens/notebook-edit-screen/content";
 
 
 // Types

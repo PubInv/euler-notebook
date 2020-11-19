@@ -22,21 +22,21 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 import * as debug1 from "debug";
 const debug = debug1('client:text-cell');
 
-import { InputType, TextCellObject } from "../../../../shared/cell";
-import { CssClass, assertFalse, PlainText, notImplemented, Html } from "../../../../shared/common";
-import { Stroke } from "../../../../shared/stylus";
-import { NotebookUpdate, } from "../../../../shared/server-responses";
-import { notebookChangeSynopsis, cellSynopsis } from "../../../../shared/debug-synopsis";
-import { TextCellKeyboardObject, TextCellStylusObject } from "../../../../shared/cell";
-import { AddStroke } from "../../../../shared/client-requests";
+import { InputType, TextCellObject } from "../shared/cell";
+import { CssClass, assertFalse, PlainText, notImplemented, Html } from "../shared/common";
+import { Stroke } from "../shared/stylus";
+import { NotebookUpdate, } from "../shared/server-responses";
+import { notebookChangeSynopsis, cellSynopsis } from "../shared/debug-synopsis";
+import { TextCellKeyboardObject, TextCellStylusObject } from "../shared/cell";
+import { AddStroke } from "../shared/client-requests";
 
-import { $new, $outerSvg } from "../../../../dom";
-import { logError } from "../../../../error-handler";
+import { $new, $outerSvg } from "../dom";
+import { logError } from "../error-handler";
 
-import { KeyboardCallbackFn, KeyboardPanel } from "../../../../components/keyboard-panel";
-import { StrokeCallbackFn, StrokePanel } from "../../../../components/stroke-panel";
+import { KeyboardCallbackFn, KeyboardPanel } from "../components/keyboard-panel";
+import { StrokeCallbackFn, StrokePanel } from "../components/stroke-panel";
 
-import { Content as CellContainer } from "../index";
+import { Content as CellContainer } from "../screens/notebook-edit-screen/content";
 
 import { CellBase } from "./cell-base";
 
