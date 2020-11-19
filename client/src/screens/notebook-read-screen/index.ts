@@ -23,7 +23,7 @@ import { CssClass, Html, escapeHtml } from "../../shared/common";
 import { NotebookUpdate } from "../../shared/server-responses";
 import { NotebookPath } from "../../shared/folder";
 
-import { ClientNotebook, OpenNotebookOptions } from "../../client-notebook";
+import { ClientNotebook, ClientNotebookWatcher } from "../../client-notebook";
 import { reportError } from "../../error-handler";
 import { ScreenBase } from "../screen-base";
 
@@ -43,7 +43,7 @@ export enum Mode {
 
 // Exported Class
 
-export class NotebookReadScreen extends ScreenBase {
+export class NotebookReadScreen extends ScreenBase  implements ClientNotebookWatcher {
 
   // Public Class Methods
 
@@ -57,8 +57,7 @@ export class NotebookReadScreen extends ScreenBase {
       tag: 'div',
     });
 
-    const options: OpenNotebookOptions = { mustExist: true, watcher: this };
-    ClientNotebook.open(path, options)
+    ClientNotebook.open(path, this)
     .then(
       (notebook: ClientNotebook)=>{
         this.notebook = notebook;
@@ -88,11 +87,7 @@ export class NotebookReadScreen extends ScreenBase {
 
   // Notebook Watcher Methods
 
-  public onChange(_change: NotebookUpdate): void {
-    // TODO:
-  }
-
-  public onChangesFinished(): void {
+  public onUpdate(_change: NotebookUpdate): void {
     // TODO:
   }
 

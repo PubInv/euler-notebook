@@ -35,7 +35,7 @@ export interface FindCellOptions {
 }
 
 export interface NotebookObject {
-  nextId: CellId;
+  nextId: CellId;   // TODO: This does not need to be in the client's version of the object.
   pageConfig: PageConfig;
   pages: Page[];
   cellMap: CellMap;
@@ -46,11 +46,11 @@ export interface NotebookWatcher extends Watcher {
   onChange(change: NotebookUpdate, ownRequest: boolean): void;
 }
 
-interface Page {
+export interface Page {
   cellIds: CellId[];
 }
 
-interface PageConfig {
+export interface PageConfig {
   size: CssSize;
   margins: PageMargins;
 }
@@ -79,6 +79,8 @@ export const VERSION = "0.0.17";
 
 // Exported Class
 
+// TODO: This is only used by server-notebook.ts.
+//       This class should be merged with that one.
 export abstract class Notebook<W extends NotebookWatcher> extends WatchedResource<NotebookPath, W> {
 
   // Public Class Property Functions

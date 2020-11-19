@@ -19,7 +19,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 // Requirements
 
-import { CssClass } from "../../shared/common";
+import { CssClass, Html } from "../../shared/common";
 import { $, CLOSE_X_ENTITY } from "../../dom";
 import { HtmlElement } from "../../html-element";
 import { NotebookEditScreen } from ".";
@@ -64,7 +64,7 @@ export class DebugPopup extends HtmlElement<'div'>{
 
   public show(): void {
     const $content = $(this.$elt, '.content');
-    $content.innerHTML = this.screen.notebook.toHtml();
+    $content.innerHTML = <Html>`Not implemented.` // this.screen.notebook.toHtml();
     super.show();
   }
 

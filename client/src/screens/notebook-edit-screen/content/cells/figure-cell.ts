@@ -90,8 +90,6 @@ export class FigureCell extends CellBase {
     }
   }
 
-  public onChangesFinished(): void { /* Nothing to do. */ }
-
   // -- PRIVATE --
 
   // Private Instance Properties

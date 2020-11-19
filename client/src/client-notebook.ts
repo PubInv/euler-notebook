@@ -21,14 +21,13 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 // Requirements
 
-import { CellId } from "./shared/cell";
-import { Notebook, NotebookWatcher } from "./shared/notebook";
+import { CellId, CellObject } from "./shared/cell";
+import { NotebookObject, PageConfig } from "./shared/notebook";
 import {
   NotebookChangeRequest, ChangeNotebook, UseTool,
   OpenNotebook,
 } from "./shared/client-requests";
 import { NotebookUpdated, NotebookOpened, NotebookResponse, NotebookClosed, NotebookUpdate } from "./shared/server-responses";
-import { OpenOptions } from "./shared/watched-resource";
 
 import { appInstance } from "./app";
 import { NotebookName, NotebookPath } from "./shared/folder";
@@ -36,62 +35,98 @@ import { assert, assertFalse } from "./shared/common";
 
 // Types
 
-export interface ClientNotebookWatcher extends NotebookWatcher {
-  onChangesFinished(ownRequest: boolean): void;
+export interface ClientNotebookWatcher {
+  onUpdate(update: NotebookUpdate, ownRequest: boolean): void;
+  onClosed(reason: string): void;
 }
-
-export type OpenNotebookOptions = OpenOptions<ClientNotebookWatcher>;
 
 interface ChangeRequestResults {
   changes: NotebookUpdate[];
   undoChangeRequests?: NotebookChangeRequest[];
 }
 
+interface OpenInfo {
+  promise: Promise<ClientNotebook>;
+  tally: number;
+  watchers: Set<ClientNotebookWatcher>;
+}
+
+interface Page {
+  cellObjects: CellObject[];
+}
+
 // Constants
 
 // Global Variables
 
-// Class
+// Exported Class
 
-export class ClientNotebook extends Notebook<ClientNotebookWatcher> {
+export class ClientNotebook {
 
-  // Class Methods
+  // Public Class Methods
 
-  public static async open(path: NotebookPath, options: OpenNotebookOptions): Promise<ClientNotebook> {
-    // IMPORTANT: This is a standard open pattern that all WatchedResource-derived classes should use.
-    //            Do not modify unless you know what you are doing!
-    const isOpen = this.isOpen(path);
-    const instance = isOpen ? this.getInstance(path) : new this(path, options);
-    instance.open(options, isOpen);
-    return instance.openPromise;
-  }
-
-  // Class Event Handlers
-
-  public static smMessage(msg: NotebookResponse, ownRequest: boolean): void {
-    // A notebook message was received from the server.
-    switch(msg.operation) {
-      case 'updated': this.smUpdated(msg, ownRequest); break;
-      case 'closed':  this.smClosed(msg, ownRequest); break;
-      case 'opened':  break; // Nothing to do. Opened response is handled when request promise is resolved.
-      default: assertFalse();
+  public static async open(path: NotebookPath, watcher: ClientNotebookWatcher): Promise<ClientNotebook> {
+    // REVIEW: If open promise rejects, then we should purge it from
+    //         the openMap so the open can be attempted again.
+    //         Otherwise, all subsequent attempts at opening will fail
+    //         on the same rejected promise.
+    let openInfo = this.openMap.get(path);
+    if (openInfo) {
+      openInfo.tally++;
+      openInfo.watchers.add(watcher);
+    } else {
+      openInfo = { promise: this.openNew(path), tally: 1, watchers: new Set([ watcher ]) };
+      this.openMap.set(path, openInfo);
     }
+    return openInfo.promise;
   }
 
-  // Instance Properties
+  // Public Class Event Handlers
 
-  // Instance Property Functions
+  public static onServerResponse(msg: NotebookResponse, ownRequest: boolean): void {
+    // Opened response is handled when request promise is resolved.
+    if (msg.operation == 'opened') { return; }
+    const instance = this.instanceMap.get(msg.path)!;
+    assert(instance);
+    instance.onServerResponse(msg, ownRequest);
+  }
+
+  // Public Instance Properties
+
+  public readonly path: NotebookPath;
+  // public readonly pageConfig: PageConfig;
+
+  // Public Instance Property Functions
 
   public get notebookName(): NotebookName {
     const i = this.path.lastIndexOf('/');
     return <NotebookName>this.path.slice(i);
   }
 
-  // Instance Methods
+  public get pageConfig(): PageConfig {
+    return this.obj.pageConfig;
+  }
 
-  // public connect(screen: NotebookBasedScreen): void {
-  //   this.screen = screen;
-  // }
+  public get pages(): Page[] {
+    // TODO: return iterator instead of full array.
+    return this.obj.pages.map(p=>({
+      cellObjects: p.cellIds.map(id=>this.obj.cellMap[id]),
+    }))
+  }
+
+  // Public Instance Methods
+
+  public close(watcher: ClientNotebookWatcher): void {
+    assert(!this.terminated);
+    const openInfo = ClientNotebook.openMap.get(this.path)!;
+    assert(openInfo);
+    const had = openInfo.watchers.delete(watcher);
+    assert(had);
+    if (openInfo.watchers.size == 0) {
+      // LATER: Set timer to destroy in the future.
+      this.terminate("Closed by client");
+    }
+  }
 
   public export(): void {
     // NOTE: Notebook path starts with a slash.
@@ -142,52 +177,77 @@ export class ClientNotebook extends Notebook<ClientNotebookWatcher> {
 
   // Private Class Properties
 
+  protected static openMap: Map<NotebookPath, OpenInfo> = new Map();
+  protected static instanceMap: Map<NotebookPath, ClientNotebook> = new Map();
+
   // Private Class Methods
 
   protected static getInstance(path: NotebookPath): ClientNotebook {
-    return <ClientNotebook>super.getInstance(path);
+    const instance = this.instanceMap.get(path)!;
+    assert(instance);
+    return instance;
+  }
+
+  private static async openNew(path: NotebookPath): Promise<ClientNotebook> {
+    const message: OpenNotebook = { type: 'notebook', operation: 'open', path };
+    const responseMessages = await appInstance.socket.sendRequest<NotebookOpened>(message);
+    const instance = new this(path, responseMessages[0].obj);
+    this.instanceMap.set(path, instance);
+    return instance;
   }
 
   // Private Class Event Handlers
 
-  private static smUpdated(msg: NotebookUpdated, ownRequest: boolean): void {
-    // Message from the server that the notebook has changed.
-    const instance = this.getInstance(msg.path);
-    instance.smChanged(msg, ownRequest);
-  }
-
-  private static smClosed(msg: NotebookClosed, _ownRequest: boolean): void {
-    // Message from the server that the notebook has been closed by the server.
-    // For example, if the notebook was deleted or moved.
-    const had = this.close(msg.path, msg.reason);
-    assert(had);
-  }
-
   // Private Constructor
 
-  private constructor(path: NotebookPath, _options: OpenNotebookOptions) {
-    super(path);
+  private constructor(path: NotebookPath, obj: NotebookObject) {
+    this.path = path;
+    this.obj = obj;
+    this.terminated = false;
   }
 
   // Private Instance Properties
 
-  // Private Instance Methods
+  private obj: NotebookObject;
+  private terminated: boolean;  // TODO: Where to assert(!this.terminated)?
 
-  protected async initialize(_options: OpenNotebookOptions): Promise<void> {
-    const message: OpenNotebook = { type: 'notebook', operation: 'open', path: this.path };
-    const responseMessages = await appInstance.socket.sendRequest<NotebookOpened>(message);
-    assert(responseMessages.length == 1);
-    Notebook.validateObject(responseMessages[0].obj);
-    this.initializeFromObject(responseMessages[0].obj);
+  // Private Instance Property Functions
+
+  private get watchers(): Set<ClientNotebookWatcher> {
+    const openInfo = ClientNotebook.openMap.get(this.path)!;
+    assert(openInfo);
+    return openInfo.watchers;
   }
 
+  // Private Instance Methods
+
   protected terminate(reason: string): void {
-    super.terminate(reason);
+    assert(!this.terminated);
+    this.terminated = true;
+    ClientNotebook.instanceMap.delete(this.path);
+    ClientNotebook.openMap.delete(this.path);
+    for (const watcher of this.watchers) { watcher.onClosed(reason); }
   }
 
   // Private Event Handlers
 
-  private smChanged(msg: NotebookUpdated, ownRequest: boolean): void {
+  private onServerResponse(msg: NotebookResponse, ownRequest: boolean): void {
+    // A notebook message was received from the server.
+    switch(msg.operation) {
+      case 'updated': this.onUpdated(msg, ownRequest); break;
+      case 'closed':  this.onClosedByServer(msg, ownRequest); break;
+      case 'opened':
+      default: assertFalse();
+    }
+  }
+
+  private onClosedByServer(msg: NotebookClosed, _ownRequest: boolean): void {
+    // Message from the server that the notebook has been closed by the server.
+    // For example, if the notebook was deleted or moved.
+    this.terminate(msg.reason);
+  }
+
+  private onUpdated(msg: NotebookUpdated, ownRequest: boolean): void {
     // Message from the server indicating this notebook has changed.
 
     // Apply changes to the notebook data structure, and notify the view of the change.
@@ -198,13 +258,11 @@ export class ClientNotebook extends Notebook<ClientNotebookWatcher> {
     //  then it cannot do that.)
     for (const change of msg.updates) {
       for (const watcher of this.watchers) {
-        watcher.onChange(change, ownRequest);
+        watcher.onUpdate(change, ownRequest);
       }
     }
 
-    for (const watcher of this.watchers) {
-      watcher.onChangesFinished(ownRequest);
-    }
+
   }
 
 }

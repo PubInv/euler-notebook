@@ -25,10 +25,10 @@ const debug = debug1(`server:${MODULE}`);
 
 import { NextFunction, Request, Response, Router } from "express";
 
-import { DebugParams, DebugResults } from "../shared/api-calls";
+import { DebugParams, DebugResults, SearchParams } from "../shared/api-calls";
 
 import { ServerNotebook } from "../server-notebook";
-
+import { search_full as wolframAlphaSearch } from "../adapters/wolframalpha";
 
 // Types
 
@@ -55,6 +55,25 @@ router.post('/debug', async function(req: Request, res: Response, _next: NextFun
       // const html = formatSymTable(cellId, sym_table);
       const html = "TODO: Not implemented.";
       const results: DebugResults = { html };
+      res.json(results);
+    } finally {
+      notebook.close();
+    }
+  } catch (err) {
+    // TODO: Distinguish 400 from 500 responses
+    console.error(`Error in /debug API: ${err.message}`)
+    debug(err.stack);
+    res.status(500).json({ ok: false, message: err.message });
+  }
+});
+
+router.post('/search', async function(req: Request, res: Response, _next: NextFunction) {
+  try {
+    const params: SearchParams = req.body;
+    const notebook = await ServerNotebook.open(params.notebookPath, { mustExist: true });
+    try {
+      debug(`Searching for: "${params.query}"`);
+      const results = await wolframAlphaSearch(params.query);
       res.json(results);
     } finally {
       notebook.close();

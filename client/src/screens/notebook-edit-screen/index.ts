@@ -24,15 +24,18 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 import { CssClass, Html, escapeHtml } from "../../shared/common";
 import { NotebookPath } from "../../shared/folder";
-import { NotebookWatcher } from "../../shared/notebook";
 import { NotebookUpdate } from "../../shared/server-responses";
-import { DebugPopup } from "./debug-popup";
+
+import { ClientNotebook, ClientNotebookWatcher } from "../../client-notebook";
 import { reportError } from "../../error-handler";
+
+import { ScreenBase } from "../screen-base";
+
+import { DebugPopup } from "./debug-popup";
 import { Content } from "./content";
+import { SearchPanel } from "./search-panel";
 import { Sidebar } from "./sidebar";
 import { Tools } from "./tools";
-import { ClientNotebook, OpenNotebookOptions } from "../../client-notebook";
-import { ScreenBase } from "../screen-base";
 
 // Types
 
@@ -42,7 +45,7 @@ import { ScreenBase } from "../screen-base";
 
 // Exported Class
 
-export class NotebookEditScreen extends ScreenBase implements NotebookWatcher {
+export class NotebookEditScreen extends ScreenBase implements ClientNotebookWatcher {
 
   // Public Constructor
 
@@ -54,14 +57,14 @@ export class NotebookEditScreen extends ScreenBase implements NotebookWatcher {
       tag: 'div',
     });
 
-    const options: OpenNotebookOptions = { mustExist: true, watcher: this };
-    ClientNotebook.open(path, options)
+    ClientNotebook.open(path, this)
     .then(
       (notebook: ClientNotebook)=>{
         this.notebook = notebook;
         this.sidebar = new Sidebar(this);
         this.content = new Content(this);
         this.tools = new Tools(this);
+        this.searchPanel = new SearchPanel(this);
         this.debugPopup = new DebugPopup(this);
       },
       (err)=>{
@@ -76,11 +79,21 @@ export class NotebookEditScreen extends ScreenBase implements NotebookWatcher {
 
   public debugPopup!: DebugPopup;
   public notebook!: ClientNotebook;
+  public searchPanel!: SearchPanel;
   public sidebar!: Sidebar;
   public tools!: Tools;
   public content!: Content;
 
   // Public Instance Methods
+
+  public toggleSearchPanel(): void {
+    if (this.searchPanel.isHidden) {
+      this.searchPanel.show();
+      this.searchPanel.setFocus();
+    } else {
+      this.searchPanel.hide();
+    }
+  }
 
   // Public Instance Event Handlers
 
@@ -88,12 +101,8 @@ export class NotebookEditScreen extends ScreenBase implements NotebookWatcher {
 
   // ClientNotebookWatcher Methods
 
-  public onChange(change: NotebookUpdate): void {
+  public onUpdate(change: NotebookUpdate): void {
     this.content.onChange(change);
-  }
-
-  public onChangesFinished(): void {
-    this.content.onChangesFinished();
   }
 
   public onClosed(reason?: string): void {

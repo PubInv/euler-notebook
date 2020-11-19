@@ -17,48 +17,30 @@ You should have received a copy of the GNU Affero General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
+import { DebugParams, DebugResults, SearchParams, SearchResults } from "./shared/api-calls";
+import { assert } from "./shared/common";
+
 // Requirements
 
 // Exported Functions
 
-// export function apiGetRequest(method: string) {
-//   return new Promise((resolve, reject)=>{
-//     const xhr = new XMLHttpRequest();
-//     xhr.open('GET', `/api/${method}`);
-//     xhr.onload = function() {
-//       if (xhr.status === 200) {
-//         try {
-//           const results = JSON.parse(xhr.responseText);
-//           resolve(results);
-//         } catch (err) {
-//           reject(new Error(`Ajax GET /api/${method} returned invalid JSON: ${err.message}`));
-//         }
-//       } else {
-//         reject(new Error(`Ajax GET /api/${method} request failed: status ${xhr.status}`));
-//       }
-//     };
-//     xhr.send();
-//   });
-// }
-
-export function apiPostRequest<P,R>(method: string, data: P): Promise<R> {
-  return new Promise<R>((resolve, reject)=>{
-    const xhr = new XMLHttpRequest();
-    xhr.open('POST', `/api/${method}`);
-    xhr.onload = function() {
-      if (xhr.status === 200) {
-        try {
-          const results = JSON.parse(xhr.responseText);
-          resolve(results);
-        } catch (err) {
-          reject(new Error(`Ajax POST /api/${method} returned invalid JSON: ${err.message}`));
-        }
-      } else {
-        reject(new Error(`Ajax POST /api/${method} request failed: status ${xhr.status}`));
-      }
-    };
-    xhr.setRequestHeader("Content-Type", "application/json;charset=UTF-8");
-    xhr.send(JSON.stringify(data));
-  });
+export async function apiDebug(params: DebugParams): Promise<DebugResults> {
+  return await apiCall<DebugParams, DebugResults>('/api/debug', params);
 }
 
+export async function apiSearch(params: SearchParams): Promise<SearchResults> {
+  return await apiCall<SearchParams, SearchResults>('/api/search', params);
+}
+
+// Helper Functions
+
+export async function apiCall<P,R>(path: string, params: P): Promise<R> {
+  const headers = new Headers();
+  headers.append('Content-Type', 'application/json');
+  const body = JSON.stringify(params);
+  const response = await fetch(path, { method: 'POST', headers, body });
+  assert(response.status == 200, `Error ${response.status} returned from ${path}`);
+  // REVIEW: Check results headers for content type?
+  const results = <R>await response.json();
+  return results;
+}

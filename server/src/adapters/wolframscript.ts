@@ -261,6 +261,7 @@ export async function checkEquiv(a:string, b:string) : Promise<boolean> {
   return (<unknown>result == 'True');
 }
 
+
 // Note: As often happens, this does not handle the input
 // being an assignment properly...it is best to texify
 // both sides of an assignment and handle that way.
@@ -282,6 +283,7 @@ export async function convertEvaluatedWolframToTeX(text: WolframExpression): Pro
       const tex = <TexExpression>(await execute(getTex));
       return tex;
     }  catch (e) {
+      console.log("error",e);
       return <TexExpression>'';
     }
 }

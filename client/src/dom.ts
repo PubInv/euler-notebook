@@ -28,7 +28,7 @@ export type CssSelector = '{CssSelector}';
 export type ElementId = '{ElementId}';
 
 interface Attributes {
-  [name: string]: boolean|number|string,
+  [name: string]: boolean | number | string,
 }
 
 interface AsyncListeners {
@@ -38,6 +38,7 @@ interface AsyncListeners {
   input?: AsyncListener<InputEvent>;
   keypress?: AsyncListener<KeyboardEvent>;
   keyup?: AsyncListener<KeyboardEvent>;
+  submit?: AsyncListener<Event>;
 }
 interface SyncListeners {
   // REVIEW: Can we populate this declaratively from the standard DOM types?
@@ -82,6 +83,7 @@ interface NewCommonOptions {
   listeners?: SyncListeners;
   style?: string;
   title?: string;
+  type?: string;
   value?: string;
   selected?: boolean;
 
@@ -166,6 +168,8 @@ export function $configure($elt: HTMLElement|SVGElement, options: NewCommonOptio
   }
   if (options.disabled) { attributes.disabled = true; }
   if (options.selected) { attributes.selected = true; }
+  if (options.title) { attributes.title = options.title }
+  if (options.type) { attributes.type = options.type }
   if (options.value) { attributes.value = options.value }
   attachAttributes($elt, attributes);
 

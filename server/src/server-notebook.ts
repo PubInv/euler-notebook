@@ -317,11 +317,11 @@ export class ServerNotebook extends Notebook<ServerNotebookWatcher> {
 
   // Public Instance Methods
 
-  public async requestChanges(
+  public requestChanges(
     source: CellSource,
     changeRequests: NotebookChangeRequest[],
     options: RequestChangesOptions,
-  ): Promise<void> {
+  ): void {
     assert(!this.terminated);
     debug(`${source} change requests: ${changeRequests.length}`);
 
@@ -333,19 +333,19 @@ export class ServerNotebook extends Notebook<ServerNotebookWatcher> {
       debug(`${source} change request: ${notebookChangeRequestSynopsis(changeRequest)}`);
       switch(changeRequest.type) {
         case 'addStroke':
-          await this.applyAddStrokeRequest(source, changeRequest, updates, undoChangeRequests);
+          this.applyAddStrokeRequest(source, changeRequest, updates, undoChangeRequests);
           break;
         case 'deleteCell':
-          await this.applyDeleteCellRequest(source, changeRequest, updates, undoChangeRequests);
+          this.applyDeleteCellRequest(source, changeRequest, updates, undoChangeRequests);
           break;
         case 'insertCell':
-          await this.applyInsertCellRequest(source, changeRequest, updates, undoChangeRequests);
+          this.applyInsertCellRequest(source, changeRequest, updates, undoChangeRequests);
           break;
         case 'moveCell':
-          await this.applyMoveStyleRequest(source, changeRequest, updates, undoChangeRequests);
+          this.applyMoveStyleRequest(source, changeRequest, updates, undoChangeRequests);
           break;
         case 'removeStroke':
-          await this.applyRemoveStrokeRequest(source, changeRequest, updates, undoChangeRequests);
+          this.applyRemoveStrokeRequest(source, changeRequest, updates, undoChangeRequests);
           break;
         default:
           assertFalse();
@@ -356,7 +356,7 @@ export class ServerNotebook extends Notebook<ServerNotebookWatcher> {
       type: 'notebook',
       path: this.path,
       operation: 'updated',
-      updates: updates,
+      updates,
       undoChangeRequests, // TODO: Only undo for initiating client.
       complete: true,
     }
@@ -369,8 +369,11 @@ export class ServerNotebook extends Notebook<ServerNotebookWatcher> {
     }
 
     // REVIEW: If other batches of changes are being processed at the same time?
-    // LATER: Set/restart a timer for the save so we save only once when the document reaches a quiescent state.
-    await this.save();
+    // TODO: Set/restart a timer for the save so we save only once when the document reaches a quiescent state.
+    this.save()
+    .catch(err=>{
+      logError(err, `Error saving "${this.path}"`);
+    });
   }
 
   public reserveId(): CellId {
@@ -447,7 +450,7 @@ export class ServerNotebook extends Notebook<ServerNotebookWatcher> {
 
     assert(cellObject.inputType == InputType.Stylus);
     cellObject.stylusInput.strokeGroups[0].strokes.push(update.stroke);
-    notImplemented();
+
 
     const undoChangeRequest: RemoveStroke = { type: 'removeStroke', cellId, strokeId };
     undoChangeRequests.unshift(undoChangeRequest);
@@ -748,17 +751,16 @@ export class ServerNotebook extends Notebook<ServerNotebookWatcher> {
   }
 
   private async save(): Promise<void> {
-    // Do not call this directly.
-    // Changes to the document should result in calls to notifyChange,
-    // which will schedule a save, eventually getting here.
+    // LATER: A new save can be requested before the previous save completes,
+    //        so wait until the previous save completes before attempting to save.
+    assert(!this.saving);
+    this.saving = true;
 
     // "Ephemeral" notebooks are not persisted in the filesystem.
     if (this.ephemeral) { return; }
 
-    assert(!this.saving); // LATER: Saving promise?
     assert(ServerNotebook.isValidNotebookPath(this.path));
     debug(`saving ${this.path}`);
-    this.saving = true;
 
     const json = JSON.stringify(this);
     const filePath = absFilePathFromNotebookPath(this.path);
@@ -817,11 +819,7 @@ export class ServerNotebook extends Notebook<ServerNotebookWatcher> {
 
   private onChangeRequest(originatingSocket: ServerSocket, msg: ChangeNotebook): void {
     const options: RequestChangesOptions = { originatingSocket, requestId: msg.requestId };
-    this.requestChanges('USER', msg.changeRequests, options)
-    .catch(err=>{
-      // REVIEW: Proper error handling?
-      logError(err, "Error processing client notebook change message.");
-    });
+    this.requestChanges('USER', msg.changeRequests, options);
   }
 
   private onCloseRequest(socket: ServerSocket, _msg: CloseNotebook): void {

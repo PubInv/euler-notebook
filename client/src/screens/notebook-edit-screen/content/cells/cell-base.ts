@@ -25,9 +25,9 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 // const debug = debug1('client:cell-base');
 
 import { CellObject, CellId } from "../../../../shared/cell";
-import { assert, Html, CssClass } from "../../../../shared/common";
+import { assert, Html, CssClass, notImplemented } from "../../../../shared/common";
 import { NotebookUpdate } from "../../../../shared/server-responses";
-import { MoveCell } from "../../../../shared/client-requests";
+// import { MoveCell } from "../../../../shared/client-requests";
 
 import { HtmlElement } from "../../../../html-element";
 import {
@@ -93,7 +93,6 @@ export abstract class CellBase extends HtmlElement<'div'>{
   // Overridable ClientNotebookWatcher Methods
 
   public abstract onChange(change: NotebookUpdate): void;
-  public abstract onChangesFinished(): void;
 
   // PRIVATE
 
@@ -242,27 +241,28 @@ export abstract class CellBase extends HtmlElement<'div'>{
     event.dataTransfer!.effectAllowed = 'all';
   }
 
-  private onDrop(event: DragEvent): void {
-    const cellDragData = getDragData(event);
-    if (!cellDragData) { return; }
-    // console.log(`Dropped style ${cellDragData.cellId} onto style ${this.cellId}`);
+  private onDrop(_event: DragEvent): void {
+    notImplemented();
+    // const cellDragData = getDragData(event);
+    // if (!cellDragData) { return; }
+    // // console.log(`Dropped style ${cellDragData.cellId} onto style ${this.cellId}`);
 
-    const c = this.container.screen.notebook.compareCellPositions(cellDragData.cellId, this.cellId);
-    if (c==0) { /* Dropped onto self */ return; }
+    // const c = this.container.screen.notebook.compareCellPositions(cellDragData.cellId, this.cellId);
+    // if (c==0) { /* Dropped onto self */ return; }
 
-    // If dragging down, then put dragged cell below the cell that was dropped on.
-    // If dragging up, then put dragged cell above the cell that was dropped on.
-    const afterId = c<0 ? this.cellId : this.container.screen.notebook.precedingCellId(this.cellId);
-    const moveRequest: MoveCell = {
-      type: 'moveCell',
-      cellId: cellDragData.cellId,
-      afterId,
-    }
-    this.container.editStyle([ moveRequest ])
-    .catch((err: Error)=>{
-      // TODO: What to do here?
-      reportError(err, <Html>"Error moving style for drag/drop");
-    });
+    // // If dragging down, then put dragged cell below the cell that was dropped on.
+    // // If dragging up, then put dragged cell above the cell that was dropped on.
+    // const afterId = c<0 ? this.cellId : this.container.screen.notebook.precedingCellId(this.cellId);
+    // const moveRequest: MoveCell = {
+    //   type: 'moveCell',
+    //   cellId: cellDragData.cellId,
+    //   afterId,
+    // }
+    // this.container.editStyle([ moveRequest ])
+    // .catch((err: Error)=>{
+    //   // TODO: What to do here?
+    //   reportError(err, <Html>"Error moving style for drag/drop");
+    // });
   }
 
   private onInsertCellBelow(): void {
@@ -280,13 +280,13 @@ export abstract class CellBase extends HtmlElement<'div'>{
 
 // HELPER FUNCTIONS
 
-function getDragData(event: DragEvent): CellDragData|undefined {
-  assert(event.dataTransfer);
-  const json = event.dataTransfer!.getData(CELL_MIME_TYPE);
-  if (!json) { return undefined; }
-  const cellDragData = <CellDragData>JSON.parse(json);
-  return cellDragData;
-}
+// function getDragData(event: DragEvent): CellDragData|undefined {
+//   assert(event.dataTransfer);
+//   const json = event.dataTransfer!.getData(CELL_MIME_TYPE);
+//   if (!json) { return undefined; }
+//   const cellDragData = <CellDragData>JSON.parse(json);
+//   return cellDragData;
+// }
 
 function hasDragData(event: DragEvent): boolean {
   return event.dataTransfer!.types.includes(CELL_MIME_TYPE);

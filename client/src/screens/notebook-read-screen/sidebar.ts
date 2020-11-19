@@ -47,7 +47,6 @@ export class Sidebar extends ButtonBar {
         // thumbnail view
         tag: 'button',
         class: <CssClass>'iconButton',
-        attrs: { title: "Thumbnail View"},
         html: svgIconReference('iconMonstrFile12'),
         listeners: { click: (_e: MouseEvent)=>{ window.location.href = `/#${screen.notebook.path}`; }},
         title: "Reading view",
@@ -56,7 +55,6 @@ export class Sidebar extends ButtonBar {
         // reading view
         tag: 'button',
         class: <CssClass>'iconButton',
-        attrs: { title: "Reading View"},
         html: svgIconReference('iconMonstrFile5'),
         listeners: { click: (_e: MouseEvent)=>{ window.location.href = `/#${screen.notebook.path}?view=read`; }},
         title: "Reading view",
@@ -65,7 +63,6 @@ export class Sidebar extends ButtonBar {
         // edit view
         tag: 'button',
         class: <CssClass>'iconButton',
-        attrs: { title: "Editing View"},
         html: svgIconReference('iconMonstrNote23'),
         listeners: { click: (_e: MouseEvent)=>{ window.location.href = `/#${screen.notebook.path}?view=edit`; }},
         title: "Editing view",

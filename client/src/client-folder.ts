@@ -38,7 +38,6 @@ import { OpenOptions } from "./shared/watched-resource";
 // Types
 
 export interface ClientFolderWatcher extends FolderWatcher {
-  onChangesFinished(ownRequest: boolean): void;
 }
 
 export type OpenFolderOptions = OpenOptions<ClientFolderWatcher>;
@@ -240,10 +239,7 @@ export class ClientFolder extends Folder<ClientFolderWatcher> {
       this.applyChange(change, ownRequest);
     }
 
-    for (const watcher of this.watchers) {
-      watcher.onChangesFinished(ownRequest);
-    }
-
+    // TODO: Notify watchers?
   }
 
 }

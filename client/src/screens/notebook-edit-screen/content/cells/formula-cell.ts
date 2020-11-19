@@ -120,8 +120,6 @@ export class FormulaCell extends CellBase {
     return false;
   }
 
-  public onChangesFinished(): void { /* Nothing to do. */ }
-
   // -- PRIVATE --
 
   // Private Instance Properties

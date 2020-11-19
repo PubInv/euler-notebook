@@ -24,6 +24,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
   --header-button-padding 2px
   --header-height 30px
   --page-aspect-ratio calc(8.5 / 11)
+  --searchbar-height 30px
   --sidebar-button-padding 4px
   --sidebar-width 60px
   --svg-left-offset 6px
@@ -236,6 +237,8 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
       text-decoration underline
 
   >.content
+    height: calc(100% - var(--header-height) - var(--searchbar-height)) !important
+    top calc(var(--header-height) + var(--searchbar-height)) !important
 
     >.cell
 
@@ -330,6 +333,36 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
     .figureCell
       padding var(--svg-top-offset) 0px 0px var(--svg-left-offset)
 
+  >.searchPanel
+    background #F0F0F0
+    border 1px solid #808080
+    height calc(100% - var(--header-height))
+    left var(--sidebar-width)
+    position fixed
+    top var(--header-height)
+    width calc(75% - var(--sidebar-width))
+
+    >.searchResults
+      overflow scroll
+
+    >.searchForm
+      border-bottom 1px solid #808080
+      display flex
+      justify-content space-between
+
+      >input[type=text]
+        background none
+        border none
+        flex 2
+      >input[type=text]:focus
+        outline none
+
+      >button[type=submit]
+        flex 0
+        height var(--header-height)
+        padding var(--header-button-padding)
+        width var(--header-width)
+
 .notebookThumbnailsScreen
 .notebookReadScreen
   >.content
@@ -381,12 +414,24 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
     width var(--sidebar-width)
 
     .icon
-      height 52px // why not?: calc(var(--sidebar-width)-2*var(--sidebar-button-padding))
-      width 52px // why not?: calc(var(--sidebar-width)-2*var(--sidebar-button-padding))
+      height 52px // why not? doesn't work!: calc(var(--sidebar-width) - 2 * var(--sidebar-button-padding))
+      width 52px // why not? doesn't work!: calc(var(--sidebar-width)- 2 * var(--sidebar-button-padding))
 
   button:disabled
     svg
       fill #808080
+
+.smallIconButton
+  background none
+  border none
+  color inherit
+  height var(--header-height)
+  padding var(--header-button-padding)
+  width var(--header-height)
+
+  >.icon
+    height 26px // why not? doesn't work!: calc(var(--header-height) - 2 * var(--header-width))
+    width 26px // why not? doesn't work! calc(var(--header-height) - 2 * var(--header-width))
 
 .strokePanel
   >.stylusDrawingPanel

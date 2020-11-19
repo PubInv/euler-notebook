@@ -54,4 +54,3 @@ after("Stopping WolframScript.", async function(){
   await stopWolframscript();
   debug(`  Global after finished.`);
 });
-

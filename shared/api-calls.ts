@@ -23,6 +23,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 // Requirements
 
 import { CellId } from "./cell";
+import { Html, PlainText } from "./common";
 import { NotebookPath } from "./folder";
 
 // Types
@@ -40,9 +41,27 @@ export interface DebugResults {
   html: string;
 }
 
+export interface SearchParams {
+  query: PlainText;
+  notebookPath: NotebookPath;
+}
+
+export interface SearchResults {
+  results: SearchResult[];
+}
+
 // Other
 
 export interface NameValuePair {
   name: string;
   value: string;
+}
+
+export interface SearchResult {
+  title?: PlainText;
+  text?: PlainText; // a short summary
+  html?: Html;
+  raw?: object;
+  formula?: PlainText; // if present, this is would a syntactically correct wolfram language expression
+  knownConstant?: PlainText;
 }

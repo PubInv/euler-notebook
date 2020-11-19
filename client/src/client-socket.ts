@@ -157,7 +157,7 @@ export class ClientSocket {
       switch(msg.type) {
         // TODO: case 'error': errors should only come back from 'requests'
         case 'folder': ClientFolder.smMessage(msg, ownRequest); break;
-        case 'notebook': ClientNotebook.smMessage(msg, ownRequest); break;
+        case 'notebook': ClientNotebook.onServerResponse(msg, ownRequest); break;
         case 'error': {
           if (requestInfo) {
             // Do nothing.

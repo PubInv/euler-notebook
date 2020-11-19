@@ -43,6 +43,7 @@ export interface PromiseResolver<T> {
   reject: (err: Error)=>void
 }
 
+
 // Constants
 
 const ASSERTION_FAILED_MSG = "Assertion failed.";

@@ -29,7 +29,7 @@ import { CellId, CellObject, CellRelativePosition, CellPosition, CellType, Input
 import { CssClass, assert, Html, assertFalse, notImplemented, emptySvg, PlainText, POINTS_PER_INCH, CssSize, CssLength } from "../../../shared/common";
 import { DeleteCell, InsertCell, MoveCell, NotebookChangeRequest, } from "../../../shared/client-requests";
 import { NotebookUpdate } from "../../../shared/server-responses";
-import { DebugParams, DebugResults, } from "../../../shared/api-calls";
+import { DebugParams } from "../../../shared/api-calls";
 
 import { CellBase } from "./cells/cell-base";
 import { createCell } from "./cells/index";
@@ -39,6 +39,7 @@ import { reportError } from "../../../error-handler";
 import { userSettingsInstance } from "../../../user-settings";
 import { EMPTY_FORMULA, FormulaCellObject } from "../../../shared/formula";
 import { emptyStylusInput } from "../../../shared/stylus";
+import { apiDebug } from "../../../api";
 
 // Types
 
@@ -108,15 +109,14 @@ export class Content extends HtmlElement<'div'>{
     this.screen = screen;
 
     this.cellViews = new Map();
-    this.dirtyCells = new Set();
     this.topOfUndoStack = 0;
     this.undoStack = [];
 
-    for (const cellId of this.screen.notebook.topLevelCellOrder()) {
-      const cellObject = this.screen.notebook.getCell(cellId);
-      this.createCell(cellObject, -1);
+    for (const page of this.screen.notebook.pages) {
+      for (const cellObject of page.cellObjects) {
+        this.createCell(cellObject, -1);
+      }
     }
-
   }
 
   // Public Instance Properties
@@ -167,17 +167,7 @@ export class Content extends HtmlElement<'div'>{
     const notebookPath = this.screen.notebook.path;
     const cellId = this.lastCellSelected?.cellId;
     const params: DebugParams = { notebookPath, cellId };
-
-    const api = '/api/debug';
-    const headers = new Headers();
-    headers.append('Content-Type', 'application/json');
-    const body = JSON.stringify(params);
-    const response = await fetch(api, { method: 'POST', headers, body });
-    if (response.status != 200) {
-      console.error(`Error ${response.status} returned from ${api}`);
-    }
-    // REVIEW: Check results headers for content type?
-    /* const results = */<DebugResults>await response.json();
+    /* const results = */ await apiDebug(params);
     notImplemented();
     // WAS: this.screen.debugPopup.showContents(results.html);
   }
@@ -503,7 +493,6 @@ export class Content extends HtmlElement<'div'>{
   // ClientNotebookWatcher Methods
 
   public onChange(change: NotebookUpdate): void {
-    const notebook = this.screen.notebook;
     // If a change would (or might) modify the display of a cell,
     // then mark add the cell to a list of cells to be redrawn.
     // If a cell is deleted or moved, then make that change immediately.
@@ -524,11 +513,9 @@ export class Content extends HtmlElement<'div'>{
       case 'cellDeleted': {
         // If a substyle is deleted then mark the cell as dirty.
         // If a top-level style is deleted then remove the cell.
-        const cellObject = notebook.getCell(change.cellId);
-        const cellView = this.cellViews.get(cellObject.id);
+        const cellView = this.cellViews.get(change.cellId);
         assert(cellView);
         this.deleteCell(cellView!);
-        this.dirtyCells.delete(cellObject.id);
         break;
       }
       case 'cellInserted': {
@@ -536,8 +523,7 @@ export class Content extends HtmlElement<'div'>{
         break;
       }
       case 'cellMoved': {
-        const cellObject = notebook.getCell(change.cellId);
-        const movedCell = this.cellViews.get(cellObject.id);
+        const movedCell = this.cellViews.get(change.cellId);
         assert(movedCell);
         // Note: DOM methods ensure the element will be removed from
         //       its current parent.
@@ -549,24 +535,19 @@ export class Content extends HtmlElement<'div'>{
     }
   }
 
-  public onChangesFinished(): void {
-    // Redraw all of the cells that (may) have changed.
-    for (const cellId of this.dirtyCells) {
-      const cellView = this.cellViewFromId(cellId);
-      cellView.onChangesFinished();
-    }
-    if (this.lastCellSelected) {
-      this.lastCellSelected.renderTools(this.screen.tools);
-    }
-    this.dirtyCells.clear();
-  }
+  // REVIEW: We no longer have this notification. Do we need it?
+  // public onChangesFinished(): void {
+  //   // Redraw all of the cells that (may) have changed.
+  //   if (this.lastCellSelected) {
+  //     this.lastCellSelected.renderTools(this.screen.tools);
+  //   }
+  // }
 
   // -- PRIVATE --
 
   // Private Instance Properties
 
   private cellViews: Map<CellId, CellBase>;
-  private dirtyCells: Set<CellId>;     // Style ids of top-level styles that need to be redrawn.
   private lastCellSelected?: CellBase;
   private topOfUndoStack: number;       // Index of the top of the stack. May not be the length of the undoStack array if there have been some undos.
   private undoStack: UndoEntry[];
@@ -586,12 +567,8 @@ export class Content extends HtmlElement<'div'>{
   }
 
   private firstCell(): CellBase | undefined {
-    const styleOrder = this.screen.notebook.topLevelCellOrder();
-    if (styleOrder.length==0) { return undefined; }
-    const cellId = styleOrder[0];
-    const cellView = this.cellViewFromId(cellId);
-    assert(cellView);
-    return cellView;
+    const $elt = <HTMLDivElement|null>this.$elt.firstElementChild;
+    return $elt ? this.cellViewFromElement($elt) : undefined;
   }
 
   private lastCell(): CellBase | undefined {

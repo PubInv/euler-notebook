@@ -85,8 +85,6 @@ export class FolderScreen extends ScreenBase implements ClientFolderWatcher {
     this.view.onChange(change);
   }
 
-  public onChangesFinished(): void { }
-
   public onClosed(reason?: string): void {
     this.sidebar.destroy();
     this.view.destroy();

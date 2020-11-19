@@ -23,7 +23,9 @@ import { readFile } from "fs";
 import { join } from "path";
 import { promisify } from "util";
 
-import { ServerKeys } from "./adapters/myscript";
+import { ApiKeys as MyScriptApiKeys } from "./adapters/myscript";
+import { ApiKeys as WolframAlphaApiKeys } from "./adapters/wolframalpha";
+
 import { logWarning } from "./error-handler";
 
 const readFile2 = promisify(readFile);
@@ -39,7 +41,8 @@ export interface Config {
 }
 
 export interface Credentials {
-  myscript: ServerKeys;
+  myscript: MyScriptApiKeys;
+  wolframalpha: WolframAlphaApiKeys;
 }
 
 export interface MathematicaConfig {

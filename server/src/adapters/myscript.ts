@@ -33,12 +33,18 @@ import * as debug1 from "debug";
 import fetch, { Response } from "node-fetch";
 
 import { StrokeGroup } from "../shared/stylus";
-import { TexExpression } from "../shared/math-tablet-api";
+import { TexExpression } from "../shared/formula";
 
 const MODULE = __filename.split(/[/\\]/).slice(-1)[0].slice(0,-3);
 const debug = debug1(`server:${MODULE}`);
 
 // Types
+
+export interface ApiKeys {
+  // This structure lives in ~/.math-tablet/credentials.json under "myscript" key.
+  applicationKey: string;
+  hmacKey: string;
+}
 
 interface BatchRequest {
   configuration?: Configuration;
@@ -121,11 +127,6 @@ interface MathConfiguration {
   solver?: SolverConfiguration;
 }
 
-export interface ServerKeys {
-  applicationKey: string;
-  hmacKey: string;
-}
-
 interface SolverConfiguration {
   enable: boolean;
   'fractional-part-digits': number;
@@ -153,7 +154,7 @@ const MYSCRIPT_BATCH_API_URL = 'https://webdemoapi.myscript.com/api/v4.0/iink/ba
 //   return <Jiix>jiix;
 // }
 
-export async function postLatexRequest(keys: ServerKeys, strokeGroups: StrokeGroup[]): Promise<TexExpression> {
+export async function postLatexRequest(keys: ApiKeys, strokeGroups: StrokeGroup[]): Promise<TexExpression> {
 
   // If there aren't any strokes yet, return an empty TeX expression.
   if (strokeGroups.length == 1 && strokeGroups[0].strokes.length == 0) {
@@ -245,7 +246,7 @@ function cleanLatex(latexExport: number|TexExpression): TexExpression {
     .replace(new RegExp("(align.{1})", "g"), "aligned");
 }
 
-function computeHmac(keys: ServerKeys, body: string): string {
+function computeHmac(keys: ApiKeys, body: string): string {
   const hmac = HmacSHA512(body, keys.applicationKey + keys.hmacKey);
   const hex = hmac.toString(Hex);
   return hex;
@@ -255,7 +256,7 @@ function isErrorResponse(response: Jiix|ErrorResponse): response is ErrorRespons
   return response.hasOwnProperty('code');
 }
 
-async function postRequest(keys: ServerKeys, accept: string, batchRequest: BatchRequest): Promise<string> {
+async function postRequest(keys: ApiKeys, accept: string, batchRequest: BatchRequest): Promise<string> {
   const body = JSON.stringify(batchRequest);
   const hmac = computeHmac(keys, body);
   const headers = {

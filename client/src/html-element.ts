@@ -37,6 +37,12 @@ export class HtmlElement<K extends keyof HTMLElementTagNameMap> {
 
   public $elt: HTMLElementTagNameMap[K];
 
+  // Public Instance Property Functions
+
+  public get isHidden(): boolean {
+    return this.$elt.style.display == 'none';
+  }
+
   // Public Instance Methods
 
   public appendTo(parent: HTMLElement|HtmlElement<any>): void {
@@ -66,6 +72,11 @@ export class HtmlElement<K extends keyof HTMLElementTagNameMap> {
     // Note that this will not work if the element is hidden by a declaration in a stylesheet,
     this.$elt.style.display = '';
   }
+
+  // public toggleVisibility(): void {
+  //   if (this.isHidden) { this.show(); }
+  //   else { this.hide(); }
+  // }
 
   // -- PRIVATE --
 

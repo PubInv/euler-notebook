@@ -43,23 +43,21 @@ export class Sidebar extends ButtonBar {
     const $newFolderButton = $new({
       tag: 'button',
       class: <CssClass>'iconButton',
-      attrs: { title: "New Folder"},
       html: svgIconReference('iconMonstrFolder5'),
       asyncListeners: {
         click: (e: MouseEvent)=>this.onNewFolderClicked(e)
       },
-      title: "Page thumbnail view",
+      title: "New folder",
     });
 
     const $newNotebookButton = $new({
       tag: 'button',
       class: <CssClass>'iconButton',
-      attrs: { title: "New Notebook"},
       html: svgIconReference('iconMonstrFile15'),
       asyncListeners: {
         click: (e: MouseEvent)=>this.onNewNotebookClicked(e)
       },
-      title: "Reading view",
+      title: "New notebook",
     });
 
     super({
