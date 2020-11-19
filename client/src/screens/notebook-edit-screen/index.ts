@@ -32,7 +32,7 @@ import { reportError } from "../../error-handler";
 import { ScreenBase } from "../screen-base";
 
 import { DebugPopup } from "./debug-popup";
-import { Content } from "./content";
+import { NotebookEditView } from "../../views/notebook-edit-view";
 import { SearchPanel } from "./search-panel";
 import { Sidebar } from "./sidebar";
 import { Tools } from "./tools";
@@ -62,7 +62,7 @@ export class NotebookEditScreen extends ScreenBase implements ClientNotebookWatc
       (notebook: ClientNotebook)=>{
         this.notebook = notebook;
         this.sidebar = new Sidebar(this);
-        this.content = new Content(this);
+        this.content = new NotebookEditView(this);
         this.tools = new Tools(this);
         this.searchPanel = new SearchPanel(this);
         this.debugPopup = new DebugPopup(this);
@@ -82,7 +82,7 @@ export class NotebookEditScreen extends ScreenBase implements ClientNotebookWatc
   public searchPanel!: SearchPanel;
   public sidebar!: Sidebar;
   public tools!: Tools;
-  public content!: Content;
+  public content!: NotebookEditView;
 
   // Public Instance Methods
 

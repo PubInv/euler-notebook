@@ -19,35 +19,26 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 // Requirements
 
-import { PlotCellObject } from "../shared/cell";
+import { CellObject } from "../shared/cell";
+import { notImplemented } from "../shared/common";
 import { NotebookUpdate } from "../shared/server-responses";
 
-import { ClientNotebook } from "../client-notebook";
+import { ClientCell } from "../client-cell";
 
-import { ClientCell } from "./index";
-import { PlotEditView } from "../views/plot-edit-view";
+import { CellView } from "./cell-edit-view";
 
 // Exported Class
 
-export class PlotCell extends ClientCell<PlotCellObject> {
+export class CellReadView<O extends CellObject> /* extends HtmlElement<'div'> */ implements CellView {
 
-  // Public Constructor
+  public onUpdate(_update: NotebookUpdate, _ownRequest: boolean): void {
+    notImplemented();
+  };
 
-  public constructor(notebook: ClientNotebook, obj: PlotCellObject) {
-    super(notebook, obj);
+  public constructor(_cell: ClientCell<O>) {
+    // this.cell = cell;
   }
 
-  // Public Instance Methods
-
-  public createEditView(): PlotEditView {
-    const instance = new PlotEditView(this);
-    this.views.add(instance);
-    return instance;
-  };
-
-  public onUpdate(update: NotebookUpdate, ownRequest: boolean): void {
-    super.onUpdate(update, ownRequest);
-  };
-
+  // private cell: ClientCell<O>;
 }
 

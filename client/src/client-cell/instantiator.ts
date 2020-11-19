@@ -23,13 +23,14 @@ import { CellObject, CellType, FigureCellObject, PlotCellObject, TextCellObject 
 import { assertFalse } from "../shared/common";
 import { FormulaCellObject } from "../shared/formula";
 
-import { FormulaClientCell } from "./formula-cell";
-import { FigureClientCell } from "./figure-cell";
-import { PlotClientCell } from "./plot-cell";
-import { TextClientCell } from "./text-cell";
+import { ClientNotebook } from "../client-notebook";
+
+import { FormulaCell } from "./formula-cell";
+import { FigureCell } from "./figure-cell";
+import { PlotCell } from "./plot-cell";
+import { TextCell } from "./text-cell";
 
 import { ClientCell } from "./index";
-import { ClientNotebook } from "../client-notebook";
 
 // Constants
 
@@ -38,12 +39,12 @@ import { ClientNotebook } from "../client-notebook";
 export function createCell<O extends CellObject>(notebook: ClientNotebook, obj: O): ClientCell<O> {
 
   // If a style has a child of REPRESENTATION|INPUT/STROKES then use a stylus cell.
-  let rval: FigureClientCell|FormulaClientCell|TextClientCell|PlotClientCell;
+  let rval: FigureCell|FormulaCell|TextCell|PlotCell;
   switch(obj.type) {
-    case CellType.Figure:   rval = new FigureClientCell(notebook, <FigureCellObject><unknown>obj); break;
-    case CellType.Formula:  rval = new FormulaClientCell(notebook, <FormulaCellObject><unknown>obj); break;
-    case CellType.Text:     rval = new TextClientCell(notebook, <TextCellObject><unknown>obj); break;
-    case CellType.Plot:     rval = new PlotClientCell(notebook, <PlotCellObject><unknown>obj); break;
+    case CellType.Figure:   rval = new FigureCell(notebook, <FigureCellObject><unknown>obj); break;
+    case CellType.Formula:  rval = new FormulaCell(notebook, <FormulaCellObject><unknown>obj); break;
+    case CellType.Text:     rval = new TextCell(notebook, <TextCellObject><unknown>obj); break;
+    case CellType.Plot:     rval = new PlotCell(notebook, <PlotCellObject><unknown>obj); break;
     default: assertFalse();
   }
   return <ClientCell<O>><unknown>rval;

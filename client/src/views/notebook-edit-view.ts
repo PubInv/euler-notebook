@@ -25,27 +25,27 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 import * as debug1 from "debug";
 const debug = debug1('client:notebook-edit-screen-content');
 
-import { CellId, CellObject, CellRelativePosition, CellPosition, CellType, InputType, TextCellObject, FigureCellObject } from "../../shared/cell";
-import { CssClass, assert, Html, assertFalse, notImplemented, emptySvg, PlainText, POINTS_PER_INCH, CssSize, CssLength } from "../../shared/common";
-import { DeleteCell, InsertCell, MoveCell, NotebookChangeRequest, } from "../../shared/client-requests";
-import { NotebookUpdate } from "../../shared/server-responses";
-import { DebugParams } from "../../shared/api-calls";
+import { CellId, CellObject, CellRelativePosition, CellPosition, CellType, InputType, TextCellObject, FigureCellObject } from "../shared/cell";
+import { CssClass, assert, Html, assertFalse, notImplemented, emptySvg, PlainText, POINTS_PER_INCH, CssSize, CssLength } from "../shared/common";
+import { DeleteCell, InsertCell, MoveCell, NotebookChangeRequest, } from "../shared/client-requests";
+import { NotebookUpdate } from "../shared/server-responses";
+import { DebugParams } from "../shared/api-calls";
 
-import { CellEditView } from "../../client-cell";
-import { createCell } from "../../client-cell/instantiator";
-import { HtmlElement } from "../../html-element";
-import { NotebookEditScreen } from ".";
-import { reportError } from "../../error-handler";
-import { userSettingsInstance } from "../../user-settings";
-import { EMPTY_FORMULA, FormulaCellObject } from "../../shared/formula";
-import { emptyStylusInput } from "../../shared/stylus";
-import { apiDebug } from "../../api";
+import { CellEditView } from "./cell-edit-view";
+import { createCell } from "../client-cell/instantiator";
+import { HtmlElement } from "../html-element";
+import { NotebookEditScreen } from "../screens/notebook-edit-screen";
+import { reportError } from "../error-handler";
+import { userSettingsInstance } from "../user-settings";
+import { EMPTY_FORMULA, FormulaCellObject } from "../shared/formula";
+import { emptyStylusInput } from "../shared/stylus";
+import { apiDebug } from "../api";
 
 // Types
 
 type CommandName = string;
 
-type CommandFunction = (this: Content)=>Promise<void>;
+type CommandFunction = (this: NotebookEditView)=>Promise<void>;
 
 enum KeyMod {
   None = 0,
@@ -89,7 +89,7 @@ const KEY_BINDINGS = new Map<KeyCombo, CommandName>(KEY_MAP.map(([ keyName, keyM
 
 // Exported Class
 
-export class Content extends HtmlElement<'div'>{
+export class NotebookEditView extends HtmlElement<'div'>{
 
   // Public Class Methods
 

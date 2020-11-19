@@ -27,7 +27,7 @@ import { ClientNotebook, ClientNotebookWatcher } from "../../client-notebook";
 import { reportError } from "../../error-handler";
 import { ScreenBase } from "../screen-base";
 
-import { Content } from "./content";
+import { NotebookReadView } from "../../views/notebook-read-view";
 import { Sidebar } from "./sidebar";
 
 // Types
@@ -62,7 +62,7 @@ export class NotebookReadScreen extends ScreenBase  implements ClientNotebookWat
       (notebook: ClientNotebook)=>{
         this.notebook = notebook;
         /* this.sidebar = */ new Sidebar(this, mode);
-        this.content = new Content(this, mode);
+        this.content = new NotebookReadView(this, mode);
       },
       (err)=>{
         const message = <Html>`Error opening notebook '${path}'`;
@@ -103,7 +103,7 @@ export class NotebookReadScreen extends ScreenBase  implements ClientNotebookWat
 
   // Private Instance Properties
 
-  private content?: Content;
+  private content?: NotebookReadView;
   // private sidebar: Sidebar;
 
   // Private Property Functions

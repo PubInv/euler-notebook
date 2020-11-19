@@ -19,12 +19,12 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 // Requirements
 
-import { CssClass, assert, CssLength, notImplemented } from "../../shared/common";
+import { CssClass, assert, CssLength, notImplemented } from "../shared/common";
 
-import { $newSvg, $allSvg, $outerSvg, cssLength } from "../../dom";
-import { HtmlElement } from "../../html-element";
+import { $newSvg, $allSvg, $outerSvg, cssLength } from "../dom";
+import { HtmlElement } from "../html-element";
 
-import { Mode, NotebookReadScreen } from "./index";
+import { Mode, NotebookReadScreen } from "../screens/notebook-read-screen/index";
 
 // Types
 
@@ -39,7 +39,7 @@ const PIXELS_PER_INCH = 96;
 
 // Class
 
-export class Content extends HtmlElement<'div'>{
+export class NotebookReadView extends HtmlElement<'div'>{
 
   // Class Methods
 
