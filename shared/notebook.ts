@@ -66,3 +66,19 @@ export function cellInsertedFromNotebookChange(change: NotebookUpdate): CellInse
 export function inchesInPoints(inches: number): CssLength {
   return <CssLength>`${Math.round(inches * POINTS_PER_INCH)}pt`;
 }
+
+export function sizeInPoints(heightInches: number, widthInches: number): CssSize {
+  return {
+    height: inchesInPoints(heightInches),
+    width: inchesInPoints(widthInches),
+  };
+}
+
+export function marginsInPoints(top: number, right: number, bottom: number, left: number): PageMargins {
+  return {
+    top: inchesInPoints(top),
+    right: inchesInPoints(right),
+    bottom: inchesInPoints(bottom),
+    left: inchesInPoints(left),
+  };
+}

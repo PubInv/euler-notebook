@@ -28,10 +28,10 @@ import * as debug1 from "debug";
 // import { readdirSync, unlink, writeFileSync } from "fs"; // LATER: Eliminate synchronous file operations.
 import { join } from "path";
 
-import { CellObject, CellSource, CellId, CellPosition, StylusCellObject, InputType } from "./shared/cell";
-import { assert, assertFalse, deepCopy, escapeHtml, ExpectedError, Html, notImplemented, Timestamp } from "./shared/common";
+import { CellObject, CellSource, CellId, CellPosition, StylusCellObject, InputType, CellType, FigureCellObject, TextCellKeyboardObject, TextCellStylusObject } from "./shared/cell";
+import { assert, assertFalse, deepCopy, emptySvg, escapeHtml, ExpectedError, Html, notImplemented, PlainText, Timestamp } from "./shared/common";
 import { NotebookPath, NOTEBOOK_PATH_RE, NotebookName, FolderPath, NotebookEntry, Folder } from "./shared/folder";
-import { NotebookObject, FORMAT_VERSION, NotebookWatcher, inchesInPoints, PageObject } from "./shared/notebook";
+import { NotebookObject, FORMAT_VERSION, NotebookWatcher, PageObject, sizeInPoints, marginsInPoints } from "./shared/notebook";
 import {
   NotebookChangeRequest, MoveCell, InsertCell, DeleteCell,
   ChangeNotebook, UseTool, RequestId, AddStroke, RemoveStroke, NotebookRequest, OpenNotebook, CloseNotebook,
@@ -41,12 +41,13 @@ import {
   CellInserted, CellDeleted, StrokeInserted,
 } from "./shared/server-responses";
 import { cellSynopsis, notebookChangeRequestSynopsis } from "./shared/debug-synopsis";
-import { StrokeId } from "./shared/stylus";
+import { emptyStylusInput, StrokeId } from "./shared/stylus";
 import { OpenOptions, WatchedResource } from "./shared/watched-resource";
-
+import { FormulaCellKeyboardObject, FormulaCellStylusObject, PlainTextFormula } from "./shared/formula";
 import { ServerSocket } from "./server-socket";
 import { AbsDirectoryPath, ROOT_DIR_PATH, mkDir, readFile, rename, rmRaf, writeFile } from "./adapters/file-system";
 import { logError } from "./error-handler";
+import { SSL_OP_SSLEAY_080_CLIENT_DH_BUG } from "constants";
 
 
 // const svg2img = require('svg2img');
@@ -84,16 +85,19 @@ interface ServerNotebookObject extends NotebookObject {
 
 // Constants
 
+const LETTER_PAGE_SIZE = sizeInPoints(8.5, 11);
+const DEFAULT_LETTER_MARGINS = marginsInPoints(1,1,1,1);
+const DEFAULT_WIDTH = 6.5; // inches
+
+const DEFAULT_FORMULA_CSS_SIZE = sizeInPoints(1, DEFAULT_WIDTH);
+const DEFAULT_FIGURE_CSS_SIZE = sizeInPoints(4, DEFAULT_WIDTH);
+const DEFAULT_TEXT_CSS_SIZE = sizeInPoints(4, DEFAULT_WIDTH);
+
 const DEFAULT_PAGE: PageObject = {
   // REVIEW: Standardize on "pt" as the unit of measurement rather than mixing inches and points?
   cells: [],
-  margins: {
-    top: inchesInPoints(1),
-    right: inchesInPoints(1),
-    bottom: inchesInPoints(1),
-    left: inchesInPoints(1),
-  },
-  size: { width: inchesInPoints(8.5), height: inchesInPoints(11) },
+  margins: DEFAULT_LETTER_MARGINS,
+  size: LETTER_PAGE_SIZE,
 }
 
 const NOTEBOOK_ENCODING = 'utf8';
@@ -654,19 +658,20 @@ export class ServerNotebook extends Notebook<ServerNotebookWatcher> {
     _source: CellSource,
     request: DeleteCell,
     updates: NotebookUpdate[],
-    undoChangeRequests: NotebookChangeRequest[],
+    _undoChangeRequests: NotebookChangeRequest[],
   ): Promise<void> {
 
     const cellObject = this.getCell<T>(request.cellId);
 
-    // Assemble the undo change request before we delete anything
-    // from the notebook.
-    const undoChangeRequest: InsertCell<T> = {
-      type: 'insertCell',
-      afterId: this.precedingCellId(cellObject.id),
-      cellObject,
-    };
-    undoChangeRequests.unshift(undoChangeRequest);
+    // TODO:
+    // // Assemble the undo change request before we delete anything
+    // // from the notebook.
+    // const undoChangeRequest: InsertCell = {
+    //   type: 'insertCell',
+    //   afterId: this.precedingCellId(cellObject.id),
+    //   cellObject,
+    // };
+    // undoChangeRequests.unshift(undoChangeRequest);
 
     const update: CellDeleted = { type: 'cellDeleted', cellId: cellObject.id };
     updates.push(update);
@@ -680,36 +685,130 @@ export class ServerNotebook extends Notebook<ServerNotebookWatcher> {
     // TODO: Repaginate.
   }
 
-  private async applyInsertCellRequest<T extends CellObject>(
-    _source: CellSource,
-    request: InsertCell<T>,
+  private async applyInsertCellRequest(
+    source: CellSource,
+    request: InsertCell,
     updates: NotebookUpdate[],
     undoChangeRequests: NotebookChangeRequest[],
   ): Promise<void> {
-    const cellObject = request.cellObject;
-    const afterId = request.afterId;
-    assert(cellObject.id == 0);
-    const cellId = cellObject.id = this.nextId++;
-    const update: CellInserted =  { type: 'cellInserted', cellObject, afterId };
-    updates.push(update);
 
-    this.cellMap.set(cellObject.id, cellObject);
-    // Insert top-level styles in the style order.
-    let cpp: CellPagePosition;
-    if (!afterId || afterId===CellPosition.Top) {
-      cpp = [0, 0];
-    } else if (afterId===CellPosition.Bottom) {
-      const pi = this.pages.length-1;
-      const ci = this.pages[pi].cells.length;
-      cpp = [pi, ci];
-    } else {
-      cpp = this.cellPagePosition(afterId);
-      cpp[1]++;
+    let cellObject: CellObject;
+    const id = this.nextId++;
+    switch(request.cellType) {
+      case CellType.Figure: {
+        const size = DEFAULT_FIGURE_CSS_SIZE;
+        const figureCellObject: FigureCellObject = {
+          id,
+          type: CellType.Figure,
+          inputType: InputType.Stylus,
+          cssSize: deepCopy(size),
+          displaySvg: emptySvg(size),
+          source,
+          stylusInput: emptyStylusInput(size),
+          stylusSvg: emptySvg(size),
+        };
+        cellObject = figureCellObject;
+        break;
+      }
+      case CellType.Formula: {
+        switch(request.inputType) {
+          case InputType.Keyboard: {
+            const size = DEFAULT_FORMULA_CSS_SIZE;
+            const formulaCellObject: FormulaCellKeyboardObject = {
+              id,
+              type: CellType.Formula,
+              inputType: InputType.Keyboard,
+              cssSize: deepCopy(size),
+              displaySvg: emptySvg(size),
+              inputText: <PlainText>"",
+              plainTextFormula: <PlainTextFormula>"",
+              source,
+            }
+            cellObject = formulaCellObject;
+            break;
+          }
+          case InputType.Stylus: {
+            const size = DEFAULT_FORMULA_CSS_SIZE;
+            const formulaCellObject: FormulaCellStylusObject = {
+              id,
+              type: CellType.Formula,
+              inputType: InputType.Stylus,
+              cssSize: deepCopy(size),
+              displaySvg: emptySvg(size),
+              plainTextFormula: <PlainTextFormula>"",
+              source,
+              stylusInput: emptyStylusInput(size),
+              stylusSvg: emptySvg(size),
+            }
+            cellObject = formulaCellObject;
+            break;
+          }
+          default: assertFalse();
+        }
+        break;
+      }
+      case CellType.Plot: {
+        notImplemented();
+        break;
+      }
+      case CellType.Text: {
+        switch(request.inputType) {
+          case InputType.Keyboard: {
+            const size = DEFAULT_TEXT_CSS_SIZE;
+            const textCellObject: TextCellKeyboardObject = {
+              id,
+              type: CellType.Text,
+              inputType: InputType.Keyboard,
+              cssSize: deepCopy(size),
+              displaySvg: emptySvg(size),
+              inputText: <PlainText>"",
+              source,
+            }
+            cellObject = textCellObject;
+            break;
+          }
+          case InputType.Stylus: {
+            const size = DEFAULT_TEXT_CSS_SIZE;
+            const textCellObject: TextCellStylusObject = {
+              id,
+              type: CellType.Text,
+              inputType: InputType.Stylus,
+              cssSize: deepCopy(size),
+              displaySvg: emptySvg(size),
+              source,
+              stylusInput: emptyStylusInput(size),
+              stylusSvg: emptySvg(size),
+            }
+            cellObject = textCellObject;
+            break;
+          }
+          default: assertFalse();
+        }
+        break;
+      }
+      default: assertFalse();
     }
-    this.addCellToPage(cellObject, cpp);
+
+    let pageIndex: number, cellIndex: number;
+    // Insert top-level styles in the style order.
+    const afterId = request.afterId;
+    if (!afterId || afterId===CellPosition.Top) {
+      pageIndex = 0; cellIndex = SSL_OP_SSLEAY_080_CLIENT_DH_BUG;
+    } else if (afterId===CellPosition.Bottom) {
+      pageIndex = this.pages.length-1;
+      cellIndex = this.pages[pageIndex].cells.length;
+    } else {
+      [ pageIndex, cellIndex ] = this.cellPagePosition(afterId);
+      cellIndex++;
+    }
+    this.addCellToPage(cellObject, [ pageIndex, cellIndex ]);
+    this.cellMap.set(cellObject.id, cellObject);
     // TODO: repaginate
 
-    const undoChangeRequest: DeleteCell = { type: 'deleteCell', cellId };
+    const update: CellInserted = { type: 'cellInserted', cellObject, pageIndex, cellIndex };
+    updates.push(update);
+
+    const undoChangeRequest: DeleteCell = { type: 'deleteCell', cellId: id };
     undoChangeRequests.unshift(undoChangeRequest);
   }
 
@@ -755,20 +854,20 @@ export class ServerNotebook extends Notebook<ServerNotebookWatcher> {
     // undoChangeRequests.unshift(undoChangeRequest);
   }
 
-  private async applyRemoveStrokeRequest<T extends CellObject>(
+  private async applyRemoveStrokeRequest(
     _source: CellSource,
-    request: RemoveStroke,
-    updates: NotebookUpdate[],
-    undoChangeRequests: NotebookChangeRequest[],
+    _request: RemoveStroke,
+    _updates: NotebookUpdate[],
+    _undoChangeRequests: NotebookChangeRequest[],
   ): Promise<void> {
-    const cellId = request.cellId;
-    const cellObject = this.getCell<T>(request.cellId);
-    const afterId = CellPosition.Bottom;  // TODO: Get the ID of the cell preceding us.
-    const update: CellDeleted =  { type: 'cellDeleted', cellId };
-    updates.push(update);
+    // const cellId = request.cellId;
+    // const cellObject = this.getCell<T>(request.cellId);
+    // const update: CellDeleted =  { type: 'cellDeleted', cellId };
+    // updates.push(update);
 
-    const undoChangeRequest: InsertCell<T> = { type: 'insertCell', cellObject, afterId };
-    undoChangeRequests.unshift(undoChangeRequest);
+    // TODO:
+    // const undoChangeRequest: InsertCell = { ... };
+    // undoChangeRequests.unshift(undoChangeRequest);
 
     notImplemented();
 

@@ -23,7 +23,7 @@ import { CssClass, Html, escapeHtml } from "../../shared/common";
 import { NotebookUpdate } from "../../shared/server-responses";
 import { NotebookPath } from "../../shared/folder";
 
-import { ClientNotebook, ClientNotebookWatcher } from "../../client-notebook";
+import { ClientNotebook, NotebookView } from "../../client-notebook";
 import { reportError } from "../../error-handler";
 import { ScreenBase } from "../screen-base";
 
@@ -43,7 +43,7 @@ export enum Mode {
 
 // Exported Class
 
-export class NotebookReadScreen extends ScreenBase  implements ClientNotebookWatcher {
+export class NotebookReadScreen extends ScreenBase  implements NotebookView {
 
   // Public Class Methods
 

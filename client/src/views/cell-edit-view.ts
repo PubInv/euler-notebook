@@ -37,14 +37,10 @@ import { reportError } from "../error-handler";
 
 import { Tools } from "../screens/notebook-edit-screen/tools";
 import { ResizerBar } from "../components/resizer-bar";
-import { ClientCell } from "../client-cell";
+import { CellView, ClientCell } from "../client-cell";
 
 
 // Types
-
-export interface CellView {
-  onUpdate(update: NotebookUpdate, ownRequest: boolean): void;
-}
 
 interface CellDragData {
   cellId: CellId;

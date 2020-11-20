@@ -26,7 +26,7 @@ import { CssClass, Html, escapeHtml } from "../../shared/common";
 import { NotebookPath } from "../../shared/folder";
 import { NotebookUpdate } from "../../shared/server-responses";
 
-import { ClientNotebook, ClientNotebookWatcher } from "../../client-notebook";
+import { ClientNotebook, NotebookView } from "../../client-notebook";
 import { reportError } from "../../error-handler";
 
 import { ScreenBase } from "../screen-base";
@@ -45,7 +45,7 @@ import { Tools } from "./tools";
 
 // Exported Class
 
-export class NotebookEditScreen extends ScreenBase implements ClientNotebookWatcher {
+export class NotebookEditScreen extends ScreenBase implements NotebookView {
 
   // Public Constructor
 
@@ -63,7 +63,7 @@ export class NotebookEditScreen extends ScreenBase implements ClientNotebookWatc
         this.notebook = notebook;
         this.sidebar = new Sidebar(this);
         this.content = new NotebookEditView(this, notebook);
-        this.tools = new Tools(this);
+        // TODO: this.tools = new Tools(this);
         this.searchPanel = new SearchPanel(this);
         this.debugPopup = new DebugPopup(this);
       },

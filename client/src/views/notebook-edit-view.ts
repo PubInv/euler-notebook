@@ -25,8 +25,8 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 import * as debug1 from "debug";
 const debug = debug1('client:notebook-edit-screen-content');
 
-import { CellId, CellObject, CellRelativePosition, CellPosition, CellType, InputType, TextCellObject, FigureCellObject } from "../shared/cell";
-import { CssClass, assert, Html, notImplemented, emptySvg, PlainText, POINTS_PER_INCH, CssSize, CssLength, assertFalse } from "../shared/common";
+import { CellId, CellObject, CellRelativePosition, CellPosition, CellType, InputType } from "../shared/cell";
+import { CssClass, assert, Html, notImplemented, assertFalse } from "../shared/common";
 import { DeleteCell, InsertCell, MoveCell, NotebookChangeRequest, } from "../shared/client-requests";
 import { NotebookUpdate } from "../shared/server-responses";
 import { DebugParams } from "../shared/api-calls";
@@ -36,11 +36,9 @@ import { HtmlElement } from "../html-element";
 import { NotebookEditScreen } from "../screens/notebook-edit-screen";
 import { reportError } from "../error-handler";
 import { userSettingsInstance } from "../user-settings";
-import { EMPTY_FORMULA, FormulaCellObject } from "../shared/formula";
-import { emptyStylusInput } from "../shared/stylus";
 import { apiDebug } from "../api";
 import { ClientCell } from "../client-cell";
-import { ClientNotebook } from "../client-notebook";
+import { ClientNotebook, NotebookView } from "../client-notebook";
 
 // Types
 
@@ -90,7 +88,7 @@ const KEY_BINDINGS = new Map<KeyCombo, CommandName>(KEY_MAP.map(([ keyName, keyM
 
 // Exported Class
 
-export class NotebookEditView extends HtmlElement<'div'>{
+export class NotebookEditView extends HtmlElement<'div'> implements NotebookView {
 
   // Public Class Methods
 
@@ -181,23 +179,11 @@ export class NotebookEditView extends HtmlElement<'div'>{
       else { afterId = CellPosition.Bottom; }
     }
 
-    const cssSize: CssSize = {
-      height: <CssLength>`${2*POINTS_PER_INCH}pt`,
-      width: <CssLength>`${6.5*POINTS_PER_INCH}pt`,
-    }
-    let changeRequest: InsertCell<FigureCellObject>;
+    let changeRequest: InsertCell;
       changeRequest = {
         type: 'insertCell',
-        cellObject: {
-          id: 0,
-          type: CellType.Figure,
-          inputType: InputType.Stylus,
-          cssSize,
-          displaySvg: emptySvg(cssSize),
-          source: 'USER',
-          stylusInput: emptyStylusInput(cssSize),
-          stylusSvg: emptySvg(cssSize),
-        },
+        cellType: CellType.Figure,
+        inputType: InputType.Stylus,
         afterId,
       };
     /* const undoChangeRequest = */await this.notebook.sendChangeRequest(changeRequest);
@@ -216,41 +202,20 @@ export class NotebookEditView extends HtmlElement<'div'>{
       else { afterId = CellPosition.Bottom; }
     }
 
-    const cssSize: CssSize = {
-      height: <CssLength>`${1*POINTS_PER_INCH}pt`,
-      width: <CssLength>`${6.5*POINTS_PER_INCH}pt`,
-    }
-    let changeRequest: InsertCell<FormulaCellObject>;
+    let changeRequest: InsertCell;
     const inputMode = userSettingsInstance.defaultInputMode;
     if (inputMode == 'keyboard') {
       changeRequest = {
         type: 'insertCell',
-        cellObject: {
-          id: 0,
-          type: CellType.Formula,
-          inputText: <PlainText>"",
-          cssSize,
-          displaySvg: emptySvg(cssSize),
-          inputType: InputType.Keyboard,
-          plainTextFormula: EMPTY_FORMULA,
-          source: 'USER',
-        },
+        cellType: CellType.Formula,
+        inputType: InputType.Keyboard,
         afterId,
       };
     } else {
       changeRequest = {
         type: 'insertCell',
-        cellObject: {
-          id: 0,
-          type: CellType.Formula,
-          inputType: InputType.Stylus,
-          displaySvg: emptySvg(cssSize),
-          cssSize,
-          plainTextFormula: EMPTY_FORMULA,
-          source: 'USER',
-          stylusInput: emptyStylusInput(cssSize),
-          stylusSvg: emptySvg(cssSize),
-        },
+        cellType: CellType.Formula,
+        inputType: InputType.Stylus,
         afterId,
       };
     }
@@ -270,39 +235,20 @@ export class NotebookEditView extends HtmlElement<'div'>{
       else { afterId = CellPosition.Bottom; }
     }
 
-    const cssSize: CssSize = {
-      height: <CssLength>`${1*POINTS_PER_INCH}pt`,
-      width: <CssLength>`${6.5*POINTS_PER_INCH}pt`,
-    }
     const inputMode = userSettingsInstance.defaultInputMode;
-    let changeRequest: InsertCell<TextCellObject>;
+    let changeRequest: InsertCell;
     if (inputMode == 'keyboard') {
       changeRequest = {
         type: 'insertCell',
-        cellObject: {
-          id: 0,
-          type: CellType.Text,
-          inputType: InputType.Keyboard,
-          cssSize,
-          displaySvg: emptySvg(cssSize),
-          inputText: <PlainText>"",
-          source: 'USER',
-        },
+        cellType: CellType.Text,
+        inputType: InputType.Keyboard,
         afterId,
       };
     } else {
       changeRequest = {
         type: 'insertCell',
-        cellObject: {
-          id: 0,
-          type: CellType.Text,
-          inputType: InputType.Stylus,
-          cssSize,
-          displaySvg: emptySvg(cssSize),
-          source: 'USER',
-          stylusInput: emptyStylusInput(cssSize),
-          stylusSvg: emptySvg(cssSize),
-        },
+        cellType: CellType.Text,
+        inputType: InputType.Stylus,
         afterId,
       };
     }
@@ -442,23 +388,10 @@ export class NotebookEditView extends HtmlElement<'div'>{
     await this.sendUndoableChangeRequests(changeRequests);
   }
 
-  // REVIEW: Should be private?
-  public insertCellView(cellView: CellEditView<any>, afterId: CellRelativePosition): void {
-    if (afterId == CellPosition.Top) {
-      this.$elt.prepend(cellView.$elt);
-    } else if (afterId == CellPosition.Bottom) {
-      this.$elt.append(cellView.$elt);
-    } else {
-      const afterCell = this.cellViews.get(afterId);
-      if (!afterCell) { throw new Error(`Cannot insert cell after unknown cell ${afterId}`); }
-      afterCell.$elt.insertAdjacentElement('afterend', cellView.$elt);
-    }
-  }
-
-  public async insertStyle<T extends CellObject>(cellObject: T, afterId: CellRelativePosition = CellPosition.Bottom): Promise<void> {
-    const changeRequest: InsertCell<T> = { type: 'insertCell', cellObject, afterId };
-    await this.sendUndoableChangeRequests([ changeRequest ]);
-  }
+  // public async insertStyle<T extends CellObject>(cellObject: T, afterId: CellRelativePosition = CellPosition.Bottom): Promise<void> {
+  //   const changeRequest: InsertCell<T> = { type: 'insertCell', cellObject, afterId };
+  //   await this.sendUndoableChangeRequests([ changeRequest ]);
+  // }
 
   public selectCell(
     cellView: CellEditView<any>,
@@ -483,7 +416,11 @@ export class NotebookEditView extends HtmlElement<'div'>{
     this.setFocus();
   }
 
-  // ClientNotebookWatcher Methods
+  // Public Instance Event Handlers
+
+  public onClosed(_reason: string): void {
+    notImplemented();
+  }
 
   public onUpdate(update: NotebookUpdate): void {
     // Update our data structure
@@ -562,7 +499,17 @@ export class NotebookEditView extends HtmlElement<'div'>{
   private createCellView<O extends CellObject>(cell: ClientCell<O>, afterId: CellRelativePosition): CellEditView<O> {
     const cellView = cell.createEditView();
     this.cellViews.set(cell.id, cellView);
-    this.insertCellView(cellView, afterId);
+
+    if (afterId == CellPosition.Top) {
+      this.$elt.prepend(cellView.$elt);
+    } else if (afterId == CellPosition.Bottom) {
+      this.$elt.append(cellView.$elt);
+    } else {
+      const afterCell = this.cellViews.get(afterId);
+      if (!afterCell) { throw new Error(`Cannot insert cell after unknown cell ${afterId}`); }
+      afterCell.$elt.insertAdjacentElement('afterend', cellView.$elt);
+    }
+
     return cellView;
   }
 

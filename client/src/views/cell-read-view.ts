@@ -23,9 +23,8 @@ import { CellObject } from "../shared/cell";
 import { CssLength, notImplemented } from "../shared/common";
 import { NotebookUpdate } from "../shared/server-responses";
 
-import { ClientCell } from "../client-cell";
+import { CellView, ClientCell } from "../client-cell";
 
-import { CellView } from "./cell-edit-view";
 import { $outerSvg } from "../dom";
 
 // Exported Class

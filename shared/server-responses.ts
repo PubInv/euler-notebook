@@ -126,7 +126,8 @@ export interface CellDeleted {
 export interface CellInserted {
   type: 'cellInserted';
   cellObject: CellObject;
-  afterId?: CellRelativePosition;
+  pageIndex: number;
+  cellIndex: number;
 }
 export interface CellMoved {
   type: 'cellMoved';

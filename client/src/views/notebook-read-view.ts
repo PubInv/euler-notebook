@@ -19,7 +19,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 // Requirements
 
-import { CssClass, assert, CssLength, notImplemented } from "../shared/common";
+import { CssClass, assert, CssLength, notImplemented, assertFalse } from "../shared/common";
 
 import { $newSvg, $allSvg, cssLength } from "../dom";
 import { HtmlElement } from "../html-element";
@@ -27,6 +27,8 @@ import { HtmlElement } from "../html-element";
 import { Mode, NotebookReadScreen } from "../screens/notebook-read-screen/index";
 
 import { CellReadView } from "./cell-read-view";
+import { NotebookView } from "../client-notebook";
+import { NotebookUpdate } from "../shared/server-responses";
 
 // Types
 
@@ -41,7 +43,7 @@ const PIXELS_PER_INCH = 96;
 
 // Class
 
-export class NotebookReadView extends HtmlElement<'div'>{
+export class NotebookReadView extends HtmlElement<'div'> implements NotebookView {
 
   // Class Methods
 
@@ -102,6 +104,30 @@ export class NotebookReadView extends HtmlElement<'div'>{
       $page.style.margin = `${pageMargin}px 0 0 ${pageMargin}px`;
     }
   }
+
+  public onClosed(_reason: string): void {
+    notImplemented();
+  }
+
+  public onUpdate(update: NotebookUpdate): void {
+    // Update our data structure
+    switch (update.type) {
+      case 'cellDeleted': {
+        notImplemented();
+        break;
+      }
+      case 'cellInserted': {
+        notImplemented();
+        break;
+      }
+      case 'cellMoved': {
+        notImplemented();
+        break;
+      }
+      default: assertFalse();
+    }
+  }
+
 
   // -- PRIVATE --
 

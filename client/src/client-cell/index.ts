@@ -25,7 +25,14 @@ import { notImplemented } from "../shared/common";
 import { NotebookUpdate } from "../shared/server-responses";
 
 import { ChangeRequestResults, ClientNotebook } from "../client-notebook";
-import { CellEditView, CellView } from "../views/cell-edit-view";
+import { CellEditView } from "../views/cell-edit-view";
+
+// Types
+
+export interface CellView {
+  onUpdate(update: NotebookUpdate, ownRequest: boolean): void;
+}
+
 
 // Exported Class
 

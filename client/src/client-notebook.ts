@@ -38,7 +38,7 @@ import { ClientCell } from "./client-cell";
 
 // Types
 
-export interface ClientNotebookWatcher {
+export interface NotebookView {
   onUpdate(update: NotebookUpdate, ownRequest: boolean): void;
   onClosed(reason: string): void;
 }
@@ -51,7 +51,7 @@ export interface ChangeRequestResults {
 interface OpenInfo {
   promise: Promise<ClientNotebook>;
   tally: number;
-  watchers: Set<ClientNotebookWatcher>;
+  views: Set<NotebookView>;
 }
 
 interface Page {
@@ -70,7 +70,7 @@ export class ClientNotebook {
 
   // Public Class Methods
 
-  public static async open(path: NotebookPath, watcher: ClientNotebookWatcher): Promise<ClientNotebook> {
+  public static async open(path: NotebookPath, watcher: NotebookView): Promise<ClientNotebook> {
     // REVIEW: If open promise rejects, then we should purge it from
     //         the openMap so the open can be attempted again.
     //         Otherwise, all subsequent attempts at opening will fail
@@ -78,9 +78,9 @@ export class ClientNotebook {
     let openInfo = this.openMap.get(path);
     if (openInfo) {
       openInfo.tally++;
-      openInfo.watchers.add(watcher);
+      openInfo.views.add(watcher);
     } else {
-      openInfo = { promise: this.openNew(path), tally: 1, watchers: new Set([ watcher ]) };
+      openInfo = { promise: this.openNew(path), tally: 1, views: new Set([ watcher ]) };
       this.openMap.set(path, openInfo);
     }
     return openInfo.promise;
@@ -128,13 +128,13 @@ export class ClientNotebook {
 
   // Public Instance Methods
 
-  public close(watcher: ClientNotebookWatcher): void {
+  public close(watcher: NotebookView): void {
     assert(!this.terminated);
     const openInfo = ClientNotebook.openMap.get(this.path)!;
     assert(openInfo);
-    const had = openInfo.watchers.delete(watcher);
+    const had = openInfo.views.delete(watcher);
     assert(had);
-    if (openInfo.watchers.size == 0) {
+    if (openInfo.views.size == 0) {
       // LATER: Set timer to destroy in the future.
       this.terminate("Closed by client");
     }
@@ -215,18 +215,25 @@ export class ClientNotebook {
   private constructor(path: NotebookPath, notebookObject: NotebookObject) {
     assert(notebookObject.formatVersion == FORMAT_VERSION);
     this.path = path;
-    const cellMap = this.cellMap = new Map();
+    this.cellMap = new Map();
     this.terminated = false;
 
     this.pages = notebookObject.pages.map(pageObject=>{
       const cells = pageObject.cells.map(cellObject=>{
         const cell = createCell(this, cellObject);
-        cellMap.set(cell.id, cell);
+        this.cellMap.set(cell.id, cell);
         return cell;
       });
       const page: Page = { ...pageObject, cells };
       return page;
     })
+  }
+
+  private addCell<O extends CellObject>(cellObject: O, pageIndex: number, cellIndex: number): ClientCell<O> {
+    const cell = createCell(this, cellObject);
+    this.pages[pageIndex].cells.splice(cellIndex, 0, cell);
+    this.cellMap.set(cell.id, cell);
+    return cell;
   }
 
   // Private Instance Properties
@@ -236,10 +243,10 @@ export class ClientNotebook {
 
   // Private Instance Property Functions
 
-  private get watchers(): Set<ClientNotebookWatcher> {
+  private get views(): Set<NotebookView> {
     const openInfo = ClientNotebook.openMap.get(this.path)!;
     assert(openInfo);
-    return openInfo.watchers;
+    return openInfo.views;
   }
 
   // Private Instance Methods
@@ -249,7 +256,7 @@ export class ClientNotebook {
     this.terminated = true;
     ClientNotebook.instanceMap.delete(this.path);
     ClientNotebook.openMap.delete(this.path);
-    for (const watcher of this.watchers) { watcher.onClosed(reason); }
+    for (const view of this.views) { view.onClosed(reason); }
   }
 
   // Private Event Handlers
@@ -258,13 +265,13 @@ export class ClientNotebook {
     // A notebook message was received from the server.
     switch(msg.operation) {
       case 'updated': this.onUpdated(msg, ownRequest); break;
-      case 'closed':  this.onClosedByServer(msg, ownRequest); break;
+      case 'closed':  this.onClosed(msg, ownRequest); break;
       case 'opened':
       default: assertFalse();
     }
   }
 
-  private onClosedByServer(msg: NotebookClosed, _ownRequest: boolean): void {
+  private onClosed(msg: NotebookClosed, _ownRequest: boolean): void {
     // Message from the server that the notebook has been closed by the server.
     // For example, if the notebook was deleted or moved.
     this.terminate(msg.reason);
@@ -272,13 +279,6 @@ export class ClientNotebook {
 
   private onUpdated(msg: NotebookUpdated, ownRequest: boolean): void {
     // Message from the server indicating this notebook has changed.
-
-    // Apply changes to the notebook data structure, and notify the view of the change.
-    // If the change is not a delete, then update the data structure first, then notify the view.
-    // Otherwise, notify the view of the change, then update the data structure.
-    // (The view needs to trace the deleted cell or relationship to the top-level cell to
-    //  determine what cell to update. If the cell has been deleted from the notebook already
-    //  then it cannot do that.)
     for (const update of msg.updates) {
       this.onUpdate(update, ownRequest);
     }
@@ -298,8 +298,8 @@ export class ClientNotebook {
         break;
       }
       case 'cellInserted': {
-        notImplemented();
-        // this.createCell(change.cellObject, change.afterId!);
+        this.addCell(update.cellObject, update.pageIndex, update.cellIndex);
+        // REVIEW: add to view?
         break;
       }
       case 'cellMoved': {
@@ -316,8 +316,9 @@ export class ClientNotebook {
     }
 
     // Notify watchers of the update.
-    for (const watcher of this.watchers) {
-      watcher.onUpdate(update, ownRequest);
+    for (const views of this.views
+      ) {
+      views.onUpdate(update, ownRequest);
     }
   }
 }
