@@ -83,6 +83,10 @@ export abstract class Folder<W extends FolderWatcher> extends WatchedResource<Fo
     return FOLDER_NAME_RE.test(name);
   }
 
+  public static isValidNotebookName(name: NotebookName): boolean {
+    return NOTEBOOK_NAME_RE.test(name);
+  }
+
   // Public Class Methods
 
   public static validateObject(_obj: FolderObject): void {
@@ -217,4 +221,11 @@ export abstract class Folder<W extends FolderWatcher> extends WatchedResource<Fo
     this.notebooks = obj.notebooks;
   }
 
+}
+
+// Exported Functions
+
+export function NotebookNameFromNotebookPath(path: NotebookPath): NotebookName {
+  const i = path.lastIndexOf('/');
+  return <NotebookName>path.slice(i);
 }

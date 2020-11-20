@@ -21,10 +21,12 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 import { CssClass, assert, CssLength, notImplemented } from "../shared/common";
 
-import { $newSvg, $allSvg, $outerSvg, cssLength } from "../dom";
+import { $newSvg, $allSvg, cssLength } from "../dom";
 import { HtmlElement } from "../html-element";
 
 import { Mode, NotebookReadScreen } from "../screens/notebook-read-screen/index";
+
+import { CellReadView } from "./cell-read-view";
 
 // Types
 
@@ -77,8 +79,9 @@ export class NotebookReadView extends HtmlElement<'div'>{
     const viewWidth = this.$elt.getBoundingClientRect().width;
 
     // Calculate the size of the page thumbnails
+    // TODO: Different pages could have different sizes.
     const notebook = this.screen.notebook;
-    const pageAspectRatio = parseInt(notebook.pageConfig.size.width) / parseInt(notebook.pageConfig.size.height);
+    const pageAspectRatio = parseInt(notebook.pages[0].size.width) / parseInt(notebook.pages[0].size.height);
     let pageWidth = viewWidth / (this.pagesPerRow + (this.pagesPerRow+1)*this.marginPercent);
     const pageHeight = Math.round(pageWidth / pageAspectRatio);
     const pageMargin = Math.round(pageWidth * this.marginPercent);
@@ -113,13 +116,14 @@ export class NotebookReadView extends HtmlElement<'div'>{
   private render(): void {
     const notebook = this.screen.notebook;
 
-    const pageWidth = parseInt(notebook.pageConfig.size.width);
-    const pageHeight = parseInt(notebook.pageConfig.size.height);
+    // TODO: Different pages could be different sizes.
+    const pageWidth = parseInt(notebook.pages[0].size.width);
+    const pageHeight = parseInt(notebook.pages[0].size.height);
     const viewBoxWidth = pageWidth * PIXELS_PER_INCH;
     const viewBoxHeight = pageHeight * PIXELS_PER_INCH;
 
-    const topMargin = notebook.pageConfig.margins.top;
-    const leftMargin = notebook.pageConfig.margins.left;
+    const topMargin = notebook.pages[0].margins.top;
+    const leftMargin = notebook.pages[0].margins.left;
 
     for (const page of notebook.pages) {
       const $page = $newSvg({
@@ -137,10 +141,9 @@ export class NotebookReadView extends HtmlElement<'div'>{
 
       let x: number = cssLength(leftMargin, 'pt');
       let y: number = cssLength(topMargin, 'pt');
-      for (const cellObject of page.cellObjects) {
-        const $cellSvg = $outerSvg(cellObject.displaySvg);
-        $cellSvg.setAttribute('x', `${x}pt`);
-        $cellSvg.setAttribute('y', `${y}pt`);
+      for (const cell of page.cells) {
+        const readView = new CellReadView(cell, <CssLength>`${x}pt`, <CssLength>`${y}pt`);
+        const $cellSvg = readView.$svg;
         // TODO: translate SVG by (leftMargin, y);
         $page.appendChild($cellSvg);
 

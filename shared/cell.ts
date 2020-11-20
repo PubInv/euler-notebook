@@ -77,10 +77,6 @@ export interface StylusCellObject extends CellObject {
   stylusSvg: SvgMarkup
 }
 
-export interface CellMap {
-  [id: /* CellId */number]: CellObject;
-}
-
 // HERE TEMPORARILY:
 // Move them into their own files when they become classes.
 

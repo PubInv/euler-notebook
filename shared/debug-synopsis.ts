@@ -23,11 +23,12 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 import { CellObject } from "./cell";
 import { assertFalse } from './common';
-import { Notebook } from './notebook';
+//import { Notebook } from './notebook';
 import {
   FolderRequest, ClientRequest, NotebookRequest, FolderChangeRequest, NotebookChangeRequest,
 } from './client-requests';
 import { FolderResponse, FolderUpdate, ServerResponse, NotebookResponse, NotebookUpdate } from "./server-responses";
+import { NotebookObject } from "./notebook";
 // Exported Functions
 
 export function clientMessageSynopsis(msg: ClientRequest): string {
@@ -123,13 +124,14 @@ export function notebookChangeSynopsis(change: NotebookUpdate): string {
   return rval;
 }
 
-export function notebookSynopsis(notebook: Notebook<any>): string {
-  return notebook.topLevelCellOrder()
-  .map(cellId=>{
-    const cellObject = notebook.getCell(cellId);
-    return cellSynopsis(cellObject);
-  })
-  .join('');
+export function notebookSynopsis(notebookObject: NotebookObject): string {
+  // TODO: Notebook formatVersion, etc.
+  return notebookObject.pages.map(page=>{
+    // TODO: Page configuration
+    return page.cells.map(cell=>{
+      return cellSynopsis(cell);
+    }).join('/n');
+  }).join('/n');
 }
 
 export function serverMessageSynopsis(msg: ServerResponse): string {

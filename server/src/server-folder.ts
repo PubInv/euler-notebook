@@ -190,7 +190,7 @@ export class ServerFolder extends Folder<ServerFolderWatcher> {
         // Folders are all other directories.
         if (listing.endsWith(suffix)) {
           const nameWithoutSuffix: NotebookName = <NotebookName>listing.slice(0, -suffixLen);
-          if (!ServerNotebook.isValidNotebookName(nameWithoutSuffix)) {
+          if (!ServerFolder.isValidNotebookName(nameWithoutSuffix)) {
             logWarning(MODULE, `Skipping notebook with invalid name: '${listing}'`);
             continue;
           }

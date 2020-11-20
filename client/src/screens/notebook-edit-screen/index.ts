@@ -62,7 +62,7 @@ export class NotebookEditScreen extends ScreenBase implements ClientNotebookWatc
       (notebook: ClientNotebook)=>{
         this.notebook = notebook;
         this.sidebar = new Sidebar(this);
-        this.content = new NotebookEditView(this);
+        this.content = new NotebookEditView(this, notebook);
         this.tools = new Tools(this);
         this.searchPanel = new SearchPanel(this);
         this.debugPopup = new DebugPopup(this);
@@ -102,7 +102,7 @@ export class NotebookEditScreen extends ScreenBase implements ClientNotebookWatc
   // ClientNotebookWatcher Methods
 
   public onUpdate(change: NotebookUpdate): void {
-    this.content.onChange(change);
+    this.content.onUpdate(change);
   }
 
   public onClosed(reason?: string): void {

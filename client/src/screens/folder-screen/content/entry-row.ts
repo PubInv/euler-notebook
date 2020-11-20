@@ -21,7 +21,6 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 import { CssClass, escapeHtml } from "../../../shared/common"
 import { Folder, FolderEntry, FolderName, NotebookEntry, NotebookName } from "../../../shared/folder";
-import { Notebook } from "../../../shared/notebook";
 
 import { svgIconReference, CLOSE_X_ENTITY, PENCIL_ENTITY, CHECKMARK_ENTITY, $new, DOTTED_CIRCLE_ENTITY } from "../../../dom";
 import { ClientFolder } from "../../../client-folder";
@@ -293,7 +292,7 @@ export class EntryRow<K extends keyof EntryTypeMap> extends HtmlElement<'tr'> {
 
     const invalid = (this.type == EntryType.Folder ?
                                     !Folder.isValidFolderName(<FolderName>newName) :
-                                    !Notebook.isValidNotebookName(<NotebookName>newName));
+                                    !Folder.isValidNotebookName(<NotebookName>newName));
 
     let duplicate: boolean = (newName != this.entry.name) && this.anotherFolderOrNotebookHasSameName(newName);
 

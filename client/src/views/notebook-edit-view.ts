@@ -26,13 +26,12 @@ import * as debug1 from "debug";
 const debug = debug1('client:notebook-edit-screen-content');
 
 import { CellId, CellObject, CellRelativePosition, CellPosition, CellType, InputType, TextCellObject, FigureCellObject } from "../shared/cell";
-import { CssClass, assert, Html, assertFalse, notImplemented, emptySvg, PlainText, POINTS_PER_INCH, CssSize, CssLength } from "../shared/common";
+import { CssClass, assert, Html, notImplemented, emptySvg, PlainText, POINTS_PER_INCH, CssSize, CssLength, assertFalse } from "../shared/common";
 import { DeleteCell, InsertCell, MoveCell, NotebookChangeRequest, } from "../shared/client-requests";
 import { NotebookUpdate } from "../shared/server-responses";
 import { DebugParams } from "../shared/api-calls";
 
 import { CellEditView } from "./cell-edit-view";
-import { createCell } from "../client-cell/instantiator";
 import { HtmlElement } from "../html-element";
 import { NotebookEditScreen } from "../screens/notebook-edit-screen";
 import { reportError } from "../error-handler";
@@ -40,6 +39,8 @@ import { userSettingsInstance } from "../user-settings";
 import { EMPTY_FORMULA, FormulaCellObject } from "../shared/formula";
 import { emptyStylusInput } from "../shared/stylus";
 import { apiDebug } from "../api";
+import { ClientCell } from "../client-cell";
+import { ClientNotebook } from "../client-notebook";
 
 // Types
 
@@ -95,10 +96,10 @@ export class NotebookEditView extends HtmlElement<'div'>{
 
   // Public Constructor
 
-  public constructor(screen: NotebookEditScreen) {
+  public constructor(container: NotebookEditScreen, notebook: ClientNotebook) {
     super({
       tag: 'div',
-      appendTo: screen.$elt,
+      appendTo: container.$elt,
       class: <CssClass>'content',
       listeners: {
         blur: e=>this.onBlur(e),
@@ -106,22 +107,19 @@ export class NotebookEditView extends HtmlElement<'div'>{
         keyup: e=>this.onKeyUp(e),
       }
     });
-    this.screen = screen;
 
     this.cellViews = new Map();
+    this.container = container;
+    this.notebook = notebook;
     this.topOfUndoStack = 0;
     this.undoStack = [];
 
-    for (const page of this.screen.notebook.pages) {
-      for (const cellObject of page.cellObjects) {
-        this.createCell(cellObject, -1);
+    for (const page of this.notebook.pages) {
+      for (const cell of page.cells) {
+        this.createCellView(cell, -1);
       }
     }
   }
-
-  // Public Instance Properties
-
-  public screen: NotebookEditScreen;
 
   // Public Instance Property Functions
 
@@ -165,7 +163,7 @@ export class NotebookEditView extends HtmlElement<'div'>{
     // For when a developer needs a button to initiate a test action.
     console.log('Development Button Clicked!');
     if (!this.lastCellSelected) { return; /* TODO: warning that no cell selected. */}
-    const notebookPath = this.screen.notebook.path;
+    const notebookPath = this.notebook.path;
     const cellId = this.lastCellSelected?.id;
     const params: DebugParams = { notebookPath, cellId };
     /* const results = */ await apiDebug(params);
@@ -202,7 +200,7 @@ export class NotebookEditView extends HtmlElement<'div'>{
         },
         afterId,
       };
-    /* const undoChangeRequest = */await this.screen.notebook.sendChangeRequest(changeRequest);
+    /* const undoChangeRequest = */await this.notebook.sendChangeRequest(changeRequest);
     // const cellId = (<DeleteCellRequest>undoChangeRequest).cellId;
 
     // TODO: Set focus?
@@ -256,7 +254,7 @@ export class NotebookEditView extends HtmlElement<'div'>{
         afterId,
       };
     }
-    /* const undoChangeRequest = */await this.screen.notebook.sendChangeRequest(changeRequest);
+    /* const undoChangeRequest = */await this.notebook.sendChangeRequest(changeRequest);
     // const cellId = (<DeleteCellRequest>undoChangeRequest).cellId;
 
     // TODO: Set focus?
@@ -308,7 +306,7 @@ export class NotebookEditView extends HtmlElement<'div'>{
         afterId,
       };
     }
-    /* const undoChangeRequest = */await this.screen.notebook.sendChangeRequest(changeRequest);
+    /* const undoChangeRequest = */await this.notebook.sendChangeRequest(changeRequest);
     // const cellId = (<DeleteCellRequest>undoChangeRequest).cellId;
 
     // TODO: Set focus?
@@ -362,8 +360,8 @@ export class NotebookEditView extends HtmlElement<'div'>{
 
   public async redo(): Promise<void> {
     // Disable undo and redo buttons during the operation.
-    this.screen.sidebar.$redoButton.disabled = true;
-    this.screen.sidebar.$undoButton.disabled = true;
+    this.container.sidebar.$redoButton.disabled = true;
+    this.container.sidebar.$undoButton.disabled = true;
 
     // Resubmit the change requests.
     assert(this.topOfUndoStack < this.undoStack.length);
@@ -371,8 +369,8 @@ export class NotebookEditView extends HtmlElement<'div'>{
     await this.sendUndoableChangeRequests(entry.changeRequests);
 
     // Enable undo and redo buttons as appropriate.
-    this.screen.sidebar.$redoButton.disabled = (this.topOfUndoStack >= this.undoStack.length);
-    this.screen.sidebar.$undoButton.disabled = false;
+    this.container.sidebar.$redoButton.disabled = (this.topOfUndoStack >= this.undoStack.length);
+    this.container.sidebar.$undoButton.disabled = false;
   }
 
   public async selectDown(extend?: boolean): Promise<void> {
@@ -404,17 +402,17 @@ export class NotebookEditView extends HtmlElement<'div'>{
 
   public async undo(): Promise<void> {
     // Disable undo and redo during the operation
-    this.screen.sidebar.$redoButton.disabled = true;
-    this.screen.sidebar.$undoButton.disabled = true;
+    this.container.sidebar.$redoButton.disabled = true;
+    this.container.sidebar.$undoButton.disabled = true;
 
     // Undo the changes by making a set of counteracting changes.
     assert(this.topOfUndoStack > 0);
     const entry = this.undoStack[--this.topOfUndoStack];
-    await this.screen.notebook.sendChangeRequests(entry.undoChangeRequests);
+    await this.notebook.sendChangeRequests(entry.undoChangeRequests);
 
     // Enable undo and redo as appropriate
-    this.screen.sidebar.$redoButton.disabled = false;
-    this.screen.sidebar.$undoButton.disabled = (this.topOfUndoStack == 0);
+    this.container.sidebar.$redoButton.disabled = false;
+    this.container.sidebar.$undoButton.disabled = (this.topOfUndoStack == 0);
   }
 
   // REVIEW: Not actually asynchronous. Have synchronous alternative for internal use?
@@ -424,19 +422,11 @@ export class NotebookEditView extends HtmlElement<'div'>{
     }
     delete this.lastCellSelected;
     if (!noEmit) {
-      this.screen.sidebar.$trashButton.disabled = true;
+      this.container.sidebar.$trashButton.disabled = true;
     }
   }
 
-  // Instance Methods
-
-  public createCell<O extends CellObject>(obj: O, afterId: CellRelativePosition): CellEditView<O> {
-    const cell = createCell<O>(this.screen.notebook, obj)
-    const cellView = cell.createEditView();
-    this.cellViews.set(obj.id, cellView);
-    this.insertCell(cellView, afterId);
-    return cellView;
-  }
+  // Public Instance Methods
 
   public deleteCell(cellView: CellEditView<any>): void {
     if (cellView == this.lastCellSelected) {
@@ -452,7 +442,8 @@ export class NotebookEditView extends HtmlElement<'div'>{
     await this.sendUndoableChangeRequests(changeRequests);
   }
 
-  public insertCell(cellView: CellEditView<any>, afterId: CellRelativePosition): void {
+  // REVIEW: Should be private?
+  public insertCellView(cellView: CellEditView<any>, afterId: CellRelativePosition): void {
     if (afterId == CellPosition.Top) {
       this.$elt.prepend(cellView.$elt);
     } else if (afterId == CellPosition.Bottom) {
@@ -475,82 +466,52 @@ export class NotebookEditView extends HtmlElement<'div'>{
     indivExtending?: boolean, // Extending selection by an individual cell, possibly non-contiguous.
   ): void {
     // Erase tools panel. Newly selected cell will populate, if it is the only cell selected.
-    this.screen.tools.clear();
+    this.container.tools.clear();
 
     const solo = !rangeExtending && !indivExtending;
     if (solo) {
       this.unselectAll(true);
     }
     cellView.select();
-    cellView.renderTools(this.screen.tools);
+    cellView.renderTools(this.container.tools);
     this.lastCellSelected = cellView;
-    this.screen.sidebar.$trashButton.disabled = false;
+    this.container.sidebar.$trashButton.disabled = false;
   }
 
   public useTool(id: CellId): void {
-    this.screen.notebook.useTool(id);
+    this.notebook.useTool(id);
     this.setFocus();
   }
 
   // ClientNotebookWatcher Methods
 
-  public onChange(change: NotebookUpdate): void {
-    // If a change would (or might) modify the display of a cell,
-    // then mark add the cell to a list of cells to be redrawn.
-    // If a cell is deleted or moved, then make that change immediately.
-    switch (change.type) {
-      // case 'styleChanged': {
-      //   // REVIEW: Is there a way to tell what styles affect display?
-      //   const topLevelStyleId = notebook.topLevelStyleOf(change.style.id).id;
-      //   this.dirtyCells.add(topLevelStyleId);
-      //   this.cellViewFromId(topLevelStyleId).onChange(change);
-      //   break;
-      // }
-      // case 'styleConverted': {
-      //   const topLevelStyleId = notebook.topLevelStyleOf(change.cellId).id;
-      //   this.dirtyCells.add(topLevelStyleId);
-      //   this.cellViewFromId(topLevelStyleId).onChange(change);
-      //   break;
-      // }
+  public onUpdate(update: NotebookUpdate): void {
+    // Update our data structure
+    switch (update.type) {
       case 'cellDeleted': {
-        // If a substyle is deleted then mark the cell as dirty.
-        // If a top-level style is deleted then remove the cell.
-        const cellView = this.cellViews.get(change.cellId);
-        assert(cellView);
-        this.deleteCell(cellView!);
+        notImplemented();
         break;
       }
       case 'cellInserted': {
-        this.createCell(change.cellObject, change.afterId!);
+        notImplemented();
         break;
       }
       case 'cellMoved': {
-        const movedCell = this.cellViews.get(change.cellId);
-        assert(movedCell);
-        // Note: DOM methods ensure the element will be removed from
-        //       its current parent.
-        this.insertCell(movedCell!, change.afterId);
-        // REVIEW: We do not pass the changed event to the moved cell, assuming it does not change. Safe assumption?
+        notImplemented();
         break;
       }
       default: assertFalse();
     }
   }
 
-  // REVIEW: We no longer have this notification. Do we need it?
-  // public onChangesFinished(): void {
-  //   // Redraw all of the cells that (may) have changed.
-  //   if (this.lastCellSelected) {
-  //     this.lastCellSelected.renderTools(this.screen.tools);
-  //   }
-  // }
-
   // -- PRIVATE --
 
   // Private Instance Properties
 
   private cellViews: Map<CellId, CellEditView<any>>;
+  private container: NotebookEditScreen;
   private lastCellSelected?: CellEditView<any>;
+  private notebook: ClientNotebook;
   private topOfUndoStack: number;       // Index of the top of the stack. May not be the length of the undoStack array if there have been some undos.
   private undoStack: UndoEntry[];
 
@@ -596,6 +557,15 @@ export class NotebookEditView extends HtmlElement<'div'>{
     return rval;
   }
 
+  // Private Instance Methods
+
+  private createCellView<O extends CellObject>(cell: ClientCell<O>, afterId: CellRelativePosition): CellEditView<O> {
+    const cellView = cell.createEditView();
+    this.cellViews.set(cell.id, cellView);
+    this.insertCellView(cellView, afterId);
+    return cellView;
+  }
+
   // private async sendUndoableChangeRequest(changeRequest: NotebookChangeRequest): Promise<NotebookChangeRequest> {
   //   const undoChangeRequests = await this.sendUndoableChangeRequests([changeRequest]);
   //   assert(undoChangeRequests.length==1);
@@ -603,13 +573,13 @@ export class NotebookEditView extends HtmlElement<'div'>{
   // }
 
   private async sendUndoableChangeRequests(changeRequests: NotebookChangeRequest[]): Promise<NotebookChangeRequest[]> {
-    // Disable the undo and redo buttons
-    this.screen.sidebar.$redoButton.disabled = true;
-    this.screen.sidebar.$undoButton.disabled = true;
+    // REVIEW: Disable the undo and redo buttons
+    this.container.sidebar.$redoButton.disabled = true;
+    this.container.sidebar.$undoButton.disabled = true;
 
     // const { undoChangeRequests } = await this.sendTrackedChangeRequests(changeRequests);
 
-    const results = await this.screen.notebook.sendChangeRequests(changeRequests);
+    const results = await this.notebook.sendChangeRequests(changeRequests);
 
     const undoChangeRequests = results.undoChangeRequests!;
     assert(undoChangeRequests && undoChangeRequests.length>0);
@@ -619,8 +589,8 @@ export class NotebookEditView extends HtmlElement<'div'>{
     this.topOfUndoStack = this.undoStack.length;
 
     // Enable the undo button and disable the redo button.
-    this.screen.sidebar.$redoButton.disabled = true;
-    this.screen.sidebar.$undoButton.disabled = false;
+    this.container.sidebar.$redoButton.disabled = true;
+    this.container.sidebar.$undoButton.disabled = false;
 
     return undoChangeRequests;
   }

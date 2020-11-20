@@ -29,24 +29,20 @@ import * as debug1 from "debug";
 import { join } from "path";
 
 import { CellObject, CellSource, CellId, CellPosition, StylusCellObject, InputType } from "./shared/cell";
-import { assert, assertFalse, ExpectedError, notImplemented, Timestamp } from "./shared/common";
-import { NotebookPath, NOTEBOOK_PATH_RE, NotebookName, FolderPath, NotebookEntry } from "./shared/folder";
-import {
-  Notebook, NotebookObject,
-  VERSION,
-  NotebookWatcher,
-} from "./shared/notebook";
+import { assert, assertFalse, deepCopy, escapeHtml, ExpectedError, Html, notImplemented, Timestamp } from "./shared/common";
+import { NotebookPath, NOTEBOOK_PATH_RE, NotebookName, FolderPath, NotebookEntry, Folder } from "./shared/folder";
+import { NotebookObject, FORMAT_VERSION, NotebookWatcher, inchesInPoints, PageObject } from "./shared/notebook";
 import {
   NotebookChangeRequest, MoveCell, InsertCell, DeleteCell,
   ChangeNotebook, UseTool, RequestId, AddStroke, RemoveStroke, NotebookRequest, OpenNotebook, CloseNotebook,
 } from "./shared/client-requests";
 import {
   NotebookUpdated, NotebookOpened, NotebookUpdate,
-  CellMoved, CellInserted, CellDeleted, StrokeInserted,
+  CellInserted, CellDeleted, StrokeInserted,
 } from "./shared/server-responses";
-import { notebookChangeRequestSynopsis } from "./shared/debug-synopsis";
+import { cellSynopsis, notebookChangeRequestSynopsis } from "./shared/debug-synopsis";
 import { StrokeId } from "./shared/stylus";
-import { OpenOptions } from "./shared/watched-resource";
+import { OpenOptions, WatchedResource } from "./shared/watched-resource";
 
 import { ServerSocket } from "./server-socket";
 import { AbsDirectoryPath, ROOT_DIR_PATH, mkDir, readFile, rename, rmRaf, writeFile } from "./adapters/file-system";
@@ -62,6 +58,13 @@ const debug = debug1(`server:${MODULE}`);
 
 type AbsFilePath = string; // Absolute path to a file in the file system.
 
+type CellPagePosition = [ number, number ]; // First number is page index, second is cell index.
+
+export interface FindCellOptions {
+  source?: CellSource;
+  notSource?: CellSource;
+}
+
 export interface OpenNotebookOptions extends OpenOptions<ServerNotebookWatcher> {
   ephemeral?: boolean;    // true iff notebook not persisted to the file system and disappears after last close.
 }
@@ -75,12 +78,196 @@ export interface ServerNotebookWatcher extends NotebookWatcher {
   onChanged(msg: NotebookUpdated): void;
 }
 
+interface ServerNotebookObject extends NotebookObject {
+  nextId: CellId;
+}
+
 // Constants
+
+const DEFAULT_PAGE: PageObject = {
+  // REVIEW: Standardize on "pt" as the unit of measurement rather than mixing inches and points?
+  cells: [],
+  margins: {
+    top: inchesInPoints(1),
+    right: inchesInPoints(1),
+    bottom: inchesInPoints(1),
+    left: inchesInPoints(1),
+  },
+  size: { width: inchesInPoints(8.5), height: inchesInPoints(11) },
+}
 
 const NOTEBOOK_ENCODING = 'utf8';
 const NOTEBOOK_FILE_NAME = 'notebook.json';
 
 // Base Class
+
+// TODO: Merge this class into ServerNotebook.
+export abstract class Notebook<W extends NotebookWatcher> extends WatchedResource<NotebookPath, W> {
+
+  // Public Class Property Functions
+
+  // Public Class Methods
+
+  public static validateObject(obj: ServerNotebookObject): void {
+    // Throws an exception with a descriptive message if the object is not a valid notebook object.
+    // LATER: More thorough validation of the object.
+    if (!obj.nextId) { throw new Error("Invalid notebook object JSON."); }
+    if (obj.formatVersion != FORMAT_VERSION) {
+      throw new ExpectedError(`Invalid notebook version ${obj.formatVersion}. Expect version ${FORMAT_VERSION}`);
+    }
+  }
+
+  // Public Instance Properties
+
+  public nextId: CellId;
+  public pages: PageObject[];
+
+  // Public Instance Property Functions
+
+  // public allCells(): CellObject[] {
+  //   // REVIEW: Return an iterator?
+  //   const sortedIds: CellId[] = Object.keys(this.cellMap).map(k=>parseInt(k,10)).sort();
+  //   return sortedIds.map(id=>this.getCell(id));
+  // }
+
+  // public followingCellId(id: CellId): CellId {
+  //   // Returns the id of the style immediately after the top-level style specified.
+  //   // TODO: On different pages.
+  //   const i = this.pages[0].cellIds.indexOf(id);
+  //   assert(i>=0);
+  //   if (i+1>=this.pages[0].cellIds.length) { return 0; }
+  //   return this.pages[0].cellIds[i+1];
+  // }
+
+  public getCell<T extends CellObject>(id: CellId): T {
+    const rval = <T>this.cellMap.get(id);
+    assert(rval, `Cell ${id} doesn't exist.`);
+    return rval;
+  }
+
+  // public getCellThatMayNotExist(id: CellId): CellObject|undefined {
+  //   // TODO: Eliminate. Change usages to .findStyle.
+  //   return this.cellMap.get(id);
+  // }
+
+  public isEmpty(): boolean {
+    return this.pages.length == 1 && this.pages[0].cells.length == 0;
+  }
+
+  public precedingCellId(_id: CellId): CellId {
+    notImplemented();
+    // // Returns the id of the style immediately before the top-level style specified.
+    // // TODO: On different pages.
+    // const i = this.pages[0].cellIds.indexOf(id);
+    // assert(i>=0);
+    // if (i<1) { return 0; }
+    // return this.pages[0].cellIds[i-1];
+  }
+
+  public toHtml(): Html {
+    if (this.isEmpty()) { return <Html>"<i>Notebook is empty.</i>"; }
+    else {
+      return <Html>this.pages.map(pageObject=>{
+        return pageObject.cells.map(cellObject=>{
+          return this.cellToHtml(cellObject);
+        }).join('\n');
+      }).join('\n');
+    }
+  }
+
+  // Public Instance Methods
+
+  // public findCell(options: FindCellOptions): CellObject|undefined {
+  //   // REVIEW: If we don't need to throw on multiple matches, then we can terminate the search
+  //   //         after we find the first match.
+  //   // Like findStyles but expects to find zero or one matching style.
+  //   // If it finds more than one matching style then it returns the first and outputs a warning.
+  //   const styles = this.findCells(options);
+  //   if (styles.length > 0) {
+  //     if (styles.length > 1) {
+  //       // TODO: On the server, this should use the logging system rather than console output.
+  //       console.warn(`More than one style found for ${JSON.stringify(options)}`);
+  //     }
+  //     return styles[0];
+  //   } else {
+  //     return undefined;
+  //   }
+  // }
+
+  // public findCells(
+  //   options: FindCellOptions,
+  //   rval: CellObject[] = []
+  // ): CellObject[] {
+  //   // Option to throw if style not found.
+  //   const cellObjects = this.topLevelCells();
+  //   // REVIEW: Use filter with predicate instead of explicit loop.
+  //   for (const cellObject of cellObjects) {
+  //     if (cellMatchesPattern(cellObject, options)) { rval.push(cellObject); }
+  //   }
+  //   return rval;
+  // }
+
+  // public hasCellId(cellId: CellId): boolean {
+  //   return this.cellMap.has(cellId);
+  // }
+
+  // public hasCell(
+  //   options: FindCellOptions,
+  // ): boolean {
+  //   // Returns true iff findStyles with the same parameters would return a non-empty list.
+  //   // OPTIMIZATION: Return true when we find the first matching style.
+  //   // NOTE: We don't use 'findStyle' because that throws on multiple matches.
+  //   const styles = this.findCells(options);
+  //   return styles.length>0;
+  // }
+
+  // --- PRIVATE ---
+
+  // Private Class Properties
+
+  // Private Class Methods
+
+  // Private Constructor
+
+  protected constructor(path: NotebookPath) {
+    super(path);
+    this.cellMap = new Map();
+    this.nextId = 1;
+    this.pages = [ deepCopy(DEFAULT_PAGE) ];
+  }
+
+  // Private Instance Properties
+
+  protected cellMap: Map<CellId, CellObject>;
+
+  // Private Instance Property Functions
+
+  // REVIEW: This probably belongs somewhere else. Seems specific to the use.
+  private cellToHtml(cell: CellObject): Html {
+    // TODO: This is very inefficient as notebook.childStylesOf goes through *all* styles.
+    return <Html>`<div>
+<span class="collapsed">S${cell.id} ${cell.type} ${cell.source}</span>
+<div class="nested" style="display:none">
+  <tt>${escapeHtml(cellSynopsis(cell))}</tt>
+</div>
+</div>`;
+  }
+
+  // Private Instance Methods
+
+  protected initializeFromObject(obj: ServerNotebookObject): void {
+    this.nextId = obj.nextId;
+    this.pages = obj.pages;
+    for (const pageObject of this.pages) {
+      for (const cellObject of pageObject.cells) {
+        this.cellMap.set(cellObject.id, cellObject);
+      }
+    }
+  }
+
+}
+
+// Exported Class
 
 export class ServerNotebook extends Notebook<ServerNotebookWatcher> {
 
@@ -103,7 +290,7 @@ export class ServerNotebook extends Notebook<ServerNotebookWatcher> {
   }
 
   public static validateNotebookName(name: NotebookName): void {
-    if (!this.isValidNotebookName(name)) { throw new Error(`Invalid notebook name: ${name}`); }
+    if (!Folder.isValidNotebookName(name)) { throw new Error(`Invalid notebook name: ${name}`); }
   }
 
   // Public Class Property Functions
@@ -304,13 +491,11 @@ export class ServerNotebook extends Notebook<ServerNotebookWatcher> {
   //   return finalTeX;
   // }
 
-  public toJSON(): NotebookObject {
-    const rval: NotebookObject = {
+  public toJSON(): ServerNotebookObject {
+    const rval: ServerNotebookObject = {
+      formatVersion: FORMAT_VERSION,
       nextId: this.nextId,
-      pageConfig: this.pageConfig,
       pages: this.pages,
-      cellMap: this.cellMap,
-      version: VERSION,
     }
     return rval;
   }
@@ -429,6 +614,15 @@ export class ServerNotebook extends Notebook<ServerNotebookWatcher> {
 
   // Private Instance Property Functions
 
+  private cellPagePosition(cellId: CellId): CellPagePosition {
+    for (let pi=0; pi<this.pages.length; pi++) {
+      const page = this.pages[pi];
+      const ci = page.cells.findIndex(cellObject => cellObject.id === cellId)
+      if (ci>=0) { return [pi,ci]; }
+    }
+    assertFalse();
+  }
+
   // Private Instance Methods
 
   private async applyAddStrokeRequest<T extends StylusCellObject>(
@@ -477,14 +671,13 @@ export class ServerNotebook extends Notebook<ServerNotebookWatcher> {
     const update: CellDeleted = { type: 'cellDeleted', cellId: cellObject.id };
     updates.push(update);
 
+    // Remove cell from the page and from the map.
     const cellId = update.cellId;
-    assert(this.cellMap[cellId]);
-    // If this is a top-level style then remove it from the top-level style order first.
-    const i = this.pages[0].cellIds.indexOf(cellId);
-    assert(i>=0);
-    this.pages[0].cellIds.splice(i,1);
-    delete this.cellMap[cellId];
+    assert(this.cellMap.has(cellId));
 
+    this.removeCellFromPage(cellId);
+    this.cellMap.delete(cellId);
+    // TODO: Repaginate.
   }
 
   private async applyInsertCellRequest<T extends CellObject>(
@@ -500,17 +693,21 @@ export class ServerNotebook extends Notebook<ServerNotebookWatcher> {
     const update: CellInserted =  { type: 'cellInserted', cellObject, afterId };
     updates.push(update);
 
-    this.cellMap[cellObject.id] = cellObject;
+    this.cellMap.set(cellObject.id, cellObject);
     // Insert top-level styles in the style order.
+    let cpp: CellPagePosition;
     if (!afterId || afterId===CellPosition.Top) {
-      this.pages[0].cellIds.unshift(cellObject.id);
+      cpp = [0, 0];
     } else if (afterId===CellPosition.Bottom) {
-      this.pages[0].cellIds.push(cellObject.id);
+      const pi = this.pages.length-1;
+      const ci = this.pages[pi].cells.length;
+      cpp = [pi, ci];
     } else {
-      const i = this.pages[0].cellIds.indexOf(afterId);
-      if (i<0) { throw new Error(`Cannot insert thought after unknown thought ${afterId}`); }
-      this.pages[0].cellIds.splice(i+1, 0, cellObject.id);
+      cpp = this.cellPagePosition(afterId);
+      cpp[1]++;
     }
+    this.addCellToPage(cellObject, cpp);
+    // TODO: repaginate
 
     const undoChangeRequest: DeleteCell = { type: 'deleteCell', cellId };
     undoChangeRequests.unshift(undoChangeRequest);
@@ -518,43 +715,44 @@ export class ServerNotebook extends Notebook<ServerNotebookWatcher> {
 
   private async applyMoveStyleRequest(
     _source: CellSource,
-    request: MoveCell,
-    updates: NotebookUpdate[],
-    undoChangeRequests: NotebookChangeRequest[],
+    _request: MoveCell,
+    _updates: NotebookUpdate[],
+    _undoChangeRequests: NotebookChangeRequest[],
   ): Promise<void> {
-    const { cellId, afterId } = request;
-    if (afterId == cellId) { throw new Error(`Style ${cellId} can't be moved after itself.`); }
+    notImplemented();
+    // const { cellId, afterId } = request;
+    // if (afterId == cellId) { throw new Error(`Style ${cellId} can't be moved after itself.`); }
 
-    const style = this.getCell(cellId);
-    const oldPosition: CellPosition = this.pages[0].cellIds.indexOf(style.id);
-    if (oldPosition < 0) { throw new Error(`Style ${cellId} can't be moved: not found in styleOrder array.`); }
+    // const style = this.getCell(cellId);
+    // const oldPosition: CellPosition = this.pages[0].cellIds.indexOf(style.id);
+    // if (oldPosition < 0) { throw new Error(`Style ${cellId} can't be moved: not found in styleOrder array.`); }
 
-    let oldAfterId: number;
-    if (oldPosition == 0) { oldAfterId = 0; }
-    else if (oldPosition == this.pages[0].cellIds.length-1) { oldAfterId = -1; }
-    else { oldAfterId = this.pages[0].cellIds[oldPosition-1]; }
+    // let oldAfterId: number;
+    // if (oldPosition == 0) { oldAfterId = 0; }
+    // else if (oldPosition == this.pages[0].cellIds.length-1) { oldAfterId = -1; }
+    // else { oldAfterId = this.pages[0].cellIds[oldPosition-1]; }
 
-    let newPosition: CellPosition;
-    if (afterId == 0) { newPosition = 0; }
-    else if (afterId == -1) { newPosition = this.pages[0].cellIds.length  - 1; }
-    else {
-      newPosition = this.pages[0].cellIds.indexOf(afterId);
-      if (newPosition < 0) { throw new Error(`Style ${cellId} can't be moved: other style ${afterId} not found in styleOrder array.`); }
-      if (oldPosition > newPosition) { newPosition++; }
-    }
+    // let newPosition: CellPosition;
+    // if (afterId == 0) { newPosition = 0; }
+    // else if (afterId == -1) { newPosition = this.pages[0].cellIds.length  - 1; }
+    // else {
+    //   newPosition = this.pages[0].cellIds.indexOf(afterId);
+    //   if (newPosition < 0) { throw new Error(`Style ${cellId} can't be moved: other style ${afterId} not found in styleOrder array.`); }
+    //   if (oldPosition > newPosition) { newPosition++; }
+    // }
 
-    const update: CellMoved = { type: 'cellMoved', cellId, afterId, oldPosition, newPosition };
-    updates.push(update);
+    // const update: CellMoved = { type: 'cellMoved', cellId, afterId, oldPosition, newPosition };
+    // updates.push(update);
 
-    this.pages[0].cellIds.splice(oldPosition, 1);
-    this.pages[0].cellIds.splice(newPosition, 0, cellId);
+    // this.pages[0].cellIds.splice(oldPosition, 1);
+    // this.pages[0].cellIds.splice(newPosition, 0, cellId);
 
-    const undoChangeRequest: MoveCell = {
-      type: 'moveCell',
-      cellId: style.id,
-      afterId: oldAfterId
-    };
-    undoChangeRequests.unshift(undoChangeRequest);
+    // const undoChangeRequest: MoveCell = {
+    //   type: 'moveCell',
+    //   cellId: style.id,
+    //   afterId: oldAfterId
+    // };
+    // undoChangeRequests.unshift(undoChangeRequest);
   }
 
   private async applyRemoveStrokeRequest<T extends CellObject>(
@@ -593,6 +791,12 @@ export class ServerNotebook extends Notebook<ServerNotebookWatcher> {
       //        Currently this is an illegal option configuration.
       notImplemented();
     }
+  }
+
+  private addCellToPage(cellObject: CellObject, cpp: CellPagePosition): void {
+    const [pi, ci] = cpp;
+    const pageObject = this.pages[pi];
+    pageObject.cells.splice(ci, 0, cellObject);
   }
 
   // private processInsertCellRequest(
@@ -741,6 +945,20 @@ export class ServerNotebook extends Notebook<ServerNotebookWatcher> {
   //   notImplemented();
   // }
 
+  private removeCellFromPage(cellId: CellId): void {
+    // IMPORTANT:
+    // * This does not remove the cell from the cell map!
+    // * This does not remove the page if the last cell is removed from it.
+    // * This does not repaginate.
+    const cpp = this.cellPagePosition(cellId);
+    this.removeCellFromPosition(cpp);
+  }
+
+  private removeCellFromPosition(cpp: CellPagePosition): void {
+    const [pi, ci] = cpp;
+    this.pages[pi].cells.splice(ci, 1);
+  }
+
   private removeSocket(socket: ServerSocket): void {
     const hadSocket = this.sockets.delete(socket);
     assert(hadSocket);
@@ -873,6 +1091,11 @@ function absFilePathFromNotebookPath(path: NotebookPath): AbsFilePath {
   const absPath = absDirPathFromNotebookPath(path);
   return join(absPath, NOTEBOOK_FILE_NAME);
 }
+
+// function cellMatchesPattern(cell: CellObject, options: FindCellOptions): boolean {
+//   return    (!options.source || cell.source == options.source)
+//          && (!options.notSource || cell.source != options.notSource);
+// }
 
 // function emptyStylusInput(height: number, width: number): StylusInput {
 //   return {

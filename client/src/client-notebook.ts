@@ -22,16 +22,19 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 // Requirements
 
 import { CellId, CellObject } from "./shared/cell";
-import { NotebookObject, PageConfig } from "./shared/notebook";
+import { assert, assertFalse, CssSize, notImplemented } from "./shared/common";
+import { NotebookName, NotebookNameFromNotebookPath, NotebookPath } from "./shared/folder";
+import { FORMAT_VERSION, NotebookObject, PageMargins } from "./shared/notebook";
 import {
   NotebookChangeRequest, ChangeNotebook, UseTool,
   OpenNotebook,
 } from "./shared/client-requests";
 import { NotebookUpdated, NotebookOpened, NotebookResponse, NotebookClosed, NotebookUpdate } from "./shared/server-responses";
 
+import { createCell } from "./client-cell/instantiator";
+
 import { appInstance } from "./app";
-import { NotebookName, NotebookPath } from "./shared/folder";
-import { assert, assertFalse } from "./shared/common";
+import { ClientCell } from "./client-cell";
 
 // Types
 
@@ -52,7 +55,9 @@ interface OpenInfo {
 }
 
 interface Page {
-  cellObjects: CellObject[];
+  cells: ClientCell<any>[];
+  margins: PageMargins;
+  size: CssSize;
 }
 
 // Constants
@@ -94,24 +99,31 @@ export class ClientNotebook {
   // Public Instance Properties
 
   public readonly path: NotebookPath;
-  // public readonly pageConfig: PageConfig;
+  public pages: Page[];
 
   // Public Instance Property Functions
 
+  // public compareCellPositions(id1: CellId, id2: CellId): number {
+  //   // Returns a negative number if style1 is before style2,
+  //   // zero if they are the same styles,
+  //   // or a positive number if style1 is after style2.
+
+  //   return cellPosition(id1) - cellPosition(id2);
+  // }
+  // public cellPosition(id: CellId): CellOrdinalPosition {
+  //   // TODO: On different pages.
+  //   return this.pages[0].cellIds.indexOf(id);
+  // }
+
   public get notebookName(): NotebookName {
-    const i = this.path.lastIndexOf('/');
-    return <NotebookName>this.path.slice(i);
+    // REVIEW: Rename to just "name"?
+    return NotebookNameFromNotebookPath(this.path);
   }
 
-  public get pageConfig(): PageConfig {
-    return this.obj.pageConfig;
-  }
-
-  public get pages(): Page[] {
-    // TODO: return iterator instead of full array.
-    return this.obj.pages.map(p=>({
-      cellObjects: p.cellIds.map(id=>this.obj.cellMap[id]),
-    }))
+  public getCell<O extends CellObject>(id: CellId): ClientCell<O> {
+    const cell = <ClientCell<O>>this.cellMap.get(id);
+    assert(cell);
+    return cell;
   }
 
   // Public Instance Methods
@@ -200,15 +212,26 @@ export class ClientNotebook {
 
   // Private Constructor
 
-  private constructor(path: NotebookPath, obj: NotebookObject) {
+  private constructor(path: NotebookPath, notebookObject: NotebookObject) {
+    assert(notebookObject.formatVersion == FORMAT_VERSION);
     this.path = path;
-    this.obj = obj;
+    const cellMap = this.cellMap = new Map();
     this.terminated = false;
+
+    this.pages = notebookObject.pages.map(pageObject=>{
+      const cells = pageObject.cells.map(cellObject=>{
+        const cell = createCell(this, cellObject);
+        cellMap.set(cell.id, cell);
+        return cell;
+      });
+      const page: Page = { ...pageObject, cells };
+      return page;
+    })
   }
 
   // Private Instance Properties
 
-  private obj: NotebookObject;
+  private cellMap: Map<CellId, ClientCell<any>>;
   private terminated: boolean;  // TODO: Where to assert(!this.terminated)?
 
   // Private Instance Property Functions
@@ -256,13 +279,45 @@ export class ClientNotebook {
     // (The view needs to trace the deleted cell or relationship to the top-level cell to
     //  determine what cell to update. If the cell has been deleted from the notebook already
     //  then it cannot do that.)
-    for (const change of msg.updates) {
-      for (const watcher of this.watchers) {
-        watcher.onUpdate(change, ownRequest);
-      }
+    for (const update of msg.updates) {
+      this.onUpdate(update, ownRequest);
     }
-
-
   }
 
+  private onUpdate(update: NotebookUpdate, ownRequest: boolean): void {
+
+    // Update our data structure
+    switch (update.type) {
+      case 'cellDeleted': {
+        notImplemented();
+        // // If a substyle is deleted then mark the cell as dirty.
+        // // If a top-level style is deleted then remove the cell.
+        // const cellView = this.cellViews.get(update.cellId);
+        // assert(cellView);
+        // this.deleteCell(cellView!);
+        break;
+      }
+      case 'cellInserted': {
+        notImplemented();
+        // this.createCell(change.cellObject, change.afterId!);
+        break;
+      }
+      case 'cellMoved': {
+        notImplemented();
+        // const movedCell = this.cellViews.get(update.cellId);
+        // assert(movedCell);
+        // // Note: DOM methods ensure the element will be removed from
+        // //       its current parent.
+        // this.insertCellView(movedCell!, update.afterId);
+        // // REVIEW: We do not pass the changed event to the moved cell, assuming it does not change. Safe assumption?
+        break;
+      }
+      default: assertFalse();
+    }
+
+    // Notify watchers of the update.
+    for (const watcher of this.watchers) {
+      watcher.onUpdate(update, ownRequest);
+    }
+  }
 }

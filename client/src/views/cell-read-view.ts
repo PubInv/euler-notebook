@@ -20,23 +20,29 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 // Requirements
 
 import { CellObject } from "../shared/cell";
-import { notImplemented } from "../shared/common";
+import { CssLength, notImplemented } from "../shared/common";
 import { NotebookUpdate } from "../shared/server-responses";
 
 import { ClientCell } from "../client-cell";
 
 import { CellView } from "./cell-edit-view";
+import { $outerSvg } from "../dom";
 
 // Exported Class
 
-export class CellReadView<O extends CellObject> /* extends HtmlElement<'div'> */ implements CellView {
+export class CellReadView<O extends CellObject> implements CellView {
+
+  public $svg: SVGSVGElement;
 
   public onUpdate(_update: NotebookUpdate, _ownRequest: boolean): void {
     notImplemented();
   };
 
-  public constructor(_cell: ClientCell<O>) {
-    // this.cell = cell;
+  public constructor(cell: ClientCell<O>, xAttr: CssLength, yAttr: CssLength) {
+    // TODO: <use xlink:href="#${id}"/> instead of duplicate instantiation.
+    const $svg = this.$svg = $outerSvg<'svg'>(cell.obj.displaySvg);
+    $svg.setAttribute('x', xAttr);
+    $svg.setAttribute('y', yAttr);
   }
 
   // private cell: ClientCell<O>;
