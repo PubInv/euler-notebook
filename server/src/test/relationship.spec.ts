@@ -115,7 +115,6 @@ function wolframFormulaInsertRequest(plainTextFormula: PlainTextFormula): Insert
   const data: FormulaCellObject = {
     type: CellType.Formula,
     inputType: InputType.None,
-    displaySvg: EMPTY_SVG,
     height: 72, // points
     inputText: <PlainText>plainTextFormula,
     plainTextFormula: plainTextFormula,

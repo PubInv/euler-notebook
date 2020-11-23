@@ -19,6 +19,9 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 // Requirements
 
+import * as debug1 from "debug";
+const debug = debug1('client:figure-cell');
+
 import { TextCellObject } from "../shared/cell";
 import { NotebookUpdate } from "../shared/server-responses";
 
@@ -26,6 +29,7 @@ import { ClientNotebook } from "../client-notebook";
 
 import { ClientCell } from "./index";
 import { TextEditView } from "../views/text-edit-view";
+import { notebookUpdateSynopsis } from "../shared/debug-synopsis";
 
 // Exported Class
 
@@ -46,6 +50,7 @@ export class TextCell extends ClientCell<TextCellObject> {
   };
 
   public onUpdate(update: NotebookUpdate, ownRequest: boolean): void {
+    debug(`onUpdate ${notebookUpdateSynopsis(update)}`);
     super.onUpdate(update, ownRequest);
   };
 

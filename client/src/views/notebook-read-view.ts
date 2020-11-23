@@ -19,6 +19,9 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 // Requirements
 
+import * as debug1 from "debug";
+const debug = debug1('client:figure-cell');
+
 import { CssClass, assert, CssLength, notImplemented, assertFalse } from "../shared/common";
 
 import { $newSvg, $allSvg, cssLength } from "../dom";
@@ -29,6 +32,7 @@ import { Mode, NotebookReadScreen } from "../screens/notebook-read-screen/index"
 import { CellReadView } from "./cell-read-view";
 import { NotebookView } from "../client-notebook";
 import { NotebookUpdate } from "../shared/server-responses";
+import { notebookUpdateSynopsis } from "../shared/debug-synopsis";
 
 // Types
 
@@ -83,7 +87,7 @@ export class NotebookReadView extends HtmlElement<'div'> implements NotebookView
     // Calculate the size of the page thumbnails
     // TODO: Different pages could have different sizes.
     const notebook = this.screen.notebook;
-    const pageAspectRatio = parseInt(notebook.pages[0].size.width) / parseInt(notebook.pages[0].size.height);
+    const pageAspectRatio = parseInt(notebook.pageSize.width) / parseInt(notebook.pageSize.height);
     let pageWidth = viewWidth / (this.pagesPerRow + (this.pagesPerRow+1)*this.marginPercent);
     const pageHeight = Math.round(pageWidth / pageAspectRatio);
     const pageMargin = Math.round(pageWidth * this.marginPercent);
@@ -110,6 +114,8 @@ export class NotebookReadView extends HtmlElement<'div'> implements NotebookView
   }
 
   public onUpdate(update: NotebookUpdate): void {
+    debug(`onUpdate ${notebookUpdateSynopsis(update)}`);
+
     // Update our data structure
     switch (update.type) {
       case 'cellDeleted': {
@@ -143,15 +149,20 @@ export class NotebookReadView extends HtmlElement<'div'> implements NotebookView
     const notebook = this.screen.notebook;
 
     // TODO: Different pages could be different sizes.
-    const pageWidth = parseInt(notebook.pages[0].size.width);
-    const pageHeight = parseInt(notebook.pages[0].size.height);
+    const pageWidth = parseInt(notebook.pageSize.width);
+    const pageHeight = parseInt(notebook.pageSize.height);
     const viewBoxWidth = pageWidth * PIXELS_PER_INCH;
     const viewBoxHeight = pageHeight * PIXELS_PER_INCH;
 
-    const topMargin = notebook.pages[0].margins.top;
-    const leftMargin = notebook.pages[0].margins.left;
+    const topMargin = notebook.margins.top;
+    const leftMargin = notebook.margins.left;
 
-    for (const page of notebook.pages) {
+    const pagination = notebook.pagination;
+    let cellIndex = 0;
+    for (let pageIndex = 0;
+         pageIndex < pagination.length;
+         cellIndex += pagination[pageIndex], pageIndex++)
+    {
       const $page = $newSvg({
         tag: 'svg',
         appendTo: this.$elt,
@@ -167,7 +178,8 @@ export class NotebookReadView extends HtmlElement<'div'> implements NotebookView
 
       let x: number = cssLength(leftMargin, 'pt');
       let y: number = cssLength(topMargin, 'pt');
-      for (const cell of page.cells) {
+      for (let i=0; i<pagination[pageIndex]; i++) {
+        const cell = notebook.cells[cellIndex+i];
         const readView = new CellReadView(cell, <CssLength>`${x}pt`, <CssLength>`${y}pt`);
         const $cellSvg = readView.$svg;
         // TODO: translate SVG by (leftMargin, y);

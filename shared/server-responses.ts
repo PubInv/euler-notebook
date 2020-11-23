@@ -22,7 +22,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 // Requirements
 
-import { CellId, CellObject, CellOrdinalPosition, CellRelativePosition } from "./cell";
+import { CellId, CellObject } from "./cell";
 import { RequestId, NotebookChangeRequest } from "./client-requests";
 import { FolderObject, FolderPath, NotebookPath, FolderEntry, FolderName, NotebookEntry, NotebookName } from "./folder";
 import { NotebookObject } from "./notebook";
@@ -126,15 +126,12 @@ export interface CellDeleted {
 export interface CellInserted {
   type: 'cellInserted';
   cellObject: CellObject;
-  pageIndex: number;
   cellIndex: number;
 }
 export interface CellMoved {
   type: 'cellMoved';
   cellId: CellId;
-  afterId: CellRelativePosition;
-  oldPosition: CellOrdinalPosition;
-  newPosition: CellOrdinalPosition;
+  cellIndex: number;
 }
 export interface StrokeDeleted {
   type: 'strokeDeleted';

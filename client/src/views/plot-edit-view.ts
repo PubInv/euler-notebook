@@ -23,8 +23,8 @@ import * as debug1 from "debug";
 const debug = debug1('client:formula-cell');
 
 import { CellObject, PlotCellObject } from "../shared/cell";
-import { assertFalse, CssClass } from "../shared/common";
-import { notebookChangeSynopsis } from "../shared/debug-synopsis";
+import { assertFalse, CssClass, SvgMarkup } from "../shared/common";
+import { notebookUpdateSynopsis } from "../shared/debug-synopsis";
 import { NotebookUpdate } from "../shared/server-responses";
 
 import { $outerSvg, HtmlElementSpecification } from "../dom";
@@ -57,7 +57,7 @@ export class PlotEditView extends CellEditView<PlotCellObject> {
   // ClientNotebookWatcher Methods
 
   public onUpdate(update: NotebookUpdate): void {
-    debug(`onChange: style ${this.id} ${notebookChangeSynopsis(update)}`);
+    debug(`onUpdate: C${this.id} ${notebookUpdateSynopsis(update)}`);
 
     switch (update.type) {
       case 'cellInserted': {
@@ -89,8 +89,9 @@ export class PlotEditView extends CellEditView<PlotCellObject> {
 
   // Private Instance Methods
 
-  private createDisplayPanel(cellObject: CellObject): SVGSVGElement {
-    const $displayPanel = $outerSvg<'svg'>(cellObject.displaySvg);
+  private createDisplayPanel(_cellObject: CellObject): SVGSVGElement {
+    const svgMarkup = <SvgMarkup>"<svg></svg>"; // TODO:
+    const $displayPanel = $outerSvg<'svg'>(svgMarkup);
     $displayPanel.classList.add('display');
     return $displayPanel;
   }

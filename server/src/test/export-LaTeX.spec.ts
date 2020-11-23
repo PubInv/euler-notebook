@@ -80,7 +80,6 @@ function generateInsertRequests(inputs: PlainTextFormula[]) : InsertCellRequest[
     const formulaData: FormulaCellObject = {
       type: CellType.Formula,
       inputType: InputType.None,
-      displaySvg: EMPTY_SVG,
       height: 72, // points
       inputText: <PlainText>wolframData,
       plainTextFormula: wolframData,

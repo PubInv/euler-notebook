@@ -27,19 +27,19 @@ import { Watcher } from "./watched-resource";
 
 // Types
 
+// Number of cells on each page.
+export type Pagination = number[];
+
 export interface NotebookObject {
-  pages: PageObject[];
+  cells: CellObject[];
   formatVersion: string;
+  margins: PageMargins;
+  pageSize: CssSize;
+  pagination: Pagination;
 }
 
 export interface NotebookWatcher extends Watcher {
   onChange(change: NotebookUpdate, ownRequest: boolean): void;
-}
-
-export interface PageObject {
-  cells: CellObject[];
-  margins: PageMargins;
-  size: CssSize;
 }
 
 export interface PageMargins {
@@ -51,7 +51,7 @@ export interface PageMargins {
 
 // Constants
 
-export const FORMAT_VERSION = "0.0.18";
+export const FORMAT_VERSION = "0.0.19";
 
 // Exported Class
 

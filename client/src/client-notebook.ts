@@ -21,15 +21,18 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 // Requirements
 
+import * as debug1 from "debug";
+const debug = debug1('client:client-notebook');
+
 import { CellId, CellObject } from "./shared/cell";
 import { assert, assertFalse, CssSize, notImplemented } from "./shared/common";
+import { notebookUpdateSynopsis } from "./shared/debug-synopsis";
 import { NotebookName, NotebookNameFromNotebookPath, NotebookPath } from "./shared/folder";
-import { FORMAT_VERSION, NotebookObject, PageMargins } from "./shared/notebook";
+import { FORMAT_VERSION, NotebookObject, PageMargins, Pagination } from "./shared/notebook";
+import { NotebookChangeRequest, ChangeNotebook, UseTool, OpenNotebook } from "./shared/client-requests";
 import {
-  NotebookChangeRequest, ChangeNotebook, UseTool,
-  OpenNotebook,
-} from "./shared/client-requests";
-import { NotebookUpdated, NotebookOpened, NotebookResponse, NotebookClosed, NotebookUpdate } from "./shared/server-responses";
+  NotebookUpdated, NotebookOpened, NotebookResponse, NotebookClosed, NotebookUpdate, CellInserted, CellDeleted, CellMoved
+} from "./shared/server-responses";
 
 import { createCell } from "./client-cell/instantiator";
 
@@ -52,12 +55,6 @@ interface OpenInfo {
   promise: Promise<ClientNotebook>;
   tally: number;
   views: Set<NotebookView>;
-}
-
-interface Page {
-  cells: ClientCell<any>[];
-  margins: PageMargins;
-  size: CssSize;
 }
 
 // Constants
@@ -98,8 +95,11 @@ export class ClientNotebook {
 
   // Public Instance Properties
 
+  public cells: ClientCell<any>[]; // REVIEW: Make function property that returns iterator?
+  public readonly margins: PageMargins;
   public readonly path: NotebookPath;
-  public pages: Page[];
+  public readonly pageSize: CssSize;
+  public readonly pagination: Pagination;
 
   // Public Instance Property Functions
 
@@ -216,24 +216,17 @@ export class ClientNotebook {
     assert(notebookObject.formatVersion == FORMAT_VERSION);
     this.path = path;
     this.cellMap = new Map();
+    this.cells = [];
+    this.margins = notebookObject.margins; // REVIEW: Deep copy?
+    this.pageSize = notebookObject.pageSize; // REVIEW: Deep copy?
+    this.pagination = notebookObject.pagination;
     this.terminated = false;
 
-    this.pages = notebookObject.pages.map(pageObject=>{
-      const cells = pageObject.cells.map(cellObject=>{
-        const cell = createCell(this, cellObject);
-        this.cellMap.set(cell.id, cell);
-        return cell;
-      });
-      const page: Page = { ...pageObject, cells };
-      return page;
-    })
-  }
-
-  private addCell<O extends CellObject>(cellObject: O, pageIndex: number, cellIndex: number): ClientCell<O> {
-    const cell = createCell(this, cellObject);
-    this.pages[pageIndex].cells.splice(cellIndex, 0, cell);
-    this.cellMap.set(cell.id, cell);
-    return cell;
+    for (let cellIndex=0; cellIndex<notebookObject.cells.length; cellIndex++) {
+      const cellObject = notebookObject.cells[cellIndex];
+      const cellUpdate: CellInserted = { type: 'cellInserted', cellObject, cellIndex }
+      this.onCellInserted(cellUpdate);
+    }
   }
 
   // Private Instance Properties
@@ -277,6 +270,22 @@ export class ClientNotebook {
     this.terminate(msg.reason);
   }
 
+  private onCellDeleted(_update: CellDeleted): void {
+    notImplemented();
+  }
+
+  private onCellInserted(update: CellInserted): void {
+    const { cellObject, cellIndex } = update;
+    const cell = createCell(this, cellObject);
+    this.cells.splice(cellIndex, 0, cell);
+    this.cellMap.set(cell.id, cell);
+  }
+
+  private onCellMoved(_update: CellMoved): void {
+    notImplemented();
+  }
+
+
   private onUpdated(msg: NotebookUpdated, ownRequest: boolean): void {
     // Message from the server indicating this notebook has changed.
     for (const update of msg.updates) {
@@ -285,39 +294,26 @@ export class ClientNotebook {
   }
 
   private onUpdate(update: NotebookUpdate, ownRequest: boolean): void {
+    debug(`onUpdate ${notebookUpdateSynopsis(update)}`);
+
+    // Process an individual notebook change from the server.
 
     // Update our data structure
     switch (update.type) {
-      case 'cellDeleted': {
-        notImplemented();
-        // // If a substyle is deleted then mark the cell as dirty.
-        // // If a top-level style is deleted then remove the cell.
-        // const cellView = this.cellViews.get(update.cellId);
-        // assert(cellView);
-        // this.deleteCell(cellView!);
-        break;
-      }
-      case 'cellInserted': {
-        this.addCell(update.cellObject, update.pageIndex, update.cellIndex);
-        // REVIEW: add to view?
-        break;
-      }
-      case 'cellMoved': {
-        notImplemented();
-        // const movedCell = this.cellViews.get(update.cellId);
-        // assert(movedCell);
-        // // Note: DOM methods ensure the element will be removed from
-        // //       its current parent.
-        // this.insertCellView(movedCell!, update.afterId);
-        // // REVIEW: We do not pass the changed event to the moved cell, assuming it does not change. Safe assumption?
+      case 'cellDeleted': { this.onCellDeleted(update); break; }
+      case 'cellInserted': this.onCellInserted(update); break;
+      case 'cellMoved': { this.onCellMoved(update); break; }
+      case 'strokeDeleted':
+      case 'strokeInserted': {
+        const cell = this.getCell(update.cellId);
+        cell.onUpdate(update, ownRequest);
         break;
       }
       default: assertFalse();
     }
 
-    // Notify watchers of the update.
-    for (const views of this.views
-      ) {
+    // Notify notebook views of the update.
+    for (const views of this.views) {
       views.onUpdate(update, ownRequest);
     }
   }

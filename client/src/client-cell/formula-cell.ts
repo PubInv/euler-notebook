@@ -19,6 +19,9 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 // Requirements
 
+import * as debug1 from "debug";
+const debug = debug1('client:formula-cell');
+
 import { FormulaCellObject } from "../shared/formula";
 import { NotebookUpdate } from "../shared/server-responses";
 
@@ -26,6 +29,7 @@ import { ClientNotebook } from "../client-notebook";
 
 import { ClientCell } from "./index";
 import { FormulaEditView } from "../views/formula-edit-view";
+import { notebookUpdateSynopsis } from "../shared/debug-synopsis";
 
 // Exported Class
 
@@ -46,6 +50,7 @@ export class FormulaCell extends ClientCell<FormulaCellObject> {
   };
 
   public onUpdate(update: NotebookUpdate, ownRequest: boolean): void {
+    debug(`onUpdate ${notebookUpdateSynopsis(update)}`);
     super.onUpdate(update, ownRequest);
   };
 

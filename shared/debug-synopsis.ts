@@ -96,19 +96,19 @@ export function notebookChangeRequestSynopsis(request: NotebookChangeRequest): s
   return rval;
 }
 
-export function notebookChangeSynopsis(change: NotebookUpdate): string {
-  let rval: string = change.type;
-  switch(change.type) {
+export function notebookUpdateSynopsis(update: NotebookUpdate): string {
+  let rval: string = update.type;
+  switch(update.type) {
     case 'cellDeleted': {
-      rval += ` C${change.cellId}`;
+      rval += ` P${update.cellId}`;
       break;
     }
     case 'cellInserted': {
-      rval += ` ${cellSynopsis(change.cellObject)}`;
+      rval += ` ${cellSynopsis(update.cellObject)}`;
       break;
     }
     case 'cellMoved': {
-      rval += ` ${change.cellId} after ${change.afterId} ${change.oldPosition}->${change.newPosition}`;
+      rval += ` ${update.cellId} to index ${update.cellIndex}`;
       break;
     }
     case 'strokeInserted': {
@@ -125,12 +125,9 @@ export function notebookChangeSynopsis(change: NotebookUpdate): string {
 }
 
 export function notebookSynopsis(notebookObject: NotebookObject): string {
-  // TODO: Notebook formatVersion, etc.
-  return notebookObject.pages.map(page=>{
-    // TODO: Page configuration
-    return page.cells.map(cell=>{
-      return cellSynopsis(cell);
-    }).join('/n');
+  // TODO: Notebook formatVersion, pageConfiguration, etc.
+  return notebookObject.cells.map(cell=>{
+    return cellSynopsis(cell);
   }).join('/n');
 }
 
@@ -217,7 +214,7 @@ function NotebookResponseSynopsis(msg: NotebookResponse) {
   switch(msg.operation) {
     case 'updated':
       for (const change of msg.updates) {
-        rval += `${notebookChangeSynopsis(change)}; `;
+        rval += `${notebookUpdateSynopsis(change)}; `;
       }
       break;
     case 'closed': rval += ` reason: ${msg.reason}`; break;

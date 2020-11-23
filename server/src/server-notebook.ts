@@ -29,9 +29,9 @@ import * as debug1 from "debug";
 import { join } from "path";
 
 import { CellObject, CellSource, CellId, CellPosition, StylusCellObject, InputType, CellType, FigureCellObject, TextCellKeyboardObject, TextCellStylusObject } from "./shared/cell";
-import { assert, assertFalse, deepCopy, emptySvg, escapeHtml, ExpectedError, Html, notImplemented, PlainText, Timestamp } from "./shared/common";
+import { assert, assertFalse, deepCopy, escapeHtml, ExpectedError, Html, notImplemented, PlainText, Timestamp } from "./shared/common";
 import { NotebookPath, NOTEBOOK_PATH_RE, NotebookName, FolderPath, NotebookEntry, Folder } from "./shared/folder";
-import { NotebookObject, FORMAT_VERSION, NotebookWatcher, PageObject, sizeInPoints, marginsInPoints } from "./shared/notebook";
+import { NotebookObject, FORMAT_VERSION, NotebookWatcher, sizeInPoints, marginsInPoints } from "./shared/notebook";
 import {
   NotebookChangeRequest, MoveCell, InsertCell, DeleteCell,
   ChangeNotebook, UseTool, RequestId, AddStroke, RemoveStroke, NotebookRequest, OpenNotebook, CloseNotebook,
@@ -41,13 +41,12 @@ import {
   CellInserted, CellDeleted, StrokeInserted,
 } from "./shared/server-responses";
 import { cellSynopsis, notebookChangeRequestSynopsis } from "./shared/debug-synopsis";
-import { emptyStylusInput, StrokeId } from "./shared/stylus";
+import { emptyStrokeData, StrokeId } from "./shared/stylus";
 import { OpenOptions, WatchedResource } from "./shared/watched-resource";
 import { FormulaCellKeyboardObject, FormulaCellStylusObject, PlainTextFormula } from "./shared/formula";
 import { ServerSocket } from "./server-socket";
 import { AbsDirectoryPath, ROOT_DIR_PATH, mkDir, readFile, rename, rmRaf, writeFile } from "./adapters/file-system";
 import { logError } from "./error-handler";
-import { SSL_OP_SSLEAY_080_CLIENT_DH_BUG } from "constants";
 
 
 // const svg2img = require('svg2img');
@@ -58,8 +57,6 @@ const debug = debug1(`server:${MODULE}`);
 // Types
 
 type AbsFilePath = string; // Absolute path to a file in the file system.
-
-type CellPagePosition = [ number, number ]; // First number is page index, second is cell index.
 
 export interface FindCellOptions {
   source?: CellSource;
@@ -93,11 +90,13 @@ const DEFAULT_FORMULA_CSS_SIZE = sizeInPoints(1, DEFAULT_WIDTH);
 const DEFAULT_FIGURE_CSS_SIZE = sizeInPoints(4, DEFAULT_WIDTH);
 const DEFAULT_TEXT_CSS_SIZE = sizeInPoints(4, DEFAULT_WIDTH);
 
-const DEFAULT_PAGE: PageObject = {
-  // REVIEW: Standardize on "pt" as the unit of measurement rather than mixing inches and points?
+const EMPTY_NOTEBOOK_OBJ: ServerNotebookObject = {
+  nextId: 1,
   cells: [],
   margins: DEFAULT_LETTER_MARGINS,
-  size: LETTER_PAGE_SIZE,
+  pageSize: LETTER_PAGE_SIZE,
+  formatVersion: FORMAT_VERSION,
+  pagination: [],
 }
 
 const NOTEBOOK_ENCODING = 'utf8';
@@ -123,25 +122,7 @@ export abstract class Notebook<W extends NotebookWatcher> extends WatchedResourc
 
   // Public Instance Properties
 
-  public nextId: CellId;
-  public pages: PageObject[];
-
   // Public Instance Property Functions
-
-  // public allCells(): CellObject[] {
-  //   // REVIEW: Return an iterator?
-  //   const sortedIds: CellId[] = Object.keys(this.cellMap).map(k=>parseInt(k,10)).sort();
-  //   return sortedIds.map(id=>this.getCell(id));
-  // }
-
-  // public followingCellId(id: CellId): CellId {
-  //   // Returns the id of the style immediately after the top-level style specified.
-  //   // TODO: On different pages.
-  //   const i = this.pages[0].cellIds.indexOf(id);
-  //   assert(i>=0);
-  //   if (i+1>=this.pages[0].cellIds.length) { return 0; }
-  //   return this.pages[0].cellIds[i+1];
-  // }
 
   public getCell<T extends CellObject>(id: CellId): T {
     const rval = <T>this.cellMap.get(id);
@@ -155,7 +136,7 @@ export abstract class Notebook<W extends NotebookWatcher> extends WatchedResourc
   // }
 
   public isEmpty(): boolean {
-    return this.pages.length == 1 && this.pages[0].cells.length == 0;
+    return this.obj.cells.length == 0;
   }
 
   public precedingCellId(_id: CellId): CellId {
@@ -171,10 +152,8 @@ export abstract class Notebook<W extends NotebookWatcher> extends WatchedResourc
   public toHtml(): Html {
     if (this.isEmpty()) { return <Html>"<i>Notebook is empty.</i>"; }
     else {
-      return <Html>this.pages.map(pageObject=>{
-        return pageObject.cells.map(cellObject=>{
-          return this.cellToHtml(cellObject);
-        }).join('\n');
+      return <Html>this.obj.cells.map(cellObject=>{
+        return this.cellToHtml(cellObject);
       }).join('\n');
     }
   }
@@ -235,13 +214,13 @@ export abstract class Notebook<W extends NotebookWatcher> extends WatchedResourc
 
   protected constructor(path: NotebookPath) {
     super(path);
+    this.obj = deepCopy(EMPTY_NOTEBOOK_OBJ);
     this.cellMap = new Map();
-    this.nextId = 1;
-    this.pages = [ deepCopy(DEFAULT_PAGE) ];
   }
 
   // Private Instance Properties
 
+  protected obj: ServerNotebookObject;
   protected cellMap: Map<CellId, CellObject>;
 
   // Private Instance Property Functions
@@ -260,12 +239,9 @@ export abstract class Notebook<W extends NotebookWatcher> extends WatchedResourc
   // Private Instance Methods
 
   protected initializeFromObject(obj: ServerNotebookObject): void {
-    this.nextId = obj.nextId;
-    this.pages = obj.pages;
-    for (const pageObject of this.pages) {
-      for (const cellObject of pageObject.cells) {
-        this.cellMap.set(cellObject.id, cellObject);
-      }
+    this.obj = obj; // REVIEW: Deep copy?
+    for (const cellObject of this.obj.cells) {
+      this.cellMap.set(cellObject.id, cellObject);
     }
   }
 
@@ -496,12 +472,7 @@ export class ServerNotebook extends Notebook<ServerNotebookWatcher> {
   // }
 
   public toJSON(): ServerNotebookObject {
-    const rval: ServerNotebookObject = {
-      formatVersion: FORMAT_VERSION,
-      nextId: this.nextId,
-      pages: this.pages,
-    }
-    return rval;
+    return this.obj;
   }
 
   // Public Instance Methods
@@ -566,7 +537,7 @@ export class ServerNotebook extends Notebook<ServerNotebookWatcher> {
   }
 
   public reserveId(): CellId {
-    const cellId = this.nextId++;
+    const cellId = this.obj.nextId++;
     this.reservedIds.add(cellId);
     return cellId;
   }
@@ -618,15 +589,6 @@ export class ServerNotebook extends Notebook<ServerNotebookWatcher> {
 
   // Private Instance Property Functions
 
-  private cellPagePosition(cellId: CellId): CellPagePosition {
-    for (let pi=0; pi<this.pages.length; pi++) {
-      const page = this.pages[pi];
-      const ci = page.cells.findIndex(cellObject => cellObject.id === cellId)
-      if (ci>=0) { return [pi,ci]; }
-    }
-    assertFalse();
-  }
-
   // Private Instance Methods
 
   private async applyAddStrokeRequest<T extends StylusCellObject>(
@@ -647,7 +609,7 @@ export class ServerNotebook extends Notebook<ServerNotebookWatcher> {
     updates.push(update);
 
     assert(cellObject.inputType == InputType.Stylus);
-    cellObject.stylusInput.strokeGroups[0].strokes.push(update.stroke);
+    cellObject.strokeData.strokeGroups[0].strokes.push(update.stroke);
 
 
     const undoChangeRequest: RemoveStroke = { type: 'removeStroke', cellId, strokeId };
@@ -693,7 +655,7 @@ export class ServerNotebook extends Notebook<ServerNotebookWatcher> {
   ): Promise<void> {
 
     let cellObject: CellObject;
-    const id = this.nextId++;
+    const id = this.obj.nextId++;
     switch(request.cellType) {
       case CellType.Figure: {
         const size = DEFAULT_FIGURE_CSS_SIZE;
@@ -702,10 +664,8 @@ export class ServerNotebook extends Notebook<ServerNotebookWatcher> {
           type: CellType.Figure,
           inputType: InputType.Stylus,
           cssSize: deepCopy(size),
-          displaySvg: emptySvg(size),
           source,
-          stylusInput: emptyStylusInput(size),
-          stylusSvg: emptySvg(size),
+          strokeData: emptyStrokeData(size),
         };
         cellObject = figureCellObject;
         break;
@@ -719,7 +679,6 @@ export class ServerNotebook extends Notebook<ServerNotebookWatcher> {
               type: CellType.Formula,
               inputType: InputType.Keyboard,
               cssSize: deepCopy(size),
-              displaySvg: emptySvg(size),
               inputText: <PlainText>"",
               plainTextFormula: <PlainTextFormula>"",
               source,
@@ -734,11 +693,9 @@ export class ServerNotebook extends Notebook<ServerNotebookWatcher> {
               type: CellType.Formula,
               inputType: InputType.Stylus,
               cssSize: deepCopy(size),
-              displaySvg: emptySvg(size),
               plainTextFormula: <PlainTextFormula>"",
               source,
-              stylusInput: emptyStylusInput(size),
-              stylusSvg: emptySvg(size),
+              strokeData: emptyStrokeData(size),
             }
             cellObject = formulaCellObject;
             break;
@@ -760,7 +717,6 @@ export class ServerNotebook extends Notebook<ServerNotebookWatcher> {
               type: CellType.Text,
               inputType: InputType.Keyboard,
               cssSize: deepCopy(size),
-              displaySvg: emptySvg(size),
               inputText: <PlainText>"",
               source,
             }
@@ -774,10 +730,8 @@ export class ServerNotebook extends Notebook<ServerNotebookWatcher> {
               type: CellType.Text,
               inputType: InputType.Stylus,
               cssSize: deepCopy(size),
-              displaySvg: emptySvg(size),
               source,
-              stylusInput: emptyStylusInput(size),
-              stylusSvg: emptySvg(size),
+              strokeData: emptyStrokeData(size),
             }
             cellObject = textCellObject;
             break;
@@ -789,23 +743,22 @@ export class ServerNotebook extends Notebook<ServerNotebookWatcher> {
       default: assertFalse();
     }
 
-    let pageIndex: number, cellIndex: number;
+    let cellIndex: number;
     // Insert top-level styles in the style order.
     const afterId = request.afterId;
     if (!afterId || afterId===CellPosition.Top) {
-      pageIndex = 0; cellIndex = SSL_OP_SSLEAY_080_CLIENT_DH_BUG;
+      cellIndex = 0;
     } else if (afterId===CellPosition.Bottom) {
-      pageIndex = this.pages.length-1;
-      cellIndex = this.pages[pageIndex].cells.length;
+      cellIndex = this.obj.cells.length;
     } else {
-      [ pageIndex, cellIndex ] = this.cellPagePosition(afterId);
+      cellIndex = this.obj.cells.findIndex(cellObject => cellObject.id === afterId);
       cellIndex++;
     }
-    this.addCellToPage(cellObject, [ pageIndex, cellIndex ]);
+    this.addCellToPage(cellObject, cellIndex);
     this.cellMap.set(cellObject.id, cellObject);
     // TODO: repaginate
 
-    const update: CellInserted = { type: 'cellInserted', cellObject, pageIndex, cellIndex };
+    const update: CellInserted = { type: 'cellInserted', cellObject, cellIndex };
     updates.push(update);
 
     const undoChangeRequest: DeleteCell = { type: 'deleteCell', cellId: id };
@@ -892,170 +845,21 @@ export class ServerNotebook extends Notebook<ServerNotebookWatcher> {
     }
   }
 
-  private addCellToPage(cellObject: CellObject, cpp: CellPagePosition): void {
-    const [pi, ci] = cpp;
-    const pageObject = this.pages[pi];
-    pageObject.cells.splice(ci, 0, cellObject);
+  private addCellToPage(cellObject: CellObject, cellIndex: number): void {
+    this.obj.cells.splice(cellIndex, 0, cellObject);
   }
-
-  // private processInsertCellRequest(
-  //   request: InsertCellRequest,
-  // ): StyleInsertRequest {
-  //   let data: FigureCellData|FormulaCellData|TextCellData;
-  //   let role: StyleRole;
-  //   let type: StyleType;
-  //   switch(request.cellType) {
-  //     case CellType.Figure: {
-  //       role = 'FIGURE';
-  //       type = 'FIGURE-DATA';
-  //       assert(request.inputType == InputType.Stylus);
-  //       const figureCellData: FigureCellData = {
-  //         type: request.cellType,
-  //         height: 72*3, // 3 inches in points
-  //         displaySvg: EMPTY_SVG,
-  //         inputType: InputType.Stylus,
-  //         stylusInput: emptyStylusInput(3, 6.5),
-  //       };
-  //       data = figureCellData;
-  //       break;
-  //     }
-  //     case CellType.Formula: {
-  //       role = 'FORMULA';
-  //       type = 'FORMULA-DATA';
-  //       switch(request.inputType) {
-  //         case InputType.Keyboard: {
-  //           const formulaCellKeyboardData: FormulaCellKeyboardData = {
-  //             type: request.cellType,
-  //             height: 72*1, // 1 inch in points
-  //             displaySvg: EMPTY_SVG,
-  //             inputType: InputType.Keyboard,
-  //             inputText: <PlainText>'',
-  //             plainTextFormula: EMPTY_FORMULA,
-  //           };
-  //           data = formulaCellKeyboardData;
-  //           break;
-  //         }
-  //         case InputType.Stylus: {
-  //           const formulaCellStylusData: FormulaCellStylusData = {
-  //             type: request.cellType,
-  //             height: 72*1, // 1 inch in points
-  //             displaySvg: EMPTY_SVG,
-  //             inputType: InputType.Stylus,
-  //             inputText: <PlainText>'',
-  //             plainTextFormula: EMPTY_FORMULA,
-  //             stylusInput: emptyStylusInput(1, 6.5),
-  //             stylusSvg: EMPTY_SVG,
-  //           };
-  //           data = formulaCellStylusData;
-  //           break;
-  //         }
-  //         default: assertFalse();
-  //       }
-  //       break;
-  //     }
-  //     case CellType.Text: {
-  //       role = 'TEXT';
-  //       type = 'TEXT-DATA';
-  //       switch(request.inputType) {
-  //         case InputType.Keyboard: {
-  //           const textCellKeyboardData: TextCellKeyboardData = {
-  //             type: request.cellType,
-  //             height: 72*1, // 1 inch in points
-  //             displaySvg: EMPTY_SVG,
-  //             inputType: InputType.Keyboard,
-  //             inputText: <PlainText>"",
-  //           };
-  //           data = textCellKeyboardData;
-  //           break;
-  //         }
-  //         case InputType.Stylus: {
-  //           const textCellStylusData: TextCellStylusData = {
-  //             type: request.cellType,
-  //             height: 72*1, // 1 inch in points
-  //             displaySvg: EMPTY_SVG,
-  //             inputType: InputType.Stylus,
-  //             inputText: <PlainText>"",
-  //             stylusInput: emptyStylusInput(1, 6.5),
-  //             stylusSvg: EMPTY_SVG,
-  //           };
-  //           data = textCellStylusData;
-  //           break;
-  //         }
-  //         default: assertFalse();
-  //       }
-  //       break;
-  //     }
-  //     default: assertFalse();
-  //   }
-
-  //   const changeRequest: StyleInsertRequest = {
-  //     type: 'insertCell',
-  //     afterId: request.afterId,
-  //     parentId: 0,
-  //     styleProps: { role, type, data },
-  //   }
-  //   return changeRequest;
-
-  // }
-
-  // private processKeyboardChangeRequest(
-  //   _source: StyleSource,
-  //   request: KeyboardInputRequest,
-  //   requestId?: RequestId,
-  // ): ServerNotebookCellChangedMessage {
-
-  //   // Update the inputText field in the cell.
-  //   const style = this.getStyle(request.cellId);
-  //   assert(style.role == 'FORMULA' || style.role == 'TEXT');
-  //   const data: FormulaCellData|TextCellData = style.data;
-
-  //   // TODO: Use start, end, replacement to just replace changed segment.
-  //   // data.inputText = <PlainText>replaceStringSegment(data.inputText, request.start, request.end, request.replacement);
-  //   data.inputText = request.value;
-
-  //   // LATER: This will fail when there is a race condition between two clients attempting to update the value.
-  //   //        Need to deal with that case.
-  //   assert(data.inputText==request.value);
-
-  //   // TODO: Update display svg, etc.
-
-  //   // Notify all watchers
-  //   const reply: ServerNotebookCellChangedMessage = {
-  //     type: 'notebook',
-  //     path: this.path,
-  //     operation: 'cellChanged',
-  //     cellId: request.cellId,
-  //     complete: true,
-  //     requestId,
-
-  //     inputText: data.inputText,
-  //     inputTextStart: request.start,
-  //     inputTextEnd: request.end,
-  //     inputTextReplacement: request.replacement,
-  //   };
-  //   return reply;
-  // }
-
-  // private processStylusChangeRequest(
-  //   _source: StyleSource,
-  //   _request: StylusInputRequest,
-  //   _requestId?: RequestId,
-  // ): ServerNotebookCellChangedMessage {
-  //   notImplemented();
-  // }
 
   private removeCellFromPage(cellId: CellId): void {
     // IMPORTANT:
     // * This does not remove the cell from the cell map!
     // * This does not remove the page if the last cell is removed from it.
     // * This does not repaginate.
-    const cpp = this.cellPagePosition(cellId);
-    this.removeCellFromPosition(cpp);
+    const cellIndex = this.obj.cells.findIndex(cell => cell.id===cellId);
+    this.removeCellFromPosition(cellIndex);
   }
 
-  private removeCellFromPosition(cpp: CellPagePosition): void {
-    const [pi, ci] = cpp;
-    this.pages[pi].cells.splice(ci, 1);
+  private removeCellFromPosition(cellIndex: number): void {
+    this.obj.cells.splice(cellIndex, 1);
   }
 
   private removeSocket(socket: ServerSocket): void {
@@ -1196,7 +1000,7 @@ function absFilePathFromNotebookPath(path: NotebookPath): AbsFilePath {
 //          && (!options.notSource || cell.source != options.notSource);
 // }
 
-// function emptyStylusInput(height: number, width: number): StylusInput {
+// function emptyStrokeData(height: number, width: number): StrokeData {
 //   return {
 //     size: { height: <CssLength>`${height*72}pt`, width: <CssLength>`${width*72}pt` },
 //     strokeGroups: [ { strokes: [] }, ]

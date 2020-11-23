@@ -23,7 +23,7 @@ import * as debug1 from "debug";
 const debug = debug1('client:stroke-panel');
 
 import { CssClass, SvgMarkup, assert, CssSize } from "../shared/common";
-import { Stroke } from "../shared/stylus";
+import { Stroke, StrokeData } from "../shared/stylus";
 
 import { $outerSvg, $newSvg, $svg } from "../dom";
 
@@ -50,9 +50,11 @@ export class StrokePanel extends HtmlElement<'div'> {
 
   public constructor(
     cssSize: CssSize,
-    svgMarkup: SvgMarkup|undefined,
+    _strokeData: StrokeData,
     strokeCallbackFn: StrokeCallbackFn,
   ) {
+    console.warn("TODO: STROKE PANEL NEEDS TO BE UPDATED.")
+    const svgMarkup: SvgMarkup|undefined = undefined;
     debug(`Creating instance ${svgMarkup?'with':'without'} SVG markup.`);
 
     // REVIEW: Why do we have to specify height here?

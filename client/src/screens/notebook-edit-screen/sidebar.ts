@@ -57,7 +57,7 @@ export class Sidebar extends ButtonBar {
       class: <CssClass>'iconButton',
       html: svgIconReference('iconMonstrRedo4'),
       asyncListeners: { click: async (_e: MouseEvent)=>{
-        await this.screen.content.redo();
+        await this.screen.editView.redo();
       }},
       title: "Redo",
     });
@@ -67,7 +67,7 @@ export class Sidebar extends ButtonBar {
       class: <CssClass>'iconButton',
       html: svgIconReference('iconMonstrTrashcan2'),
       asyncListeners: { click: async (_e: MouseEvent)=>{
-        await this.screen.content.deleteSelectedCells();
+        await this.screen.editView.deleteSelectedCells();
       }},
       title: "Trash",
     });
@@ -77,7 +77,7 @@ export class Sidebar extends ButtonBar {
       class: <CssClass>'iconButton',
       html: svgIconReference('iconMonstrUndo4'),
       asyncListeners: { click: async (_e: MouseEvent)=>{
-        await this.screen.content.undo();
+        await this.screen.editView.undo();
       }},
       title: "Undo",
     });
@@ -126,7 +126,7 @@ export class Sidebar extends ButtonBar {
           class: <CssClass>'entityButton',
           html: SIGMA_ENTITY,
           asyncListeners: { click: async (_e: MouseEvent): Promise<void> =>{
-            await this.screen.content.insertFormulaCellBelow();
+            await this.screen.editView.insertFormulaCellBelow();
           }},
           title: "Insert formula",
         }, {
@@ -135,7 +135,7 @@ export class Sidebar extends ButtonBar {
           class: <CssClass>'iconButton',
           html: svgIconReference('iconMonstrText1'),
           asyncListeners: { click: async (_e: MouseEvent): Promise<void> =>{
-            await this.screen.content.insertTextCellBelow();
+            await this.screen.editView.insertTextCellBelow();
           }},
           title: "Insert text",
         }, {
@@ -144,7 +144,7 @@ export class Sidebar extends ButtonBar {
           class: <CssClass>'iconButton',
           html: svgIconReference('iconMonstrPencil9'),
           asyncListeners: { click: async (_e: MouseEvent): Promise<void> =>{
-            await this.screen.content.insertFigureCellBelow();
+            await this.screen.editView.insertFigureCellBelow();
           }},
           title: "Insert drawing cell",
         }, {
@@ -173,7 +173,7 @@ export class Sidebar extends ButtonBar {
           class: <CssClass>'iconButton',
           html: svgIconReference('iconMonstrClothing18'),
           asyncListeners: { click: async (_e: MouseEvent)=>{
-            await this.screen.content.developmentButtonClicked();
+            await this.screen.editView.developmentButtonClicked();
           }},
           title: "Development use only",
         },

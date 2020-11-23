@@ -21,7 +21,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 import { CellId, CellObject } from "../shared/cell";
 import { NotebookChangeRequest } from "../shared/client-requests";
-import { notImplemented } from "../shared/common";
+import { assertFalse, notImplemented } from "../shared/common";
 import { NotebookUpdate } from "../shared/server-responses";
 
 import { ChangeRequestResults, ClientNotebook } from "../client-notebook";
@@ -59,6 +59,20 @@ export abstract class ClientCell<O extends CellObject> {
   public abstract createEditView(): CellEditView<O>;
 
   public onUpdate(update: NotebookUpdate, ownRequest: boolean): void {
+
+    switch(update.type) {
+      case 'strokeDeleted': {
+        // TODO: Remove the stroke from stroke data.
+        notImplemented();
+        break;
+      }
+      case 'strokeInserted': {
+        // TODO: Add the stroke to stroke data.
+        notImplemented();
+        break;
+      }
+      default: assertFalse();
+    }
     for (const view of this.views) {
       view.onUpdate(update, ownRequest);
     }

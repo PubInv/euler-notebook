@@ -102,7 +102,6 @@ describe("server notebook", function() {
       const data: FormulaCellObject = {
         type: CellType.Formula,
         inputType: InputType.None,
-        displaySvg: EMPTY_SVG,
         height: 72, // points
         inputText: <PlainText>"",
         plainTextFormula: EMPTY_FORMULA,
@@ -123,7 +122,6 @@ describe("server notebook", function() {
       const formulaData: FormulaCellObject = {
         type: CellType.Formula,
         inputType: InputType.None,
-        displaySvg: EMPTY_SVG,
         height: 72, // points
         inputText: <PlainText>"",
         plainTextFormula: EMPTY_FORMULA,

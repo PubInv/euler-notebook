@@ -62,7 +62,7 @@ export class NotebookReadScreen extends ScreenBase  implements NotebookView {
       (notebook: ClientNotebook)=>{
         this.notebook = notebook;
         /* this.sidebar = */ new Sidebar(this, mode);
-        this.content = new NotebookReadView(this, mode);
+        this.readView = new NotebookReadView(this, mode);
       },
       (err)=>{
         const message = <Html>`Error opening notebook '${path}'`;
@@ -82,7 +82,7 @@ export class NotebookReadScreen extends ScreenBase  implements NotebookView {
   public onResize(_window: Window, _event: UIEvent): void {
     // const bodyViewRect = $('#content').getBoundingClientRect();
     // REVIEW: Could this.pageView be undefined?
-    this.content!.resize(/* bodyViewRect.width */);
+    this.readView!.resize(/* bodyViewRect.width */);
   }
 
   // Notebook Watcher Methods
@@ -103,7 +103,7 @@ export class NotebookReadScreen extends ScreenBase  implements NotebookView {
 
   // Private Instance Properties
 
-  private content?: NotebookReadView;
+  private readView!: NotebookReadView;
   // private sidebar: Sidebar;
 
   // Private Property Functions

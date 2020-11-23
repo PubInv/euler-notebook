@@ -19,9 +19,9 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 // Requirements
 
-import { CssSize, Html, PlainText, SvgMarkup } from "./common";
+import { CssSize, Html, PlainText } from "./common";
 import { TexExpression, WolframExpression } from "./formula";
-import { StylusInput } from "./stylus";
+import { StrokeData } from "./stylus";
 
 // Types
 
@@ -62,7 +62,6 @@ export interface CellObject {
   id: CellId;
   type: CellType;
   cssSize: CssSize;
-  displaySvg: SvgMarkup;
   source: CellSource;
 }
 
@@ -73,8 +72,7 @@ export interface KeyboardCellObject extends CellObject {
 
 export interface StylusCellObject extends CellObject {
   inputType: InputType.Stylus,
-  stylusInput: StylusInput, // REVIEW: Does client need this structure?
-  stylusSvg: SvgMarkup
+  strokeData: StrokeData, // REVIEW: Does client need this structure?
 }
 
 // HERE TEMPORARILY:

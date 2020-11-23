@@ -22,7 +22,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 // Requirements
 
 // import * as debug1 from "debug";
-// const debug = debug1('client:cell-base');
+// const debug = debug1('client:cell-edit-view');
 
 import { CellObject, CellId } from "../shared/cell";
 import { assert, Html, CssClass, notImplemented } from "../shared/common";

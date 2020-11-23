@@ -20,12 +20,12 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 // Requirements
 
 import * as debug1 from "debug";
-const debug = debug1('client:figure-cell');
+const debug = debug1('client:figure-edit-view');
 
 import { CssClass, CssLength, assertFalse, Html } from "../shared/common";
 import { Stroke } from "../shared/stylus";
 import { NotebookUpdate } from "../shared/server-responses";
-import { notebookChangeSynopsis } from "../shared/debug-synopsis";
+import { notebookUpdateSynopsis } from "../shared/debug-synopsis";
 import { FigureCellObject } from "../shared/cell";
 import { AddStroke } from "../shared/client-requests";
 
@@ -62,7 +62,7 @@ export class FigureEditView extends CellEditView<FigureCellObject> {
   // ClientNotebookWatcher Methods
 
   public onUpdate(update: NotebookUpdate): void {
-    debug(`onChange: style ${this.id} ${notebookChangeSynopsis(update)}`);
+    debug(`onChange: style ${this.id} ${notebookUpdateSynopsis(update)}`);
 
     // Update the SVG display if it has changed.
 
@@ -116,8 +116,9 @@ export class FigureEditView extends CellEditView<FigureCellObject> {
         logError(err, <Html>"Error sending stroke from figure cell");
       });
     };
+
     // Create the panel
-    const strokePanel = new StrokePanel(cellObject.cssSize, cellObject.displaySvg, callbackFn);
+    const strokePanel = new StrokePanel(cellObject.cssSize, cellObject.strokeData, callbackFn);
     return strokePanel;
   }
 

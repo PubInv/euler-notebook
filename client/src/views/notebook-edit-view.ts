@@ -23,7 +23,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 // Requirements
 
 import * as debug1 from "debug";
-const debug = debug1('client:notebook-edit-screen-content');
+const debug = debug1('client:notebook-edit-view');
 
 import { CellId, CellObject, CellRelativePosition, CellPosition, CellType, InputType } from "../shared/cell";
 import { CssClass, assert, Html, notImplemented, assertFalse } from "../shared/common";
@@ -39,6 +39,7 @@ import { userSettingsInstance } from "../user-settings";
 import { apiDebug } from "../api";
 import { ClientCell } from "../client-cell";
 import { ClientNotebook, NotebookView } from "../client-notebook";
+import { notebookUpdateSynopsis } from "../shared/debug-synopsis";
 
 // Types
 
@@ -112,10 +113,8 @@ export class NotebookEditView extends HtmlElement<'div'> implements NotebookView
     this.topOfUndoStack = 0;
     this.undoStack = [];
 
-    for (const page of this.notebook.pages) {
-      for (const cell of page.cells) {
-        this.createCellView(cell, -1);
-      }
+    for (const cell of notebook.cells) {
+      this.createCellView(cell, -1);
     }
   }
 
@@ -423,6 +422,8 @@ export class NotebookEditView extends HtmlElement<'div'> implements NotebookView
   }
 
   public onUpdate(update: NotebookUpdate): void {
+    debug(`onUpdate P${this.notebook.path} ${notebookUpdateSynopsis(update)}`);
+
     // Update our data structure
     switch (update.type) {
       case 'cellDeleted': {
@@ -437,6 +438,12 @@ export class NotebookEditView extends HtmlElement<'div'> implements NotebookView
         notImplemented();
         break;
       }
+      case 'strokeDeleted':
+      case 'strokeInserted':
+        // Do nothing.
+        // The change is entirely within the cell.
+        // Cell will pass the update to the cell view.
+        break;
       default: assertFalse();
     }
   }

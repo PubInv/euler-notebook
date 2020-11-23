@@ -22,13 +22,13 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 // Requirements
 
 import * as debug1 from "debug";
-const debug = debug1('client:formula-cell');
+const debug = debug1('client:formula-edit-view');
 
-import { CssClass, Html, assertFalse, PlainText, notImplemented } from "../shared/common";
+import { CssClass, Html, assertFalse, PlainText, notImplemented, SvgMarkup } from "../shared/common";
 import { Stroke } from "../shared/stylus";
 import { FormulaCellKeyboardObject, FormulaCellObject, FormulaCellStylusObject } from "../shared/formula";
 import { NotebookUpdate } from "../shared/server-responses";
-import { notebookChangeSynopsis } from "../shared/debug-synopsis";
+import { notebookUpdateSynopsis } from "../shared/debug-synopsis";
 import { InputType } from "../shared/cell";
 import { AddStroke } from "../shared/client-requests";
 
@@ -91,7 +91,7 @@ export class FormulaEditView extends CellEditView<FormulaCellObject> {
   // }
 
   public onUpdate(update: NotebookUpdate): boolean {
-    debug(`onChange: cell ${this.id} ${notebookChangeSynopsis(update)}`);
+    debug(`onChange: cell ${this.id} ${notebookUpdateSynopsis(update)}`);
 
     // TODO: Changes that affect the prefix panel.
 
@@ -171,8 +171,9 @@ export class FormulaEditView extends CellEditView<FormulaCellObject> {
   //   return html;
   // }
 
-  private createDisplayPanel(cellObject: FormulaCellObject): SVGSVGElement {
-    const $displayPanel = $outerSvg<'svg'>(cellObject.displaySvg);
+  private createDisplayPanel(_cellObject: FormulaCellObject): SVGSVGElement {
+    const svgMarkup = <SvgMarkup>"<svg></svg>"; // TODO:
+    const $displayPanel = $outerSvg<'svg'>(svgMarkup);
     $displayPanel.classList.add('display');
     return $displayPanel;
   }
@@ -233,7 +234,7 @@ export class FormulaEditView extends CellEditView<FormulaCellObject> {
       });
     };
     // Create the panel
-    const strokePanel = new StrokePanel(cellObject.cssSize, cellObject.stylusSvg, callbackFn);
+    const strokePanel = new StrokePanel(cellObject.cssSize, cellObject.strokeData, callbackFn);
     return strokePanel;
   }
 

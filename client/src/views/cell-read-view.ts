@@ -20,7 +20,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 // Requirements
 
 import { CellObject } from "../shared/cell";
-import { CssLength, notImplemented } from "../shared/common";
+import { CssLength, notImplemented, SvgMarkup } from "../shared/common";
 import { NotebookUpdate } from "../shared/server-responses";
 
 import { CellView, ClientCell } from "../client-cell";
@@ -37,9 +37,11 @@ export class CellReadView<O extends CellObject> implements CellView {
     notImplemented();
   };
 
-  public constructor(cell: ClientCell<O>, xAttr: CssLength, yAttr: CssLength) {
-    // TODO: <use xlink:href="#${id}"/> instead of duplicate instantiation.
-    const $svg = this.$svg = $outerSvg<'svg'>(cell.obj.displaySvg);
+  public constructor(_cell: ClientCell<O>, xAttr: CssLength, yAttr: CssLength) {
+    // LATER: <use xlink:href="#${id}"/> instead of duplicate instantiation?
+    // TODO:
+    const svgMarkup = <SvgMarkup>"<svg></svg>"
+    const $svg = this.$svg = $outerSvg<'svg'>(svgMarkup);
     $svg.setAttribute('x', xAttr);
     $svg.setAttribute('y', yAttr);
   }

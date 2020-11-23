@@ -20,13 +20,13 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 // Requirements
 
 import * as debug1 from "debug";
-const debug = debug1('client:text-cell');
+const debug = debug1('client:text-edit-view');
 
 import { InputType, TextCellObject } from "../shared/cell";
-import { CssClass, assertFalse, PlainText, notImplemented, Html } from "../shared/common";
+import { CssClass, assertFalse, PlainText, notImplemented, Html, SvgMarkup } from "../shared/common";
 import { Stroke } from "../shared/stylus";
 import { NotebookUpdate } from "../shared/server-responses";
-import { notebookChangeSynopsis, cellSynopsis } from "../shared/debug-synopsis";
+import { notebookUpdateSynopsis, cellSynopsis } from "../shared/debug-synopsis";
 import { TextCellKeyboardObject, TextCellStylusObject } from "../shared/cell";
 import { AddStroke } from "../shared/client-requests";
 
@@ -73,7 +73,7 @@ export class TextEditView extends CellEditView<TextCellObject> {
   // ClientNotebookWatcher Methods
 
   public onUpdate(update: NotebookUpdate, _ownRequest: boolean): void {
-    debug(`onChange: style ${this.id} ${notebookChangeSynopsis(update)}`);
+    debug(`onUpdate: C${this.id} ${notebookUpdateSynopsis(update)}`);
 
     switch (update.type) {
       case 'cellInserted': {
@@ -112,8 +112,9 @@ export class TextEditView extends CellEditView<TextCellObject> {
 
   // Private Instance Methods
 
-  private createDisplayPanel(cellObject: TextCellObject): SVGSVGElement {
-    const $displayPanel = $outerSvg<'svg'>(cellObject.displaySvg);
+  private createDisplayPanel(_cellObject: TextCellObject): SVGSVGElement {
+    const svgMarkup = <SvgMarkup>"<svg></svg>"; // TODO:
+    const $displayPanel = $outerSvg<'svg'>(svgMarkup);
     $displayPanel.classList.add('display');
     return $displayPanel;
   }
@@ -156,7 +157,7 @@ export class TextEditView extends CellEditView<TextCellObject> {
         logError(err, <Html>"Error sending stroke from text cell");
       });
     };
-    const strokePanel = new StrokePanel(cellObject.cssSize, cellObject.displaySvg, callbackFn);
+    const strokePanel = new StrokePanel(cellObject.cssSize, cellObject.strokeData, callbackFn);
     return strokePanel;
   }
 
