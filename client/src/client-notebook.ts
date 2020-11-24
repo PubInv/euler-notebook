@@ -29,7 +29,7 @@ import { assert, assertFalse, CssSize, Html, notImplemented } from "./shared/com
 import { notebookUpdateSynopsis } from "./shared/debug-synopsis";
 import { NotebookName, NotebookNameFromNotebookPath, NotebookPath } from "./shared/folder";
 import { FORMAT_VERSION, NotebookObject, PageMargins, Pagination } from "./shared/notebook";
-import { NotebookChangeRequest, ChangeNotebook, UseTool, OpenNotebook } from "./shared/client-requests";
+import { NotebookChangeRequest, ChangeNotebook, UseTool, OpenNotebook, DeleteCell } from "./shared/client-requests";
 import {
   NotebookUpdated, NotebookOpened, NotebookResponse, NotebookClosed, NotebookUpdate, CellInserted, CellDeleted, CellMoved
 } from "./shared/server-responses";
@@ -144,6 +144,12 @@ export class ClientNotebook {
       // LATER: Set timer to destroy in the future.
       this.terminate("Closed by client");
     }
+  }
+
+  public async deleteCell(cellId: CellId): Promise<void> {
+    // TODO: Make this undoable.
+    const changeRequest: DeleteCell = { type: 'deleteCell', cellId: cellId };
+    await this.sendChangeRequest(changeRequest);
   }
 
   public export(): void {
@@ -276,8 +282,11 @@ export class ClientNotebook {
     this.terminate(msg.reason);
   }
 
-  private onCellDeleted(_update: CellDeleted): void {
-    notImplemented();
+  private onCellDeleted(update: CellDeleted): void {
+    const { cellId } = update;
+    this.cellMap.delete(cellId);
+    const cellIndex = this.cells.findIndex(cell => cell.id===cellId);
+    this.cells.splice(cellIndex, 1);
   }
 
   private onCellInserted(update: CellInserted): void {

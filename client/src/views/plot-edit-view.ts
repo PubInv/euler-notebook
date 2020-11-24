@@ -60,10 +60,6 @@ export class PlotEditView extends CellEditView<PlotCellObject> {
     debug(`onUpdate: C${this.id} ${notebookUpdateSynopsis(update)}`);
 
     switch (update.type) {
-      case 'cellInserted': {
-        // Ignore. Not something we are interested in.
-        break;
-      }
       // case 'styleChanged': {
       //   if (change.style.id == this.cellId) {
       //     this.updateDisplayPanel(change.style);
@@ -72,11 +68,6 @@ export class PlotEditView extends CellEditView<PlotCellObject> {
       //   }
       //   break;
       // }
-      case 'cellDeleted': {
-        // Ignore. Not something we are interested in.
-        break;
-      }
-      case 'cellMoved': assertFalse();
       default: assertFalse();
     }
   }

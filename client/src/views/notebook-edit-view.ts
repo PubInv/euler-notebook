@@ -113,7 +113,8 @@ export class NotebookEditView extends HtmlElement<'div'> implements NotebookView
     this.undoStack = [];
 
     for (let cellIndex=0; cellIndex<notebook.cells.length; cellIndex++) {
-      const cellUpdate: CellInserted = { type: 'cellInserted', cellObject: notebook.cells[cellIndex].obj, cellIndex }
+      const cellObject = notebook.cells[cellIndex].obj;
+      const cellUpdate: CellInserted = { type: 'cellInserted', cellObject, cellIndex }
       this.onCellInserted(cellUpdate);
     }
   }
@@ -121,12 +122,6 @@ export class NotebookEditView extends HtmlElement<'div'> implements NotebookView
   // Public Instance Property Functions
 
   // Public Instance Methods
-
-  public async deleteTopLevelStyle(cellId: CellId): Promise<void> {
-    await this.unselectAll();
-    const changeRequest: DeleteCell = { type: 'deleteCell', cellId: cellId };
-    await this.sendUndoableChangeRequests([changeRequest]);
-  }
 
   // public scrollPageIntoView(pageId: PageId): void {
   //   // TODO: This will not work when cells can be added or removed.
@@ -548,8 +543,11 @@ export class NotebookEditView extends HtmlElement<'div'> implements NotebookView
     // console.dir(event);
   }
 
-  private onCellDeleted(_update: CellDeleted): void {
-    notImplemented();
+  private onCellDeleted(update: CellDeleted): void {
+    const cellIndex = this.cellViews.findIndex(cellView => cellView.id === update.cellId);
+    const cellView = this.cellViews[cellIndex];
+    this.cellViews.splice(cellIndex, 1);
+    cellView.$elt.remove();
   }
 
   private onCellInserted(update: CellInserted): void {
@@ -560,8 +558,8 @@ export class NotebookEditView extends HtmlElement<'div'> implements NotebookView
     if (cellIndex === 0) {
       this.$elt.prepend(cellView.$elt);
     } else {
-      const precedingCellView = this.cellViews[cellIndex];
-      precedingCellView.$elt.before(cellView.$elt);
+      const precedingCellView = this.cellViews[cellIndex-1];
+      precedingCellView.$elt.after(cellView.$elt);
     }
   }
 

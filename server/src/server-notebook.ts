@@ -865,8 +865,8 @@ export class ServerNotebook extends Notebook<ServerNotebookWatcher> {
     const hadSocket = this.sockets.delete(socket);
     assert(hadSocket);
     if (this.sockets.size == 0) {
-      // TODO: purge this notebook immediately or set a timer to purge it in the near future.
-      notImplemented();
+      // TODO: purge this folder immediately or set a timer to purge it in the near future.
+      console.warn(`Last socket removed from notebook: "${this.path}"`)
     }
   }
 

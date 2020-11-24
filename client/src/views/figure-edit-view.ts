@@ -67,10 +67,6 @@ export class FigureEditView extends CellEditView<FigureCellObject> {
     // Update the SVG display if it has changed.
 
     switch (update.type) {
-      case 'cellInserted': {
-        // Ignore. Not something that affects our display.
-        break;
-      }
       // case 'styleChanged': {
       //   if (change.style.id == this.cellId) {
       //     this.strokePanel!.updateStylusInput(change.style.data);
@@ -80,11 +76,6 @@ export class FigureEditView extends CellEditView<FigureCellObject> {
       //   }
       //   break;
       // }
-      case 'cellDeleted':
-        // Styles relevant to display of the figure are only deleted when the entire formula is deleted,
-        // so we can ignore styleDeleted messages.
-        break;
-      case 'cellMoved': assertFalse();
       default: assertFalse();
     }
   }

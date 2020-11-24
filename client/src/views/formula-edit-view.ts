@@ -98,10 +98,6 @@ export class FormulaEditView extends CellEditView<FormulaCellObject> {
     // TODO: Do we deal with showing the Wolfram Evaluation values in the formula,
     //       and therefore deal with updating them here, or should we move their display to the tools panel?
     switch (update.type) {
-      case 'cellInserted': {
-        // Ignore. Not something we are interested in.
-        break;
-      }
       // case 'styleChanged': {
       //   if (change.style.id == this.cellId) {
       //     this.updateDisplayPanel(change.style);
@@ -112,11 +108,6 @@ export class FormulaEditView extends CellEditView<FormulaCellObject> {
       //   }
       //   break;
       // }
-      case 'cellDeleted': {
-        // Ignore. Not something we are interested in.
-        break;
-      }
-      case 'cellMoved': assertFalse();
       default: assertFalse();
     }
     return false;

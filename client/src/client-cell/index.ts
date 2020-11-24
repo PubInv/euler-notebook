@@ -92,9 +92,10 @@ export abstract class ClientCell<O extends CellObject> {
     }
   };
 
-  public removeFromNotebook(): Promise<void> {
-    notImplemented();
-    // WAS: container.deleteTopLevelStyle(this.cellId)
+  public async delete(): Promise<void> {
+    // Called when the 'X' button has been pressed in a cell.
+    // Ask the notebook to delete us.
+    await this.notebook.deleteCell(this.id);
   }
 
   // REVIEW: Make private and

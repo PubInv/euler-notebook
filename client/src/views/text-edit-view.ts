@@ -76,10 +76,6 @@ export class TextEditView extends CellEditView<TextCellObject> {
     debug(`onUpdate: C${this.id} ${notebookUpdateSynopsis(update)}`);
 
     switch (update.type) {
-      case 'cellInserted': {
-        // Ignore. Not something we are interested in.
-        break;
-      }
       // case 'styleChanged': {
       //   if (change.style.id == this.cellId) {
       //     this.updateDisplayPanel(change.style);
@@ -90,11 +86,6 @@ export class TextEditView extends CellEditView<TextCellObject> {
       //   }
       //   break;
       // }
-      case 'cellDeleted': {
-        // Ignore. Not something we are interested in.
-        break;
-      }
-      case 'cellMoved': assertFalse();
       default: assertFalse();
     }
   }

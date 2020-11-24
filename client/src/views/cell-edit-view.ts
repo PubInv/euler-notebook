@@ -21,8 +21,8 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 // Requirements
 
-// import * as debug1 from "debug";
-// const debug = debug1('client:cell-edit-view');
+import * as debug1 from "debug";
+const debug = debug1('client:cell-edit-view');
 
 import { CellObject, CellId } from "../shared/cell";
 import { assert, Html, CssClass, notImplemented } from "../shared/common";
@@ -33,7 +33,6 @@ import { HtmlElement } from "../html-element";
 import {
   $new, CLOSE_X_ENTITY, ElementId, HtmlElementOrSpecification, HtmlElementSpecification
 } from "../dom";
-import { reportError } from "../error-handler";
 
 import { Tools } from "../screens/notebook-edit-screen/tools";
 import { ResizerBar } from "../components/resizer-bar";
@@ -120,7 +119,7 @@ export abstract class CellEditView<O extends CellObject> extends HtmlElement<'di
           attrs: { tabindex: -1 },
           classes:[ <CssClass>'deleteCellButton', <CssClass>'iconButton' ],
           html: CLOSE_X_ENTITY,
-          listeners: {
+          asyncListeners: {
             click: e=>this.onDeleteCellButtonClicked(e),
           },
         },{
@@ -183,16 +182,17 @@ export abstract class CellEditView<O extends CellObject> extends HtmlElement<'di
   // Private Event Handlers
 
   private onClicked(_event: MouseEvent): void {
-    notImplemented();
+    debug(`onClicked`);
+    console.warn("Click to select not implemented.");
     // Note: Shift-click or ctrl-click will extend the current selection.
     // this.container.selectCell(this, event.shiftKey, event.metaKey);
   }
 
-  private onDeleteCellButtonClicked(_event: MouseEvent): void {
-    this.cell.removeFromNotebook().catch(err=>{
-      // TODO: Better handling of this error.
-      reportError(err, <Html>"Error deleting cell");
-    });
+  private async onDeleteCellButtonClicked(event: MouseEvent): Promise<void> {
+    event.stopPropagation(); // Prevent our own 'onClicked' handler from being called.
+    debug(`onDeleteCellButtonClicked`);
+    // TODO: Make the provisional change: hide ourself?
+    await this.cell.delete();
   }
 
   private onDragEnd(_event: DragEvent): void {
