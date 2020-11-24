@@ -191,7 +191,7 @@ export abstract class CellEditView<O extends CellObject> extends HtmlElement<'di
   private async onDeleteCellButtonClicked(event: MouseEvent): Promise<void> {
     event.stopPropagation(); // Prevent our own 'onClicked' handler from being called.
     debug(`onDeleteCellButtonClicked`);
-    // TODO: Make the provisional change: hide ourself?
+    // TODO: Make the provisional change by hiding ourself? Or notify our container to hide us?
     await this.cell.delete();
   }
 

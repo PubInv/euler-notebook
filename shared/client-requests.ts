@@ -124,26 +124,31 @@ export interface NotebookRenameRequest {
 // Client Notebook Change Requests
 
 export type NotebookChangeRequest =
-  AddStroke |
-  DeleteCell|
-  InsertCell|
-  ChangeText|
-  MoveCell|
-  RemoveStroke;
-export interface AddStroke {
-  type: 'addStroke';
-  cellId: CellId;
-  stroke: Stroke;
-}
+  ChangeText |
+  DeleteCell |
+  DeleteStroke |
+  InsertCell |
+  InsertStroke |
+  MoveCell;
 export interface DeleteCell {
   type: 'deleteCell';
   cellId: CellId;
+}
+export interface DeleteStroke {
+  type: 'deleteStroke';
+  cellId: CellId;
+  strokeId: StrokeId;
 }
 export interface InsertCell {
   type: 'insertCell';
   cellType: CellType;
   inputType: InputType;
   afterId: CellRelativePosition;
+}
+export interface InsertStroke {
+  type: 'insertStroke';
+  cellId: CellId;
+  stroke: Stroke;
 }
 export interface ChangeText {
   type: 'keyboardInputChange';
@@ -157,9 +162,4 @@ export interface MoveCell {
   type: 'moveCell';
   cellId: CellId;
   afterId: CellRelativePosition;
-}
-export interface RemoveStroke {
-  type: 'removeStroke';
-  cellId: CellId;
-  strokeId: StrokeId;
 }

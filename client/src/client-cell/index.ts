@@ -22,9 +22,9 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 import * as debug1 from "debug";
 const debug = debug1('client:client-cell');
 
-import { CellId, CellObject } from "../shared/cell";
+import { CellId, CellObject, StylusCellObject } from "../shared/cell";
 import { NotebookChangeRequest } from "../shared/client-requests";
-import { assertFalse, escapeHtml, Html, notImplemented } from "../shared/common";
+import { assert, assertFalse, escapeHtml, Html, notImplemented } from "../shared/common";
 import { NotebookUpdate } from "../shared/server-responses";
 
 import { ChangeRequestResults, ClientNotebook } from "../client-notebook";
@@ -82,7 +82,9 @@ export abstract class ClientCell<O extends CellObject> {
       }
       case 'strokeInserted': {
         // TODO: Add the stroke to stroke data.
-        notImplemented();
+        assert(this.obj.hasOwnProperty('strokeData'));
+        const obj = <StylusCellObject><unknown>this.obj;
+        obj.strokeData.strokeGroups[0].strokes.push(update.stroke);
         break;
       }
       default: assertFalse();

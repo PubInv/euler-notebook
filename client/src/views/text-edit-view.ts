@@ -28,7 +28,7 @@ import { Stroke } from "../shared/stylus";
 import { NotebookUpdate } from "../shared/server-responses";
 import { notebookUpdateSynopsis, cellSynopsis } from "../shared/debug-synopsis";
 import { TextCellKeyboardObject, TextCellStylusObject } from "../shared/cell";
-import { AddStroke } from "../shared/client-requests";
+import { InsertStroke } from "../shared/client-requests";
 
 import { $new, $outerSvg } from "../dom";
 import { logError } from "../error-handler";
@@ -73,7 +73,7 @@ export class TextEditView extends CellEditView<TextCellObject> {
   // ClientNotebookWatcher Methods
 
   public onUpdate(update: NotebookUpdate, _ownRequest: boolean): void {
-    debug(`onUpdate: C${this.id} ${notebookUpdateSynopsis(update)}`);
+    debug(`onUpdate C${this.id} ${notebookUpdateSynopsis(update)}`);
 
     switch (update.type) {
       // case 'styleChanged': {
@@ -141,7 +141,7 @@ export class TextEditView extends CellEditView<TextCellObject> {
 
   private createStrokeSubpanel(cellObject: TextCellStylusObject): StrokePanel {
     const callbackFn: StrokeCallbackFn = async (stroke: Stroke)=>{
-      const changeRequest: AddStroke = { type: 'addStroke', cellId: cellObject.id, stroke };
+      const changeRequest: InsertStroke = { type: 'insertStroke', cellId: cellObject.id, stroke };
       await this.cell.sendChangeRequest(changeRequest)
       .catch(err=>{
         // REVIEW: Proper way to handle this error?

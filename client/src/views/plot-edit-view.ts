@@ -56,8 +56,8 @@ export class PlotEditView extends CellEditView<PlotCellObject> {
 
   // ClientNotebookWatcher Methods
 
-  public onUpdate(update: NotebookUpdate): void {
-    debug(`onUpdate: C${this.id} ${notebookUpdateSynopsis(update)}`);
+  public onUpdate(update: NotebookUpdate, _ownRequest: boolean): void {
+    debug(`onUpdate C${this.id} ${notebookUpdateSynopsis(update)}`);
 
     switch (update.type) {
       // case 'styleChanged': {

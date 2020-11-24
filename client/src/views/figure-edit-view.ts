@@ -24,10 +24,10 @@ const debug = debug1('client:figure-edit-view');
 
 import { CssClass, CssLength, assertFalse, Html } from "../shared/common";
 import { Stroke } from "../shared/stylus";
-import { NotebookUpdate } from "../shared/server-responses";
+import { NotebookUpdate, StrokeInserted } from "../shared/server-responses";
 import { notebookUpdateSynopsis } from "../shared/debug-synopsis";
 import { FigureCellObject } from "../shared/cell";
-import { AddStroke } from "../shared/client-requests";
+import { InsertStroke } from "../shared/client-requests";
 
 import { $svg, HtmlElementSpecification } from "../dom";
 import { logError } from "../error-handler";
@@ -61,21 +61,11 @@ export class FigureEditView extends CellEditView<FigureCellObject> {
 
   // ClientNotebookWatcher Methods
 
-  public onUpdate(update: NotebookUpdate): void {
+  public onUpdate(update: NotebookUpdate, ownRequest: boolean): void {
     debug(`onUpdate: C${this.id} ${notebookUpdateSynopsis(update)}`);
 
-    // Update the SVG display if it has changed.
-
     switch (update.type) {
-      // case 'styleChanged': {
-      //   if (change.style.id == this.cellId) {
-      //     this.strokePanel!.updateStylusInput(change.style.data);
-      //     this.strokePanel!.updateSvgMarkup(change.style.data);
-      //   } else {
-      //     // Ignore. Not something that affects our display.
-      //   }
-      //   break;
-      // }
+      case 'strokeInserted': this.onStrokeInserted(update, ownRequest); break;
       default: assertFalse();
     }
   }
@@ -85,8 +75,7 @@ export class FigureEditView extends CellEditView<FigureCellObject> {
   // Private Instance Properties
 
   private $inputPanel: HTMLDivElement;
-  // @ts-expect-error // TODO: value is never read error
-  private strokePanel?: StrokePanel;
+  private strokePanel!: StrokePanel;
 
   // Private Instance Property Functions
 
@@ -99,7 +88,7 @@ export class FigureEditView extends CellEditView<FigureCellObject> {
 
   private createStrokeSubpanel(cellObject: FigureCellObject): StrokePanel {
     const callbackFn: StrokeCallbackFn = async (stroke: Stroke)=>{
-      const changeRequest: AddStroke = { type: 'addStroke', cellId: cellObject.id, stroke };
+      const changeRequest: InsertStroke = { type: 'insertStroke', cellId: cellObject.id, stroke };
       // TODO: Remove tentative stroke from subpanel.
       await this.cell.sendChangeRequest(changeRequest)
       .catch(err=>{
@@ -114,6 +103,10 @@ export class FigureEditView extends CellEditView<FigureCellObject> {
   }
 
   // Private Instance Event Handlers
+
+  private onStrokeInserted(update: StrokeInserted, _ownRequest: boolean): void {
+    this.strokePanel.insertStroke(update.strokeId, update.stroke);
+  }
 
   protected onResize(deltaY: number, final: boolean): void {
     debug(`onResize: ${deltaY} ${final}`);

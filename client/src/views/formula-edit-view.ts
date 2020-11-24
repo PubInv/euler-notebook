@@ -30,7 +30,7 @@ import { FormulaCellKeyboardObject, FormulaCellObject, FormulaCellStylusObject }
 import { NotebookUpdate } from "../shared/server-responses";
 import { notebookUpdateSynopsis } from "../shared/debug-synopsis";
 import { InputType } from "../shared/cell";
-import { AddStroke } from "../shared/client-requests";
+import { InsertStroke } from "../shared/client-requests";
 
 import { $new, $outerSvg } from "../dom";
 
@@ -90,8 +90,8 @@ export class FormulaEditView extends CellEditView<FormulaCellObject> {
 
   // }
 
-  public onUpdate(update: NotebookUpdate): boolean {
-    debug(`onChange: cell ${this.id} ${notebookUpdateSynopsis(update)}`);
+  public onUpdate(update: NotebookUpdate, _ownRequest: boolean): boolean {
+    debug(`onUpdate C${this.id} ${notebookUpdateSynopsis(update)}`);
 
     // TODO: Changes that affect the prefix panel.
 
@@ -217,7 +217,7 @@ export class FormulaEditView extends CellEditView<FormulaCellObject> {
 
   private createStrokeSubpanel(cellObject: FormulaCellStylusObject): StrokePanel {
     const callbackFn: StrokeCallbackFn = async (stroke: Stroke)=>{
-      const changeRequest: AddStroke = { type: 'addStroke', cellId: cellObject.id, stroke };
+      const changeRequest: InsertStroke = { type: 'insertStroke', cellId: cellObject.id, stroke };
       await this.cell.sendChangeRequest(changeRequest)
       .catch(err=>{
         // REVIEW: Proper way to handle this error?

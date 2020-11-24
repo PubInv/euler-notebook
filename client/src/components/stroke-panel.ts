@@ -22,10 +22,10 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 import * as debug1 from "debug";
 const debug = debug1('client:stroke-panel');
 
-import { CssClass, SvgMarkup, assert, CssSize } from "../shared/common";
-import { Stroke, StrokeData } from "../shared/stylus";
+import { CssClass, SvgMarkup, CssSize } from "../shared/common";
+import { Stroke, StrokeData, StrokeId } from "../shared/stylus";
 
-import { $outerSvg, $newSvg, $svg } from "../dom";
+import { $newSvg, $outerSvg } from "../dom";
 
 import { SvgStroke } from "../svg-stroke";
 import { StylusDrawingPanel } from "./stylus-drawing-panel";
@@ -36,6 +36,7 @@ import { HtmlElement } from "../html-element";
 
 // Types
 
+type PathDAttribute = '{PathDAttribute}';
 export type StrokeCallbackFn = (stroke: Stroke)=>Promise<void>;
 
 // Constants
@@ -50,15 +51,12 @@ export class StrokePanel extends HtmlElement<'div'> {
 
   public constructor(
     cssSize: CssSize,
-    _strokeData: StrokeData,
+    strokeData: StrokeData,
     strokeCallbackFn: StrokeCallbackFn,
   ) {
-    console.warn("TODO: STROKE PANEL NEEDS TO BE UPDATED.")
-    const svgMarkup: SvgMarkup|undefined = undefined;
-    debug(`Creating instance ${svgMarkup?'with':'without'} SVG markup.`);
+    const svgMarkup = convertStrokesToSvg(strokeData);
 
-    // REVIEW: Why do we have to specify height here?
-    const $svgPanel = svgMarkup ? $outerSvg<'svg'>(svgMarkup) : $newSvg<'svg'>({ tag: 'svg', class: <CssClass>'svgPanel', attrs: { height: cssSize.height, width: cssSize.width }});
+    const $svgPanel = $outerSvg<'svg'>(svgMarkup);
     const stylusDrawingPanel = new StylusDrawingPanel(cssSize, (stroke)=>this.onStrokeComplete(stroke));
 
     super({
@@ -77,21 +75,19 @@ export class StrokePanel extends HtmlElement<'div'> {
 
   // Public Instance Properties
 
-
   // Public Instance Methods
 
-  public updateSvgMarkup(markup: SvgMarkup): void {
-    debug(`Updating SVG markup`);
-    assert(this.$svgPanel);
-    this.$svgPanel!.outerHTML = markup;
-    this.$svgPanel = $svg<'svg'>(this.$elt, '.svgPanel');
+  public insertStroke(_strokeId: StrokeId, stroke: Stroke): void {
+    const shape = convertStrokeToPathShape(stroke);
+    const $path = $newSvg({ tag: 'path', attrs: { d: shape }});
+    this.$svgPanel.append($path);
   }
 
   // -- PRIVATE --
 
   // Private Instance Properties
 
-  private $svgPanel: SVGSVGElement|undefined;
+  private $svgPanel: SVGSVGElement;
   private strokeCallbackFn: StrokeCallbackFn;
 
   // Private Instance Property Functions
@@ -135,3 +131,32 @@ export class StrokePanel extends HtmlElement<'div'> {
 
 
 // HELPER FUNCTIONS
+
+function convertStrokesToSvg(strokeData: StrokeData): SvgMarkup {
+  const paths: string[] = [];
+  for (const strokeGroup of strokeData.strokeGroups) {
+    for (const stroke of strokeGroup.strokes) {
+      const path = convertStrokeToPath(stroke);
+      paths.push(path);
+    }
+  }
+  const svgMarkup = <SvgMarkup>`<svg class="svgPanel" height="${strokeData.size.height}" width="${strokeData.size.width}" fill="none" stroke="black">${paths.join('')}</svg>`;
+  return svgMarkup;
+}
+
+function convertStrokeToPath(stroke: Stroke): SvgMarkup {
+  const shape = convertStrokeToPathShape(stroke);
+  return <SvgMarkup>`<path d="${shape}"></path>`;
+}
+
+function convertStrokeToPathShape(stroke: Stroke): PathDAttribute {
+  if (stroke.x.length<2) {
+    console.warn(`Have a stroke with too few data points: ${stroke.x.length}`)
+    return <PathDAttribute>"";
+  }
+  let shape: PathDAttribute = <PathDAttribute>`M${stroke.x[0]} ${stroke.y[0]}`;
+  for (let i=1; i<stroke.x.length; i++) {
+    shape += ` L${stroke.x[i]} ${stroke.y[i]}`
+  }
+  return shape;
+}

@@ -315,9 +315,11 @@ export class ClientNotebook {
 
     // Update our data structure
     switch (update.type) {
+
       case 'cellDeleted': { this.onCellDeleted(update); break; }
       case 'cellInserted': this.onCellInserted(update); break;
       case 'cellMoved': { this.onCellMoved(update); break; }
+
       case 'strokeDeleted':
       case 'strokeInserted': {
         const cell = this.getCell(update.cellId);

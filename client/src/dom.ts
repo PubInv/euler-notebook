@@ -215,7 +215,7 @@ export function $outerSvg<K extends keyof SVGElementTagNameMap>(markup: SvgMarku
   $parent.innerHTML = markup;
   const $elt: SVGElement = <SVGElement>$parent.firstElementChild!;
   assert($elt);
-  assert($elt instanceof SVGElement);
+  // assert($elt instanceof SVGElement);  // REVIEW: <path> elements don't appear to mneet this instanceof test.
   return <SVGElementTagNameMap[K]>$elt;
 }
 

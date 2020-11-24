@@ -29,6 +29,7 @@ import {
 } from './client-requests';
 import { FolderResponse, FolderUpdate, ServerResponse, NotebookResponse, NotebookUpdate } from "./server-responses";
 import { NotebookObject } from "./notebook";
+import { Stroke } from "./stylus";
 
 // Constants
 
@@ -103,12 +104,12 @@ export function folderChangeSynopsis(change: FolderUpdate): string {
 export function notebookChangeRequestSynopsis(request: NotebookChangeRequest): string {
   let rval: string = request.type;
   switch(request.type) {
-    case 'addStroke': rval +=  ` C${request.cellId} S${JSON.stringify(request.stroke)}`; break;
     case 'deleteCell': rval += ` C${request.cellId}`; break;
+    case 'deleteStroke': rval += ` C${request.cellId} S${request.strokeId}`; break;
     case 'insertCell': rval += ` TODO:`; break;
+    case 'insertStroke': rval +=  ` C${request.cellId} ${strokeSynopsis(request.stroke)}`; break;
     case 'keyboardInputChange': rval += ` TODO:`; break;
     case 'moveCell': rval += ` C${request.cellId} A${request.afterId}`; break;
-    case 'removeStroke': rval += ` C${request.cellId} S${request.strokeId}`; break;
     default: assertFalse();
   }
   return rval;
@@ -126,15 +127,15 @@ export function notebookUpdateSynopsis(update: NotebookUpdate): string {
       break;
     }
     case 'cellMoved': {
-      rval += ` ${update.cellId} to index ${update.cellIndex}`;
+      rval += ` C${update.cellId} to index ${update.cellIndex}`;
       break;
     }
     case 'strokeInserted': {
-      rval += ` TODO:`;
+      rval += ` C${update.cellId} S${update.strokeId} ${strokeSynopsis(update.stroke)}`;
       break;
     }
     case 'strokeDeleted': {
-      rval += ` TODO:`;
+      rval += ` C${update.cellId} S${update.strokeId}`;
       break;
     }
     default: assertFalse();
@@ -158,11 +159,11 @@ export function serverMessageSynopsis(msg: ServerResponse): string {
       break;
     }
     case 'folder': {
-      rval += FolderResponseSynopsis(msg);
+      rval += folderResponseSynopsis(msg);
       break;
     }
     case 'notebook': {
-      rval += NotebookResponseSynopsis(msg);
+      rval += notebookResponseSynopsis(msg);
       break;
     }
     default: assertFalse();
@@ -210,11 +211,9 @@ function clientNotebookMessageSynopsis(msg: NotebookRequest): string {
   return rval;
 }
 
-
-
 function indentation(indentationLevel: number): string { return ' '.repeat(indentationLevel*2); }
 
-function FolderResponseSynopsis(msg: FolderResponse): string {
+function folderResponseSynopsis(msg: FolderResponse): string {
   let rval = `${msg.path} ${msg.operation} `;
   switch(msg.operation) {
     case 'updated':
@@ -229,7 +228,7 @@ function FolderResponseSynopsis(msg: FolderResponse): string {
   return rval;
 }
 
-function NotebookResponseSynopsis(msg: NotebookResponse) {
+function notebookResponseSynopsis(msg: NotebookResponse): string {
   let rval = `${msg.path} ${msg.operation} `;
   switch(msg.operation) {
     case 'updated':
@@ -244,3 +243,13 @@ function NotebookResponseSynopsis(msg: NotebookResponse) {
   return rval;
 }
 
+function strokeSynopsis(stroke: Stroke): string {
+  const prefixLen = Math.min(stroke.x.length, 3);
+  const abbreviated = stroke.x.length > prefixLen;
+  const xPrefix = stroke.x.slice(0, prefixLen);
+  const points = xPrefix.map((x,i)=>{
+    const y = stroke.y[i];
+    return `(${x.toFixed(2)},${y.toFixed(2)})`;
+  });
+  return `S[${points.join(',')}${abbreviated?"...":""}]`
+}
