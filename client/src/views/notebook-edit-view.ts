@@ -28,7 +28,7 @@ const debug = debug1('client:notebook-edit-view');
 import { CellId, CellObject, CellRelativePosition, CellPosition, CellType, InputType } from "../shared/cell";
 import { CssClass, assert, Html, notImplemented, assertFalse } from "../shared/common";
 import { DeleteCell, InsertCell, MoveCell, NotebookChangeRequest, } from "../shared/client-requests";
-import { NotebookUpdate } from "../shared/server-responses";
+import { CellDeleted, CellInserted, CellMoved, NotebookUpdate } from "../shared/server-responses";
 import { DebugParams } from "../shared/api-calls";
 
 import { CellEditView } from "./cell-edit-view";
@@ -37,7 +37,6 @@ import { NotebookEditScreen } from "../screens/notebook-edit-screen";
 import { reportError } from "../error-handler";
 import { userSettingsInstance } from "../user-settings";
 import { apiDebug } from "../api";
-import { ClientCell } from "../client-cell";
 import { ClientNotebook, NotebookView } from "../client-notebook";
 import { notebookUpdateSynopsis } from "../shared/debug-synopsis";
 
@@ -107,14 +106,15 @@ export class NotebookEditView extends HtmlElement<'div'> implements NotebookView
       }
     });
 
-    this.cellViews = new Map();
+    this.cellViews = [];
     this.container = container;
     this.notebook = notebook;
     this.topOfUndoStack = 0;
     this.undoStack = [];
 
-    for (const cell of notebook.cells) {
-      this.createCellView(cell, -1);
+    for (let cellIndex=0; cellIndex<notebook.cells.length; cellIndex++) {
+      const cellUpdate: CellInserted = { type: 'cellInserted', cellObject: notebook.cells[cellIndex].obj, cellIndex }
+      this.onCellInserted(cellUpdate);
     }
   }
 
@@ -362,7 +362,7 @@ export class NotebookEditView extends HtmlElement<'div'> implements NotebookView
 
   // REVIEW: Not actually asynchronous. Have synchronous alternative for internal use?
   public async unselectAll(noEmit?: boolean): Promise<void> {
-    for (const cellView of this.cellViews.values()) {
+    for (const cellView of this.cellViews) {
       if (cellView.isSelected()) { cellView.unselect(); }
     }
     delete this.lastCellSelected;
@@ -378,7 +378,8 @@ export class NotebookEditView extends HtmlElement<'div'> implements NotebookView
       delete this.lastCellSelected;
     }
     this.$elt.removeChild(cellView.$elt);
-    this.cellViews.delete(cellView.id);
+    notImplemented();
+    // TODO: Splice cell view out of cellViews array.
   }
 
   // REVIEW: Should be limited to changing a single style so this isn't used as backdoor
@@ -426,18 +427,9 @@ export class NotebookEditView extends HtmlElement<'div'> implements NotebookView
 
     // Update our data structure
     switch (update.type) {
-      case 'cellDeleted': {
-        notImplemented();
-        break;
-      }
-      case 'cellInserted': {
-        notImplemented();
-        break;
-      }
-      case 'cellMoved': {
-        notImplemented();
-        break;
-      }
+      case 'cellDeleted': this.onCellDeleted(update); break;
+      case 'cellInserted': this.onCellInserted(update); break;
+      case 'cellMoved': this.onCellMoved(update); break;
       case 'strokeDeleted':
       case 'strokeInserted':
         // Do nothing.
@@ -452,7 +444,7 @@ export class NotebookEditView extends HtmlElement<'div'> implements NotebookView
 
   // Private Instance Properties
 
-  private cellViews: Map<CellId, CellEditView<any>>;
+  private cellViews:CellEditView<any>[];
   private container: NotebookEditScreen;
   private lastCellSelected?: CellEditView<any>;
   private notebook: ClientNotebook;
@@ -462,9 +454,9 @@ export class NotebookEditView extends HtmlElement<'div'> implements NotebookView
   // Private Instance Property Functions
 
   private cellViewFromId<O extends CellObject>(cellId: CellId): CellEditView<O> {
-    const rval = this.cellViews.get(cellId)!;
-    assert(rval);
-    return rval;
+    const cellView = this.cellViews.find(cellView => cellView.id===cellId);
+    assert(cellView);
+    return <CellEditView<O>>cellView;
   }
 
   private cellViewFromElement<O extends CellObject>($elt: HTMLDivElement): CellEditView<O> {
@@ -503,22 +495,22 @@ export class NotebookEditView extends HtmlElement<'div'> implements NotebookView
 
   // Private Instance Methods
 
-  private createCellView<O extends CellObject>(cell: ClientCell<O>, afterId: CellRelativePosition): CellEditView<O> {
-    const cellView = cell.createEditView();
-    this.cellViews.set(cell.id, cellView);
+  // private createCellView<O extends CellObject>(cell: ClientCell<O>, afterId: CellRelativePosition): CellEditView<O> {
+  //   const cellView = cell.createEditView();
+  //   this.cellViews.set(cell.id, cellView);
 
-    if (afterId == CellPosition.Top) {
-      this.$elt.prepend(cellView.$elt);
-    } else if (afterId == CellPosition.Bottom) {
-      this.$elt.append(cellView.$elt);
-    } else {
-      const afterCell = this.cellViews.get(afterId);
-      if (!afterCell) { throw new Error(`Cannot insert cell after unknown cell ${afterId}`); }
-      afterCell.$elt.insertAdjacentElement('afterend', cellView.$elt);
-    }
+  //   if (afterId == CellPosition.Top) {
+  //     this.$elt.prepend(cellView.$elt);
+  //   } else if (afterId == CellPosition.Bottom) {
+  //     this.$elt.append(cellView.$elt);
+  //   } else {
+  //     const afterCell = this.cellViews.get(afterId);
+  //     if (!afterCell) { throw new Error(`Cannot insert cell after unknown cell ${afterId}`); }
+  //     afterCell.$elt.insertAdjacentElement('afterend', cellView.$elt);
+  //   }
 
-    return cellView;
-  }
+  //   return cellView;
+  // }
 
   // private async sendUndoableChangeRequest(changeRequest: NotebookChangeRequest): Promise<NotebookChangeRequest> {
   //   const undoChangeRequests = await this.sendUndoableChangeRequests([changeRequest]);
@@ -554,6 +546,27 @@ export class NotebookEditView extends HtmlElement<'div'> implements NotebookView
   private onBlur(_event: FocusEvent): void {
     // console.log("BLUR!!!");
     // console.dir(event);
+  }
+
+  private onCellDeleted(_update: CellDeleted): void {
+    notImplemented();
+  }
+
+  private onCellInserted(update: CellInserted): void {
+    const { cellObject, cellIndex } = update;
+    const cell = this.notebook.getCell(cellObject.id);
+    const cellView = cell.createEditView();
+    this.cellViews.splice(cellIndex, 0, cellView);
+    if (cellIndex === 0) {
+      this.$elt.prepend(cellView.$elt);
+    } else {
+      const precedingCellView = this.cellViews[cellIndex];
+      precedingCellView.$elt.before(cellView.$elt);
+    }
+  }
+
+  private onCellMoved(_update: CellMoved): void {
+    notImplemented();
   }
 
   private onFocus(_event: FocusEvent): void {

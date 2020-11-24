@@ -227,7 +227,6 @@ export abstract class Notebook<W extends NotebookWatcher> extends WatchedResourc
 
   // REVIEW: This probably belongs somewhere else. Seems specific to the use.
   private cellToHtml(cell: CellObject): Html {
-    // TODO: This is very inefficient as notebook.childStylesOf goes through *all* styles.
     return <Html>`<div>
 <span class="collapsed">S${cell.id} ${cell.type} ${cell.source}</span>
 <div class="nested" style="display:none">

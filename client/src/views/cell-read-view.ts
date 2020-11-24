@@ -19,6 +19,9 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 // Requirements
 
+import * as debug1 from "debug";
+const debug = debug1('client:cell-read-view');
+
 import { CellObject } from "../shared/cell";
 import { CssLength, notImplemented, SvgMarkup } from "../shared/common";
 import { NotebookUpdate } from "../shared/server-responses";
@@ -26,6 +29,7 @@ import { NotebookUpdate } from "../shared/server-responses";
 import { CellView, ClientCell } from "../client-cell";
 
 import { $outerSvg } from "../dom";
+import { notebookUpdateSynopsis } from "../shared/debug-synopsis";
 
 // Exported Class
 
@@ -33,7 +37,8 @@ export class CellReadView<O extends CellObject> implements CellView {
 
   public $svg: SVGSVGElement;
 
-  public onUpdate(_update: NotebookUpdate, _ownRequest: boolean): void {
+  public onUpdate(update: NotebookUpdate, _ownRequest: boolean): void {
+    debug(`onUpdate: ${notebookUpdateSynopsis(update)}`);
     notImplemented();
   };
 

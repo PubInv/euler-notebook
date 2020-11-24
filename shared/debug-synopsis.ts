@@ -21,15 +21,33 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 // Requirements
 
-import { CellObject } from "./cell";
-import { assertFalse } from './common';
+import { CellObject, CellType } from "./cell";
+import { assert, assertFalse } from './common';
 //import { Notebook } from './notebook';
 import {
   FolderRequest, ClientRequest, NotebookRequest, FolderChangeRequest, NotebookChangeRequest,
 } from './client-requests';
 import { FolderResponse, FolderUpdate, ServerResponse, NotebookResponse, NotebookUpdate } from "./server-responses";
 import { NotebookObject } from "./notebook";
+
+// Constants
+
+const CELL_TYPES: Map<CellType, string> = new Map([
+  [ CellType.Figure, "Figure" ],
+  [ CellType.Formula, "Formula" ],
+  [ CellType.Plot, "Plot" ],
+  [ CellType.Text, "Text" ],
+]);
+
 // Exported Functions
+
+export function cellBriefSynopsis(cell: CellObject, indentationLevel: number = 0): string {
+  return `${indentation(indentationLevel)}C${cell.id} ${cellTypeString(cell.type)} ${cell.source}`;
+}
+
+export function cellSynopsis(cell: CellObject, indentationLevel: number = 0): string {
+  return `${cellBriefSynopsis(cell, indentationLevel)} TODO: more data depending on type.`;
+}
 
 export function clientMessageSynopsis(msg: ClientRequest): string {
   let rval = `${msg.requestId?`${msg.requestId} `:''}${msg.type} `;
@@ -153,11 +171,13 @@ export function serverMessageSynopsis(msg: ServerResponse): string {
   return rval;
 }
 
-export function cellSynopsis(cell: CellObject, indentationLevel: number = 0): string {
-  return `${indentation(indentationLevel)}C${cell.id} ${cell.type} ${cell.source} TODO: more data depending on type.`;
-}
-
 // Helper Functions
+
+function cellTypeString(type: CellType): string {
+  const rval = CELL_TYPES.get(type)!;
+  assert(rval);
+  return rval;
+}
 
 function clientFolderMessageSynopsis(msg: FolderRequest): string {
   let rval = `${msg.path} ${msg.operation}`;

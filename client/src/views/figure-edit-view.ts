@@ -62,7 +62,7 @@ export class FigureEditView extends CellEditView<FigureCellObject> {
   // ClientNotebookWatcher Methods
 
   public onUpdate(update: NotebookUpdate): void {
-    debug(`onChange: style ${this.id} ${notebookUpdateSynopsis(update)}`);
+    debug(`onUpdate: C${this.id} ${notebookUpdateSynopsis(update)}`);
 
     // Update the SVG display if it has changed.
 

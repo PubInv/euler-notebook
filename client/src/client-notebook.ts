@@ -25,7 +25,7 @@ import * as debug1 from "debug";
 const debug = debug1('client:client-notebook');
 
 import { CellId, CellObject } from "./shared/cell";
-import { assert, assertFalse, CssSize, notImplemented } from "./shared/common";
+import { assert, assertFalse, CssSize, Html, notImplemented } from "./shared/common";
 import { notebookUpdateSynopsis } from "./shared/debug-synopsis";
 import { NotebookName, NotebookNameFromNotebookPath, NotebookPath } from "./shared/folder";
 import { FORMAT_VERSION, NotebookObject, PageMargins, Pagination } from "./shared/notebook";
@@ -115,16 +115,22 @@ export class ClientNotebook {
   //   return this.pages[0].cellIds.indexOf(id);
   // }
 
-  public get notebookName(): NotebookName {
-    // REVIEW: Rename to just "name"?
-    return NotebookNameFromNotebookPath(this.path);
-  }
-
   public getCell<O extends CellObject>(id: CellId): ClientCell<O> {
     const cell = <ClientCell<O>>this.cellMap.get(id);
     assert(cell);
     return cell;
   }
+
+  public get notebookName(): NotebookName {
+    // REVIEW: Rename to just "name"?
+    return NotebookNameFromNotebookPath(this.path);
+  }
+
+  public toDebugHtml(): Html {
+    return <Html>this.cells.map(cell=>{
+      return cell.toDebugHtml();
+    }).join('\n');
+}
 
   // Public Instance Methods
 

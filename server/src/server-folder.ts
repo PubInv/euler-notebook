@@ -26,7 +26,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 import * as debug1 from "debug";
 import { join } from "path";
 
-import { assert, notImplemented } from "./shared/common";
+import { assert } from "./shared/common";
 import {
   Folder, FolderEntry, FolderName, FolderObject, FolderPath, FOLDER_PATH_RE, NotebookEntry,
   NotebookName, NotebookPath, FolderWatcher,
@@ -220,7 +220,7 @@ export class ServerFolder extends Folder<ServerFolderWatcher> {
     assert(hadSocket);
     if (this.sockets.size == 0) {
       // TODO: purge this folder immediately or set a timer to purge it in the near future.
-      notImplemented();
+      console.warn(`Last socket removed from folder: "${this.path}"`)
     }
   }
 

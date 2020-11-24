@@ -19,13 +19,17 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 // Requirements
 
+import * as debug1 from "debug";
+const debug = debug1('client:client-cell');
+
 import { CellId, CellObject } from "../shared/cell";
 import { NotebookChangeRequest } from "../shared/client-requests";
-import { assertFalse, notImplemented } from "../shared/common";
+import { assertFalse, escapeHtml, Html, notImplemented } from "../shared/common";
 import { NotebookUpdate } from "../shared/server-responses";
 
 import { ChangeRequestResults, ClientNotebook } from "../client-notebook";
 import { CellEditView } from "../views/cell-edit-view";
+import { cellBriefSynopsis, cellSynopsis, notebookUpdateSynopsis } from "../shared/debug-synopsis";
 
 // Types
 
@@ -54,11 +58,21 @@ export abstract class ClientCell<O extends CellObject> {
 
   public get id(): CellId { return this.obj.id; }
 
+  public toDebugHtml(): Html {
+    return <Html>`<div>
+<span class="collapsed">${escapeHtml(cellBriefSynopsis(this.obj))}</span>
+<div class="nested" style="display:none">
+  <tt>${escapeHtml(cellSynopsis(this.obj))}</tt>
+</div>
+</div>`;
+  }
+
   // Public Instance Methods
 
   public abstract createEditView(): CellEditView<O>;
 
   public onUpdate(update: NotebookUpdate, ownRequest: boolean): void {
+    debug(`onUpdate C${this.id} ${notebookUpdateSynopsis(update)}`);
 
     switch(update.type) {
       case 'strokeDeleted': {
