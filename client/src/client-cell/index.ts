@@ -22,14 +22,14 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 import * as debug1 from "debug";
 const debug = debug1('client:client-cell');
 
-import { CellId, CellObject, StylusCellObject } from "../shared/cell";
-import { NotebookChangeRequest } from "../shared/client-requests";
-import { assert, assertFalse, CssSize, escapeHtml, Html, notImplemented } from "../shared/common";
+import { CellId, CellObject } from "../shared/cell";
+import { assertFalse, CssSize, escapeHtml, Html, notImplemented } from "../shared/common";
 import { NotebookUpdate } from "../shared/server-responses";
 
-import { ChangeRequestResults, ClientNotebook } from "../client-notebook";
+import { ClientNotebook } from "../client-notebook";
 import { CellEditView } from "../views/cell-edit-view";
 import { cellBriefSynopsis, cellSynopsis, notebookUpdateSynopsis } from "../shared/debug-synopsis";
+import { Stroke } from "../shared/myscript-types";
 
 // Types
 
@@ -86,10 +86,7 @@ export abstract class ClientCell<O extends CellObject> {
         break;
       }
       case 'strokeInserted': {
-        // TODO: Add the stroke to stroke data.
-        assert(this.obj.hasOwnProperty('strokeData'));
-        const obj = <StylusCellObject><unknown>this.obj;
-        obj.strokeData.strokeGroups[0].strokes.push(update.stroke);
+        this.obj.strokeData.strokeGroups[0].strokes.push(update.stroke);
         break;
       }
       default: assertFalse();
@@ -105,15 +102,14 @@ export abstract class ClientCell<O extends CellObject> {
     await this.notebook.deleteCell(this.id);
   }
 
+  public async insertStroke(stroke: Stroke): Promise<void> {
+    await this.notebook.insertStrokeIntoCell(this.id, stroke);
+  }
+
   public async resize(cssSize: CssSize): Promise<void> {
     // Called when user finishes resizing a cell.
     // Ask the notebook to resize us.
     await this.notebook.resizeCell(this.id, cssSize);
-  }
-
-  // REVIEW: Make private and
-  public sendChangeRequest(request: NotebookChangeRequest): Promise<ChangeRequestResults> {
-    return this.notebook.sendChangeRequest(request);
   }
 
   // Private Instance Properties

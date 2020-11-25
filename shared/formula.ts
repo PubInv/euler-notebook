@@ -19,7 +19,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 // Requirements
 
-import { CellObject, CellType, InputType, KeyboardCellObject, StylusCellObject } from "./cell";
+import { CellObject, CellType } from "./cell";
 
 // Types
 
@@ -30,21 +30,10 @@ export type PlainTextFormula = '{PlainTextFormula}';
 export type TexExpression = '{TexExpression}';
 export type WolframExpression = '{WolframExpression}';
 
-interface MathCellObject {
+export interface FormulaCellObject extends CellObject {
+  type: CellType.Formula,
   plainTextFormula: PlainTextFormula; // REVIEW: Does the client need this?
 }
-
-export interface FormulaCellKeyboardObject extends KeyboardCellObject, MathCellObject {
-  type: CellType.Formula,
-}
-export interface FormulaCellStylusObject extends StylusCellObject, MathCellObject {
-  type: CellType.Formula,
-}
-interface FormulaCellNoInputObject extends CellObject, MathCellObject {
-  type: CellType.Formula,
-  inputType: InputType.None,
-}
-export type FormulaCellObject = FormulaCellKeyboardObject | FormulaCellStylusObject | FormulaCellNoInputObject;
 
 // CONSTANTS
 

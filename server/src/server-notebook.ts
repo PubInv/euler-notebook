@@ -28,10 +28,10 @@ import * as debug1 from "debug";
 // import { readdirSync, unlink, writeFileSync } from "fs"; // LATER: Eliminate synchronous file operations.
 import { join } from "path";
 
-import { CellObject, CellSource, CellId, CellPosition, StylusCellObject, InputType, CellType, FigureCellObject, TextCellKeyboardObject, TextCellStylusObject } from "./shared/cell";
+import { CellObject, CellSource, CellId, CellPosition, CellType, FigureCellObject, TextCellObject } from "./shared/cell";
 import { assert, assertFalse, deepCopy, escapeHtml, ExpectedError, Html, notImplemented, PlainText, Timestamp } from "./shared/common";
 import { NotebookPath, NOTEBOOK_PATH_RE, NotebookName, FolderPath, NotebookEntry, Folder } from "./shared/folder";
-import { FormulaCellKeyboardObject, FormulaCellStylusObject, PlainTextFormula } from "./shared/formula";
+import { FormulaCellObject, PlainTextFormula } from "./shared/formula";
 import { NotebookObject, FORMAT_VERSION, NotebookWatcher, sizeInPoints, marginsInPoints } from "./shared/notebook";
 import {
   NotebookChangeRequest, MoveCell, InsertCell, DeleteCell, InsertStroke, DeleteStroke,
@@ -632,7 +632,7 @@ export class ServerNotebook extends Notebook<ServerNotebookWatcher> {
         const figureCellObject: FigureCellObject = {
           id,
           type: CellType.Figure,
-          inputType: InputType.Stylus,
+          inputText: <PlainText>"",
           cssSize: deepCopy(size),
           source,
           strokeData: deepCopy(EMPTY_STROKE_DATA),
@@ -641,36 +641,16 @@ export class ServerNotebook extends Notebook<ServerNotebookWatcher> {
         break;
       }
       case CellType.Formula: {
-        switch(request.inputType) {
-          case InputType.Keyboard: {
-            const formulaCellObject: FormulaCellKeyboardObject = {
-              id,
-              type: CellType.Formula,
-              inputType: InputType.Keyboard,
-              cssSize: deepCopy(DEFAULT_FORMULA_CSS_SIZE),
-              inputText: <PlainText>"",
-              plainTextFormula: <PlainTextFormula>"",
-              source,
-            }
-            cellObject = formulaCellObject;
-            break;
-          }
-          case InputType.Stylus: {
-            const size = DEFAULT_FORMULA_CSS_SIZE;
-            const formulaCellObject: FormulaCellStylusObject = {
-              id,
-              type: CellType.Formula,
-              inputType: InputType.Stylus,
-              cssSize: deepCopy(size),
-              plainTextFormula: <PlainTextFormula>"",
-              source,
-              strokeData: deepCopy(EMPTY_STROKE_DATA),
-            }
-            cellObject = formulaCellObject;
-            break;
-          }
-          default: assertFalse();
+        const formulaCellObject: FormulaCellObject = {
+          id,
+          type: CellType.Formula,
+          cssSize: deepCopy(DEFAULT_FORMULA_CSS_SIZE),
+          inputText: <PlainText>"",
+          plainTextFormula: <PlainTextFormula>"",
+          source,
+          strokeData: deepCopy(EMPTY_STROKE_DATA),
         }
+        cellObject = formulaCellObject;
         break;
       }
       case CellType.Plot: {
@@ -678,34 +658,15 @@ export class ServerNotebook extends Notebook<ServerNotebookWatcher> {
         break;
       }
       case CellType.Text: {
-        switch(request.inputType) {
-          case InputType.Keyboard: {
-            const textCellObject: TextCellKeyboardObject = {
-              id,
-              type: CellType.Text,
-              inputType: InputType.Keyboard,
-              cssSize: deepCopy(DEFAULT_TEXT_CSS_SIZE),
-              inputText: <PlainText>"",
-              source,
-            }
-            cellObject = textCellObject;
-            break;
-          }
-          case InputType.Stylus: {
-            const size = DEFAULT_TEXT_CSS_SIZE;
-            const textCellObject: TextCellStylusObject = {
-              id,
-              type: CellType.Text,
-              inputType: InputType.Stylus,
-              cssSize: deepCopy(size),
-              source,
-              strokeData: deepCopy(EMPTY_STROKE_DATA),
-            }
-            cellObject = textCellObject;
-            break;
-          }
-          default: assertFalse();
+        const textCellObject: TextCellObject = {
+          id,
+          type: CellType.Text,
+          cssSize: deepCopy(DEFAULT_TEXT_CSS_SIZE),
+          inputText: <PlainText>"",
+          source,
+          strokeData: deepCopy(EMPTY_STROKE_DATA),
         }
+        cellObject = textCellObject;
         break;
       }
       default: assertFalse();
@@ -733,16 +694,15 @@ export class ServerNotebook extends Notebook<ServerNotebookWatcher> {
     undoChangeRequests.unshift(undoChangeRequest);
   }
 
-  private async applyInsertStrokeRequest<T extends StylusCellObject>(
+  private async applyInsertStrokeRequest(
     _source: CellSource,
     request: InsertStroke,
     updates: NotebookUpdate[],
     undoChangeRequests: NotebookChangeRequest[],
   ): Promise<void> {
     const cellId = request.cellId;
-    const cellObject = this.getCell<T>(request.cellId);
-    const strokeId: StrokeId = -1; //BUGBUG;
-    assert(cellObject.inputType == InputType.Stylus);
+    const cellObject = this.getCell(request.cellId);
+    const strokeId: StrokeId = -1; // TODO:
     cellObject.strokeData.strokeGroups[0].strokes.push(request.stroke);
 
     const update: StrokeInserted = {

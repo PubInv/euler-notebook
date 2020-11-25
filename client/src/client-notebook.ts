@@ -24,12 +24,12 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 import * as debug1 from "debug";
 const debug = debug1('client:client-notebook');
 
-import { CellId, CellObject } from "./shared/cell";
+import { CellId, CellObject, CellRelativePosition, CellType } from "./shared/cell";
 import { assert, assertFalse, CssSize, Html, notImplemented } from "./shared/common";
 import { notebookUpdateSynopsis } from "./shared/debug-synopsis";
 import { NotebookName, NotebookNameFromNotebookPath, NotebookPath } from "./shared/folder";
 import { FORMAT_VERSION, NotebookObject, PageMargins, Pagination } from "./shared/notebook";
-import { NotebookChangeRequest, ChangeNotebook, UseTool, OpenNotebook, DeleteCell, ResizeCell } from "./shared/client-requests";
+import { NotebookChangeRequest, ChangeNotebook, UseTool, OpenNotebook, DeleteCell, ResizeCell, InsertStroke, InsertCell } from "./shared/client-requests";
 import {
   NotebookUpdated, NotebookOpened, NotebookResponse, NotebookClosed, NotebookUpdate, CellInserted, CellDeleted, CellMoved
 } from "./shared/server-responses";
@@ -38,6 +38,7 @@ import { createCell } from "./client-cell/instantiator";
 
 import { appInstance } from "./app";
 import { ClientCell } from "./client-cell";
+import { Stroke } from "./shared/myscript-types";
 
 // Types
 
@@ -56,6 +57,11 @@ interface OpenInfo {
   tally: number;
   views: Set<NotebookView>;
 }
+
+// interface UndoEntry {
+//   changeRequests: NotebookChangeRequest[];
+//   undoChangeRequests: NotebookChangeRequest[];
+// }
 
 // Constants
 
@@ -159,43 +165,43 @@ export class ClientNotebook {
     window.open(url, "_blank")
   }
 
+  public async insertCell(cellType: CellType, afterId: CellRelativePosition): Promise<void> {
+    const changeRequest: InsertCell = { type: 'insertCell', cellType, afterId };
+    /* const undoChangeRequest = */await this.sendChangeRequest(changeRequest);
+    // const cellId = (<DeleteCellRequest>undoChangeRequest).cellId;
+  }
+
+  public async insertStrokeIntoCell(cellId: CellId, stroke: Stroke): Promise<void> {
+    // TODO: Undoable
+    const changeRequest: InsertStroke = { type: 'insertStroke', cellId, stroke };
+    await this.sendChangeRequest(changeRequest)
+  }
+
+  public async redo(): Promise<boolean> {
+    // Returns true if there are more redos available.
+    notImplemented();
+    // // Resubmit the change requests.
+    // assert(this.topOfUndoStack < this.undoStack.length);
+    // const entry = this.undoStack[this.topOfUndoStack++];
+    // await this.sendUndoableChangeRequests(entry.changeRequests);
+
+    // return this.topOfUndoStack < this.undoStack.length;
+  }
+
   public async resizeCell(cellId: CellId, cssSize: CssSize): Promise<void> {
     // TODO: Make this undoable.
     const changeRequest: ResizeCell = { type: 'resizeCell', cellId, cssSize };
     await this.sendChangeRequest(changeRequest);
   }
 
-  public async sendChangeRequest(changeRequest: NotebookChangeRequest): Promise<ChangeRequestResults> {
-    return this.sendChangeRequests([ changeRequest ]);
-  }
-
-  public async sendChangeRequests(changeRequests: NotebookChangeRequest[]): Promise<ChangeRequestResults> {
-    assert(!this.terminated);
-    assert(changeRequests.length>0);
-    const msg: ChangeNotebook = {
-      type: 'notebook',
-      operation: 'change',
-      path: this.path,
-      changeRequests,
-    }
-    const responseMessages = await appInstance.socket.sendRequest<NotebookUpdated>(msg);
-    assert(responseMessages.length>=1);
-    if (responseMessages.length == 1) {
-      const responseMessage = responseMessages[0];
-      return { changes: responseMessage.updates, undoChangeRequests: responseMessage.undoChangeRequests };
-    } else {
-      const rval: ChangeRequestResults = {
-        changes: [],
-        undoChangeRequests: [],
-      };
-      for (const responseMessage of responseMessages) {
-        rval.changes.push(...responseMessage.updates);
-        if (responseMessage.undoChangeRequests) {
-          rval.undoChangeRequests!.push(...responseMessage.undoChangeRequests);
-        }
-      }
-      return rval;
-    }
+  public async undo(): Promise<boolean> {
+    // Returns true if there are more undos available.
+    notImplemented();
+    // // Undo the changes by making a set of counteracting changes.
+    // assert(this.topOfUndoStack > 0);
+    // const entry = this.undoStack[--this.topOfUndoStack];
+    // await this.notebook.sendChangeRequests(entry.undoChangeRequests);
+    // return this.topOfUndoStack > 0
   }
 
   public useTool(id: CellId): void {
@@ -240,6 +246,9 @@ export class ClientNotebook {
     this.pagination = notebookObject.pagination;
     this.terminated = false;
 
+    // this.topOfUndoStack = 0;
+    // this.undoStack = [];
+
     for (let cellIndex=0; cellIndex<notebookObject.cells.length; cellIndex++) {
       const cellObject = notebookObject.cells[cellIndex];
       const cellUpdate: CellInserted = { type: 'cellInserted', cellObject, cellIndex }
@@ -252,6 +261,9 @@ export class ClientNotebook {
   private cellMap: Map<CellId, ClientCell<any>>;
   private terminated: boolean;  // TODO: Where to assert(!this.terminated)?
 
+  // private topOfUndoStack: number;       // Index of the top of the stack. May not be the length of the undoStack array if there have been some undos.
+  // private undoStack: UndoEntry[];
+
   // Private Instance Property Functions
 
   private get views(): Set<NotebookView> {
@@ -261,6 +273,51 @@ export class ClientNotebook {
   }
 
   // Private Instance Methods
+
+  private async sendChangeRequest(changeRequest: NotebookChangeRequest): Promise<ChangeRequestResults> {
+    return this.sendChangeRequests([ changeRequest ]);
+  }
+
+  private async sendChangeRequests(changeRequests: NotebookChangeRequest[]): Promise<ChangeRequestResults> {
+    assert(!this.terminated);
+    assert(changeRequests.length>0);
+    const msg: ChangeNotebook = {
+      type: 'notebook',
+      operation: 'change',
+      path: this.path,
+      changeRequests,
+    }
+    const responseMessages = await appInstance.socket.sendRequest<NotebookUpdated>(msg);
+    assert(responseMessages.length>=1);
+    if (responseMessages.length == 1) {
+      const responseMessage = responseMessages[0];
+      return { changes: responseMessage.updates, undoChangeRequests: responseMessage.undoChangeRequests };
+    } else {
+      const rval: ChangeRequestResults = {
+        changes: [],
+        undoChangeRequests: [],
+      };
+      for (const responseMessage of responseMessages) {
+        rval.changes.push(...responseMessage.updates);
+        if (responseMessage.undoChangeRequests) {
+          rval.undoChangeRequests!.push(...responseMessage.undoChangeRequests);
+        }
+      }
+      return rval;
+    }
+  }
+
+  // private async sendUndoableChangeRequests(changeRequests: NotebookChangeRequest[]): Promise<NotebookChangeRequest[]> {
+  //   // const { undoChangeRequests } = await this.sendTrackedChangeRequests(changeRequests);
+  //   const results = await this.sendChangeRequests(changeRequests);
+  //   const undoChangeRequests = results.undoChangeRequests!;
+  //   assert(undoChangeRequests && undoChangeRequests.length>0);
+  //   const entry: UndoEntry = { changeRequests, undoChangeRequests };
+  //   while(this.undoStack.length > this.topOfUndoStack) { this.undoStack.pop(); }
+  //   this.undoStack.push(entry);
+  //   this.topOfUndoStack = this.undoStack.length;
+  //   return undoChangeRequests;
+  // }
 
   protected terminate(reason: string): void {
     assert(!this.terminated);

@@ -24,19 +24,13 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 import * as debug1 from "debug";
 const debug = debug1('client:formula-edit-view');
 
-import { CssClass, Html, assertFalse, PlainText, notImplemented } from "../shared/common";
-import { Stroke } from "../shared/myscript-types";
-import { FormulaCellKeyboardObject, FormulaCellObject, FormulaCellStylusObject } from "../shared/formula";
+import { CssClass } from "../shared/common";
+import { FormulaCellObject } from "../shared/formula";
 import { NotebookUpdate } from "../shared/server-responses";
 import { notebookUpdateSynopsis } from "../shared/debug-synopsis";
-import { InputType } from "../shared/cell";
-import { InsertStroke } from "../shared/client-requests";
 
 import { $new } from "../dom";
 
-import { KeyboardCallbackFn, KeyboardPanel } from "../components/keyboard-panel";
-import { StrokeCallbackFn, StrokePanel } from "../components/stroke-panel";
-import { logError } from "../error-handler";
 
 import { FormulaCell } from "../client-cell/formula-cell";
 
@@ -64,48 +58,28 @@ export class FormulaEditView extends CellEditView<FormulaCellObject> {
 
     super(cell, $content);
 
-    this.$inputPanel = this.createInputPanel(cell.obj);
-    if (this.$inputPanel) {
-      this.$content.append(this.$inputPanel);
-    }
+    // TODO: Formula prefix, formula handle (formula number), formula status.
+    // const prefixHtml = <Html>''; // LATER: Prefix may be something like, "Assume", or "Define", or "Prove" etc.,
+    // const $inputPanel = $new({
+    //   tag: 'div',
+    //   class: <CssClass>'formulaInput',
+    //   children: [
+    //     { tag: 'div', class: <CssClass>'prefixPanel', html: prefixHtml },
+    //     panel.$elt,
+    //     { tag: 'div', class: <CssClass>'handlePanel', html: <Html>`(${cellObject.id})` },
+    //     { tag: 'div', class: <CssClass>'statusPanel', html: <Html>'&nbsp;' },
+    //   ],
+    // });
   }
 
   // Public Instance Methods
 
-  // ClientNotebookWatcher Methods
-
-  // public onCellChange(msg: ServerNotebookCellChangedMessage, ownRequest: boolean): void {
-
-  //   // If input text has changed then update the keyboard panel.
-  //   if (!ownRequest) {
-  //     if (msg.inputText) {
-  //       assert(this.keyboardPanel);
-  //       // LATER: msg.inputTextStart/End/Replacement.
-  //       this.keyboardPanel!.updateText(msg.inputText);
-  //     }
-  //   }
-
-  // }
-
   public onUpdate(update: NotebookUpdate, ownRequest: boolean): boolean {
     debug(`onUpdate C${this.id} ${notebookUpdateSynopsis(update)}`);
     super.onUpdate(update, ownRequest);
-    // TODO: Changes that affect the prefix panel.
-
-    // TODO: Do we deal with showing the Wolfram Evaluation values in the formula,
-    //       and therefore deal with updating them here, or should we move their display to the tools panel?
-    switch (update.type) {
-      // case 'styleChanged': {
-      //   if (change.style.id == this.cellId) {
-      //     this.updateDisplayPanel(change.style);
-      //     this.updateInputPanelData(change.style);
-      //     this.updateInputPanelDrawing(change.style);
-      //   } else {
-      //     // Ignore. Not something we are interested in.
-      //   }
-      //   break;
-      // }
-    }
+    // switch (update.type) {
+    //   default: /* Nothing to do */ break;
+    // }
     return false;
   }
 
@@ -113,109 +87,7 @@ export class FormulaEditView extends CellEditView<FormulaCellObject> {
 
   // Private Instance Properties
 
-  private $inputPanel: HTMLDivElement|undefined;
-  // @ts-expect-error // TODO: value is never read error
-  private keyboardPanel?: KeyboardPanel;
-  // @ts-expect-error // TODO: value is never read error
-  private strokePanel?: StrokePanel;
-
   // Private Instance Methods
-
-  //   // Render Wolfram evaluation if it exists.
-  //   // REVIEW: Rendering evaluation annotations should probably be
-  //   //         done separately from rendering the formula,
-  //   //         but for now, for lack of a better place to put them,
-  //   //         we are just appending the evaluation
-  //   //         to the end of the formula.
-  //   {
-  //     const findOptions: FindStyleOptions = { role: 'EVALUATION', recursive: true };
-  //     const evaluationStyles = notebook.findStyles(findOptions, rootStyleId);
-  //     for (const evaluationStyle of evaluationStyles) {
-  //       // HACK ALERT: We only take evaluations that are numbers:
-  //       const evalStr = evaluationStyle.data.toString();
-  //       if (/^\d+$/.test(evalStr)) {
-  //         html = <Html>(html + ` [=${evalStr}]`);
-  //       }
-  //     }
-  //   }
-
-  //   // Render list of equivalent styles, if there are any.
-  //   // REVIEW: Rendering equivalency annotations should probably be
-  //   //         done separately from rendering the formula,
-  //   //         but for now, for lack of a better place to put them,
-  //   //         we are just appending the list of equivalent formulas
-  //   //         to the end of the formula.
-  //   {
-  //     const findOptions: FindRelationshipOptions = { fromId: rootStyleId, toId: rootStyleId, role: 'EQUIVALENCE' };
-  //     const relationships = notebook.findRelationships(findOptions);
-  //     const equivalentStyleIds = relationships.map(r=>(r.toId!=rootStyleId ? r.toId : r.fromId)).sort();
-  //     if (equivalentStyleIds.length>0) {
-  //       html = <Html>(html + ` {${equivalentStyleIds.join(', ')}}`);
-  //     }
-  //   }
-
-  //   return html;
-  // }
-
-  private createInputPanel(cellObject: FormulaCellObject): HTMLDivElement|undefined {
-    let panel: KeyboardPanel|StrokePanel|undefined;
-    switch(cellObject.inputType) {
-      case InputType.Keyboard:
-        panel = this.keyboardPanel = this.createKeyboardSubpanel(cellObject);
-        break;
-      case InputType.Stylus:
-        panel = this.strokePanel = this.createStrokeSubpanel(cellObject);
-        break;
-      case InputType.None:
-        // Do nothing.
-        break;
-      default: assertFalse();
-    }
-
-    if (panel) {
-      const prefixHtml = <Html>''; // LATER: Prefix may be something like, "Assume", or "Define", or "Prove" etc.,
-      const $inputPanel = $new({
-        tag: 'div',
-        class: <CssClass>'formulaInput',
-        children: [
-          { tag: 'div', class: <CssClass>'prefixPanel', html: prefixHtml },
-          panel.$elt,
-          { tag: 'div', class: <CssClass>'handlePanel', html: <Html>`(${cellObject.id})` },
-          { tag: 'div', class: <CssClass>'statusPanel', html: <Html>'&nbsp;' },
-        ],
-      });
-      return $inputPanel;
-    } else {
-      return undefined;
-    }
-  }
-
-  private createKeyboardSubpanel(cellObject: FormulaCellKeyboardObject): KeyboardPanel {
-    const callbackFn: KeyboardCallbackFn = (_start: number, _end: number, _replacement: PlainText, _value: PlainText): void=>{
-      notImplemented();
-      // const changeRequest: KeyboardInputRequest = { type: 'keyboardInputChange', cellId: style.id, start, end, replacement, value, };
-      // this.container.screen.notebook.sendCellChangeRequest(changeRequest)
-      // .catch(err=>{
-      // // REVIEW: Proper way to handle this error?
-      //   logError(err, <Html>"Error sending keyboardInputChange from formula cell");
-      // });
-    }
-    return new KeyboardPanel(cellObject.inputText, callbackFn);
-  }
-
-  private createStrokeSubpanel(cellObject: FormulaCellStylusObject): StrokePanel {
-    const callbackFn: StrokeCallbackFn = async (stroke: Stroke)=>{
-      const changeRequest: InsertStroke = { type: 'insertStroke', cellId: cellObject.id, stroke };
-      await this.cell.sendChangeRequest(changeRequest)
-      .catch(err=>{
-        // REVIEW: Proper way to handle this error?
-        logError(err, <Html>"Error sending stroke from formula cell");
-      });
-    };
-    // Create the panel
-    const strokePanel = new StrokePanel(cellObject.cssSize, cellObject.strokeData, callbackFn);
-    return strokePanel;
-  }
 
   // Private Event Handlers
 

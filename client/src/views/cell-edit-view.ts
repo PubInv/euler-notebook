@@ -26,7 +26,7 @@ const debug = debug1('client:cell-edit-view');
 
 import { CellObject, CellId } from "../shared/cell";
 import { assert, Html, CssClass, notImplemented, CssLength, CssSize, LengthInPixels } from "../shared/common";
-import { CellResized, NotebookUpdate } from "../shared/server-responses";
+import { NotebookUpdate } from "../shared/server-responses";
 // import { MoveCell } from "../../../../shared/client-requests";
 
 import { HtmlElement } from "../html-element";
@@ -37,8 +37,9 @@ import {
 import { Tools } from "../screens/notebook-edit-screen/tools";
 import { CallbackFunctions as ResizerCallbackFunctions, ResizerBar } from "../components/resizer-bar";
 import { CellView, ClientCell } from "../client-cell";
-import { reportError } from "../error-handler";
-
+import { logError, reportError } from "../error-handler";
+import { StrokeCallbackFn, StrokePanel } from "../components/stroke-panel";
+import { Stroke } from "../shared/myscript-types";
 
 // Types
 
@@ -96,9 +97,10 @@ export abstract class CellEditView<O extends CellObject> extends HtmlElement<'di
   // Overridable ClientNotebookWatcher Methods
 
   public onUpdate(update: NotebookUpdate, ownRequest: boolean): void {
-    switch (update.type) {
-      case 'cellResized': this.onCellResized(update, ownRequest); break;
-    }
+    this.strokePanel.onUpdate(update, ownRequest);
+    // switch (update.type) {
+    //   default: /* Nothing to do. */ break;
+    // }
   };
 
   // --- PRIVATE ---
@@ -183,6 +185,17 @@ export abstract class CellEditView<O extends CellObject> extends HtmlElement<'di
     this.$content = $content;
     this.$main = $main;
     this.cell = cell;
+
+    const callbackFn: StrokeCallbackFn = async (stroke: Stroke)=>{
+      this.cell.insertStroke(stroke)
+      .catch(err=>{
+        // REVIEW: Proper way to handle this error?
+        logError(err, <Html>"Error sending stroke from text cell");
+      });
+    };
+    this.strokePanel = new StrokePanel(cell.obj.cssSize, cell.obj.strokeData, callbackFn);
+
+    $content.append(this.strokePanel.$elt);
   }
 
   // Private Instance Properties
@@ -190,17 +203,23 @@ export abstract class CellEditView<O extends CellObject> extends HtmlElement<'di
   protected $content: HTMLDivElement;
   private $main: HTMLDivElement;
   private resizingInitialHeight?: LengthInPixels;
+  private strokePanel: StrokePanel;
 
   // Private Instance Methods
 
-  // Private Event Handlers
+  // private createKeyboardSubpanel(cellObject: TextCellObject): KeyboardPanel {
+  //   const textChangeCallback: KeyboardCallbackFn = (_start: number, _end: number, _replacement: PlainText, _value: PlainText): void =>{
+  //     notImplemented();
+  //     // const changeRequest: KeyboardInputRequest = { type: 'keyboardInputChange', cellId: style.id, start, end, replacement, value, };
+  //     // this.container.screen.notebook.sendCellChangeRequest(changeRequest)
+  //     // .catch(err=>{
+  //     //   logError(err, <Html>"Error sending keyboardInputChange from text cell");
+  //     // });
+  //   }
+  //   return new KeyboardPanel(cellObject.inputText, textChangeCallback);
+  // }
 
-  private onCellResized(update: CellResized, _ownRequest: boolean): void {
-    // Server notifying us that our cell has been resized.
-    // TODO: Resize stroke panels
-    console.log(`ON RESIZED: ${JSON.stringify(update)}`);
-    notImplemented();
-  }
+  // Private Event Handlers
 
   private onClicked(_event: MouseEvent): void {
     debug(`onClicked`);
@@ -293,13 +312,13 @@ export abstract class CellEditView<O extends CellObject> extends HtmlElement<'di
     // });
   }
 
-  protected onResizerCancel(): void {
+  private onResizerCancel(): void {
     debug(`onResizerCancel`);
     delete this.resizingInitialHeight;
     this.$main.style.removeProperty('height');
   }
 
-  protected onResizerDown(): void {
+  private onResizerDown(): void {
     debug(`onResizerDown`);
     assert(!this.resizingInitialHeight);
     const style = window.getComputedStyle(this.$main);
@@ -308,7 +327,7 @@ export abstract class CellEditView<O extends CellObject> extends HtmlElement<'di
     this.resizingInitialHeight = parseInt(cssHeight.slice(0,-2), 10);
   }
 
-  protected onResizerMove(deltaY: LengthInPixels): void {
+  private onResizerMove(deltaY: LengthInPixels): void {
     debug(`onResizerMove: ${this.resizingInitialHeight} ${deltaY}`);
     assert(this.resizingInitialHeight);
     const newHeight = this.resizingInitialHeight!+deltaY;
@@ -331,25 +350,31 @@ export abstract class CellEditView<O extends CellObject> extends HtmlElement<'di
     // }
   }
 
-  protected onResizerUp(deltaY: LengthInPixels): void {
+  private onResizerUp(deltaY: LengthInPixels): void {
     debug(`onResizerUp: ${this.resizingInitialHeight} ${deltaY}`);
 
     assert(this.resizingInitialHeight);
     const newHeight = this.resizingInitialHeight!+deltaY;
 
     delete this.resizingInitialHeight;
-    this.$main.style.removeProperty('height');
 
     // TODO: Convert pixels to points
     const width = this.cell.obj.cssSize.width;
     const height = <CssLength>`${newHeight}px`;
     const cssSize: CssSize = { width, height };
+    // LATER: Some sort of visual indication that the resize request is outstanding.
     this.cell.resize(cssSize)
     .catch((err: Error)=>{
       // TODO: What to do here?
       reportError(err, <Html>"Error submitting resize");
+    })
+    .finally(()=>{
+      // REVIEW: What if new resizing starts before old resizing update returns?
+      //         Do we need to keep track of an outstanding resize request?
+      this.$main.style.removeProperty('height');
     });
   }
+
 }
 
 // Helper Functions

@@ -22,8 +22,8 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 import * as debug1 from "debug";
 const debug = debug1('client:stroke-panel');
 
-import { CssClass, SvgMarkup, CssSize } from "../shared/common";
-import { StrokeData, StrokeId } from "../shared/stylus";
+import { CssClass, SvgMarkup, CssSize, assert } from "../shared/common";
+import { StrokeData } from "../shared/stylus";
 import { Stroke } from "../shared/myscript-types";
 
 import { $newSvg, $outerSvg } from "../dom";
@@ -32,6 +32,8 @@ import { SvgStroke } from "../svg-stroke";
 import { StylusDrawingPanel } from "./stylus-drawing-panel";
 
 import { HtmlElement } from "../html-element";
+import { CellResized, NotebookUpdate, StrokeInserted } from "../shared/server-responses";
+import { notebookUpdateSynopsis } from "../shared/debug-synopsis";
 
 // TODO: Rename stylus panel.
 
@@ -78,11 +80,16 @@ export class StrokePanel extends HtmlElement<'div'> {
 
   // Public Instance Methods
 
-  public insertStroke(_strokeId: StrokeId, stroke: Stroke): void {
-    const shape = convertStrokeToPathShape(stroke);
-    const $path = $newSvg({ tag: 'path', attrs: { d: shape }});
-    this.$svgPanel.append($path);
-  }
+  // Public Event Handlers
+
+  public onUpdate(update: NotebookUpdate, ownRequest: boolean): void {
+    debug(`onUpdate ${notebookUpdateSynopsis(update)}`);
+    switch (update.type) {
+      case 'cellResized': this.onCellResized(update, ownRequest); break;
+      case 'strokeInserted': this.onStrokeInserted(update, ownRequest); break;
+      default: /* Nothing to do. */ break;
+    }
+  };
 
   // -- PRIVATE --
 
@@ -95,32 +102,17 @@ export class StrokePanel extends HtmlElement<'div'> {
 
   // Private Event Handlers
 
-  // TODO: Remove or comment out all of the drag/drop console messages.
+  private onCellResized(update: CellResized, _ownRequest: boolean): void {
+    this.$svgPanel.setAttribute('height', update.cssSize.height);
+    assert(this.$svgPanel.getAttribute('width') === update.cssSize.width);
+    // TODO: Resize StylusInputPanel.
+  }
 
-  // private onResize(deltaY: number, final: boolean): void {
-  //   const $svgPanel = $svg<'svg'>(this.$elt, '.svgPanel');
-  //   const currentHeight = parseInt($svgPanel.getAttribute('height')!.slice(0, -2), 10);
-  //   // TODO: resizer bar should enforce minimum.
-  //   // TODO: minimum height should be based on ink content.
-  //   const newHeight = Math.max(currentHeight + deltaY, 10);
-  //   const newHeightStr = `${newHeight}px`;
-  //   $svgPanel.setAttribute('height', newHeightStr);
-
-  //   if (final) {
-  //     // TODO: Incremental change request?
-  //     const inputStyle = this.inputStyleCopy!;
-  //     assert(inputStyle);
-  //     const data = <DrawingData>inputStyle.data;
-  //     data.size.height = newHeightStr;
-  //     // REVIEW: what if size is unchanged?
-  //     const changeRequest: StyleChangeRequest = { type: 'changeStyle', cellId: inputStyle.id, data };
-  //     this.view.editStyle([ changeRequest ])
-  //     .catch((err: Error)=>{
-  //       // TODO: What to do here?
-  //       reportError(err, <Html>"Error submitting resize");
-  //     });
-  //   }
-  // }
+  private onStrokeInserted(update: StrokeInserted, _ownRequest: boolean): void {
+    const shape = convertStrokeToPathShape(update.stroke);
+    const $path = $newSvg({ tag: 'path', attrs: { d: shape }});
+    this.$svgPanel.append($path);
+  }
 
   private async onStrokeComplete(stroke: SvgStroke): Promise<void> {
     // TODO: What if socket to server is closed? We'll just accumulate strokes that will never get saved.

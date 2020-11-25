@@ -22,16 +22,12 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 import * as debug1 from "debug";
 const debug = debug1('client:figure-edit-view');
 
-import { CssClass, Html } from "../shared/common";
-import { Stroke } from "../shared/myscript-types";
-import { NotebookUpdate, StrokeInserted } from "../shared/server-responses";
+import { CssClass } from "../shared/common";
+import { NotebookUpdate } from "../shared/server-responses";
 import { notebookUpdateSynopsis } from "../shared/debug-synopsis";
 import { FigureCellObject } from "../shared/cell";
-import { InsertStroke } from "../shared/client-requests";
 
 import { HtmlElementSpecification } from "../dom";
-import { logError } from "../error-handler";
-import { StrokeCallbackFn, StrokePanel } from "../components/stroke-panel";
 
 import { FigureCell } from "../client-cell/figure-cell";
 import { CellEditView } from "./cell-edit-view";
@@ -53,8 +49,6 @@ export class FigureEditView extends CellEditView<FigureCellObject> {
       classes: [ <CssClass>'content', <CssClass>'figureCell' ],
     };
     super(cell, contentSpec);
-    this.$inputPanel = this.createInputPanel();
-    this.$content.append(this.$inputPanel);
   }
 
   // Public Instance Methods
@@ -64,48 +58,21 @@ export class FigureEditView extends CellEditView<FigureCellObject> {
   public onUpdate(update: NotebookUpdate, ownRequest: boolean): void {
     debug(`onUpdate: C${this.id} ${notebookUpdateSynopsis(update)}`);
     super.onUpdate(update, ownRequest);
-    switch (update.type) {
-      case 'strokeInserted': this.onStrokeInserted(update, ownRequest); break;
-    }
+    // switch (update.type) {
+    //   default: /* Nothing to do */ break;
+    // }
   }
 
   // -- PRIVATE --
 
   // Private Instance Properties
 
-  private $inputPanel: HTMLDivElement;
-  private strokePanel!: StrokePanel;
-
   // Private Instance Property Functions
 
   // Private Instance Methods
 
-  private createInputPanel(): HTMLDivElement {
-    const panel = this.strokePanel = this.createStrokeSubpanel(this.cell.obj);
-    return panel.$elt;
-  }
-
-  private createStrokeSubpanel(cellObject: FigureCellObject): StrokePanel {
-    const callbackFn: StrokeCallbackFn = async (stroke: Stroke)=>{
-      const changeRequest: InsertStroke = { type: 'insertStroke', cellId: cellObject.id, stroke };
-      // TODO: Remove tentative stroke from subpanel.
-      await this.cell.sendChangeRequest(changeRequest)
-      .catch(err=>{
-        // REVIEW: Proper way to handle this error?
-        logError(err, <Html>"Error sending stroke from figure cell");
-      });
-    };
-
-    // Create the panel
-    const strokePanel = new StrokePanel(cellObject.cssSize, cellObject.strokeData, callbackFn);
-    return strokePanel;
-  }
-
   // Private Instance Event Handlers
 
-  private onStrokeInserted(update: StrokeInserted, _ownRequest: boolean): void {
-    this.strokePanel.insertStroke(update.strokeId, update.stroke);
-  }
 }
 
 

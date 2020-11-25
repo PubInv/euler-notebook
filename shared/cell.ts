@@ -52,36 +52,21 @@ export enum CellType {
   Plot = 4,
 }
 
-export enum InputType {
-  None = 0,
-  Keyboard = 1,
-  Stylus = 2,
-}
-
 export interface CellObject {
   id: CellId;
+  inputText: PlainText,
   type: CellType;
   cssSize: CssSize;
   source: CellSource;
-}
-
-export interface KeyboardCellObject extends CellObject {
-  inputType: InputType.Keyboard,
-  inputText: PlainText,
-}
-
-export interface StylusCellObject extends CellObject {
-  inputType: InputType.Stylus,
-  strokeData: StrokeData, // REVIEW: Does client need this structure?
+  strokeData: StrokeData,
 }
 
 // HERE TEMPORARILY:
 // Move them into their own files when they become classes.
 
-export interface FigureCellStylusObject extends StylusCellObject {
+export interface FigureCellObject extends CellObject {
   type: CellType.Figure,
 }
-export type FigureCellObject = FigureCellStylusObject;
 
 export interface PlotCellObject extends CellObject {
   type: CellType.Plot,
@@ -89,17 +74,9 @@ export interface PlotCellObject extends CellObject {
   // LATER: Identify the symbols used in the plot for each axis, etc.
 }
 
-export interface TextCellKeyboardObject extends KeyboardCellObject {
+export interface TextCellObject extends CellObject {
   type: CellType.Text,
 }
-export interface TextCellStylusObject extends StylusCellObject {
-  type: CellType.Text,
-}
-interface TextCellNoInputObject extends CellObject {
-  type: CellType.Text,
-  inputType: InputType.None,
-}
-export type TextCellObject = TextCellKeyboardObject | TextCellStylusObject | TextCellNoInputObject;
 
 // LEGACY??
 
