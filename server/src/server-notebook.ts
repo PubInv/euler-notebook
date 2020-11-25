@@ -46,7 +46,6 @@ import { OpenOptions, WatchedResource } from "./shared/watched-resource";
 
 import { ServerSocket } from "./server-socket";
 import { AbsDirectoryPath, ROOT_DIR_PATH, mkDir, readFile, rename, rmRaf, writeFile } from "./adapters/file-system";
-import { logError } from "./error-handler";
 
 
 // const svg2img = require('svg2img');
@@ -476,11 +475,11 @@ export class ServerNotebook extends Notebook<ServerNotebookWatcher> {
 
   // Public Instance Methods
 
-  public requestChanges(
+  public async requestChanges(
     source: CellSource,
     changeRequests: NotebookChangeRequest[],
     options: RequestChangesOptions,
-  ): void {
+  ): Promise<void> {
     assert(!this.terminated);
     debug(`${source} change requests: ${changeRequests.length}`);
 
@@ -491,12 +490,12 @@ export class ServerNotebook extends Notebook<ServerNotebookWatcher> {
       assert(changeRequest);
       debug(`${source} change request: ${notebookChangeRequestSynopsis(changeRequest)}`);
       switch(changeRequest.type) {
-        case 'deleteCell':   this.applyDeleteCellRequest(source, changeRequest, updates, undoChangeRequests); break;
-        case 'deleteStroke': this.applyDeleteStrokeRequest(source, changeRequest, updates, undoChangeRequests); break;
-        case 'insertCell':   this.applyInsertCellRequest(source, changeRequest, updates, undoChangeRequests); break;
-        case 'insertStroke': this.applyInsertStrokeRequest(source, changeRequest, updates, undoChangeRequests); break;
-        case 'moveCell':     this.applyMoveCellRequest(source, changeRequest, updates, undoChangeRequests); break;
-        case 'resizeCell':   this.applyResizeCellRequest(source, changeRequest, updates, undoChangeRequests); break;
+        case 'deleteCell':   await this.applyDeleteCellRequest(source, changeRequest, updates, undoChangeRequests); break;
+        case 'deleteStroke': await this.applyDeleteStrokeRequest(source, changeRequest, updates, undoChangeRequests); break;
+        case 'insertCell':   await this.applyInsertCellRequest(source, changeRequest, updates, undoChangeRequests); break;
+        case 'insertStroke': await this.applyInsertStrokeRequest(source, changeRequest, updates, undoChangeRequests); break;
+        case 'moveCell':     await this.applyMoveCellRequest(source, changeRequest, updates, undoChangeRequests); break;
+        case 'resizeCell':   await this.applyResizeCellRequest(source, changeRequest, updates, undoChangeRequests); break;
         default: assertFalse();
       }
     }
@@ -519,10 +518,7 @@ export class ServerNotebook extends Notebook<ServerNotebookWatcher> {
 
     // REVIEW: If other batches of changes are being processed at the same time?
     // TODO: Set/restart a timer for the save so we save only once when the document reaches a quiescent state.
-    this.save()
-    .catch(err=>{
-      logError(err, `Error saving "${this.path}"`);
-    });
+    await this.save();
   }
 
   public reserveId(): CellId {
@@ -767,7 +763,10 @@ export class ServerNotebook extends Notebook<ServerNotebookWatcher> {
   ): Promise<void> {
     const { cellId, cssSize } = request;
     const cellObject = this.getCell(cellId);
-    cellObject.cssSize = request.cssSize;
+    assert(cssSize.height.endsWith('pt'));
+    assert(cssSize.width.endsWith('pt'));
+    cellObject.cssSize.height = cssSize.height;
+    cellObject.cssSize.width = cssSize.width;
 
     const update: CellResized = { type: 'cellResized', cellId, cssSize };
     updates.push(update);
@@ -871,7 +870,7 @@ export class ServerNotebook extends Notebook<ServerNotebookWatcher> {
   private async onClientRequest(socket: ServerSocket, msg: NotebookRequest): Promise<void> {
     assert(!this.terminated);
     switch(msg.operation) {
-      case 'change': this.onChangeRequest(socket, msg); break;
+      case 'change': await this.onChangeRequest(socket, msg); break;
       case 'close':  this.onCloseRequest(socket, msg); break;
       case 'open':  this.onOpenRequest(socket, msg); break;
       case 'useTool': this.onUseToolRequest(socket, msg); break;
@@ -887,9 +886,9 @@ export class ServerNotebook extends Notebook<ServerNotebookWatcher> {
 
   // Client Message Event Handlers
 
-  private onChangeRequest(originatingSocket: ServerSocket, msg: ChangeNotebook): void {
+  private async onChangeRequest(originatingSocket: ServerSocket, msg: ChangeNotebook): Promise<void> {
     const options: RequestChangesOptions = { originatingSocket, requestId: msg.requestId };
-    this.requestChanges('USER', msg.changeRequests, options);
+    await this.requestChanges('USER', msg.changeRequests, options);
   }
 
   private onCloseRequest(socket: ServerSocket, _msg: CloseNotebook): void {

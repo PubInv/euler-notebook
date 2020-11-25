@@ -243,7 +243,7 @@ export class ServerFolder extends Folder<ServerFolderWatcher> {
   private async onClientRequest(socket: ServerSocket, msg: FolderRequest): Promise<void> {
     assert(!this.terminated);
     switch(msg.operation) {
-      case 'change': this.onChangeRequest(socket, msg); break;
+      case 'change': await this.onChangeRequest(socket, msg); break;
       case 'close':  this.onCloseRequest(socket, msg); break;
       case 'open':  this.onOpenRequest(socket, msg); break;
       default: assert(false); break;

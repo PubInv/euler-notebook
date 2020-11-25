@@ -49,6 +49,7 @@ export interface PromiseResolver<T> {
 // Constants
 
 const ASSERTION_FAILED_MSG = "Assertion failed.";
+export const PIXELS_PER_INCH = 96;  // REVIEW: May not be true???
 export const POINTS_PER_INCH = 72;
 
 // Exported Functions

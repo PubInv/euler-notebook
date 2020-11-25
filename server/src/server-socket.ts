@@ -236,8 +236,8 @@ export class ServerSocket {
   private async onClientRequest(msg: ClientRequest): Promise<void> {
     debug(`Recd: ${this.id} ${clientMessageSynopsis(msg)}`);
     switch(msg.type) {
-      case 'folder': ServerFolder.onClientRequest(this, msg); break;
-      case 'notebook': ServerNotebook.onClientRequest(this, msg); break;
+      case 'folder': await ServerFolder.onClientRequest(this, msg); break;
+      case 'notebook': await ServerNotebook.onClientRequest(this, msg); break;
       default: assert(false); break;
     }
   }

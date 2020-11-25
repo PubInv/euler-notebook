@@ -22,7 +22,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 import * as debug1 from "debug";
 const debug = debug1('client:figure-cell');
 
-import { CssClass, assert, CssLength, notImplemented } from "../shared/common";
+import { CssClass, assert, CssLength, notImplemented, PIXELS_PER_INCH, POINTS_PER_INCH, LengthInPixels } from "../shared/common";
 
 import { $newSvg, $allSvg, cssLength } from "../dom";
 import { HtmlElement } from "../html-element";
@@ -37,8 +37,6 @@ import { notebookUpdateSynopsis } from "../shared/debug-synopsis";
 // Types
 
 // Constants
-
-const PIXELS_PER_INCH = 96;
 
 // TEMPORARY page data until our Notebooks are paginated:
 
@@ -140,10 +138,13 @@ export class NotebookReadView extends HtmlElement<'div'> implements NotebookView
     const notebook = this.screen.notebook;
 
     // TODO: Different pages could be different sizes.
-    const pageWidth = parseInt(notebook.pageSize.width);
-    const pageHeight = parseInt(notebook.pageSize.height);
-    const viewBoxWidth = pageWidth * PIXELS_PER_INCH;
-    const viewBoxHeight = pageHeight * PIXELS_PER_INCH;
+    assert(notebook.pageSize.height.endsWith('pt'));
+    assert(notebook.pageSize.width.endsWith('pt'));
+
+    const pageWidthInPoints = parseInt(notebook.pageSize.width);
+    const pageHeightInPoints = parseInt(notebook.pageSize.height);
+    const viewBoxWidth: LengthInPixels = Math.round(pageWidthInPoints * PIXELS_PER_INCH / POINTS_PER_INCH);
+    const viewBoxHeight: LengthInPixels = Math.round(pageHeightInPoints * PIXELS_PER_INCH / POINTS_PER_INCH);
 
     const topMargin = notebook.margins.top;
     const leftMargin = notebook.margins.left;

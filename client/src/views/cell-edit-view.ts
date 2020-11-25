@@ -25,7 +25,10 @@ import * as debug1 from "debug";
 const debug = debug1('client:cell-edit-view');
 
 import { CellObject, CellId } from "../shared/cell";
-import { assert, Html, CssClass, notImplemented, CssLength, CssSize, LengthInPixels } from "../shared/common";
+import {
+  assert, Html, CssClass, notImplemented, CssLength, CssSize, LengthInPixels,
+  PIXELS_PER_INCH, POINTS_PER_INCH
+} from "../shared/common";
 import { NotebookUpdate } from "../shared/server-responses";
 // import { MoveCell } from "../../../../shared/client-requests";
 
@@ -354,13 +357,14 @@ export abstract class CellEditView<O extends CellObject> extends HtmlElement<'di
     debug(`onResizerUp: ${this.resizingInitialHeight} ${deltaY}`);
 
     assert(this.resizingInitialHeight);
-    const newHeight = this.resizingInitialHeight!+deltaY;
+    const newHeightInPixels = this.resizingInitialHeight!+deltaY;
+    const newHeightInPoints = Math.round(newHeightInPixels * POINTS_PER_INCH / PIXELS_PER_INCH);
 
     delete this.resizingInitialHeight;
 
     // TODO: Convert pixels to points
     const width = this.cell.obj.cssSize.width;
-    const height = <CssLength>`${newHeight}px`;
+    const height = <CssLength>`${newHeightInPoints}pt`;
     const cssSize: CssSize = { width, height };
     // LATER: Some sort of visual indication that the resize request is outstanding.
     this.cell.resize(cssSize)
