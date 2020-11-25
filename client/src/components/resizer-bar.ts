@@ -21,7 +21,10 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 // Requirements
 
-import { CssClass } from "../shared/common";
+import * as debug1 from "debug";
+const debug = debug1('client:resizer-bar');
+
+import { CssClass, LengthInPixels, PositionInPixels } from "../shared/common";
 import { RIGHT_TRIANGLE_ENTITY } from "../dom";
 import { HtmlElement } from "../html-element";
 
@@ -29,14 +32,20 @@ import { HtmlElement } from "../html-element";
 
 // REVIEW: These types are duplicated in stylus-input-panel.ts.
 
-type InsertCallbackFn = ()=>void;
 type PointerId = number;
 type PointerMap = Map<PointerId, PointerInfo>;
-type ResizeCallbackFn = (deltaY: number, final: boolean)=>void;
+
+export interface CallbackFunctions {
+  cancel: ()=>void;
+  down: ()=>void;
+  insert: ()=>void;
+  move: (deltaY: LengthInPixels)=>void;
+  up: (deltaY: LengthInPixels)=>void;
+}
 
 interface PointerInfo {
-  clientY: number;
-  lastDeltaY: number;
+  clientY: PositionInPixels;
+  lastDeltaY: LengthInPixels;
 }
 
 // Constants
@@ -52,10 +61,7 @@ export class ResizerBar extends HtmlElement<'div'>  {
 
   // Public Constructor
 
-  public constructor(
-    resizeCallbackFn: ResizeCallbackFn,
-    insertCallbackFn: InsertCallbackFn,
-  ) {
+  public constructor(callbackFunctions: CallbackFunctions) {
 
     super({
       tag: 'div',
@@ -76,12 +82,12 @@ export class ResizerBar extends HtmlElement<'div'>  {
           attrs: { tabindex: -1 },
           classes: [ <CssClass>'insertCellBelowButton', <CssClass>'iconButton' ],
           html: RIGHT_TRIANGLE_ENTITY,
-          listeners: { click: _e=>insertCallbackFn() },
+          listeners: { click: _e=>callbackFunctions.insert() },
         }
       ],
     });
 
-    this.resizeCallbackFn = resizeCallbackFn;
+    this.callbackFunctions = callbackFunctions;
     this.pointerMap = new Map();
   }
 
@@ -89,8 +95,8 @@ export class ResizerBar extends HtmlElement<'div'>  {
 
   // Private Instance Properties
 
+  private callbackFunctions: CallbackFunctions;
   private pointerMap: PointerMap;
-  private resizeCallbackFn: ResizeCallbackFn;
 
   // Private Instance Property Functions
 
@@ -99,23 +105,23 @@ export class ResizerBar extends HtmlElement<'div'>  {
   // Private Instance Event Handlers
 
   private onPointerCancel(event: PointerEvent): void {
-    // console.log(`${event.pointerType} ${event.pointerId} ${event.type}`);
-    // console.dir(event);
+    debug(`${event.pointerType} ${event.pointerId} ${event.type}`);
     if (!this.pointerMap.delete(event.pointerId)) {
       console.warn(`Unknown pointer ID on pointer cancel: ${event.pointerId}`);
       return;
     }
     this.$elt.releasePointerCapture(event.pointerId);
-    // REVIEW: Abort resizing callback?
+    this.callbackFunctions.cancel();
   }
 
   private onPointerDown(event: PointerEvent): void {
-    if (event.target !== this.$elt) {
-      // User clicked on insert button.
-      return;
-    }
-    // console.log(`${event.pointerType} ${event.pointerId} ${event.type}`);
-    // console.dir(event);
+    debug(`${event.pointerType} ${event.pointerId} ${event.type}`);
+    if (event.target !== this.$elt) { /* User clicked on insert button. */ return; }
+
+    // Prevent compatibility mouse events
+    // REVIEW: This doesn't prevent a click event on cell.
+    event.preventDefault();
+
     this.$elt.setPointerCapture(event.pointerId);
 
     const pi: PointerInfo = {
@@ -123,43 +129,41 @@ export class ResizerBar extends HtmlElement<'div'>  {
       lastDeltaY: 0,
     };
     this.pointerMap.set(event.pointerId, pi);
+
+    this.callbackFunctions.down();
   }
 
   // private onPointerEnter(event: PointerEvent): void {
-  //   console.log(`${event.pointerType} ${event.pointerId} ${event.type}`);
-  //   // console.dir(event);
+  //  debug(`${event.pointerType} ${event.pointerId} ${event.type}`);
   // }
 
   // private onPointerLeave(event: PointerEvent): void {
-  //   console.log(`${event.pointerType} ${event.pointerId} ${event.type}`);
-  //   // console.dir(event);
+  //  debug(`${event.pointerType} ${event.pointerId} ${event.type}`);
   // }
 
   private onPointerMove(event: PointerEvent): void {
-    // console.dir(`${event.pointerType} ${event.pointerId} ${event.type}`);
+    // debug(`${event.pointerType} ${event.pointerId} ${event.type}`);
     const pi = this.pointerMap.get(event.pointerId);
     if (!pi) { /* Pointer is not down */ return; }
 
     // Call the resize callback unless the vertical displacement hasn't changed.
-    const totalDeltaY = Math.round(event.clientY-pi.clientY);
-    if (totalDeltaY != pi.lastDeltaY) {
-      const deltaY = totalDeltaY - pi.lastDeltaY;
-      pi.lastDeltaY = totalDeltaY;
-      this.resizeCallbackFn(deltaY, false);
+    const deltaY = Math.round(event.clientY-pi.clientY);
+    if (deltaY != pi.lastDeltaY) {
+      pi.lastDeltaY = deltaY;
+      this.callbackFunctions.move(deltaY);
     }
   }
 
   // private onPointerOut(event: PointerEvent): void {
-  //   console.log(`${event.pointerType} ${event.pointerId} ${event.type}`);
-  //   // console.dir(event);
+  //  debug(`${event.pointerType} ${event.pointerId} ${event.type}`);
   // }
 
   // private onPointerOver(event: PointerEvent): void {
-  //   console.log(`${event.pointerType} ${event.pointerId} ${event.type}`);
-  //   // console.dir(event);
+  //  debug(`${event.pointerType} ${event.pointerId} ${event.type}`);
   // }
 
   private onPointerUp(event: PointerEvent): void {
+    debug(`${event.pointerType} ${event.pointerId} ${event.type}`);
 
     const pi = this.pointerMap.get(event.pointerId);
     if (!pi) {
@@ -167,15 +171,11 @@ export class ResizerBar extends HtmlElement<'div'>  {
       return;
     }
 
-    // console.log(`${event.pointerType} ${event.pointerId} ${event.type}`);
-    // console.dir(event);
-
     this.pointerMap.delete(event.pointerId);
     this.$elt.releasePointerCapture(event.pointerId);
 
-    const totalDeltaY = Math.round(event.clientY-pi.clientY);
-    const deltaY = totalDeltaY - pi.lastDeltaY;
-    this.resizeCallbackFn(deltaY, true);
+    const deltaY = Math.round(event.clientY-pi.clientY);
+    this.callbackFunctions.up(deltaY);
   }
 
 }

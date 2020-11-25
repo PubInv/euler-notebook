@@ -24,7 +24,7 @@ const debug = debug1('client:client-cell');
 
 import { CellId, CellObject, StylusCellObject } from "../shared/cell";
 import { NotebookChangeRequest } from "../shared/client-requests";
-import { assert, assertFalse, escapeHtml, Html, notImplemented } from "../shared/common";
+import { assert, assertFalse, CssSize, escapeHtml, Html, notImplemented } from "../shared/common";
 import { NotebookUpdate } from "../shared/server-responses";
 
 import { ChangeRequestResults, ClientNotebook } from "../client-notebook";
@@ -75,6 +75,11 @@ export abstract class ClientCell<O extends CellObject> {
     debug(`onUpdate C${this.id} ${notebookUpdateSynopsis(update)}`);
 
     switch(update.type) {
+      case 'cellResized': {
+        this.obj.cssSize.width = update.cssSize.width;
+        this.obj.cssSize.height = update.cssSize.height;
+        break;
+      }
       case 'strokeDeleted': {
         // TODO: Remove the stroke from stroke data.
         notImplemented();
@@ -98,6 +103,12 @@ export abstract class ClientCell<O extends CellObject> {
     // Called when the 'X' button has been pressed in a cell.
     // Ask the notebook to delete us.
     await this.notebook.deleteCell(this.id);
+  }
+
+  public async resize(cssSize: CssSize): Promise<void> {
+    // Called when user finishes resizing a cell.
+    // Ask the notebook to resize us.
+    await this.notebook.resizeCell(this.id, cssSize);
   }
 
   // REVIEW: Make private and

@@ -24,9 +24,11 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 import { CellId, CellObject } from "./cell";
 import { RequestId, NotebookChangeRequest } from "./client-requests";
+import { CssSize } from "./common";
 import { FolderObject, FolderPath, NotebookPath, FolderEntry, FolderName, NotebookEntry, NotebookName } from "./folder";
 import { NotebookObject } from "./notebook";
-import { Stroke, StrokeId } from "./stylus";
+import { StrokeId } from "./stylus";
+import { Stroke } from "./myscript-types";
 
 // Types
 
@@ -118,7 +120,7 @@ export interface NotebookRenamed {
 
 // Notebook Updates
 
-export type NotebookUpdate = CellDeleted | CellInserted | CellMoved | StrokeInserted | StrokeDeleted;
+export type NotebookUpdate = CellDeleted | CellInserted | CellMoved | CellResized | StrokeInserted | StrokeDeleted;
 export interface CellDeleted {
   type: 'cellDeleted';
   cellId: CellId;
@@ -132,6 +134,11 @@ export interface CellMoved {
   type: 'cellMoved';
   cellId: CellId;
   cellIndex: number;
+}
+export interface CellResized {
+  type: 'cellResized';
+  cellId: CellId;
+  cssSize: CssSize;
 }
 export interface StrokeDeleted {
   type: 'strokeDeleted';

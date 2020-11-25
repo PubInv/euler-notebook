@@ -29,7 +29,7 @@ import { assert, assertFalse, CssSize, Html, notImplemented } from "./shared/com
 import { notebookUpdateSynopsis } from "./shared/debug-synopsis";
 import { NotebookName, NotebookNameFromNotebookPath, NotebookPath } from "./shared/folder";
 import { FORMAT_VERSION, NotebookObject, PageMargins, Pagination } from "./shared/notebook";
-import { NotebookChangeRequest, ChangeNotebook, UseTool, OpenNotebook, DeleteCell } from "./shared/client-requests";
+import { NotebookChangeRequest, ChangeNotebook, UseTool, OpenNotebook, DeleteCell, ResizeCell } from "./shared/client-requests";
 import {
   NotebookUpdated, NotebookOpened, NotebookResponse, NotebookClosed, NotebookUpdate, CellInserted, CellDeleted, CellMoved
 } from "./shared/server-responses";
@@ -148,7 +148,7 @@ export class ClientNotebook {
 
   public async deleteCell(cellId: CellId): Promise<void> {
     // TODO: Make this undoable.
-    const changeRequest: DeleteCell = { type: 'deleteCell', cellId: cellId };
+    const changeRequest: DeleteCell = { type: 'deleteCell', cellId };
     await this.sendChangeRequest(changeRequest);
   }
 
@@ -157,6 +157,12 @@ export class ClientNotebook {
     const url = `/export${this.path}`;
     // window.location.href = url;
     window.open(url, "_blank")
+  }
+
+  public async resizeCell(cellId: CellId, cssSize: CssSize): Promise<void> {
+    // TODO: Make this undoable.
+    const changeRequest: ResizeCell = { type: 'resizeCell', cellId, cssSize };
+    await this.sendChangeRequest(changeRequest);
   }
 
   public async sendChangeRequest(changeRequest: NotebookChangeRequest): Promise<ChangeRequestResults> {
@@ -320,6 +326,7 @@ export class ClientNotebook {
       case 'cellInserted': this.onCellInserted(update); break;
       case 'cellMoved': { this.onCellMoved(update); break; }
 
+      case 'cellResized':
       case 'strokeDeleted':
       case 'strokeInserted': {
         const cell = this.getCell(update.cellId);

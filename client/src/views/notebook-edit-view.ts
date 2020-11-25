@@ -26,7 +26,7 @@ import * as debug1 from "debug";
 const debug = debug1('client:notebook-edit-view');
 
 import { CellId, CellObject, CellRelativePosition, CellPosition, CellType, InputType } from "../shared/cell";
-import { CssClass, assert, Html, notImplemented, assertFalse } from "../shared/common";
+import { CssClass, assert, Html, notImplemented } from "../shared/common";
 import { DeleteCell, InsertCell, MoveCell, NotebookChangeRequest, } from "../shared/client-requests";
 import { CellDeleted, CellInserted, CellMoved, NotebookUpdate } from "../shared/server-responses";
 import { DebugParams } from "../shared/api-calls";
@@ -422,16 +422,10 @@ export class NotebookEditView extends HtmlElement<'div'> implements NotebookView
 
     // Update our data structure
     switch (update.type) {
-      case 'cellDeleted': this.onCellDeleted(update); break;
+      case 'cellDeleted':  this.onCellDeleted(update); break;
       case 'cellInserted': this.onCellInserted(update); break;
-      case 'cellMoved': this.onCellMoved(update); break;
-      case 'strokeDeleted':
-      case 'strokeInserted':
-        // Do nothing.
-        // The change is entirely within the cell.
-        // Cell will pass the update to the cell view.
-        break;
-      default: assertFalse();
+      case 'cellMoved':    this.onCellMoved(update); break;
+      default: /* Nothing to do */ break;
     }
   }
 

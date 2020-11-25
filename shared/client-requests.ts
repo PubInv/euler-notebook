@@ -23,10 +23,10 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 // Requirements
 
 import { CellId, CellRelativePosition, CellType, InputType } from "./cell";
-import { PlainText } from "./common";
+import { CssSize, PlainText } from "./common";
 import { FolderPath, NotebookPath, FolderName, NotebookName, } from "./folder";
-import { Stroke, StrokeId } from "./stylus";
-
+import { StrokeId } from "./stylus";
+import { Stroke } from "./myscript-types";
 // Types
 
 export type RequestId = '{RequestId}';
@@ -129,7 +129,8 @@ export type NotebookChangeRequest =
   DeleteStroke |
   InsertCell |
   InsertStroke |
-  MoveCell;
+  MoveCell |
+  ResizeCell;
 export interface DeleteCell {
   type: 'deleteCell';
   cellId: CellId;
@@ -162,4 +163,9 @@ export interface MoveCell {
   type: 'moveCell';
   cellId: CellId;
   afterId: CellRelativePosition;
+}
+export interface ResizeCell {
+  type: 'resizeCell';
+  cellId: CellId;
+  cssSize: CssSize;
 }

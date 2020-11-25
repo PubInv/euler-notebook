@@ -160,8 +160,6 @@ export class ServerSocket {
   // }
 
   public sendMessage(msg: ServerResponse): void {
-    // Should only be called by our watchers.
-
     debug(`Sent: ${this.id} ${serverMessageSynopsis(msg)}`);
     // console.dir(msg, { depth: null });
     const json = JSON.stringify(msg);

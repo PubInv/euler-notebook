@@ -32,8 +32,8 @@ const HmacSHA512 = require('crypto-js/hmac-sha512');
 import * as debug1 from "debug";
 import fetch, { Response } from "node-fetch";
 
-import { StrokeGroup } from "../shared/stylus";
 import { TexExpression } from "../shared/formula";
+import { StrokeGroup } from "../shared/myscript-types";
 
 const MODULE = __filename.split(/[/\\]/).slice(-1)[0].slice(0,-3);
 const debug = debug1(`server:${MODULE}`);

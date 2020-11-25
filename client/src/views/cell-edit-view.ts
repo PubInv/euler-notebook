@@ -25,8 +25,8 @@ import * as debug1 from "debug";
 const debug = debug1('client:cell-edit-view');
 
 import { CellObject, CellId } from "../shared/cell";
-import { assert, Html, CssClass, notImplemented } from "../shared/common";
-import { NotebookUpdate } from "../shared/server-responses";
+import { assert, Html, CssClass, notImplemented, CssLength, CssSize, LengthInPixels } from "../shared/common";
+import { CellResized, NotebookUpdate } from "../shared/server-responses";
 // import { MoveCell } from "../../../../shared/client-requests";
 
 import { HtmlElement } from "../html-element";
@@ -35,8 +35,9 @@ import {
 } from "../dom";
 
 import { Tools } from "../screens/notebook-edit-screen/tools";
-import { ResizerBar } from "../components/resizer-bar";
+import { CallbackFunctions as ResizerCallbackFunctions, ResizerBar } from "../components/resizer-bar";
 import { CellView, ClientCell } from "../client-cell";
+import { reportError } from "../error-handler";
 
 
 // Types
@@ -94,7 +95,11 @@ export abstract class CellEditView<O extends CellObject> extends HtmlElement<'di
 
   // Overridable ClientNotebookWatcher Methods
 
-  public abstract onUpdate(change: NotebookUpdate, ownRequest: boolean): void;
+  public onUpdate(update: NotebookUpdate, ownRequest: boolean): void {
+    switch (update.type) {
+      case 'cellResized': this.onCellResized(update, ownRequest); break;
+    }
+  };
 
   // --- PRIVATE ---
 
@@ -149,7 +154,14 @@ export abstract class CellEditView<O extends CellObject> extends HtmlElement<'di
       ],
     });
 
-    const resizerBar = new ResizerBar((deltaY: number, final: boolean)=>this.onResize(deltaY, final), ()=>this.onInsertCellBelow());
+    const resizerCallbackFunctions: ResizerCallbackFunctions = {
+      cancel: ()=>this.onResizerCancel(),
+      down: ()=>this.onResizerDown(),
+      insert: ()=>this.onInsertCellBelow(),
+      move: (deltaY: number)=>this.onResizerMove(deltaY),
+      up: (deltaY: LengthInPixels)=>this.onResizerUp(deltaY),
+    };
+    const resizerBar = new ResizerBar(resizerCallbackFunctions);
 
     super({
       tag: 'div',
@@ -169,17 +181,26 @@ export abstract class CellEditView<O extends CellObject> extends HtmlElement<'di
     });
 
     this.$content = $content;
-
+    this.$main = $main;
     this.cell = cell;
   }
 
   // Private Instance Properties
 
   protected $content: HTMLDivElement;
+  private $main: HTMLDivElement;
+  private resizingInitialHeight?: LengthInPixels;
 
   // Private Instance Methods
 
   // Private Event Handlers
+
+  private onCellResized(update: CellResized, _ownRequest: boolean): void {
+    // Server notifying us that our cell has been resized.
+    // TODO: Resize stroke panels
+    console.log(`ON RESIZED: ${JSON.stringify(update)}`);
+    notImplemented();
+  }
 
   private onClicked(_event: MouseEvent): void {
     debug(`onClicked`);
@@ -272,8 +293,63 @@ export abstract class CellEditView<O extends CellObject> extends HtmlElement<'di
     // });
   }
 
-  protected abstract onResize(deltaY: number, final: boolean): void;
+  protected onResizerCancel(): void {
+    debug(`onResizerCancel`);
+    delete this.resizingInitialHeight;
+    this.$main.style.removeProperty('height');
+  }
 
+  protected onResizerDown(): void {
+    debug(`onResizerDown`);
+    assert(!this.resizingInitialHeight);
+    const style = window.getComputedStyle(this.$main);
+    const cssHeight = <CssLength>style.height;
+    assert(cssHeight.endsWith('px'));
+    this.resizingInitialHeight = parseInt(cssHeight.slice(0,-2), 10);
+  }
+
+  protected onResizerMove(deltaY: LengthInPixels): void {
+    debug(`onResizerMove: ${this.resizingInitialHeight} ${deltaY}`);
+    assert(this.resizingInitialHeight);
+    const newHeight = this.resizingInitialHeight!+deltaY;
+    this.$main.style.height = `${newHeight}px`;
+
+    //console.dir(this.$main.style.height);
+    //console.dir(this.$main.offsetHeight);
+
+    // const $svgPanel = $svg<'svg'>(this.$elt, '.svgPanel');
+    // const currentHeight = parseInt($svgPanel.getAttribute('height')!.slice(0, -2), 10);
+    // // TODO: resizer bar should enforce minimum.
+    // // TODO: minimum height should be based on ink content.
+    // const newHeight = Math.max(currentHeight + deltaY, 10);
+    // const newHeightStr = <CssLength>`${newHeight}px`;
+    // $svgPanel.setAttribute('height', newHeightStr);
+
+    // // If the user has stopped resizing the cell, then submit a request to change the size of the cell.
+    // // REVIEW: How can the user cancel the resizing? Pressing escape?
+    // if (final) {
+    // }
+  }
+
+  protected onResizerUp(deltaY: LengthInPixels): void {
+    debug(`onResizerUp: ${this.resizingInitialHeight} ${deltaY}`);
+
+    assert(this.resizingInitialHeight);
+    const newHeight = this.resizingInitialHeight!+deltaY;
+
+    delete this.resizingInitialHeight;
+    this.$main.style.removeProperty('height');
+
+    // TODO: Convert pixels to points
+    const width = this.cell.obj.cssSize.width;
+    const height = <CssLength>`${newHeight}px`;
+    const cssSize: CssSize = { width, height };
+    this.cell.resize(cssSize)
+    .catch((err: Error)=>{
+      // TODO: What to do here?
+      reportError(err, <Html>"Error submitting resize");
+    });
+  }
 }
 
 // Helper Functions

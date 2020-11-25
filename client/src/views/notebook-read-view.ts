@@ -22,7 +22,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 import * as debug1 from "debug";
 const debug = debug1('client:figure-cell');
 
-import { CssClass, assert, CssLength, notImplemented, assertFalse } from "../shared/common";
+import { CssClass, assert, CssLength, notImplemented } from "../shared/common";
 
 import { $newSvg, $allSvg, cssLength } from "../dom";
 import { HtmlElement } from "../html-element";
@@ -31,7 +31,7 @@ import { Mode, NotebookReadScreen } from "../screens/notebook-read-screen/index"
 
 import { CellReadView } from "./cell-read-view";
 import { NotebookView } from "../client-notebook";
-import { NotebookUpdate } from "../shared/server-responses";
+import { CellDeleted, CellInserted, CellMoved, NotebookUpdate } from "../shared/server-responses";
 import { notebookUpdateSynopsis } from "../shared/debug-synopsis";
 
 // Types
@@ -118,19 +118,10 @@ export class NotebookReadView extends HtmlElement<'div'> implements NotebookView
 
     // Update our data structure
     switch (update.type) {
-      case 'cellDeleted': {
-        notImplemented();
-        break;
-      }
-      case 'cellInserted': {
-        notImplemented();
-        break;
-      }
-      case 'cellMoved': {
-        notImplemented();
-        break;
-      }
-      default: assertFalse();
+      case 'cellDeleted':  this.onCellDeleted(update); break;
+      case 'cellInserted': this.onCellInserted(update); break;
+      case 'cellMoved':    this.onCellMoved(update); break;
+      default: /* Nothing to do */ break;
     }
   }
 
@@ -194,6 +185,18 @@ export class NotebookReadView extends HtmlElement<'div'> implements NotebookView
   }
 
   // Private Event Handlers
+
+  private onCellDeleted(_update: CellDeleted): void {
+    notImplemented();
+  }
+
+  private onCellInserted(_update: CellInserted): void {
+    notImplemented();
+  }
+
+  private onCellMoved(_update: CellMoved): void {
+    notImplemented();
+  }
 
   private onPageClicked(event: MouseEvent): void {
     const $page = <SVGSVGElement>event.target;

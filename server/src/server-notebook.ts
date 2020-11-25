@@ -31,19 +31,19 @@ import { join } from "path";
 import { CellObject, CellSource, CellId, CellPosition, StylusCellObject, InputType, CellType, FigureCellObject, TextCellKeyboardObject, TextCellStylusObject } from "./shared/cell";
 import { assert, assertFalse, deepCopy, escapeHtml, ExpectedError, Html, notImplemented, PlainText, Timestamp } from "./shared/common";
 import { NotebookPath, NOTEBOOK_PATH_RE, NotebookName, FolderPath, NotebookEntry, Folder } from "./shared/folder";
+import { FormulaCellKeyboardObject, FormulaCellStylusObject, PlainTextFormula } from "./shared/formula";
 import { NotebookObject, FORMAT_VERSION, NotebookWatcher, sizeInPoints, marginsInPoints } from "./shared/notebook";
 import {
   NotebookChangeRequest, MoveCell, InsertCell, DeleteCell, InsertStroke, DeleteStroke,
-  ChangeNotebook, UseTool, RequestId, NotebookRequest, OpenNotebook, CloseNotebook,
+  ChangeNotebook, UseTool, RequestId, NotebookRequest, OpenNotebook, CloseNotebook, ResizeCell,
 } from "./shared/client-requests";
 import {
-  NotebookUpdated, NotebookOpened, NotebookUpdate,
-  CellInserted, CellDeleted, StrokeInserted,
+  NotebookUpdated, NotebookOpened, NotebookUpdate, CellInserted, CellDeleted, StrokeInserted, CellResized,
 } from "./shared/server-responses";
 import { cellSynopsis, notebookChangeRequestSynopsis } from "./shared/debug-synopsis";
-import { emptyStrokeData, StrokeId } from "./shared/stylus";
+import { EMPTY_STROKE_DATA, StrokeId } from "./shared/stylus";
 import { OpenOptions, WatchedResource } from "./shared/watched-resource";
-import { FormulaCellKeyboardObject, FormulaCellStylusObject, PlainTextFormula } from "./shared/formula";
+
 import { ServerSocket } from "./server-socket";
 import { AbsDirectoryPath, ROOT_DIR_PATH, mkDir, readFile, rename, rmRaf, writeFile } from "./adapters/file-system";
 import { logError } from "./error-handler";
@@ -491,23 +491,13 @@ export class ServerNotebook extends Notebook<ServerNotebookWatcher> {
       assert(changeRequest);
       debug(`${source} change request: ${notebookChangeRequestSynopsis(changeRequest)}`);
       switch(changeRequest.type) {
-        case 'deleteCell':
-          this.applyDeleteCellRequest(source, changeRequest, updates, undoChangeRequests);
-          break;
-        case 'deleteStroke':
-          this.applyDeleteStrokeRequest(source, changeRequest, updates, undoChangeRequests);
-          break;
-        case 'insertCell':
-          this.applyInsertCellRequest(source, changeRequest, updates, undoChangeRequests);
-          break;
-        case 'insertStroke':
-          this.applyInsertStrokeRequest(source, changeRequest, updates, undoChangeRequests);
-          break;
-        case 'moveCell':
-          this.applyMoveStyleRequest(source, changeRequest, updates, undoChangeRequests);
-          break;
-        default:
-          assertFalse();
+        case 'deleteCell':   this.applyDeleteCellRequest(source, changeRequest, updates, undoChangeRequests); break;
+        case 'deleteStroke': this.applyDeleteStrokeRequest(source, changeRequest, updates, undoChangeRequests); break;
+        case 'insertCell':   this.applyInsertCellRequest(source, changeRequest, updates, undoChangeRequests); break;
+        case 'insertStroke': this.applyInsertStrokeRequest(source, changeRequest, updates, undoChangeRequests); break;
+        case 'moveCell':     this.applyMoveCellRequest(source, changeRequest, updates, undoChangeRequests); break;
+        case 'resizeCell':   this.applyResizeCellRequest(source, changeRequest, updates, undoChangeRequests); break;
+        default: assertFalse();
       }
     }
 
@@ -590,35 +580,32 @@ export class ServerNotebook extends Notebook<ServerNotebookWatcher> {
 
   // Private Instance Methods
 
-  private async applyDeleteCellRequest<T extends CellObject>(
+  private async applyDeleteCellRequest(
     _source: CellSource,
     request: DeleteCell,
     updates: NotebookUpdate[],
     _undoChangeRequests: NotebookChangeRequest[],
   ): Promise<void> {
 
-    const cellObject = this.getCell<T>(request.cellId);
+    // Remove cell from the page and from the map.
+    const cellId = request.cellId;
+    assert(this.cellMap.has(cellId));
+    // const cellObject = this.getCell<T>(cellId);
+    this.removeCellFromPage(cellId);
+    this.cellMap.delete(cellId);
+
+    // TODO: Repaginate.
+
+    const update: CellDeleted = { type: 'cellDeleted', cellId };
+    updates.push(update);
 
     // TODO:
-    // // Assemble the undo change request before we delete anything
-    // // from the notebook.
     // const undoChangeRequest: InsertCell = {
     //   type: 'insertCell',
     //   afterId: this.precedingCellId(cellObject.id),
     //   cellObject,
     // };
     // undoChangeRequests.unshift(undoChangeRequest);
-
-    const update: CellDeleted = { type: 'cellDeleted', cellId: cellObject.id };
-    updates.push(update);
-
-    // Remove cell from the page and from the map.
-    const cellId = update.cellId;
-    assert(this.cellMap.has(cellId));
-
-    this.removeCellFromPage(cellId);
-    this.cellMap.delete(cellId);
-    // TODO: Repaginate.
   }
 
   private async applyDeleteStrokeRequest(
@@ -648,7 +635,7 @@ export class ServerNotebook extends Notebook<ServerNotebookWatcher> {
           inputType: InputType.Stylus,
           cssSize: deepCopy(size),
           source,
-          strokeData: emptyStrokeData(size),
+          strokeData: deepCopy(EMPTY_STROKE_DATA),
         };
         cellObject = figureCellObject;
         break;
@@ -656,12 +643,11 @@ export class ServerNotebook extends Notebook<ServerNotebookWatcher> {
       case CellType.Formula: {
         switch(request.inputType) {
           case InputType.Keyboard: {
-            const size = DEFAULT_FORMULA_CSS_SIZE;
             const formulaCellObject: FormulaCellKeyboardObject = {
               id,
               type: CellType.Formula,
               inputType: InputType.Keyboard,
-              cssSize: deepCopy(size),
+              cssSize: deepCopy(DEFAULT_FORMULA_CSS_SIZE),
               inputText: <PlainText>"",
               plainTextFormula: <PlainTextFormula>"",
               source,
@@ -678,7 +664,7 @@ export class ServerNotebook extends Notebook<ServerNotebookWatcher> {
               cssSize: deepCopy(size),
               plainTextFormula: <PlainTextFormula>"",
               source,
-              strokeData: emptyStrokeData(size),
+              strokeData: deepCopy(EMPTY_STROKE_DATA),
             }
             cellObject = formulaCellObject;
             break;
@@ -694,12 +680,11 @@ export class ServerNotebook extends Notebook<ServerNotebookWatcher> {
       case CellType.Text: {
         switch(request.inputType) {
           case InputType.Keyboard: {
-            const size = DEFAULT_TEXT_CSS_SIZE;
             const textCellObject: TextCellKeyboardObject = {
               id,
               type: CellType.Text,
               inputType: InputType.Keyboard,
-              cssSize: deepCopy(size),
+              cssSize: deepCopy(DEFAULT_TEXT_CSS_SIZE),
               inputText: <PlainText>"",
               source,
             }
@@ -714,7 +699,7 @@ export class ServerNotebook extends Notebook<ServerNotebookWatcher> {
               inputType: InputType.Stylus,
               cssSize: deepCopy(size),
               source,
-              strokeData: emptyStrokeData(size),
+              strokeData: deepCopy(EMPTY_STROKE_DATA),
             }
             cellObject = textCellObject;
             break;
@@ -772,7 +757,7 @@ export class ServerNotebook extends Notebook<ServerNotebookWatcher> {
     undoChangeRequests.unshift(undoChangeRequest);
   }
 
-  private async applyMoveStyleRequest(
+  private async applyMoveCellRequest(
     _source: CellSource,
     _request: MoveCell,
     _updates: NotebookUpdate[],
@@ -811,6 +796,22 @@ export class ServerNotebook extends Notebook<ServerNotebookWatcher> {
     //   cellId: style.id,
     //   afterId: oldAfterId
     // };
+    // undoChangeRequests.unshift(undoChangeRequest);
+  }
+
+  private async applyResizeCellRequest(
+    _source: CellSource,
+    request: ResizeCell,
+    updates: NotebookUpdate[],
+    _undoChangeRequests: NotebookChangeRequest[],
+  ): Promise<void> {
+    const { cellId, cssSize } = request;
+    const cellObject = this.getCell(cellId);
+    cellObject.cssSize = request.cssSize;
+
+    const update: CellResized = { type: 'cellResized', cellId, cssSize };
+    updates.push(update);
+    // TODO: Make undoable.
     // undoChangeRequests.unshift(undoChangeRequest);
   }
 

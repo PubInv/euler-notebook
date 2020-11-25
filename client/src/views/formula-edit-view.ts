@@ -24,15 +24,15 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 import * as debug1 from "debug";
 const debug = debug1('client:formula-edit-view');
 
-import { CssClass, Html, assertFalse, PlainText, notImplemented, SvgMarkup } from "../shared/common";
-import { Stroke } from "../shared/stylus";
+import { CssClass, Html, assertFalse, PlainText, notImplemented } from "../shared/common";
+import { Stroke } from "../shared/myscript-types";
 import { FormulaCellKeyboardObject, FormulaCellObject, FormulaCellStylusObject } from "../shared/formula";
 import { NotebookUpdate } from "../shared/server-responses";
 import { notebookUpdateSynopsis } from "../shared/debug-synopsis";
 import { InputType } from "../shared/cell";
 import { InsertStroke } from "../shared/client-requests";
 
-import { $new, $outerSvg } from "../dom";
+import { $new } from "../dom";
 
 import { KeyboardCallbackFn, KeyboardPanel } from "../components/keyboard-panel";
 import { StrokeCallbackFn, StrokePanel } from "../components/stroke-panel";
@@ -64,9 +64,6 @@ export class FormulaEditView extends CellEditView<FormulaCellObject> {
 
     super(cell, $content);
 
-    this.$displayPanel = this.createDisplayPanel(cell.obj);
-    this.$content.prepend(this.$displayPanel);
-
     this.$inputPanel = this.createInputPanel(cell.obj);
     if (this.$inputPanel) {
       this.$content.append(this.$inputPanel);
@@ -90,9 +87,9 @@ export class FormulaEditView extends CellEditView<FormulaCellObject> {
 
   // }
 
-  public onUpdate(update: NotebookUpdate, _ownRequest: boolean): boolean {
+  public onUpdate(update: NotebookUpdate, ownRequest: boolean): boolean {
     debug(`onUpdate C${this.id} ${notebookUpdateSynopsis(update)}`);
-
+    super.onUpdate(update, ownRequest);
     // TODO: Changes that affect the prefix panel.
 
     // TODO: Do we deal with showing the Wolfram Evaluation values in the formula,
@@ -108,7 +105,6 @@ export class FormulaEditView extends CellEditView<FormulaCellObject> {
       //   }
       //   break;
       // }
-      default: assertFalse();
     }
     return false;
   }
@@ -117,7 +113,6 @@ export class FormulaEditView extends CellEditView<FormulaCellObject> {
 
   // Private Instance Properties
 
-  private $displayPanel?: SVGSVGElement;
   private $inputPanel: HTMLDivElement|undefined;
   // @ts-expect-error // TODO: value is never read error
   private keyboardPanel?: KeyboardPanel;
@@ -161,13 +156,6 @@ export class FormulaEditView extends CellEditView<FormulaCellObject> {
 
   //   return html;
   // }
-
-  private createDisplayPanel(_cellObject: FormulaCellObject): SVGSVGElement {
-    const svgMarkup = <SvgMarkup>"<svg></svg>"; // TODO:
-    const $displayPanel = $outerSvg<'svg'>(svgMarkup);
-    $displayPanel.classList.add('display');
-    return $displayPanel;
-  }
 
   private createInputPanel(cellObject: FormulaCellObject): HTMLDivElement|undefined {
     let panel: KeyboardPanel|StrokePanel|undefined;
@@ -229,37 +217,8 @@ export class FormulaEditView extends CellEditView<FormulaCellObject> {
     return strokePanel;
   }
 
-  // private updateDisplayPanel(style: CellObject): void {
-  //   const $displayPanel = this.createDisplayPanel(style);
-  //   this.$displayPanel!.replaceWith($displayPanel);
-  //   this.$displayPanel = $displayPanel;
-  // }
-
-  // private updateInputPanelData(inputStyle: CellObject): void {
-  //   switch(inputStyle.type) {
-  //     case 'STROKE-DATA':
-  //       assert(this.strokePanel);
-  //       this.strokePanel!.updateStylusInput(inputStyle.data);
-  //       break;
-  //     case 'TEX-EXPRESSION':
-  //     case 'WOLFRAM-EXPRESSION':
-  //       assert(this.keyboardPanel);
-  //       this.keyboardPanel!.updateText(inputStyle.data);
-  //       break;
-  //     default: assertFalse();
-  //   }
-  // }
-
-  // private updateInputPanelDrawing(svgRepStyle: CellObject): void {
-  //   assert(this.strokePanel);
-  //   this.strokePanel!.updateSvgMarkup(svgRepStyle.data);
-  // }
-
   // Private Event Handlers
 
-  protected onResize(deltaY: number, final: boolean): void {
-    debug(`onResize: ${deltaY} ${final}`);
-  }
 }
 
 // HELPER FUNCTIONS

@@ -22,12 +22,12 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 import * as debug1 from "debug";
 const debug = debug1('client:formula-cell');
 
-import { CellObject, PlotCellObject } from "../shared/cell";
-import { assertFalse, CssClass, SvgMarkup } from "../shared/common";
+import { PlotCellObject } from "../shared/cell";
+import { CssClass } from "../shared/common";
 import { notebookUpdateSynopsis } from "../shared/debug-synopsis";
 import { NotebookUpdate } from "../shared/server-responses";
 
-import { $outerSvg, HtmlElementSpecification } from "../dom";
+import { HtmlElementSpecification } from "../dom";
 
 import { PlotCell } from "../client-cell/plot-cell";
 import { CellEditView } from "./cell-edit-view";
@@ -50,15 +50,13 @@ export class PlotEditView extends CellEditView<PlotCellObject> {
       classes: [ <CssClass>'plotCell', <CssClass>'content' ],
     };
     super(cell, contentSpec);
-    this.$displayPanel = this.createDisplayPanel(cell.obj);
-    this.$content.prepend(this.$displayPanel);
   }
 
   // ClientNotebookWatcher Methods
 
-  public onUpdate(update: NotebookUpdate, _ownRequest: boolean): void {
+  public onUpdate(update: NotebookUpdate, ownRequest: boolean): void {
     debug(`onUpdate C${this.id} ${notebookUpdateSynopsis(update)}`);
-
+    super.onUpdate(update, ownRequest);
     switch (update.type) {
       // case 'styleChanged': {
       //   if (change.style.id == this.cellId) {
@@ -68,7 +66,6 @@ export class PlotEditView extends CellEditView<PlotCellObject> {
       //   }
       //   break;
       // }
-      default: assertFalse();
     }
   }
 
@@ -76,27 +73,8 @@ export class PlotEditView extends CellEditView<PlotCellObject> {
 
   // Private Instance Properties
 
-  private $displayPanel?: SVGSVGElement;
-
   // Private Instance Methods
 
-  private createDisplayPanel(_cellObject: CellObject): SVGSVGElement {
-    const svgMarkup = <SvgMarkup>"<svg></svg>"; // TODO:
-    const $displayPanel = $outerSvg<'svg'>(svgMarkup);
-    $displayPanel.classList.add('display');
-    return $displayPanel;
-  }
-
-  // private updateDisplayPanel(style: CellObject): void {
-  //   const $displayPanel = this.createDisplayPanel(style);
-  //   this.$displayPanel!.replaceWith($displayPanel);
-  //   this.$displayPanel = $displayPanel;
-  // }
-
   // Private Event Handlers
-
-  protected onResize(_deltaY: number, _final: boolean): void {
-    debug("PlotCell resize not implemented.");
-  }
 
 }

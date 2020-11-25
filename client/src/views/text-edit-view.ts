@@ -23,14 +23,14 @@ import * as debug1 from "debug";
 const debug = debug1('client:text-edit-view');
 
 import { InputType, TextCellObject } from "../shared/cell";
-import { CssClass, assertFalse, PlainText, notImplemented, Html, SvgMarkup } from "../shared/common";
-import { Stroke } from "../shared/stylus";
+import { CssClass, assertFalse, PlainText, notImplemented, Html } from "../shared/common";
+import { Stroke } from "../shared/myscript-types";
 import { NotebookUpdate } from "../shared/server-responses";
 import { notebookUpdateSynopsis, cellSynopsis } from "../shared/debug-synopsis";
 import { TextCellKeyboardObject, TextCellStylusObject } from "../shared/cell";
 import { InsertStroke } from "../shared/client-requests";
 
-import { $new, $outerSvg } from "../dom";
+import { $new } from "../dom";
 import { logError } from "../error-handler";
 
 import { KeyboardCallbackFn, KeyboardPanel } from "../components/keyboard-panel";
@@ -61,20 +61,17 @@ export class TextEditView extends CellEditView<TextCellObject> {
 
     super(cell, $content);
 
-    this.$displayPanel = this.createDisplayPanel(cell.obj);
-    this.$content.prepend(this.$displayPanel);
-
-    this.$inputPanel = this.createInputPanel(cell.obj);
-    if (this.$inputPanel) {
-      this.$content.append(this.$inputPanel);
+    const $inputPanel = this.createInputPanel(cell.obj);
+    if ($inputPanel) {
+      this.$content.append($inputPanel);
     }
   }
 
   // ClientNotebookWatcher Methods
 
-  public onUpdate(update: NotebookUpdate, _ownRequest: boolean): void {
+  public onUpdate(update: NotebookUpdate, ownRequest: boolean): void {
     debug(`onUpdate C${this.id} ${notebookUpdateSynopsis(update)}`);
-
+    super.onUpdate(update, ownRequest);
     switch (update.type) {
       // case 'styleChanged': {
       //   if (change.style.id == this.cellId) {
@@ -86,7 +83,6 @@ export class TextEditView extends CellEditView<TextCellObject> {
       //   }
       //   break;
       // }
-      default: assertFalse();
     }
   }
 
@@ -94,21 +90,12 @@ export class TextEditView extends CellEditView<TextCellObject> {
 
   // Private Instance Properties
 
-  private $displayPanel?: SVGSVGElement;
-  private $inputPanel?: HTMLDivElement;
   // @ts-expect-error // TODO: value is never read error
   private keyboardPanel?: KeyboardPanel;
   // @ts-expect-error // TODO: value is never read error
   private strokePanel?: StrokePanel;
 
   // Private Instance Methods
-
-  private createDisplayPanel(_cellObject: TextCellObject): SVGSVGElement {
-    const svgMarkup = <SvgMarkup>"<svg></svg>"; // TODO:
-    const $displayPanel = $outerSvg<'svg'>(svgMarkup);
-    $displayPanel.classList.add('display');
-    return $displayPanel;
-  }
 
   private createInputPanel(cellObject: TextCellObject): HTMLDivElement|undefined {
     let panel: KeyboardPanel|StrokePanel|undefined;
@@ -152,38 +139,6 @@ export class TextEditView extends CellEditView<TextCellObject> {
     return strokePanel;
   }
 
-  // private updateDisplayPanel(style: CellObject): void {
-  //   const $displayPanel = this.createDisplayPanel(style);
-  //   this.$displayPanel!.replaceWith($displayPanel);
-  //   this.$displayPanel = $displayPanel;
-  // }
-
-  // private updateInputPanelData(inputStyle: CellObject): void {
-  //   switch(inputStyle.type) {
-  //     case 'STROKE-DATA':
-  //       assert(this.strokePanel);
-  //       this.strokePanel!.updateStylusInput(inputStyle.data);
-  //       break;
-  //     case 'PLAIN-TEXT':
-  //       assert(this.keyboardPanel);
-  //       this.keyboardPanel!.updateText(inputStyle.data);
-  //       break;
-  //     default: assertFalse();
-  //   }
-  // }
-
-  // private updateInputPanelDrawing(svgRepStyle: CellObject): void {
-  //   assert(this.strokePanel);
-  //   this.strokePanel!.updateSvgMarkup(svgRepStyle.data);
-  // }
-
   // Private Instance Event Handlers
 
-  protected onResize(deltaY: number, final: boolean): void {
-    debug(`onResize: ${deltaY} ${final}`);
-  }
-
 }
-
-// HELPER FUNCTIONS
-

@@ -17,31 +17,20 @@ You should have received a copy of the GNU Affero General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
+// Exported Types
 
-// Requirements
-
-import { StrokeGroup } from "./myscript-types";
-
-// Types
-
-export type StrokeId = number;
-
-export type StrokeRelativePosition = StrokeId | StrokePosition;
-
-export enum StrokePosition {
-  Top = 0,
-  Bottom = -1,
+export interface StrokeGroup {
+  // penStyle?: string;
+  // penStyleClasses?: string;
+  strokes: Stroke[];
 }
 
-export interface StrokeData {
-  strokeGroups: StrokeGroup[];
+export interface Stroke {
+  // id?: string;
+  // p?: number[];
+  // pointerId?: number;
+  // pointerType?: 'PEN'|'TOUCH'|'ERASER';
+  // t?: number[];
+  x: number[];
+  y: number[];
 }
-
-// Constants
-
-export const EMPTY_STROKE_DATA: StrokeData = {
-  strokeGroups: [{
-    strokes: [],
-  }],
-}
-// Exported Functions

@@ -22,14 +22,14 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 import * as debug1 from "debug";
 const debug = debug1('client:figure-edit-view');
 
-import { CssClass, CssLength, assertFalse, Html } from "../shared/common";
-import { Stroke } from "../shared/stylus";
+import { CssClass, Html } from "../shared/common";
+import { Stroke } from "../shared/myscript-types";
 import { NotebookUpdate, StrokeInserted } from "../shared/server-responses";
 import { notebookUpdateSynopsis } from "../shared/debug-synopsis";
 import { FigureCellObject } from "../shared/cell";
 import { InsertStroke } from "../shared/client-requests";
 
-import { $svg, HtmlElementSpecification } from "../dom";
+import { HtmlElementSpecification } from "../dom";
 import { logError } from "../error-handler";
 import { StrokeCallbackFn, StrokePanel } from "../components/stroke-panel";
 
@@ -63,10 +63,9 @@ export class FigureEditView extends CellEditView<FigureCellObject> {
 
   public onUpdate(update: NotebookUpdate, ownRequest: boolean): void {
     debug(`onUpdate: C${this.id} ${notebookUpdateSynopsis(update)}`);
-
+    super.onUpdate(update, ownRequest);
     switch (update.type) {
       case 'strokeInserted': this.onStrokeInserted(update, ownRequest); break;
-      default: assertFalse();
     }
   }
 
@@ -106,34 +105,6 @@ export class FigureEditView extends CellEditView<FigureCellObject> {
 
   private onStrokeInserted(update: StrokeInserted, _ownRequest: boolean): void {
     this.strokePanel.insertStroke(update.strokeId, update.stroke);
-  }
-
-  protected onResize(deltaY: number, final: boolean): void {
-    debug(`onResize: ${deltaY} ${final}`);
-    const $svgPanel = $svg<'svg'>(this.$elt, '.svgPanel');
-    const currentHeight = parseInt($svgPanel.getAttribute('height')!.slice(0, -2), 10);
-    // TODO: resizer bar should enforce minimum.
-    // TODO: minimum height should be based on ink content.
-    const newHeight = Math.max(currentHeight + deltaY, 10);
-    const newHeightStr = <CssLength>`${newHeight}px`;
-    $svgPanel.setAttribute('height', newHeightStr);
-
-    // TODO: Save new cell height on final resize call.
-    // if (final) {
-    //   // TODO: Incremental change request?
-    //   const inputStyle = this.inputStyleCopy!;
-    //   assert(inputStyle);
-    //   const data = <StrokeData>inputStyle.data;
-    //   data.size.height = newHeightStr;
-    //   // REVIEW: what if size is unchanged?
-    //   const changeRequest: StyleChangeRequest = { type: 'changeStyle', cellId: inputStyle.id, data };
-    //   this.container.editStyle([ changeRequest ])
-    //   .catch((err: Error)=>{
-    //     // TODO: What to do here?
-    //     reportError(err, <Html>"Error submitting resize");
-    //   });
-    // }
-
   }
 }
 

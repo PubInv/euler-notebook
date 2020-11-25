@@ -23,7 +23,8 @@ import * as debug1 from "debug";
 const debug = debug1('client:stroke-panel');
 
 import { CssClass, SvgMarkup, CssSize } from "../shared/common";
-import { Stroke, StrokeData, StrokeId } from "../shared/stylus";
+import { StrokeData, StrokeId } from "../shared/stylus";
+import { Stroke } from "../shared/myscript-types";
 
 import { $newSvg, $outerSvg } from "../dom";
 
@@ -54,7 +55,7 @@ export class StrokePanel extends HtmlElement<'div'> {
     strokeData: StrokeData,
     strokeCallbackFn: StrokeCallbackFn,
   ) {
-    const svgMarkup = convertStrokesToSvg(strokeData);
+    const svgMarkup = convertStrokesToSvg(cssSize, strokeData);
 
     const $svgPanel = $outerSvg<'svg'>(svgMarkup);
     const stylusDrawingPanel = new StylusDrawingPanel(cssSize, (stroke)=>this.onStrokeComplete(stroke));
@@ -132,7 +133,7 @@ export class StrokePanel extends HtmlElement<'div'> {
 
 // HELPER FUNCTIONS
 
-function convertStrokesToSvg(strokeData: StrokeData): SvgMarkup {
+function convertStrokesToSvg(cssSize: CssSize, strokeData: StrokeData): SvgMarkup {
   const paths: string[] = [];
   for (const strokeGroup of strokeData.strokeGroups) {
     for (const stroke of strokeGroup.strokes) {
@@ -140,7 +141,7 @@ function convertStrokesToSvg(strokeData: StrokeData): SvgMarkup {
       paths.push(path);
     }
   }
-  const svgMarkup = <SvgMarkup>`<svg class="svgPanel" height="${strokeData.size.height}" width="${strokeData.size.width}" fill="none" stroke="black">${paths.join('')}</svg>`;
+  const svgMarkup = <SvgMarkup>`<svg class="svgPanel" height="${cssSize.height}" width="${cssSize.width}" fill="none" stroke="black">${paths.join('')}</svg>`;
   return svgMarkup;
 }
 
