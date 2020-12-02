@@ -21,7 +21,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 import { CssClass } from "../../shared/common";
 import { ButtonBar } from "../../components/button-bar";
-import { svgIconReference, $new, SIGMA_ENTITY } from "../../dom";
+import { svgIconReferenceMarkup, $new } from "../../dom";
 
 import { NotebookEditScreen } from "./index";
 
@@ -44,7 +44,7 @@ export class Sidebar extends ButtonBar {
     const $debugButton = $new({
       tag: 'button',
       class: <CssClass>'iconButton',
-      html: svgIconReference('iconMonstrBug12'),
+      html: svgIconReferenceMarkup('iconMonstrBug12'),
       listeners: { click: (_e)=>{
         this.$bugButton.disabled = true;
         this.screen.debugPopup.show();
@@ -55,7 +55,7 @@ export class Sidebar extends ButtonBar {
     const $redoButton = $new({ // TODO: Start out disabled?
       tag: 'button',
       class: <CssClass>'iconButton',
-      html: svgIconReference('iconMonstrRedo4'),
+      html: svgIconReferenceMarkup('iconMonstrRedo4'),
       asyncListeners: { click: async (_e: MouseEvent)=>{
         await this.screen.editView.redo();
       }},
@@ -65,7 +65,7 @@ export class Sidebar extends ButtonBar {
     const $trashButton = $new({
       tag: 'button',
       class: <CssClass>'iconButton',
-      html: svgIconReference('iconMonstrTrashcan2'),
+      html: svgIconReferenceMarkup('iconMonstrTrashcan2'),
       asyncListeners: { click: async (_e: MouseEvent)=>{
         await this.screen.editView.deleteSelectedCells();
       }},
@@ -75,7 +75,7 @@ export class Sidebar extends ButtonBar {
     const $undoButton = $new({
       tag: 'button',
       class: <CssClass>'iconButton',
-      html: svgIconReference('iconMonstrUndo4'),
+      html: svgIconReferenceMarkup('iconMonstrUndo4'),
       asyncListeners: { click: async (_e: MouseEvent)=>{
         await this.screen.editView.undo();
       }},
@@ -91,7 +91,7 @@ export class Sidebar extends ButtonBar {
           // search
           tag: 'button',
           class: <CssClass>'iconButton',
-          html: svgIconReference('iconMagnifier6'),
+          html: svgIconReferenceMarkup('iconMagnifier6'),
           listeners: { click: (_e: MouseEvent): void =>{ this.screen.toggleSearchPanel(); }},
           title: "Search",
         }, {
@@ -100,31 +100,31 @@ export class Sidebar extends ButtonBar {
           // thumbnail view
           tag: 'button',
           class: <CssClass>'iconButton',
-          html: svgIconReference('iconMonstrFile12'),
+          html: svgIconReferenceMarkup('iconMonstrFile12'),
           listeners: { click: (_e: MouseEvent): void =>{ window.location.href = `/#${screen.notebook.path}`; }},
           title: "Thumbnail view",
         }, {
           // reading view
           tag: 'button',
           class: <CssClass>'iconButton',
-          html: svgIconReference('iconMonstrFile5'),
+          html: svgIconReferenceMarkup('iconMonstrFile5'),
           listeners: { click: (_e: MouseEvent): void =>{ window.location.href = `/#${screen.notebook.path}?view=read`; }},
           title: "Reading view",
         },{
           // edit view
           tag: 'button',
           class: <CssClass>'iconButton',
-          html: svgIconReference('iconMonstrNote23'),
+          html: svgIconReferenceMarkup('iconMonstrNote23'),
           // listeners: { click: (_e: MouseEvent)=>{ window.location.href = `/#${screen.notebook.path}?view=edit`; }},
           title: "Editing view",
           disabled: true,
         }, {
           tag: 'div', class: <CssClass>'separator'
         }, {
-          // insert formula (sigma)
+          // insert formula
           tag: 'button',
-          class: <CssClass>'entityButton',
-          html: SIGMA_ENTITY,
+          class: <CssClass>'iconButton',
+          html: svgIconReferenceMarkup('iconMonstrCalculator2'),
           asyncListeners: { click: async (_e: MouseEvent): Promise<void> =>{
             await this.screen.editView.insertFormulaCellBelow();
           }},
@@ -133,20 +133,20 @@ export class Sidebar extends ButtonBar {
           // insert text cell
           tag: 'button',
           class: <CssClass>'iconButton',
-          html: svgIconReference('iconMonstrText1'),
+          html: svgIconReferenceMarkup('iconMonstrText1'),
           asyncListeners: { click: async (_e: MouseEvent): Promise<void> =>{
             await this.screen.editView.insertTextCellBelow();
           }},
           title: "Insert text",
         }, {
-          // insert drawing cell
+          // insert figure cell
           tag: 'button',
           class: <CssClass>'iconButton',
-          html: svgIconReference('iconMonstrPencil9'),
+          html: svgIconReferenceMarkup('iconMonstrPencil9'),
           asyncListeners: { click: async (_e: MouseEvent): Promise<void> =>{
             await this.screen.editView.insertFigureCellBelow();
           }},
-          title: "Insert drawing cell",
+          title: "Insert figure cell",
         }, {
           tag: 'div', class: <CssClass>'separator'
         },
@@ -158,7 +158,7 @@ export class Sidebar extends ButtonBar {
           // export
           tag: 'button',
           class: <CssClass>'iconButton',
-          html: svgIconReference('iconMonstrLogout18'),
+          html: svgIconReferenceMarkup('iconMonstrLogout18'),
           listeners: { click: _e=>{
             this.screen.notebook.export();
           }},
@@ -171,7 +171,7 @@ export class Sidebar extends ButtonBar {
           // "underwear" for dev use only
           tag: 'button',
           class: <CssClass>'iconButton',
-          html: svgIconReference('iconMonstrClothing18'),
+          html: svgIconReferenceMarkup('iconMonstrClothing18'),
           asyncListeners: { click: async (_e: MouseEvent)=>{
             await this.screen.editView.developmentButtonClicked();
           }},

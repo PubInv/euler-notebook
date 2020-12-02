@@ -24,7 +24,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 import * as debug1 from "debug";
 const debug = debug1('client:cell-edit-view');
 
-import { CellObject, CellId } from "../shared/cell";
+import { CellObject, CellId, CellType } from "../shared/cell";
 import {
   assert, Html, CssClass, notImplemented, CssLength, CssSize, LengthInPixels,
   PIXELS_PER_INCH, POINTS_PER_INCH
@@ -34,7 +34,9 @@ import { NotebookUpdate } from "../shared/server-responses";
 
 import { HtmlElement } from "../html-element";
 import {
-  $new, CLOSE_X_ENTITY, ElementId, HtmlElementOrSpecification, HtmlElementSpecification
+  $new, CLOSE_X_ENTITY, ElementId, HtmlElementOrSpecification, HtmlElementSpecification,
+  SvgIconId,
+  svgIconReferenceMarkup,
 } from "../dom";
 
 import { Tools } from "../screens/notebook-edit-screen/tools";
@@ -53,6 +55,13 @@ interface CellDragData {
 // Constants
 
 const CELL_MIME_TYPE = 'application/vnd.mathtablet.cell';
+
+const CELL_ICONS: Map<CellType, SvgIconId> = new Map([
+  [CellType.Figure, 'iconMonstrPencil9'],
+  [CellType.Formula, 'iconMonstrCalculator2'],
+  [CellType.Plot, 'iconMonstrChart20'],
+  [CellType.Text, 'iconMonstrText1'],
+]);
 
 // Exported Class
 
@@ -115,24 +124,14 @@ export abstract class CellEditView<O extends CellObject> extends HtmlElement<'di
     contentSpec: HtmlElementOrSpecification,
   ) {
 
+    const iconId = CELL_ICONS.get(cell.obj.type)!;
+    assert(iconId);
+
     const $leftMargin = $new<'div'>({
       tag: 'div',
       class: <CssClass>'leftMargin',
-    });
-
-    const $rightMargin = $new<'div'>({
-      tag: 'div',
-      class: <CssClass>'rightMargin',
       children: [
         {
-          tag: 'button',
-          attrs: { tabindex: -1 },
-          classes:[ <CssClass>'deleteCellButton', <CssClass>'iconButton' ],
-          html: CLOSE_X_ENTITY,
-          asyncListeners: {
-            click: e=>this.onDeleteCellButtonClicked(e),
-          },
-        },{
           tag: 'div',
           attrs: { draggable: true },
           class: <CssClass>'dragIcon',
@@ -141,9 +140,27 @@ export abstract class CellEditView<O extends CellObject> extends HtmlElement<'di
             dragend: e=>this.onDragEnd(e),
             dragstart: e=>this.onDragStart(e),
           },
-          style: "width:16px;height:16px",
-        }
+        },
+        {
+          tag: 'div',
+          class: <CssClass>'cellIcon',
+          html: svgIconReferenceMarkup(iconId),
+        },
       ],
+    });
+
+    const $rightMargin = $new<'div'>({
+      tag: 'div',
+      class: <CssClass>'rightMargin',
+      children: [{
+        tag: 'button',
+        attrs: { tabindex: -1 },
+        classes:[ <CssClass>'deleteButton', <CssClass>'entityButton' ],
+        html: CLOSE_X_ENTITY,
+        asyncListeners: {
+          click: e=>this.onDeleteButtonClicked(e),
+        },
+      }],
     });
 
     const contentInstantiated = contentSpec instanceof HTMLElement || contentSpec instanceof SVGElement;
@@ -208,6 +225,8 @@ export abstract class CellEditView<O extends CellObject> extends HtmlElement<'di
   private resizingInitialHeight?: LengthInPixels;
   private strokePanel: StrokePanel;
 
+  // Private Instance Property Functions
+
   // Private Instance Methods
 
   // private createKeyboardSubpanel(cellObject: TextCellObject): KeyboardPanel {
@@ -231,7 +250,7 @@ export abstract class CellEditView<O extends CellObject> extends HtmlElement<'di
     // this.container.selectCell(this, event.shiftKey, event.metaKey);
   }
 
-  private async onDeleteCellButtonClicked(event: MouseEvent): Promise<void> {
+  private async onDeleteButtonClicked(event: MouseEvent): Promise<void> {
     event.stopPropagation(); // Prevent our own 'onClicked' handler from being called.
     debug(`onDeleteCellButtonClicked`);
     // TODO: Make the provisional change by hiding ourself? Or notify our container to hide us?

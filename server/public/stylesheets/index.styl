@@ -245,28 +245,36 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
         justify-content space-between
 
         >.leftMargin
-          width 30pt
+          align-items center
+          display flex
+
+          >.dragIcon
+            color lightgray
+            height 16px
+            padding 6px 12px 6px 6px
+            width 16px
+
+          >.cellIcon
+            padding 6px
+
+            >.icon
+              fill lightgray
+              stroke lightgray
+              height 16px
+              width 16px
 
         >.content
           position relative
           flex-grow 1
 
         >.rightMargin
-          position relative
-          width 30pt
+          align-items center
+          display flex
+          justify-content flex-end
 
-          >.deleteCellButton
+          >.deleteButton
             color lightgray
-            position absolute
-            right 4pt
-            top 4pt
-
-          >.dragIcon
-            color lightgray
-            padding 6px 12px 6px 6px
-            position absolute
-            right 0
-            top 30px
+            padding 6px 6px 6px 12px
 
       >.resizeBar
         border-top 1px dotted  #F0F0F0

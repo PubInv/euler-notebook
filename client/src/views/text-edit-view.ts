@@ -70,6 +70,8 @@ export class TextEditView extends CellEditView<TextCellObject> {
 
   // Private Instance Properties
 
+  // Private Instance Property Functions
+
   // Private Instance Methods
 
   // Private Instance Event Handlers

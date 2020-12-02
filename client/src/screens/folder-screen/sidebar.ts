@@ -20,7 +20,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 // Requirements
 
 import { CssClass } from "../../shared/common";
-import { $new, svgIconReference } from "../../dom";
+import { $new, svgIconReferenceMarkup } from "../../dom";
 import { FolderScreen } from ".";
 import { ButtonBar } from "../../components/button-bar";
 
@@ -43,7 +43,7 @@ export class Sidebar extends ButtonBar {
     const $newFolderButton = $new({
       tag: 'button',
       class: <CssClass>'iconButton',
-      html: svgIconReference('iconMonstrFolder5'),
+      html: svgIconReferenceMarkup('iconMonstrFolder5'),
       asyncListeners: {
         click: (e: MouseEvent)=>this.onNewFolderClicked(e)
       },
@@ -53,7 +53,7 @@ export class Sidebar extends ButtonBar {
     const $newNotebookButton = $new({
       tag: 'button',
       class: <CssClass>'iconButton',
-      html: svgIconReference('iconMonstrFile15'),
+      html: svgIconReferenceMarkup('iconMonstrFile15'),
       asyncListeners: {
         click: (e: MouseEvent)=>this.onNewNotebookClicked(e)
       },

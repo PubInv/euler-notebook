@@ -22,7 +22,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 import { CssClass, escapeHtml } from "../../../shared/common"
 import { Folder, FolderEntry, FolderName, NotebookEntry, NotebookName } from "../../../shared/folder";
 
-import { svgIconReference, CLOSE_X_ENTITY, PENCIL_ENTITY, CHECKMARK_ENTITY, $new, DOTTED_CIRCLE_ENTITY } from "../../../dom";
+import { svgIconReferenceMarkup, CLOSE_X_ENTITY, PENCIL_ENTITY, CHECKMARK_ENTITY, $new, DOTTED_CIRCLE_ENTITY } from "../../../dom";
 import { ClientFolder } from "../../../client-folder";
 import { HtmlElement } from "../../../html-element";
 
@@ -98,7 +98,7 @@ export class EntryRow<K extends keyof EntryTypeMap> extends HtmlElement<'tr'> {
       appendTo: $parentElt,
       children: [
         // File or folder icon
-        { tag: 'td', html: svgIconReference(type==EntryType.Folder?'iconMonstrFolder2':'iconMonstrFile5') },
+        { tag: 'td', html: svgIconReferenceMarkup(type==EntryType.Folder?'iconMonstrFolder2':'iconMonstrFile5') },
 
         // Name cell.
         // Contains a link, an input box, and an error message.

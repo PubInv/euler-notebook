@@ -29,7 +29,7 @@ import { CssClass, Html, escapeHtml, notImplemented } from "../shared/common";
 import { Path } from "../shared/folder";
 
 import { ButtonBar } from "./button-bar";
-import { $, $new, svgIconReference, ElementId } from "../dom";
+import { $, $new, svgIconReferenceMarkup, ElementId } from "../dom";
 import { monitorPromise } from "../error-handler";
 import { userSettingsInstance, InputMode } from "../user-settings";
 
@@ -78,7 +78,7 @@ export class Header extends ButtonBar {
       tag: 'button',
       class: <CssClass>'iconButton',
       title: "Full screen",
-      html: svgIconReference('iconMonstrFullScreen7'),
+      html: svgIconReferenceMarkup('iconMonstrFullScreen7'),
       disabled: !document.fullscreenEnabled,
       listeners: { click: e=>this.onFullscreenButtonClicked(e) },
     });
@@ -97,7 +97,7 @@ export class Header extends ButtonBar {
               tag: 'button',
               class: <CssClass>'iconButton',
               title: "Math Tablet home",
-              html: svgIconReference('iconMonstrHome6'),
+              html: svgIconReferenceMarkup('iconMonstrHome6'),
               listeners: { click: _e=>{ window.location.href = '/#/'; }},
             }, {
               tag: 'select',
@@ -123,7 +123,7 @@ export class Header extends ButtonBar {
               tag: 'button',
               class: <CssClass>'iconButton',
               title: "Refresh page",
-              html: svgIconReference('iconMonstrRefresh2'),
+              html: svgIconReferenceMarkup('iconMonstrRefresh2'),
               listeners: { click: _e=>window.location.reload() },
             },
             $fullscreenButton,
@@ -131,7 +131,7 @@ export class Header extends ButtonBar {
               tag: 'button',
               class: <CssClass>'iconButton',
               title: "User settings",
-              html: svgIconReference('iconMonstrUser1'),
+              html: svgIconReferenceMarkup('iconMonstrUser1'),
               listeners: { click: _e=>notImplemented() },
             },
           ],

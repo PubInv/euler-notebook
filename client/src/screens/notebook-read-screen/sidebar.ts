@@ -20,7 +20,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 // Requirements
 
 import { CssClass } from "../../shared/common";
-import { svgIconReference } from "../../dom";
+import { svgIconReferenceMarkup } from "../../dom";
 import { ButtonBar } from "../../components/button-bar";
 import { Mode, NotebookReadScreen } from "./index";
 
@@ -47,7 +47,7 @@ export class Sidebar extends ButtonBar {
         // thumbnail view
         tag: 'button',
         class: <CssClass>'iconButton',
-        html: svgIconReference('iconMonstrFile12'),
+        html: svgIconReferenceMarkup('iconMonstrFile12'),
         listeners: { click: (_e: MouseEvent)=>{ window.location.href = `/#${screen.notebook.path}`; }},
         title: "Reading view",
         disabled: mode == Mode.Thumbnails,
@@ -55,7 +55,7 @@ export class Sidebar extends ButtonBar {
         // reading view
         tag: 'button',
         class: <CssClass>'iconButton',
-        html: svgIconReference('iconMonstrFile5'),
+        html: svgIconReferenceMarkup('iconMonstrFile5'),
         listeners: { click: (_e: MouseEvent)=>{ window.location.href = `/#${screen.notebook.path}?view=read`; }},
         title: "Reading view",
         disabled: mode == Mode.Reading,
@@ -63,7 +63,7 @@ export class Sidebar extends ButtonBar {
         // edit view
         tag: 'button',
         class: <CssClass>'iconButton',
-        html: svgIconReference('iconMonstrNote23'),
+        html: svgIconReferenceMarkup('iconMonstrNote23'),
         listeners: { click: (_e: MouseEvent)=>{ window.location.href = `/#${screen.notebook.path}?view=edit`; }},
         title: "Editing view",
       }, {

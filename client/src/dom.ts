@@ -96,18 +96,26 @@ interface NewCommonOptions {
 export interface HtmlElementSpecification<K extends keyof HTMLElementTagNameMap> extends NewCommonOptions {
   tag: K;
   children?: HtmlElementOrSpecification[];
-  html?: Html;
+  html?: Html|SvgMarkup;
 }
 
 export interface SvgElementSpecification<K extends keyof SVGElementTagNameMap> extends NewCommonOptions {
   tag: K;
   children?: SvgElementSpecification<any>[];
-  html?: Html;
+  html?: SvgMarkup;
 }
 
 export type HtmlElementOrSpecification = HtmlElementSpecification<any>|HTMLElement|SVGElement;
 
-// Constants
+// Keep this list in sync with server/views/iconmonstr.pug.
+export type SvgIconId = 'iconMonstrBug12' | 'iconMonstrCalculator2' | 'iconMonstrClothing18' | 'iconMonstrFile5' |
+                  'iconMonstrFile12' | 'iconMonstrFile15' | 'iconMonstrFolder2' | 'iconMonstrFolder5' |
+                  'iconMonstrFullScreen7' | 'iconMonstrHome6' | 'iconMonstrLogout18' | 'iconMonstrNote23' |
+                  'iconMagnifier6' | 'iconMonstrPencil9' | 'iconMonstrRedo4' | 'iconMonstrRefresh2' |
+                  'iconMonstrText1' | 'iconMonstrTrashcan2' | 'iconMonstrUndo4' | 'iconMonstrUser1' |
+                  'iconMonstrChart20' ;
+
+  // Constants
 
 const SVG_NS = 'http://www.w3.org/2000/svg';
 
@@ -119,7 +127,7 @@ export const DOTTED_CIRCLE_ENTITY = <Html>'&#x25CC;';
 export const PENCIL_ENTITY = <Html>'&#x270E;';
 export const RIGHT_TRIANGLE_ENTITY = <Html>'&#x25B6;';
 export const RIGHT_ARROW_ENTITY = <Html>'&#x27A1;';
-export const SIGMA_ENTITY = <Html>'&#x3A3;';
+// export const SIGMA_ENTITY = <Html>'&#x3A3;';
 
 // Exported Functions
 
@@ -225,6 +233,10 @@ export function $svg<K extends keyof SVGElementTagNameMap>(root: Element|Documen
   return $elts[0];
 }
 
+// export function $svgIconReference(id: SvgIconId): SVGSVGElement {
+//   return $outerSvg<'svg'>(svgIconReferenceMarkup(id));
+// }
+
 // export function escapeHtml(str: string): Html {
 //   // From: http://shebang.brandonmintern.com/foolproof-html-escaping-in-javascript/
 //   var $div = document.createElement('div');
@@ -237,8 +249,8 @@ export function cssLength(length: CssLength, units: CssLengthUnits): number {
   return parseFloat(length);
 }
 
-export function svgIconReference(id: string): Html {
-  return <Html>`<svg class="icon"><use xlink:href="#${id}"/></svg>`
+export function svgIconReferenceMarkup(id: SvgIconId): SvgMarkup {
+  return <SvgMarkup>`<svg class="icon"><use xlink:href="#${id}"/></svg>`
 }
 
 // HELPER FUNCTIONS
@@ -287,4 +299,3 @@ function elementSpecifier($elt: Element): string {
   }
   return specifier;
 }
-

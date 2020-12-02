@@ -29,7 +29,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 // Requirements
 
 import { CssClass, escapeHtml, Html, PlainText } from "../../shared/common";
-import { $, $new, svgIconReference } from "../../dom";
+import { $, $new, svgIconReferenceMarkup } from "../../dom";
 
 import { HtmlElement } from "../../html-element";
 
@@ -78,7 +78,7 @@ export class SearchPanel extends HtmlElement<'div'> {
               class: <CssClass>'smallIconButton',
               type: 'submit',
               title: "Full screen",
-              html: svgIconReference('iconMagnifier6'),
+              html: svgIconReferenceMarkup('iconMagnifier6'),
             }
           ],
           asyncListeners: {

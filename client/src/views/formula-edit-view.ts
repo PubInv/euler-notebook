@@ -87,6 +87,8 @@ export class FormulaEditView extends CellEditView<FormulaCellObject> {
 
   // Private Instance Properties
 
+  // Private Instance Property Functions
+
   // Private Instance Methods
 
   // Private Event Handlers
