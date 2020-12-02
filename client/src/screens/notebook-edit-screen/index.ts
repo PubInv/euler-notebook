@@ -61,8 +61,8 @@ export class NotebookEditScreen extends ScreenBase implements NotebookView {
     .then(
       (notebook: ClientNotebook)=>{
         this.notebook = notebook;
-        this.sidebar = new Sidebar(this);
         this.editView = new NotebookEditView(this, notebook);
+        this.sidebar = new Sidebar(this);
         // TODO: this.tools = new Tools(this);
         this.searchPanel = new SearchPanel(this);
         this.debugPopup = new DebugPopup(this);

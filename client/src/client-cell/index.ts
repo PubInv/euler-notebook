@@ -22,12 +22,11 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 import * as debug1 from "debug";
 const debug = debug1('client:client-cell');
 
-import { CellId, CellObject } from "../shared/cell";
+import { CellId, CellObject, CellType } from "../shared/cell";
 import { assertFalse, CssSize, escapeHtml, Html, notImplemented } from "../shared/common";
 import { NotebookUpdate } from "../shared/server-responses";
 
 import { ClientNotebook } from "../client-notebook";
-import { CellEditView } from "../views/cell-edit-view";
 import { cellBriefSynopsis, cellSynopsis, notebookUpdateSynopsis } from "../shared/debug-synopsis";
 import { Stroke } from "../shared/myscript-types";
 
@@ -57,6 +56,7 @@ export abstract class ClientCell<O extends CellObject> {
   // Public Instance Property Functions
 
   public get id(): CellId { return this.obj.id; }
+  public get type(): CellType { return this.obj.type; }
 
   public toDebugHtml(): Html {
     return <Html>`<div>
@@ -69,7 +69,9 @@ export abstract class ClientCell<O extends CellObject> {
 
   // Public Instance Methods
 
-  public abstract createEditView(): CellEditView<O>;
+  public addView(view: CellView): void {
+    this.views.add(view);
+  }
 
   public onUpdate(update: NotebookUpdate, ownRequest: boolean): void {
     debug(`onUpdate C${this.id} ${notebookUpdateSynopsis(update)}`);

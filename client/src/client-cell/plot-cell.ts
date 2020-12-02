@@ -28,7 +28,6 @@ import { NotebookUpdate } from "../shared/server-responses";
 import { ClientNotebook } from "../client-notebook";
 
 import { ClientCell } from "./index";
-import { PlotEditView } from "../views/plot-edit-view";
 import { notebookUpdateSynopsis } from "../shared/debug-synopsis";
 
 // Exported Class
@@ -42,12 +41,6 @@ export class PlotCell extends ClientCell<PlotCellObject> {
   }
 
   // Public Instance Methods
-
-  public createEditView(): PlotEditView {
-    const instance = new PlotEditView(this);
-    this.views.add(instance);
-    return instance;
-  };
 
   public onUpdate(update: NotebookUpdate, ownRequest: boolean): void {
     debug(`onUpdate ${notebookUpdateSynopsis(update)}`);

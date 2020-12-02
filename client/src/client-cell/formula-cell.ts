@@ -28,7 +28,6 @@ import { NotebookUpdate } from "../shared/server-responses";
 import { ClientNotebook } from "../client-notebook";
 
 import { ClientCell } from "./index";
-import { FormulaEditView } from "../views/formula-edit-view";
 import { notebookUpdateSynopsis } from "../shared/debug-synopsis";
 
 // Exported Class
@@ -42,12 +41,6 @@ export class FormulaCell extends ClientCell<FormulaCellObject> {
   }
 
   // Public Instance Methods
-
-  public createEditView(): FormulaEditView {
-    const instance = new FormulaEditView(this);
-    this.views.add(instance);
-    return instance;
-  };
 
   public onUpdate(update: NotebookUpdate, ownRequest: boolean): void {
     debug(`onUpdate ${notebookUpdateSynopsis(update)}`);

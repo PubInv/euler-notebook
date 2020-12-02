@@ -45,6 +45,7 @@ import { CellView, ClientCell } from "../client-cell";
 import { logError, reportError } from "../error-handler";
 import { StrokeCallbackFn, StrokePanel } from "../components/stroke-panel";
 import { Stroke } from "../shared/myscript-types";
+import { NotebookEditView } from "./notebook-edit-view";
 
 // Types
 
@@ -120,6 +121,7 @@ export abstract class CellEditView<O extends CellObject> extends HtmlElement<'di
   // Private Constructor
 
   protected constructor(
+    notebookEditView: NotebookEditView,
     cell: ClientCell<O>,
     contentSpec: HtmlElementOrSpecification,
   ) {
@@ -179,7 +181,7 @@ export abstract class CellEditView<O extends CellObject> extends HtmlElement<'di
     const resizerCallbackFunctions: ResizerCallbackFunctions = {
       cancel: ()=>this.onResizerCancel(),
       down: ()=>this.onResizerDown(),
-      insert: ()=>this.onInsertCellBelow(),
+      insert: ()=>this.onInsertCell(),
       move: (deltaY: number)=>this.onResizerMove(deltaY),
       up: (deltaY: LengthInPixels)=>this.onResizerUp(deltaY),
     };
@@ -205,6 +207,7 @@ export abstract class CellEditView<O extends CellObject> extends HtmlElement<'di
     this.$content = $content;
     this.$main = $main;
     this.cell = cell;
+    this.notebookEditView = notebookEditView;
 
     const callbackFn: StrokeCallbackFn = async (stroke: Stroke)=>{
       this.cell.insertStroke(stroke)
@@ -216,6 +219,8 @@ export abstract class CellEditView<O extends CellObject> extends HtmlElement<'di
     this.strokePanel = new StrokePanel(cell.obj.cssSize, cell.obj.strokeData, callbackFn);
 
     $content.append(this.strokePanel.$elt);
+
+    cell.addView(this);
   }
 
   // Private Instance Properties
@@ -223,6 +228,7 @@ export abstract class CellEditView<O extends CellObject> extends HtmlElement<'di
   protected $content: HTMLDivElement;
   private $main: HTMLDivElement;
   private resizingInitialHeight?: LengthInPixels;
+  private notebookEditView: NotebookEditView;
   private strokePanel: StrokePanel;
 
   // Private Instance Property Functions
@@ -251,6 +257,7 @@ export abstract class CellEditView<O extends CellObject> extends HtmlElement<'di
   }
 
   private async onDeleteButtonClicked(event: MouseEvent): Promise<void> {
+    event.preventDefault(); // Don't take focus.
     event.stopPropagation(); // Prevent our own 'onClicked' handler from being called.
     debug(`onDeleteCellButtonClicked`);
     // TODO: Make the provisional change by hiding ourself? Or notify our container to hide us?
@@ -326,12 +333,11 @@ export abstract class CellEditView<O extends CellObject> extends HtmlElement<'di
     // });
   }
 
-  private onInsertCellBelow(): void {
-    notImplemented();
-    // this.container.insertFigureCellBelow(this.cellId).catch(err=>{
-    //   // TODO: Better handling of this error.
-    //   reportError(err, <Html>"Error inserting cell below");
-    // });
+  private onInsertCell(): void {
+    this.notebookEditView.insertCell(this.id).catch((err: Error)=>{
+      // TODO: Better handling of this error.
+      reportError(err, <Html>"Error inserting cell");
+    });
   }
 
   private onResizerCancel(): void {

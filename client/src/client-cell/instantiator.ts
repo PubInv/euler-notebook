@@ -37,8 +37,6 @@ import { ClientCell } from "./index";
 // Exports
 
 export function createCell<O extends CellObject>(notebook: ClientNotebook, obj: O): ClientCell<O> {
-
-  // If a style has a child of REPRESENTATION|INPUT/STROKES then use a stylus cell.
   let rval: FigureCell|FormulaCell|TextCell|PlotCell;
   switch(obj.type) {
     case CellType.Figure:   rval = new FigureCell(notebook, <FigureCellObject><unknown>obj); break;

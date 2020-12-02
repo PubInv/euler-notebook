@@ -27,11 +27,12 @@ import { CssClass } from "../shared/common";
 import { NotebookUpdate } from "../shared/server-responses";
 import { notebookUpdateSynopsis, cellSynopsis } from "../shared/debug-synopsis";
 
-import { $new } from "../dom";
+import { HtmlElementSpecification } from "../dom";
 
 
 import { TextCell } from "../client-cell/text-cell";
 import { CellEditView } from "./cell-edit-view";
+import { NotebookEditView } from "./notebook-edit-view";
 
 // Types
 
@@ -45,15 +46,15 @@ export class TextEditView extends CellEditView<TextCellObject> {
 
   // Public Constructor
 
-  public constructor(cell: TextCell) {
+  public constructor(notebookEditView: NotebookEditView, cell: TextCell) {
     debug(`Constructing: ${cellSynopsis(cell.obj)}`);
 
-    const $content = $new({
+    const contentSpec: HtmlElementSpecification<'div'> = {
       tag: 'div',
       classes: [ <CssClass>'content', <CssClass>'textCell' ],
-    });
+    };
 
-    super(cell, $content);
+    super(notebookEditView, cell, contentSpec);
   }
 
   // ClientNotebookWatcher Methods

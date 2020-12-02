@@ -86,8 +86,8 @@ const DEFAULT_LETTER_MARGINS = marginsInPoints(1,1,1,1);
 const DEFAULT_WIDTH = 6.5; // inches
 
 const DEFAULT_FORMULA_CSS_SIZE = sizeInPoints(1, DEFAULT_WIDTH);
-const DEFAULT_FIGURE_CSS_SIZE = sizeInPoints(4, DEFAULT_WIDTH);
-const DEFAULT_TEXT_CSS_SIZE = sizeInPoints(4, DEFAULT_WIDTH);
+const DEFAULT_FIGURE_CSS_SIZE = sizeInPoints(3, DEFAULT_WIDTH);
+const DEFAULT_TEXT_CSS_SIZE = sizeInPoints(1, DEFAULT_WIDTH);
 
 const EMPTY_NOTEBOOK_OBJ: ServerNotebookObject = {
   nextId: 1,

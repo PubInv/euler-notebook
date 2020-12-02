@@ -31,6 +31,7 @@ import { HtmlElementSpecification } from "../dom";
 
 import { PlotCell } from "../client-cell/plot-cell";
 import { CellEditView } from "./cell-edit-view";
+import { NotebookEditView } from "./notebook-edit-view";
 
 // Types
 
@@ -44,12 +45,12 @@ export class PlotEditView extends CellEditView<PlotCellObject> {
 
   // Public Constructor
 
-  public  constructor(cell: PlotCell) {
+  public  constructor(notebookEditView: NotebookEditView, cell: PlotCell) {
     const contentSpec: HtmlElementSpecification<'div'> = {
       tag: 'div',
       classes: [ <CssClass>'plotCell', <CssClass>'content' ],
     };
-    super(cell, contentSpec);
+    super(notebookEditView, cell, contentSpec);
   }
 
   // ClientNotebookWatcher Methods

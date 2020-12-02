@@ -24,6 +24,7 @@ import { ButtonBar } from "../../components/button-bar";
 import { svgIconReferenceMarkup, $new } from "../../dom";
 
 import { NotebookEditScreen } from "./index";
+import { CellType } from "../../shared/cell";
 
 // Types
 
@@ -40,6 +41,41 @@ export class Sidebar extends ButtonBar {
   // Public Constructor
 
   public constructor(screen: NotebookEditScreen) {
+
+    const mode = screen.editView.insertMode;
+
+    const $formulaModeButton = $new({
+      tag: 'button',
+      class: <CssClass>'iconButton',
+      html: svgIconReferenceMarkup('iconMonstrCalculator2'),
+      listeners: {
+        click: (_e: MouseEvent): void =>{ this.onModeChange(CellType.Formula); }
+      },
+      title: "Insert formula",
+      disabled: (mode === CellType.Formula),
+    });
+
+    const $textModeButton = $new({
+      tag: 'button',
+      class: <CssClass>'iconButton',
+      html: svgIconReferenceMarkup('iconMonstrText1'),
+      listeners: {
+        click: (_e: MouseEvent): void =>{ this.onModeChange(CellType.Text); }
+      },
+      title: "Insert text",
+      disabled: (mode === CellType.Text),
+    });
+
+    const $figureModeButton = $new({
+      tag: 'button',
+      class: <CssClass>'iconButton',
+      html: svgIconReferenceMarkup('iconMonstrPencil9'),
+      listeners: {
+        click: (_e: MouseEvent): void =>{ this.onModeChange(CellType.Figure); }
+      },
+      title: "Insert figure cell",
+      disabled: (mode === CellType.Figure),
+    });
 
     const $debugButton = $new({
       tag: 'button',
@@ -120,39 +156,16 @@ export class Sidebar extends ButtonBar {
           disabled: true,
         }, {
           tag: 'div', class: <CssClass>'separator'
-        }, {
-          // insert formula
-          tag: 'button',
-          class: <CssClass>'iconButton',
-          html: svgIconReferenceMarkup('iconMonstrCalculator2'),
-          asyncListeners: { click: async (_e: MouseEvent): Promise<void> =>{
-            await this.screen.editView.insertFormulaCellBelow();
-          }},
-          title: "Insert formula",
-        }, {
-          // insert text cell
-          tag: 'button',
-          class: <CssClass>'iconButton',
-          html: svgIconReferenceMarkup('iconMonstrText1'),
-          asyncListeners: { click: async (_e: MouseEvent): Promise<void> =>{
-            await this.screen.editView.insertTextCellBelow();
-          }},
-          title: "Insert text",
-        }, {
-          // insert figure cell
-          tag: 'button',
-          class: <CssClass>'iconButton',
-          html: svgIconReferenceMarkup('iconMonstrPencil9'),
-          asyncListeners: { click: async (_e: MouseEvent): Promise<void> =>{
-            await this.screen.editView.insertFigureCellBelow();
-          }},
-          title: "Insert figure cell",
-        }, {
+        },
+        $formulaModeButton,
+        $textModeButton,
+        $figureModeButton,
+        {
           tag: 'div', class: <CssClass>'separator'
         },
         $undoButton,
-        $redoButton
-        , {
+        $redoButton,
+        {
           tag: 'div', class: <CssClass>'separator'
         }, {
           // export
@@ -180,13 +193,16 @@ export class Sidebar extends ButtonBar {
         $trashButton,
       ],
     });
+
     this.screen = screen;
 
-    // Sidebar button events
     this.$bugButton = $debugButton;
     this.$redoButton = $redoButton;
     this.$trashButton = $trashButton;
     this.$undoButton = $undoButton;
+    this.$formulaModeButton = $formulaModeButton;
+    this.$figureModeButton = $figureModeButton;
+    this.$textModeButton = $textModeButton;
   }
 
   // Public Instance Properties
@@ -204,9 +220,18 @@ export class Sidebar extends ButtonBar {
   // Private Instance Properties
 
   private screen: NotebookEditScreen;
+  public $figureModeButton: HTMLButtonElement;
+  public $formulaModeButton: HTMLButtonElement;
+  public $textModeButton: HTMLButtonElement;
 
   // Private Instance Methods
 
   // Private Event Handlers
 
+  private onModeChange(mode: CellType): void {
+    this.screen.editView.insertMode = mode;
+    this.$figureModeButton.disabled = (mode === CellType.Figure);
+    this.$formulaModeButton.disabled = (mode === CellType.Formula);
+    this.$textModeButton.disabled = (mode === CellType.Text);
+  }
 }

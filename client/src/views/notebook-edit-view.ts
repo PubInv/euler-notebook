@@ -25,7 +25,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 import * as debug1 from "debug";
 const debug = debug1('client:notebook-edit-view');
 
-import { CellId, CellObject, CellRelativePosition, CellPosition, CellType } from "../shared/cell";
+import { CellId, CellObject, CellRelativePosition, CellType } from "../shared/cell";
 import { CssClass, assert, Html, notImplemented } from "../shared/common";
 import { CellDeleted, CellInserted, CellMoved, NotebookUpdate } from "../shared/server-responses";
 import { DebugParams } from "../shared/api-calls";
@@ -37,6 +37,7 @@ import { reportError } from "../error-handler";
 import { apiDebug } from "../api";
 import { ClientNotebook, NotebookView } from "../client-notebook";
 import { notebookUpdateSynopsis } from "../shared/debug-synopsis";
+import { createCellView } from "./instantiator";
 
 // Types
 
@@ -72,7 +73,7 @@ const KEY_MAP: [ KeyName, KeyMods, CommandName][] = [
   [ 'ArrowUp', KeyMod.Alt, 'moveSelectionUp'],
   [ 'Backspace', KeyMod.None, 'deleteSelectedCells'],
   [ 'Enter', KeyMod.None, 'editSelectedCell'],
-  [ 'Enter', KeyMod.Alt, 'insertFormulaCellBelow'],
+  // [ 'Enter', KeyMod.Alt, 'insertFormulaCellBelow'],
   // TODO: [ 'Enter', KeyMod.Alt|KeyMod.Shift, 'insertFormulaCellAbove'],
   [ 'Escape', KeyMod.None, 'unselectAll'],
 ];
@@ -102,6 +103,7 @@ export class NotebookEditView extends HtmlElement<'div'> implements NotebookView
 
     this.cellViews = [];
     this.container = container;
+    this.insertMode = CellType.Formula;
     this.notebook = notebook;
 
     for (let cellIndex=0; cellIndex<notebook.cells.length; cellIndex++) {
@@ -110,6 +112,10 @@ export class NotebookEditView extends HtmlElement<'div'> implements NotebookView
       this.onCellInserted(cellUpdate);
     }
   }
+
+  // Public Instance Properties
+
+  public insertMode: CellType;
 
   // Public Instance Property Functions
 
@@ -156,46 +162,51 @@ export class NotebookEditView extends HtmlElement<'div'> implements NotebookView
     // WAS: this.screen.debugPopup.showContents(results.html);
   }
 
-  public async insertFigureCellBelow(afterId?: CellRelativePosition): Promise<void> {
-    debug("Insert Figure Cell Below");
-
-    // If cell to insert after is not specified, then insert below the last cell selected.
-    // If no cells are selected, then insert at the end of the notebook.
-    if (afterId === undefined) {
-      if (this.lastCellSelected) { afterId = this.lastCellSelected.id; }
-      else { afterId = CellPosition.Bottom; }
-    }
-    await this.notebook.insertCell(CellType.Figure, afterId);
-    // TODO: Set focus?
+  public async insertCell(afterId: CellRelativePosition): Promise<void> {
+    debug("Insert Cell");
+    await this.notebook.insertCell(this.insertMode, afterId);
   }
 
-  public async insertFormulaCellBelow(afterId?: CellRelativePosition): Promise<void> {
-    debug("Insert Formula Cell Below");
+  // public async insertFigureCellBelow(afterId?: CellRelativePosition): Promise<void> {
+  //   debug("Insert Figure Cell Below");
 
-    // If cell to insert after is not specified, then insert below the last cell selected.
-    // If no cells are selected, then insert at the end of the notebook.
-    if (afterId === undefined) {
-      if (this.lastCellSelected) { afterId = this.lastCellSelected.id; }
-      else { afterId = CellPosition.Bottom; }
-    }
-    await this.notebook.insertCell(CellType.Formula, afterId);
-    // const inputMode = userSettingsInstance.defaultInputMode;
-    // TODO: Set focus?
-  }
+  //   // If cell to insert after is not specified, then insert below the last cell selected.
+  //   // If no cells are selected, then insert at the end of the notebook.
+  //   if (afterId === undefined) {
+  //     if (this.lastCellSelected) { afterId = this.lastCellSelected.id; }
+  //     else { afterId = CellPosition.Bottom; }
+  //   }
+  //   await this.notebook.insertCell(CellType.Figure, afterId);
+  //   // TODO: Set focus?
+  // }
 
-  public async insertTextCellBelow(afterId?: CellRelativePosition): Promise<void> {
-    debug("Insert Text Cell Below");
+  // public async insertFormulaCellBelow(afterId?: CellRelativePosition): Promise<void> {
+  //   debug("Insert Formula Cell Below");
 
-    // If cell to insert after is not specified, then insert below the last cell selected.
-    // If no cells are selected, then insert at the end of the notebook.
-    if (afterId === undefined) {
-      if (this.lastCellSelected) { afterId = this.lastCellSelected.id; }
-      else { afterId = CellPosition.Bottom; }
-    }
+  //   // If cell to insert after is not specified, then insert below the last cell selected.
+  //   // If no cells are selected, then insert at the end of the notebook.
+  //   if (afterId === undefined) {
+  //     if (this.lastCellSelected) { afterId = this.lastCellSelected.id; }
+  //     else { afterId = CellPosition.Bottom; }
+  //   }
+  //   await this.notebook.insertCell(CellType.Formula, afterId);
+  //   // const inputMode = userSettingsInstance.defaultInputMode;
+  //   // TODO: Set focus?
+  // }
 
-    await this.notebook.insertCell(CellType.Text, afterId);
-    // TODO: Set focus?
-  }
+  // public async insertTextCellBelow(afterId?: CellRelativePosition): Promise<void> {
+  //   debug("Insert Text Cell Below");
+
+  //   // If cell to insert after is not specified, then insert below the last cell selected.
+  //   // If no cells are selected, then insert at the end of the notebook.
+  //   if (afterId === undefined) {
+  //     if (this.lastCellSelected) { afterId = this.lastCellSelected.id; }
+  //     else { afterId = CellPosition.Bottom; }
+  //   }
+
+  //   await this.notebook.insertCell(CellType.Text, afterId);
+  //   // TODO: Set focus?
+  // }
 
   public async moveSelectionDown(): Promise<void> {
     notImplemented();
@@ -466,7 +477,7 @@ export class NotebookEditView extends HtmlElement<'div'> implements NotebookView
   private onCellInserted(update: CellInserted): void {
     const { cellObject, cellIndex } = update;
     const cell = this.notebook.getCell(cellObject.id);
-    const cellView = cell.createEditView();
+    const cellView = createCellView(this, cell);
     this.cellViews.splice(cellIndex, 0, cellView);
     if (cellIndex === 0) {
       this.$elt.prepend(cellView.$elt);

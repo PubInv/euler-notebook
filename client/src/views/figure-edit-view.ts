@@ -31,6 +31,7 @@ import { HtmlElementSpecification } from "../dom";
 
 import { FigureCell } from "../client-cell/figure-cell";
 import { CellEditView } from "./cell-edit-view";
+import { NotebookEditView } from "./notebook-edit-view";
 
 // Types
 
@@ -42,13 +43,12 @@ export class FigureEditView extends CellEditView<FigureCellObject> {
 
   // Public Constructor
 
-  public constructor(cell: FigureCell) {
-
+  public constructor(notebookEditView: NotebookEditView, cell: FigureCell) {
     const contentSpec: HtmlElementSpecification<'div'> = {
       tag: 'div',
       classes: [ <CssClass>'content', <CssClass>'figureCell' ],
     };
-    super(cell, contentSpec);
+    super(notebookEditView, cell, contentSpec);
   }
 
   // Public Instance Methods

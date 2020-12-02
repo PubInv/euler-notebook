@@ -29,12 +29,13 @@ import { FormulaCellObject } from "../shared/formula";
 import { NotebookUpdate } from "../shared/server-responses";
 import { notebookUpdateSynopsis } from "../shared/debug-synopsis";
 
-import { $new } from "../dom";
+import { HtmlElementSpecification } from "../dom";
 
 
 import { FormulaCell } from "../client-cell/formula-cell";
 
 import { CellEditView } from "./cell-edit-view";
+import { NotebookEditView } from "./notebook-edit-view";
 
 // Types
 
@@ -48,15 +49,14 @@ export class FormulaEditView extends CellEditView<FormulaCellObject> {
 
   // Public Constructor
 
-  public constructor(cell: FormulaCell) {
+  public constructor(notebookEditView: NotebookEditView, cell: FormulaCell) {
     debug(`Creating instance: style ${cell.obj.id}`);
 
-    const $content = $new({
+    const contentSpec: HtmlElementSpecification<'div'> ={
       tag: 'div',
       classes: [ <CssClass>'content', <CssClass>'formulaCell' ],
-    });
-
-    super(cell, $content);
+    };
+    super(notebookEditView, cell, contentSpec);
 
     // TODO: Formula prefix, formula handle (formula number), formula status.
     // const prefixHtml = <Html>''; // LATER: Prefix may be something like, "Assume", or "Define", or "Prove" etc.,
