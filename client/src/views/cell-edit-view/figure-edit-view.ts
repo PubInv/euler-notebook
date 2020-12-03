@@ -20,47 +20,44 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 // Requirements
 
 import * as debug1 from "debug";
-const debug = debug1('client:text-edit-view');
+const debug = debug1('client:figure-edit-view');
 
-import { TextCellObject } from "../shared/cell";
-import { CssClass } from "../shared/common";
-import { NotebookUpdate } from "../shared/server-responses";
-import { notebookUpdateSynopsis, cellSynopsis } from "../shared/debug-synopsis";
+import { CssClass } from "../../shared/common";
+import { NotebookUpdate } from "../../shared/server-responses";
+import { notebookUpdateSynopsis } from "../../shared/debug-synopsis";
+import { FigureCellObject } from "../../shared/cell";
 
-import { HtmlElementSpecification } from "../dom";
+import { HtmlElementSpecification } from "../../dom";
+import { FigureCell } from "../../client-cell/figure-cell";
 
+import { NotebookEditView } from "../notebook-edit-view";
 
-import { TextCell } from "../client-cell/text-cell";
-import { CellEditView } from "./cell-edit-view";
-import { NotebookEditView } from "./notebook-edit-view";
+import { CellEditView } from "./index";
 
 // Types
 
-// Constants
-
 // Exported Class
 
-export class TextEditView extends CellEditView<TextCellObject> {
+export class FigureEditView extends CellEditView<FigureCellObject> {
 
   // Public Class Methods
 
   // Public Constructor
 
-  public constructor(notebookEditView: NotebookEditView, cell: TextCell) {
-    debug(`Constructing: ${cellSynopsis(cell.obj)}`);
-
+  public constructor(notebookEditView: NotebookEditView, cell: FigureCell) {
     const contentSpec: HtmlElementSpecification<'div'> = {
       tag: 'div',
-      classes: [ <CssClass>'content', <CssClass>'textCell' ],
+      classes: [ <CssClass>'content', <CssClass>'figureCell' ],
     };
-
     super(notebookEditView, cell, contentSpec);
   }
+
+  // Public Instance Methods
 
   // ClientNotebookWatcher Methods
 
   public onUpdate(update: NotebookUpdate, ownRequest: boolean): void {
-    debug(`onUpdate C${this.id} ${notebookUpdateSynopsis(update)}`);
+    debug(`onUpdate: C${this.id} ${notebookUpdateSynopsis(update)}`);
     super.onUpdate(update, ownRequest);
     // switch (update.type) {
     //   default: /* Nothing to do */ break;
@@ -78,3 +75,5 @@ export class TextEditView extends CellEditView<TextCellObject> {
   // Private Instance Event Handlers
 
 }
+
+

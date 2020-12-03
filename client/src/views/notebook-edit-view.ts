@@ -37,7 +37,7 @@ import { reportError } from "../error-handler";
 import { apiDebug } from "../api";
 import { ClientNotebook, NotebookView } from "../client-notebook";
 import { notebookUpdateSynopsis } from "../shared/debug-synopsis";
-import { createCellView } from "./instantiator";
+import { createCellView } from "./cell-edit-view/instantiator";
 
 // Types
 

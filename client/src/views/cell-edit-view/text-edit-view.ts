@@ -20,18 +20,19 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 // Requirements
 
 import * as debug1 from "debug";
-const debug = debug1('client:formula-cell');
+const debug = debug1('client:text-edit-view');
 
-import { PlotCellObject } from "../shared/cell";
-import { CssClass } from "../shared/common";
-import { notebookUpdateSynopsis } from "../shared/debug-synopsis";
-import { NotebookUpdate } from "../shared/server-responses";
+import { TextCellObject } from "../../shared/cell";
+import { CssClass } from "../../shared/common";
+import { NotebookUpdate } from "../../shared/server-responses";
+import { notebookUpdateSynopsis, cellSynopsis } from "../../shared/debug-synopsis";
 
-import { HtmlElementSpecification } from "../dom";
+import { HtmlElementSpecification } from "../../dom";
+import { TextCell } from "../../client-cell/text-cell";
 
-import { PlotCell } from "../client-cell/plot-cell";
-import { CellEditView } from "./cell-edit-view";
-import { NotebookEditView } from "./notebook-edit-view";
+import { NotebookEditView } from "../notebook-edit-view";
+
+import { CellEditView } from "./index";
 
 // Types
 
@@ -39,17 +40,20 @@ import { NotebookEditView } from "./notebook-edit-view";
 
 // Exported Class
 
-export class PlotEditView extends CellEditView<PlotCellObject> {
+export class TextEditView extends CellEditView<TextCellObject> {
 
   // Public Class Methods
 
   // Public Constructor
 
-  public  constructor(notebookEditView: NotebookEditView, cell: PlotCell) {
+  public constructor(notebookEditView: NotebookEditView, cell: TextCell) {
+    debug(`Constructing: ${cellSynopsis(cell.obj)}`);
+
     const contentSpec: HtmlElementSpecification<'div'> = {
       tag: 'div',
-      classes: [ <CssClass>'plotCell', <CssClass>'content' ],
+      classes: [ <CssClass>'content', <CssClass>'textCell' ],
     };
+
     super(notebookEditView, cell, contentSpec);
   }
 
@@ -58,16 +62,9 @@ export class PlotEditView extends CellEditView<PlotCellObject> {
   public onUpdate(update: NotebookUpdate, ownRequest: boolean): void {
     debug(`onUpdate C${this.id} ${notebookUpdateSynopsis(update)}`);
     super.onUpdate(update, ownRequest);
-    switch (update.type) {
-      // case 'styleChanged': {
-      //   if (change.style.id == this.cellId) {
-      //     this.updateDisplayPanel(change.style);
-      //   } else {
-      //     // Ignore. Not something that affects our display.
-      //   }
-      //   break;
-      // }
-    }
+    // switch (update.type) {
+    //   default: /* Nothing to do */ break;
+    // }
   }
 
   // -- PRIVATE --
@@ -78,6 +75,6 @@ export class PlotEditView extends CellEditView<PlotCellObject> {
 
   // Private Instance Methods
 
-  // Private Event Handlers
+  // Private Instance Event Handlers
 
 }

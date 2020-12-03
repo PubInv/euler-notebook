@@ -20,47 +20,55 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 // Requirements
 
 import * as debug1 from "debug";
-const debug = debug1('client:figure-edit-view');
+const debug = debug1('client:formula-cell');
 
-import { CssClass } from "../shared/common";
-import { NotebookUpdate } from "../shared/server-responses";
-import { notebookUpdateSynopsis } from "../shared/debug-synopsis";
-import { FigureCellObject } from "../shared/cell";
+import { PlotCellObject } from "../../shared/cell";
+import { CssClass } from "../../shared/common";
+import { notebookUpdateSynopsis } from "../../shared/debug-synopsis";
+import { NotebookUpdate } from "../../shared/server-responses";
 
-import { HtmlElementSpecification } from "../dom";
+import { HtmlElementSpecification } from "../../dom";
+import { PlotCell } from "../../client-cell/plot-cell";
 
-import { FigureCell } from "../client-cell/figure-cell";
-import { CellEditView } from "./cell-edit-view";
-import { NotebookEditView } from "./notebook-edit-view";
+import { NotebookEditView } from "../notebook-edit-view";
+
+import { CellEditView } from "./index";
 
 // Types
 
+// Constants
+
 // Exported Class
 
-export class FigureEditView extends CellEditView<FigureCellObject> {
+export class PlotEditView extends CellEditView<PlotCellObject> {
 
   // Public Class Methods
 
   // Public Constructor
 
-  public constructor(notebookEditView: NotebookEditView, cell: FigureCell) {
+  public  constructor(notebookEditView: NotebookEditView, cell: PlotCell) {
     const contentSpec: HtmlElementSpecification<'div'> = {
       tag: 'div',
-      classes: [ <CssClass>'content', <CssClass>'figureCell' ],
+      classes: [ <CssClass>'plotCell', <CssClass>'content' ],
     };
     super(notebookEditView, cell, contentSpec);
   }
 
-  // Public Instance Methods
-
   // ClientNotebookWatcher Methods
 
   public onUpdate(update: NotebookUpdate, ownRequest: boolean): void {
-    debug(`onUpdate: C${this.id} ${notebookUpdateSynopsis(update)}`);
+    debug(`onUpdate C${this.id} ${notebookUpdateSynopsis(update)}`);
     super.onUpdate(update, ownRequest);
-    // switch (update.type) {
-    //   default: /* Nothing to do */ break;
-    // }
+    switch (update.type) {
+      // case 'styleChanged': {
+      //   if (change.style.id == this.cellId) {
+      //     this.updateDisplayPanel(change.style);
+      //   } else {
+      //     // Ignore. Not something that affects our display.
+      //   }
+      //   break;
+      // }
+    }
   }
 
   // -- PRIVATE --
@@ -71,8 +79,6 @@ export class FigureEditView extends CellEditView<FigureCellObject> {
 
   // Private Instance Methods
 
-  // Private Instance Event Handlers
+  // Private Event Handlers
 
 }
-
-

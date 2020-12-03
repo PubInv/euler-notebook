@@ -24,28 +24,28 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 import * as debug1 from "debug";
 const debug = debug1('client:cell-edit-view');
 
-import { CellObject, CellId, CellType } from "../shared/cell";
+import { CellObject, CellId, CellType } from "../../shared/cell";
 import {
   assert, Html, CssClass, notImplemented, CssLength, CssSize, LengthInPixels,
   PIXELS_PER_INCH, POINTS_PER_INCH
-} from "../shared/common";
-import { NotebookUpdate } from "../shared/server-responses";
+} from "../../shared/common";
+import { NotebookUpdate } from "../../shared/server-responses";
 // import { MoveCell } from "../../../../shared/client-requests";
 
-import { HtmlElement } from "../html-element";
+import { HtmlElement } from "../../html-element";
 import {
   $new, CLOSE_X_ENTITY, ElementId, HtmlElementOrSpecification, HtmlElementSpecification,
   SvgIconId,
   svgIconReferenceMarkup,
-} from "../dom";
+} from "../../dom";
 
-import { Tools } from "../screens/notebook-edit-screen/tools";
-import { CallbackFunctions as ResizerCallbackFunctions, ResizerBar } from "../components/resizer-bar";
-import { CellView, ClientCell } from "../client-cell";
-import { logError, reportError } from "../error-handler";
-import { StrokeCallbackFn, StrokePanel } from "../components/stroke-panel";
-import { Stroke } from "../shared/myscript-types";
-import { NotebookEditView } from "./notebook-edit-view";
+import { Tools } from "../../screens/notebook-edit-screen/tools";
+import { CallbackFunctions as ResizerCallbackFunctions, ResizerBar } from "../../components/resizer-bar";
+import { CellView, ClientCell } from "../../client-cell";
+import { logError, reportError } from "../../error-handler";
+import { StrokeCallbackFn, StrokePanel } from "../../components/stroke-panel";
+import { Stroke } from "../../shared/myscript-types";
+import { NotebookEditView } from "../notebook-edit-view";
 
 // Types
 
