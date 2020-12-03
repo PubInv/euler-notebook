@@ -35,7 +35,7 @@ import { HtmlElement } from "../html-element";
 import { NotebookEditScreen } from "../screens/notebook-edit-screen";
 import { reportError } from "../error-handler";
 import { apiDebug } from "../api";
-import { ClientNotebook, NotebookView } from "../client-notebook";
+import { ClientNotebook } from "../client-notebook";
 import { notebookUpdateSynopsis } from "../shared/debug-synopsis";
 import { createCellView } from "./cell-edit-view/instantiator";
 
@@ -83,7 +83,7 @@ const KEY_BINDINGS = new Map<KeyCombo, CommandName>(KEY_MAP.map(([ keyName, keyM
 
 // Exported Class
 
-export class NotebookEditView extends HtmlElement<'div'> implements NotebookView {
+export class NotebookEditView extends HtmlElement<'div'> {
 
   // Public Class Methods
 
@@ -262,18 +262,6 @@ export class NotebookEditView extends HtmlElement<'div'> implements NotebookView
     // await this.sendUndoableChangeRequests([ request ]);
   }
 
-  public async redo(): Promise<void> {
-    // Disable undo and redo buttons during the operation.
-    this.container.sidebar.$redoButton.disabled = true;
-    this.container.sidebar.$undoButton.disabled = true;
-
-    const moreRedoAvailable = await this.notebook.redo();
-
-    // Enable undo and redo buttons as appropriate.
-    this.container.sidebar.$redoButton.disabled = !moreRedoAvailable;
-    this.container.sidebar.$undoButton.disabled = false;
-  }
-
   public async selectDown(extend?: boolean): Promise<void> {
     const cellView = this.lastCellSelected ? this.nextCell(this.lastCellSelected): this.firstCell();
     if (cellView) {
@@ -299,20 +287,6 @@ export class NotebookEditView extends HtmlElement<'div'> implements NotebookView
 
   public async selectUpExtended(): Promise<void> {
     this.selectUp(true);
-  }
-
-  public async undo(): Promise<void> {
-    // REVIEW: Do we really want to disable the buttons?
-    //         User should be able to hammer the undo button several times to undo several changes quickly.
-    // Disable undo and redo during the operation
-    this.container.sidebar.$redoButton.disabled = true;
-    this.container.sidebar.$undoButton.disabled = true;
-
-    const moreUndoAvailable = await this.notebook.undo();
-
-    // Enable undo and redo as appropriate
-    this.container.sidebar.$redoButton.disabled = false;
-    this.container.sidebar.$undoButton.disabled = !moreUndoAvailable;
   }
 
   // REVIEW: Not actually asynchronous. Have synchronous alternative for internal use?
@@ -464,13 +438,6 @@ export class NotebookEditView extends HtmlElement<'div'> implements NotebookView
 
   //   return cellView;
   // }
-
-  // private async sendUndoableChangeRequest(changeRequest: NotebookChangeRequest): Promise<NotebookChangeRequest> {
-  //   const undoChangeRequests = await this.sendUndoableChangeRequests([changeRequest]);
-  //   assert(undoChangeRequests.length==1);
-  //   return undoChangeRequests[0];
-  // }
-
 
   // Private Event Handlers
 

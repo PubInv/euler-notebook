@@ -38,7 +38,7 @@ type PointerMap = Map<PointerId, PointerInfo>;
 export interface CallbackFunctions {
   cancel: ()=>void;
   down: ()=>void;
-  insert: ()=>void;
+  insert: ()=>Promise<void>;
   move: (deltaY: LengthInPixels)=>void;
   up: (deltaY: LengthInPixels)=>void;
 }
@@ -82,7 +82,7 @@ export class ResizerBar extends HtmlElement<'div'>  {
           attrs: { tabindex: -1 },
           classes: [ <CssClass>'insertCellBelowButton', <CssClass>'iconButton' ],
           html: RIGHT_TRIANGLE_ENTITY,
-          listeners: { click: _e=>callbackFunctions.insert() },
+          asyncListeners: { click: e=>this.onInsertButtonClicked(e) },
         }
       ],
     });
@@ -103,6 +103,11 @@ export class ResizerBar extends HtmlElement<'div'>  {
   // Private Instance Methods
 
   // Private Instance Event Handlers
+
+  private async onInsertButtonClicked(event: MouseEvent): Promise<void> {
+    event.preventDefault();
+    await this.callbackFunctions.insert();
+  }
 
   private onPointerCancel(event: PointerEvent): void {
     debug(`${event.pointerType} ${event.pointerId} ${event.type}`);

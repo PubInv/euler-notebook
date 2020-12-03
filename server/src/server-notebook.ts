@@ -47,9 +47,6 @@ import { OpenOptions, WatchedResource } from "./shared/watched-resource";
 import { ServerSocket } from "./server-socket";
 import { AbsDirectoryPath, ROOT_DIR_PATH, mkDir, readFile, rename, rmRaf, writeFile } from "./adapters/file-system";
 
-
-// const svg2img = require('svg2img');
-
 const MODULE = __filename.split(/[/\\]/).slice(-1)[0].slice(0,-3);
 const debug = debug1(`server:${MODULE}`);
 
@@ -516,17 +513,13 @@ export class ServerNotebook extends WatchedResource<NotebookPath, ServerNotebook
       if (oldIndex > newIndex) { newIndex++; }
     }
 
-    const update: CellMoved = { type: 'cellMoved', cellId, newIndex };
-    updates.push(update);
-
     this.obj.cells.splice(oldIndex, 1);
     this.obj.cells.splice(newIndex, 0, cellObj);
 
-    const undoChangeRequest: MoveCell = {
-      type: 'moveCell',
-      cellId,
-      afterId: oldAfterId
-    };
+    const update: CellMoved = { type: 'cellMoved', cellId, newIndex };
+    updates.push(update);
+
+    const undoChangeRequest: MoveCell = { type: 'moveCell', cellId, afterId: oldAfterId };
     undoChangeRequests.unshift(undoChangeRequest);
   }
 
@@ -534,19 +527,22 @@ export class ServerNotebook extends WatchedResource<NotebookPath, ServerNotebook
     _source: CellSource,
     request: ResizeCell,
     updates: NotebookUpdate[],
-    _undoChangeRequests: NotebookChangeRequest[],
+    undoChangeRequests: NotebookChangeRequest[],
   ): Promise<void> {
     const { cellId, cssSize } = request;
-    const cellObject = this.getCell(cellId);
     assert(cssSize.height.endsWith('pt'));
     assert(cssSize.width.endsWith('pt'));
+    const cellObject = this.getCell(cellId);
+    const oldCssSize = deepCopy(cellObject.cssSize);
+
     cellObject.cssSize.height = cssSize.height;
     cellObject.cssSize.width = cssSize.width;
 
     const update: CellResized = { type: 'cellResized', cellId, cssSize };
     updates.push(update);
-    // TODO: Make undoable.
-    // undoChangeRequests.unshift(undoChangeRequest);
+
+    const undoChangeRequest: ResizeCell = { type: 'resizeCell', cellId, cssSize: oldCssSize };
+    undoChangeRequests.unshift(undoChangeRequest);
   }
 
   protected async initialize(options: OpenNotebookOptions): Promise<void> {

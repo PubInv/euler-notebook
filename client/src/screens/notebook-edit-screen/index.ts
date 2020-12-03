@@ -101,16 +101,24 @@ export class NotebookEditScreen extends ScreenBase implements NotebookView {
 
   // ClientNotebookWatcher Methods
 
-  public onUpdate(change: NotebookUpdate): void {
-    this.editView.onUpdate(change);
-  }
-
   public onClosed(reason?: string): void {
     this.sidebar.destroy();
     this.editView.destroy();
     this.tools.destroy();
     this.debugPopup.destroy();
     this.displayErrorMessage(<Html>`Notebook ${this.notebook.path} closed by server: ${reason}`);
+  }
+
+  public onRedoStateChange(enabled: boolean): void {
+    this.sidebar.onRedoStateChange(enabled);
+  }
+
+  onUndoStateChange(enabled: boolean): void {
+    this.sidebar.onUndoStateChange(enabled);
+  }
+
+  public onUpdate(change: NotebookUpdate): void {
+    this.editView.onUpdate(change);
   }
 
   // --- PRIVATE ---

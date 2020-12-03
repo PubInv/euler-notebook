@@ -319,11 +319,8 @@ export abstract class CellEditView<O extends CellObject> extends HtmlElement<'di
     await this.notebookEditView.moveCell(cellDragData.cellId, this.id);
   }
 
-  private onInsertCell(): void {
-    this.notebookEditView.insertCell(this.id).catch((err: Error)=>{
-      // TODO: Better handling of this error.
-      reportError(err, <Html>"Error inserting cell");
-    });
+  private async onInsertCell(): Promise<void> {
+    await this.notebookEditView.insertCell(this.id);
   }
 
   private onResizerCancel(): void {

@@ -25,7 +25,7 @@ import * as debug1 from "debug";
 const debug = debug1('client:client-notebook');
 
 import { CellId, CellObject, CellOrdinalPosition, CellPosition, CellRelativePosition, CellType } from "./shared/cell";
-import { assert, assertFalse, CssSize, Html, notImplemented } from "./shared/common";
+import { assert, assertFalse, CssSize, Html } from "./shared/common";
 import { notebookUpdateSynopsis } from "./shared/debug-synopsis";
 import { NotebookName, NotebookNameFromNotebookPath, NotebookPath } from "./shared/folder";
 import { FORMAT_VERSION, NotebookObject, PageMargins, Pagination } from "./shared/notebook";
@@ -43,8 +43,10 @@ import { Stroke } from "./shared/myscript-types";
 // Types
 
 export interface NotebookView {
-  onUpdate(update: NotebookUpdate, ownRequest: boolean): void;
   onClosed(reason: string): void;
+  onRedoStateChange(enabled: boolean): void;
+  onUndoStateChange(enabled: boolean): void;
+  onUpdate(update: NotebookUpdate, ownRequest: boolean): void;
 }
 
 export interface ChangeRequestResults {
@@ -58,10 +60,10 @@ interface OpenInfo {
   views: Set<NotebookView>;
 }
 
-// interface UndoEntry {
-//   changeRequests: NotebookChangeRequest[];
-//   undoChangeRequests: NotebookChangeRequest[];
-// }
+interface UndoEntry {
+  changeRequests: NotebookChangeRequest[];
+  undoChangeRequests: NotebookChangeRequest[];
+}
 
 // Constants
 
@@ -141,9 +143,8 @@ export class ClientNotebook {
   }
 
   public async deleteCell(cellId: CellId): Promise<void> {
-    // TODO: Make this undoable.
     const changeRequest: DeleteCell = { type: 'deleteCell', cellId };
-    await this.sendChangeRequest(changeRequest);
+    await this.sendUndoableChangeRequest(changeRequest);
   }
 
   public export(): void {
@@ -155,14 +156,12 @@ export class ClientNotebook {
 
   public async insertCell(cellType: CellType, afterId: CellRelativePosition): Promise<void> {
     const changeRequest: InsertCell = { type: 'insertCell', cellType, afterId };
-    /* const undoChangeRequest = */await this.sendChangeRequest(changeRequest);
-    // const cellId = (<DeleteCellRequest>undoChangeRequest).cellId;
+    await this.sendUndoableChangeRequest(changeRequest);
   }
 
   public async insertStrokeIntoCell(cellId: CellId, stroke: Stroke): Promise<void> {
-    // TODO: Undoable
     const changeRequest: InsertStroke = { type: 'insertStroke', cellId, stroke };
-    await this.sendChangeRequest(changeRequest)
+    await this.sendUndoableChangeRequest(changeRequest)
   }
 
   public async moveCell(cellId: CellId, targetCellId: CellId): Promise<void> {
@@ -185,34 +184,48 @@ export class ClientNotebook {
       cellId: cellId,
       afterId,
     }
-    /* const undoChangeRequest = */await this.sendChangeRequest(changeRequest);
+    await this.sendUndoableChangeRequest(changeRequest);
   }
 
-  public async redo(): Promise<boolean> {
+  public async redo(): Promise<void> {
     // Returns true if there are more redos available.
-    notImplemented();
-    // // Resubmit the change requests.
-    // assert(this.topOfUndoStack < this.undoStack.length);
-    // const entry = this.undoStack[this.topOfUndoStack++];
-    // await this.sendUndoableChangeRequests(entry.changeRequests);
+    // Resubmit the change requests.
+    assert(this.topOfUndoStack < this.undoStack.length);
+    const entry = this.undoStack[this.topOfUndoStack++];
+    await this.sendChangeRequests(entry.changeRequests);
 
-    // return this.topOfUndoStack < this.undoStack.length;
+    // If the are no more undos to redo, then notify the views to disable redo.
+    if (this.topOfUndoStack == this.undoStack.length) {
+      for (const view of this.views) { view.onRedoStateChange(false); }
+    }
+
+    // If we redid the first availabe undo, then notify the views to enable undo.
+    if (this.topOfUndoStack == 1) {
+      for (const view of this.views) { view.onUndoStateChange(true); }
+    }
   }
 
   public async resizeCell(cellId: CellId, cssSize: CssSize): Promise<void> {
-    // TODO: Make this undoable.
     const changeRequest: ResizeCell = { type: 'resizeCell', cellId, cssSize };
-    await this.sendChangeRequest(changeRequest);
+    await this.sendUndoableChangeRequest(changeRequest);
   }
 
-  public async undo(): Promise<boolean> {
+  public async undo(): Promise<void> {
     // Returns true if there are more undos available.
-    notImplemented();
-    // // Undo the changes by making a set of counteracting changes.
-    // assert(this.topOfUndoStack > 0);
-    // const entry = this.undoStack[--this.topOfUndoStack];
-    // await this.notebook.sendChangeRequests(entry.undoChangeRequests);
-    // return this.topOfUndoStack > 0
+    assert(this.topOfUndoStack > 0);
+    const entry = this.undoStack[--this.topOfUndoStack];
+    await this.sendChangeRequests(entry.undoChangeRequests);
+
+    // If there are no more operations that can be undone, then notify the views to disable undo.
+    if (this.topOfUndoStack == 0) {
+      for (const view of this.views) { view.onUndoStateChange(false); }
+    }
+
+    // If this is the first undo of a possible sequence of undos, then notify the views to enable redo.
+    if (this.topOfUndoStack == this.undoStack.length-1) {
+      for (const view of this.views) { view.onRedoStateChange(true); }
+    }
+
   }
 
   public useTool(id: CellId): void {
@@ -256,9 +269,8 @@ export class ClientNotebook {
     this.pageSize = notebookObject.pageSize; // REVIEW: Deep copy?
     this.pagination = notebookObject.pagination;
     this.terminated = false;
-
-    // this.topOfUndoStack = 0;
-    // this.undoStack = [];
+    this.topOfUndoStack = 0;
+    this.undoStack = [];
 
     for (let cellIndex=0; cellIndex<notebookObject.cells.length; cellIndex++) {
       const cellObject = notebookObject.cells[cellIndex];
@@ -271,9 +283,8 @@ export class ClientNotebook {
 
   private cellMap: Map<CellId, ClientCell<any>>;
   private terminated: boolean;  // TODO: Where to assert(!this.terminated)?
-
-  // private topOfUndoStack: number;       // Index of the top of the stack. May not be the length of the undoStack array if there have been some undos.
-  // private undoStack: UndoEntry[];
+  private topOfUndoStack: number;       // Index of the top of the stack. May not be the length of the undoStack array if there have been some undos.
+  private undoStack: UndoEntry[];
 
   // Private Instance Property Functions
 
@@ -291,9 +302,9 @@ export class ClientNotebook {
 
   // Private Instance Methods
 
-  private async sendChangeRequest(changeRequest: NotebookChangeRequest): Promise<ChangeRequestResults> {
-    return this.sendChangeRequests([ changeRequest ]);
-  }
+  // private async sendChangeRequest(changeRequest: NotebookChangeRequest): Promise<ChangeRequestResults> {
+  //   return this.sendChangeRequests([ changeRequest ]);
+  // }
 
   private async sendChangeRequests(changeRequests: NotebookChangeRequest[]): Promise<ChangeRequestResults> {
     assert(!this.terminated);
@@ -324,17 +335,27 @@ export class ClientNotebook {
     }
   }
 
-  // private async sendUndoableChangeRequests(changeRequests: NotebookChangeRequest[]): Promise<NotebookChangeRequest[]> {
-  //   // const { undoChangeRequests } = await this.sendTrackedChangeRequests(changeRequests);
-  //   const results = await this.sendChangeRequests(changeRequests);
-  //   const undoChangeRequests = results.undoChangeRequests!;
-  //   assert(undoChangeRequests && undoChangeRequests.length>0);
-  //   const entry: UndoEntry = { changeRequests, undoChangeRequests };
-  //   while(this.undoStack.length > this.topOfUndoStack) { this.undoStack.pop(); }
-  //   this.undoStack.push(entry);
-  //   this.topOfUndoStack = this.undoStack.length;
-  //   return undoChangeRequests;
-  // }
+  private async sendUndoableChangeRequest(changeRequest: NotebookChangeRequest): Promise<NotebookChangeRequest[]> {
+    return this.sendUndoableChangeRequests([changeRequest]);
+  }
+
+  private async sendUndoableChangeRequests(changeRequests: NotebookChangeRequest[]): Promise<NotebookChangeRequest[]> {
+    // TODO: Enable undo buttons, enable redo buttons?
+    const results = await this.sendChangeRequests(changeRequests);
+    const undoChangeRequests = results.undoChangeRequests!;
+    assert(undoChangeRequests && undoChangeRequests.length>0);
+    const entry: UndoEntry = { changeRequests, undoChangeRequests };
+    while(this.undoStack.length > this.topOfUndoStack) { this.undoStack.pop(); }
+    this.undoStack.push(entry);
+    const stackLength = this.topOfUndoStack = this.undoStack.length;
+
+    // If the undo stack was empty before this operation, then notify the views to enable undo.
+    if (stackLength == 1) {
+      for (const view of this.views) { view.onUndoStateChange(true); }
+    }
+
+    return undoChangeRequests;
+  }
 
   protected terminate(reason: string): void {
     assert(!this.terminated);

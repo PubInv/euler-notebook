@@ -88,14 +88,13 @@ export class Sidebar extends ButtonBar {
       title: "Debug popup",
     });
 
-    const $redoButton = $new({ // TODO: Start out disabled?
+    const $redoButton = $new({
       tag: 'button',
       class: <CssClass>'iconButton',
       html: svgIconReferenceMarkup('iconMonstrRedo4'),
-      asyncListeners: { click: async (_e: MouseEvent)=>{
-        await this.screen.editView.redo();
-      }},
+      asyncListeners: { click: async (_e: MouseEvent)=>{ await this.screen.notebook.redo(); }},
       title: "Redo",
+      disabled: true,
     });
 
     const $trashButton = $new({
@@ -112,10 +111,9 @@ export class Sidebar extends ButtonBar {
       tag: 'button',
       class: <CssClass>'iconButton',
       html: svgIconReferenceMarkup('iconMonstrUndo4'),
-      asyncListeners: { click: async (_e: MouseEvent)=>{
-        await this.screen.editView.undo();
-      }},
+      asyncListeners: { click: async (_e: MouseEvent)=>{ await this.screen.notebook.undo(); }},
       title: "Undo",
+      disabled: true,
     });
 
     super({
@@ -234,4 +232,13 @@ export class Sidebar extends ButtonBar {
     this.$formulaModeButton.disabled = (mode === CellType.Formula);
     this.$textModeButton.disabled = (mode === CellType.Text);
   }
+
+  public onRedoStateChange(enabled: boolean): void {
+    this.$redoButton.disabled = !enabled;
+  }
+
+  onUndoStateChange(enabled: boolean): void {
+    this.$undoButton.disabled = !enabled;
+  }
+
 }
