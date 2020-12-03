@@ -28,7 +28,7 @@ import * as debug1 from "debug";
 // import { readdirSync, unlink, writeFileSync } from "fs"; // LATER: Eliminate synchronous file operations.
 import { join } from "path";
 
-import { CellObject, CellSource, CellId, CellPosition, CellType, FigureCellObject, TextCellObject } from "./shared/cell";
+import { CellObject, CellSource, CellId, CellPosition, CellType, FigureCellObject, TextCellObject, CellOrdinalPosition } from "./shared/cell";
 import { assert, assertFalse, deepCopy, escapeHtml, ExpectedError, Html, notImplemented, PlainText, Timestamp } from "./shared/common";
 import { NotebookPath, NOTEBOOK_PATH_RE, NotebookName, FolderPath, NotebookEntry, Folder } from "./shared/folder";
 import { FormulaCellObject, PlainTextFormula } from "./shared/formula";
@@ -38,7 +38,7 @@ import {
   ChangeNotebook, UseTool, RequestId, NotebookRequest, OpenNotebook, CloseNotebook, ResizeCell,
 } from "./shared/client-requests";
 import {
-  NotebookUpdated, NotebookOpened, NotebookUpdate, CellInserted, CellDeleted, StrokeInserted, CellResized,
+  NotebookUpdated, NotebookOpened, NotebookUpdate, CellInserted, CellDeleted, StrokeInserted, CellResized, CellMoved,
 } from "./shared/server-responses";
 import { cellSynopsis, notebookChangeRequestSynopsis } from "./shared/debug-synopsis";
 import { EMPTY_STROKE_DATA, StrokeId } from "./shared/stylus";
@@ -101,153 +101,9 @@ const EMPTY_NOTEBOOK_OBJ: ServerNotebookObject = {
 const NOTEBOOK_ENCODING = 'utf8';
 const NOTEBOOK_FILE_NAME = 'notebook.json';
 
-// Base Class
-
-// TODO: Merge this class into ServerNotebook.
-export abstract class Notebook<W extends NotebookWatcher> extends WatchedResource<NotebookPath, W> {
-
-  // Public Class Property Functions
-
-  // Public Class Methods
-
-  public static validateObject(obj: ServerNotebookObject): void {
-    // Throws an exception with a descriptive message if the object is not a valid notebook object.
-    // LATER: More thorough validation of the object.
-    if (!obj.nextId) { throw new Error("Invalid notebook object JSON."); }
-    if (obj.formatVersion != FORMAT_VERSION) {
-      throw new ExpectedError(`Invalid notebook version ${obj.formatVersion}. Expect version ${FORMAT_VERSION}`);
-    }
-  }
-
-  // Public Instance Properties
-
-  // Public Instance Property Functions
-
-  public getCell<T extends CellObject>(id: CellId): T {
-    const rval = <T>this.cellMap.get(id);
-    assert(rval, `Cell ${id} doesn't exist.`);
-    return rval;
-  }
-
-  // public getCellThatMayNotExist(id: CellId): CellObject|undefined {
-  //   // TODO: Eliminate. Change usages to .findStyle.
-  //   return this.cellMap.get(id);
-  // }
-
-  public isEmpty(): boolean {
-    return this.obj.cells.length == 0;
-  }
-
-  public precedingCellId(_id: CellId): CellId {
-    notImplemented();
-    // // Returns the id of the style immediately before the top-level style specified.
-    // // TODO: On different pages.
-    // const i = this.pages[0].cellIds.indexOf(id);
-    // assert(i>=0);
-    // if (i<1) { return 0; }
-    // return this.pages[0].cellIds[i-1];
-  }
-
-  public toHtml(): Html {
-    if (this.isEmpty()) { return <Html>"<i>Notebook is empty.</i>"; }
-    else {
-      return <Html>this.obj.cells.map(cellObject=>{
-        return this.cellToHtml(cellObject);
-      }).join('\n');
-    }
-  }
-
-  // Public Instance Methods
-
-  // public findCell(options: FindCellOptions): CellObject|undefined {
-  //   // REVIEW: If we don't need to throw on multiple matches, then we can terminate the search
-  //   //         after we find the first match.
-  //   // Like findStyles but expects to find zero or one matching style.
-  //   // If it finds more than one matching style then it returns the first and outputs a warning.
-  //   const styles = this.findCells(options);
-  //   if (styles.length > 0) {
-  //     if (styles.length > 1) {
-  //       // TODO: On the server, this should use the logging system rather than console output.
-  //       console.warn(`More than one style found for ${JSON.stringify(options)}`);
-  //     }
-  //     return styles[0];
-  //   } else {
-  //     return undefined;
-  //   }
-  // }
-
-  // public findCells(
-  //   options: FindCellOptions,
-  //   rval: CellObject[] = []
-  // ): CellObject[] {
-  //   // Option to throw if style not found.
-  //   const cellObjects = this.topLevelCells();
-  //   // REVIEW: Use filter with predicate instead of explicit loop.
-  //   for (const cellObject of cellObjects) {
-  //     if (cellMatchesPattern(cellObject, options)) { rval.push(cellObject); }
-  //   }
-  //   return rval;
-  // }
-
-  // public hasCellId(cellId: CellId): boolean {
-  //   return this.cellMap.has(cellId);
-  // }
-
-  // public hasCell(
-  //   options: FindCellOptions,
-  // ): boolean {
-  //   // Returns true iff findStyles with the same parameters would return a non-empty list.
-  //   // OPTIMIZATION: Return true when we find the first matching style.
-  //   // NOTE: We don't use 'findStyle' because that throws on multiple matches.
-  //   const styles = this.findCells(options);
-  //   return styles.length>0;
-  // }
-
-  // --- PRIVATE ---
-
-  // Private Class Properties
-
-  // Private Class Methods
-
-  // Private Constructor
-
-  protected constructor(path: NotebookPath) {
-    super(path);
-    this.obj = deepCopy(EMPTY_NOTEBOOK_OBJ);
-    this.cellMap = new Map();
-  }
-
-  // Private Instance Properties
-
-  protected obj: ServerNotebookObject;
-  protected cellMap: Map<CellId, CellObject>;
-
-  // Private Instance Property Functions
-
-  // REVIEW: This probably belongs somewhere else. Seems specific to the use.
-  private cellToHtml(cell: CellObject): Html {
-    return <Html>`<div>
-<span class="collapsed">S${cell.id} ${cell.type} ${cell.source}</span>
-<div class="nested" style="display:none">
-  <tt>${escapeHtml(cellSynopsis(cell))}</tt>
-</div>
-</div>`;
-  }
-
-  // Private Instance Methods
-
-  protected initializeFromObject(obj: ServerNotebookObject): void {
-    this.obj = obj; // REVIEW: Deep copy?
-    for (const cellObject of this.obj.cells) {
-      this.cellMap.set(cellObject.id, cellObject);
-    }
-  }
-
-}
-
 // Exported Class
 
-export class ServerNotebook extends Notebook<ServerNotebookWatcher> {
+export class ServerNotebook extends WatchedResource<NotebookPath, ServerNotebookWatcher> {
 
   // Public Class Constants
 
@@ -344,130 +200,14 @@ export class ServerNotebook extends Notebook<ServerNotebookWatcher> {
     return absDirPathFromNotebookPath(this.path);
   }
 
-//   public async exportLatex(): Promise<TexExpression> {
-//     const ourPreamble = <TexExpression>`\\documentclass[12pt]{article}
-// \\usepackage{amsmath}
-// \\usepackage{amssymb}
-// \\usepackage[normalem]{ulem}
-// \\usepackage{graphicx}
-// \\usepackage{epstopdf}
-// \\epstopdfDeclareGraphicsRule{.gif}{png}{.png}{convert gif:#1 png:\\OutputFile}
-// \\AppendGraphicsExtensions{.gif}
-// \\begin{document}
-// \\title{Magic Math Table}
-// \\author{me}
-// \\maketitle
-// `;
-//     const close = <TexExpression>`\\end{document}`;
-
-//     // Our basic approach is to apply a function to each
-//     // top level style in order. This function will preferentially
-//     // take the LaTeX if there is any.
-//     function displayFormula(f : string) : string {
-//       return `\\begin{align}\n ${f} \\end{align}\n`;
-//     }
-//     const tlso = this.topLevelStyleOrder();
-//     const cells = [];
-//     debug("TOP LEVEL",tlso);
-//     for(const tls of tlso) {
-//       var retLaTeX = "";
-//       // REVIEW: Does this search need to be recursive?
-//       const latex = this.findStyles({ type: 'TEX-EXPRESSION' }, tls);
-//       if (latex.length > 1) { // here we have to have some disambiguation
-//         retLaTeX += "ambiguous: " +displayFormula(latex[0].data);
-//       } else if (latex.length == 1) {  // here it is obvious, maybe...
-//         retLaTeX += displayFormula(latex[0].data);
-//       }
-
-
-//       // REVIEW: Does this search need to be recursive?
-//       const image = this.findStyles({ type: 'IMAGE-URL', role: 'PLOT' }, tls);
-//       if (image.length > 0) {
-//         const plot = image[0];
-//         const apath = this.absoluteDirectoryPath();
-//         // The notebook name is both a part of the plot.data,
-//         // AND is a part of the absolute path. So we take only
-//         // the final file name of local.data here.
-//         const final = plot.data.split("/");
-//         const graphics = `\\includegraphics{${apath}/${final[2]}}`;
-//         retLaTeX += graphics;
-//         retLaTeX += `\n`;
-//         if (image.length > 1) {
-//           retLaTeX += " more than one plot, not sure how to handle that";
-//         }
-//       }
-
-      // TODO: Handle embedded PNGS & SVGs.
-      //       We started putting SVGs of plots, etc. inline
-      //       so the code here that reads the SVG files needs to be updated.
-      // Now we search for .PNGs --- most likely generated from
-      // .svgs, but not necessarily, which allows the possibility
-      // of photographs being included in output later.
-      // REVIEW: Does this search need to be recursive?
-      // const svgs = this.findStyles({ type: 'SVG-MARKUP', recursive: true }, tls);
-      // debug("SVGS:",svgs);
-      // debug("tlso:",styleObject);
-      // for(const s of svgs) {
-      //   // NOTE: At present, this is using a BUFFER, which is volatile.
-      //   // It does not correctly survive resets of the notebook.
-      //   // In fact when we output the file to a file, we need to change
-      //   // the notebook do have a durable 'PNG-FILE' type generated from
-      //   // the buffer. This may seem awkward, but it keeps the
-      //   // function "ruleConvertSvgToPng" completely pure and static,
-      //   // which is a paradigm worth preserving. However, this means
-      //   // we have to handle the data being null until we have consistent
-      //   // file handling.
-      //   if (s.data) {
-      //     const b: Buffer = await apiFunctionWrapper(s.data);
-      //     const ts = Date.now();
-      //     console.log(tls);
-      //     console.log(ts);
-      //     const filename = `image-${s.id}-${ts}.png`;
-      //     console.log("filename",filename);
-      //     const apath = this.absoluteDirectoryPath();
-      //     var abs_filename = `${apath}/${filename}`;
-      //     const directory = apath;
-
-      //     var foundfile = "";
-      //     debug("BEGIN", directory);
-      //     var files = readdirSync(directory);
-      //     debug("files", files);
-      //     // TODO: We removed timestamp from the style, so we need to make whatever changes are necessary here.
-      //     // for (const file of files) {
-      //     //   // I don't know why this is needed!
-      //     //   if (fileIsLaterVersionThan(s.id, s.timestamp, file)) {
-      //     //     foundfile = file;
-      //     //   }
-      //     // }
-      //     debug("END");
-      //     if (foundfile) {
-      //       abs_filename = `${apath}/${foundfile}`;
-      //     } else {
-      //       writeFileSync(abs_filename, b);
-      //       debug("directory",directory);
-      //       var files = readdirSync(directory);
-
-      //       for (const file of files) {
-      //         debug("file",file);
-      //         // I don't know why this is needed!
-      //         if (fileIsEarlierVersionThan(s.id,ts,file)) {
-      //           unlink(join(directory, file), err  => {
-      //             if (err) throw err;
-      //           });
-      //         }
-      //       }
-      //     }
-      //     const graphics = `\\includegraphics{${abs_filename}}`;
-      //     retLaTeX += graphics;
-      //   }
-      // }
-    //   cells.push(retLaTeX);
-    // }
-
-  //   const finalTeX = <TexExpression>(ourPreamble + cells.join('\n') + close);
-  //   debug("finalTeX", finalTeX);
-  //   return finalTeX;
-  // }
+  public toHtml(): Html {
+    if (this.isEmpty()) { return <Html>"<i>Notebook is empty.</i>"; }
+    else {
+      return <Html>this.obj.cells.map(cellObject=>{
+        return ServerNotebook.cellToHtml(cellObject);
+      }).join('\n');
+    }
+  }
 
   public toJSON(): ServerNotebookObject {
     return this.obj;
@@ -541,7 +281,21 @@ export class ServerNotebook extends Notebook<ServerNotebookWatcher> {
     return <ServerNotebook>super.getInstance(path);
   }
 
+  private isEmpty(): boolean {
+    return this.obj.cells.length == 0;
+  }
+
   // Private Class Methods
+
+  // REVIEW: This probably belongs somewhere else. Seems specific to the use.
+  private static cellToHtml(cell: CellObject): Html {
+    return <Html>`<div>
+<span class="collapsed">S${cell.id} ${cell.type} ${cell.source}</span>
+<div class="nested" style="display:none">
+  <tt>${escapeHtml(cellSynopsis(cell))}</tt>
+</div>
+</div>`;
+  }
 
   private static generateUniqueEphemeralPath(): NotebookPath {
     let timestamp = <Timestamp>Date.now();
@@ -552,6 +306,14 @@ export class ServerNotebook extends Notebook<ServerNotebookWatcher> {
     return  <NotebookPath>`/eph${timestamp}${this.NOTEBOOK_DIR_SUFFIX}`;
   }
 
+  public static validateObject(obj: ServerNotebookObject): void {
+    // Throws an exception with a descriptive message if the object is not a valid notebook object.
+    // LATER: More thorough validation of the object.
+    if (!obj.nextId) { throw new Error("Invalid notebook object JSON."); }
+    if (obj.formatVersion != FORMAT_VERSION) {
+      throw new ExpectedError(`Invalid notebook version ${obj.formatVersion}. Expect version ${FORMAT_VERSION}`);
+    }
+  }
 
   // Private Class Event Handlers
 
@@ -559,6 +321,8 @@ export class ServerNotebook extends Notebook<ServerNotebookWatcher> {
 
   private constructor(path: NotebookPath, options: OpenNotebookOptions) {
     super(path);
+    this.obj = deepCopy(EMPTY_NOTEBOOK_OBJ);
+    this.cellMap = new Map();
     this.ephemeral = options.ephemeral;
     this.reservedIds = new Set();
     this.sockets = new Set<ServerSocket>();
@@ -567,12 +331,26 @@ export class ServerNotebook extends Notebook<ServerNotebookWatcher> {
   // Private Instance Properties
 
   // TODO: purge changes in queue that have been processed asynchronously.
+  private cellMap: Map<CellId, CellObject>;
   private ephemeral?: boolean;     // Not persisted to the filesystem.
+  private obj: ServerNotebookObject;
   private reservedIds: Set<CellId>;
   private saving?: boolean;
   private sockets: Set<ServerSocket>;
 
   // Private Instance Property Functions
+
+  private cellIndex(id: CellId): CellOrdinalPosition {
+    const rval = this.obj.cells.findIndex(cellObj=>cellObj.id===id);
+    assert(rval>=0);
+    return rval;
+  }
+
+  private getCell<T extends CellObject>(id: CellId): T {
+    const rval = <T>this.cellMap.get(id);
+    assert(rval, `Cell ${id} doesn't exist.`);
+    return rval;
+  }
 
   // Private Instance Methods
 
@@ -715,44 +493,41 @@ export class ServerNotebook extends Notebook<ServerNotebookWatcher> {
 
   private async applyMoveCellRequest(
     _source: CellSource,
-    _request: MoveCell,
-    _updates: NotebookUpdate[],
-    _undoChangeRequests: NotebookChangeRequest[],
+    request: MoveCell,
+    updates: NotebookUpdate[],
+    undoChangeRequests: NotebookChangeRequest[],
   ): Promise<void> {
-    notImplemented();
-    // const { cellId, afterId } = request;
-    // if (afterId == cellId) { throw new Error(`Style ${cellId} can't be moved after itself.`); }
+    const { cellId, afterId } = request;
+    if (afterId == cellId) { throw new Error(`Style ${cellId} can't be moved after itself.`); }
 
-    // const style = this.getCell(cellId);
-    // const oldPosition: CellPosition = this.pages[0].cellIds.indexOf(style.id);
-    // if (oldPosition < 0) { throw new Error(`Style ${cellId} can't be moved: not found in styleOrder array.`); }
+    const cellObj = this.getCell(cellId);
 
-    // let oldAfterId: number;
-    // if (oldPosition == 0) { oldAfterId = 0; }
-    // else if (oldPosition == this.pages[0].cellIds.length-1) { oldAfterId = -1; }
-    // else { oldAfterId = this.pages[0].cellIds[oldPosition-1]; }
+    let oldAfterId: number;
+    const oldIndex: CellPosition = this.cellIndex(cellId);
+    if (oldIndex == 0) { oldAfterId = 0; }
+    else if (oldIndex == this.obj.cells.length-1) { oldAfterId = -1; }
+    else { oldAfterId = this.obj.cells[oldIndex-1].id; }
 
-    // let newPosition: CellPosition;
-    // if (afterId == 0) { newPosition = 0; }
-    // else if (afterId == -1) { newPosition = this.pages[0].cellIds.length  - 1; }
-    // else {
-    //   newPosition = this.pages[0].cellIds.indexOf(afterId);
-    //   if (newPosition < 0) { throw new Error(`Style ${cellId} can't be moved: other style ${afterId} not found in styleOrder array.`); }
-    //   if (oldPosition > newPosition) { newPosition++; }
-    // }
+    let newIndex: CellPosition;
+    if (afterId == 0) { newIndex = 0; }
+    else if (afterId == -1) { newIndex = this.obj.cells.length  - 1; }
+    else {
+      newIndex = this.cellIndex(afterId);
+      if (oldIndex > newIndex) { newIndex++; }
+    }
 
-    // const update: CellMoved = { type: 'cellMoved', cellId, afterId, oldPosition, newPosition };
-    // updates.push(update);
+    const update: CellMoved = { type: 'cellMoved', cellId, newIndex };
+    updates.push(update);
 
-    // this.pages[0].cellIds.splice(oldPosition, 1);
-    // this.pages[0].cellIds.splice(newPosition, 0, cellId);
+    this.obj.cells.splice(oldIndex, 1);
+    this.obj.cells.splice(newIndex, 0, cellObj);
 
-    // const undoChangeRequest: MoveCell = {
-    //   type: 'moveCell',
-    //   cellId: style.id,
-    //   afterId: oldAfterId
-    // };
-    // undoChangeRequests.unshift(undoChangeRequest);
+    const undoChangeRequest: MoveCell = {
+      type: 'moveCell',
+      cellId,
+      afterId: oldAfterId
+    };
+    undoChangeRequests.unshift(undoChangeRequest);
   }
 
   private async applyResizeCellRequest(
@@ -782,9 +557,12 @@ export class ServerNotebook extends Notebook<ServerNotebookWatcher> {
       const json = await readFile(absPath, NOTEBOOK_ENCODING);
       const obj = JSON.parse(json);
       assert(typeof obj == 'object');
-      Notebook.validateObject(obj);
-      this.initializeFromObject(obj);
-    } else if (options.mustNotExist) {
+      ServerNotebook.validateObject(obj);
+      this.obj = obj; // REVIEW: Deep copy?
+      for (const cellObject of this.obj.cells) {
+        this.cellMap.set(cellObject.id, cellObject);
+      }
+      } else if (options.mustNotExist) {
       await this.saveNew();
     } else {
       // LATER: Neither mustExist or mustNotExist specified. Open if it exists, or create if it doesn't exist.
@@ -922,6 +700,193 @@ export class ServerNotebook extends Notebook<ServerNotebookWatcher> {
     // const changes = await this.requestChanges(source, changeRequests);
     // return changes;
   }
+
+  // NOT USED
+
+//   public async exportLatex(): Promise<TexExpression> {
+//     const ourPreamble = <TexExpression>`\\documentclass[12pt]{article}
+// \\usepackage{amsmath}
+// \\usepackage{amssymb}
+// \\usepackage[normalem]{ulem}
+// \\usepackage{graphicx}
+// \\usepackage{epstopdf}
+// \\epstopdfDeclareGraphicsRule{.gif}{png}{.png}{convert gif:#1 png:\\OutputFile}
+// \\AppendGraphicsExtensions{.gif}
+// \\begin{document}
+// \\title{Magic Math Table}
+// \\author{me}
+// \\maketitle
+// `;
+//     const close = <TexExpression>`\\end{document}`;
+
+//     // Our basic approach is to apply a function to each
+//     // top level style in order. This function will preferentially
+//     // take the LaTeX if there is any.
+//     function displayFormula(f : string) : string {
+//       return `\\begin{align}\n ${f} \\end{align}\n`;
+//     }
+//     const tlso = this.topLevelStyleOrder();
+//     const cells = [];
+//     debug("TOP LEVEL",tlso);
+//     for(const tls of tlso) {
+//       var retLaTeX = "";
+//       // REVIEW: Does this search need to be recursive?
+//       const latex = this.findStyles({ type: 'TEX-EXPRESSION' }, tls);
+//       if (latex.length > 1) { // here we have to have some disambiguation
+//         retLaTeX += "ambiguous: " +displayFormula(latex[0].data);
+//       } else if (latex.length == 1) {  // here it is obvious, maybe...
+//         retLaTeX += displayFormula(latex[0].data);
+//       }
+
+
+//       // REVIEW: Does this search need to be recursive?
+//       const image = this.findStyles({ type: 'IMAGE-URL', role: 'PLOT' }, tls);
+//       if (image.length > 0) {
+//         const plot = image[0];
+//         const apath = this.absoluteDirectoryPath();
+//         // The notebook name is both a part of the plot.data,
+//         // AND is a part of the absolute path. So we take only
+//         // the final file name of local.data here.
+//         const final = plot.data.split("/");
+//         const graphics = `\\includegraphics{${apath}/${final[2]}}`;
+//         retLaTeX += graphics;
+//         retLaTeX += `\n`;
+//         if (image.length > 1) {
+//           retLaTeX += " more than one plot, not sure how to handle that";
+//         }
+//       }
+
+      // TODO: Handle embedded PNGS & SVGs.
+      //       We started putting SVGs of plots, etc. inline
+      //       so the code here that reads the SVG files needs to be updated.
+      // Now we search for .PNGs --- most likely generated from
+      // .svgs, but not necessarily, which allows the possibility
+      // of photographs being included in output later.
+      // REVIEW: Does this search need to be recursive?
+      // const svgs = this.findStyles({ type: 'SVG-MARKUP', recursive: true }, tls);
+      // debug("SVGS:",svgs);
+      // debug("tlso:",styleObject);
+      // for(const s of svgs) {
+      //   // NOTE: At present, this is using a BUFFER, which is volatile.
+      //   // It does not correctly survive resets of the notebook.
+      //   // In fact when we output the file to a file, we need to change
+      //   // the notebook do have a durable 'PNG-FILE' type generated from
+      //   // the buffer. This may seem awkward, but it keeps the
+      //   // function "ruleConvertSvgToPng" completely pure and static,
+      //   // which is a paradigm worth preserving. However, this means
+      //   // we have to handle the data being null until we have consistent
+      //   // file handling.
+      //   if (s.data) {
+      //     const b: Buffer = await apiFunctionWrapper(s.data);
+      //     const ts = Date.now();
+      //     console.log(tls);
+      //     console.log(ts);
+      //     const filename = `image-${s.id}-${ts}.png`;
+      //     console.log("filename",filename);
+      //     const apath = this.absoluteDirectoryPath();
+      //     var abs_filename = `${apath}/${filename}`;
+      //     const directory = apath;
+
+      //     var foundfile = "";
+      //     debug("BEGIN", directory);
+      //     var files = readdirSync(directory);
+      //     debug("files", files);
+      //     // TODO: We removed timestamp from the style, so we need to make whatever changes are necessary here.
+      //     // for (const file of files) {
+      //     //   // I don't know why this is needed!
+      //     //   if (fileIsLaterVersionThan(s.id, s.timestamp, file)) {
+      //     //     foundfile = file;
+      //     //   }
+      //     // }
+      //     debug("END");
+      //     if (foundfile) {
+      //       abs_filename = `${apath}/${foundfile}`;
+      //     } else {
+      //       writeFileSync(abs_filename, b);
+      //       debug("directory",directory);
+      //       var files = readdirSync(directory);
+
+      //       for (const file of files) {
+      //         debug("file",file);
+      //         // I don't know why this is needed!
+      //         if (fileIsEarlierVersionThan(s.id,ts,file)) {
+      //           unlink(join(directory, file), err  => {
+      //             if (err) throw err;
+      //           });
+      //         }
+      //       }
+      //     }
+      //     const graphics = `\\includegraphics{${abs_filename}}`;
+      //     retLaTeX += graphics;
+      //   }
+      // }
+    //   cells.push(retLaTeX);
+    // }
+
+  //   const finalTeX = <TexExpression>(ourPreamble + cells.join('\n') + close);
+  //   debug("finalTeX", finalTeX);
+  //   return finalTeX;
+  // }
+
+
+  // public getCellThatMayNotExist(id: CellId): CellObject|undefined {
+  //   // TODO: Eliminate. Change usages to .findStyle.
+  //   return this.cellMap.get(id);
+  // }
+
+  // public precedingCellId(_id: CellId): CellId {
+  //   notImplemented();
+  //   // // Returns the id of the style immediately before the top-level style specified.
+  //   // // TODO: On different pages.
+  //   // const i = this.pages[0].cellIds.indexOf(id);
+  //   // assert(i>=0);
+  //   // if (i<1) { return 0; }
+  //   // return this.pages[0].cellIds[i-1];
+  // }
+
+  // public findCell(options: FindCellOptions): CellObject|undefined {
+  //   // REVIEW: If we don't need to throw on multiple matches, then we can terminate the search
+  //   //         after we find the first match.
+  //   // Like findStyles but expects to find zero or one matching style.
+  //   // If it finds more than one matching style then it returns the first and outputs a warning.
+  //   const styles = this.findCells(options);
+  //   if (styles.length > 0) {
+  //     if (styles.length > 1) {
+  //       // TODO: On the server, this should use the logging system rather than console output.
+  //       console.warn(`More than one style found for ${JSON.stringify(options)}`);
+  //     }
+  //     return styles[0];
+  //   } else {
+  //     return undefined;
+  //   }
+  // }
+
+  // public findCells(
+  //   options: FindCellOptions,
+  //   rval: CellObject[] = []
+  // ): CellObject[] {
+  //   // Option to throw if style not found.
+  //   const cellObjects = this.topLevelCells();
+  //   // REVIEW: Use filter with predicate instead of explicit loop.
+  //   for (const cellObject of cellObjects) {
+  //     if (cellMatchesPattern(cellObject, options)) { rval.push(cellObject); }
+  //   }
+  //   return rval;
+  // }
+
+  // public hasCellId(cellId: CellId): boolean {
+  //   return this.cellMap.has(cellId);
+  // }
+
+  // public hasCell(
+  //   options: FindCellOptions,
+  // ): boolean {
+  //   // Returns true iff findStyles with the same parameters would return a non-empty list.
+  //   // OPTIMIZATION: Return true when we find the first matching style.
+  //   // NOTE: We don't use 'findStyle' because that throws on multiple matches.
+  //   const styles = this.findCells(options);
+  //   return styles.length>0;
+  // }
 
 }
 

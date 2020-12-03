@@ -26,7 +26,7 @@ const debug = debug1('client:cell-edit-view');
 
 import { CellObject, CellId, CellType } from "../../shared/cell";
 import {
-  assert, Html, CssClass, notImplemented, CssLength, CssSize, LengthInPixels,
+  assert, Html, CssClass, CssLength, CssSize, LengthInPixels,
   PIXELS_PER_INCH, POINTS_PER_INCH
 } from "../../shared/common";
 import { NotebookUpdate } from "../../shared/server-responses";
@@ -196,11 +196,13 @@ export abstract class CellEditView<O extends CellObject> extends HtmlElement<'di
         $main,
         resizerBar.$elt,
       ],
+      asyncListeners: {
+        drop: e=>this.onDrop(e),
+      },
       listeners: {
         click: e=>this.onClicked(e),
         dragenter: e=>this.onDragEnter(e),
         dragover: e=>this.onDragOver(e),
-        drop: e=>this.onDrop(e),
       },
     });
 
@@ -239,7 +241,7 @@ export abstract class CellEditView<O extends CellObject> extends HtmlElement<'di
   //   const textChangeCallback: KeyboardCallbackFn = (_start: number, _end: number, _replacement: PlainText, _value: PlainText): void =>{
   //     notImplemented();
   //     // const changeRequest: KeyboardInputRequest = { type: 'keyboardInputChange', cellId: style.id, start, end, replacement, value, };
-  //     // this.container.screen.notebook.sendCellChangeRequest(changeRequest)
+  //     // this.notebookEditView.screen.notebook.sendCellChangeRequest(changeRequest)
   //     // .catch(err=>{
   //     //   logError(err, <Html>"Error sending keyboardInputChange from text cell");
   //     // });
@@ -253,7 +255,7 @@ export abstract class CellEditView<O extends CellObject> extends HtmlElement<'di
     debug(`onClicked`);
     console.warn("Click to select not implemented.");
     // Note: Shift-click or ctrl-click will extend the current selection.
-    // this.container.selectCell(this, event.shiftKey, event.metaKey);
+    // this.notebookEditView.selectCell(this, event.shiftKey, event.metaKey);
   }
 
   private async onDeleteButtonClicked(event: MouseEvent): Promise<void> {
@@ -309,28 +311,12 @@ export abstract class CellEditView<O extends CellObject> extends HtmlElement<'di
     event.dataTransfer!.effectAllowed = 'all';
   }
 
-  private onDrop(_event: DragEvent): void {
-    notImplemented();
-    // const cellDragData = getDragData(event);
-    // if (!cellDragData) { return; }
-    // // console.log(`Dropped style ${cellDragData.cellId} onto style ${this.cellId}`);
-
-    // const c = this.container.screen.notebook.compareCellPositions(cellDragData.cellId, this.cellId);
-    // if (c==0) { /* Dropped onto self */ return; }
-
-    // // If dragging down, then put dragged cell below the cell that was dropped on.
-    // // If dragging up, then put dragged cell above the cell that was dropped on.
-    // const afterId = c<0 ? this.cellId : this.container.screen.notebook.precedingCellId(this.cellId);
-    // const moveRequest: MoveCell = {
-    //   type: 'moveCell',
-    //   cellId: cellDragData.cellId,
-    //   afterId,
-    // }
-    // this.container.editStyle([ moveRequest ])
-    // .catch((err: Error)=>{
-    //   // TODO: What to do here?
-    //   reportError(err, <Html>"Error moving style for drag/drop");
-    // });
+  private async onDrop(event: DragEvent): Promise<void> {
+    // TODO: Allow dropping on area below last cell.
+    const cellDragData = getDragData(event);
+    if (!cellDragData) { return; }
+    debug(`Dropped style ${cellDragData.cellId} onto style ${this.id}`);
+    await this.notebookEditView.moveCell(cellDragData.cellId, this.id);
   }
 
   private onInsertCell(): void {
@@ -408,13 +394,13 @@ export abstract class CellEditView<O extends CellObject> extends HtmlElement<'di
 
 // Helper Functions
 
-// function getDragData(event: DragEvent): CellDragData|undefined {
-//   assert(event.dataTransfer);
-//   const json = event.dataTransfer!.getData(CELL_MIME_TYPE);
-//   if (!json) { return undefined; }
-//   const cellDragData = <CellDragData>JSON.parse(json);
-//   return cellDragData;
-// }
+function getDragData(event: DragEvent): CellDragData|undefined {
+  assert(event.dataTransfer);
+  const json = event.dataTransfer!.getData(CELL_MIME_TYPE);
+  if (!json) { return undefined; }
+  const cellDragData = <CellDragData>JSON.parse(json);
+  return cellDragData;
+}
 
 function hasDragData(event: DragEvent): boolean {
   return event.dataTransfer!.types.includes(CELL_MIME_TYPE);

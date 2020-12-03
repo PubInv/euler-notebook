@@ -32,16 +32,18 @@ interface Attributes {
 }
 
 interface AsyncListeners {
+  // REVIEW: Can we populate this automatically from the standard DOM types?
   blur?: SyncListener<FocusEvent>;
   change?: AsyncListener<InputEvent>;
   click?: AsyncListener<MouseEvent>;
+  drop?: SyncListener<DragEvent>;
   input?: AsyncListener<InputEvent>;
   keypress?: AsyncListener<KeyboardEvent>;
   keyup?: AsyncListener<KeyboardEvent>;
   submit?: AsyncListener<Event>;
 }
 interface SyncListeners {
-  // REVIEW: Can we populate this declaratively from the standard DOM types?
+  // REVIEW: Can we populate this automatically from the standard DOM types?
   blur?: SyncListener<FocusEvent>;
   change?: SyncListener<InputEvent>;
   click?: SyncListener<MouseEvent>;

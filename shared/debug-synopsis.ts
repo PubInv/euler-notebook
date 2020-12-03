@@ -111,7 +111,7 @@ export function notebookUpdateSynopsis(update: NotebookUpdate): string {
   switch(update.type) {
     case 'cellDeleted':    rval += ` P${update.cellId}`; break;
     case 'cellInserted':   rval += ` ${cellSynopsis(update.cellObject)}`; break;
-    case 'cellMoved':      rval += ` C${update.cellId} to index ${update.cellIndex}`; break;
+    case 'cellMoved':      rval += ` C${update.cellId} to index ${update.newIndex}`; break;
     case 'cellResized':    rval += ` C${update.cellId} ${JSON.stringify(update.cssSize)}`; break;
     case 'strokeInserted': rval += ` C${update.cellId} S${update.strokeId} ${strokeSynopsis(update.stroke)}`; break;
     case 'strokeDeleted':  rval += ` C${update.cellId} S${update.strokeId}`; break;

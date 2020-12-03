@@ -24,12 +24,12 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 import * as debug1 from "debug";
 const debug = debug1('client:client-notebook');
 
-import { CellId, CellObject, CellRelativePosition, CellType } from "./shared/cell";
+import { CellId, CellObject, CellOrdinalPosition, CellPosition, CellRelativePosition, CellType } from "./shared/cell";
 import { assert, assertFalse, CssSize, Html, notImplemented } from "./shared/common";
 import { notebookUpdateSynopsis } from "./shared/debug-synopsis";
 import { NotebookName, NotebookNameFromNotebookPath, NotebookPath } from "./shared/folder";
 import { FORMAT_VERSION, NotebookObject, PageMargins, Pagination } from "./shared/notebook";
-import { NotebookChangeRequest, ChangeNotebook, UseTool, OpenNotebook, DeleteCell, ResizeCell, InsertStroke, InsertCell } from "./shared/client-requests";
+import { NotebookChangeRequest, ChangeNotebook, UseTool, OpenNotebook, DeleteCell, ResizeCell, InsertStroke, InsertCell, MoveCell } from "./shared/client-requests";
 import {
   NotebookUpdated, NotebookOpened, NotebookResponse, NotebookClosed, NotebookUpdate, CellInserted, CellDeleted, CellMoved
 } from "./shared/server-responses";
@@ -109,18 +109,6 @@ export class ClientNotebook {
 
   // Public Instance Property Functions
 
-  // public compareCellPositions(id1: CellId, id2: CellId): number {
-  //   // Returns a negative number if style1 is before style2,
-  //   // zero if they are the same styles,
-  //   // or a positive number if style1 is after style2.
-
-  //   return cellPosition(id1) - cellPosition(id2);
-  // }
-  // public cellPosition(id: CellId): CellOrdinalPosition {
-  //   // TODO: On different pages.
-  //   return this.pages[0].cellIds.indexOf(id);
-  // }
-
   public getCell<O extends CellObject>(id: CellId): ClientCell<O> {
     const cell = <ClientCell<O>>this.cellMap.get(id);
     assert(cell);
@@ -175,6 +163,29 @@ export class ClientNotebook {
     // TODO: Undoable
     const changeRequest: InsertStroke = { type: 'insertStroke', cellId, stroke };
     await this.sendChangeRequest(changeRequest)
+  }
+
+  public async moveCell(cellId: CellId, targetCellId: CellId): Promise<void> {
+    // The cell has been dragged onto the target cell.
+    // If the cell was dragged down, then put the cell after the target.
+    // If the cell was dragged up, then put the cell before the target.
+    assert(cellId != targetCellId);
+    const cellIndex = this.cellIndex(cellId);
+    const targetIndex = this.cellIndex(targetCellId);
+    // If dragging down, then put dragged cell below the cell that was dropped on.
+    // If dragging up, then put dragged cell above the cell that was dropped on.
+    let afterId: CellRelativePosition;
+    if (cellIndex<targetIndex) { afterId = targetCellId; }
+    else {
+      if (targetIndex>0) { afterId = this.cells[targetIndex-1].id; }
+      else { afterId = CellPosition.Top; }
+    }
+    const changeRequest: MoveCell = {
+      type: 'moveCell',
+      cellId: cellId,
+      afterId,
+    }
+    /* const undoChangeRequest = */await this.sendChangeRequest(changeRequest);
   }
 
   public async redo(): Promise<boolean> {
@@ -266,6 +277,12 @@ export class ClientNotebook {
 
   // Private Instance Property Functions
 
+  private cellIndex(id: CellId): CellOrdinalPosition {
+    const rval = this.cells.findIndex(cell=>cell.id===id);
+    assert(rval>=0);
+    return rval;
+  }
+
   private get views(): Set<NotebookView> {
     const openInfo = ClientNotebook.openMap.get(this.path)!;
     assert(openInfo);
@@ -348,7 +365,7 @@ export class ClientNotebook {
   private onCellDeleted(update: CellDeleted): void {
     const { cellId } = update;
     this.cellMap.delete(cellId);
-    const cellIndex = this.cells.findIndex(cell => cell.id===cellId);
+    const cellIndex = this.cellIndex(cellId);
     this.cells.splice(cellIndex, 1);
   }
 
@@ -359,8 +376,15 @@ export class ClientNotebook {
     this.cellMap.set(cell.id, cell);
   }
 
-  private onCellMoved(_update: CellMoved): void {
-    notImplemented();
+  private onCellMoved(update: CellMoved): void {
+    const { cellId, newIndex } = update;
+
+    // Remove cell from its existing position.
+    const cellIndex = this.cellIndex(cellId);
+    const cell = this.cells.splice(cellIndex, 1)[0];
+
+    // Insert cell into its new position.
+    this.cells.splice(newIndex, 0, cell);
   }
 
 

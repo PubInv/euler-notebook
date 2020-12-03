@@ -25,7 +25,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 import * as debug1 from "debug";
 const debug = debug1('client:notebook-edit-view');
 
-import { CellId, CellObject, CellRelativePosition, CellType } from "../shared/cell";
+import { CellId, CellObject, CellOrdinalPosition, CellRelativePosition, CellType } from "../shared/cell";
 import { CssClass, assert, Html, notImplemented } from "../shared/common";
 import { CellDeleted, CellInserted, CellMoved, NotebookUpdate } from "../shared/server-responses";
 import { DebugParams } from "../shared/api-calls";
@@ -207,6 +207,12 @@ export class NotebookEditView extends HtmlElement<'div'> implements NotebookView
   //   await this.notebook.insertCell(CellType.Text, afterId);
   //   // TODO: Set focus?
   // }
+
+  public async moveCell(movedCellId: CellId, droppedCellId: CellId): Promise<void> {
+    debug(`Move cell: ${movedCellId}, ${droppedCellId}`);
+    // REVIEW: Placeholder move?
+    await this.notebook.moveCell(movedCellId, droppedCellId);
+  }
 
   public async moveSelectionDown(): Promise<void> {
     notImplemented();
@@ -406,6 +412,12 @@ export class NotebookEditView extends HtmlElement<'div'> implements NotebookView
     return this.cellViewFromId(cellId);
   }
 
+  private cellViewIndex(cellId: CellId): CellOrdinalPosition {
+    const rval = this.cellViews.findIndex(cellView => cellView.id === cellId);
+    assert(rval>=0);
+    return rval;
+  }
+
   private firstCell<O extends CellObject>(): CellEditView<O> | undefined {
     const $elt = <HTMLDivElement|null>this.$elt.firstElementChild;
     return $elt ? this.cellViewFromElement($elt) : undefined;
@@ -468,9 +480,8 @@ export class NotebookEditView extends HtmlElement<'div'> implements NotebookView
   }
 
   private onCellDeleted(update: CellDeleted): void {
-    const cellIndex = this.cellViews.findIndex(cellView => cellView.id === update.cellId);
-    const cellView = this.cellViews[cellIndex];
-    this.cellViews.splice(cellIndex, 1);
+    const cellIndex = this.cellViewIndex(update.cellId);
+    const cellView = this.cellViews.splice(cellIndex, 1)[0];
     cellView.$elt.remove();
   }
 
@@ -487,8 +498,22 @@ export class NotebookEditView extends HtmlElement<'div'> implements NotebookView
     }
   }
 
-  private onCellMoved(_update: CellMoved): void {
-    notImplemented();
+  private onCellMoved(update: CellMoved): void {
+    const { cellId, newIndex } = update;
+
+    // Remove cell view from its existing position
+    const cellIndex = this.cellViewIndex(cellId);
+    const cellView = this.cellViews.splice(cellIndex, 1)[0];
+    cellView.$elt.remove();
+
+    // Insert cell into its new position
+    this.cellViews.splice(newIndex, 0, cellView);
+    if (newIndex === 0) {
+      this.$elt.prepend(cellView.$elt);
+    } else {
+      const precedingCellView = this.cellViews[newIndex-1];
+      precedingCellView.$elt.after(cellView.$elt);
+    }
   }
 
   private onFocus(_event: FocusEvent): void {

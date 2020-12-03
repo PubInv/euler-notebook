@@ -133,7 +133,7 @@ export interface CellInserted {
 export interface CellMoved {
   type: 'cellMoved';
   cellId: CellId;
-  cellIndex: number;
+  newIndex: number; // After cell is removed from its existing position, this is the index of where it should be inserted.
 }
 export interface CellResized {
   type: 'cellResized';
