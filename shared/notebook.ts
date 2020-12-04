@@ -32,7 +32,6 @@ export type Pagination = number[];
 
 export interface NotebookObject {
   cells: CellObject[];
-  formatVersion: string;
   margins: PageMargins;
   pageSize: CssSize;
   pagination: Pagination;
@@ -50,8 +49,6 @@ export interface PageMargins {
 }
 
 // Constants
-
-export const FORMAT_VERSION = "0.0.19";
 
 // Exported Class
 

@@ -23,12 +23,12 @@ import * as debug1 from "debug";
 const debug = debug1('client:client-cell');
 
 import { CellId, CellObject, CellType } from "../shared/cell";
-import { assertFalse, CssSize, escapeHtml, Html, notImplementedError } from "../shared/common";
+import { assert, assertFalse, CssSize, escapeHtml, Html } from "../shared/common";
 import { NotebookUpdate } from "../shared/server-responses";
+import { cellBriefSynopsis, cellSynopsis, notebookUpdateSynopsis } from "../shared/debug-synopsis";
+import { Stroke } from "../shared/stylus";
 
 import { ClientNotebook } from "../client-notebook";
-import { cellBriefSynopsis, cellSynopsis, notebookUpdateSynopsis } from "../shared/debug-synopsis";
-import { Stroke } from "../shared/myscript-types";
 
 // Types
 
@@ -83,12 +83,14 @@ export abstract class ClientCell<O extends CellObject> {
         break;
       }
       case 'strokeDeleted': {
-        // TODO: Remove the stroke from stroke data.
-        notImplementedError("ClientCell strokeDeleted");
+        const strokes = this.obj.strokeData.strokes;
+        const strokeIndex = strokes.findIndex(stroke=>stroke.id==update.strokeId);
+        assert(strokeIndex>=0);
+        strokes.splice(strokeIndex, 1);
         break;
       }
       case 'strokeInserted': {
-        this.obj.strokeData.strokeGroups[0].strokes.push(update.stroke);
+        this.obj.strokeData.strokes.push(update.stroke);
         break;
       }
       default: assertFalse();

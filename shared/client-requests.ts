@@ -25,8 +25,8 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 import { CellId, CellRelativePosition, CellType } from "./cell";
 import { CssSize, PlainText } from "./common";
 import { FolderPath, NotebookPath, FolderName, NotebookName, } from "./folder";
-import { StrokeId } from "./stylus";
-import { Stroke } from "./myscript-types";
+import { Stroke, StrokeId } from "./stylus";
+
 // Types
 
 export type RequestId = '{RequestId}';

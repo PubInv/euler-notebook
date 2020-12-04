@@ -20,7 +20,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 // Requirements
 
-import { StrokeGroup } from "./myscript-types";
+import { Stroke as MyScriptStroke } from "./myscript-types";
 
 // Types
 
@@ -34,14 +34,19 @@ export enum StrokePosition {
 }
 
 export interface StrokeData {
-  strokeGroups: StrokeGroup[];
+  nextId: StrokeId;
+  strokes: Stroke[];
+}
+
+export interface Stroke extends MyScriptStroke {
+  id: StrokeId;
 }
 
 // Constants
 
 export const EMPTY_STROKE_DATA: StrokeData = {
-  strokeGroups: [{
-    strokes: [],
-  }],
+  nextId: 1,
+  strokes: [],
 }
+
 // Exported Functions

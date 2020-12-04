@@ -32,16 +32,16 @@ import { CellObject, CellSource, CellId, CellPosition, CellType, FigureCellObjec
 import { assert, assertFalse, deepCopy, escapeHtml, ExpectedError, Html, notImplementedError, PlainText, Timestamp } from "./shared/common";
 import { NotebookPath, NOTEBOOK_PATH_RE, NotebookName, FolderPath, NotebookEntry, Folder } from "./shared/folder";
 import { FormulaCellObject, PlainTextFormula } from "./shared/formula";
-import { NotebookObject, FORMAT_VERSION, NotebookWatcher, sizeInPoints, marginsInPoints } from "./shared/notebook";
+import { NotebookObject, NotebookWatcher, sizeInPoints, marginsInPoints } from "./shared/notebook";
 import {
   NotebookChangeRequest, MoveCell, InsertCell, DeleteCell, InsertStroke, DeleteStroke,
   ChangeNotebook, UseTool, RequestId, NotebookRequest, OpenNotebook, CloseNotebook, ResizeCell,
 } from "./shared/client-requests";
 import {
-  NotebookUpdated, NotebookOpened, NotebookUpdate, CellInserted, CellDeleted, StrokeInserted, CellResized, CellMoved,
+  NotebookUpdated, NotebookOpened, NotebookUpdate, CellInserted, CellDeleted, StrokeInserted, CellResized, CellMoved, StrokeDeleted,
 } from "./shared/server-responses";
 import { cellSynopsis, notebookChangeRequestSynopsis } from "./shared/debug-synopsis";
-import { EMPTY_STROKE_DATA, StrokeId } from "./shared/stylus";
+import { EMPTY_STROKE_DATA } from "./shared/stylus";
 import { OpenOptions, WatchedResource } from "./shared/watched-resource";
 
 import { ServerSocket } from "./server-socket";
@@ -73,6 +73,7 @@ export interface ServerNotebookWatcher extends NotebookWatcher {
 }
 
 interface ServerNotebookObject extends NotebookObject {
+  formatVersion: string;
   nextId: CellId;
 }
 
@@ -85,6 +86,8 @@ const DEFAULT_WIDTH = 6.5; // inches
 const DEFAULT_FORMULA_CSS_SIZE = sizeInPoints(1, DEFAULT_WIDTH);
 const DEFAULT_FIGURE_CSS_SIZE = sizeInPoints(3, DEFAULT_WIDTH);
 const DEFAULT_TEXT_CSS_SIZE = sizeInPoints(1, DEFAULT_WIDTH);
+
+const FORMAT_VERSION = "0.0.19";
 
 const EMPTY_NOTEBOOK_OBJ: ServerNotebookObject = {
   nextId: 1,
@@ -362,7 +365,8 @@ export class ServerNotebook extends WatchedResource<NotebookPath, ServerNotebook
     const cellId = request.cellId;
     assert(this.cellMap.has(cellId));
     // const cellObject = this.getCell<T>(cellId);
-    this.removeCellFromPage(cellId);
+    const cellIndex = this.obj.cells.findIndex(cell => cell.id===cellId);
+    this.obj.cells.splice(cellIndex, 1);
     this.cellMap.delete(cellId);
 
     // TODO: Repaginate.
@@ -381,11 +385,27 @@ export class ServerNotebook extends WatchedResource<NotebookPath, ServerNotebook
 
   private async applyDeleteStrokeRequest(
     _source: CellSource,
-    _request: DeleteStroke,
-    _updates: NotebookUpdate[],
-    _undoChangeRequests: NotebookChangeRequest[],
+    request: DeleteStroke,
+    updates: NotebookUpdate[],
+    undoChangeRequests: NotebookChangeRequest[],
   ): Promise<void> {
-    notImplementedError("ServerNoteboook delete stroke request");
+    const { cellId, strokeId } = request;
+    const cellObject = this.getCell(cellId);
+    const strokes = cellObject.strokeData.strokes;
+    const strokeIndex = strokes.findIndex(stroke=>stroke.id===strokeId);
+    assert(strokeIndex>=0, `Cannot find stroke c${cellId}s${strokeId}`);
+
+    const stroke = strokes.splice(strokeIndex, 1)[0];
+
+    const update: StrokeDeleted = { type: 'strokeDeleted', cellId, strokeId };
+    updates.push(update);
+
+    const undoChangeRequest: InsertStroke = {
+      type: 'insertStroke',
+      cellId,
+      stroke,
+    }
+    undoChangeRequests.unshift(undoChangeRequest);
   }
 
   private async applyInsertCellRequest(
@@ -471,20 +491,21 @@ export class ServerNotebook extends WatchedResource<NotebookPath, ServerNotebook
     updates: NotebookUpdate[],
     undoChangeRequests: NotebookChangeRequest[],
   ): Promise<void> {
-    const cellId = request.cellId;
+    const { cellId, stroke } = request;
     const cellObject = this.getCell(request.cellId);
-    const strokeId: StrokeId = -1; // TODO:
-    cellObject.strokeData.strokeGroups[0].strokes.push(request.stroke);
+    const strokeData = cellObject.strokeData;
+
+    stroke.id = strokeData.nextId++;
+    cellObject.strokeData.strokes.push(request.stroke);
 
     const update: StrokeInserted = {
       type: 'strokeInserted',
       cellId: cellObject.id,
-      strokeId: strokeId,
       stroke: request.stroke
     };
     updates.push(update);
 
-    const undoChangeRequest: DeleteStroke = { type: 'deleteStroke', cellId, strokeId };
+    const undoChangeRequest: DeleteStroke = { type: 'deleteStroke', cellId, strokeId: stroke.id };
     undoChangeRequests.unshift(undoChangeRequest);
   }
 
@@ -575,19 +596,6 @@ export class ServerNotebook extends WatchedResource<NotebookPath, ServerNotebook
       //        Currently this is an illegal option configuration.
       notImplementedError("ServerNoteboook Neither mustExist or mustNotExist specified");
     }
-  }
-
-  private removeCellFromPage(cellId: CellId): void {
-    // IMPORTANT:
-    // * This does not remove the cell from the cell map!
-    // * This does not remove the page if the last cell is removed from it.
-    // * This does not repaginate.
-    const cellIndex = this.obj.cells.findIndex(cell => cell.id===cellId);
-    this.removeCellFromPosition(cellIndex);
-  }
-
-  private removeCellFromPosition(cellIndex: number): void {
-    this.obj.cells.splice(cellIndex, 1);
   }
 
   private removeSocket(socket: ServerSocket): void {

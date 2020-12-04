@@ -28,17 +28,17 @@ import { CellId, CellObject, CellOrdinalPosition, CellPosition, CellRelativePosi
 import { assert, assertFalse, CssSize, Html } from "./shared/common";
 import { notebookUpdateSynopsis } from "./shared/debug-synopsis";
 import { NotebookName, NotebookNameFromNotebookPath, NotebookPath } from "./shared/folder";
-import { FORMAT_VERSION, NotebookObject, PageMargins, Pagination } from "./shared/notebook";
+import { NotebookObject, PageMargins, Pagination } from "./shared/notebook";
 import { NotebookChangeRequest, ChangeNotebook, UseTool, OpenNotebook, DeleteCell, ResizeCell, InsertStroke, InsertCell, MoveCell } from "./shared/client-requests";
 import {
   NotebookUpdated, NotebookOpened, NotebookResponse, NotebookClosed, NotebookUpdate, CellInserted, CellDeleted, CellMoved
 } from "./shared/server-responses";
+import { Stroke } from "./shared/stylus";
 
 import { createCell } from "./client-cell/instantiator";
 
 import { appInstance } from "./app";
 import { ClientCell } from "./client-cell";
-import { Stroke } from "./shared/myscript-types";
 
 // Types
 
@@ -261,7 +261,6 @@ export class ClientNotebook {
   // Private Constructor
 
   private constructor(path: NotebookPath, notebookObject: NotebookObject) {
-    assert(notebookObject.formatVersion == FORMAT_VERSION);
     this.path = path;
     this.cellMap = new Map();
     this.cells = [];

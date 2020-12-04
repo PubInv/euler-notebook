@@ -29,7 +29,7 @@ import {
 } from './client-requests';
 import { FolderResponse, FolderUpdate, ServerResponse, NotebookResponse, NotebookUpdate } from "./server-responses";
 import { NotebookObject } from "./notebook";
-import { Stroke } from "./myscript-types";
+import { Stroke } from "./stylus";
 
 // Constants
 
@@ -113,7 +113,7 @@ export function notebookUpdateSynopsis(update: NotebookUpdate): string {
     case 'cellInserted':   rval += ` ${cellSynopsis(update.cellObject)}`; break;
     case 'cellMoved':      rval += ` C${update.cellId} to index ${update.newIndex}`; break;
     case 'cellResized':    rval += ` C${update.cellId} ${JSON.stringify(update.cssSize)}`; break;
-    case 'strokeInserted': rval += ` C${update.cellId} S${update.strokeId} ${strokeSynopsis(update.stroke)}`; break;
+    case 'strokeInserted': rval += ` C${update.cellId} ${strokeSynopsis(update.stroke)}`; break;
     case 'strokeDeleted':  rval += ` C${update.cellId} S${update.strokeId}`; break;
     default: rval += UNKNOWN_TYPE;
   }
@@ -219,5 +219,5 @@ function strokeSynopsis(stroke: Stroke): string {
     const y = stroke.y[i];
     return `(${x.toFixed(2)},${y.toFixed(2)})`;
   });
-  return `S[${points.join(',')}${abbreviated?"...":""}]`
+  return `S${stroke.id}[${points.join(',')}${abbreviated?"...":""}]`
 }

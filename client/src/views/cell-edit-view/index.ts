@@ -31,6 +31,7 @@ import {
 } from "../../shared/common";
 import { NotebookUpdate } from "../../shared/server-responses";
 // import { MoveCell } from "../../../../shared/client-requests";
+import { Stroke } from "../../shared/stylus";
 
 import { HtmlElement } from "../../html-element";
 import {
@@ -44,7 +45,6 @@ import { CallbackFunctions as ResizerCallbackFunctions, ResizerBar } from "../..
 import { CellView, ClientCell } from "../../client-cell";
 import { logError, reportError } from "../../error-handler";
 import { StrokeCallbackFn, StrokePanel } from "../../components/stroke-panel";
-import { Stroke } from "../../shared/myscript-types";
 import { NotebookEditView } from "../notebook-edit-view";
 
 // Types
@@ -218,7 +218,7 @@ export abstract class CellEditView<O extends CellObject> extends HtmlElement<'di
         logError(err, <Html>"Error sending stroke from text cell");
       });
     };
-    this.strokePanel = new StrokePanel(cell.obj.cssSize, cell.obj.strokeData, callbackFn);
+    this.strokePanel = new StrokePanel(cell.obj, callbackFn);
 
     $content.append(this.strokePanel.$elt);
 

@@ -27,8 +27,7 @@ import { RequestId, NotebookChangeRequest } from "./client-requests";
 import { CssSize } from "./common";
 import { FolderObject, FolderPath, NotebookPath, FolderEntry, FolderName, NotebookEntry, NotebookName } from "./folder";
 import { NotebookObject } from "./notebook";
-import { StrokeId } from "./stylus";
-import { Stroke } from "./myscript-types";
+import { StrokeId, Stroke } from "./stylus";
 
 // Types
 
@@ -148,6 +147,5 @@ export interface StrokeDeleted {
 export interface StrokeInserted {
   type: 'strokeInserted';
   cellId: CellId;
-  strokeId: StrokeId;
   stroke: Stroke;
 }
