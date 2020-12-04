@@ -318,7 +318,7 @@ export class NotebookEditView extends HtmlElement<'div'> {
   // }
 
   // public async insertStyle<T extends CellObject>(cellObject: T, afterId: CellRelativePosition = CellPosition.Bottom): Promise<void> {
-  //   const changeRequest: InsertCell<T> = { type: 'insertCell', cellObject, afterId };
+  //   const changeRequest: InsertCell<T> = { type: 'insertEmptyCell', cellObject, afterId };
   //   await this.sendUndoableChangeRequests([ changeRequest ]);
   // }
 

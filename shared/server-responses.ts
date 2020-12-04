@@ -84,7 +84,7 @@ export interface NotebookOpened extends NotebookResponseBase {
 export interface NotebookUpdated extends NotebookResponseBase {
   operation: 'updated';
   updates: NotebookUpdate[];
-  undoChangeRequests?: NotebookChangeRequest[];
+  undoChangeRequests: NotebookChangeRequest[];
 }
 
 // Folder Updates

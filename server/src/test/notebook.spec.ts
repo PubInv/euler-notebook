@@ -104,7 +104,7 @@ async function createNotebookFromText(type: StyleType, text: string): Promise<Se
       inputText: <PlainText>s.trim()
     };
     const styleProps: StyleProperties = { role: 'TEXT', type, data };
-    const rval: InsertCellRequest = { type: 'insertCell', cellObject: styleProps }
+    const rval: InsertCellRequest = { type: 'insertEmptyCell', cellObject: styleProps }
     return rval;
   });
   await td.requestChanges('TEST', changeRequests);

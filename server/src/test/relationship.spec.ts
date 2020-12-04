@@ -120,7 +120,7 @@ function wolframFormulaInsertRequest(plainTextFormula: PlainTextFormula): Insert
     plainTextFormula: plainTextFormula,
   };
   const request: InsertCellRequest = {
-    type: 'insertCell',
+    type: 'insertEmptyCell',
     // styleProps: { role: 'REPRESENTATION', type: 'WOLFRAM-EXPRESSION', data },
     cellObject: { role: 'FORMULA', type: 'FORMULA-DATA', data: data },
   };

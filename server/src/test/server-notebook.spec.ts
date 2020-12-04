@@ -107,7 +107,7 @@ describe("server notebook", function() {
         plainTextFormula: EMPTY_FORMULA,
       };
       const styleProps: StyleProperties = { role: 'FORMULA', type: 'FORMULA-DATA', data };
-      const insertRequest: InsertCellRequest = { type: 'insertCell', cellObject: styleProps };
+      const insertRequest: InsertCellRequest = { type: 'insertEmptyCell', cellObject: styleProps };
       const changeRequests = [insertRequest];
       await notebook.requestChanges('TEST', changeRequests);
       assert(onChangesAsyncSpy.callCount>callCountAsync);
@@ -134,7 +134,7 @@ describe("server notebook", function() {
           { role: 'ATTRIBUTE', type: 'TOOL-DATA', data: toolData },
         ]
       };
-      const insertRequest: InsertCellRequest = { type: 'insertCell', cellObject: styleProps };
+      const insertRequest: InsertCellRequest = { type: 'insertEmptyCell', cellObject: styleProps };
       const changes = await notebook.requestChange('TEST', insertRequest);
 
       // Find the tool style that was inserted.

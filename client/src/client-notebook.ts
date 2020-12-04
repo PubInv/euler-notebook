@@ -29,7 +29,7 @@ import { assert, assertFalse, CssSize, Html } from "./shared/common";
 import { notebookUpdateSynopsis } from "./shared/debug-synopsis";
 import { NotebookName, NotebookNameFromNotebookPath, NotebookPath } from "./shared/folder";
 import { NotebookObject, PageMargins, Pagination } from "./shared/notebook";
-import { NotebookChangeRequest, ChangeNotebook, UseTool, OpenNotebook, DeleteCell, ResizeCell, InsertStroke, InsertCell, MoveCell } from "./shared/client-requests";
+import { NotebookChangeRequest, ChangeNotebook, UseTool, OpenNotebook, DeleteCell, ResizeCell, InsertStroke, InsertEmptyCell, MoveCell } from "./shared/client-requests";
 import {
   NotebookUpdated, NotebookOpened, NotebookResponse, NotebookClosed, NotebookUpdate, CellInserted, CellDeleted, CellMoved
 } from "./shared/server-responses";
@@ -47,11 +47,6 @@ export interface NotebookView {
   onRedoStateChange(enabled: boolean): void;
   onUndoStateChange(enabled: boolean): void;
   onUpdate(update: NotebookUpdate, ownRequest: boolean): void;
-}
-
-export interface ChangeRequestResults {
-  changes: NotebookUpdate[];
-  undoChangeRequests?: NotebookChangeRequest[];
 }
 
 interface OpenInfo {
@@ -155,7 +150,7 @@ export class ClientNotebook {
   }
 
   public async insertCell(cellType: CellType, afterId: CellRelativePosition): Promise<void> {
-    const changeRequest: InsertCell = { type: 'insertCell', cellType, afterId };
+    const changeRequest: InsertEmptyCell = { type: 'insertEmptyCell', cellType, afterId };
     await this.sendUndoableChangeRequest(changeRequest);
   }
 
@@ -305,7 +300,7 @@ export class ClientNotebook {
   //   return this.sendChangeRequests([ changeRequest ]);
   // }
 
-  private async sendChangeRequests(changeRequests: NotebookChangeRequest[]): Promise<ChangeRequestResults> {
+  private async sendChangeRequests(changeRequests: NotebookChangeRequest[]): Promise<NotebookUpdated> {
     assert(!this.terminated);
     assert(changeRequests.length>0);
     const msg: ChangeNotebook = {
@@ -317,17 +312,21 @@ export class ClientNotebook {
     const responseMessages = await appInstance.socket.sendRequest<NotebookUpdated>(msg);
     assert(responseMessages.length>=1);
     if (responseMessages.length == 1) {
-      const responseMessage = responseMessages[0];
-      return { changes: responseMessage.updates, undoChangeRequests: responseMessage.undoChangeRequests };
+      return responseMessages[0];
     } else {
-      const rval: ChangeRequestResults = {
-        changes: [],
+      const rval: NotebookUpdated = {
+        type: 'notebook',
+        path: this.path,
+        operation: 'updated',
+        updates: [],
         undoChangeRequests: [],
       };
       for (const responseMessage of responseMessages) {
-        rval.changes.push(...responseMessage.updates);
-        if (responseMessage.undoChangeRequests) {
-          rval.undoChangeRequests!.push(...responseMessage.undoChangeRequests);
+        rval.updates.push(...responseMessage.updates);
+        // Undo change requests have to go in reverse order.
+        for (let i=responseMessage.undoChangeRequests.length; i>0; --i) {
+          const undoChangeRequest = responseMessage.undoChangeRequests[i-1];
+          rval.undoChangeRequests.unshift(undoChangeRequest);
         }
       }
       return rval;

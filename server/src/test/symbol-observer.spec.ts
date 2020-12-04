@@ -92,7 +92,7 @@ describe("test symbol observer", function() {
         exclusiveChildTypeAndRole: true,
       }
       const cr1: InsertCellRequest = {
-        type: 'insertCell',
+        type: 'insertEmptyCell',
         parentId: style.id,
         cellObject: styleProps1,
       };
@@ -104,7 +104,7 @@ describe("test symbol observer", function() {
         exclusiveChildTypeAndRole: true,
       }
       const cr2: InsertCellRequest = {
-        type: 'insertCell',
+        type: 'insertEmptyCell',
         parentId: style.id,
         cellObject: styleProps2,
       };
@@ -637,7 +637,7 @@ function insertWolframFormulas(_wolframDatas: PlainTextFormula[]) : InsertCellRe
   //     plainTextFormula: wolframData,
   //   };
   //   reqs.push({
-  //     type: 'insertCell',
+  //     type: 'insertEmptyCell',
   //     styleProps: { role: 'FORMULA', type: 'FORMULA-DATA', data }
   //   });
   // }

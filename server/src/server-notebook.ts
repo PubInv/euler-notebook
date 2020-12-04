@@ -34,8 +34,8 @@ import { NotebookPath, NOTEBOOK_PATH_RE, NotebookName, FolderPath, NotebookEntry
 import { FormulaCellObject, PlainTextFormula } from "./shared/formula";
 import { NotebookObject, NotebookWatcher, sizeInPoints, marginsInPoints } from "./shared/notebook";
 import {
-  NotebookChangeRequest, MoveCell, InsertCell, DeleteCell, InsertStroke, DeleteStroke,
-  ChangeNotebook, UseTool, RequestId, NotebookRequest, OpenNotebook, CloseNotebook, ResizeCell,
+  NotebookChangeRequest, MoveCell, InsertEmptyCell, DeleteCell, InsertStroke, DeleteStroke,
+  ChangeNotebook, UseTool, RequestId, NotebookRequest, OpenNotebook, CloseNotebook, ResizeCell, InsertCell,
 } from "./shared/client-requests";
 import {
   NotebookUpdated, NotebookOpened, NotebookUpdate, CellInserted, CellDeleted, StrokeInserted, CellResized, CellMoved, StrokeDeleted,
@@ -233,6 +233,7 @@ export class ServerNotebook extends WatchedResource<NotebookPath, ServerNotebook
         case 'deleteCell':   await this.applyDeleteCellRequest(source, changeRequest, updates, undoChangeRequests); break;
         case 'deleteStroke': await this.applyDeleteStrokeRequest(source, changeRequest, updates, undoChangeRequests); break;
         case 'insertCell':   await this.applyInsertCellRequest(source, changeRequest, updates, undoChangeRequests); break;
+        case 'insertEmptyCell':   await this.applyInsertEmptyCellRequest(source, changeRequest, updates, undoChangeRequests); break;
         case 'insertStroke': await this.applyInsertStrokeRequest(source, changeRequest, updates, undoChangeRequests); break;
         case 'moveCell':     await this.applyMoveCellRequest(source, changeRequest, updates, undoChangeRequests); break;
         case 'resizeCell':   await this.applyResizeCellRequest(source, changeRequest, updates, undoChangeRequests); break;
@@ -245,7 +246,7 @@ export class ServerNotebook extends WatchedResource<NotebookPath, ServerNotebook
       path: this.path,
       operation: 'updated',
       updates,
-      undoChangeRequests, // TODO: Only undo for initiating client.
+      undoChangeRequests, // LATER: Only send undo information to client that requested the change.
       complete: true,
     }
     for (const socket of this.sockets) {
@@ -358,7 +359,7 @@ export class ServerNotebook extends WatchedResource<NotebookPath, ServerNotebook
     _source: CellSource,
     request: DeleteCell,
     updates: NotebookUpdate[],
-    _undoChangeRequests: NotebookChangeRequest[],
+    undoChangeRequests: NotebookChangeRequest[],
   ): Promise<void> {
 
     // Remove cell from the page and from the map.
@@ -366,7 +367,9 @@ export class ServerNotebook extends WatchedResource<NotebookPath, ServerNotebook
     assert(this.cellMap.has(cellId));
     // const cellObject = this.getCell<T>(cellId);
     const cellIndex = this.obj.cells.findIndex(cell => cell.id===cellId);
-    this.obj.cells.splice(cellIndex, 1);
+    assert(cellIndex>=0);
+    const afterId = cellIndex === 0 ? CellPosition.Top : this.obj.cells[cellIndex-1].id;
+    const cellObj = this.obj.cells.splice(cellIndex, 1)[0];
     this.cellMap.delete(cellId);
 
     // TODO: Repaginate.
@@ -374,13 +377,12 @@ export class ServerNotebook extends WatchedResource<NotebookPath, ServerNotebook
     const update: CellDeleted = { type: 'cellDeleted', cellId };
     updates.push(update);
 
-    // TODO:
-    // const undoChangeRequest: InsertCell = {
-    //   type: 'insertCell',
-    //   afterId: this.precedingCellId(cellObject.id),
-    //   cellObject,
-    // };
-    // undoChangeRequests.unshift(undoChangeRequest);
+    const undoChangeRequest: InsertCell = {
+      type: 'insertCell',
+      afterId,
+      cellObj,
+    };
+    undoChangeRequests.unshift(undoChangeRequest);
   }
 
   private async applyDeleteStrokeRequest(
@@ -409,8 +411,40 @@ export class ServerNotebook extends WatchedResource<NotebookPath, ServerNotebook
   }
 
   private async applyInsertCellRequest(
-    source: CellSource,
+    _source: CellSource,
     request: InsertCell,
+    updates: NotebookUpdate[],
+    undoChangeRequests: NotebookChangeRequest[],
+  ): Promise<void> {
+
+    const { cellObj, afterId } = request;
+
+    let cellIndex: number;
+    // Insert top-level styles in the style order.
+    if (!afterId || afterId===CellPosition.Top) {
+      cellIndex = 0;
+    } else if (afterId===CellPosition.Bottom) {
+      cellIndex = this.obj.cells.length;
+    } else {
+      cellIndex = this.obj.cells.findIndex(cellObject => cellObject.id === afterId);
+      assert(cellIndex>=0);
+      cellIndex++;
+    }
+    this.obj.cells.splice(cellIndex, 0, cellObj);
+    this.cellMap.set(cellObj.id, cellObj);
+
+    // TODO: repaginate
+
+    const update: CellInserted = { type: 'cellInserted', cellObject: cellObj, cellIndex };
+    updates.push(update);
+
+    const undoChangeRequest: DeleteCell = { type: 'deleteCell', cellId: cellObj.id };
+    undoChangeRequests.unshift(undoChangeRequest);
+  }
+
+  private async applyInsertEmptyCellRequest(
+    source: CellSource,
+    request: InsertEmptyCell,
     updates: NotebookUpdate[],
     undoChangeRequests: NotebookChangeRequest[],
   ): Promise<void> {
@@ -585,10 +619,10 @@ export class ServerNotebook extends WatchedResource<NotebookPath, ServerNotebook
       // TODO: This is a temporary workaround for the fact that you can't insert a cell if there
       //       are no cells in the notebook.
       await this.requestChanges('USER', [
-        { type: 'insertCell', cellType: CellType.Text, afterId: CellPosition.Top },
-        { type: 'insertCell', cellType: CellType.Formula, afterId: CellPosition.Bottom },
-        { type: 'insertCell', cellType: CellType.Formula, afterId: CellPosition.Bottom },
-        { type: 'insertCell', cellType: CellType.Formula, afterId: CellPosition.Bottom },
+        { type: 'insertEmptyCell', cellType: CellType.Text, afterId: CellPosition.Top },
+        { type: 'insertEmptyCell', cellType: CellType.Formula, afterId: CellPosition.Bottom },
+        { type: 'insertEmptyCell', cellType: CellType.Formula, afterId: CellPosition.Bottom },
+        { type: 'insertEmptyCell', cellType: CellType.Formula, afterId: CellPosition.Bottom },
       ], {});
 
     } else {

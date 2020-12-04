@@ -22,7 +22,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 // Requirements
 
-import { CellId, CellRelativePosition, CellType } from "./cell";
+import { CellId, CellObject, CellRelativePosition, CellType } from "./cell";
 import { CssSize, PlainText } from "./common";
 import { FolderPath, NotebookPath, FolderName, NotebookName, } from "./folder";
 import { Stroke, StrokeId } from "./stylus";
@@ -128,6 +128,7 @@ export type NotebookChangeRequest =
   DeleteCell |
   DeleteStroke |
   InsertCell |
+  InsertEmptyCell |
   InsertStroke |
   MoveCell |
   ResizeCell;
@@ -142,6 +143,11 @@ export interface DeleteStroke {
 }
 export interface InsertCell {
   type: 'insertCell';
+  cellObj: CellObject;
+  afterId: CellRelativePosition;
+}
+export interface InsertEmptyCell {
+  type: 'insertEmptyCell';
   cellType: CellType;
   afterId: CellRelativePosition;
 }

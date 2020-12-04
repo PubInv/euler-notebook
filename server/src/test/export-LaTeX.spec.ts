@@ -85,7 +85,7 @@ function generateInsertRequests(inputs: PlainTextFormula[]) : InsertCellRequest[
       plainTextFormula: wolframData,
     };
     reqs.push({
-      type: 'insertCell',
+      type: 'insertEmptyCell',
       cellObject: {
         role: 'FORMULA',
         type: 'FORMULA-DATA',
