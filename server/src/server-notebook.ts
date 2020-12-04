@@ -454,7 +454,7 @@ export class ServerNotebook extends WatchedResource<NotebookPath, ServerNotebook
       cellIndex = this.obj.cells.findIndex(cellObject => cellObject.id === afterId);
       cellIndex++;
     }
-    this.addCellToPage(cellObject, cellIndex);
+    this.obj.cells.splice(cellIndex, 0, cellObject);
     this.cellMap.set(cellObject.id, cellObject);
     // TODO: repaginate
 
@@ -558,17 +558,23 @@ export class ServerNotebook extends WatchedResource<NotebookPath, ServerNotebook
       for (const cellObject of this.obj.cells) {
         this.cellMap.set(cellObject.id, cellObject);
       }
-      } else if (options.mustNotExist) {
+    } else if (options.mustNotExist) {
       await this.saveNew();
+
+      // TODO: This is a temporary workaround for the fact that you can't insert a cell if there
+      //       are no cells in the notebook.
+      await this.requestChanges('USER', [
+        { type: 'insertCell', cellType: CellType.Text, afterId: CellPosition.Top },
+        { type: 'insertCell', cellType: CellType.Formula, afterId: CellPosition.Bottom },
+        { type: 'insertCell', cellType: CellType.Formula, afterId: CellPosition.Bottom },
+        { type: 'insertCell', cellType: CellType.Formula, afterId: CellPosition.Bottom },
+      ], {});
+
     } else {
       // LATER: Neither mustExist or mustNotExist specified. Open if it exists, or create if it doesn't exist.
       //        Currently this is an illegal option configuration.
       notImplemented();
     }
-  }
-
-  private addCellToPage(cellObject: CellObject, cellIndex: number): void {
-    this.obj.cells.splice(cellIndex, 0, cellObject);
   }
 
   private removeCellFromPage(cellId: CellId): void {

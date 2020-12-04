@@ -85,14 +85,18 @@ export class NotebookReadScreen extends ScreenBase  implements NotebookView {
     this.readView!.resize(/* bodyViewRect.width */);
   }
 
-  // Notebook Watcher Methods
+  // NotebookView Interface Methods
 
-  public onUpdate(_change: NotebookUpdate): void {
-    // TODO:
+  public onClosed(reason: string): void {
+    this.readView.onClosed(reason);
   }
 
-  public onClosed(_reason?: string): void {
-    // TODO:
+  public onRedoStateChange(_enabled: boolean): void { /* Nothing to do */ }
+
+  public onUndoStateChange(_enabled: boolean): void { /* Nothing to do */ }
+
+  public onUpdate(update: NotebookUpdate): void {
+    this.readView.onUpdate(update);
   }
 
   // --- PRIVATE ---

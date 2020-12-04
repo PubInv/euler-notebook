@@ -30,7 +30,6 @@ import { HtmlElement } from "../html-element";
 import { Mode, NotebookReadScreen } from "../screens/notebook-read-screen/index";
 
 import { CellReadView } from "./cell-read-view";
-import { NotebookView } from "../client-notebook";
 import { CellDeleted, CellInserted, CellMoved, NotebookUpdate } from "../shared/server-responses";
 import { notebookUpdateSynopsis } from "../shared/debug-synopsis";
 
@@ -45,7 +44,7 @@ import { notebookUpdateSynopsis } from "../shared/debug-synopsis";
 
 // Class
 
-export class NotebookReadView extends HtmlElement<'div'> implements NotebookView {
+export class NotebookReadView extends HtmlElement<'div'> {
 
   // Class Methods
 
@@ -106,6 +105,8 @@ export class NotebookReadView extends HtmlElement<'div'> implements NotebookView
       $page.style.margin = `${pageMargin}px 0 0 ${pageMargin}px`;
     }
   }
+
+  // NotebookView Interface Methods
 
   public onClosed(_reason: string): void {
     notImplemented();

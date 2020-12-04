@@ -113,7 +113,7 @@ export class NotebookEditScreen extends ScreenBase implements NotebookView {
     this.sidebar.onRedoStateChange(enabled);
   }
 
-  onUndoStateChange(enabled: boolean): void {
+  public onUndoStateChange(enabled: boolean): void {
     this.sidebar.onUndoStateChange(enabled);
   }
 
