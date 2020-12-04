@@ -239,7 +239,7 @@ export abstract class CellEditView<O extends CellObject> extends HtmlElement<'di
 
   // private createKeyboardSubpanel(cellObject: TextCellObject): KeyboardPanel {
   //   const textChangeCallback: KeyboardCallbackFn = (_start: number, _end: number, _replacement: PlainText, _value: PlainText): void =>{
-  //     notImplemented();
+  //     notImplementedError();
   //     // const changeRequest: KeyboardInputRequest = { type: 'keyboardInputChange', cellId: style.id, start, end, replacement, value, };
   //     // this.notebookEditView.screen.notebook.sendCellChangeRequest(changeRequest)
   //     // .catch(err=>{

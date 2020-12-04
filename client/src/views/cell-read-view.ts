@@ -23,7 +23,7 @@ import * as debug1 from "debug";
 const debug = debug1('client:cell-read-view');
 
 import { CellObject } from "../shared/cell";
-import { CssLength, notImplemented, SvgMarkup } from "../shared/common";
+import { CssLength, notImplementedWarning, SvgMarkup } from "../shared/common";
 import { NotebookUpdate } from "../shared/server-responses";
 
 import { CellView, ClientCell } from "../client-cell";
@@ -39,7 +39,7 @@ export class CellReadView<O extends CellObject> implements CellView {
 
   public onUpdate(update: NotebookUpdate, _ownRequest: boolean): void {
     debug(`onUpdate: ${notebookUpdateSynopsis(update)}`);
-    notImplemented();
+    notImplementedWarning("CellReadView update");
   };
 
   public constructor(_cell: ClientCell<O>, xAttr: CssLength, yAttr: CssLength) {

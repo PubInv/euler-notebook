@@ -29,7 +29,7 @@ import * as debug1 from "debug";
 import { join } from "path";
 
 import { CellObject, CellSource, CellId, CellPosition, CellType, FigureCellObject, TextCellObject, CellOrdinalPosition } from "./shared/cell";
-import { assert, assertFalse, deepCopy, escapeHtml, ExpectedError, Html, notImplemented, PlainText, Timestamp } from "./shared/common";
+import { assert, assertFalse, deepCopy, escapeHtml, ExpectedError, Html, notImplementedError, PlainText, Timestamp } from "./shared/common";
 import { NotebookPath, NOTEBOOK_PATH_RE, NotebookName, FolderPath, NotebookEntry, Folder } from "./shared/folder";
 import { FormulaCellObject, PlainTextFormula } from "./shared/formula";
 import { NotebookObject, FORMAT_VERSION, NotebookWatcher, sizeInPoints, marginsInPoints } from "./shared/notebook";
@@ -385,7 +385,7 @@ export class ServerNotebook extends WatchedResource<NotebookPath, ServerNotebook
     _updates: NotebookUpdate[],
     _undoChangeRequests: NotebookChangeRequest[],
   ): Promise<void> {
-    notImplemented();
+    notImplementedError("ServerNoteboook delete stroke request");
   }
 
   private async applyInsertCellRequest(
@@ -425,7 +425,7 @@ export class ServerNotebook extends WatchedResource<NotebookPath, ServerNotebook
         break;
       }
       case CellType.Plot: {
-        notImplemented();
+        notImplementedError("ServerNoteboook insert plot cell");
         break;
       }
       case CellType.Text: {
@@ -573,7 +573,7 @@ export class ServerNotebook extends WatchedResource<NotebookPath, ServerNotebook
     } else {
       // LATER: Neither mustExist or mustNotExist specified. Open if it exists, or create if it doesn't exist.
       //        Currently this is an illegal option configuration.
-      notImplemented();
+      notImplementedError("ServerNoteboook Neither mustExist or mustNotExist specified");
     }
   }
 
@@ -693,7 +693,7 @@ export class ServerNotebook extends WatchedResource<NotebookPath, ServerNotebook
 
   private onUseToolRequest(_socket: ServerSocket, _msg: UseTool): void {
     // debug(`useTool ${cellId}`);
-    notImplemented();
+    notImplementedError("ServerNotebook onUseToolRequest");
     // const style = this.getStyle(cellId);
     // const source = style.source;
     // if (!style) { throw new Error(`Notebook useTool style ID not found: ${cellId}`); }
@@ -837,7 +837,7 @@ export class ServerNotebook extends WatchedResource<NotebookPath, ServerNotebook
   // }
 
   // public precedingCellId(_id: CellId): CellId {
-  //   notImplemented();
+  //   notImplementedError();
   //   // // Returns the id of the style immediately before the top-level style specified.
   //   // // TODO: On different pages.
   //   // const i = this.pages[0].cellIds.indexOf(id);

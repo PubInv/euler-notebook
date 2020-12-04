@@ -23,7 +23,7 @@ import * as debug1 from "debug";
 const debug = debug1('client:client-cell');
 
 import { CellId, CellObject, CellType } from "../shared/cell";
-import { assertFalse, CssSize, escapeHtml, Html, notImplemented } from "../shared/common";
+import { assertFalse, CssSize, escapeHtml, Html, notImplementedError } from "../shared/common";
 import { NotebookUpdate } from "../shared/server-responses";
 
 import { ClientNotebook } from "../client-notebook";
@@ -84,7 +84,7 @@ export abstract class ClientCell<O extends CellObject> {
       }
       case 'strokeDeleted': {
         // TODO: Remove the stroke from stroke data.
-        notImplemented();
+        notImplementedError("ClientCell strokeDeleted");
         break;
       }
       case 'strokeInserted': {

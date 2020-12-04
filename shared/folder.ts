@@ -19,7 +19,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 // Requirements
 
-import { assert, notImplemented, assertFalse } from "./common";
+import { assert, notImplementedError, assertFalse } from "./common";
 import { FolderUpdate } from "./server-responses";
 import { Watcher, WatchedResource } from "./watched-resource";
 
@@ -106,7 +106,7 @@ export abstract class Folder<W extends FolderWatcher> extends WatchedResource<Fo
   }
 
   public get name(): FolderName {
-    return notImplemented();
+    return notImplementedError("Folder name");
   }
 
   public hasFolderNamed(

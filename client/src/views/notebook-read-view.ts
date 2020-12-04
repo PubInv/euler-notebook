@@ -22,7 +22,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 import * as debug1 from "debug";
 const debug = debug1('client:figure-cell');
 
-import { CssClass, assert, CssLength, notImplemented, PIXELS_PER_INCH, POINTS_PER_INCH, LengthInPixels } from "../shared/common";
+import { CssClass, assert, CssLength, notImplementedError, PIXELS_PER_INCH, POINTS_PER_INCH, LengthInPixels, notImplementedWarning } from "../shared/common";
 
 import { $newSvg, $allSvg, cssLength } from "../dom";
 import { HtmlElement } from "../html-element";
@@ -109,7 +109,7 @@ export class NotebookReadView extends HtmlElement<'div'> {
   // NotebookView Interface Methods
 
   public onClosed(_reason: string): void {
-    notImplemented();
+    notImplementedWarning("NotebookReadView onClosed");
   }
 
   public onUpdate(update: NotebookUpdate): void {
@@ -189,15 +189,15 @@ export class NotebookReadView extends HtmlElement<'div'> {
   // Private Event Handlers
 
   private onCellDeleted(_update: CellDeleted): void {
-    notImplemented();
+    notImplementedWarning("NotebookReadView onCellDeleted");
   }
 
   private onCellInserted(_update: CellInserted): void {
-    notImplemented();
+    notImplementedWarning("NotebookReadView onCellInserted");
   }
 
   private onCellMoved(_update: CellMoved): void {
-    notImplemented();
+    notImplementedWarning("NotebookReadView onCellMoved");
   }
 
   private onPageClicked(event: MouseEvent): void {
@@ -217,7 +217,7 @@ export class NotebookReadView extends HtmlElement<'div'> {
 
   private onPageDoubleClicked(_event: MouseEvent): void {
     // TODO: double-click on thumbnail should go to page, not cells.
-    notImplemented();
+    notImplementedError("NotebookReadView onPageDoubleCLicked");
   }
 
 }

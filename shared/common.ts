@@ -96,8 +96,12 @@ export function newPromiseResolver<T>(): { promise: Promise<T>, resolver: Promis
   return { promise, resolver };
 }
 
-export function notImplemented(): never {
-  throw new Error("Not implemented.");
+export function notImplementedError(feature: string): never {
+  throw new Error(`${feature} is not yet implemented.`);
+}
+
+export function notImplementedWarning(feature: string): void {
+  console.warn(`${feature} is not yet implemented.`);
 }
 
 export function replaceStringSegment(s: string, start: number, end: number, replacement: string): string {

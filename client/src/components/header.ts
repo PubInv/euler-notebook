@@ -25,7 +25,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 import * as debug1 from "debug";
 const debug = debug1('client:header');
 
-import { CssClass, Html, escapeHtml, notImplemented } from "../shared/common";
+import { CssClass, Html, escapeHtml, notImplementedError } from "../shared/common";
 import { Path } from "../shared/folder";
 
 import { ButtonBar } from "./button-bar";
@@ -132,7 +132,7 @@ export class Header extends ButtonBar {
               class: <CssClass>'iconButton',
               title: "User settings",
               html: svgIconReferenceMarkup('iconMonstrUser1'),
-              listeners: { click: _e=>notImplemented() },
+              listeners: { click: _e=>notImplementedError("User settings") },
             },
           ],
         }

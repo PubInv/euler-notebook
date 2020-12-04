@@ -26,7 +26,7 @@ import * as debug1 from "debug";
 const debug = debug1('client:notebook-edit-view');
 
 import { CellId, CellObject, CellOrdinalPosition, CellRelativePosition, CellType } from "../shared/cell";
-import { CssClass, assert, Html, notImplemented } from "../shared/common";
+import { CssClass, assert, Html, notImplementedError, notImplementedWarning } from "../shared/common";
 import { CellDeleted, CellInserted, CellMoved, NotebookUpdate } from "../shared/server-responses";
 import { DebugParams } from "../shared/api-calls";
 
@@ -142,7 +142,7 @@ export class NotebookEditView extends HtmlElement<'div'> {
   // (Public instance methods bound to keystrokes)
 
   public async deleteSelectedCells(): Promise<void> {
-    notImplemented();
+    notImplementedError("NotebookEditView delete selected cells");
     // const cellViews = this.selectedCells();
     // await this.unselectAll();
     // const changeRequests = cellViews.map<DeleteCell>(c=>({ type: 'deleteCell', cellId: c.id }));
@@ -158,7 +158,7 @@ export class NotebookEditView extends HtmlElement<'div'> {
     const cellId = this.lastCellSelected?.id;
     const params: DebugParams = { notebookPath, cellId };
     /* const results = */ await apiDebug(params);
-    notImplemented();
+    notImplementedError("NotebookEditView developmentButtonClicked");
     // WAS: this.screen.debugPopup.showContents(results.html);
   }
 
@@ -215,7 +215,7 @@ export class NotebookEditView extends HtmlElement<'div'> {
   }
 
   public async moveSelectionDown(): Promise<void> {
-    notImplemented();
+    notImplementedError("NotebookEditView moveSelectionDown");
     // // TODO: contiguous multiple selection
     // // TODO: discontiguous multiple selection
     // // TODO: scroll into view if necessary.
@@ -239,7 +239,7 @@ export class NotebookEditView extends HtmlElement<'div'> {
   }
 
   public async moveSelectionUp(): Promise<void> {
-    notImplemented();
+    notImplementedError("NotebookEditView MoveSelectionUp");
     // // TODO: contiguous multiple selection
     // // TODO: discontiguous multiple selection
     // // TODO: scroll into view if necessary.
@@ -307,7 +307,7 @@ export class NotebookEditView extends HtmlElement<'div'> {
       delete this.lastCellSelected;
     }
     this.$elt.removeChild(cellView.$elt);
-    notImplemented();
+    notImplementedError("NotebookEditView deleteCell");
     // TODO: Splice cell view out of cellViews array.
   }
 
@@ -348,7 +348,7 @@ export class NotebookEditView extends HtmlElement<'div'> {
   // Public Instance Event Handlers
 
   public onClosed(_reason: string): void {
-    notImplemented();
+    notImplementedWarning("NotebookEditView onClosed");
   }
 
   public onUpdate(update: NotebookUpdate): void {
