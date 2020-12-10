@@ -23,25 +23,23 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 // Requirements
 
 import { CellId, CellObject, CellRelativePosition, CellType } from "./cell";
-import { CssSize, PlainText } from "./common";
+import { CssSize, PlainText, SessionToken } from "./common";
 import { FolderPath, NotebookPath, FolderName, NotebookName, } from "./folder";
 import { Stroke, StrokeId } from "./stylus";
+import { UserName, UserPassword } from "./user";
 
 // Types
 
 export type RequestId = '{RequestId}';
 
-export type ClientRequest = FolderRequest|NotebookRequest;
+export type ClientRequest = FolderRequest | NotebookRequest | UserRequest;
 interface RequestBase {
   requestId?: RequestId; // TYPESCRIPT: always added on at the end before sending. How to capture this?
 }
 
-// Client Folder Requests
+// Folder Requests
 
-export type FolderRequest =
-  ChangeFolder |
-  CloseFolder |
-  OpenFolder;
+export type FolderRequest = ChangeFolder | CloseFolder | OpenFolder;
 interface FolderRequestBase extends RequestBase {
   type: 'folder';
   path: FolderPath;
@@ -58,13 +56,9 @@ export interface OpenFolder extends FolderRequestBase {
   operation: 'open';
 }
 
-// Client Notebook Requests
+// Notebook Requests
 
-export type NotebookRequest =
-  ChangeNotebook |
-  CloseNotebook |
-  OpenNotebook |
-  UseTool;
+export type NotebookRequest = ChangeNotebook | CloseNotebook | OpenNotebook | UseTool;
 interface NotebookRequestBase extends RequestBase {
   type: 'notebook';
   path: NotebookPath;
@@ -85,7 +79,27 @@ export interface UseTool extends NotebookRequestBase {
   cellId: CellId;
 }
 
-// Client Folder Change Requests
+// User Requests
+
+export type UserRequest = LoginUserWithPassword | LoginUserWithToken | LogoutUser;
+interface UserRequestBase extends RequestBase {
+  type: 'user';
+}
+export interface LoginUserWithPassword extends UserRequestBase {
+  operation: 'passwordLogin';
+  userName: UserName;
+  password: UserPassword;
+}
+export interface LoginUserWithToken extends UserRequestBase {
+  operation: 'tokenLogin';
+  sessionToken: SessionToken;
+}
+export interface LogoutUser extends UserRequestBase {
+  operation: 'logout';
+  sessionToken: SessionToken;
+}
+
+// Folder Change Requests
 
 export type FolderChangeRequest =
   FolderCreateRequest|
@@ -121,7 +135,7 @@ export interface NotebookRenameRequest {
   newName: NotebookName;
 }
 
-// Client Notebook Change Requests
+// Notebook Change Requests
 
 export type NotebookChangeRequest =
   ChangeText |

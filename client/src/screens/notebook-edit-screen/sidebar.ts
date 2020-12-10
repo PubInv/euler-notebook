@@ -118,7 +118,6 @@ export class Sidebar extends ButtonBar {
 
     super({
       tag: 'div',
-      appendTo: screen.$elt,
       class: <CssClass>'sidebar',
       children: [
         {

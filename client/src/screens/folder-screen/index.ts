@@ -27,10 +27,10 @@ import { FolderUpdate } from "../../shared/server-responses";
 
 import { ScreenBase } from "../screen-base";
 import { ClientFolder, ClientFolderWatcher, OpenFolderOptions } from "../../client-folder";
-import { reportError } from "../../error-handler";
 
 import { Content } from "./content";
 import { Sidebar } from "./sidebar";
+import { Header } from "../../components/header";
 
 // Types
 
@@ -46,12 +46,11 @@ export class FolderScreen extends ScreenBase implements ClientFolderWatcher {
 
   // Public Constructor
 
-  public constructor($parent: HTMLElement, path: FolderPath) {
+  public constructor(path: FolderPath) {
     super({
-      appendTo: $parent,
+      tag: 'div',
       classes: [<CssClass>'screen', <CssClass>'folderScreen'],
       data: { path },
-      tag: 'div',
     });
 
     const options: OpenFolderOptions = { mustExist: true, watcher: this };
@@ -59,12 +58,15 @@ export class FolderScreen extends ScreenBase implements ClientFolderWatcher {
     .then(
       (folder: ClientFolder)=>{
         this.folder = folder;
+
+        this.header = new Header(folder.path, folder.userMap.values());
         this.sidebar = new Sidebar(this);
         this.view = new Content(this);
-          },
+
+        this.$elt.append(this.header.$elt, this.sidebar.$elt, this.view.$elt);
+      },
       (err)=>{
-        reportError(err, <Html>`Error opening folder '${path}'`);
-        this.displayErrorMessage(<Html>`Error opening folder '${path}'`);
+        this.displayError(err, <Html>`Error opening folder <tt>${path}</tt>`);
       }
     );
   }
@@ -76,6 +78,7 @@ export class FolderScreen extends ScreenBase implements ClientFolderWatcher {
   // Public Instance Properties
 
   public folder!: ClientFolder;     // Instantiated asynchronously in the constructor.
+  public header!: Header;
   public sidebar!: Sidebar;   // Instantiated asynchronously in the constructor.
   public view!: Content;         // Instantiated asynchronously in the constructor.
 
@@ -88,7 +91,7 @@ export class FolderScreen extends ScreenBase implements ClientFolderWatcher {
   public onClosed(reason?: string): void {
     this.sidebar.destroy();
     this.view.destroy();
-    this.displayErrorMessage(<Html>`Folder ${this.folder.path} closed by server: ${reason}`);
+    this.displayErrorMessage(<Html>`Server closed folder <tt>${this.folder.path}</tt>: ${reason}`);
   }
 
   // --- PRIVATE ---

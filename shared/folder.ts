@@ -33,11 +33,10 @@ export type FolderName = '{folder-name}'; // Name of a folder without any slashe
 // separator is a backslash.
 export type FolderPath = '{folder-path}';
 
-export type NotebookName = '{notebook-name}';  // Just the name of the notebook, no .mtnb extension.
+export type NotebookName = '{notebook-name}';  // Just the name of the notebook, no .enb extension.
 
-// Notebook paths are a FolderPath followed by a NotebookName, then a '.mtnb' extension.
-// Note that we always use forward slash, even on Windows where the filesystem
-// separator is a backslash.
+// Notebook paths are a FolderPath followed by a NotebookName, then a '.enb' extension.
+// Note that we always use forward slash, even on filesystems with other separators (e.g. Windows)
 export type NotebookPath = '{notebook-path}';
 
 export type Path = FolderPath | NotebookPath;
@@ -71,7 +70,7 @@ export type NotebookEntry = Entry<NotebookName, NotebookPath>;
 export const FOLDER_NAME_RE = /^(\w+)$/;
 export const FOLDER_PATH_RE = /^\/((\w+)\/)*$/;
 export const NOTEBOOK_NAME_RE = /^(\w+)$/;
-export const NOTEBOOK_PATH_RE = /^\/((\w+\/)*)(\w+)\.mtnb$/;
+export const NOTEBOOK_PATH_RE = /^\/((\w+\/)*)(\w+)\.enb$/;
 
 // Exported Class
 

@@ -25,9 +25,9 @@ import { CellObject, CellType } from "./cell";
 import { assert } from './common';
 //import { Notebook } from './notebook';
 import {
-  FolderRequest, ClientRequest, NotebookRequest, FolderChangeRequest, NotebookChangeRequest,
+  FolderRequest, ClientRequest, NotebookRequest, FolderChangeRequest, NotebookChangeRequest, UserRequest,
 } from './client-requests';
-import { FolderResponse, FolderUpdate, ServerResponse, NotebookResponse, NotebookUpdate } from "./server-responses";
+import { FolderResponse, FolderUpdate, ServerResponse, NotebookResponse, NotebookUpdate, UserResponse } from "./server-responses";
 import { NotebookObject } from "./notebook";
 import { Stroke } from "./stylus";
 
@@ -58,6 +58,18 @@ export function clientMessageSynopsis(msg: ClientRequest): string {
   switch (msg.type) {
     case 'folder': rval += clientFolderMessageSynopsis(msg); break;
     case 'notebook': rval += clientNotebookMessageSynopsis(msg); break;
+    case 'user': rval += clientUserMessageSynopsis(msg); break;
+    default: rval += UNKNOWN_TYPE;
+  }
+  return rval;
+}
+
+export function clientUserMessageSynopsis(msg: UserRequest): string {
+  let rval = `${msg.operation}`;
+  switch(msg.operation) {
+    case 'passwordLogin': rval += `${msg.userName}`; break;
+    case 'tokenLogin': rval += ` ${msg.sessionToken}`; break;
+    case 'logout': rval += ` ${msg.sessionToken}`; break;
     default: rval += UNKNOWN_TYPE;
   }
   return rval;
@@ -132,9 +144,10 @@ export function serverMessageSynopsis(msg: ServerResponse): string {
 
   switch (msg.type) {
     case 'error':    rval += `msg: "${msg.message}"`; break;
-    case 'folder':   rval += folderResponseSynopsis(msg); break;
-    case 'notebook': rval += notebookResponseSynopsis(msg); break;
-    default: rval += UNKNOWN_TYPE;
+    case 'folder':   rval += serverFolderResponseSynopsis(msg); break;
+    case 'notebook': rval += serverNotebookResponseSynopsis(msg); break;
+    case 'user':     rval += serverUserResponseSynopsis(msg); break;
+    default:         rval += UNKNOWN_TYPE;
   }
   if (msg.complete) { rval += ' [complete]' };
   return rval;
@@ -181,7 +194,7 @@ function clientNotebookMessageSynopsis(msg: NotebookRequest): string {
 
 function indentation(indentationLevel: number): string { return ' '.repeat(indentationLevel*2); }
 
-function folderResponseSynopsis(msg: FolderResponse): string {
+function serverFolderResponseSynopsis(msg: FolderResponse): string {
   let rval = `${msg.path} ${msg.operation} `;
   switch(msg.operation) {
     case 'updated':
@@ -196,7 +209,7 @@ function folderResponseSynopsis(msg: FolderResponse): string {
   return rval;
 }
 
-function notebookResponseSynopsis(msg: NotebookResponse): string {
+function serverNotebookResponseSynopsis(msg: NotebookResponse): string {
   let rval = `${msg.path} ${msg.operation} `;
   switch(msg.operation) {
     case 'updated':
@@ -206,6 +219,16 @@ function notebookResponseSynopsis(msg: NotebookResponse): string {
       break;
     case 'closed': rval += ` reason: ${msg.reason}`; break;
     case 'opened': break;
+    default: rval += UNKNOWN_TYPE;
+  }
+  return rval;
+}
+
+function serverUserResponseSynopsis(msg: UserResponse): string {
+  let rval = `${msg.operation}`;
+  switch(msg.operation) {
+    case 'loggedIn': rval += ` ${JSON.stringify(msg.obj)} ${msg.sessionToken}`; break;
+    case 'loggedOut': break;
     default: rval += UNKNOWN_TYPE;
   }
   return rval;

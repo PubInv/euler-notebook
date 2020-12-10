@@ -20,29 +20,28 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 // TODO: Watch folder on disk. Generate change notifications if things are created, deleted, or renamed.
 // TODO: Folder lifecycle. When and how are folders that are no longer used cleaned up?
 // REVIEW: Where should we be checking if this.terminated is set?
-``
+
 // Requirements
 
 import * as debug1 from "debug";
-import { join } from "path";
+const MODULE = __filename.split(/[/\\]/).slice(-1)[0].slice(0,-3);
+const debug = debug1(`server:${MODULE}`);
 
-import { assert } from "./shared/common";
+import { assert, ExpectedError } from "./shared/common";
 import {
   Folder, FolderEntry, FolderName, FolderObject, FolderPath, FOLDER_PATH_RE, NotebookEntry,
   NotebookName, NotebookPath, FolderWatcher,
 } from "./shared/folder";
 import { ChangeFolder, CloseFolder, FolderRequest, OpenFolder, RequestId } from "./shared/client-requests";
 import { FolderUpdated, FolderOpened, FolderResponse, FolderUpdate } from "./shared/server-responses";
+import { UserPermission } from "./shared/permissions";
 
-import { AbsDirectoryPath, ROOT_DIR_PATH, dirStat, mkDir, readDir, rename, rmDir } from "./adapters/file-system";
+import { createDirectory, deleteDirectory, readDirectory, renameDirectory } from "./adapters/file-system";
 import { ServerNotebook, notebookPath } from "./server-notebook";
 import { OpenOptions } from "./shared/watched-resource";
 import { logWarning } from "./error-handler";
 import { ServerSocket } from "./server-socket";
-
-const MODULE = __filename.split(/[/\\]/).slice(-1)[0].slice(0,-3);
-const debug = debug1(`server:${MODULE}`);
-
+import { Permissions } from "./permissions";
 
 // Types
 
@@ -79,23 +78,15 @@ export class ServerFolder extends Folder<ServerFolderWatcher> {
 
   public static async delete(path: FolderPath): Promise<void> {
     this.close(path, "Folder is deleted"); // no-op if the folder is not open.
-    const absPath = absDirPathFromFolderPath(path);
-    debug(`Deleting folder directory ${absPath}`);
-    await rmDir(absPath); // TODO: Handle failure.
+    deleteDirectory(path, false /* not recursive */);
   }
 
   public static async move(oldPath: FolderPath, newPath: FolderPath): Promise<FolderEntry> {
     // Called by the containing ServerFolder when one of its subfolders is renamed.
-
-    const oldAbsPath = absDirPathFromFolderPath(oldPath);
-    const newAbsPath = absDirPathFromFolderPath(newPath);
-
     await this.close(newPath, `Folder moving to ${newPath}`);
-
     // REVIEW: If there is an existing *file* (not directory) at the new path then it will be overwritten silently.
     //         However, we don't expect random files to be floating around out notebook storage filesystem.
-    await rename(oldAbsPath, newAbsPath);
-
+    await renameDirectory(oldPath, newPath);
     return { path: newPath, name: this.nameFromPath(newPath) }
   }
 
@@ -160,6 +151,7 @@ export class ServerFolder extends Folder<ServerFolderWatcher> {
 
   // Private Instance Properties
 
+  private permissions!: Permissions;
   private sockets: Set<ServerSocket>;
 
   // Private Instance Property Functions
@@ -168,39 +160,36 @@ export class ServerFolder extends Folder<ServerFolderWatcher> {
 
   protected async initialize(options: OpenFolderOptions): Promise<void> {
     if (options.mustExist) {
-      const absPath = absDirPathFromFolderPath(this.path);
-      debug(`Opening folder from filesystem: "${absPath}"`)
-      const listings = await readDir(absPath);
       const notebooks: NotebookEntry[] = [];
       const folders: FolderEntry[] = [];
 
       const suffix = ServerNotebook.NOTEBOOK_DIR_SUFFIX;
       const suffixLen = suffix.length;
 
-      for (const listing of listings) {
+      const dirMap = await readDirectory(this.path);
+      for (const [filename, stats] of dirMap.entries()) {
 
         // Skip hidden files and folders
-        if (listing.startsWith(".")) { /* skip hidden */ continue; }
+        if (filename.startsWith(".")) { /* skip hidden */ continue; }
 
         // Skip non-directories
-        const stats = await(dirStat(join(absPath, listing)));
         if (!stats.isDirectory()) { continue; }
 
-        // Notebooks are directories that end with .mtnb.
+        // Notebooks are directories that end with .enb.
         // Folders are all other directories.
-        if (listing.endsWith(suffix)) {
-          const nameWithoutSuffix: NotebookName = <NotebookName>listing.slice(0, -suffixLen);
+        if (filename.endsWith(suffix)) {
+          const nameWithoutSuffix: NotebookName = <NotebookName>filename.slice(0, -suffixLen);
           if (!ServerFolder.isValidNotebookName(nameWithoutSuffix)) {
-            logWarning(MODULE, `Skipping notebook with invalid name: '${listing}'`);
+            logWarning(MODULE, `Skipping notebook with invalid name: '${filename}'`);
             continue;
           }
-          notebooks.push({ name: nameWithoutSuffix, path: <NotebookPath>`${this.path}${listing}` })
+          notebooks.push({ name: nameWithoutSuffix, path: <NotebookPath>`${this.path}${filename}` })
         } else {
-          if (!ServerFolder.isValidFolderName(<FolderName>listing)) {
-            logWarning(MODULE, `Skipping folder with invalid name: '${listing}'`);
+          if (!ServerFolder.isValidFolderName(<FolderName>filename)) {
+            logWarning(MODULE, `Skipping folder with invalid name: '${filename}'`);
             continue;
           }
-          folders.push({ name: <FolderName>listing, path: <FolderPath>`${this.path}${listing}/` })
+          folders.push({ name: <FolderName>filename, path: <FolderPath>`${this.path}${filename}/` })
         }
       }
 
@@ -210,6 +199,8 @@ export class ServerFolder extends Folder<ServerFolderWatcher> {
         notebooks,
       };
       this.initializeFromObject(obj);
+
+      this.permissions = await Permissions.load(this.path);
     } else {
       assert(false);
     }
@@ -261,6 +252,16 @@ export class ServerFolder extends Folder<ServerFolderWatcher> {
   private async onChangeRequest(socket: ServerSocket, request: ChangeFolder): Promise<void> {
     // TODO: Undo?
 
+    // Verify the user has permission to modify the folder.
+    const user = socket.user;
+    const permissions = this.permissions.getUserPermissions(user);
+    if (!(permissions & UserPermission.Modify)) {
+      const message = user ?
+                      `You do not have permission to modify this folder.` :
+                      `You must be logged in to modify this folder.`;
+      throw new ExpectedError(message)
+    }
+
     const changes: FolderUpdate[] = [];
     assert(request.changeRequests.length>0);
     for (const changeRequest of request.changeRequests) {
@@ -271,9 +272,7 @@ export class ServerFolder extends Folder<ServerFolderWatcher> {
           ServerFolder.validateFolderName(name)
           const path = childFolderPath(this.path, name);
           debug(`Creating folder: ${path}`);
-          const absPath = absDirPathFromFolderPath(path);
-          console.log(absPath);
-          await mkDir(absPath);  // TODO: Handle failure.
+          await createDirectory(path);
           change = { type: 'folderCreated', entry: { name, path }};
           break;
         }
@@ -335,6 +334,15 @@ export class ServerFolder extends Folder<ServerFolderWatcher> {
   }
 
   private onOpenRequest(socket: ServerSocket, msg: OpenFolder): void {
+    const user = socket.user;
+    const permissions = this.permissions.getUserPermissions(user);
+    if (!(permissions & UserPermission.Read)) {
+      const message = user ?
+                      `This folder is not public and is not shared with you.` :
+                      `You must be logged in to access this folder.`;
+      throw new ExpectedError(message)
+    }
+
     this.sockets.add(socket);
     const obj = this.toJSON();
     const response: FolderOpened = {
@@ -342,6 +350,7 @@ export class ServerFolder extends Folder<ServerFolderWatcher> {
       type: 'folder',
       operation: 'opened',
       path: this.path,
+      permissions,
       obj,
       complete: true
     };
@@ -354,17 +363,7 @@ export class ServerFolder extends Folder<ServerFolderWatcher> {
 
 // REVIEW: Which of these should be class and instance methods or properties?
 
-// REVIEW: Memoize or save in global?
-export function rootDir(): AbsDirectoryPath {
-  return ROOT_DIR_PATH;
-}
-
 // Helper Functions
-
-function absDirPathFromFolderPath(path: FolderPath): AbsDirectoryPath {
-  const pathSegments = path.split('/').slice(1, -1);
-  return join(ROOT_DIR_PATH, ...pathSegments);
-}
 
 function childFolderPath(path: FolderPath, name: FolderName): FolderPath {
   return <FolderPath>`${path}${name}/`;

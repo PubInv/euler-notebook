@@ -63,9 +63,6 @@ export class SearchPanel extends HtmlElement<'div'> {
 
     super({
       tag: 'div',
-      // TODO: In keeping with convention, we should just return ourself and let our caller add us to the DOM.
-      //       Other screen elements need this change, too.
-      appendTo: screen.$elt,
       class: <CssClass>'searchPanel',
       children: [
         {

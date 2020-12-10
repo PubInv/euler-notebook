@@ -62,7 +62,6 @@ export class Sidebar extends ButtonBar {
 
     super({
       tag: 'div',
-      appendTo: screen.$elt,
       class: <CssClass>'sidebar',
       children: [ $newFolderButton, $newNotebookButton ],
     });
@@ -88,16 +87,12 @@ export class Sidebar extends ButtonBar {
     e.preventDefault(); // Do not take focus.
     const entry = await this.screen.folder.newFolder();
     this.screen.view.editFolderName(entry.name);
-    // Other possible behavior: open the new folder.
-    // appInstance.navigateTo(path);
   }
 
   private async onNewNotebookClicked(e: MouseEvent): Promise<void> {
     e.preventDefault(); // Do not take focus.
     const entry = await this.screen.folder.newNotebook();
     this.screen.view.editNotebookName(entry.name);
-    // Other possible behavior: open the new folder.
-    // appInstance.navigateTo(entry.path);
   }
 
 }

@@ -22,11 +22,10 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 import { Html, assertFalse } from "../shared/common";
 import { FOLDER_PATH_RE, NOTEBOOK_PATH_RE, FolderPath, NotebookPath } from "../shared/folder";
 
-import { headerInstance } from "../components/header";
-
 import { ScreenBase } from "./screen-base";
 import { addSyncEventListener } from "../error-handler";
 import { FolderScreen } from "./folder-screen";
+import { HomeScreen } from "./home-screen";
 import { NotebookEditScreen } from "./notebook-edit-screen";
 import { Mode, NotebookReadScreen } from "./notebook-read-screen";
 
@@ -54,11 +53,10 @@ export abstract class Screens {
 
     if (this.currentScreen) { this.currentScreen.hide(); }
 
-    headerInstance.setPathTitle(</* BUGBUG */NotebookPath>pathname);
-
     let nextScreen = this.instanceMap.get(pathname);
     if (!nextScreen) {
       nextScreen = this.createScreenForPathname(pathname);
+      this.$body.append(nextScreen.$elt);
       this.instanceMap.set(pathname, nextScreen);
     } else {
       if (nextScreen == this.currentScreen) { assertFalse(); }
@@ -78,26 +76,29 @@ export abstract class Screens {
   // Private Class Methods
 
   private static createScreenForPathname(pathname: Pathname): ScreenBase {
-
-    const match = NOTEBOOK_PATH_WITH_VIEW_RE.exec(pathname);
-    if (match) {
-      const path = <NotebookPath>match[1];
-      const view = match[5];
-      switch(view) {
-        case 'edit':
-          return new NotebookEditScreen(this.$body, path);
-        case 'read':
-          return new NotebookReadScreen(this.$body, path, Mode.Reading);
-        default:
-          assertFalse();
-          break;
+    if (pathname == <Pathname>'/') {
+      return new HomeScreen();
+    } else {
+      const match = NOTEBOOK_PATH_WITH_VIEW_RE.exec(pathname);
+      if (match) {
+        const path = <NotebookPath>match[1];
+        const view = match[5];
+        switch(view) {
+          case 'edit':
+            return new NotebookEditScreen(path);
+          case 'read':
+            return new NotebookReadScreen(path, Mode.Reading);
+          default:
+            assertFalse();
+            break;
+        }
+      } else if (NOTEBOOK_PATH_RE.test(pathname)) {
+        return new NotebookReadScreen(<NotebookPath>pathname, Mode.Thumbnails);
+      } else if (FOLDER_PATH_RE.test(pathname)) {
+        return new FolderScreen(<FolderPath>pathname);
+      } else  {
+        throw new Error("Invalid path.");
       }
-    } else if (NOTEBOOK_PATH_RE.test(pathname)) {
-      return new NotebookReadScreen(this.$body, <NotebookPath>pathname, Mode.Thumbnails);
-    } else if (FOLDER_PATH_RE.test(pathname)) {
-      return new FolderScreen(this.$body, <FolderPath>pathname);
-    } else  {
-      throw new Error("Invalid path.");
     }
   }
 

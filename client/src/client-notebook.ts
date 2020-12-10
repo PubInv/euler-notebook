@@ -25,13 +25,13 @@ import * as debug1 from "debug";
 const debug = debug1('client:client-notebook');
 
 import { CellId, CellObject, CellOrdinalPosition, CellPosition, CellRelativePosition, CellType } from "./shared/cell";
-import { assert, assertFalse, CssSize, Html } from "./shared/common";
+import { assert, assertFalse, ClientId, CssSize, Html } from "./shared/common";
 import { notebookUpdateSynopsis } from "./shared/debug-synopsis";
 import { NotebookName, NotebookNameFromNotebookPath, NotebookPath } from "./shared/folder";
 import { NotebookObject, PageMargins, Pagination } from "./shared/notebook";
 import { NotebookChangeRequest, ChangeNotebook, UseTool, OpenNotebook, DeleteCell, ResizeCell, InsertStroke, InsertEmptyCell, MoveCell } from "./shared/client-requests";
 import {
-  NotebookUpdated, NotebookOpened, NotebookResponse, NotebookClosed, NotebookUpdate, CellInserted, CellDeleted, CellMoved
+  NotebookUpdated, NotebookOpened, NotebookResponse, NotebookClosed, NotebookUpdate, CellInserted, CellDeleted, CellMoved, NotebookUserConnected, NotebookUserDisconnected
 } from "./shared/server-responses";
 import { Stroke } from "./shared/stylus";
 
@@ -47,6 +47,8 @@ export interface NotebookView {
   onRedoStateChange(enabled: boolean): void;
   onUndoStateChange(enabled: boolean): void;
   onUpdate(update: NotebookUpdate, ownRequest: boolean): void;
+  onUserConnected(msg: NotebookUserConnected, ownRequest: boolean): void;
+  onUserDisconnected(msg: NotebookUserDisconnected, ownRequest: boolean): void;
 }
 
 interface OpenInfo {
@@ -103,6 +105,7 @@ export class ClientNotebook {
   public readonly path: NotebookPath;
   public readonly pageSize: CssSize;
   public readonly pagination: Pagination;
+  public readonly userMap: Map<ClientId, NotebookUserConnected>;
 
   // Public Instance Property Functions
 
@@ -265,12 +268,14 @@ export class ClientNotebook {
     this.terminated = false;
     this.topOfUndoStack = 0;
     this.undoStack = [];
+    this.userMap = new Map();
 
     for (let cellIndex=0; cellIndex<notebookObject.cells.length; cellIndex++) {
       const cellObject = notebookObject.cells[cellIndex];
       const cellUpdate: CellInserted = { type: 'cellInserted', cellObject, cellIndex }
       this.onCellInserted(cellUpdate);
     }
+
   }
 
   // Private Instance Properties
@@ -370,6 +375,8 @@ export class ClientNotebook {
     switch(msg.operation) {
       case 'updated': this.onUpdated(msg, ownRequest); break;
       case 'closed':  this.onClosed(msg, ownRequest); break;
+      case 'userConnected': this.onUserConnected(msg, ownRequest); break;
+      case 'userDisconnected': this.onUserDisconnected(msg, ownRequest); break;
       case 'opened':
       default: assertFalse();
     }
@@ -441,4 +448,19 @@ export class ClientNotebook {
       views.onUpdate(update, ownRequest);
     }
   }
+
+  private onUserConnected(msg: NotebookUserConnected, ownRequest: boolean): void {
+    // Message from the server indicating a user has connected to the notebook.
+    assert(!this.userMap.has(msg.clientId));
+    this.userMap.set(msg.clientId, msg);
+    for (const views of this.views) { views.onUserConnected(msg, ownRequest); }
+  }
+
+  private onUserDisconnected(msg: NotebookUserDisconnected, ownRequest: boolean): void {
+    // Message from the server indicating a user has connected to the notebook.
+    assert(this.userMap.has(msg.clientId));
+    this.userMap.delete(msg.clientId);
+    for (const views of this.views) { views.onUserDisconnected(msg, ownRequest); }
+  }
+
 }

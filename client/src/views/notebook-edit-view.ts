@@ -33,7 +33,7 @@ import { DebugParams } from "../shared/api-calls";
 import { CellEditView } from "./cell-edit-view";
 import { HtmlElement } from "../html-element";
 import { NotebookEditScreen } from "../screens/notebook-edit-screen";
-import { reportError } from "../error-handler";
+import { showError } from "../error-handler";
 import { apiDebug } from "../api";
 import { ClientNotebook } from "../client-notebook";
 import { notebookUpdateSynopsis } from "../shared/debug-synopsis";
@@ -92,7 +92,6 @@ export class NotebookEditView extends HtmlElement<'div'> {
   public constructor(container: NotebookEditScreen, notebook: ClientNotebook) {
     super({
       tag: 'div',
-      appendTo: container.$elt,
       class: <CssClass>'content',
       listeners: {
         blur: e=>this.onBlur(e),
@@ -507,7 +506,7 @@ export class NotebookEditView extends HtmlElement<'div'> {
       console.log(`Command: ${commandName}`);
       commandFn.call(this)
       .catch(err=>{
-        reportError(err, <Html>`Error in '${commandName}'`);
+        showError(err, <Html>`Error in '${commandName}'`);
       });
     } else {
       if (IGNORED_KEYUPS.indexOf(keyName)<0) {

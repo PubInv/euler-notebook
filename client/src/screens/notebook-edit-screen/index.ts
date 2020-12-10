@@ -22,17 +22,18 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 // Requirements
 
-import { CssClass, Html, escapeHtml } from "../../shared/common";
+import { CssClass, Html } from "../../shared/common";
 import { NotebookPath } from "../../shared/folder";
-import { NotebookUpdate } from "../../shared/server-responses";
+import { NotebookUpdate, NotebookUserConnected, NotebookUserDisconnected } from "../../shared/server-responses";
+
+import { Header } from "../../components/header";
+import { NotebookEditView } from "../../views/notebook-edit-view";
 
 import { ClientNotebook, NotebookView } from "../../client-notebook";
-import { reportError } from "../../error-handler";
 
 import { ScreenBase } from "../screen-base";
 
 import { DebugPopup } from "./debug-popup";
-import { NotebookEditView } from "../../views/notebook-edit-view";
 import { SearchPanel } from "./search-panel";
 import { Sidebar } from "./sidebar";
 import { Tools } from "./tools";
@@ -49,28 +50,29 @@ export class NotebookEditScreen extends ScreenBase implements NotebookView {
 
   // Public Constructor
 
-  public constructor($parent: HTMLElement, path: NotebookPath) {
+  public constructor(path: NotebookPath) {
     super({
-      appendTo: $parent,
+      tag: 'div',
       classes: [<CssClass>'screen', <CssClass>'notebookEditScreen'],
       data: { path },
-      tag: 'div',
     });
 
     ClientNotebook.open(path, this)
     .then(
       (notebook: ClientNotebook)=>{
         this.notebook = notebook;
+
+        this.header = new Header(notebook.path, notebook.userMap.values());
         this.editView = new NotebookEditView(this, notebook);
         this.sidebar = new Sidebar(this);
         // TODO: this.tools = new Tools(this);
         this.searchPanel = new SearchPanel(this);
         this.debugPopup = new DebugPopup(this);
+
+        this.$elt.append(this.header.$elt, this.sidebar.$elt, this.editView.$elt, this.searchPanel.$elt, this.debugPopup.$elt);
       },
       (err)=>{
-        const message = <Html>`Error opening notebook '${path}'`;
-        reportError(err, message);
-        this.displayErrorMessage(<Html>`${message}: ${escapeHtml(err.message)}`);
+        this.displayError(err, <Html>`Error opening notebook <tt>${path}</tt>`);
       }
     );
   }
@@ -78,6 +80,7 @@ export class NotebookEditScreen extends ScreenBase implements NotebookView {
   // Public Instance Properties
 
   public debugPopup!: DebugPopup;
+  public header!: Header;
   public notebook!: ClientNotebook;
   public searchPanel!: SearchPanel;
   public sidebar!: Sidebar;
@@ -102,11 +105,12 @@ export class NotebookEditScreen extends ScreenBase implements NotebookView {
   // ClientNotebookWatcher Methods
 
   public onClosed(reason?: string): void {
+    this.header.destroy();
     this.sidebar.destroy();
     this.editView.destroy();
     this.tools.destroy();
     this.debugPopup.destroy();
-    this.displayErrorMessage(<Html>`Notebook ${this.notebook.path} closed by server: ${reason}`);
+    this.displayErrorMessage(<Html>`Server closed notebook <tt>${this.notebook.path}</tt>: ${reason}`);
   }
 
   public onRedoStateChange(enabled: boolean): void {
@@ -119,6 +123,14 @@ export class NotebookEditScreen extends ScreenBase implements NotebookView {
 
   public onUpdate(change: NotebookUpdate): void {
     this.editView.onUpdate(change);
+  }
+
+  public onUserConnected(msg: NotebookUserConnected, ownRequest: boolean): void {
+    this.header.onUserConnected(msg, ownRequest);
+  };
+
+  public onUserDisconnected(msg: NotebookUserDisconnected, ownRequest: boolean): void {
+    this.header.onUserDisconnected(msg, ownRequest);
   }
 
   // --- PRIVATE ---

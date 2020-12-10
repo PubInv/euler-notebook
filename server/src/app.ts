@@ -30,6 +30,7 @@ import * as cookieParser from "cookie-parser";
 import * as express from "express";
 import * as  createError from "http-errors";
 import * as morgan from "morgan";
+import * as nodeCleanup from "node-cleanup";
 import { satisfies as semverSatisfies } from "semver";
 import { middleware as stylusMiddleware } from "stylus";
 
@@ -37,13 +38,13 @@ import { assert } from "./shared/common";
 import { ServerSocket } from "./server-socket";
 import { loadConfig } from "./config";
 import { initialize as initializeMathJax } from "./adapters/mathjax";
-import { rootDir as notebookRootDir } from "./server-folder";
 import { start as startWolframscript } from "./adapters/wolframscript";
 
 import { router as apiRouter } from "./routes/api";
 import { router as exportRouter } from "./routes/export";
 import { router as indexRouter } from "./routes/index";
 import { router as xrayRouter } from "./routes/xray";
+import { UserSession } from "./user-session";
 
 // Constants
 
@@ -55,8 +56,17 @@ async function main() {
 
   checkNodeVersion();
 
+  // Perform any cleanup actions when the process exits.
+  // nodemon uses SIGUSR2 to terminate the process before restarting it,
+  // but node-cleanup doesn't catch SIGUSR2, so we have to catch that
+  // separately.
+  nodeCleanup(cleanupHandler);
+  process.once('SIGUSR2', function(){ cleanupHandler(null, 'SIGUSR2'); });
+
   const config = await loadConfig();
   // const credentials = await loadCredentials();
+
+  await UserSession.loadIfAvailable();
 
   // TODO: stopWolframscript before exiting.
   if (config.mathematica) { await startWolframscript(config.wolframscript); }
@@ -70,7 +80,6 @@ async function main() {
 
   app.use(stylusMiddleware(join(__dirname, '..', 'public')));
   app.use(express.static(join(__dirname, '..', 'public')));
-  app.use(express.static(notebookRootDir(), { index: false, redirect: false }));
 
   // REVIEW: Putting this logger *after* the static routes means the static routes are not logged.
   //         This is generally what we want for development, but may not be what we want for production.
@@ -142,6 +151,27 @@ main().then(
 );
 
 // Helper Functions
+
+async function asyncCleanupHandler(_signal: string): Promise<void> {
+  debug("Saving user session.");
+  await UserSession.save();
+}
+
+function cleanupHandler(exitCode: number|null, signal: string|null): boolean {
+  // NOTE: Put all cleanup in asyncCleanupHandler unless it must be done for
+  //       non-signal exits.
+  if (signal) {
+    debug(`Cleanup handler called for signal: ${signal}`);
+    asyncCleanupHandler(signal).finally(()=>{ process.kill(process.pid, signal); })
+    nodeCleanup.uninstall(); // don't call cleanup handler again
+    return false;
+  } else {
+    // Process always exits after the cleanup handlers for non-signals.
+    // We cannot do any asynchronous cleanup.
+    debug(`Cleanup handler called with exit code: ${exitCode}`);
+    return true;
+  }
+}
 
 function checkNodeVersion(): void {
   assert(semverSatisfies(process.versions.node, NODE_REQUIREMENT), `Node version must satisfy requirement '${NODE_REQUIREMENT}'`);

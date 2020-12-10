@@ -19,7 +19,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 // Requirements
 
-import { assert, CssClass, CssLength, CssLengthUnits, Html, SvgMarkup } from "./shared/common";
+import { assert, CssClass, CssLength, CssLengthUnits, Html, RelativeUrl, SvgMarkup } from "./shared/common";
 import { SyncListener, addSyncEventListener, addAsyncEventListener, AsyncListener } from "./error-handler";
 
 // Types
@@ -40,7 +40,7 @@ interface AsyncListeners {
   input?: AsyncListener<InputEvent>;
   keypress?: AsyncListener<KeyboardEvent>;
   keyup?: AsyncListener<KeyboardEvent>;
-  submit?: AsyncListener<Event>;
+  submit?: AsyncListener</* TYPESCRIPT: SubmitEvent? */Event>;
 }
 interface SyncListeners {
   // REVIEW: Can we populate this automatically from the standard DOM types?
@@ -83,6 +83,7 @@ interface NewCommonOptions {
   id?: ElementId;
   hidden?: boolean;
   listeners?: SyncListeners;
+  src?: RelativeUrl;
   style?: string;
   title?: string;
   type?: string;
@@ -126,6 +127,7 @@ const ENUMERATED_ATTRIBUTES = new Set<string>([ 'draggable']);
 export const CHECKMARK_ENTITY = <Html>'&#x2713;'
 export const CLOSE_X_ENTITY = <Html>'&#x2715;'
 export const DOTTED_CIRCLE_ENTITY = <Html>'&#x25CC;';
+export const EULER_NUMBER_ENTITY = <Html>'&#x1D452;';
 export const PENCIL_ENTITY = <Html>'&#x270E;';
 export const RIGHT_TRIANGLE_ENTITY = <Html>'&#x25B6;';
 export const RIGHT_ARROW_ENTITY = <Html>'&#x27A1;';
@@ -178,9 +180,12 @@ export function $configure($elt: HTMLElement|SVGElement, options: NewCommonOptio
   }
   if (options.disabled) { attributes.disabled = true; }
   if (options.selected) { attributes.selected = true; }
-  if (options.title) { attributes.title = options.title }
-  if (options.type) { attributes.type = options.type }
-  if (options.value) { attributes.value = options.value }
+  for (const attr of ['src', 'title', 'type', 'value']) {
+    if (options.hasOwnProperty(attr)) {
+      // @ts-expect-error "Element implicitly has an 'any' type"
+      attributes[attr] = options[attr];
+    }
+  }
   attachAttributes($elt, attributes);
 
   if (options.style) { $elt.setAttribute('style', options.style); }

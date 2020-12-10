@@ -28,11 +28,11 @@ import {
 } from "./shared/client-requests";
 import {
   FolderUpdated, FolderResponse, FolderOpened, FolderClosed,
-  FolderUpdate, FolderCreated, NotebookCreated, FolderRenamed, NotebookRenamed, FolderDeleted, NotebookDeleted,
+  FolderUpdate, FolderCreated, NotebookCreated, FolderRenamed, NotebookRenamed, FolderDeleted, NotebookDeleted, NotebookUserConnected,
 } from "./shared/server-responses"
 
 import { appInstance } from "./app";
-import { assert, assertFalse } from "./shared/common";
+import { assert, assertFalse, ClientId } from "./shared/common";
 import { OpenOptions } from "./shared/watched-resource";
 
 // Types
@@ -65,7 +65,7 @@ export class ClientFolder extends Folder<ClientFolderWatcher> {
 
   // Class Event Handlers
 
-  public static smMessage(msg: FolderResponse, ownRequest: boolean): void {
+  public static onServerResponse(msg: FolderResponse, ownRequest: boolean): void {
     // A folder message was received from the server.
     switch(msg.operation) {
       case 'updated': this.smUpdated(msg, ownRequest); break;
@@ -79,6 +79,8 @@ export class ClientFolder extends Folder<ClientFolderWatcher> {
   }
 
   // Public Instance Properties
+
+  public readonly userMap: Map<ClientId, NotebookUserConnected>;
 
   // Public Instance Property Functions
 
@@ -157,6 +159,7 @@ export class ClientFolder extends Folder<ClientFolderWatcher> {
 
   private constructor(path: FolderPath, _options: OpenFolderOptions) {
     super(path);
+    this.userMap = new Map();
   }
 
   // Private Instance Properties

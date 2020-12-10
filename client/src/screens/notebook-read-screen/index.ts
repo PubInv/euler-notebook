@@ -19,15 +19,17 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 // Requirements
 
-import { CssClass, Html, escapeHtml } from "../../shared/common";
-import { NotebookUpdate } from "../../shared/server-responses";
+import { CssClass, Html, notImplementedWarning } from "../../shared/common";
+import { NotebookUpdate, NotebookUserConnected, NotebookUserDisconnected } from "../../shared/server-responses";
 import { NotebookPath } from "../../shared/folder";
 
+import { Header } from "../../components/header";
+import { NotebookReadView } from "../../views/notebook-read-view";
+
 import { ClientNotebook, NotebookView } from "../../client-notebook";
-import { reportError } from "../../error-handler";
+
 import { ScreenBase } from "../screen-base";
 
-import { NotebookReadView } from "../../views/notebook-read-view";
 import { Sidebar } from "./sidebar";
 
 // Types
@@ -49,25 +51,24 @@ export class NotebookReadScreen extends ScreenBase  implements NotebookView {
 
   // Public Constructor
 
-  public constructor($parent: HTMLElement, path: NotebookPath, mode: Mode) {
+  public constructor(path: NotebookPath, mode: Mode) {
     super({
-      appendTo: $parent,
+      tag: 'div',
       classes: [<CssClass>'screen', <CssClass>'notebookReadScreen'],
       data: { path },
-      tag: 'div',
     });
 
     ClientNotebook.open(path, this)
     .then(
       (notebook: ClientNotebook)=>{
         this.notebook = notebook;
+
+        this.header = new Header(notebook.path, notebook.userMap.values());
         /* this.sidebar = */ new Sidebar(this, mode);
         this.readView = new NotebookReadView(this, mode);
       },
       (err)=>{
-        const message = <Html>`Error opening notebook '${path}'`;
-        reportError(err, message);
-        this.displayErrorMessage(<Html>`${message}: ${escapeHtml(err.message)}`);
+        this.displayError(err, <Html>`Error opening notebook <tt>${path}</tt>`);
       }
     );
 
@@ -75,6 +76,7 @@ export class NotebookReadScreen extends ScreenBase  implements NotebookView {
 
   // Public Instance Properties
 
+  public header!: Header;
   public notebook!: ClientNotebook;
 
   // Public Instance Event Handlers
@@ -88,7 +90,9 @@ export class NotebookReadScreen extends ScreenBase  implements NotebookView {
   // NotebookView Interface Methods
 
   public onClosed(reason: string): void {
-    this.readView.onClosed(reason);
+    this.header.destroy();
+    this.readView.destroy();
+    this.displayErrorMessage(<Html>`Server closed notebook <tt>${this.notebook.path}</tt>: ${reason}`);
   }
 
   public onRedoStateChange(_enabled: boolean): void { /* Nothing to do */ }
@@ -97,6 +101,14 @@ export class NotebookReadScreen extends ScreenBase  implements NotebookView {
 
   public onUpdate(update: NotebookUpdate): void {
     this.readView.onUpdate(update);
+  }
+
+  public onUserConnected(_msg: NotebookUserConnected, _ownRequest: boolean): void {
+    notImplementedWarning("NotebookReadScreen onUserConnected");
+  };
+
+  public onUserDisconnected(_msg: NotebookUserDisconnected, _ownRequest: boolean): void {
+    notImplementedWarning("NotebookReadScreen onUserDisconnected");
   }
 
   // --- PRIVATE ---

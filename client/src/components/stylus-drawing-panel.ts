@@ -25,7 +25,7 @@ const debug = debug1('client:stylus-drawing-panel');
 import { Html, CssClass, CssSize } from "../shared/common";
 
 import { SvgStroke } from "../svg-stroke";
-import { reportError } from "../error-handler";
+import { showError } from "../error-handler";
 import { SvgElement } from "../svg-element";
 
 
@@ -173,7 +173,7 @@ export class StylusDrawingPanel extends SvgElement<'svg'> {
     this.strokeCallbackFn(stroke)
     .then(
       ()=>{ stroke.remove(); },
-      (err)=>{ reportError(err, <Html>"Error updating stroke"); },
+      (err)=>{ showError(err, <Html>"Error updating stroke"); },
     )
 
 

@@ -19,9 +19,10 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 // Requirements
 
-import { CssClass, Html } from "../shared/common";
-import { $new, HtmlElementSpecification } from "../dom";
+import { errorMessageForUser, Html } from "../shared/common";
+import { HtmlElementSpecification } from "../dom";
 import { HtmlElement } from "../html-element";
+import { logErrorIfUnexpected } from "../error-handler";
 
 // Requirements
 
@@ -39,23 +40,25 @@ export abstract class ScreenBase extends HtmlElement<'div'>{
 
   // --- PRIVATE ---
 
-  protected constructor(options: HtmlElementSpecification<'div'>) {
-    super(options);
+  protected constructor(spec: HtmlElementSpecification<'div'>|HTMLElementTagNameMap['div']) {
+    super(spec);
   }
 
   // Private Properties
 
   // Private Instance Methods
 
+  protected displayError(err: Error, html: Html) {
+    logErrorIfUnexpected(err);
+    this.displayErrorMessage(<Html>`${html}: ${errorMessageForUser(err)}`);
+  }
+
   protected displayErrorMessage(html: Html) {
+    // Replaces the contents of the screen with an error message.
+
     // LATER: Better way to display to display a closed message.
     // LATER: Give user helpful instructions, e.g. "refresh the page, go to the parent folder, or go to the home folder."
-    $new({
-      tag: 'div',
-      class: <CssClass>'error',
-      html,
-      replaceInner: this.$elt,
-    });
+    this.$elt.innerHTML = `<div class="errorMessage">${html}</div>`;
   }
 
 }

@@ -41,7 +41,6 @@ export class DebugPopup extends HtmlElement<'div'>{
   public constructor(screen: NotebookEditScreen) {
     super({
       tag: 'div',
-      appendTo: screen.$elt,
       class: <CssClass>'debugPopup',
       children: [
         {

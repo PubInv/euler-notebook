@@ -82,8 +82,12 @@ export class HtmlElement<K extends keyof HTMLElementTagNameMap> {
 
   // Constructor
 
-  protected constructor(options: HtmlElementSpecification<K>) {
-    this.$elt = $new(options);
+  protected constructor(spec: HtmlElementSpecification<K>|HTMLElementTagNameMap[K]) {
+    if (spec instanceof HTMLElement) {
+      this.$elt = spec;
+    } else {
+      this.$elt = $new(spec);
+    }
   }
 
   // Private Instance Properties

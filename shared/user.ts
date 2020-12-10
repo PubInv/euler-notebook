@@ -17,20 +17,19 @@ You should have received a copy of the GNU Affero General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-// TODO: Convert all console.error calls to reportError calls.
-
 // Requirements
 
-import { ExpectedError } from "./shared/common";
+// Types
 
-// Exported Functions
+export type UserId = number;
+export type UserName = '{UserName}';
+export type UserPassword = '{UserPassword}';
 
-export function logError(/* TODO: component, */ err: Error, message?: string /* TYPESCRIPT: Html type? */): void {
-  if (err instanceof ExpectedError) { return; }
-  console.error(message || err.message);
-  console.dir(err);
+export interface UserObject {
+  id: UserId;
+  userName: UserName;
 }
 
-export function logWarning(module: string, message: string): void {
-  console.warn(`WARNING: ${module}: ${message}`);
-}
+// Constants
+
+export const USERNAME_RE = /^[a-z0-9_]+$/;

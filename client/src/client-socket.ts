@@ -33,7 +33,8 @@ import { ResponseBase, ServerResponse, } from "./shared/server-responses";
 import { messageDisplayInstance } from "./message-display";
 import { ClientFolder } from "./client-folder";
 import { ClientNotebook } from "./client-notebook";
-import { reportError } from "./error-handler";
+import { showError } from "./error-handler";
+import { ClientUser } from "./client-user";
 
 // Types
 
@@ -76,7 +77,7 @@ export class ClientSocket {
       this.ws.send(json);
     } catch(err) {
       // REVIEW: What to do?
-      reportError(err, <Html>"Error sending websocket message");
+      showError(err, <Html>"Error sending websocket message");
     }
   }
 
@@ -156,8 +157,9 @@ export class ClientSocket {
       // console.dir(msg);
       switch(msg.type) {
         // TODO: case 'error': errors should only come back from 'requests'
-        case 'folder': ClientFolder.smMessage(msg, ownRequest); break;
+        case 'folder': ClientFolder.onServerResponse(msg, ownRequest); break;
         case 'notebook': ClientNotebook.onServerResponse(msg, ownRequest); break;
+        case 'user': ClientUser.onServerResponse(msg, ownRequest); break;
         case 'error': {
           if (requestInfo) {
             // Do nothing.
@@ -205,7 +207,7 @@ export class ClientSocket {
       }
 
     } catch(err) {
-      reportError(err, <Html>"Unexpected client error handling WebSocket message event.");
+      showError(err, <Html>"Unexpected client error handling WebSocket message event.");
     }
   }
 
@@ -214,7 +216,7 @@ export class ClientSocket {
     try {
       this.connectPromise.resolve(this);
     } catch(err) {
-      reportError(err, <Html>"Unexpected error handling WebSocket open");
+      showError(err, <Html>"Unexpected error handling WebSocket open");
     }
   }
 }

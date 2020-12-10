@@ -24,7 +24,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 // Requirements
 
-import { ExpectedError, Html } from "./shared/common";
+import { ExpectedError, Html, PlainText } from "./shared/common";
 
 import { messageDisplayInstance } from "./message-display";
 
@@ -45,7 +45,7 @@ export function addAsyncEventListener<E extends Event>(target: EventTarget, type
   //       It should be inferred from the type parameter.
   const wrappedListener = function(event: E): void {
     try { monitorPromise(listener(event), message); }
-    catch (err) {reportError(err, message); }
+    catch (err) {showError(err, message); }
   }
   target.addEventListener(type, </* TYPESCRIPT: */EventListener>wrappedListener);
   return wrappedListener;
@@ -57,28 +57,41 @@ export function addSyncEventListener<E extends Event>(target: EventTarget, type:
   //       It should be inferred from the type parameter.
   const wrappedListener = function(event: E): void {
     try { listener(event); }
-    catch (err) { reportError(err, message); }
+    catch (err) { showError(err, message); }
   }
   target.addEventListener(type, </* TYPESCRIPT: */EventListener>wrappedListener);
   return wrappedListener;
 }
 
-export function logError(err: Error, message?: Html): void {
-  // LATER: Report error to server.
-  if (err instanceof ExpectedError) { return; }
-  if (message) { console.error(message); }
-  // LATER: This console.dir does not use the sourcemap to interpret the stack trace.
+export function logError(err: Error, message?: PlainText): void {
+  // Makes a record of the error.
+  // If the error might be an ExpectedError, then call logErrorIfUnexpected instead.
+  // Currently it just writes the error to the browser console.
+  // In the future, this may send the error to the server.
+  // It does not display anything to the user.
+  // If you also want the error displayed to the user, call reportError instead.
+  // LATER: Send error to server.
+  // LATER: console.dir does not use the sourcemap to interpret the stack trace.
   //        How do we get it to do that?
-  // Uncomment this to see interpreted stack trace: */ throw err;
+
+  if (message) { console.error(message); }
+  // Uncomment the following line to see interpreted stack trace:
+  //   throw err;
   console.dir(err);
 }
 
-export function monitorPromise(promise: Promise<any>, message: Html): void {
-  promise.catch(err=>reportError(err, message));
+export function logErrorIfUnexpected(err: Error, message?: PlainText): void {
+  // Makes a record of the error if it is not an instance of ExpectedError.
+  if (err instanceof ExpectedError) { return; }
+  logError(err, message);
 }
 
-export function reportError(err: Error, message?: Html): void {
-  logError(err, message);
+export function monitorPromise(promise: Promise<any>, message: Html): void {
+  promise.catch(err=>showError(err, message));
+}
+
+export function showError(err: Error, message?: Html): void {
+  // Shows the error to the user, and logs it if appropriate.
+  logErrorIfUnexpected(err, /* BUGBUG */<PlainText>message);
   messageDisplayInstance.addError(err, message);
 }
-

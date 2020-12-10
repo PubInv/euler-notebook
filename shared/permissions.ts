@@ -1,6 +1,6 @@
 /*
 Math Tablet
-Copyright (C) 2019 Public Invention
+Copyright (C) 20209 Public Invention
 https://pubinv.github.io/PubInv/
 
 This program is free software: you can redistribute it and/or modify
@@ -17,20 +17,16 @@ You should have received a copy of the GNU Affero General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-// TODO: Convert all console.error calls to reportError calls.
-
 // Requirements
 
-import { ExpectedError } from "./shared/common";
+// Types
 
-// Exported Functions
+export enum UserPermission {
+  None = 0,
+  Read = 1,
+  Comment = 2,
+  Modify = 4,
+  All = 0xFFFFFFFF,
+};
 
-export function logError(/* TODO: component, */ err: Error, message?: string /* TYPESCRIPT: Html type? */): void {
-  if (err instanceof ExpectedError) { return; }
-  console.error(message || err.message);
-  console.dir(err);
-}
-
-export function logWarning(module: string, message: string): void {
-  console.warn(`WARNING: ${module}: ${message}`);
-}
+export type UserPermissions = number; // Bit combination of NotebookPermission values.

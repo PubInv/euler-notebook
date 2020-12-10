@@ -19,16 +19,13 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 // Requirements
 
-import { readFile } from "fs";
-import { join } from "path";
-import { promisify } from "util";
+import { FileName, readConfigFile } from "./adapters/file-system";
 
 import { ApiKeys as MyScriptApiKeys } from "./adapters/myscript";
 import { ApiKeys as WolframAlphaApiKeys } from "./adapters/wolframalpha";
 
 import { logWarning } from "./error-handler";
 
-const readFile2 = promisify(readFile);
 
 const MODULE = __filename.split(/[/\\]/).slice(-1)[0].slice(0,-3);
 
@@ -41,8 +38,14 @@ export interface Config {
 }
 
 export interface Credentials {
+  jsonWebToken: JsonWebTokenKeys;
   myscript: MyScriptApiKeys;
   wolframalpha: WolframAlphaApiKeys;
+}
+
+export interface JsonWebTokenKeys {
+  algorithm: 'HS256';
+  secret: string;
 }
 
 export interface MathematicaConfig {
@@ -60,9 +63,8 @@ export interface WolframScriptConfig {
 
 // Constants
 
-const CONFIG_DIR = '.math-tablet';
-const CONFIG_FILENAME = 'config.json';
-const CREDENTIALS_FILENAME = 'credentials.json';
+const CONFIG_FILENAME = <FileName>'config.json';
+const CREDENTIALS_FILENAME = <FileName>'credentials.json';
 
 // Exported Globals
 
@@ -73,7 +75,7 @@ export var globalCredentials: Credentials;
 
 export async function loadConfig(): Promise<Config> {
   if (!globalConfig) {
-    globalConfig = await getJsonFileFromConfigDir<Config>(CONFIG_FILENAME);
+    globalConfig = await readConfigFile<Config>(CONFIG_FILENAME);
   } else {
     logWarning(MODULE, "Loading config file multiple times.");
   }
@@ -82,17 +84,9 @@ export async function loadConfig(): Promise<Config> {
 
 export async function loadCredentials(): Promise<Credentials> {
   if (!globalCredentials) {
-    globalCredentials = await getJsonFileFromConfigDir<Credentials>(CREDENTIALS_FILENAME);
+    globalCredentials = await readConfigFile<Credentials>(CREDENTIALS_FILENAME);
   } else {
     logWarning(MODULE, "Loading credentials file multiple times.");
   }
   return globalCredentials;
-}
-
-// Helper Functions
-
-async function getJsonFileFromConfigDir<T>(name: string): Promise<T> {
-  const path = join(process.env.HOME!, CONFIG_DIR, name);
-  const json = await readFile2(path, 'utf8');
-  return JSON.parse(json);
 }

@@ -18,6 +18,17 @@
 
 include iconmonstr
 
+mixin homeScreen
+  #homeScreen.screen(style="display:none")
+    h1 Euler Notebook
+    form#loginForm
+      label Username
+      input(type='text', name='userName')
+      label Password
+      input(type='password', name='password')
+      input(type='submit', value="Log in")
+      div.errorMessage
+
 doctype html
 html(lang='en')
   head
@@ -32,3 +43,4 @@ html(lang='en')
     script(type='module', src='/javascripts/app.js')
   body
     +svgIcons
+    +homeScreen

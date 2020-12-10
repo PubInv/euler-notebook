@@ -25,8 +25,10 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 // Requirements
 
 import * as debug1 from "debug";
+const MODULE = __filename.split(/[/\\]/).slice(-1)[0].slice(0,-3);
+const debug = debug1(`server:${MODULE}`);
+
 // import { readdirSync, unlink, writeFileSync } from "fs"; // LATER: Eliminate synchronous file operations.
-import { join } from "path";
 
 import { CellObject, CellSource, CellId, CellPosition, CellType, FigureCellObject, TextCellObject, CellOrdinalPosition } from "./shared/cell";
 import { assert, assertFalse, deepCopy, escapeHtml, ExpectedError, Html, notImplementedError, PlainText, Timestamp } from "./shared/common";
@@ -43,16 +45,11 @@ import {
 import { cellSynopsis, notebookChangeRequestSynopsis } from "./shared/debug-synopsis";
 import { EMPTY_STROKE_DATA } from "./shared/stylus";
 import { OpenOptions, WatchedResource } from "./shared/watched-resource";
+import { UserPermission } from "./shared/permissions";
 
 import { ServerSocket } from "./server-socket";
-import { AbsDirectoryPath, ROOT_DIR_PATH, mkDir, readFile, rename, rmRaf, writeFile } from "./adapters/file-system";
-
-const MODULE = __filename.split(/[/\\]/).slice(-1)[0].slice(0,-3);
-const debug = debug1(`server:${MODULE}`);
-
-// Types
-
-type AbsFilePath = string; // Absolute path to a file in the file system.
+import { createDirectory, deleteDirectory, FileName, readJsonFile, renameDirectory, writeJsonFile } from "./adapters/file-system";
+import { Permissions } from "./permissions";
 
 export interface FindCellOptions {
   source?: CellSource;
@@ -98,8 +95,7 @@ const EMPTY_NOTEBOOK_OBJ: ServerNotebookObject = {
   pagination: [],
 }
 
-const NOTEBOOK_ENCODING = 'utf8';
-const NOTEBOOK_FILE_NAME = 'notebook.json';
+const NOTEBOOK_FILENAME = <FileName>'notebook.json';
 
 // Exported Class
 
@@ -107,7 +103,7 @@ export class ServerNotebook extends WatchedResource<NotebookPath, ServerNotebook
 
   // Public Class Constants
 
-  public static NOTEBOOK_DIR_SUFFIX = '.mtnb';
+  public static NOTEBOOK_DIR_SUFFIX = '.enb';
 
   // Public Class Properties
 
@@ -139,21 +135,17 @@ export class ServerNotebook extends WatchedResource<NotebookPath, ServerNotebook
   public static async delete(path: NotebookPath): Promise<void> {
     // REVIEW: Race conditions?
     this.close(path, "Notebook has been deleted."); // no-op if the notebook is not open.
-    const absPath = absDirPathFromNotebookPath(path);
-    debug(`Deleting notebook directory ${absPath}`);
-    await rmRaf(absPath); // TODO: Handle failure.
+    deleteDirectory(path, true);
   }
 
-  public static async move(path: NotebookPath, newPath: NotebookPath): Promise<NotebookEntry> {
+  public static async move(oldPath: NotebookPath, newPath: NotebookPath): Promise<NotebookEntry> {
     // Called by the containing ServerFolder when one of its notebooks is renamed.
 
-    this.close(path, `Notebook is moving to ${newPath}.`)
-    const oldAbsPath = absDirPathFromNotebookPath(path);
-    const newAbsPath = absDirPathFromNotebookPath(newPath);
+    this.close(oldPath, `Notebook is moving to ${newPath}.`)
 
     // REVIEW: If there is an existing *file* (not directory) at the new path then it will be overwritten silently.
     //         However, we don't expect random files to be floating around out notebook storage filesystem.
-    await rename(oldAbsPath, newAbsPath);
+    await renameDirectory(oldPath, newPath);
     return { path: newPath, name: this.nameFromPath(newPath) }
   }
 
@@ -196,10 +188,6 @@ export class ServerNotebook extends WatchedResource<NotebookPath, ServerNotebook
 
   // Public Instance Property Functions
 
-  public absoluteDirectoryPath(): AbsDirectoryPath {
-    return absDirPathFromNotebookPath(this.path);
-  }
-
   public toHtml(): Html {
     if (this.isEmpty()) { return <Html>"<i>Notebook is empty.</i>"; }
     else {
@@ -207,10 +195,6 @@ export class ServerNotebook extends WatchedResource<NotebookPath, ServerNotebook
         return ServerNotebook.cellToHtml(cellObject);
       }).join('\n');
     }
-  }
-
-  public toJSON(): ServerNotebookObject {
-    return this.obj;
   }
 
   // Public Instance Methods
@@ -335,6 +319,7 @@ export class ServerNotebook extends WatchedResource<NotebookPath, ServerNotebook
   private cellMap: Map<CellId, CellObject>;
   private ephemeral?: boolean;     // Not persisted to the filesystem.
   private obj: ServerNotebookObject;
+  private permissions!: Permissions;
   private reservedIds: Set<CellId>;
   private saving?: boolean;
   private sockets: Set<ServerSocket>;
@@ -603,10 +588,8 @@ export class ServerNotebook extends WatchedResource<NotebookPath, ServerNotebook
   protected async initialize(options: OpenNotebookOptions): Promise<void> {
     if (options.mustExist) {
       assert(ServerNotebook.isValidNotebookPath(this.path));
-      const absPath = absFilePathFromNotebookPath(this.path);
       // REVIEW: Create file-system readJsonFile function?
-      const json = await readFile(absPath, NOTEBOOK_ENCODING);
-      const obj = JSON.parse(json);
+      const obj = await readJsonFile<ServerNotebookObject>(this.path, NOTEBOOK_FILENAME);
       assert(typeof obj == 'object');
       ServerNotebook.validateObject(obj);
       this.obj = obj; // REVIEW: Deep copy?
@@ -630,6 +613,7 @@ export class ServerNotebook extends WatchedResource<NotebookPath, ServerNotebook
       //        Currently this is an illegal option configuration.
       notImplementedError("ServerNoteboook Neither mustExist or mustNotExist specified");
     }
+    this.permissions = await Permissions.load(this.path);
   }
 
   private removeSocket(socket: ServerSocket): void {
@@ -653,9 +637,7 @@ export class ServerNotebook extends WatchedResource<NotebookPath, ServerNotebook
     assert(ServerNotebook.isValidNotebookPath(this.path));
     debug(`saving ${this.path}`);
 
-    const json = JSON.stringify(this);
-    const filePath = absFilePathFromNotebookPath(this.path);
-    await writeFile(filePath, json, NOTEBOOK_ENCODING)
+    await writeJsonFile(this.path, NOTEBOOK_FILENAME, this.obj);
     this.saving = false;
   }
 
@@ -673,8 +655,7 @@ export class ServerNotebook extends WatchedResource<NotebookPath, ServerNotebook
     // LATER: Don't attempt to create the directory every time we save. Only the first time.
     this.saving = true;
     try {
-      const dirPath = absDirPathFromNotebookPath(this.path);
-      await mkDir(dirPath);
+      await createDirectory(this.path);
     } catch(err) {
       if (err.code == 'EEXIST') {
         err = new ExpectedError(`Notebook '${this.path}' already exists.`);
@@ -708,8 +689,19 @@ export class ServerNotebook extends WatchedResource<NotebookPath, ServerNotebook
 
   // Client Message Event Handlers
 
-  private async onChangeRequest(originatingSocket: ServerSocket, msg: ChangeNotebook): Promise<void> {
-    const options: RequestChangesOptions = { originatingSocket, requestId: msg.requestId };
+  private async onChangeRequest(socket: ServerSocket, msg: ChangeNotebook): Promise<void> {
+
+    // Verify the user has permission to modify the notebook.
+    const user = socket.user;
+    const permissions = this.permissions.getUserPermissions(user);
+    if (!(permissions & UserPermission.Modify)) {
+      const message = user ?
+                      `You do not have permission to modify this notebook.` :
+                      `You must be logged in to modify this notebook.`;
+      throw new ExpectedError(message)
+    }
+
+    const options: RequestChangesOptions = { originatingSocket: socket, requestId: msg.requestId };
     await this.requestChanges('USER', msg.changeRequests, options);
   }
 
@@ -720,14 +712,23 @@ export class ServerNotebook extends WatchedResource<NotebookPath, ServerNotebook
   }
 
   private onOpenRequest(socket: ServerSocket, msg: OpenNotebook): void {
+    const user = socket.user;
+    const permissions = this.permissions.getUserPermissions(user);
+    if (!(permissions & UserPermission.Read)) {
+      const message = user ?
+                      `This notebook is not public and is not shared with you.` :
+                      `You must be logged in to access this notebook.`;
+      throw new ExpectedError(message)
+    }
+
     this.sockets.add(socket);
-    const obj = this.toJSON();
     const response: NotebookOpened = {
       requestId: msg.requestId,
       type: 'notebook',
       operation: 'opened',
       path: this.path,
-      obj,
+      permissions,
+      obj: this.obj,
       complete: true
     };
     socket.sendMessage(response);
@@ -936,21 +937,11 @@ export class ServerNotebook extends WatchedResource<NotebookPath, ServerNotebook
 
 // Exported Functions
 
-export function absDirPathFromNotebookPath(path: NotebookPath): AbsDirectoryPath {
-  const pathSegments = path.split('/').slice(1);  // slice removes leading slash
-  return join(ROOT_DIR_PATH, ...pathSegments);
-}
-
 export function notebookPath(path: FolderPath, name: NotebookName): NotebookPath {
   return <NotebookPath>`${path}${name}${ServerNotebook.NOTEBOOK_DIR_SUFFIX}`;
 }
 
 // Helper Functions
-
-function absFilePathFromNotebookPath(path: NotebookPath): AbsFilePath {
-  const absPath = absDirPathFromNotebookPath(path);
-  return join(absPath, NOTEBOOK_FILE_NAME);
-}
 
 // function cellMatchesPattern(cell: CellObject, options: FindCellOptions): boolean {
 //   return    (!options.source || cell.source == options.source)

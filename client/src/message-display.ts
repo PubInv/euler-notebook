@@ -51,7 +51,7 @@ export class MessageDisplay extends HtmlElement<'div'> {
   // Public Class Methods
 
   public static initialize($body: HTMLBodyElement): void {
-    messageDisplayInstance = new MessageDisplay($body)
+    messageDisplayInstance = new MessageDisplay($body);
   }
 
   // Public Constructor

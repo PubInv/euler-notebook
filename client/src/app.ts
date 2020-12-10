@@ -23,11 +23,11 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 import { Html } from "./shared/common";
 
-import { addAsyncEventListener, addSyncEventListener } from "./error-handler";
-import { Header } from "./components/header";
+import { addAsyncEventListener, addSyncEventListener, showError } from "./error-handler";
 import { Pathname, Screens } from "./screens";
 import { ClientSocket } from "./client-socket";
 import { MessageDisplay } from "./message-display";
+import { ClientUser } from "./client-user";
 
 // Types
 
@@ -76,11 +76,12 @@ class App {
     // TODO: this.banner = Banner.attach($(document, '#banner'));
     const $body = <HTMLBodyElement>window.document.body;
     MessageDisplay.initialize($body);
-    Header.initialize($body);
     Screens.initialize();
 
     // TODO: Show a "connecting..." spinner.
     this.socket = await ClientSocket.connect(`ws://${window.location.host}/`);
+    try { await ClientUser.loginIfSavedToken(); }
+    catch(err) { showError(err, <Html>`Please log in again. Cannot restore user session`); }
     Screens.navigateTo(this.currentPath);
   }
 

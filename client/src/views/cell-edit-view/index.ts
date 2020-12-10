@@ -43,7 +43,7 @@ import {
 import { Tools } from "../../screens/notebook-edit-screen/tools";
 import { CallbackFunctions as ResizerCallbackFunctions, ResizerBar } from "../../components/resizer-bar";
 import { CellView, ClientCell } from "../../client-cell";
-import { logError, reportError } from "../../error-handler";
+import { showError } from "../../error-handler";
 import { StrokeCallbackFn, StrokePanel } from "../../components/stroke-panel";
 import { NotebookEditView } from "../notebook-edit-view";
 
@@ -215,7 +215,7 @@ export abstract class CellEditView<O extends CellObject> extends HtmlElement<'di
       this.cell.insertStroke(stroke)
       .catch(err=>{
         // REVIEW: Proper way to handle this error?
-        logError(err, <Html>"Error sending stroke from text cell");
+        showError(err, <Html>"Error sending stroke from text cell");
       });
     };
     this.strokePanel = new StrokePanel(cell.obj, callbackFn);
@@ -243,7 +243,7 @@ export abstract class CellEditView<O extends CellObject> extends HtmlElement<'di
   //     // const changeRequest: KeyboardInputRequest = { type: 'keyboardInputChange', cellId: style.id, start, end, replacement, value, };
   //     // this.notebookEditView.screen.notebook.sendCellChangeRequest(changeRequest)
   //     // .catch(err=>{
-  //     //   logError(err, <Html>"Error sending keyboardInputChange from text cell");
+  //     //   reportError(err, <Html>"Error sending keyboardInputChange from text cell");
   //     // });
   //   }
   //   return new KeyboardPanel(cellObject.inputText, textChangeCallback);
@@ -378,7 +378,7 @@ export abstract class CellEditView<O extends CellObject> extends HtmlElement<'di
     this.cell.resize(cssSize)
     .catch((err: Error)=>{
       // TODO: What to do here?
-      reportError(err, <Html>"Error submitting resize");
+      showError(err, <Html>"Error submitting resize");
     })
     .finally(()=>{
       // REVIEW: What if new resizing starts before old resizing update returns?

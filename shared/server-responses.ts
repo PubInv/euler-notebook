@@ -24,16 +24,17 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 import { CellId, CellObject } from "./cell";
 import { RequestId, NotebookChangeRequest } from "./client-requests";
-import { CssSize } from "./common";
+import { ClientId, CssSize, SessionToken } from "./common";
 import { FolderObject, FolderPath, NotebookPath, FolderEntry, FolderName, NotebookEntry, NotebookName } from "./folder";
 import { NotebookObject } from "./notebook";
 import { StrokeId, Stroke } from "./stylus";
-
+import { UserId, UserObject } from "./user";
+import { UserPermissions } from "./permissions";
 // Types
 
 // Server Responses
 
-export type ServerResponse = ErrorResponse|FolderResponse|NotebookResponse;
+export type ServerResponse = ErrorResponse | FolderResponse | NotebookResponse | UserResponse;
 export interface ResponseBase {
   complete?: boolean;
   requestId?: RequestId; // REVIEW: Just 'id'?
@@ -44,10 +45,7 @@ export interface ErrorResponse extends ResponseBase {
   message: string,
 }
 
-export type FolderResponse =
-  FolderClosed |
-  FolderOpened |
-  FolderUpdated;
+export type FolderResponse = FolderClosed | FolderOpened | FolderUpdated;
 export interface FolderResponseBase extends ResponseBase {
   type: 'folder',
   path: FolderPath,
@@ -58,6 +56,7 @@ export interface FolderClosed extends FolderResponseBase {
 }
 export interface FolderOpened extends FolderResponseBase {
   operation: 'opened';
+  permissions: UserPermissions;
   obj: FolderObject;
 }
 export interface FolderUpdated extends FolderResponseBase {
@@ -65,10 +64,7 @@ export interface FolderUpdated extends FolderResponseBase {
   updates: FolderUpdate[];
 }
 
-export type NotebookResponse =
-  NotebookUpdated |
-  NotebookClosed |
-  NotebookOpened;
+export type NotebookResponse = NotebookClosed | NotebookOpened | NotebookUpdated | NotebookUserConnected | NotebookUserDisconnected;
 interface NotebookResponseBase extends ResponseBase {
   type: 'notebook',
   path: NotebookPath,
@@ -79,6 +75,7 @@ export interface NotebookClosed extends NotebookResponseBase {
 }
 export interface NotebookOpened extends NotebookResponseBase {
   operation: 'opened';
+  permissions: UserPermissions;
   obj: NotebookObject;
 }
 export interface NotebookUpdated extends NotebookResponseBase {
@@ -86,10 +83,34 @@ export interface NotebookUpdated extends NotebookResponseBase {
   updates: NotebookUpdate[];
   undoChangeRequests: NotebookChangeRequest[];
 }
+export interface NotebookUserConnected extends NotebookResponseBase {
+  operation: 'userConnected';
+  clientId: ClientId;
+  userInfo: UserObject;
+}
+export interface NotebookUserDisconnected extends NotebookResponseBase {
+  operation: 'userDisconnected';
+  clientId: ClientId;
+  userId: UserId;
+}
+
+export type UserResponse = UserLoggedIn | UserLoggedOut;
+export interface UserResponseBase extends ResponseBase {
+  type: 'user',
+}
+export interface UserLoggedIn extends UserResponseBase {
+  operation: 'loggedIn';
+  obj: UserObject;
+  sessionToken: SessionToken;
+}
+export interface UserLoggedOut extends UserResponseBase {
+  operation: 'loggedOut';
+  // REVIEW: Include userName for verification?
+}
 
 // Folder Updates
 
-export type FolderUpdate = FolderCreated|FolderDeleted|FolderRenamed|NotebookCreated|NotebookDeleted|NotebookRenamed;
+export type FolderUpdate = FolderCreated | FolderDeleted | FolderRenamed | NotebookCreated | NotebookDeleted | NotebookRenamed;
 export interface FolderCreated {
   type: 'folderCreated';
   entry: FolderEntry;
