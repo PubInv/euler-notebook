@@ -19,15 +19,13 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 // Requirements
 
-import { Path } from "../../shared/folder";
-
-import { Header } from "../../components/header";
-
 import { ClientUser } from "../../client-user";
 
 import { ScreenBase } from "../screen-base";
 import { $, $attach, CssSelector } from "../../dom";
 import { UserName, UserPassword } from "../../shared/user";
+import { appInstance } from "../../app";
+import { FolderPath } from "../../shared/folder";
 
 // Types
 
@@ -54,9 +52,6 @@ export class HomeScreen extends ScreenBase {
     const $elt = $<'div'>(document.body, '#homeScreen')
     super($elt);
 
-    const header = new Header(<Path>'/');
-    $elt.prepend(header.$elt);
-
     $attach(this.$elt, <CssSelector>'#loginForm', {
       asyncListeners: {
         submit: (e: Event)=>this.onLoginSubmit(e),
@@ -66,6 +61,13 @@ export class HomeScreen extends ScreenBase {
   }
 
   // Public Instance Properties
+
+  // Public Instance Methods
+
+  public show(): void {
+    appInstance.header.setPath(<FolderPath>'/');
+    super.show();
+  }
 
   // Public Instance Event Handlers
 

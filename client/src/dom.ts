@@ -85,6 +85,7 @@ interface NewCommonOptions {
   listeners?: SyncListeners;
   src?: RelativeUrl;
   style?: string;
+  styles?: Styles;
   title?: string;
   type?: string;
   value?: string;
@@ -109,6 +110,10 @@ export interface SvgElementSpecification<K extends keyof SVGElementTagNameMap> e
 }
 
 export type HtmlElementOrSpecification = HtmlElementSpecification<any>|HTMLElement|SVGElement;
+
+interface Styles {
+  [style: string]: string,
+}
 
 // Keep this list in sync with server/views/iconmonstr.pug.
 export type SvgIconId = 'iconMonstrBug12' | 'iconMonstrCalculator2' | 'iconMonstrClothing18' | 'iconMonstrFile5' |
@@ -188,7 +193,12 @@ export function $configure($elt: HTMLElement|SVGElement, options: NewCommonOptio
   }
   attachAttributes($elt, attributes);
 
-  if (options.style) { $elt.setAttribute('style', options.style); }
+  let style: /* TYPESCRIPT: */string  = '';
+  if (options.styles) {
+    style = Object.entries(options.styles).map(([key, value])=>`${key}: ${value}`).join('; ');
+  }
+  if (options.style) { style += options.style; }
+  if (style.length>0) { $elt.setAttribute('style', style); }
   if (options.hidden) { $elt.style.display = 'none'; }
 
   if (options.listeners) { attachSyncListeners($elt, options.listeners); }

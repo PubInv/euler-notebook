@@ -23,7 +23,6 @@ import { CssClass, Html, notImplementedWarning } from "../../shared/common";
 import { NotebookUpdate, NotebookUserConnected, NotebookUserDisconnected } from "../../shared/server-responses";
 import { NotebookPath } from "../../shared/folder";
 
-import { Header } from "../../components/header";
 import { NotebookReadView } from "../../views/notebook-read-view";
 
 import { ClientNotebook, NotebookView } from "../../client-notebook";
@@ -31,6 +30,7 @@ import { ClientNotebook, NotebookView } from "../../client-notebook";
 import { ScreenBase } from "../screen-base";
 
 import { Sidebar } from "./sidebar";
+import { appInstance } from "../../app";
 
 // Types
 
@@ -55,6 +55,7 @@ export class NotebookReadScreen extends ScreenBase  implements NotebookView {
     super({
       tag: 'div',
       classes: [<CssClass>'screen', <CssClass>'notebookReadScreen'],
+      styles: { display: 'none' },
       data: { path },
     });
 
@@ -62,8 +63,8 @@ export class NotebookReadScreen extends ScreenBase  implements NotebookView {
     .then(
       (notebook: ClientNotebook)=>{
         this.notebook = notebook;
+        appInstance.header.setPath(this.notebook.path);
 
-        this.header = new Header(notebook.path, notebook.userMap.values());
         /* this.sidebar = */ new Sidebar(this, mode);
         this.readView = new NotebookReadView(this, mode);
       },
@@ -76,8 +77,16 @@ export class NotebookReadScreen extends ScreenBase  implements NotebookView {
 
   // Public Instance Properties
 
-  public header!: Header;
   public notebook!: ClientNotebook;
+
+  // Public Instance Methods
+
+  public show(): void {
+    if (this.notebook) {
+      appInstance.header.setPath(this.notebook.path);
+    }
+    super.show();
+  }
 
   // Public Instance Event Handlers
 
@@ -90,7 +99,6 @@ export class NotebookReadScreen extends ScreenBase  implements NotebookView {
   // NotebookView Interface Methods
 
   public onClosed(reason: string): void {
-    this.header.destroy();
     this.readView.destroy();
     this.displayErrorMessage(<Html>`Server closed notebook <tt>${this.notebook.path}</tt>: ${reason}`);
   }

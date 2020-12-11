@@ -23,6 +23,8 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 import { Html } from "./shared/common";
 
+import { Header } from "./components/header";
+
 import { addAsyncEventListener, addSyncEventListener, showError } from "./error-handler";
 import { Pathname, Screens } from "./screens";
 import { ClientSocket } from "./client-socket";
@@ -52,6 +54,7 @@ class App {
   // Public Instance Properties
 
   // REVIEW: Ensure these are read-only?
+  public header!: Header;
   public socket!: ClientSocket;  // Connection initiated at DOM ready.
 
   // Public Instance Methods
@@ -76,6 +79,10 @@ class App {
     // TODO: this.banner = Banner.attach($(document, '#banner'));
     const $body = <HTMLBodyElement>window.document.body;
     MessageDisplay.initialize($body);
+
+    this.header = new Header();
+    $body.append(this.header.$elt);
+
     Screens.initialize();
 
     // TODO: Show a "connecting..." spinner.

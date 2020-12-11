@@ -158,6 +158,9 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
   color inherit
   padding 0
 
+.entityButton:hover
+  background-color lightgray
+
 .folderScreen
 
   .content
@@ -175,6 +178,9 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
   border none
   color inherit
   padding 0
+
+.iconButton:hover
+  background-color lightgray
 
 .inputPanel
   border 1px solid #E0E0E0
@@ -384,7 +390,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
         outline 2px solid blue
 
 .screen
-  height: 100%
+  height: calc(100% - var(--header-height))
   left: 0
   position: fixed
   top var(--header-height)
@@ -405,9 +411,6 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
   position fixed
   top var(--header-height)
   width var(--sidebar-width)
-
-  .entityButton
-    font-size 50px
 
   .separator
     margin 2px 0 2px 0

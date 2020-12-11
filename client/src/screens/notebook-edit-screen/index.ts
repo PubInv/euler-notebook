@@ -26,7 +26,6 @@ import { CssClass, Html } from "../../shared/common";
 import { NotebookPath } from "../../shared/folder";
 import { NotebookUpdate, NotebookUserConnected, NotebookUserDisconnected } from "../../shared/server-responses";
 
-import { Header } from "../../components/header";
 import { NotebookEditView } from "../../views/notebook-edit-view";
 
 import { ClientNotebook, NotebookView } from "../../client-notebook";
@@ -37,6 +36,7 @@ import { DebugPopup } from "./debug-popup";
 import { SearchPanel } from "./search-panel";
 import { Sidebar } from "./sidebar";
 import { Tools } from "./tools";
+import { appInstance } from "../../app";
 
 // Types
 
@@ -54,6 +54,7 @@ export class NotebookEditScreen extends ScreenBase implements NotebookView {
     super({
       tag: 'div',
       classes: [<CssClass>'screen', <CssClass>'notebookEditScreen'],
+      styles: { display: 'none' },
       data: { path },
     });
 
@@ -61,15 +62,15 @@ export class NotebookEditScreen extends ScreenBase implements NotebookView {
     .then(
       (notebook: ClientNotebook)=>{
         this.notebook = notebook;
+        appInstance.header.setPath(this.notebook.path);
 
-        this.header = new Header(notebook.path, notebook.userMap.values());
         this.editView = new NotebookEditView(this, notebook);
         this.sidebar = new Sidebar(this);
         // TODO: this.tools = new Tools(this);
         this.searchPanel = new SearchPanel(this);
         this.debugPopup = new DebugPopup(this);
 
-        this.$elt.append(this.header.$elt, this.sidebar.$elt, this.editView.$elt, this.searchPanel.$elt, this.debugPopup.$elt);
+        this.$elt.append(this.sidebar.$elt, this.editView.$elt, this.searchPanel.$elt, this.debugPopup.$elt);
       },
       (err)=>{
         this.displayError(err, <Html>`Error opening notebook <tt>${path}</tt>`);
@@ -80,7 +81,6 @@ export class NotebookEditScreen extends ScreenBase implements NotebookView {
   // Public Instance Properties
 
   public debugPopup!: DebugPopup;
-  public header!: Header;
   public notebook!: ClientNotebook;
   public searchPanel!: SearchPanel;
   public sidebar!: Sidebar;
@@ -88,6 +88,13 @@ export class NotebookEditScreen extends ScreenBase implements NotebookView {
   public editView!: NotebookEditView;
 
   // Public Instance Methods
+
+  public show(): void {
+    if (this.notebook) {
+      appInstance.header.setPath(this.notebook.path);
+    }
+    super.show();
+  }
 
   public toggleSearchPanel(): void {
     if (this.searchPanel.isHidden) {
@@ -105,7 +112,6 @@ export class NotebookEditScreen extends ScreenBase implements NotebookView {
   // ClientNotebookWatcher Methods
 
   public onClosed(reason?: string): void {
-    this.header.destroy();
     this.sidebar.destroy();
     this.editView.destroy();
     this.tools.destroy();
@@ -125,12 +131,12 @@ export class NotebookEditScreen extends ScreenBase implements NotebookView {
     this.editView.onUpdate(change);
   }
 
-  public onUserConnected(msg: NotebookUserConnected, ownRequest: boolean): void {
-    this.header.onUserConnected(msg, ownRequest);
+  public onUserConnected(_msg: NotebookUserConnected, _ownRequest: boolean): void {
+    // TODO: this.header.onUserConnected(msg, ownRequest);
   };
 
-  public onUserDisconnected(msg: NotebookUserDisconnected, ownRequest: boolean): void {
-    this.header.onUserDisconnected(msg, ownRequest);
+  public onUserDisconnected(_msg: NotebookUserDisconnected, _ownRequest: boolean): void {
+    // TODO: this.header.onUserDisconnected(msg, ownRequest);
   }
 
   // --- PRIVATE ---

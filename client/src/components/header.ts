@@ -51,11 +51,9 @@ export class Header extends ButtonBar {
 
   // Public Class Methods
 
-  // Public Instance Methods
+  // Public Instance Property Functions
 
-  // Public Constructor
-
-  public constructor(path: Path, users?: IterableIterator<NotebookUserConnected>) {
+  public setPath(path: Path): void {
 
     let titleHtml: Html = <Html>(path===<Path>'/' ? 'Euler Notebook' : '<a href="#/">Home</a>');
     const segments = path.split('/').slice(1);
@@ -66,6 +64,15 @@ export class Header extends ButtonBar {
       const segmentHtml = (i < segments.length-1 ? `<a href="${href}">${escapedSegment}</a>` : escapedSegment);
       titleHtml += ' / ' + segmentHtml;
     }
+
+    $(this.$elt, "#title").innerHTML = titleHtml;
+  }
+
+  // Public Instance Methods
+
+  // Public Constructor
+
+  public constructor() {
 
     const refreshButton: HtmlElementSpecification<'button'> = {
       tag: 'button',
@@ -139,7 +146,7 @@ export class Header extends ButtonBar {
         {
           tag: 'div',
           id: <ElementId>'title',
-          html: titleHtml,
+          html: <Html>"Euler Notebook",
         },
         rightSpan,
       ],
@@ -147,11 +154,6 @@ export class Header extends ButtonBar {
 
     this.$usersSpan = $usersSpan;
 
-    if (users) {
-      for (const msg of users) {
-        this.addUserButton(msg);
-      }
-    }
   }
 
   // Public Instance Event Handlers

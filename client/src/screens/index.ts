@@ -60,8 +60,8 @@ export abstract class Screens {
       this.instanceMap.set(pathname, nextScreen);
     } else {
       if (nextScreen == this.currentScreen) { assertFalse(); }
-      nextScreen.show();
     }
+    nextScreen.show();
     this.currentScreen = nextScreen;
   }
 

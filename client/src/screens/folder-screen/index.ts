@@ -28,9 +28,10 @@ import { FolderUpdate } from "../../shared/server-responses";
 import { ScreenBase } from "../screen-base";
 import { ClientFolder, ClientFolderWatcher, OpenFolderOptions } from "../../client-folder";
 
+import { appInstance } from "../../app";
+
 import { Content } from "./content";
 import { Sidebar } from "./sidebar";
-import { Header } from "../../components/header";
 
 // Types
 
@@ -50,6 +51,7 @@ export class FolderScreen extends ScreenBase implements ClientFolderWatcher {
     super({
       tag: 'div',
       classes: [<CssClass>'screen', <CssClass>'folderScreen'],
+      styles: { display: 'none' },
       data: { path },
     });
 
@@ -58,12 +60,12 @@ export class FolderScreen extends ScreenBase implements ClientFolderWatcher {
     .then(
       (folder: ClientFolder)=>{
         this.folder = folder;
+        appInstance.header.setPath(this.folder.path);
 
-        this.header = new Header(folder.path, folder.userMap.values());
         this.sidebar = new Sidebar(this);
         this.view = new Content(this);
 
-        this.$elt.append(this.header.$elt, this.sidebar.$elt, this.view.$elt);
+        this.$elt.append(this.sidebar.$elt, this.view.$elt);
       },
       (err)=>{
         this.displayError(err, <Html>`Error opening folder <tt>${path}</tt>`);
@@ -78,7 +80,6 @@ export class FolderScreen extends ScreenBase implements ClientFolderWatcher {
   // Public Instance Properties
 
   public folder!: ClientFolder;     // Instantiated asynchronously in the constructor.
-  public header!: Header;
   public sidebar!: Sidebar;   // Instantiated asynchronously in the constructor.
   public view!: Content;         // Instantiated asynchronously in the constructor.
 
@@ -92,6 +93,15 @@ export class FolderScreen extends ScreenBase implements ClientFolderWatcher {
     this.sidebar.destroy();
     this.view.destroy();
     this.displayErrorMessage(<Html>`Server closed folder <tt>${this.folder.path}</tt>: ${reason}`);
+  }
+
+  // Public Instance Methods
+
+  public show(): void {
+    if (this.folder) {
+      appInstance.header.setPath(this.folder.path);
+    }
+    super.show();
   }
 
   // --- PRIVATE ---
