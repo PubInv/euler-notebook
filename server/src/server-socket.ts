@@ -72,10 +72,11 @@ export class ServerSocket {
 
   // Public Instance Properties
 
-  public clientId: ClientId;
-  public user: ServerUser | undefined;
+  public readonly clientId: ClientId;
 
   // Public Instance Property Functions
+
+  public get user(): ServerUser|undefined { return this._user };
 
   // Public Instance Methods
 
@@ -105,6 +106,21 @@ export class ServerSocket {
       return this.closePromise;
     }
     return this.closePromise;
+  }
+
+  public loginUser(user: ServerUser): void {
+    assert(!this._user);
+    this._user = user;
+    ServerFolder.onSocketUserLogin(this);
+    ServerNotebook.onSocketUserLogin(this);
+  }
+
+  public logoutUser(): void {
+    console.log("SERVER SOCKET LOGOUT USER")
+    assert(this._user);
+    ServerFolder.onSocketUserLogout(this);
+    ServerNotebook.onSocketUserLogout(this);
+    this._user = undefined;
   }
 
   public sendMessage(msg: ServerResponse): void {
@@ -146,7 +162,7 @@ export class ServerSocket {
     debug(`Constructor`)
     this.clientId = id;
     this.socket = ws;
-    this.user = undefined;
+    this._user = undefined;
     ws.on('close', (code: number, reason: string) => this.onSocketClose(ws, code, reason))
     ws.on('error', (err: Error) => this.onSocketError(ws, err))
     ws.on('message', (message: string) => this.onSocketMessage(ws, message));
@@ -157,6 +173,7 @@ export class ServerSocket {
   private closePromise?: Promise<void>;
   private closeResolver?: PromiseResolver<void>;
   private socket: WebSocket;
+  private _user: ServerUser|undefined;
 
   // Private Instance Methods
 

@@ -67,7 +67,7 @@ export class ServerUser {
           instance.onLogout(socket, msg, session);
         } else {
           logWarning(MODULE, `Session token ${msg.sessionToken} not found for logout.`);
-          socket.user = undefined;
+          socket.logoutUser();
         }
         break;
       }
@@ -153,7 +153,7 @@ export class ServerUser {
   private finishLogin(socket: ServerSocket, requestId: RequestId, sessionToken: SessionToken): void {
 
     assert(!socket.user);
-    socket.user = this;
+    socket.loginUser(this);
 
     const response: UserLoggedIn = {
       requestId,
@@ -169,9 +169,10 @@ export class ServerUser {
   // Private Instance Event Handlers
 
   private onLogout(socket: ServerSocket, msg: LogoutUser, session: UserSession): void {
+    console.log("SERVER USER LOGOUT")
     assert(socket.user && socket.user.userName === session.userName);
     UserSession.logout(msg.sessionToken);
-    socket.user = undefined;
+    socket.logoutUser();
   }
 
   private async onPasswordLogin(socket: ServerSocket, msg: LoginUserWithPassword): Promise<void> {

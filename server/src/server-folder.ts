@@ -121,7 +121,27 @@ export class ServerFolder extends Folder<ServerFolderWatcher> {
     //         we may want to create a map from sockets to lists of folder instances
     //         so we can handle this more efficiently.
     for (const instance of this.allInstances) {
-      instance.onSocketClosed(socket);
+      if (instance.sockets.has(socket)) {
+        instance.onSocketClosed(socket);
+      }
+    }
+  }
+
+  public static onSocketUserLogin(socket: ServerSocket): void {
+    // Note: see note for onSocketClosed.
+    for (const instance of this.allInstances) {
+      if (instance.sockets.has(socket)) {
+        instance.onSocketUserLogin(socket);
+      }
+    }
+  }
+
+  public static onSocketUserLogout(socket: ServerSocket): void {
+    // Note: see note for onSocketClosed.
+    for (const instance of this.allInstances) {
+      if (instance.sockets.has(socket)) {
+        instance.onSocketUserLogout(socket);
+      }
     }
   }
 
@@ -231,8 +251,7 @@ export class ServerFolder extends Folder<ServerFolderWatcher> {
       obj: collaboratorObj,
     };
     for (const otherSocket of this.sockets) {
-      assert(otherSocket !== socket);
-      if (!otherSocket.user) { continue; }
+      if (otherSocket === socket || !otherSocket.user) { continue; }
       otherSocket.sendMessage(response2);
     }
   }
@@ -247,8 +266,7 @@ export class ServerFolder extends Folder<ServerFolderWatcher> {
       clientId: socket.clientId,
     };
     for (const otherSocket of this.sockets) {
-      assert(otherSocket !== socket);
-      if (!otherSocket.user) { continue; }
+      if (otherSocket === socket || !otherSocket.user) { continue; }
       otherSocket.sendMessage(response2);
     }
   }
@@ -282,8 +300,15 @@ export class ServerFolder extends Folder<ServerFolderWatcher> {
   private onSocketClosed(socket: ServerSocket): void {
     // NOTE: When *any* socket closes, this message is sent to *all* folders,
     //       so we need to check if we are actually interested in this socket.
-    if (!this.sockets.has(socket)) { return; }
     this.removeSocket(socket);
+    this.sendCollaboratorDisconnectedMessage(socket);
+  }
+
+  private onSocketUserLogin(socket: ServerSocket): void {
+    this.sendCollaboratorConnectedMessage(socket);
+  }
+
+  private onSocketUserLogout(socket: ServerSocket): void {
     this.sendCollaboratorDisconnectedMessage(socket);
   }
 
@@ -375,6 +400,8 @@ export class ServerFolder extends Folder<ServerFolderWatcher> {
   }
 
   private onOpenRequest(socket: ServerSocket, msg: OpenFolder): void {
+
+    // Check if the user has permission to open this folder.
     const user = socket.user;
     const permissions = this.permissions.getUserPermissions(user);
     if (!(permissions & UserPermission.Read)) {
@@ -384,7 +411,6 @@ export class ServerFolder extends Folder<ServerFolderWatcher> {
       throw new ExpectedError(message)
     }
 
-    this.sendCollaboratorConnectedMessage(socket);
     this.sockets.add(socket);
 
     // Send NotebookOpened message back to the requesting client.
@@ -410,6 +436,9 @@ export class ServerFolder extends Folder<ServerFolderWatcher> {
       complete: true
     };
     socket.sendMessage(response);
+
+    this.sendCollaboratorConnectedMessage(socket);
+
   }
 
 }

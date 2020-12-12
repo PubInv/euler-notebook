@@ -63,7 +63,7 @@ export function addSyncEventListener<E extends Event>(target: EventTarget, type:
   return wrappedListener;
 }
 
-export function logError(err: Error, message?: PlainText): void {
+export function logError(err: Error, message?: string): void {
   // Makes a record of the error.
   // If the error might be an ExpectedError, then call logErrorIfUnexpected instead.
   // Currently it just writes the error to the browser console.
@@ -80,10 +80,14 @@ export function logError(err: Error, message?: PlainText): void {
   console.dir(err);
 }
 
-export function logErrorIfUnexpected(err: Error, message?: PlainText): void {
+export function logErrorIfUnexpected(err: Error, message?: string): void {
   // Makes a record of the error if it is not an instance of ExpectedError.
   if (err instanceof ExpectedError) { return; }
   logError(err, message);
+}
+
+export function logWarning(message: string): void {
+  console.warn(message);
 }
 
 export function monitorPromise(promise: Promise<any>, message: Html): void {

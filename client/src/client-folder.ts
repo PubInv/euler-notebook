@@ -35,6 +35,7 @@ import { appInstance } from "./app";
 import { assert, assertFalse, ClientId } from "./shared/common";
 import { OpenOptions } from "./shared/watched-resource";
 import { CollaboratorObject } from "./shared/user";
+import { logWarning } from "./error-handler";
 
 // Types
 
@@ -235,15 +236,22 @@ export class ClientFolder extends Folder<ClientFolderWatcher> {
   private onCollaboratorConnected(msg: FolderCollaboratorConnected): void {
     // Message from the server indicating a user has connected to the notebook.
     const clientId = msg.obj.clientId;
-    assert(!this.collaboratorMap.has(clientId));
+    if (this.collaboratorMap.has(clientId)) {
+      logWarning(`Ignoring duplicate collaborator connected message for folder: ${clientId} ${this.path}`);
+      return;
+    }
     this.collaboratorMap.set(clientId, msg.obj);
     for (const watcher of this.watchers) { watcher.onCollaboratorConnected(msg); }
   }
 
   private onCollaboratorDisconnected(msg: FolderCollaboratorDisconnected): void {
     // Message from the server indicating a user has connected to the notebook.
-    assert(this.collaboratorMap.has(msg.clientId));
-    this.collaboratorMap.delete(msg.clientId);
+    const clientId = msg.clientId;
+    if (!this.collaboratorMap.has(clientId)) {
+      logWarning(`Ignoring duplicate collaborator disconnected message for folder: ${clientId} ${this.path}`);
+      return;
+    }
+    this.collaboratorMap.delete(clientId);
     for (const watcher of this.watchers) { watcher.onCollaboratorDisconnected(msg); }
   }
 

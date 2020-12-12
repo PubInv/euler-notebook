@@ -40,6 +40,7 @@ import { createCell } from "./client-cell/instantiator";
 import { appInstance } from "./app";
 import { ClientCell } from "./client-cell";
 import { CollaboratorObject } from "./shared/user";
+import { logWarning } from "./error-handler";
 
 // Types
 
@@ -462,15 +463,22 @@ export class ClientNotebook {
   private onCollaboratorConnected(msg: NotebookCollaboratorConnected): void {
     // Message from the server indicating a user has connected to the notebook.
     const clientId = msg.obj.clientId;
-    assert(!this.collaboratorMap.has(clientId));
+    if (this.collaboratorMap.has(clientId)) {
+      logWarning(`Ignoring duplicate collaborator connected message for notebook: ${clientId} ${this.path}`);
+      return;
+    }
     this.collaboratorMap.set(clientId, msg.obj);
     for (const views of this.views) { views.onCollaboratorConnected(msg); }
   }
 
   private onCollaboratorDisconnected(msg: NotebookCollaboratorDisconnected): void {
     // Message from the server indicating a user has connected to the notebook.
-    assert(this.collaboratorMap.has(msg.clientId));
-    this.collaboratorMap.delete(msg.clientId);
+    const clientId = msg.clientId;
+    if (!this.collaboratorMap.has(clientId)) {
+      logWarning(`Ignoring duplicate collaborator disconnected message for notebook: ${clientId} ${this.path}`);
+      return;
+    }
+    this.collaboratorMap.delete(clientId);
     for (const views of this.views) { views.onCollaboratorDisconnected(msg); }
   }
 

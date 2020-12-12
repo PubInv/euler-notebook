@@ -177,11 +177,31 @@ export class ServerNotebook extends WatchedResource<NotebookPath, ServerNotebook
   }
 
   public static onSocketClosed(socket: ServerSocket): void {
-    // REVIEW: If the server has a large number of notebook instances, then
-    //         we may want to create a map from sockets to lists of notebook instances
-    //         so we can handle this more efficiently.
+    // Note: If the server has a large number of notebook instances, then
+    //       we may want to create a map from sockets to lists of notebook instances
+    //       so we can handle this more efficiently.
     for (const instance of this.allInstances) {
-      instance.onSocketClosed(socket);
+      if (instance.sockets.has(socket)) {
+        instance.onSocketClosed(socket);
+      }
+    }
+  }
+
+  public static onSocketUserLogin(socket: ServerSocket): void {
+    // Note: see note for onSocketClosed.
+    for (const instance of this.allInstances) {
+      if (instance.sockets.has(socket)) {
+        instance.onSocketUserLogin(socket);
+      }
+    }
+  }
+
+  public static onSocketUserLogout(socket: ServerSocket): void {
+    // Note: see note for onSocketClosed.
+    for (const instance of this.allInstances) {
+      if (instance.sockets.has(socket)) {
+        instance.onSocketUserLogout(socket);
+      }
     }
   }
 
@@ -657,8 +677,7 @@ export class ServerNotebook extends WatchedResource<NotebookPath, ServerNotebook
       obj: collaboratorObj,
     };
     for (const otherSocket of this.sockets) {
-      assert(otherSocket !== socket);
-      if (!otherSocket.user) { continue; }
+      if (otherSocket === socket || !otherSocket.user) { continue; }
       otherSocket.sendMessage(response2);
     }
   }
@@ -673,8 +692,7 @@ export class ServerNotebook extends WatchedResource<NotebookPath, ServerNotebook
       clientId: socket.clientId,
     };
     for (const otherSocket of this.sockets) {
-      assert(otherSocket !== socket);
-      if (!otherSocket.user) { continue; }
+      if (otherSocket === socket || !otherSocket.user) { continue; }
       otherSocket.sendMessage(response2);
     }
   }
@@ -720,10 +738,16 @@ export class ServerNotebook extends WatchedResource<NotebookPath, ServerNotebook
   }
 
   private onSocketClosed(socket: ServerSocket): void {
-    // NOTE: When *any* socket closes, this message is sent to *all* notebooks,
-    //       so we need to check if we are actually interested in this socket.
-    if (!this.sockets.has(socket)) { return; }
     this.removeSocket(socket);
+    this.sendCollaboratorDisconnectedMessage(socket);
+  }
+
+  private onSocketUserLogin(socket: ServerSocket): void {
+    this.sendCollaboratorConnectedMessage(socket);
+  }
+
+  private onSocketUserLogout(socket: ServerSocket): void {
+    console.log("SERVER NOTEBOOK ON SOCKET USER LOGOUT");
     this.sendCollaboratorDisconnectedMessage(socket);
   }
 
@@ -753,6 +777,8 @@ export class ServerNotebook extends WatchedResource<NotebookPath, ServerNotebook
   }
 
   private onOpenRequest(socket: ServerSocket, msg: OpenNotebook): void {
+
+    // Check if the user has permission to open this notebook.
     const user = socket.user;
     const permissions = this.permissions.getUserPermissions(user);
     if (!(permissions & UserPermission.Read)) {
@@ -762,7 +788,6 @@ export class ServerNotebook extends WatchedResource<NotebookPath, ServerNotebook
       throw new ExpectedError(message)
     }
 
-    this.sendCollaboratorConnectedMessage(socket);
     this.sockets.add(socket);
 
     // Send NotebookOpened message back to the requesting client.
@@ -787,6 +812,8 @@ export class ServerNotebook extends WatchedResource<NotebookPath, ServerNotebook
       complete: true
     };
     socket.sendMessage(response);
+
+    this.sendCollaboratorConnectedMessage(socket);
   }
 
   private onUseToolRequest(_socket: ServerSocket, _msg: UseTool): void {
