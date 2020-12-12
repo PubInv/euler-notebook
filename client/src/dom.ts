@@ -118,7 +118,7 @@ interface Styles {
 // Keep this list in sync with server/views/iconmonstr.pug.
 export type SvgIconId = 'iconMonstrBug12' | 'iconMonstrCalculator2' | 'iconMonstrClothing18' | 'iconMonstrFile5' |
                   'iconMonstrFile12' | 'iconMonstrFile15' | 'iconMonstrFolder2' | 'iconMonstrFolder5' |
-                  'iconMonstrFullScreen7' | 'iconMonstrHome6' | 'iconMonstrLogout18' | 'iconMonstrNote23' |
+                  'iconMonstrFullScreen7' | 'iconMonstrLogout18' | 'iconMonstrNote23' |
                   'iconMagnifier6' | 'iconMonstrPencil9' | 'iconMonstrRedo4' | 'iconMonstrRefresh2' |
                   'iconMonstrText1' | 'iconMonstrTrashcan2' | 'iconMonstrUndo4' | 'iconMonstrUser1' |
                   'iconMonstrChart20' ;

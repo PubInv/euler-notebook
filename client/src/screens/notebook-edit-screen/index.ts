@@ -24,7 +24,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 import { CssClass, Html } from "../../shared/common";
 import { NotebookPath } from "../../shared/folder";
-import { NotebookUpdate, NotebookUserConnected, NotebookUserDisconnected } from "../../shared/server-responses";
+import { NotebookUpdate, NotebookCollaboratorConnected, NotebookCollaboratorDisconnected } from "../../shared/server-responses";
 
 import { NotebookEditView } from "../../views/notebook-edit-view";
 
@@ -131,12 +131,12 @@ export class NotebookEditScreen extends ScreenBase implements NotebookView {
     this.editView.onUpdate(change);
   }
 
-  public onUserConnected(_msg: NotebookUserConnected, _ownRequest: boolean): void {
-    // TODO: this.header.onUserConnected(msg, ownRequest);
+  public onCollaboratorConnected(msg: NotebookCollaboratorConnected): void {
+    appInstance.header.onCollaboratorConnected(msg);
   };
 
-  public onUserDisconnected(_msg: NotebookUserDisconnected, _ownRequest: boolean): void {
-    // TODO: this.header.onUserDisconnected(msg, ownRequest);
+  public onCollaboratorDisconnected(msg: NotebookCollaboratorDisconnected): void {
+    appInstance.header.onCollaboratorDisconnected(msg);
   }
 
   // --- PRIVATE ---

@@ -19,8 +19,8 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 // Requirements
 
-import { CssClass, Html, notImplementedWarning } from "../../shared/common";
-import { NotebookUpdate, NotebookUserConnected, NotebookUserDisconnected } from "../../shared/server-responses";
+import { CssClass, Html } from "../../shared/common";
+import { NotebookUpdate, NotebookCollaboratorConnected, NotebookCollaboratorDisconnected } from "../../shared/server-responses";
 import { NotebookPath } from "../../shared/folder";
 
 import { NotebookReadView } from "../../views/notebook-read-view";
@@ -111,12 +111,12 @@ export class NotebookReadScreen extends ScreenBase  implements NotebookView {
     this.readView.onUpdate(update);
   }
 
-  public onUserConnected(_msg: NotebookUserConnected, _ownRequest: boolean): void {
-    notImplementedWarning("NotebookReadScreen onUserConnected");
+  public onCollaboratorConnected(msg: NotebookCollaboratorConnected): void {
+    appInstance.header.onCollaboratorConnected(msg);
   };
 
-  public onUserDisconnected(_msg: NotebookUserDisconnected, _ownRequest: boolean): void {
-    notImplementedWarning("NotebookReadScreen onUserDisconnected");
+  public onCollaboratorDisconnected(msg: NotebookCollaboratorDisconnected): void {
+    appInstance.header.onCollaboratorDisconnected(msg);
   }
 
   // --- PRIVATE ---

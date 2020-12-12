@@ -31,7 +31,7 @@ import { NotebookName, NotebookNameFromNotebookPath, NotebookPath } from "./shar
 import { NotebookObject, PageMargins, Pagination } from "./shared/notebook";
 import { NotebookChangeRequest, ChangeNotebook, UseTool, OpenNotebook, DeleteCell, ResizeCell, InsertStroke, InsertEmptyCell, MoveCell } from "./shared/client-requests";
 import {
-  NotebookUpdated, NotebookOpened, NotebookResponse, NotebookClosed, NotebookUpdate, CellInserted, CellDeleted, CellMoved, NotebookUserConnected, NotebookUserDisconnected
+  NotebookUpdated, NotebookOpened, NotebookResponse, NotebookClosed, NotebookUpdate, CellInserted, CellDeleted, CellMoved, NotebookCollaboratorConnected, NotebookCollaboratorDisconnected
 } from "./shared/server-responses";
 import { Stroke } from "./shared/stylus";
 
@@ -47,8 +47,8 @@ export interface NotebookView {
   onRedoStateChange(enabled: boolean): void;
   onUndoStateChange(enabled: boolean): void;
   onUpdate(update: NotebookUpdate, ownRequest: boolean): void;
-  onUserConnected(msg: NotebookUserConnected, ownRequest: boolean): void;
-  onUserDisconnected(msg: NotebookUserDisconnected, ownRequest: boolean): void;
+  onCollaboratorConnected(msg: NotebookCollaboratorConnected): void;
+  onCollaboratorDisconnected(msg: NotebookCollaboratorDisconnected): void;
 }
 
 interface OpenInfo {
@@ -105,7 +105,7 @@ export class ClientNotebook {
   public readonly path: NotebookPath;
   public readonly pageSize: CssSize;
   public readonly pagination: Pagination;
-  public readonly userMap: Map<ClientId, NotebookUserConnected>;
+  public readonly userMap: Map<ClientId, NotebookCollaboratorConnected>;
 
   // Public Instance Property Functions
 
@@ -373,10 +373,10 @@ export class ClientNotebook {
   private onServerResponse(msg: NotebookResponse, ownRequest: boolean): void {
     // A notebook message was received from the server.
     switch(msg.operation) {
-      case 'updated': this.onUpdated(msg, ownRequest); break;
-      case 'closed':  this.onClosed(msg, ownRequest); break;
-      case 'userConnected': this.onUserConnected(msg, ownRequest); break;
-      case 'userDisconnected': this.onUserDisconnected(msg, ownRequest); break;
+      case 'updated':                   this.onUpdated(msg, ownRequest); break;
+      case 'closed':                    this.onClosed(msg, ownRequest); break;
+      case 'collaboratorConnected':     this.onCollaboratorConnected(msg); break;
+      case 'collaboratorDisconnected':  this.onCollaboratorDisconnected(msg); break;
       case 'opened':
       default: assertFalse();
     }
@@ -449,18 +449,18 @@ export class ClientNotebook {
     }
   }
 
-  private onUserConnected(msg: NotebookUserConnected, ownRequest: boolean): void {
+  private onCollaboratorConnected(msg: NotebookCollaboratorConnected): void {
     // Message from the server indicating a user has connected to the notebook.
     assert(!this.userMap.has(msg.clientId));
     this.userMap.set(msg.clientId, msg);
-    for (const views of this.views) { views.onUserConnected(msg, ownRequest); }
+    for (const views of this.views) { views.onCollaboratorConnected(msg); }
   }
 
-  private onUserDisconnected(msg: NotebookUserDisconnected, ownRequest: boolean): void {
+  private onCollaboratorDisconnected(msg: NotebookCollaboratorDisconnected): void {
     // Message from the server indicating a user has connected to the notebook.
     assert(this.userMap.has(msg.clientId));
     this.userMap.delete(msg.clientId);
-    for (const views of this.views) { views.onUserDisconnected(msg, ownRequest); }
+    for (const views of this.views) { views.onCollaboratorDisconnected(msg); }
   }
 
 }

@@ -42,46 +42,51 @@ export class ClientUser {
 
   // Public Class Methods
 
-  public static async loginWithPassword(userName: UserName, password: UserPassword): Promise<ClientUser> {
-    assert(!this.loggedInUser);
-    const message: LoginUserWithPassword = { type: 'user', operation: 'passwordLogin', userName, password };
-    const responseMessages = await appInstance.socket.sendRequest<UserLoggedIn>(message);
-    assert(responseMessages.length == 1);
-    const response = responseMessages[0];
-    const instance = new this(response);
-    this.loggedInUser = instance;
-    return instance;
+  public static loginWithPassword(userName: UserName, password: UserPassword): Promise<ClientUser> {
+    const msg: LoginUserWithPassword = { type: 'user', operation: 'passwordLogin', userName, password };
+    return this.finishLogin(msg);
   }
 
   public static async loginIfSavedToken(): Promise<boolean> {
-    assert(!this.loggedInUser);
-    const sessionToken = <SessionToken>window.sessionStorage.getItem(STORAGE_KEY);
+    const sessionToken = <SessionToken|null>window.sessionStorage.getItem(STORAGE_KEY);
     if (!sessionToken) { return false; }
-    const message: LoginUserWithToken = { type: 'user', operation: 'tokenLogin', sessionToken };
-    let response: UserLoggedIn;
+    const msg: LoginUserWithToken = { type: 'user', operation: 'tokenLogin', sessionToken };
     try {
-      const responseMessages = await appInstance.socket.sendRequest<UserLoggedIn>(message);
-      assert(responseMessages.length == 1);
-      response = responseMessages[0];
+      await this.finishLogin(msg);
     } catch(err) {
-      this.deleteSessionToken();
+      // REVIEW: Only delete session token if we get a specific error? E.g. token not found error?
+      window.sessionStorage.removeItem(STORAGE_KEY);
       throw err;
     }
-    const instance = new this(response);
-    this.loggedInUser = instance;
     return true;
   }
 
+  public static logout(): void {
+    assert(this.loggedInUser);
+    const sessionToken = <SessionToken>window.sessionStorage.getItem(STORAGE_KEY)!;
+    assert(sessionToken);
+    const msg: LogoutUser = { type: 'user', operation: 'logout', sessionToken }
+    appInstance.socket.sendMessage(msg);
+    window.sessionStorage.removeItem(STORAGE_KEY);
+    this.loggedInUser = undefined;
+    appInstance.header.onUserLogout();
+  }
+
+
   // Public Class Event Handlers
 
-  public static onServerResponse(_msg: UserResponse, _ownRequest: boolean): void {
+  public static onServerResponse(msg: UserResponse, _ownRequest: boolean): void {
     // Nothing to do.
     // Login response is handled when request promise is resolved.
+    switch(msg.operation) {
+      case 'loggedOut':
+        this.logout();
+        break;
+      default: /* Do nothing */ break;
+    }
   }
 
   // Public Instance Properties
-
-  public sessionToken: SessionToken;
 
   // Public Instance Property Functions
 
@@ -91,39 +96,27 @@ export class ClientUser {
 
   // Public Instance Methods
 
-  public logout(): void {
-    const msg: LogoutUser = { type: 'user', operation: 'logout', sessionToken: this.sessionToken }
-    appInstance.socket.sendMessage(msg);
-    ClientUser.loggedInUser = undefined;
-    ClientUser.deleteSessionToken();
-  }
-
-  // public async reconnect(): Promise<void> {
-  //   assert(ClientUser.loggedInUser === this);
-  //   const message: LoginUserWithToken = { type: 'user', operation: 'tokenLogin', sessionToken: this.sessionToken };
-  //   const responseMessages = await appInstance.socket.sendRequest<UserLoggedIn>(message);
-  //   assert(responseMessages.length == 1);
-  //   const response = responseMessages[0];
-  //   this.sessionToken = response.sessionToken;
-  //   this.obj = response.obj;
-  //   this.saveSessionToken();
-  // }
-
   // -- PRIVATE --
 
   // Private Class Methods
 
-  private static deleteSessionToken(): void {
-    window.sessionStorage.removeItem(STORAGE_KEY);
+  private static async finishLogin(msg: LoginUserWithPassword|LoginUserWithToken): Promise<ClientUser> {
+    assert(!this.loggedInUser);
+    const responseMessages = await appInstance.socket.sendRequest<UserLoggedIn>(msg);
+    assert(responseMessages.length == 1);
+    const response = responseMessages[0];
+    const instance = new this(response.obj);
+    try { window.sessionStorage.setItem(STORAGE_KEY, response.sessionToken); }
+    catch(err) { logError(err); }
+    this.loggedInUser = instance;
+    appInstance.header.onUserLogin(instance);
+    return instance;
   }
-
 
   // Private Constructor
 
-  private constructor(response: UserLoggedIn) {
-    this.sessionToken = response.sessionToken;
-    this.obj = response.obj;
-    this.saveSessionToken();
+  private constructor(obj: UserObject) {
+    this.obj = obj;
   }
 
   // Private Instance Properties
@@ -132,8 +125,4 @@ export class ClientUser {
 
   // Private Instance Methods
 
-  private saveSessionToken(): void {
-    try { window.sessionStorage.setItem(STORAGE_KEY, this.sessionToken); }
-    catch(err) { logError(err); }
-  }
 }

@@ -25,19 +25,22 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 // import * as debug1 from "debug";
 // const debug = debug1('client:header');
 
-import { CssClass, Html, escapeHtml, notImplementedWarning, RelativeUrl, ClientId } from "../shared/common";
+import { CssClass, Html, escapeHtml, RelativeUrl, ClientId, notImplementedError } from "../shared/common";
 import { Path } from "../shared/folder";
-import { UserId } from "../shared/user";
+import { UserName } from "../shared/user";
 
 import { ButtonBar } from "./button-bar";
 import { $new, svgIconReferenceMarkup, ElementId, HtmlElementSpecification, $, EULER_NUMBER_ENTITY } from "../dom";
 import { monitorPromise } from "../error-handler";
 // import { userSettingsInstance, InputMode } from "../user-settings";
-import { NotebookUserConnected, NotebookUserDisconnected } from "../shared/server-responses";
+import { NotebookCollaboratorConnected, NotebookCollaboratorDisconnected } from "../shared/server-responses";
+import { ClientUser } from "../client-user";
 
 // Types
 
 // Constants
+
+const LOGGED_OUT_ICON = svgIconReferenceMarkup('iconMonstrUser1');
 
 // Global Variables
 
@@ -50,25 +53,6 @@ export let headerInstance: Header;
 export class Header extends ButtonBar {
 
   // Public Class Methods
-
-  // Public Instance Property Functions
-
-  public setPath(path: Path): void {
-
-    let titleHtml: Html = <Html>(path===<Path>'/' ? 'Euler Notebook' : '<a href="#/">Home</a>');
-    const segments = path.split('/').slice(1);
-    if (segments[segments.length-1].length == 0) { segments.pop(); }
-    for (let i=0; i<segments.length; i++) {
-      const escapedSegment = escapeHtml(segments[i]);
-      const href = `#/${segments.slice(0, i+1).join('/')}/`;
-      const segmentHtml = (i < segments.length-1 ? `<a href="${href}">${escapedSegment}</a>` : escapedSegment);
-      titleHtml += ' / ' + segmentHtml;
-    }
-
-    $(this.$elt, "#title").innerHTML = titleHtml;
-  }
-
-  // Public Instance Methods
 
   // Public Constructor
 
@@ -91,7 +75,16 @@ export class Header extends ButtonBar {
       listeners: { click: e=>this.onFullscreenButtonClicked(e) },
     };
 
-    const $usersSpan = $new<'span'>({
+    const $userButton = $new({
+      tag: 'button',
+      class: <CssClass>'iconButton',
+      title: "User settings",
+      html: LOGGED_OUT_ICON,
+      listeners: { click: e=>this.onUserButtonClicked(e) },
+      disabled: true,
+    });
+
+    const $collaboratorsSpan = $new<'span'>({
       tag: 'span',
     });
 
@@ -104,7 +97,7 @@ export class Header extends ButtonBar {
           tag: 'button',
           class: <CssClass>'entityButton',
           title: "Euler Notebook home",
-          html: EULER_NUMBER_ENTITY, // svgIconReferenceMarkup('iconMonstrHome6'),
+          html: EULER_NUMBER_ENTITY,
           listeners: { click: _e=>{ window.location.href = '/#/'; }},
         // }, {
         //   tag: 'select',
@@ -127,14 +120,7 @@ export class Header extends ButtonBar {
       children: [
         refreshButton,
         fullscreenButton,
-        $usersSpan,
-        {
-          tag: 'button',
-          class: <CssClass>'iconButton',
-          title: "User settings",
-          html: svgIconReferenceMarkup('iconMonstrUser1'),
-          listeners: { click: _e=>notImplementedWarning("User settings") },
-        },
+        $userButton,
       ],
     };
 
@@ -152,43 +138,76 @@ export class Header extends ButtonBar {
       ],
     });
 
-    this.$usersSpan = $usersSpan;
+    this.$collaboratorsSpan = $collaboratorsSpan;
+    this.$userButton = $userButton;
 
   }
 
+  // Public Instance Property Functions
+
+  public setPath(path: Path): void {
+
+    let titleHtml: Html = <Html>(path===<Path>'/' ? 'Euler Notebook' : '<a href="#/">Home</a>');
+    const segments = path.split('/').slice(1);
+    if (segments[segments.length-1].length == 0) { segments.pop(); }
+    for (let i=0; i<segments.length; i++) {
+      const escapedSegment = escapeHtml(segments[i]);
+      const href = `#/${segments.slice(0, i+1).join('/')}/`;
+      const segmentHtml = (i < segments.length-1 ? `<a href="${href}">${escapedSegment}</a>` : escapedSegment);
+      titleHtml += ' / ' + segmentHtml;
+    }
+
+    $(this.$elt, "#title").innerHTML = titleHtml;
+  }
+
+  // Public Instance Methods
+
   // Public Instance Event Handlers
 
-  public onUserConnected(msg: NotebookUserConnected, _ownRequest: boolean): void {
-    this.addUserButton(msg);
+  public onCollaboratorConnected(msg: NotebookCollaboratorConnected): void {
+    const $userButton = $new<'button'>({
+      tag: 'button',
+      title: msg.userInfo.userName,
+      children: [{
+        tag: 'img',
+        id: idForCollaboratorButton(msg.clientId),
+        src: urlForSmallProfilePic(msg.userInfo.userName),
+      }],
+      listeners: { click: e=>this.onCollaboratorButtonClicked(e, msg) },
+    });
+    this.$collaboratorsSpan.append($userButton);
   };
 
-  public onUserDisconnected(msg: NotebookUserDisconnected, _ownRequest: boolean): void {
-    $(this.$usersSpan, `#${idForUserButton(msg.clientId)}`).remove();
+  public onCollaboratorDisconnected(msg: NotebookCollaboratorDisconnected): void {
+    $(this.$collaboratorsSpan, `#${idForCollaboratorButton(msg.clientId)}`).remove();
+  }
+
+  public onUserLogin(user: ClientUser): void {
+    this.$userButton.innerHTML = `<img src="${urlForSmallProfilePic(user.userName)}"/>`;
+    this.$userButton.disabled = false;
+  }
+
+  public onUserLogout(): void {
+    // REVIEW: Should have notification message if user logged out remotely.
+    this.$userButton.innerHTML = LOGGED_OUT_ICON;
+    this.$userButton.disabled = true;
+    window.location.href = '/#/';
   }
 
   // -- PRIVATE --
 
   // Private Instance Properties
 
-  private $usersSpan: HTMLSpanElement;
+  private $userButton: HTMLButtonElement;
+  private $collaboratorsSpan: HTMLSpanElement;
 
   // Private Instance Methods
 
-  private addUserButton(msg: NotebookUserConnected): void {
-    const $userButton = $new<'button'>({
-      tag: 'button',
-      title: msg.userInfo.userName,
-      children: [{
-        tag: 'img',
-        id: idForUserButton(msg.clientId),
-        src: urlForSmallProfilePic(msg.userInfo.id),
-      }],
-      listeners: { click: e=>this.onUserButtonClicked(e, msg) },
-    });
-    this.$usersSpan.append($userButton);
-  }
-
   // Private Event Handlers
+
+  private onCollaboratorButtonClicked(_event: MouseEvent, _msg: NotebookCollaboratorConnected): void {
+    notImplementedError("Collaborator buttons");
+  }
 
   private onFullscreenButtonClicked(_event: MouseEvent): void {
     // REVIEW: Maybe use this: https://github.com/sindresorhus/screenfull.js?
@@ -201,17 +220,17 @@ export class Header extends ButtonBar {
     }
   }
 
-  private onUserButtonClicked(_event: MouseEvent, msg: NotebookUserConnected): void {
-    notImplementedWarning(`User button for ${msg.clientId} ${msg.userInfo.id} ${msg.userInfo.userName}`);
+  private onUserButtonClicked(_event: MouseEvent): void {
+    ClientUser.logout();
   }
 }
 
 // Helper Functions
 
-function idForUserButton(clientId: ClientId): ElementId {
+function idForCollaboratorButton(clientId: ClientId): ElementId {
   return <ElementId>`user-${clientId}-button`;
 }
 
-function urlForSmallProfilePic(userId: UserId): RelativeUrl {
-  return <RelativeUrl>`/images/profile-pics/user-${userId}-26x26.png`;
+function urlForSmallProfilePic(userName: UserName): RelativeUrl {
+  return <RelativeUrl>`/images/profile-pics/${userName}-26x26.png`;
 }

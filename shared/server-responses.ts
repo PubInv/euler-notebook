@@ -64,7 +64,7 @@ export interface FolderUpdated extends FolderResponseBase {
   updates: FolderUpdate[];
 }
 
-export type NotebookResponse = NotebookClosed | NotebookOpened | NotebookUpdated | NotebookUserConnected | NotebookUserDisconnected;
+export type NotebookResponse = NotebookClosed | NotebookCollaboratorConnected | NotebookCollaboratorDisconnected | NotebookOpened | NotebookUpdated;
 interface NotebookResponseBase extends ResponseBase {
   type: 'notebook',
   path: NotebookPath,
@@ -72,6 +72,16 @@ interface NotebookResponseBase extends ResponseBase {
 export interface NotebookClosed extends NotebookResponseBase {
   operation: 'closed';
   reason: string;
+}
+export interface NotebookCollaboratorConnected extends NotebookResponseBase {
+  operation: 'collaboratorConnected';
+  clientId: ClientId;
+  userInfo: UserObject;
+}
+export interface NotebookCollaboratorDisconnected extends NotebookResponseBase {
+  operation: 'collaboratorDisconnected';
+  clientId: ClientId;
+  userId: UserId;
 }
 export interface NotebookOpened extends NotebookResponseBase {
   operation: 'opened';
@@ -82,16 +92,6 @@ export interface NotebookUpdated extends NotebookResponseBase {
   operation: 'updated';
   updates: NotebookUpdate[];
   undoChangeRequests: NotebookChangeRequest[];
-}
-export interface NotebookUserConnected extends NotebookResponseBase {
-  operation: 'userConnected';
-  clientId: ClientId;
-  userInfo: UserObject;
-}
-export interface NotebookUserDisconnected extends NotebookResponseBase {
-  operation: 'userDisconnected';
-  clientId: ClientId;
-  userId: UserId;
 }
 
 export type UserResponse = UserLoggedIn | UserLoggedOut;

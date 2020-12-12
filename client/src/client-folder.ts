@@ -28,7 +28,7 @@ import {
 } from "./shared/client-requests";
 import {
   FolderUpdated, FolderResponse, FolderOpened, FolderClosed,
-  FolderUpdate, FolderCreated, NotebookCreated, FolderRenamed, NotebookRenamed, FolderDeleted, NotebookDeleted, NotebookUserConnected,
+  FolderUpdate, FolderCreated, NotebookCreated, FolderRenamed, NotebookRenamed, FolderDeleted, NotebookDeleted, NotebookCollaboratorConnected,
 } from "./shared/server-responses"
 
 import { appInstance } from "./app";
@@ -80,7 +80,7 @@ export class ClientFolder extends Folder<ClientFolderWatcher> {
 
   // Public Instance Properties
 
-  public readonly userMap: Map<ClientId, NotebookUserConnected>;
+  public readonly userMap: Map<ClientId, NotebookCollaboratorConnected>;
 
   // Public Instance Property Functions
 
