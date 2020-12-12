@@ -28,7 +28,7 @@ import { CellId, CellObject, CellOrdinalPosition, CellPosition, CellRelativePosi
 import { assert, assertFalse, ClientId, CssSize, Html } from "./shared/common";
 import { notebookUpdateSynopsis } from "./shared/debug-synopsis";
 import { NotebookName, NotebookNameFromNotebookPath, NotebookPath } from "./shared/folder";
-import { NotebookObject, PageMargins, Pagination } from "./shared/notebook";
+import { PageMargins, Pagination } from "./shared/notebook";
 import { NotebookChangeRequest, ChangeNotebook, UseTool, OpenNotebook, DeleteCell, ResizeCell, InsertStroke, InsertEmptyCell, MoveCell } from "./shared/client-requests";
 import {
   NotebookUpdated, NotebookOpened, NotebookResponse, NotebookClosed, NotebookUpdate, CellInserted, CellDeleted, CellMoved, NotebookCollaboratorConnected, NotebookCollaboratorDisconnected
@@ -39,6 +39,7 @@ import { createCell } from "./client-cell/instantiator";
 
 import { appInstance } from "./app";
 import { ClientCell } from "./client-cell";
+import { CollaboratorObject } from "./shared/user";
 
 // Types
 
@@ -92,6 +93,7 @@ export class ClientNotebook {
 
   public static onServerResponse(msg: NotebookResponse, ownRequest: boolean): void {
     // Opened response is handled when request promise is resolved.
+    // All other responses are forwarded to the instance.
     if (msg.operation == 'opened') { return; }
     const instance = this.instanceMap.get(msg.path)!;
     assert(instance);
@@ -105,9 +107,12 @@ export class ClientNotebook {
   public readonly path: NotebookPath;
   public readonly pageSize: CssSize;
   public readonly pagination: Pagination;
-  public readonly userMap: Map<ClientId, NotebookCollaboratorConnected>;
 
   // Public Instance Property Functions
+
+  public get collaborators(): IterableIterator<CollaboratorObject> {
+    return this.collaboratorMap.values();
+  }
 
   public getCell<O extends CellObject>(id: CellId): ClientCell<O> {
     const cell = <ClientCell<O>>this.cellMap.get(id);
@@ -249,7 +254,9 @@ export class ClientNotebook {
   private static async openNew(path: NotebookPath): Promise<ClientNotebook> {
     const message: OpenNotebook = { type: 'notebook', operation: 'open', path };
     const responseMessages = await appInstance.socket.sendRequest<NotebookOpened>(message);
-    const instance = new this(path, responseMessages[0].obj);
+    assert(responseMessages.length == 1);
+    const responseMessage = responseMessages[0];
+    const instance = new this(path, responseMessage);
     this.instanceMap.set(path, instance);
     return instance;
   }
@@ -258,20 +265,22 @@ export class ClientNotebook {
 
   // Private Constructor
 
-  private constructor(path: NotebookPath, notebookObject: NotebookObject) {
+  private constructor(path: NotebookPath, msg: NotebookOpened) { //notebookObject: NotebookObject) {
+    const obj = msg.obj;
     this.path = path;
     this.cellMap = new Map();
     this.cells = [];
-    this.margins = notebookObject.margins; // REVIEW: Deep copy?
-    this.pageSize = notebookObject.pageSize; // REVIEW: Deep copy?
-    this.pagination = notebookObject.pagination;
+    this.margins = obj.margins; // REVIEW: Deep copy?
+    this.pageSize = obj.pageSize; // REVIEW: Deep copy?
+    this.pagination = obj.pagination;
     this.terminated = false;
     this.topOfUndoStack = 0;
     this.undoStack = [];
-    this.userMap = new Map();
 
-    for (let cellIndex=0; cellIndex<notebookObject.cells.length; cellIndex++) {
-      const cellObject = notebookObject.cells[cellIndex];
+    this.collaboratorMap = new Map(msg.collaborators.map(c=>[c.clientId,c]));
+
+    for (let cellIndex=0; cellIndex<obj.cells.length; cellIndex++) {
+      const cellObject = obj.cells[cellIndex];
       const cellUpdate: CellInserted = { type: 'cellInserted', cellObject, cellIndex }
       this.onCellInserted(cellUpdate);
     }
@@ -281,6 +290,7 @@ export class ClientNotebook {
   // Private Instance Properties
 
   private cellMap: Map<CellId, ClientCell<any>>;
+  private readonly collaboratorMap: Map<ClientId, CollaboratorObject>;
   private terminated: boolean;  // TODO: Where to assert(!this.terminated)?
   private topOfUndoStack: number;       // Index of the top of the stack. May not be the length of the undoStack array if there have been some undos.
   private undoStack: UndoEntry[];
@@ -373,10 +383,10 @@ export class ClientNotebook {
   private onServerResponse(msg: NotebookResponse, ownRequest: boolean): void {
     // A notebook message was received from the server.
     switch(msg.operation) {
-      case 'updated':                   this.onUpdated(msg, ownRequest); break;
       case 'closed':                    this.onClosed(msg, ownRequest); break;
       case 'collaboratorConnected':     this.onCollaboratorConnected(msg); break;
       case 'collaboratorDisconnected':  this.onCollaboratorDisconnected(msg); break;
+      case 'updated':                   this.onUpdated(msg, ownRequest); break;
       case 'opened':
       default: assertFalse();
     }
@@ -451,15 +461,16 @@ export class ClientNotebook {
 
   private onCollaboratorConnected(msg: NotebookCollaboratorConnected): void {
     // Message from the server indicating a user has connected to the notebook.
-    assert(!this.userMap.has(msg.clientId));
-    this.userMap.set(msg.clientId, msg);
+    const clientId = msg.obj.clientId;
+    assert(!this.collaboratorMap.has(clientId));
+    this.collaboratorMap.set(clientId, msg.obj);
     for (const views of this.views) { views.onCollaboratorConnected(msg); }
   }
 
   private onCollaboratorDisconnected(msg: NotebookCollaboratorDisconnected): void {
     // Message from the server indicating a user has connected to the notebook.
-    assert(this.userMap.has(msg.clientId));
-    this.userMap.delete(msg.clientId);
+    assert(this.collaboratorMap.has(msg.clientId));
+    this.collaboratorMap.delete(msg.clientId);
     for (const views of this.views) { views.onCollaboratorDisconnected(msg); }
   }
 

@@ -65,7 +65,7 @@ export class HomeScreen extends ScreenBase {
   // Public Instance Methods
 
   public show(): void {
-    appInstance.header.setPath(<FolderPath>'/');
+    appInstance.header.switchScreen(<FolderPath>'/');
     super.show();
   }
 

@@ -29,6 +29,7 @@ import { NotebookPath } from "../shared/folder";
 import { ServerSocket } from "../server-socket";
 import { ServerNotebook } from "../server-notebook";
 import { ServerFolder } from "../server-folder";
+import { ClientId } from "../shared/common";
 
 const MODULE = __filename.split(/[/\\]/).slice(-1)[0].slice(0,-3);
 const debug = debug1(`server:${MODULE}`);
@@ -60,7 +61,7 @@ async function onDashboard(req: Request, res: Response) {
       const action = req.body.action;
       switch(action) {
       case 'closeClient': {
-        for (const clientId of Object.keys(req.body.clientSockets)) {
+        for (const clientId of <ClientId[]>Object.keys(req.body.clientSockets)) {
           debug(`Closing client ${clientId}`);
           await ServerSocket.close(clientId, 4000, 'dashboard');
         }

@@ -62,7 +62,7 @@ export class NotebookEditScreen extends ScreenBase implements NotebookView {
     .then(
       (notebook: ClientNotebook)=>{
         this.notebook = notebook;
-        appInstance.header.setPath(this.notebook.path);
+        appInstance.header.switchScreen(this.notebook.path, this.notebook.collaborators);
 
         this.editView = new NotebookEditView(this, notebook);
         this.sidebar = new Sidebar(this);
@@ -91,7 +91,7 @@ export class NotebookEditScreen extends ScreenBase implements NotebookView {
 
   public show(): void {
     if (this.notebook) {
-      appInstance.header.setPath(this.notebook.path);
+      appInstance.header.switchScreen(this.notebook.path, this.notebook.collaborators);
     }
     super.show();
   }
@@ -132,11 +132,11 @@ export class NotebookEditScreen extends ScreenBase implements NotebookView {
   }
 
   public onCollaboratorConnected(msg: NotebookCollaboratorConnected): void {
-    appInstance.header.onCollaboratorConnected(msg);
+    appInstance.header.onCollaboratorConnected(msg.obj);
   };
 
   public onCollaboratorDisconnected(msg: NotebookCollaboratorDisconnected): void {
-    appInstance.header.onCollaboratorDisconnected(msg);
+    appInstance.header.onCollaboratorDisconnected(msg.clientId);
   }
 
   // --- PRIVATE ---

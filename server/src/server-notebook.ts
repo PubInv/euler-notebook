@@ -40,7 +40,7 @@ import {
   ChangeNotebook, UseTool, RequestId, NotebookRequest, OpenNotebook, CloseNotebook, ResizeCell, InsertCell,
 } from "./shared/client-requests";
 import {
-  NotebookUpdated, NotebookOpened, NotebookUpdate, CellInserted, CellDeleted, StrokeInserted, CellResized, CellMoved, StrokeDeleted,
+  NotebookUpdated, NotebookOpened, NotebookUpdate, CellInserted, CellDeleted, StrokeInserted, CellResized, CellMoved, StrokeDeleted, NotebookCollaboratorConnected, NotebookCollaboratorDisconnected,
 } from "./shared/server-responses";
 import { cellSynopsis, notebookChangeRequestSynopsis } from "./shared/debug-synopsis";
 import { EMPTY_STROKE_DATA } from "./shared/stylus";
@@ -50,6 +50,7 @@ import { UserPermission } from "./shared/permissions";
 import { ServerSocket } from "./server-socket";
 import { createDirectory, deleteDirectory, FileName, readJsonFile, renameDirectory, writeJsonFile } from "./adapters/file-system";
 import { Permissions } from "./permissions";
+import { CollaboratorObject } from "./shared/user";
 
 export interface FindCellOptions {
   source?: CellSource;
@@ -709,6 +710,22 @@ export class ServerNotebook extends WatchedResource<NotebookPath, ServerNotebook
     assert(this.sockets.has(socket));
     this.removeSocket(socket);
     // NOTE: No response is expected for a close request.
+
+    // Send NotebookCollaboratorDisconnected message to other users.
+    const user = socket.user;
+    if (user) {
+      const response2: NotebookCollaboratorDisconnected = {
+        type: 'notebook',
+        operation: 'collaboratorDisconnected',
+        path: this.path,
+        clientId: socket.clientId,
+      };
+      for (const otherSocket of this.sockets) {
+        if (otherSocket === socket || !otherSocket.user) { continue; }
+        otherSocket.sendMessage(response2);
+      }
+    }
+
   }
 
   private onOpenRequest(socket: ServerSocket, msg: OpenNotebook): void {
@@ -722,16 +739,48 @@ export class ServerNotebook extends WatchedResource<NotebookPath, ServerNotebook
     }
 
     this.sockets.add(socket);
+
+    // Send NotebookOpened message back to the requesting client.
+    const collaborators: CollaboratorObject[] = [];
+    for (const otherSocket of this.sockets) {
+      if (otherSocket == socket || !otherSocket.user) { continue; }
+      const collaboratorObject: CollaboratorObject = {
+        clientId: otherSocket.clientId,
+        userId: otherSocket.user.id,
+        userName: otherSocket.user.userName,
+      };
+      collaborators.push(collaboratorObject);
+    }
     const response: NotebookOpened = {
       requestId: msg.requestId,
       type: 'notebook',
       operation: 'opened',
       path: this.path,
+      collaborators,
       permissions,
       obj: this.obj,
       complete: true
     };
     socket.sendMessage(response);
+
+    // Send NotebookCollaboratorConnected message to other users.
+    if (user) {
+      const collaboratorObj: CollaboratorObject = {
+        clientId: socket.clientId,
+        userId: user.id,
+        userName: user?.userName,
+      };
+      const response2: NotebookCollaboratorConnected = {
+        type: 'notebook',
+        operation: 'collaboratorConnected',
+        path: this.path,
+        obj: collaboratorObj,
+      };
+      for (const otherSocket of this.sockets) {
+        if (otherSocket === socket || !otherSocket.user) { continue; }
+        otherSocket.sendMessage(response2);
+      }
+    }
   }
 
   private onUseToolRequest(_socket: ServerSocket, _msg: UseTool): void {

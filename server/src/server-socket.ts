@@ -29,7 +29,7 @@ import { Request } from "express";
 import * as WebSocket from "ws";
 
 // TODO: Handle websocket lifecycle: closing, unexpected disconnects, errors, etc.
-import { assert, PromiseResolver, errorMessageForUser } from "./shared/common";
+import { assert, ClientId, PromiseResolver, errorMessageForUser } from "./shared/common";
 import { ClientRequest, } from "./shared/client-requests";
 import { ServerResponse, ErrorResponse, } from "./shared/server-responses";
 
@@ -41,8 +41,6 @@ import { ServerUser } from "./server-user";
 
 
 // Types
-
-export type ClientId = string;
 
 // Constants
 
@@ -74,7 +72,7 @@ export class ServerSocket {
 
   // Public Instance Properties
 
-  public id: ClientId;
+  public clientId: ClientId;
   public user: ServerUser | undefined;
 
   // Public Instance Property Functions
@@ -92,25 +90,25 @@ export class ServerSocket {
         ServerFolder.onSocketClosed(this);
         this.closePromise = new Promise((resolve, reject)=>{ this.closeResolver = { resolve, reject }; });
         if (this.socket.readyState != WebSocket.CLOSING) {
-          debug(`Socket closing: ${this.id}`);
+          debug(`Socket closing: ${this.clientId}`);
           this.socket.close(code, reason);
         } else {
-          logWarning(MODULE, `Closing socket that is closing: ${this.id}.`)
+          logWarning(MODULE, `Closing socket that is closing: ${this.clientId}.`)
         }
       } else {
-        logWarning(MODULE , `Closing socket that is already closed: ${this.id}`)
+        logWarning(MODULE , `Closing socket that is already closed: ${this.clientId}`)
         this.closePromise = Promise.resolve();
       }
     } else {
       // REVIEW: This may not be an error.
-      logWarning(MODULE, `Repeat close call: ${this.id}`);
+      logWarning(MODULE, `Repeat close call: ${this.clientId}`);
       return this.closePromise;
     }
     return this.closePromise;
   }
 
   public sendMessage(msg: ServerResponse): void {
-    debug(`Sent: ${this.id} ${serverMessageSynopsis(msg)}`);
+    debug(`Sent: ${this.clientId} ${serverMessageSynopsis(msg)}`);
     // console.dir(msg, { depth: null });
     const json = JSON.stringify(msg);
     try {
@@ -134,9 +132,9 @@ export class ServerSocket {
     try {
       debug(`New connection: ${req.url}`);
       // TODO: Client generate ID and send it with connection.
-      const id: ClientId = `C${Date.now()}`;
-      const instance = new this(id, ws);
-      this.instanceMap.set(id, instance);
+      const clientId: ClientId = <ClientId>`C${Date.now()}`;
+      const instance = new this(clientId, ws);
+      this.instanceMap.set(clientId, instance);
     } catch(err) {
       logError(err, "Web Socket: unexpected error handling web-socket connection event.");
     }
@@ -146,7 +144,7 @@ export class ServerSocket {
 
   private constructor(id: ClientId, ws: WebSocket) {
     debug(`Constructor`)
-    this.id = id;
+    this.clientId = id;
     this.socket = ws;
     this.user = undefined;
     ws.on('close', (code: number, reason: string) => this.onSocketClose(ws, code, reason))
@@ -165,7 +163,7 @@ export class ServerSocket {
   // Private Instance Event Handlers
 
   private async onClientRequest(msg: ClientRequest): Promise<void> {
-    debug(`Recd: ${this.id} ${clientMessageSynopsis(msg)}`);
+    debug(`Recd: ${this.clientId} ${clientMessageSynopsis(msg)}`);
     switch(msg.type) {
       case 'folder': await ServerFolder.onClientRequest(this, msg); break;
       case 'notebook': await ServerNotebook.onClientRequest(this, msg); break;
@@ -185,7 +183,7 @@ export class ServerSocket {
         ServerFolder.onSocketClosed(this);
         ServerNotebook.onSocketClosed(this);
       }
-      ServerSocket.instanceMap.delete(this.id);
+      ServerSocket.instanceMap.delete(this.clientId);
     } catch(err) {
       logError(err, "Client Socket: Unexpected error handling web-socket close.");
     }

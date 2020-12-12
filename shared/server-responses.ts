@@ -28,7 +28,7 @@ import { ClientId, CssSize, SessionToken } from "./common";
 import { FolderObject, FolderPath, NotebookPath, FolderEntry, FolderName, NotebookEntry, NotebookName } from "./folder";
 import { NotebookObject } from "./notebook";
 import { StrokeId, Stroke } from "./stylus";
-import { UserId, UserObject } from "./user";
+import { CollaboratorObject, UserObject } from "./user";
 import { UserPermissions } from "./permissions";
 // Types
 
@@ -45,10 +45,18 @@ export interface ErrorResponse extends ResponseBase {
   message: string,
 }
 
-export type FolderResponse = FolderClosed | FolderOpened | FolderUpdated;
+export type FolderResponse = FolderClosed | FolderCollaboratorConnected | FolderCollaboratorDisconnected | FolderOpened | FolderUpdated;
 export interface FolderResponseBase extends ResponseBase {
   type: 'folder',
   path: FolderPath,
+}
+export interface FolderCollaboratorConnected extends FolderResponseBase {
+  operation: 'collaboratorConnected';
+  obj: CollaboratorObject;
+}
+export interface FolderCollaboratorDisconnected extends FolderResponseBase {
+  operation: 'collaboratorDisconnected';
+  clientId: ClientId;
 }
 export interface FolderClosed extends FolderResponseBase {
   operation: 'closed';
@@ -56,6 +64,7 @@ export interface FolderClosed extends FolderResponseBase {
 }
 export interface FolderOpened extends FolderResponseBase {
   operation: 'opened';
+  collaborators: CollaboratorObject[];
   permissions: UserPermissions;
   obj: FolderObject;
 }
@@ -75,16 +84,15 @@ export interface NotebookClosed extends NotebookResponseBase {
 }
 export interface NotebookCollaboratorConnected extends NotebookResponseBase {
   operation: 'collaboratorConnected';
-  clientId: ClientId;
-  userInfo: UserObject;
+  obj: CollaboratorObject;
 }
 export interface NotebookCollaboratorDisconnected extends NotebookResponseBase {
   operation: 'collaboratorDisconnected';
   clientId: ClientId;
-  userId: UserId;
 }
 export interface NotebookOpened extends NotebookResponseBase {
   operation: 'opened';
+  collaborators: CollaboratorObject[];
   permissions: UserPermissions;
   obj: NotebookObject;
 }

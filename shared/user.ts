@@ -17,6 +17,8 @@ You should have received a copy of the GNU Affero General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
+import { ClientId } from "./common";
+
 // Requirements
 
 // Types
@@ -25,7 +27,16 @@ export type UserId = number;
 export type UserName = '{UserName}';
 export type UserPassword = '{UserPassword}';
 
+export interface CollaboratorObject {
+  // These objects are sent to clients to identify other users that are collaborating
+  // on the notebook or folder. Only put public information in this structure.
+  clientId: ClientId;
+  userId: UserId;
+  userName: UserName;
+}
+
 export interface UserObject {
+  // These objects are sent to clients when the user successfully logs in.
   id: UserId;
   userName: UserName;
 }

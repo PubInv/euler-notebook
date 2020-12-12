@@ -38,7 +38,6 @@ export interface Config {
 }
 
 export interface Credentials {
-  jsonWebToken: JsonWebTokenKeys;
   myscript: MyScriptApiKeys;
   wolframalpha: WolframAlphaApiKeys;
 }

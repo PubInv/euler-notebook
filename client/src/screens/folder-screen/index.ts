@@ -23,7 +23,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 import { CssClass, Html } from "../../shared/common";
 import { FolderPath } from "../../shared/folder";
-import { FolderUpdate } from "../../shared/server-responses";
+import { FolderCollaboratorConnected, FolderCollaboratorDisconnected, FolderUpdate } from "../../shared/server-responses";
 
 import { ScreenBase } from "../screen-base";
 import { ClientFolder, ClientFolderWatcher, OpenFolderOptions } from "../../client-folder";
@@ -60,7 +60,7 @@ export class FolderScreen extends ScreenBase implements ClientFolderWatcher {
     .then(
       (folder: ClientFolder)=>{
         this.folder = folder;
-        appInstance.header.setPath(this.folder.path);
+        appInstance.header.switchScreen(this.folder.path, this.folder.collaborators);
 
         this.sidebar = new Sidebar(this);
         this.view = new Content(this);
@@ -95,11 +95,19 @@ export class FolderScreen extends ScreenBase implements ClientFolderWatcher {
     this.displayErrorMessage(<Html>`Server closed folder <tt>${this.folder.path}</tt>: ${reason}`);
   }
 
+  public onCollaboratorConnected(msg: FolderCollaboratorConnected): void {
+    appInstance.header.onCollaboratorConnected(msg.obj);
+  };
+
+  public onCollaboratorDisconnected(msg: FolderCollaboratorDisconnected): void {
+    appInstance.header.onCollaboratorDisconnected(msg.clientId);
+  }
+
   // Public Instance Methods
 
   public show(): void {
     if (this.folder) {
-      appInstance.header.setPath(this.folder.path);
+      appInstance.header.switchScreen(this.folder.path, this.folder.collaborators);
     }
     super.show();
   }

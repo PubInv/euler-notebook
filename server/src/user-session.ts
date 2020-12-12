@@ -27,6 +27,7 @@ import { deleteConfigFile, FileName, readConfigFile, writeConfigFile } from "./a
 
 import { assert, SessionToken } from "./shared/common";
 import { UserName } from "./shared/user";
+import { logError } from "./error-handler";
 
 // Requirements
 
@@ -66,8 +67,13 @@ export class UserSession {
     try {
       obj = await readConfigFile<UserSessionsObject>(SESSIONS_FILENAME);
     } catch (err) {
-      if (err.code == 'ENOENT') { debug("Sessions file not present."); return; }
-      else { throw err; }
+      if (err.code == 'ENOENT') {
+        debug("Sessions file not present.");
+        return;
+      } else if (err instanceof SyntaxError) {
+        logError(err, `Syntax error in sessions file.`);
+        return;
+      } else { throw err; }
     }
     debug("Sessions file loaded. Deleting.");
     await deleteConfigFile(SESSIONS_FILENAME);

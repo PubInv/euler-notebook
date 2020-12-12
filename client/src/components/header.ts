@@ -27,13 +27,12 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 import { CssClass, Html, escapeHtml, RelativeUrl, ClientId, notImplementedError } from "../shared/common";
 import { Path } from "../shared/folder";
-import { UserName } from "../shared/user";
+import { CollaboratorObject, UserName } from "../shared/user";
 
 import { ButtonBar } from "./button-bar";
 import { $new, svgIconReferenceMarkup, ElementId, HtmlElementSpecification, $, EULER_NUMBER_ENTITY } from "../dom";
 import { monitorPromise } from "../error-handler";
 // import { userSettingsInstance, InputMode } from "../user-settings";
-import { NotebookCollaboratorConnected, NotebookCollaboratorDisconnected } from "../shared/server-responses";
 import { ClientUser } from "../client-user";
 
 // Types
@@ -118,6 +117,7 @@ export class Header extends ButtonBar {
     const rightSpan: HtmlElementSpecification<'span'> = {
       tag: 'span',
       children: [
+        $collaboratorsSpan,
         refreshButton,
         fullscreenButton,
         $userButton,
@@ -145,8 +145,11 @@ export class Header extends ButtonBar {
 
   // Public Instance Property Functions
 
-  public setPath(path: Path): void {
+  // Public Instance Methods
 
+  public switchScreen(path: Path, collaborators?: IterableIterator<CollaboratorObject>): void {
+
+    // Update the path to the notebook/folder.
     let titleHtml: Html = <Html>(path===<Path>'/' ? 'Euler Notebook' : '<a href="#/">Home</a>');
     const segments = path.split('/').slice(1);
     if (segments[segments.length-1].length == 0) { segments.pop(); }
@@ -156,30 +159,26 @@ export class Header extends ButtonBar {
       const segmentHtml = (i < segments.length-1 ? `<a href="${href}">${escapedSegment}</a>` : escapedSegment);
       titleHtml += ' / ' + segmentHtml;
     }
-
     $(this.$elt, "#title").innerHTML = titleHtml;
-  }
 
-  // Public Instance Methods
+    // Update the collaborator buttons
+    this.removeAllCollaboratorButtons();
+    if (collaborators) {
+      for (const collaborator of collaborators) {
+        this.addCollaboratorButton(collaborator);
+      }
+    }
+
+  }
 
   // Public Instance Event Handlers
 
-  public onCollaboratorConnected(msg: NotebookCollaboratorConnected): void {
-    const $userButton = $new<'button'>({
-      tag: 'button',
-      title: msg.userInfo.userName,
-      children: [{
-        tag: 'img',
-        id: idForCollaboratorButton(msg.clientId),
-        src: urlForSmallProfilePic(msg.userInfo.userName),
-      }],
-      listeners: { click: e=>this.onCollaboratorButtonClicked(e, msg) },
-    });
-    this.$collaboratorsSpan.append($userButton);
+  public onCollaboratorConnected(obj: CollaboratorObject): void {
+    this.addCollaboratorButton(obj);
   };
 
-  public onCollaboratorDisconnected(msg: NotebookCollaboratorDisconnected): void {
-    $(this.$collaboratorsSpan, `#${idForCollaboratorButton(msg.clientId)}`).remove();
+  public onCollaboratorDisconnected(clientId: ClientId): void {
+    this.removeCollaboratorButton(clientId);
   }
 
   public onUserLogin(user: ClientUser): void {
@@ -203,11 +202,30 @@ export class Header extends ButtonBar {
 
   // Private Instance Methods
 
-  // Private Event Handlers
-
-  private onCollaboratorButtonClicked(_event: MouseEvent, _msg: NotebookCollaboratorConnected): void {
-    notImplementedError("Collaborator buttons");
+  private addCollaboratorButton(obj: CollaboratorObject): void {
+    const $userButton = $new<'button'>({
+      tag: 'button',
+      class: <CssClass>'iconButton',
+      title: obj.userName,
+      children: [{
+        tag: 'img',
+        id: idForCollaboratorButton(obj.clientId),
+        src: urlForSmallProfilePic(obj.userName),
+      }],
+      listeners: { click: _e=>notImplementedError("Collaborator buttons") },
+    });
+    this.$collaboratorsSpan.append($userButton);
   }
+
+  private removeCollaboratorButton(clientId: ClientId): void {
+    $(this.$collaboratorsSpan, `#${idForCollaboratorButton(clientId)}`).remove();
+  }
+
+  private removeAllCollaboratorButtons(): void {
+    this.$collaboratorsSpan.innerHTML = "";
+  }
+
+  // Private Event Handlers
 
   private onFullscreenButtonClicked(_event: MouseEvent): void {
     // REVIEW: Maybe use this: https://github.com/sindresorhus/screenfull.js?

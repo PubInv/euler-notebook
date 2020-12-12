@@ -33,7 +33,7 @@ import {
   NotebookName, NotebookPath, FolderWatcher,
 } from "./shared/folder";
 import { ChangeFolder, CloseFolder, FolderRequest, OpenFolder, RequestId } from "./shared/client-requests";
-import { FolderUpdated, FolderOpened, FolderResponse, FolderUpdate } from "./shared/server-responses";
+import { FolderUpdated, FolderOpened, FolderResponse, FolderUpdate, FolderCollaboratorDisconnected, FolderCollaboratorConnected } from "./shared/server-responses";
 import { UserPermission } from "./shared/permissions";
 
 import { createDirectory, deleteDirectory, readDirectory, renameDirectory } from "./adapters/file-system";
@@ -42,6 +42,7 @@ import { OpenOptions } from "./shared/watched-resource";
 import { logWarning } from "./error-handler";
 import { ServerSocket } from "./server-socket";
 import { Permissions } from "./permissions";
+import { CollaboratorObject } from "./shared/user";
 
 // Types
 
@@ -331,6 +332,22 @@ export class ServerFolder extends Folder<ServerFolderWatcher> {
     assert(this.sockets.has(socket));
     this.removeSocket(socket);
     // NOTE: No response is expected for a close request.
+
+    // Send FolderCollaboratorDisconnected message to other users.
+    const user = socket.user;
+    if (user) {
+      const response2: FolderCollaboratorDisconnected = {
+        type: 'folder',
+        operation: 'collaboratorDisconnected',
+        path: this.path,
+        clientId: socket.clientId,
+      };
+      for (const otherSocket of this.sockets) {
+        if (otherSocket === socket || !otherSocket.user) { continue; }
+        otherSocket.sendMessage(response2);
+      }
+    }
+
   }
 
   private onOpenRequest(socket: ServerSocket, msg: OpenFolder): void {
@@ -344,17 +361,50 @@ export class ServerFolder extends Folder<ServerFolderWatcher> {
     }
 
     this.sockets.add(socket);
+
+    // Send NotebookOpened message back to the requesting client.
     const obj = this.toJSON();
+    const collaborators: CollaboratorObject[] = [];
+    for (const otherSocket of this.sockets) {
+      if (otherSocket == socket || !otherSocket.user) { continue; }
+      const collaboratorObject: CollaboratorObject = {
+        clientId: otherSocket.clientId,
+        userId: otherSocket.user.id,
+        userName: otherSocket.user.userName,
+      };
+      collaborators.push(collaboratorObject);
+    }
     const response: FolderOpened = {
       requestId: msg.requestId,
       type: 'folder',
       operation: 'opened',
       path: this.path,
+      collaborators,
       permissions,
       obj,
       complete: true
     };
     socket.sendMessage(response);
+
+    // Send FolderCollaboratorConnected message to other users.
+    if (user) {
+      const collaboratorObj: CollaboratorObject = {
+        clientId: socket.clientId,
+        userId: user.id,
+        userName: user?.userName,
+      };
+      const response2: FolderCollaboratorConnected = {
+        type: 'folder',
+        operation: 'collaboratorConnected',
+        path: this.path,
+        obj: collaboratorObj,
+      };
+      for (const otherSocket of this.sockets) {
+        if (otherSocket === socket || !otherSocket.user) { continue; }
+        otherSocket.sendMessage(response2);
+      }
+    }
+
   }
 
 }

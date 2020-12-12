@@ -195,30 +195,32 @@ function clientNotebookMessageSynopsis(msg: NotebookRequest): string {
 function indentation(indentationLevel: number): string { return ' '.repeat(indentationLevel*2); }
 
 function serverFolderResponseSynopsis(msg: FolderResponse): string {
-  let rval = `${msg.path} ${msg.operation} `;
+  let rval = `${msg.path} ${msg.operation}`;
   switch(msg.operation) {
-    case 'updated':
-      for (const change of msg.updates) {
-        rval += `${folderChangeSynopsis(change)}; `;
-      }
-      break;
     case 'closed': rval += ` reason: "${msg.reason}"`; break;
-    case 'opened': break;
+    case 'collaboratorConnected': rval += ` obj: ${JSON.stringify(msg.obj)}`; break;
+    case 'collaboratorDisconnected': rval += ` clientId: ${msg.clientId}`; break;
+    case 'opened': rval += ` cols: ${msg.collaborators.map(c=>c.userName).join(",")}`; break;
+    case 'updated': {
+      for (const change of msg.updates) { rval += ` ${folderChangeSynopsis(change)};`; }
+      break;
+    }
     default: rval += UNKNOWN_TYPE;
   }
   return rval;
 }
 
 function serverNotebookResponseSynopsis(msg: NotebookResponse): string {
-  let rval = `${msg.path} ${msg.operation} `;
+  let rval = `${msg.path} ${msg.operation}`;
   switch(msg.operation) {
-    case 'updated':
-      for (const change of msg.updates) {
-        rval += `${notebookUpdateSynopsis(change)}; `;
-      }
-      break;
     case 'closed': rval += ` reason: ${msg.reason}`; break;
-    case 'opened': break;
+    case 'collaboratorConnected': rval += ` obj: ${JSON.stringify(msg.obj)}`; break;
+    case 'collaboratorDisconnected': rval += ` clientId: ${msg.clientId}`; break;
+    case 'opened': rval += ` cols: ${msg.collaborators.map(c=>c.userName).join(",")}`; break;
+    case 'updated': {
+      for (const change of msg.updates) { rval += ` ${notebookUpdateSynopsis(change)};`; }
+      break;
+    }
     default: rval += UNKNOWN_TYPE;
   }
   return rval;

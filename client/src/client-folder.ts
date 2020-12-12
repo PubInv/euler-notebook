@@ -27,17 +27,21 @@ import {
   FolderCreateRequest, NotebookCreateRequest, FolderDeleteRequest, NotebookDeleteRequest, FolderRenameRequest, NotebookRenameRequest
 } from "./shared/client-requests";
 import {
-  FolderUpdated, FolderResponse, FolderOpened, FolderClosed,
-  FolderUpdate, FolderCreated, NotebookCreated, FolderRenamed, NotebookRenamed, FolderDeleted, NotebookDeleted, NotebookCollaboratorConnected,
+  FolderUpdated, FolderResponse, FolderOpened, FolderClosed, FolderCollaboratorConnected, FolderCollaboratorDisconnected,
+  FolderUpdate, FolderCreated, NotebookCreated, FolderRenamed, NotebookRenamed, FolderDeleted, NotebookDeleted,
 } from "./shared/server-responses"
 
 import { appInstance } from "./app";
 import { assert, assertFalse, ClientId } from "./shared/common";
 import { OpenOptions } from "./shared/watched-resource";
+import { CollaboratorObject } from "./shared/user";
 
 // Types
 
 export interface ClientFolderWatcher extends FolderWatcher {
+  onCollaboratorConnected(msg: FolderCollaboratorConnected): void;
+  onCollaboratorDisconnected(msg: FolderCollaboratorDisconnected): void;
+
 }
 
 export type OpenFolderOptions = OpenOptions<ClientFolderWatcher>;
@@ -66,23 +70,21 @@ export class ClientFolder extends Folder<ClientFolderWatcher> {
   // Class Event Handlers
 
   public static onServerResponse(msg: FolderResponse, ownRequest: boolean): void {
-    // A folder message was received from the server.
-    switch(msg.operation) {
-      case 'updated': this.smUpdated(msg, ownRequest); break;
-      case 'closed':  this.smClosed(msg, ownRequest); break;
-      case 'opened':
-        // Nothing to do. Opened response is handled when request promise is resolved.
-        assert(ownRequest);
-        break;
-      default: assertFalse();
-    }
+    // Opened response is handled when request promise is resolved.
+    // All other responses are forwarded to the instance.
+    if (msg.operation == 'opened') { return; }
+    const instance = <ClientFolder>this.instanceMap.get(msg.path)!;
+    assert(instance);
+    instance.onServerResponse(msg, ownRequest);
   }
 
   // Public Instance Properties
 
-  public readonly userMap: Map<ClientId, NotebookCollaboratorConnected>;
-
   // Public Instance Property Functions
+
+  public get collaborators(): IterableIterator<CollaboratorObject> {
+    return this.collaboratorMap.values();
+  }
 
   // Public Instance Methods
 
@@ -142,27 +144,16 @@ export class ClientFolder extends Folder<ClientFolderWatcher> {
 
   // Private Class Event Handlers
 
-  private static smClosed(msg: FolderClosed, _ownRequest: boolean): void {
-    // Message from the server that the folder has been closed by the server.
-    // For example, if the folder was deleted or moved.
-    const had = this.close(msg.path, msg.reason);
-    assert(had);
-  }
-
-  private static smUpdated(msg: FolderUpdated, ownRequest: boolean): void {
-    // A change message has come in that was not from our own change request.
-    const instance = this.getInstance(msg.path);
-    instance.smChanged(msg, ownRequest);
-  }
-
   // Private Constructor
 
   private constructor(path: FolderPath, _options: OpenFolderOptions) {
     super(path);
-    this.userMap = new Map();
+    this.collaboratorMap = new Map();
   }
 
   // Private Instance Properties
+
+  private readonly collaboratorMap: Map<ClientId, CollaboratorObject>;
 
   // Private Instance Property Functions
 
@@ -202,8 +193,10 @@ export class ClientFolder extends Folder<ClientFolderWatcher> {
     const message: OpenFolder = { type: 'folder', operation: 'open', path: this.path };
     const responseMessages = await appInstance.socket.sendRequest<FolderOpened>(message);
     assert(responseMessages.length == 1);
-    Folder.validateObject(responseMessages[0].obj);
-    this.initializeFromObject(responseMessages[0].obj);
+    const responseMessage = responseMessages[0];
+    Folder.validateObject(responseMessage.obj);
+    this.initializeFromObject(responseMessage.obj);
+    for (const collaborator of responseMessage.collaborators) { this.collaboratorMap.set(collaborator.clientId, collaborator); }
   }
 
   private async sendChangeRequest<T extends FolderUpdate>(changeRequest: FolderChangeRequest): Promise<T> {
@@ -222,7 +215,7 @@ export class ClientFolder extends Folder<ClientFolderWatcher> {
       changeRequests,
     }
     const responseMessages = await appInstance.socket.sendRequest<FolderUpdated>(msg);
-    assert(responseMessages.length == 1); // If
+    assert(responseMessages.length == 1);
     return responseMessages[0].updates;
   }
 
@@ -232,7 +225,41 @@ export class ClientFolder extends Folder<ClientFolderWatcher> {
 
   // Private Event Handlers
 
-  private smChanged(msg: FolderUpdated, ownRequest: boolean): void {
+  private onClosed(msg: FolderClosed, _ownRequest: boolean): void {
+    // Message from the server that the folder has been closed by the server.
+    // For example, if the folder was deleted or moved.
+    const had = ClientFolder.close(msg.path, msg.reason);
+    assert(had);
+  }
+
+  private onCollaboratorConnected(msg: FolderCollaboratorConnected): void {
+    // Message from the server indicating a user has connected to the notebook.
+    const clientId = msg.obj.clientId;
+    assert(!this.collaboratorMap.has(clientId));
+    this.collaboratorMap.set(clientId, msg.obj);
+    for (const watcher of this.watchers) { watcher.onCollaboratorConnected(msg); }
+  }
+
+  private onCollaboratorDisconnected(msg: FolderCollaboratorDisconnected): void {
+    // Message from the server indicating a user has connected to the notebook.
+    assert(this.collaboratorMap.has(msg.clientId));
+    this.collaboratorMap.delete(msg.clientId);
+    for (const watcher of this.watchers) { watcher.onCollaboratorDisconnected(msg); }
+  }
+
+  private onServerResponse(msg: FolderResponse, ownRequest: boolean): void {
+    // A folder message was received from the server.
+    switch(msg.operation) {
+      case 'closed':  this.onClosed(msg, ownRequest); break;
+      case 'collaboratorConnected':     this.onCollaboratorConnected(msg); break;
+      case 'collaboratorDisconnected':  this.onCollaboratorDisconnected(msg); break;
+      case 'updated': this.onUpdated(msg, ownRequest); break;
+      case 'opened':
+      default: assertFalse();
+    }
+  }
+
+  private onUpdated(msg: FolderUpdated, ownRequest: boolean): void {
     // Message from the server indicating the folder has changed.
 
     // Apply changes to the notebook data structure, and notify the view of the change.
