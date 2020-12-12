@@ -642,6 +642,43 @@ export class ServerNotebook extends WatchedResource<NotebookPath, ServerNotebook
     this.saving = false;
   }
 
+  private sendCollaboratorConnectedMessage(socket: ServerSocket): void {
+    const user = socket.user;
+    if (!user) { return; }
+    const collaboratorObj: CollaboratorObject = {
+      clientId: socket.clientId,
+      userId: user.id,
+      userName: user?.userName,
+    };
+    const response2: NotebookCollaboratorConnected = {
+      type: 'notebook',
+      operation: 'collaboratorConnected',
+      path: this.path,
+      obj: collaboratorObj,
+    };
+    for (const otherSocket of this.sockets) {
+      assert(otherSocket !== socket);
+      if (!otherSocket.user) { continue; }
+      otherSocket.sendMessage(response2);
+    }
+  }
+
+  private sendCollaboratorDisconnectedMessage(socket: ServerSocket): void {
+    const user = socket.user;
+    if (!user) { return; }
+    const response2: NotebookCollaboratorDisconnected = {
+      type: 'notebook',
+      operation: 'collaboratorDisconnected',
+      path: this.path,
+      clientId: socket.clientId,
+    };
+    for (const otherSocket of this.sockets) {
+      assert(otherSocket !== socket);
+      if (!otherSocket.user) { continue; }
+      otherSocket.sendMessage(response2);
+    }
+  }
+
   protected terminate(reason: string): void {
     // REVIEW: Notify watchers?
     super.terminate(reason);
@@ -683,9 +720,11 @@ export class ServerNotebook extends WatchedResource<NotebookPath, ServerNotebook
   }
 
   private onSocketClosed(socket: ServerSocket): void {
-    if (this.sockets.has(socket)) {
-      this.removeSocket(socket);
-    }
+    // NOTE: When *any* socket closes, this message is sent to *all* notebooks,
+    //       so we need to check if we are actually interested in this socket.
+    if (!this.sockets.has(socket)) { return; }
+    this.removeSocket(socket);
+    this.sendCollaboratorDisconnectedMessage(socket);
   }
 
   // Client Message Event Handlers
@@ -707,25 +746,10 @@ export class ServerNotebook extends WatchedResource<NotebookPath, ServerNotebook
   }
 
   private onCloseRequest(socket: ServerSocket, _msg: CloseNotebook): void {
+    // NOTE: No response is expected for a close request.
     assert(this.sockets.has(socket));
     this.removeSocket(socket);
-    // NOTE: No response is expected for a close request.
-
-    // Send NotebookCollaboratorDisconnected message to other users.
-    const user = socket.user;
-    if (user) {
-      const response2: NotebookCollaboratorDisconnected = {
-        type: 'notebook',
-        operation: 'collaboratorDisconnected',
-        path: this.path,
-        clientId: socket.clientId,
-      };
-      for (const otherSocket of this.sockets) {
-        if (otherSocket === socket || !otherSocket.user) { continue; }
-        otherSocket.sendMessage(response2);
-      }
-    }
-
+    this.sendCollaboratorDisconnectedMessage(socket);
   }
 
   private onOpenRequest(socket: ServerSocket, msg: OpenNotebook): void {
@@ -738,6 +762,7 @@ export class ServerNotebook extends WatchedResource<NotebookPath, ServerNotebook
       throw new ExpectedError(message)
     }
 
+    this.sendCollaboratorConnectedMessage(socket);
     this.sockets.add(socket);
 
     // Send NotebookOpened message back to the requesting client.
@@ -762,25 +787,6 @@ export class ServerNotebook extends WatchedResource<NotebookPath, ServerNotebook
       complete: true
     };
     socket.sendMessage(response);
-
-    // Send NotebookCollaboratorConnected message to other users.
-    if (user) {
-      const collaboratorObj: CollaboratorObject = {
-        clientId: socket.clientId,
-        userId: user.id,
-        userName: user?.userName,
-      };
-      const response2: NotebookCollaboratorConnected = {
-        type: 'notebook',
-        operation: 'collaboratorConnected',
-        path: this.path,
-        obj: collaboratorObj,
-      };
-      for (const otherSocket of this.sockets) {
-        if (otherSocket === socket || !otherSocket.user) { continue; }
-        otherSocket.sendMessage(response2);
-      }
-    }
   }
 
   private onUseToolRequest(_socket: ServerSocket, _msg: UseTool): void {

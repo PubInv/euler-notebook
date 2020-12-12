@@ -216,6 +216,43 @@ export class ServerFolder extends Folder<ServerFolderWatcher> {
     }
   }
 
+  private sendCollaboratorConnectedMessage(socket: ServerSocket): void {
+    const user = socket.user;
+    if (!user) { return; }
+    const collaboratorObj: CollaboratorObject = {
+      clientId: socket.clientId,
+      userId: user.id,
+      userName: user?.userName,
+    };
+    const response2: FolderCollaboratorConnected = {
+      type: 'folder',
+      operation: 'collaboratorConnected',
+      path: this.path,
+      obj: collaboratorObj,
+    };
+    for (const otherSocket of this.sockets) {
+      assert(otherSocket !== socket);
+      if (!otherSocket.user) { continue; }
+      otherSocket.sendMessage(response2);
+    }
+  }
+
+  private sendCollaboratorDisconnectedMessage(socket: ServerSocket): void {
+    const user = socket.user;
+    if (!user) { return; }
+    const response2: FolderCollaboratorDisconnected = {
+      type: 'folder',
+      operation: 'collaboratorDisconnected',
+      path: this.path,
+      clientId: socket.clientId,
+    };
+    for (const otherSocket of this.sockets) {
+      assert(otherSocket !== socket);
+      if (!otherSocket.user) { continue; }
+      otherSocket.sendMessage(response2);
+    }
+  }
+
   private sendUpdateToAllSockets(update: FolderResponse, originatingSocket?: ServerSocket, requestId?: RequestId): void {
     for (const socket of this.sockets) {
       if (socket === originatingSocket) {
@@ -237,15 +274,17 @@ export class ServerFolder extends Folder<ServerFolderWatcher> {
     switch(msg.operation) {
       case 'change': await this.onChangeRequest(socket, msg); break;
       case 'close':  this.onCloseRequest(socket, msg); break;
-      case 'open':  this.onOpenRequest(socket, msg); break;
-      default: assert(false); break;
+      case 'open':   this.onOpenRequest(socket, msg); break;
+      default:       assert(false); break;
     }
   }
 
   private onSocketClosed(socket: ServerSocket): void {
-    if (this.sockets.has(socket)) {
-      this.removeSocket(socket);
-    }
+    // NOTE: When *any* socket closes, this message is sent to *all* folders,
+    //       so we need to check if we are actually interested in this socket.
+    if (!this.sockets.has(socket)) { return; }
+    this.removeSocket(socket);
+    this.sendCollaboratorDisconnectedMessage(socket);
   }
 
   // Client Message Event Handlers
@@ -329,25 +368,10 @@ export class ServerFolder extends Folder<ServerFolderWatcher> {
   }
 
   private onCloseRequest(socket: ServerSocket, _msg: CloseFolder): void {
+    // NOTE: No response is expected for a close request.
     assert(this.sockets.has(socket));
     this.removeSocket(socket);
-    // NOTE: No response is expected for a close request.
-
-    // Send FolderCollaboratorDisconnected message to other users.
-    const user = socket.user;
-    if (user) {
-      const response2: FolderCollaboratorDisconnected = {
-        type: 'folder',
-        operation: 'collaboratorDisconnected',
-        path: this.path,
-        clientId: socket.clientId,
-      };
-      for (const otherSocket of this.sockets) {
-        if (otherSocket === socket || !otherSocket.user) { continue; }
-        otherSocket.sendMessage(response2);
-      }
-    }
-
+    this.sendCollaboratorDisconnectedMessage(socket);
   }
 
   private onOpenRequest(socket: ServerSocket, msg: OpenFolder): void {
@@ -360,6 +384,7 @@ export class ServerFolder extends Folder<ServerFolderWatcher> {
       throw new ExpectedError(message)
     }
 
+    this.sendCollaboratorConnectedMessage(socket);
     this.sockets.add(socket);
 
     // Send NotebookOpened message back to the requesting client.
@@ -385,26 +410,6 @@ export class ServerFolder extends Folder<ServerFolderWatcher> {
       complete: true
     };
     socket.sendMessage(response);
-
-    // Send FolderCollaboratorConnected message to other users.
-    if (user) {
-      const collaboratorObj: CollaboratorObject = {
-        clientId: socket.clientId,
-        userId: user.id,
-        userName: user?.userName,
-      };
-      const response2: FolderCollaboratorConnected = {
-        type: 'folder',
-        operation: 'collaboratorConnected',
-        path: this.path,
-        obj: collaboratorObj,
-      };
-      for (const otherSocket of this.sockets) {
-        if (otherSocket === socket || !otherSocket.user) { continue; }
-        otherSocket.sendMessage(response2);
-      }
-    }
-
   }
 
 }
