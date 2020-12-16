@@ -1,6 +1,6 @@
 /*
 Math Tablet
-Copyright (C) 2019 Public Invention
+Copyright (C) 2019-21 Public Invention
 https://pubinv.github.io/PubInv/
 
 This program is free software: you can redistribute it and/or modify
