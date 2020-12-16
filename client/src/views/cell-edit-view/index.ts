@@ -35,7 +35,7 @@ import { Stroke } from "../../shared/stylus";
 
 import { HtmlElement } from "../../html-element";
 import {
-  $new, CLOSE_X_ENTITY, ElementId, HtmlElementOrSpecification, HtmlElementSpecification,
+  $new, $outerSvg, CLOSE_X_ENTITY, ElementId, HtmlElementOrSpecification, HtmlElementSpecification,
   SvgIconId,
   svgIconReferenceMarkup,
 } from "../../dom";
@@ -210,6 +210,12 @@ export abstract class CellEditView<O extends CellObject> extends HtmlElement<'di
     this.$main = $main;
     this.cell = cell;
     this.notebookEditView = notebookEditView;
+
+    const displaySvg = cell.obj.displaySvg;
+    if (displaySvg) {
+      const $displaySvg = $outerSvg(displaySvg);
+      $content.append($displaySvg);
+    }
 
     const callbackFn: StrokeCallbackFn = async (stroke: Stroke)=>{
       this.cell.insertStroke(stroke)

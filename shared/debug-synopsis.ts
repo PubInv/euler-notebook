@@ -49,7 +49,8 @@ export function cellBriefSynopsis(cell: CellObject, indentationLevel: number = 0
 }
 
 export function cellSynopsis(cell: CellObject, indentationLevel: number = 0): string {
-  return `${cellBriefSynopsis(cell, indentationLevel)} TODO: more data depending on type.`;
+  // TODO: more data depending on type.
+  return `${cellBriefSynopsis(cell, indentationLevel)}`;
 }
 
 export function clientMessageSynopsis(msg: ClientRequest): string {

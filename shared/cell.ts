@@ -19,7 +19,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 // Requirements
 
-import { CssSize, Html, PlainText } from "./common";
+import { CssSize, Html, PlainText, SvgMarkup } from "./common";
 import { TexExpression, WolframExpression } from "./formula";
 import { StrokeData } from "./stylus";
 
@@ -57,6 +57,7 @@ export interface CellObject {
   inputText: PlainText,
   type: CellType;
   cssSize: CssSize;
+  displaySvg?: SvgMarkup;
   source: CellSource;
   strokeData: StrokeData,
 }

@@ -1,4 +1,4 @@
-import { CssClass, Html, SvgMarkup } from "../shared/common";
+import { CssClass, SvgMarkup } from "../shared/common";
 /*
 Math Tablet
 Copyright (C) 2019 Public Invention
@@ -23,6 +23,8 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 // Requirements
 
 import debug1 from "debug";
+const MODULE = __filename.split(/[/\\]/).slice(-1)[0].slice(0,-3);
+const debug = debug1(`server:${MODULE}`);
 
 import { mathjax } from "mathjax-full/js/mathjax.js";
 import { MathDocument } from "mathjax-full/js/core/MathDocument.js";
@@ -35,8 +37,16 @@ import { RegisterHTMLHandler } from "mathjax-full/js/handlers/html.js";
 import { assert } from "../shared/common";
 import { TexExpression } from "../shared/formula";
 
-const MODULE = __filename.split(/[/\\]/).slice(-1)[0].slice(0,-3);
-const debug = debug1(`server:${MODULE}`);
+// Types
+
+interface ConvertOptions {
+  class?: CssClass;
+}
+
+// Constants
+
+// const MJX_HEADER = '<mjx-container class="MathJax" jax="SVG">';
+// const MJX_FOOTER = '</mjx-container>';
 
 // Global Variables
 
@@ -63,21 +73,20 @@ export function initialize(): void {
   gHtml = mathjax.document('', { InputJax: tex, OutputJax: svg });
 }
 
-export function convertTexToSvg(tex: TexExpression, cssClass: CssClass): SvgMarkup {
+export function convertTexToSvg(tex: TexExpression, options?: ConvertOptions): SvgMarkup {
+  options = options || {};
   debug(`Converting TeX: "${tex}"`);
   const node = gHtml.convert(tex, { display: false, em: 16, ex: 8, containerWidth: 80*16 });
   // Returns HTML of a 'mjx-container' element enclosing an "svg" element.
-  const html = <Html>gAdaptor.outerHTML(node);
-  // Remove "<mjx-container class="MathJax" jax="SVG">" from the beginning and "</mjx-container>" from the end.
-  const svg = <SvgMarkup>html.slice(41,-16);
-  return fixupSvgMarkup(svg, cssClass);
-}
-
-// Helper Functions
-
-function fixupSvgMarkup(markup: SvgMarkup, cssClass: CssClass): SvgMarkup {
-  assert(markup.startsWith('<svg '));
-  assert(markup.endsWith('</svg>'));
-  markup = <SvgMarkup>markup.replace(/^<svg /, `<svg class="${cssClass}" `);
-  return <SvgMarkup>markup;
+  // const html = <Html>gAdaptor.outerHTML(node);
+  // assert(html.startsWith(MJX_HEADER));
+  // assert(html.endsWith(MJX_FOOTER));
+  // let svgMarkup = <SvgMarkup>html.slice(MJX_HEADER.length, -MJX_FOOTER.length);
+  let svgMarkup = <SvgMarkup>gAdaptor.innerHTML(node);
+  assert(svgMarkup.startsWith('<svg '));
+  assert(svgMarkup.endsWith('</svg>'));
+  if (options.class) {
+    svgMarkup = <SvgMarkup>svgMarkup.replace(/^<svg /, `<svg class="${options.class}" `);
+  }
+  return svgMarkup;
 }

@@ -44,6 +44,7 @@ import { router as apiRouter } from "./routes/api";
 import { router as exportRouter } from "./routes/export";
 import { router as indexRouter } from "./routes/index";
 import { router as xrayRouter } from "./routes/xray";
+import { router as pdfRouter } from "./routes/pdf";
 import { UserSession } from "./user-session";
 
 // Constants
@@ -91,8 +92,9 @@ async function main() {
   app.use(cookieParser());
 
   app.use('/api', apiRouter);
-  app.use('/xray', xrayRouter);
   app.use('/export', exportRouter);
+  app.use('/pdf', pdfRouter);
+  app.use('/xray', xrayRouter);
   app.use('/', indexRouter);
 
   // catch 404 and forward to error handler
@@ -137,7 +139,7 @@ async function main() {
   server.on('listening', ()=>{
     const addr = server.address();
     const bind = (typeof addr === 'string' ? `pipe ${addr}` : `port ${addr && addr.port}`);
-    console.log('Listening on ' + bind);
+    console.log(`Listening on ${bind}`);
   });
 
   ServerSocket.initialize(server);

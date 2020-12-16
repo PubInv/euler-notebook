@@ -151,13 +151,6 @@ export class ClientNotebook {
     await this.sendUndoableChangeRequest(changeRequest);
   }
 
-  public export(): void {
-    // NOTE: Notebook path starts with a slash.
-    const url = `/export${this.path}`;
-    // window.location.href = url;
-    window.open(url, "_blank")
-  }
-
   public async insertCell(cellType: CellType, afterId: CellRelativePosition): Promise<void> {
     const changeRequest: InsertEmptyCell = { type: 'insertEmptyCell', cellType, afterId };
     await this.sendUndoableChangeRequest(changeRequest);

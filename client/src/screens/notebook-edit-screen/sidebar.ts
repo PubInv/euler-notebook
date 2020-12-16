@@ -77,6 +77,17 @@ export class Sidebar extends ButtonBar {
       disabled: (mode === CellType.Figure),
     });
 
+    const $plotModeButton = $new({
+      tag: 'button',
+      class: <CssClass>'iconButton',
+      html: svgIconReferenceMarkup('iconMonstrChart20'),
+      listeners: {
+        click: (_e: MouseEvent): void =>{ this.onModeChange(CellType.Plot); }
+      },
+      title: "Insert figure cell",
+      disabled: (mode === CellType.Figure),
+    });
+
     const $debugButton = $new({
       tag: 'button',
       class: <CssClass>'iconButton',
@@ -157,6 +168,7 @@ export class Sidebar extends ButtonBar {
         $formulaModeButton,
         $textModeButton,
         $figureModeButton,
+        $plotModeButton,
         {
           tag: 'div', class: <CssClass>'separator'
         },
@@ -165,14 +177,11 @@ export class Sidebar extends ButtonBar {
         {
           tag: 'div', class: <CssClass>'separator'
         }, {
-          // export
           tag: 'button',
           class: <CssClass>'iconButton',
-          html: svgIconReferenceMarkup('iconMonstrLogout18'),
-          listeners: { click: _e=>{
-            this.screen.notebook.export();
-          }},
-          title: "Export notebook",
+          html: svgIconReferenceMarkup('iconMonstrPrinter6'),
+          listeners: { click: e=>this.onExportToPdf(e) },
+          title: "Print notebook",
         },
         $debugButton,
         {
@@ -200,6 +209,7 @@ export class Sidebar extends ButtonBar {
     this.$formulaModeButton = $formulaModeButton;
     this.$figureModeButton = $figureModeButton;
     this.$textModeButton = $textModeButton;
+    this.$plotModeButton = $plotModeButton;
   }
 
   // Public Instance Properties
@@ -220,16 +230,24 @@ export class Sidebar extends ButtonBar {
   public $figureModeButton: HTMLButtonElement;
   public $formulaModeButton: HTMLButtonElement;
   public $textModeButton: HTMLButtonElement;
+  public $plotModeButton: HTMLButtonElement;
 
   // Private Instance Methods
 
-  // Private Event Handlers
+  // Private Instance Event Handlers
+
+  private onExportToPdf(_event: MouseEvent): void {
+    // Note: this function is duplicated in read-screen sidebar.
+    const url = `/pdf${this.screen.notebook.path}`;
+    window.open(url, "_blank")
+  }
 
   private onModeChange(mode: CellType): void {
     this.screen.editView.insertMode = mode;
     this.$figureModeButton.disabled = (mode === CellType.Figure);
     this.$formulaModeButton.disabled = (mode === CellType.Formula);
     this.$textModeButton.disabled = (mode === CellType.Text);
+    this.$plotModeButton.disabled = (mode === CellType.Plot);
   }
 
   public onRedoStateChange(enabled: boolean): void {

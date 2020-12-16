@@ -30,10 +30,10 @@ const debug = debug1(`server:${MODULE}`);
 
 // import { readdirSync, unlink, writeFileSync } from "fs"; // LATER: Eliminate synchronous file operations.
 
-import { CellObject, CellSource, CellId, CellPosition, CellType, FigureCellObject, TextCellObject, CellOrdinalPosition } from "./shared/cell";
-import { assert, assertFalse, deepCopy, escapeHtml, ExpectedError, Html, notImplementedError, PlainText, Timestamp } from "./shared/common";
+import { CellObject, CellSource, CellId, CellPosition, CellType, FigureCellObject, TextCellObject, CellOrdinalPosition, PlotCellObject } from "./shared/cell";
+import { assert, assertFalse, CssClass, CssLength, deepCopy, escapeHtml, ExpectedError, Html, notImplementedError, PlainText, Timestamp } from "./shared/common";
 import { NotebookPath, NOTEBOOK_PATH_RE, NotebookName, FolderPath, NotebookEntry, Folder } from "./shared/folder";
-import { FormulaCellObject, PlainTextFormula } from "./shared/formula";
+import { FormulaCellObject, PlainTextFormula, TexExpression, WolframExpression } from "./shared/formula";
 import { NotebookObject, NotebookWatcher, sizeInPoints, marginsInPoints } from "./shared/notebook";
 import {
   NotebookChangeRequest, MoveCell, InsertEmptyCell, DeleteCell, InsertStroke, DeleteStroke,
@@ -51,6 +51,8 @@ import { ServerSocket } from "./server-socket";
 import { createDirectory, deleteDirectory, FileName, readJsonFile, renameDirectory, writeJsonFile } from "./adapters/file-system";
 import { Permissions } from "./permissions";
 import { CollaboratorObject } from "./shared/user";
+import { plotUnivariate } from "./adapters/wolframscript";
+import { convertTexToSvg } from "./adapters/mathjax";
 
 export interface FindCellOptions {
   source?: CellSource;
@@ -83,6 +85,7 @@ const DEFAULT_WIDTH = 6.5; // inches
 
 const DEFAULT_FORMULA_CSS_SIZE = sizeInPoints(1, DEFAULT_WIDTH);
 const DEFAULT_FIGURE_CSS_SIZE = sizeInPoints(3, DEFAULT_WIDTH);
+const DEFAULT_PLOT_CSS_SIZE = sizeInPoints(3, DEFAULT_WIDTH);
 const DEFAULT_TEXT_CSS_SIZE = sizeInPoints(1, DEFAULT_WIDTH);
 
 const FORMAT_VERSION = "0.0.19";
@@ -216,6 +219,20 @@ export class ServerNotebook extends WatchedResource<NotebookPath, ServerNotebook
         return ServerNotebook.cellToHtml(cellObject);
       }).join('\n');
     }
+  }
+
+  // Public Instance Property Functions
+
+  public allCells(): CellObject[] {
+    return this.obj.cells;
+  }
+
+  public get leftMargin(): CssLength {
+    return this.obj.margins.left;
+  }
+
+  public get topMargin(): CssLength {
+    return this.obj.margins.top;
   }
 
   // Public Instance Methods
@@ -472,10 +489,13 @@ export class ServerNotebook extends WatchedResource<NotebookPath, ServerNotebook
         break;
       }
       case CellType.Formula: {
+        const quadraticFormulaTex = <TexExpression>"x = \\frac{{ - b \\pm \\sqrt {b^2 - 4ac} }}{{2a}}";
+        const displaySvg = convertTexToSvg(quadraticFormulaTex, { class: <CssClass>'displaySvg' });
         const formulaCellObject: FormulaCellObject = {
           id,
           type: CellType.Formula,
           cssSize: deepCopy(DEFAULT_FORMULA_CSS_SIZE),
+          displaySvg,
           inputText: <PlainText>"",
           plainTextFormula: <PlainTextFormula>"",
           source,
@@ -485,7 +505,18 @@ export class ServerNotebook extends WatchedResource<NotebookPath, ServerNotebook
         break;
       }
       case CellType.Plot: {
-        notImplementedError("ServerNoteboook insert plot cell");
+        const displaySvg = await plotUnivariate(<WolframExpression>"x^2 - 3", <WolframExpression>"x", { class: <CssClass>'displaySvg' });
+        const plotCellObject: PlotCellObject = {
+          id,
+          type: CellType.Plot,
+          cssSize: deepCopy(DEFAULT_PLOT_CSS_SIZE),
+          displaySvg,
+          formulaCellId: -1, // TODO:
+          inputText: <PlainText>"",
+          source,
+          strokeData: deepCopy(EMPTY_STROKE_DATA),
+        }
+        cellObject = plotCellObject;
         break;
       }
       case CellType.Text: {

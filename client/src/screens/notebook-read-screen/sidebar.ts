@@ -68,8 +68,16 @@ export class Sidebar extends ButtonBar {
         title: "Editing view",
       }, {
         tag: 'div', class: <CssClass>'separator'
+      }, {
+        tag: 'button',
+        class: <CssClass>'iconButton',
+        html: svgIconReferenceMarkup('iconMonstrPrinter6'),
+        listeners: { click: e=>this.onExportToPdf(e) },
+        title: "Print notebook",
       }]
-     });
+    });
+
+    this.screen = screen;
   }
 
   // Instance Properties
@@ -80,9 +88,17 @@ export class Sidebar extends ButtonBar {
 
   // Private Instance Properties
 
+  private screen: NotebookReadScreen;
+
   // Private Instance Methods
 
-  // Private Event Handlers
+  // Private Instance Event Handlers
+
+  private onExportToPdf(_event: MouseEvent): void {
+    // Note: this function is duplicated in edit-screen sidebar.
+    const url = `/pdf${this.screen.notebook.path}`;
+    window.open(url, "_blank")
+  }
 
 
 }

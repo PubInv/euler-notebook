@@ -29,10 +29,16 @@ import { PlainTextFormula, TexExpression, WolframExpression } from "../shared/fo
 
 import { WolframScriptConfig } from "../config";
 import { logWarning } from "../error-handler";
+import { assert, CssClass, SvgMarkup } from "../shared/common";
 
 // Types
 
 export interface NVPair { name: string; value: string }
+
+interface PlotOptions {
+  class?: CssClass;
+}
+
 
 // Constants
 
@@ -53,6 +59,8 @@ const OUTPUT_PROMPT_RE = /.*Out\[(\d+)\](\/\/\w+)?=\s*/s;
 const SYNTAX_ERROR_RE = /^\s*(Syntax::.*)/;
 
 const OUR_PRIVATE_CTX_NAME = "runPrv`";
+
+const XML_HEADER = '<?xml version="1.0" encoding="UTF-8"?>\n';
 
 // Globals
 
@@ -153,9 +161,9 @@ function executeNow(command: WolframExpression, resolve: (data: WolframExpressio
   let results = <WolframExpression>'';
   const stdoutListener = (data: Buffer)=>{
     let dataString: string = data.toString();
-    debug(`data: ${showInvisible(dataString)}`);
+    debug(`Data rec'd: ${showInvisible(dataString)}`);
     results += dataString;
-    debug(`results: ${showInvisible(results)}`);
+    // debug(`Accum data: ${showInvisible(results)}`);
 
     // Once the results end with an input prompt, we have received the complete result.
     const inputPromptMatch = INPUT_PROMPT_RE.exec(results);
@@ -306,4 +314,29 @@ export function convertMTLToWolfram(expr: PlainTextFormula) : WolframExpression 
 }
 export function convertWolframToMTL(expr: WolframExpression) : PlainTextFormula {
   return <PlainTextFormula>expr.replace("==","=");
+}
+
+export async function plotUnivariate(expression: WolframExpression, symbol: WolframExpression, options?: PlotOptions): Promise<SvgMarkup> {
+  options = options || {};
+  // BIVARIATE SCRIPT: <WolframExpression>`ExportString[Plot3D[${expr},{${variables[0]},0,6 Pi},{${variables[1]},0,6 Pi}],"SVG"]`;
+  const script = <WolframExpression>`ExportString[ExportString[Plot[${expression},{${symbol},0,6 Pi},PlotTheme->"Monochrome"],"SVG"], "Base64"]`;
+  const dirtyEncoded = await execute(script);
+  const encoded = <Base64>dirtyEncoded.replace(/[^a-zA-Z0-9+=\/]/g, '');
+  const decoded = base64Decode(encoded);
+  assert(decoded.startsWith(XML_HEADER));
+  let svgMarkup = <SvgMarkup>(decoded.slice(XML_HEADER.length));
+  assert(svgMarkup.startsWith('<svg '));
+  assert(svgMarkup.endsWith('</svg>\n'));
+  if (options.class) {
+    svgMarkup = <SvgMarkup>svgMarkup.replace(/^<svg /, `<svg class="${options.class}" `);
+  }
+  return svgMarkup;
+}
+
+// Helper Functions
+
+type Base64 = '{Base64}';
+function base64Decode(encoded: Base64): string {
+  const buff = Buffer.from(encoded, 'base64');
+  return buff.toString('utf-8');
 }
