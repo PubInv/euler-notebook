@@ -26,7 +26,7 @@ import { CellId, CellObject, CellType } from "../shared/cell";
 import { assert, assertFalse, CssSize, escapeHtml, Html } from "../shared/common";
 import { NotebookUpdate } from "../shared/server-responses";
 import { cellBriefSynopsis, cellSynopsis, notebookUpdateSynopsis } from "../shared/debug-synopsis";
-import { Stroke } from "../shared/stylus";
+import { Stroke, StrokeId } from "../shared/stylus";
 
 import { ClientNotebook } from "../client-notebook";
 
@@ -104,6 +104,10 @@ export abstract class ClientCell<O extends CellObject> {
     // Called when the 'X' button has been pressed in a cell.
     // Ask the notebook to delete us.
     await this.notebook.deleteCell(this.id);
+  }
+
+  public async deleteStroke(strokeId: StrokeId): Promise<void> {
+    await this.notebook.deleteStrokeFromCell(this.id, strokeId);
   }
 
   public async insertStroke(stroke: Stroke): Promise<void> {

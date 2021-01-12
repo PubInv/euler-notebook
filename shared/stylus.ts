@@ -24,6 +24,8 @@ import { Stroke as MyScriptStroke } from "./myscript-types";
 
 // Types
 
+type PathDAttribute = '{PathDAttribute}';
+
 export type StrokeId = number;
 
 export type StrokeRelativePosition = StrokeId | StrokePosition;
@@ -50,3 +52,15 @@ export const EMPTY_STROKE_DATA: StrokeData = {
 }
 
 // Exported Functions
+
+export function convertStrokeToPathShape(stroke: Stroke): PathDAttribute {
+  if (stroke.x.length<2) {
+    console.warn(`Have a stroke with too few data points: ${stroke.x.length}`)
+    return <PathDAttribute>"";
+  }
+  let shape: PathDAttribute = <PathDAttribute>`M${stroke.x[0]} ${stroke.y[0]}`;
+  for (let i=1; i<stroke.x.length; i++) {
+    shape += ` L${stroke.x[i]} ${stroke.y[i]}`
+  }
+  return shape;
+}

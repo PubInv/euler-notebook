@@ -448,14 +448,22 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
     width 26px // why not? doesn't work! calc(var(--header-height) - 2 * var(--header-width))
 
 .strokePanel
-  >.stylusDrawingPanel
+
+  >.strokeDrawingPanel
+  >.strokeSelectionPanel
     background-color transparent
     display block
     fill none
     pen-action none
     position absolute
-    stroke gray
     touch-action none
+
+  >.strokeDrawingPanel
+    stroke gray
+
+  >.strokeSelectionPanel
+    stroke rgba(0,0,0,0.1)
+    stroke-width 6
 
   >.svgPanel
     // background-color white

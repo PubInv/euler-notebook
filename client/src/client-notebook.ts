@@ -29,11 +29,11 @@ import { assert, assertFalse, ClientId, CssSize, Html } from "./shared/common";
 import { notebookUpdateSynopsis } from "./shared/debug-synopsis";
 import { NotebookName, NotebookNameFromNotebookPath, NotebookPath } from "./shared/folder";
 import { PageMargins, Pagination } from "./shared/notebook";
-import { NotebookChangeRequest, ChangeNotebook, UseTool, OpenNotebook, DeleteCell, ResizeCell, InsertStroke, InsertEmptyCell, MoveCell } from "./shared/client-requests";
+import { NotebookChangeRequest, ChangeNotebook, UseTool, OpenNotebook, DeleteCell, ResizeCell, InsertStroke, InsertEmptyCell, MoveCell, DeleteStroke } from "./shared/client-requests";
 import {
   NotebookUpdated, NotebookOpened, NotebookResponse, NotebookClosed, NotebookUpdate, CellInserted, CellDeleted, CellMoved, NotebookCollaboratorConnected, NotebookCollaboratorDisconnected
 } from "./shared/server-responses";
-import { Stroke } from "./shared/stylus";
+import { Stroke, StrokeId } from "./shared/stylus";
 
 import { createCell } from "./client-cell/instantiator";
 
@@ -149,6 +149,11 @@ export class ClientNotebook {
   public async deleteCell(cellId: CellId): Promise<void> {
     const changeRequest: DeleteCell = { type: 'deleteCell', cellId };
     await this.sendUndoableChangeRequest(changeRequest);
+  }
+
+  public async deleteStrokeFromCell(cellId: CellId, strokeId: StrokeId): Promise<void> {
+    const changeRequest: DeleteStroke = { type: 'deleteStroke', cellId, strokeId };
+    await this.sendUndoableChangeRequest(changeRequest)
   }
 
   public async insertCell(cellType: CellType, afterId: CellRelativePosition): Promise<void> {

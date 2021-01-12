@@ -22,25 +22,34 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 import * as debug1 from "debug";
 const debug = debug1('client:stroke-panel');
 
-import { CssClass, SvgMarkup, CssSize, assert } from "../shared/common";
-import { Stroke, StrokeData, StrokeId } from "../shared/stylus";
+import { CssClass, SvgMarkup, CssSize, assert, assertFalse } from "../../shared/common";
+import { convertStrokeToPathShape, Stroke, StrokeData, StrokeId } from "../../shared/stylus";
 
-import { $, $newSvg, $outerSvg, ElementId } from "../dom";
+import { $, $newSvg, $newSvgFromMarkup, ElementId } from "../../dom";
 
-import { SvgStroke } from "../svg-stroke";
-import { StylusDrawingPanel } from "./stylus-drawing-panel";
+import { HtmlElement } from "../../html-element";
+import { CellResized, NotebookUpdate, StrokeDeleted, StrokeInserted } from "../../shared/server-responses";
+import { notebookUpdateSynopsis } from "../../shared/debug-synopsis";
+import { CellId, CellObject } from "../../shared/cell";
 
-import { HtmlElement } from "../html-element";
-import { CellResized, NotebookUpdate, StrokeDeleted, StrokeInserted } from "../shared/server-responses";
-import { notebookUpdateSynopsis } from "../shared/debug-synopsis";
-import { CellId, CellObject } from "../shared/cell";
+import { StrokeDrawingPanel } from "./stroke-drawing-panel";
+import { StrokeSelectionPanel } from "./stroke-selection-panel";
 
 // TODO: Rename stylus panel.
 
 // Types
 
-type PathDAttribute = '{PathDAttribute}';
 export type StrokeCallbackFn = (stroke: Stroke)=>Promise<void>;
+
+export interface StrokePanelCallbacks {
+  drawStroke: (stroke: Stroke)=>Promise<void>;
+  eraseStroke: (strokeId: StrokeId)=>Promise<void>;
+}
+
+export enum StylusMode {
+  Draw,
+  Erase,
+}
 
 // Constants
 
@@ -54,36 +63,58 @@ export class StrokePanel extends HtmlElement<'div'> {
 
   public constructor(
     cellObject: CellObject,
-    strokeCallbackFn: StrokeCallbackFn,
+    callbacks: StrokePanelCallbacks,
+    stylusMode: StylusMode,
   ) {
     const { id: cellId, cssSize, strokeData } = cellObject;
     const svgMarkup = convertStrokesToSvg(cellId, cssSize, strokeData);
 
-    const $svgPanel = $outerSvg<'svg'>(svgMarkup);
-    const stylusDrawingPanel = new StylusDrawingPanel(cssSize, (stroke)=>this.onStrokeComplete(stroke));
-
+    const $svgPanel = $newSvgFromMarkup<'svg'>(svgMarkup);
+    const strokeDrawingPanel = new StrokeDrawingPanel(cssSize, (stroke)=>callbacks.drawStroke(stroke.data));
+    const strokeSelectionPanel = new StrokeSelectionPanel(cssSize, strokeData, (strokeId)=>callbacks.eraseStroke(strokeId));
     super({
       tag: 'div',
       classes: [ <CssClass>'inputPanel', <CssClass>'strokePanel'],
       children: [
-        stylusDrawingPanel.$elt,
+        strokeDrawingPanel.$elt,
+        strokeSelectionPanel.$elt,
         $svgPanel,
       ]
     });
 
     this.$svgPanel = $svgPanel;
-    this.strokeCallbackFn = strokeCallbackFn;
+    this.strokeDrawingPanel = strokeDrawingPanel;
+    this.strokeSelectionPanel = strokeSelectionPanel;
     // REVIEW: Is stylusInput updated in-place?
+
+    this.stylusMode = stylusMode;
   }
 
   // Public Instance Properties
 
+  // Public Instance Property Functions
+
+  public set stylusMode(value: StylusMode) {
+    switch(value) {
+      case StylusMode.Draw:
+        this.strokeDrawingPanel.show();
+        this.strokeSelectionPanel.hide();
+        break;
+      case StylusMode.Erase:
+        this.strokeDrawingPanel.hide();
+        this.strokeSelectionPanel.show();
+        break;
+      default: assertFalse();
+    }
+  }
+
   // Public Instance Methods
 
-  // Public Event Handlers
+  // Public Instance Event Handlers
 
   public onUpdate(update: NotebookUpdate, ownRequest: boolean): void {
     debug(`onUpdate ${notebookUpdateSynopsis(update)}`);
+    this.strokeSelectionPanel.onUpdate(update, ownRequest);
     switch (update.type) {
       case 'cellResized': this.onCellResized(update, ownRequest); break;
       case 'strokeDeleted': this.onStrokeDeleted(update, ownRequest); break;
@@ -97,7 +128,8 @@ export class StrokePanel extends HtmlElement<'div'> {
   // Private Instance Properties
 
   private $svgPanel: SVGSVGElement;
-  private strokeCallbackFn: StrokeCallbackFn;
+  private strokeDrawingPanel: StrokeDrawingPanel;
+  private strokeSelectionPanel: StrokeSelectionPanel;
 
   // Private Instance Property Functions
 
@@ -107,13 +139,6 @@ export class StrokePanel extends HtmlElement<'div'> {
     this.$svgPanel.setAttribute('height', update.cssSize.height);
     assert(this.$svgPanel.getAttribute('width') === update.cssSize.width);
     // TODO: Resize StylusInputPanel.
-  }
-
-  private async onStrokeComplete(stroke: SvgStroke): Promise<void> {
-    // TODO: What if socket to server is closed? We'll just accumulate strokes that will never get saved.
-    //       How do we handle offline operation?
-    debug(`Calling stroke callback function`);
-    return this.strokeCallbackFn(stroke.data);
   }
 
   private onStrokeDeleted(update: StrokeDeleted, _ownRequest: boolean): void {
@@ -144,18 +169,6 @@ function convertStrokesToSvg(cellId: CellId, cssSize: CssSize, strokeData: Strok
 function convertStrokeToPath(cellId: CellId, stroke: Stroke): SvgMarkup {
   const shape = convertStrokeToPathShape(stroke);
   return <SvgMarkup>`<path id="${pathId(cellId, stroke.id)}" d="${shape}"></path>`;
-}
-
-function convertStrokeToPathShape(stroke: Stroke): PathDAttribute {
-  if (stroke.x.length<2) {
-    console.warn(`Have a stroke with too few data points: ${stroke.x.length}`)
-    return <PathDAttribute>"";
-  }
-  let shape: PathDAttribute = <PathDAttribute>`M${stroke.x[0]} ${stroke.y[0]}`;
-  for (let i=1; i<stroke.x.length; i++) {
-    shape += ` L${stroke.x[i]} ${stroke.y[i]}`
-  }
-  return shape;
 }
 
 function pathId(cellId: CellId, strokeId: StrokeId): ElementId {

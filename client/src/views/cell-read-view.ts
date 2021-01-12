@@ -28,7 +28,7 @@ import { NotebookUpdate } from "../shared/server-responses";
 
 import { CellView, ClientCell } from "../client-cell";
 
-import { $outerSvg } from "../dom";
+import { $newSvgFromMarkup } from "../dom";
 import { notebookUpdateSynopsis } from "../shared/debug-synopsis";
 
 // Exported Class
@@ -46,7 +46,7 @@ export class CellReadView<O extends CellObject> implements CellView {
     // LATER: <use xlink:href="#${id}"/> instead of duplicate instantiation?
     // TODO:
     const svgMarkup = <SvgMarkup>"<svg></svg>"
-    const $svg = this.$svg = $outerSvg<'svg'>(svgMarkup);
+    const $svg = this.$svg = $newSvgFromMarkup<'svg'>(svgMarkup);
     $svg.setAttribute('x', xAttr);
     $svg.setAttribute('y', yAttr);
   }

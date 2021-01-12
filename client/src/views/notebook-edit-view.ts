@@ -38,6 +38,7 @@ import { apiDebug } from "../api";
 import { ClientNotebook } from "../client-notebook";
 import { notebookUpdateSynopsis } from "../shared/debug-synopsis";
 import { createCellView } from "./cell-edit-view/instantiator";
+import { StylusMode } from "../components/stroke-panel";
 
 // Types
 
@@ -46,10 +47,10 @@ type CommandName = string;
 type CommandFunction = (this: NotebookEditView)=>Promise<void>;
 
 enum KeyMod {
-  None = 0,
-  Alt = 1,    // Option key on Mac.
-  Ctrl = 2,
-  Meta = 4,   // Command key on Mac, Windows key on Windows.
+  None  = 0,
+  Alt   = 1,    // Option key on Mac.
+  Ctrl  = 2,
+  Meta  = 4,    // Command key on Mac, Windows key on Windows.
   Shift = 8,
 }
 
@@ -57,7 +58,6 @@ type KeyMods = number;    // Bitwise or of KeyMod. // TYPESCRIPT:??
 
 type KeyName = string;
 type KeyCombo = string;   // KeyName followed by KeyMods, e.g. 'Enter8' for shift+enter.
-
 
 // Constants
 
@@ -103,6 +103,7 @@ export class NotebookEditView extends HtmlElement<'div'> {
     this.cellViews = [];
     this.container = container;
     this.insertMode = CellType.Formula;
+    this._stylusMode = StylusMode.Draw;
     this.notebook = notebook;
 
     for (let cellIndex=0; cellIndex<notebook.cells.length; cellIndex++) {
@@ -115,8 +116,20 @@ export class NotebookEditView extends HtmlElement<'div'> {
   // Public Instance Properties
 
   public insertMode: CellType;
+  private _stylusMode: StylusMode;
 
   // Public Instance Property Functions
+
+  public get stylusMode(): StylusMode {
+    return this._stylusMode;
+  }
+
+  public set stylusMode(value: StylusMode) {
+    this._stylusMode = value;
+    for (const cellView of this.cellViews) {
+      cellView.stylusMode = value;
+    }
+  }
 
   // Public Instance Methods
 
@@ -165,47 +178,6 @@ export class NotebookEditView extends HtmlElement<'div'> {
     debug("Insert Cell");
     await this.notebook.insertCell(this.insertMode, afterId);
   }
-
-  // public async insertFigureCellBelow(afterId?: CellRelativePosition): Promise<void> {
-  //   debug("Insert Figure Cell Below");
-
-  //   // If cell to insert after is not specified, then insert below the last cell selected.
-  //   // If no cells are selected, then insert at the end of the notebook.
-  //   if (afterId === undefined) {
-  //     if (this.lastCellSelected) { afterId = this.lastCellSelected.id; }
-  //     else { afterId = CellPosition.Bottom; }
-  //   }
-  //   await this.notebook.insertCell(CellType.Figure, afterId);
-  //   // TODO: Set focus?
-  // }
-
-  // public async insertFormulaCellBelow(afterId?: CellRelativePosition): Promise<void> {
-  //   debug("Insert Formula Cell Below");
-
-  //   // If cell to insert after is not specified, then insert below the last cell selected.
-  //   // If no cells are selected, then insert at the end of the notebook.
-  //   if (afterId === undefined) {
-  //     if (this.lastCellSelected) { afterId = this.lastCellSelected.id; }
-  //     else { afterId = CellPosition.Bottom; }
-  //   }
-  //   await this.notebook.insertCell(CellType.Formula, afterId);
-  //   // const inputMode = userSettingsInstance.defaultInputMode;
-  //   // TODO: Set focus?
-  // }
-
-  // public async insertTextCellBelow(afterId?: CellRelativePosition): Promise<void> {
-  //   debug("Insert Text Cell Below");
-
-  //   // If cell to insert after is not specified, then insert below the last cell selected.
-  //   // If no cells are selected, then insert at the end of the notebook.
-  //   if (afterId === undefined) {
-  //     if (this.lastCellSelected) { afterId = this.lastCellSelected.id; }
-  //     else { afterId = CellPosition.Bottom; }
-  //   }
-
-  //   await this.notebook.insertCell(CellType.Text, afterId);
-  //   // TODO: Set focus?
-  // }
 
   public async moveCell(movedCellId: CellId, droppedCellId: CellId): Promise<void> {
     debug(`Move cell: ${movedCellId}, ${droppedCellId}`);

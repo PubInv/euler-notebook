@@ -116,11 +116,11 @@ interface Styles {
 }
 
 // Keep this list in sync with server/views/iconmonstr.pug.
-export type SvgIconId = 'iconMonstrBug12' | 'iconMonstrCalculator2' | 'iconMonstrClothing18' | 'iconMonstrFile5' |
+export type SvgIconId = 'iconMonstrBug12' | 'iconMonstrCalculator2' | 'iconMonstrClothing18' | 'iconMonstrEraser2' | 'iconMonstrFile5' |
                   'iconMonstrFile12' | 'iconMonstrFile15' | 'iconMonstrFolder2' | 'iconMonstrFolder5' |
                   'iconMonstrFullScreen7' | 'iconMonstrNote23' |
                   'iconMagnifier6' | 'iconMonstrPencil9' | 'iconMonstrPrinter6' | 'iconMonstrRedo4' | 'iconMonstrRefresh2' |
-                  'iconMonstrText1' | 'iconMonstrTrashcan2' | 'iconMonstrUndo4' | 'iconMonstrUser1' |
+                  'iconMonstrRuler30' | 'iconMonstrText1' | 'iconMonstrTrashcan2' | 'iconMonstrUndo4' | 'iconMonstrUser1' |
                   'iconMonstrChart20' ;
 
   // Constants
@@ -235,12 +235,13 @@ export function $newSvg<K extends keyof SVGElementTagNameMap>(options: SvgElemen
   return $elt;
 }
 
-export function $outerSvg<K extends keyof SVGElementTagNameMap>(markup: SvgMarkup): SVGElementTagNameMap[K] {
+export function $newSvgFromMarkup<K extends keyof SVGElementTagNameMap>(markup: SvgMarkup, options?: NewCommonOptions): SVGElementTagNameMap[K] {
   const $parent = document.createElement('div');
   $parent.innerHTML = markup;
   const $elt: SVGElement = <SVGElement>$parent.firstElementChild!;
   assert($elt);
   // assert($elt instanceof SVGElement);  // REVIEW: <path> elements don't appear to mneet this instanceof test.
+  if (options) { $configure($elt, options); }
   return <SVGElementTagNameMap[K]>$elt;
 }
 

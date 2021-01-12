@@ -25,10 +25,15 @@ import { svgIconReferenceMarkup, $new } from "../../dom";
 
 import { NotebookEditScreen } from "./index";
 import { CellType } from "../../shared/cell";
+import { StylusMode } from "../../components/stroke-panel";
 
 // Types
 
 // Constants
+
+const SEPARATOR = {
+  tag: 'div', class: <CssClass>'separator'
+};
 
 // Global Variables
 
@@ -42,17 +47,18 @@ export class Sidebar extends ButtonBar {
 
   public constructor(screen: NotebookEditScreen) {
 
-    const mode = screen.editView.insertMode;
+    const insertMode = screen.editView.insertMode;
+    const stylusMode = screen.editView.stylusMode;
 
     const $formulaModeButton = $new({
       tag: 'button',
       class: <CssClass>'iconButton',
       html: svgIconReferenceMarkup('iconMonstrCalculator2'),
       listeners: {
-        click: (_e: MouseEvent): void =>{ this.onModeChange(CellType.Formula); }
+        click: (_e: MouseEvent): void =>{ this.onInsertModeChange(CellType.Formula); }
       },
       title: "Insert formula",
-      disabled: (mode === CellType.Formula),
+      disabled: (insertMode === CellType.Formula),
     });
 
     const $textModeButton = $new({
@@ -60,21 +66,21 @@ export class Sidebar extends ButtonBar {
       class: <CssClass>'iconButton',
       html: svgIconReferenceMarkup('iconMonstrText1'),
       listeners: {
-        click: (_e: MouseEvent): void =>{ this.onModeChange(CellType.Text); }
+        click: (_e: MouseEvent): void =>{ this.onInsertModeChange(CellType.Text); }
       },
       title: "Insert text",
-      disabled: (mode === CellType.Text),
+      disabled: (insertMode === CellType.Text),
     });
 
     const $figureModeButton = $new({
       tag: 'button',
       class: <CssClass>'iconButton',
-      html: svgIconReferenceMarkup('iconMonstrPencil9'),
+      html: svgIconReferenceMarkup('iconMonstrRuler30'),
       listeners: {
-        click: (_e: MouseEvent): void =>{ this.onModeChange(CellType.Figure); }
+        click: (_e: MouseEvent): void =>{ this.onInsertModeChange(CellType.Figure); }
       },
       title: "Insert figure cell",
-      disabled: (mode === CellType.Figure),
+      disabled: (insertMode === CellType.Figure),
     });
 
     const $plotModeButton = $new({
@@ -82,10 +88,32 @@ export class Sidebar extends ButtonBar {
       class: <CssClass>'iconButton',
       html: svgIconReferenceMarkup('iconMonstrChart20'),
       listeners: {
-        click: (_e: MouseEvent): void =>{ this.onModeChange(CellType.Plot); }
+        click: (_e: MouseEvent):void=>{ this.onInsertModeChange(CellType.Plot); }
       },
       title: "Insert figure cell",
-      disabled: (mode === CellType.Figure),
+      disabled: (insertMode === CellType.Figure),
+    });
+
+    const $drawModeButton = $new({
+      tag: 'button',
+      class: <CssClass>'iconButton',
+      html: svgIconReferenceMarkup('iconMonstrPencil9'),
+      listeners: {
+        click: (_e: MouseEvent):void=>{ this.onStylusModeChange(StylusMode.Draw); }
+      },
+      title: "Drawing mode",
+      disabled: (stylusMode === StylusMode.Draw),
+    });
+
+    const $eraseModeButton = $new({
+      tag: 'button',
+      class: <CssClass>'iconButton',
+      html: svgIconReferenceMarkup('iconMonstrEraser2'),
+      listeners: {
+        click: (_e: MouseEvent):void=>{ this.onStylusModeChange(StylusMode.Erase); }
+      },
+      title: "Erasing mode",
+      disabled: (stylusMode === StylusMode.Erase),
     });
 
     const $debugButton = $new({
@@ -138,9 +166,9 @@ export class Sidebar extends ButtonBar {
           html: svgIconReferenceMarkup('iconMagnifier6'),
           listeners: { click: (_e: MouseEvent): void =>{ this.screen.toggleSearchPanel(); }},
           title: "Search",
-        }, {
-          tag: 'div', class: <CssClass>'separator'
-        }, {
+        },
+        SEPARATOR,
+        {
           // thumbnail view
           tag: 'button',
           class: <CssClass>'iconButton',
@@ -154,7 +182,7 @@ export class Sidebar extends ButtonBar {
           html: svgIconReferenceMarkup('iconMonstrFile5'),
           listeners: { click: (_e: MouseEvent): void =>{ window.location.href = `/#${screen.notebook.path}?view=read`; }},
           title: "Reading view",
-        },{
+        }, {
           // edit view
           tag: 'button',
           class: <CssClass>'iconButton',
@@ -162,21 +190,20 @@ export class Sidebar extends ButtonBar {
           // listeners: { click: (_e: MouseEvent)=>{ window.location.href = `/#${screen.notebook.path}?view=edit`; }},
           title: "Editing view",
           disabled: true,
-        }, {
-          tag: 'div', class: <CssClass>'separator'
         },
+        SEPARATOR,
+        $drawModeButton,
+        $eraseModeButton,
+        SEPARATOR,
         $formulaModeButton,
         $textModeButton,
         $figureModeButton,
         $plotModeButton,
-        {
-          tag: 'div', class: <CssClass>'separator'
-        },
+        SEPARATOR,
         $undoButton,
         $redoButton,
+        SEPARATOR,
         {
-          tag: 'div', class: <CssClass>'separator'
-        }, {
           tag: 'button',
           class: <CssClass>'iconButton',
           html: svgIconReferenceMarkup('iconMonstrPrinter6'),
@@ -184,9 +211,7 @@ export class Sidebar extends ButtonBar {
           title: "Print notebook",
         },
         $debugButton,
-        {
-          tag: 'div', class: <CssClass>'separator'
-        }, {
+        SEPARATOR, {
           // "underwear" for dev use only
           tag: 'button',
           class: <CssClass>'iconButton',
@@ -210,6 +235,8 @@ export class Sidebar extends ButtonBar {
     this.$figureModeButton = $figureModeButton;
     this.$textModeButton = $textModeButton;
     this.$plotModeButton = $plotModeButton;
+    this.$drawModeButton = $drawModeButton;
+    this.$eraseModeButton = $eraseModeButton;
   }
 
   // Public Instance Properties
@@ -227,6 +254,8 @@ export class Sidebar extends ButtonBar {
   // Private Instance Properties
 
   private screen: NotebookEditScreen;
+  private $drawModeButton: HTMLButtonElement;
+  private $eraseModeButton: HTMLButtonElement;
   public $figureModeButton: HTMLButtonElement;
   public $formulaModeButton: HTMLButtonElement;
   public $textModeButton: HTMLButtonElement;
@@ -242,7 +271,7 @@ export class Sidebar extends ButtonBar {
     window.open(url, "_blank")
   }
 
-  private onModeChange(mode: CellType): void {
+  private onInsertModeChange(mode: CellType): void {
     this.screen.editView.insertMode = mode;
     this.$figureModeButton.disabled = (mode === CellType.Figure);
     this.$formulaModeButton.disabled = (mode === CellType.Formula);
@@ -252,6 +281,12 @@ export class Sidebar extends ButtonBar {
 
   public onRedoStateChange(enabled: boolean): void {
     this.$redoButton.disabled = !enabled;
+  }
+
+  private onStylusModeChange(mode: StylusMode): void {
+    this.screen.editView.stylusMode = mode;
+    this.$drawModeButton.disabled = (mode === StylusMode.Draw);
+    this.$eraseModeButton.disabled = (mode === StylusMode.Erase);
   }
 
   onUndoStateChange(enabled: boolean): void {

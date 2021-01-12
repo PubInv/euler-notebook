@@ -22,11 +22,11 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 import * as debug1 from "debug";
 const debug = debug1('client:stylus-drawing-panel');
 
-import { Html, CssClass, CssSize } from "../shared/common";
+import { Html, CssClass, CssSize } from "../../shared/common";
 
-import { SvgStroke } from "../svg-stroke";
-import { showError } from "../error-handler";
-import { SvgElement } from "../svg-element";
+import { SvgStroke } from "../../svg-stroke";
+import { showError } from "../../error-handler";
+import { SvgElement } from "../../svg-element";
 
 
 // Types
@@ -47,7 +47,7 @@ interface PointerInfo {
 
 // Exported Class
 
-export class StylusDrawingPanel extends SvgElement<'svg'> {
+export class StrokeDrawingPanel extends SvgElement<'svg'> {
 
   // Public Class Methods
 
@@ -61,7 +61,7 @@ export class StylusDrawingPanel extends SvgElement<'svg'> {
     super({
       tag: 'svg',
       attrs: { height: cssSize.height, width: cssSize.width },
-      class: <CssClass>'stylusDrawingPanel',
+      class: <CssClass>'strokeDrawingPanel',
       listeners: {
         pointercancel:  e=>this.onPointerCancel(e),
         pointerdown:    e=>this.onPointerDown(e),
@@ -97,7 +97,6 @@ export class StylusDrawingPanel extends SvgElement<'svg'> {
     }
     return rval;
   }
-
 
   // Private Instance Event Handlers
 
@@ -172,8 +171,8 @@ export class StylusDrawingPanel extends SvgElement<'svg'> {
     debug(`Calling stroke callback function: ${JSON.stringify(stroke)}`);
     this.strokeCallbackFn(stroke)
     .then(
-      ()=>{ stroke.remove(); },
-      (err)=>{ showError(err, <Html>"Error updating stroke"); },
+      ()=>stroke.remove(),
+      (err)=>showError(err, <Html>"Error updating stroke"),
     )
 
 

@@ -28,6 +28,10 @@ import { Mode, NotebookReadScreen } from "./index";
 
 // Constants
 
+const SEPARATOR = {
+  tag: 'div', class: <CssClass>'separator'
+};
+
 // Global Variables
 
 // Exported Class
@@ -44,6 +48,16 @@ export class Sidebar extends ButtonBar {
       appendTo: screen.$elt,
       class: <CssClass>'sidebar',
       children: [{
+        // search
+        tag: 'button',
+        class: <CssClass>'iconButton',
+        html: svgIconReferenceMarkup('iconMagnifier6'),
+        //listeners: { click: (_e: MouseEvent): void =>{ this.screen.toggleSearchPanel(); }},
+        title: "Search",
+        disabled: true,
+      },
+      SEPARATOR,
+      {
         // thumbnail view
         tag: 'button',
         class: <CssClass>'iconButton',
@@ -66,9 +80,9 @@ export class Sidebar extends ButtonBar {
         html: svgIconReferenceMarkup('iconMonstrNote23'),
         listeners: { click: (_e: MouseEvent)=>{ window.location.href = `/#${screen.notebook.path}?view=edit`; }},
         title: "Editing view",
-      }, {
-        tag: 'div', class: <CssClass>'separator'
-      }, {
+      },
+      SEPARATOR,
+      {
         tag: 'button',
         class: <CssClass>'iconButton',
         html: svgIconReferenceMarkup('iconMonstrPrinter6'),

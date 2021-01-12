@@ -30,12 +30,11 @@ import {
   PIXELS_PER_INCH, POINTS_PER_INCH
 } from "../../shared/common";
 import { NotebookUpdate } from "../../shared/server-responses";
-// import { MoveCell } from "../../../../shared/client-requests";
-import { Stroke } from "../../shared/stylus";
+import { Stroke, StrokeId } from "../../shared/stylus";
 
 import { HtmlElement } from "../../html-element";
 import {
-  $new, $outerSvg, CLOSE_X_ENTITY, ElementId, HtmlElementOrSpecification, HtmlElementSpecification,
+  $new, $newSvgFromMarkup, CLOSE_X_ENTITY, ElementId, HtmlElementOrSpecification, HtmlElementSpecification,
   SvgIconId,
   svgIconReferenceMarkup,
 } from "../../dom";
@@ -44,7 +43,7 @@ import { Tools } from "../../screens/notebook-edit-screen/tools";
 import { CallbackFunctions as ResizerCallbackFunctions, ResizerBar } from "../../components/resizer-bar";
 import { CellView, ClientCell } from "../../client-cell";
 import { showError } from "../../error-handler";
-import { StrokeCallbackFn, StrokePanel } from "../../components/stroke-panel";
+import { StrokePanel, StrokePanelCallbacks, StylusMode } from "../../components/stroke-panel";
 import { NotebookEditView } from "../notebook-edit-view";
 
 // Types
@@ -58,10 +57,10 @@ interface CellDragData {
 const CELL_MIME_TYPE = 'application/vnd.mathtablet.cell';
 
 const CELL_ICONS: Map<CellType, SvgIconId> = new Map([
-  [CellType.Figure, 'iconMonstrPencil9'],
-  [CellType.Formula, 'iconMonstrCalculator2'],
-  [CellType.Plot, 'iconMonstrChart20'],
-  [CellType.Text, 'iconMonstrText1'],
+  [ CellType.Figure,  'iconMonstrPencil9' ],
+  [ CellType.Formula, 'iconMonstrCalculator2' ],
+  [ CellType.Plot,    'iconMonstrChart20' ],
+  [ CellType.Text,    'iconMonstrText1' ],
 ]);
 
 // Exported Class
@@ -88,6 +87,10 @@ export abstract class CellEditView<O extends CellObject> extends HtmlElement<'di
     return this.$elt.classList.contains('selected');
   }
 
+  public set stylusMode(value: StylusMode) {
+    this.strokePanel.stylusMode = value;
+  }
+
   // Public Instance Methods
 
   public renderTools(tools: Tools): void {
@@ -111,9 +114,6 @@ export abstract class CellEditView<O extends CellObject> extends HtmlElement<'di
 
   public onUpdate(update: NotebookUpdate, ownRequest: boolean): void {
     this.strokePanel.onUpdate(update, ownRequest);
-    // switch (update.type) {
-    //   default: /* Nothing to do. */ break;
-    // }
   };
 
   // --- PRIVATE ---
@@ -200,7 +200,7 @@ export abstract class CellEditView<O extends CellObject> extends HtmlElement<'di
         drop: e=>this.onDrop(e),
       },
       listeners: {
-        click: e=>this.onClicked(e),
+        // click: e=>this.onClicked(e),
         dragenter: e=>this.onDragEnter(e),
         dragover: e=>this.onDragOver(e),
       },
@@ -213,19 +213,19 @@ export abstract class CellEditView<O extends CellObject> extends HtmlElement<'di
 
     const displaySvg = cell.obj.displaySvg;
     if (displaySvg) {
-      const $displaySvg = $outerSvg(displaySvg);
+      const $displaySvg = $newSvgFromMarkup(displaySvg);
       $content.append($displaySvg);
     }
 
-    const callbackFn: StrokeCallbackFn = async (stroke: Stroke)=>{
-      this.cell.insertStroke(stroke)
-      .catch(err=>{
-        // REVIEW: Proper way to handle this error?
-        showError(err, <Html>"Error sending stroke from text cell");
-      });
+    // Create a "stroke panel" for displaying and capturing stylus strokes
+    const drawStroke = async (stroke: Stroke): Promise<void>=>{
+      await this.cell.insertStroke(stroke)
     };
-    this.strokePanel = new StrokePanel(cell.obj, callbackFn);
-
+    const eraseStroke = async (strokeId: StrokeId): Promise<void>=>{
+      await this.cell.deleteStroke(strokeId);
+    };
+    const callbacks: StrokePanelCallbacks = { drawStroke, eraseStroke };
+    this.strokePanel = new StrokePanel(cell.obj, callbacks, notebookEditView.stylusMode);
     $content.append(this.strokePanel.$elt);
 
     cell.addView(this);
@@ -257,12 +257,12 @@ export abstract class CellEditView<O extends CellObject> extends HtmlElement<'di
 
   // Private Event Handlers
 
-  private onClicked(_event: MouseEvent): void {
-    debug(`onClicked`);
-    console.warn("Click to select not implemented.");
-    // Note: Shift-click or ctrl-click will extend the current selection.
-    // this.notebookEditView.selectCell(this, event.shiftKey, event.metaKey);
-  }
+  // private onClicked(_event: MouseEvent): void {
+  //   debug(`onClicked`);
+  //   console.warn("Click to select not implemented.");
+  //   // Note: Shift-click or ctrl-click will extend the current selection.
+  //   // this.notebookEditView.selectCell(this, event.shiftKey, event.metaKey);
+  // }
 
   private async onDeleteButtonClicked(event: MouseEvent): Promise<void> {
     event.preventDefault(); // Don't take focus.
