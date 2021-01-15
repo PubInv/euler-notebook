@@ -23,7 +23,7 @@ import { CssClass, escapeHtml } from "../../../shared/common"
 import { Folder, FolderEntry, FolderName, NotebookEntry, NotebookName } from "../../../shared/folder";
 
 import { svgIconReferenceMarkup, CLOSE_X_ENTITY, PENCIL_ENTITY, CHECKMARK_ENTITY, $new, DOTTED_CIRCLE_ENTITY } from "../../../dom";
-import { ClientFolder } from "../../../client-folder";
+import { ClientFolder } from "../../../models/client-folder";
 import { HtmlElement } from "../../../html-element";
 
 // Types

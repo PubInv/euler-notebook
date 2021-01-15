@@ -22,11 +22,13 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 import * as debug1 from "debug";
 const debug = debug1('client:stylus-drawing-panel');
 
-import { Html, CssClass, CssSize } from "../../shared/common";
+import { Html, CssClass, CssSize, assert } from "../../shared/common";
 
 import { SvgStroke } from "../../svg-stroke";
 import { showError } from "../../error-handler";
 import { SvgElement } from "../../svg-element";
+import { notebookUpdateSynopsis } from "../../shared/debug-synopsis";
+import { NotebookUpdate } from "../../shared/server-responses";
 
 
 // Types
@@ -79,6 +81,19 @@ export class StrokeDrawingPanel extends SvgElement<'svg'> {
   }
 
   // Public Instance Methods
+
+  // Public Instance Event Handlers
+
+  public onUpdate(update: NotebookUpdate, _ownRequest: boolean): void {
+    debug(`onUpdate ${notebookUpdateSynopsis(update)}`);
+    switch (update.type) {
+      case 'cellResized':
+        this.$elt.setAttribute('height', update.cssSize.height);
+        assert(this.$elt.getAttribute('width') === update.cssSize.width);
+        break;
+      default: /* Nothing to do. */ break;
+    }
+  };
 
   // --- PRIVATE ---
 

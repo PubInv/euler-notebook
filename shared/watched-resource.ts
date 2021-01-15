@@ -128,7 +128,7 @@ export abstract class WatchedResource<P extends Path, W extends Watcher> {
 
   // Private Overridable Instance Methods
 
-  protected abstract async initialize(_options: OpenOptions<W>): Promise<void>;
+  protected abstract initialize(_options: OpenOptions<W>): Promise<void>;
 
   protected terminate(reason: string): void {
     assert(this.initialized);

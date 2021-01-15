@@ -20,6 +20,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 // Requirements
 
 import { $newSvg, SvgElementSpecification } from "./dom";
+import { CssSize } from "./shared/common";
 
 // Types
 
@@ -46,6 +47,11 @@ export class SvgElement<K extends keyof SVGElementTagNameMap> {
 
   public hide(): void {
     this.$elt.style.display = 'none';
+  }
+
+  public resizeViaStyle(cssSize: CssSize): void {
+    this.$elt.style.width = cssSize.width;
+    this.$elt.style.height = cssSize.height;
   }
 
   public show(): void {

@@ -20,23 +20,23 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 // Requirements
 
 import * as debug1 from "debug";
-const debug = debug1('client:figure-cell');
+const debug = debug1('client:plot-cell');
 
-import { TextCellObject } from "../shared/cell";
-import { NotebookUpdate } from "../shared/server-responses";
+import { PlotCellObject } from "../../shared/cell";
+import { NotebookUpdate } from "../../shared/server-responses";
 
 import { ClientNotebook } from "../client-notebook";
 
 import { ClientCell } from "./index";
-import { notebookUpdateSynopsis } from "../shared/debug-synopsis";
+import { notebookUpdateSynopsis } from "../../shared/debug-synopsis";
 
 // Exported Class
 
-export class TextCell extends ClientCell<TextCellObject> {
+export class PlotCell extends ClientCell<PlotCellObject> {
 
   // Public Constructor
 
-  public constructor(notebook: ClientNotebook, obj: TextCellObject) {
+  public constructor(notebook: ClientNotebook, obj: PlotCellObject) {
     super(notebook, obj);
   }
 

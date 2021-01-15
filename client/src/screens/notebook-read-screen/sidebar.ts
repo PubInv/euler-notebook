@@ -45,7 +45,6 @@ export class Sidebar extends ButtonBar {
   public constructor(screen: NotebookReadScreen, mode: Mode) {
     super({
       tag: 'div',
-      appendTo: screen.$elt,
       class: <CssClass>'sidebar',
       children: [{
         // search

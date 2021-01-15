@@ -25,18 +25,20 @@ export type ClientId = '{ClientId}'
 export type CssClass = '{CssClass}';
 export type CssLength = '{CssLength}';
 export type CssLengthUnits = 'in'|'pt'|'px';
+export type CssSelector = '{CssSelector}';
+export type ElementId = '{ElementId}';
 export type Html = '{Html}';
 export type LengthInPixels = number;
 export type LengthInPoints = number;
 export type Milliseconds = number;  // Time interval in milliseconds.
 export type PlainText = '{PlainText}';
 export type PositionInPixels = number;
-type StackTrace = '{StackTrace}';
 export type RelativeUrl = '{RelativeUrl}';
 export type SessionToken = '{SessionToken}';
 export type SvgMarkup = '{SvgMarkup}';
 export type Timestamp = number;     // Number of milliseconds since Jan 1, 1970 as returned by Date.now().
 
+type StackTrace = '{StackTrace}';
 
 export interface CssSize {
   height: CssLength;

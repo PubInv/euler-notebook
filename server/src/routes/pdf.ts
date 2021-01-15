@@ -34,8 +34,6 @@ import { ServerNotebook } from "../server-notebook";
 import * as PDFDocument from "pdfkit";
 // @ts-ignore
 import * as SVGtoPDF from "svg-to-pdfkit";
-import { StrokeData } from '../shared/stylus';
-import { Stroke } from '../shared/myscript-types';
 
 
 // This is a fun extention suggested by the SVGtoPDF makers...
@@ -47,9 +45,6 @@ PDFDocument.prototype.addSVG = function(svg, x, y, options) {
   return SVGtoPDF(this, svg, x, y, options), this;
 };
 
-// Types
-
-type PathDAttribute = '{PathDAttribute}';
 
 // Constants
 
@@ -245,39 +240,28 @@ async function generatePdf(res: Writable, notebook: ServerNotebook): Promise<voi
     var curY = topMargin;
     debug(notebook.allCells());
     for (const cell of notebook.allCells()) {
-      if (cell.displaySvg) {
-        // test svg kit:
-        // not sure what options we might need!
-        const options = null;
-        SVGtoPDF(doc,cell.displaySvg,leftMargin,curY,options);
-      }
-      var curHgt = parseInt(cell.cssSize.height);
-      renderStrokesIntoDoc(doc,leftMargin,curY,cell.strokeData);
-      curY += curHgt;
+      SVGtoPDF(doc, cell.displaySvg, leftMargin, curY, null);
+      curY += parseInt(cell.cssSize.height);
     }
-    //         const options = null;
-    // SVGtoPDF(doc,sampleParabolicSVG,leftMargin,0,options);
-    // SVGtoPDF(doc,sampleQuadraticSVG,leftMargin,0,options);
 
     doc.flushPages();
     doc.end();
   });
 }
 
+// function renderStrokesIntoDoc(doc: typeof PDFDocument, x : number, y : number, strokeData: StrokeData) {
+//   for (const stroke of strokeData.strokes) {
+//     renderStrokeIntoDoc(doc,x,y,stroke);
+//   }
+// }
 
-function renderStrokesIntoDoc(doc: typeof PDFDocument, x : number, y : number, strokeData: StrokeData) {
-  for (const stroke of strokeData.strokes) {
-    renderStrokeIntoDoc(doc,x,y,stroke);
-  }
-}
-
-function renderStrokeIntoDoc(doc: typeof PDFDocument, x : number, y : number, stroke: Stroke) {
-  // doc.path(shape).stroke() below assumes that the path (shape) is in points. However, our stroke data come in
-  // in pixels. since pnts are 72/inch and pixels are 96/inch, pnts/px = 72/96, and multiplying converts pixels to points!
-  const s = 72.0 / 96.0;
-  let shape: PathDAttribute = <PathDAttribute>`M${s*stroke.x[0] + x } ${s*stroke.y[0] + y}`;
-  for (let i=1; i<stroke.x.length; i++) {
-    shape += ` L${s*stroke.x[i]+ x} ${s*stroke.y[i] + y}`
-  }
-  doc.path(shape).stroke();
-}
+// function renderStrokeIntoDoc(doc: typeof PDFDocument, x : number, y : number, stroke: Stroke) {
+//   // doc.path(shape).stroke() below assumes that the path (shape) is in points. However, our stroke data come in
+//   // in pixels. since pnts are 72/inch and pixels are 96/inch, pnts/px = 72/96, and multiplying converts pixels to points!
+//   const s = 72.0 / 96.0;
+//   let shape: PathDAttribute = <PathDAttribute>`M${s*stroke.x[0] + x } ${s*stroke.y[0] + y}`;
+//   for (let i=1; i<stroke.x.length; i++) {
+//     shape += ` L${s*stroke.x[i]+ x} ${s*stroke.y[i] + y}`
+//   }
+//   doc.path(shape).stroke();
+// }

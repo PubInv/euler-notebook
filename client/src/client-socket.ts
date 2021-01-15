@@ -31,8 +31,8 @@ import { ClientRequest, RequestId } from "./shared/client-requests";
 import { ResponseBase, ServerResponse, } from "./shared/server-responses";
 
 import { messageDisplayInstance } from "./message-display";
-import { ClientFolder } from "./client-folder";
-import { ClientNotebook } from "./client-notebook";
+import { ClientFolder } from "./models/client-folder";
+import { ClientNotebook } from "./models/client-notebook";
 import { showError } from "./error-handler";
 import { ClientUser } from "./client-user";
 

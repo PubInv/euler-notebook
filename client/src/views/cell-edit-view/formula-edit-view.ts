@@ -29,9 +29,7 @@ import { FormulaCellObject } from "../../shared/formula";
 import { NotebookUpdate } from "../../shared/server-responses";
 import { notebookUpdateSynopsis } from "../../shared/debug-synopsis";
 
-import { HtmlElementSpecification } from "../../dom";
-
-import { FormulaCell } from "../../client-cell/formula-cell";
+import { FormulaCell } from "../../models/client-cell/formula-cell";
 
 import { NotebookEditView } from "../notebook-edit-view";
 
@@ -52,24 +50,7 @@ export class FormulaEditView extends CellEditView<FormulaCellObject> {
   public constructor(notebookEditView: NotebookEditView, cell: FormulaCell) {
     debug(`Creating instance: style ${cell.obj.id}`);
 
-    const contentSpec: HtmlElementSpecification<'div'> ={
-      tag: 'div',
-      classes: [ <CssClass>'content', <CssClass>'formulaCell' ],
-    };
-    super(notebookEditView, cell, contentSpec);
-
-    // TODO: Formula prefix, formula handle (formula number), formula status.
-    // const prefixHtml = <Html>''; // LATER: Prefix may be something like, "Assume", or "Define", or "Prove" etc.,
-    // const $inputPanel = $new({
-    //   tag: 'div',
-    //   class: <CssClass>'formulaInput',
-    //   children: [
-    //     { tag: 'div', class: <CssClass>'prefixPanel', html: prefixHtml },
-    //     panel.$elt,
-    //     { tag: 'div', class: <CssClass>'handlePanel', html: <Html>`(${cellObject.id})` },
-    //     { tag: 'div', class: <CssClass>'statusPanel', html: <Html>'&nbsp;' },
-    //   ],
-    // });
+    super(notebookEditView, cell, <CssClass>'formulaCell');
   }
 
   // Public Instance Methods

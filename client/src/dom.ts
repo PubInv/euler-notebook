@@ -19,13 +19,20 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 // Requirements
 
-import { assert, CssClass, CssLength, CssLengthUnits, Html, RelativeUrl, SvgMarkup } from "./shared/common";
-import { SyncListener, addSyncEventListener, addAsyncEventListener, AsyncListener } from "./error-handler";
+import {
+  assert, CssClass, CssLength, CssSelector, CssSize, ElementId, Html,
+  LengthInPixels,
+  LengthInPoints,
+  PIXELS_PER_INCH,
+  POINTS_PER_INCH,
+  RelativeUrl, SvgMarkup
+} from "./shared/common";
+import {
+  SyncListener, addSyncEventListener, addAsyncEventListener, AsyncListener
+} from "./error-handler";
+import { CellType } from "./shared/cell";
 
 // Types
-
-export type CssSelector = '{CssSelector}';
-export type ElementId = '{ElementId}';
 
 interface Attributes {
   [name: string]: boolean | number | string,
@@ -123,7 +130,14 @@ export type SvgIconId = 'iconMonstrBug12' | 'iconMonstrCalculator2' | 'iconMonst
                   'iconMonstrRuler30' | 'iconMonstrText1' | 'iconMonstrTrashcan2' | 'iconMonstrUndo4' | 'iconMonstrUser1' |
                   'iconMonstrChart20' ;
 
-  // Constants
+// Constants
+
+export const CELL_ICONS: Map<CellType, SvgIconId> = new Map([
+  [ CellType.Figure,  'iconMonstrRuler30' ],
+  [ CellType.Formula, 'iconMonstrCalculator2' ],
+  [ CellType.Plot,    'iconMonstrChart20' ],
+  [ CellType.Text,    'iconMonstrText1' ],
+]);
 
 const SVG_NS = 'http://www.w3.org/2000/svg';
 
@@ -231,6 +245,7 @@ export function $new<K extends keyof HTMLElementTagNameMap>(options: HtmlElement
 
 export function $newSvg<K extends keyof SVGElementTagNameMap>(options: SvgElementSpecification<K>): SVGElementTagNameMap[K] {
   const $elt = document.createElementNS(SVG_NS, options.tag);
+  if (options.html) { $elt.innerHTML = options.html; }
   $configure($elt, options);
   return $elt;
 }
@@ -262,13 +277,34 @@ export function $svg<K extends keyof SVGElementTagNameMap>(root: Element|Documen
 //   return <Html>$div.innerHTML;
 // }
 
-export function cssLength(length: CssLength, units: CssLengthUnits): number {
-  assert(length.endsWith(units)); // LATER: Allow unit conversions.
+export function cssLengthInPixels(length: number): CssLength {
+  return <CssLength>`${length}px`;
+}
+
+export function cssSizeInPixels(width: number, height: number): CssSize {
+  return {
+    width: cssLengthInPixels(width),
+    height: cssLengthInPixels(height),
+  };
+}
+
+export function convertPointsToPixels(length: LengthInPoints): LengthInPixels {
+  return Math.round(length * PIXELS_PER_INCH / POINTS_PER_INCH);
+}
+
+export function pixelsFromCssLength(length: CssLength): LengthInPixels {
+  // LATER: Allow other units besides points
+  return convertPointsToPixels(pointsFromCssLength(length));
+}
+
+export function pointsFromCssLength(length: CssLength): LengthInPoints {
+  // LATER: Allow unit conversions.
+  assert(length.endsWith('pt'));
   return parseFloat(length);
 }
 
 export function svgIconReferenceMarkup(id: SvgIconId): SvgMarkup {
-  return <SvgMarkup>`<svg class="icon"><use xlink:href="#${id}"/></svg>`
+  return <SvgMarkup>`<svg class="icon"><use href="#${id}"/></svg>`
 }
 
 // HELPER FUNCTIONS

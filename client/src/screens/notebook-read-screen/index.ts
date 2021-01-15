@@ -19,13 +19,16 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 // Requirements
 
-import { CssClass, Html } from "../../shared/common";
+import * as debug1 from "debug";
+const debug = debug1('client:notebook-read-screen');
+
+import { assert, CssClass, Html } from "../../shared/common";
 import { NotebookUpdate, NotebookCollaboratorConnected, NotebookCollaboratorDisconnected } from "../../shared/server-responses";
 import { NotebookPath } from "../../shared/folder";
 
 import { NotebookReadView } from "../../views/notebook-read-view";
 
-import { ClientNotebook, NotebookView } from "../../client-notebook";
+import { ClientNotebook, NotebookView } from "../../models/client-notebook";
 
 import { ScreenBase } from "../screen-base";
 
@@ -52,6 +55,7 @@ export class NotebookReadScreen extends ScreenBase  implements NotebookView {
   // Public Constructor
 
   public constructor(path: NotebookPath, mode: Mode) {
+    debug(`Constructing.`);
     super({
       tag: 'div',
       classes: [<CssClass>'screen', <CssClass>'notebookReadScreen'],
@@ -62,11 +66,17 @@ export class NotebookReadScreen extends ScreenBase  implements NotebookView {
     ClientNotebook.open(path, this)
     .then(
       (notebook: ClientNotebook)=>{
+        debug(`Notebook opened.`);
         this.notebook = notebook;
+        // REVIEW: Switch the path over immediately at the beginning of the constructor,
+        //         then updated the collaborators after the notebook has opened.
         appInstance.header.switchScreen(this.notebook.path, this.notebook.collaborators);
+        const sidebar = new Sidebar(this, mode);
+        this.readView = new NotebookReadView(this.notebook, mode);
+        this.$elt.append(sidebar.$elt, this.readView.$elt);
 
-        /* this.sidebar = */ new Sidebar(this, mode);
-        this.readView = new NotebookReadView(this, mode);
+        // Update the header and size our content for the area available.
+        this.refresh();
       },
       (err)=>{
         this.displayError(err, <Html>`Error opening notebook <tt>${path}</tt>`);
@@ -82,19 +92,14 @@ export class NotebookReadScreen extends ScreenBase  implements NotebookView {
   // Public Instance Methods
 
   public show(): void {
-    if (this.notebook) {
-      appInstance.header.switchScreen(this.notebook.path, this.notebook.collaborators);
-    }
+    debug(`Showing.`);
     super.show();
+    if (this.notebook) { this.refresh(); }
   }
 
   // Public Instance Event Handlers
 
-  public onResize(_window: Window, _event: UIEvent): void {
-    // const bodyViewRect = $('#content').getBoundingClientRect();
-    // REVIEW: Could this.pageView be undefined?
-    this.readView!.resize(/* bodyViewRect.width */);
-  }
+  public onResize(_window: Window, _event: UIEvent): void { this.resize(); }
 
   // NotebookView Interface Methods
 
@@ -107,8 +112,8 @@ export class NotebookReadScreen extends ScreenBase  implements NotebookView {
 
   public onUndoStateChange(_enabled: boolean): void { /* Nothing to do */ }
 
-  public onUpdate(update: NotebookUpdate): void {
-    this.readView.onUpdate(update);
+  public onUpdate(_update: NotebookUpdate): void {
+    // this.readView.onUpdate(update);
   }
 
   public onCollaboratorConnected(msg: NotebookCollaboratorConnected): void {
@@ -124,6 +129,18 @@ export class NotebookReadScreen extends ScreenBase  implements NotebookView {
   // Instance Properties
 
   // Instance Methods
+
+  private refresh(): void {
+    appInstance.header.switchScreen(this.notebook.path, this.notebook.collaborators);
+
+    // We could have been resized since our window was last shown.
+    this.resize();
+  }
+
+  private resize(): void {
+    assert(this.readView);
+    this.readView.resize();
+  }
 
   // Private Instance Properties
 

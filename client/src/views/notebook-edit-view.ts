@@ -25,20 +25,24 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 import * as debug1 from "debug";
 const debug = debug1('client:notebook-edit-view');
 
-import { CellId, CellObject, CellOrdinalPosition, CellRelativePosition, CellType } from "../shared/cell";
+import { CellId, CellObject, CellIndex, CellPosition, CellRelativePosition, CellType } from "../shared/cell";
 import { CssClass, assert, Html, notImplementedError, notImplementedWarning } from "../shared/common";
-import { CellDeleted, CellInserted, CellMoved, NotebookUpdate } from "../shared/server-responses";
 import { DebugParams } from "../shared/api-calls";
+import { notebookUpdateSynopsis } from "../shared/debug-synopsis";
+import { CellDeleted, CellInserted, CellMoved, NotebookUpdate } from "../shared/server-responses";
 
-import { CellEditView } from "./cell-edit-view";
-import { HtmlElement } from "../html-element";
+import { StylusMode } from "../components/stroke-panel";
+
 import { NotebookEditScreen } from "../screens/notebook-edit-screen";
+
+import { HtmlElement } from "../html-element";
 import { showError } from "../error-handler";
 import { apiDebug } from "../api";
-import { ClientNotebook } from "../client-notebook";
-import { notebookUpdateSynopsis } from "../shared/debug-synopsis";
+import { ClientNotebook } from "../models/client-notebook";
+import { $, RIGHT_TRIANGLE_ENTITY } from "../dom";
+
+import { CellEditView } from "./cell-edit-view";
 import { createCellView } from "./cell-edit-view/instantiator";
-import { StylusMode } from "../components/stroke-panel";
 
 // Types
 
@@ -97,7 +101,14 @@ export class NotebookEditView extends HtmlElement<'div'> {
         blur: e=>this.onBlur(e),
         focus: e=>this.onFocus(e),
         keyup: e=>this.onKeyUp(e),
-      }
+      },
+      children: [{
+        tag: 'button',
+        attrs: { tabindex: -1 },
+        classes: [ <CssClass>'insertCellAtTopButton', <CssClass>'iconButton' ],
+        html: RIGHT_TRIANGLE_ENTITY,
+        asyncListeners: { click: e=>this.onInsertCellAtTopButtonClicked(e) },
+      }]
     });
 
     this.cellViews = [];
@@ -176,13 +187,13 @@ export class NotebookEditView extends HtmlElement<'div'> {
 
   public async insertCell(afterId: CellRelativePosition): Promise<void> {
     debug("Insert Cell");
-    await this.notebook.insertCell(this.insertMode, afterId);
+    await this.notebook.insertCellRequest(this.insertMode, afterId);
   }
 
   public async moveCell(movedCellId: CellId, droppedCellId: CellId): Promise<void> {
     debug(`Move cell: ${movedCellId}, ${droppedCellId}`);
     // REVIEW: Placeholder move?
-    await this.notebook.moveCell(movedCellId, droppedCellId);
+    await this.notebook.moveCellRequest(movedCellId, droppedCellId);
   }
 
   public async moveSelectionDown(): Promise<void> {
@@ -273,7 +284,7 @@ export class NotebookEditView extends HtmlElement<'div'> {
 
   // Public Instance Methods
 
-  public deleteCell(cellView: CellEditView<any>): void {
+  public deleteCell(cellView: CellEditView<CellObject>): void {
     if (cellView == this.lastCellSelected) {
       delete this.lastCellSelected;
     }
@@ -282,19 +293,8 @@ export class NotebookEditView extends HtmlElement<'div'> {
     // TODO: Splice cell view out of cellViews array.
   }
 
-  // // REVIEW: Should be limited to changing a single style so this isn't used as backdoor
-  // //         for submitting arbitrary changes.
-  // public async editStyle(changeRequests: NotebookChangeRequest[]): Promise<void> {
-  //   await this.sendUndoableChangeRequests(changeRequests);
-  // }
-
-  // public async insertStyle<T extends CellObject>(cellObject: T, afterId: CellRelativePosition = CellPosition.Bottom): Promise<void> {
-  //   const changeRequest: InsertCell<T> = { type: 'insertEmptyCell', cellObject, afterId };
-  //   await this.sendUndoableChangeRequests([ changeRequest ]);
-  // }
-
   public selectCell(
-    cellView: CellEditView<any>,
+    cellView: CellEditView<CellObject>,
     rangeExtending?: boolean, // Extending selection by a contiguous range.
     indivExtending?: boolean, // Extending selection by an individual cell, possibly non-contiguous.
   ): void {
@@ -338,9 +338,9 @@ export class NotebookEditView extends HtmlElement<'div'> {
 
   // Private Instance Properties
 
-  private cellViews:CellEditView<any>[];
+  private cellViews:CellEditView<CellObject>[];
   private container: NotebookEditScreen;
-  private lastCellSelected?: CellEditView<any>;
+  private lastCellSelected?: CellEditView<CellObject>;
   private notebook: ClientNotebook;
 
   // Private Instance Property Functions
@@ -357,7 +357,7 @@ export class NotebookEditView extends HtmlElement<'div'> {
     return this.cellViewFromId(cellId);
   }
 
-  private cellViewIndex(cellId: CellId): CellOrdinalPosition {
+  private cellViewIndex(cellId: CellId): CellIndex {
     const rval = this.cellViews.findIndex(cellView => cellView.id === cellId);
     assert(rval>=0);
     return rval;
@@ -373,42 +373,25 @@ export class NotebookEditView extends HtmlElement<'div'> {
     return $elt ? this.cellViewFromElement($elt) : undefined;
   }
 
-  private nextCell<O extends CellObject>(cellView: CellEditView<any>): CellEditView<O> | undefined {
+  private nextCell<O extends CellObject>(cellView: CellEditView<CellObject>): CellEditView<O> | undefined {
     const $elt = <HTMLDivElement|null>cellView.$elt.nextElementSibling;
     return $elt ? this.cellViewFromElement($elt) : undefined;
   }
 
-  private previousCell<O extends CellObject>(cellView: CellEditView<any>): CellEditView<O> | undefined {
+  private previousCell<O extends CellObject>(cellView: CellEditView<CellObject>): CellEditView<O> | undefined {
     const $elt = <HTMLDivElement|null>cellView.$elt.previousElementSibling;
     return $elt ? this.cellViewFromElement($elt) : undefined;
   }
 
-  // private selectedCells(): CellEditView<any>[] {
-  //   const rval: CellEditView<any>[] = [];
-  //   for (const cellView of this.cellViews.values()) {
-  //     if (cellView.isSelected()) { rval.push(cellView); }
-  //   }
-  //   return rval;
-  // }
-
   // Private Instance Methods
 
-  // private createCellView<O extends CellObject>(cell: ClientCell<O>, afterId: CellRelativePosition): CellEditView<O> {
-  //   const cellView = cell.createEditView();
-  //   this.cellViews.set(cell.id, cellView);
-
-  //   if (afterId == CellPosition.Top) {
-  //     this.$elt.prepend(cellView.$elt);
-  //   } else if (afterId == CellPosition.Bottom) {
-  //     this.$elt.append(cellView.$elt);
-  //   } else {
-  //     const afterCell = this.cellViews.get(afterId);
-  //     if (!afterCell) { throw new Error(`Cannot insert cell after unknown cell ${afterId}`); }
-  //     afterCell.$elt.insertAdjacentElement('afterend', cellView.$elt);
-  //   }
-
-  //   return cellView;
-  // }
+  private insertCellViewAtIndex(cellView: CellEditView<CellObject>, cellIndex: CellIndex): void {
+    this.cellViews.splice(cellIndex, 0, cellView);
+    const $precedingElt = cellIndex===0 ?
+              $(this.$elt, '.insertCellAtTopButton') :
+              this.cellViews[cellIndex-1].$elt;
+    $precedingElt.after(cellView.$elt)
+  }
 
   // Private Event Handlers
 
@@ -427,13 +410,7 @@ export class NotebookEditView extends HtmlElement<'div'> {
     const { cellObject, cellIndex } = update;
     const cell = this.notebook.getCell(cellObject.id);
     const cellView = createCellView(this, cell);
-    this.cellViews.splice(cellIndex, 0, cellView);
-    if (cellIndex === 0) {
-      this.$elt.prepend(cellView.$elt);
-    } else {
-      const precedingCellView = this.cellViews[cellIndex-1];
-      precedingCellView.$elt.after(cellView.$elt);
-    }
+    this.insertCellViewAtIndex(cellView, cellIndex);
   }
 
   private onCellMoved(update: CellMoved): void {
@@ -443,15 +420,12 @@ export class NotebookEditView extends HtmlElement<'div'> {
     const cellIndex = this.cellViewIndex(cellId);
     const cellView = this.cellViews.splice(cellIndex, 1)[0];
     cellView.$elt.remove();
+    this.insertCellViewAtIndex(cellView, newIndex);
+  }
 
-    // Insert cell into its new position
-    this.cellViews.splice(newIndex, 0, cellView);
-    if (newIndex === 0) {
-      this.$elt.prepend(cellView.$elt);
-    } else {
-      const precedingCellView = this.cellViews[newIndex-1];
-      precedingCellView.$elt.after(cellView.$elt);
-    }
+  private async onInsertCellAtTopButtonClicked(event: MouseEvent): Promise<void> {
+    event.preventDefault(); // Don't take focus.
+    await this.insertCell(CellPosition.Top);
   }
 
   private onFocus(_event: FocusEvent): void {

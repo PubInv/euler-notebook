@@ -19,24 +19,40 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 // Requirements
 
-import { CellObject, CellType, FigureCellObject, PlotCellObject, TextCellObject } from "../shared/cell";
+import { CellObject, CellSource, CellType, FigureCellObject, PlotCellObject, TextCellObject } from "../shared/cell";
 import { assertFalse } from "../shared/common";
 import { FormulaCellObject } from "../shared/formula";
 
-import { ClientNotebook } from "../client-notebook";
+import { ServerNotebook } from "../server-notebook";
 
 import { FormulaCell } from "./formula-cell";
 import { FigureCell } from "./figure-cell";
 import { PlotCell } from "./plot-cell";
 import { TextCell } from "./text-cell";
 
-import { ClientCell } from "./index";
+import { ServerCell } from "./index";
 
 // Constants
 
 // Exports
 
-export function createCell<O extends CellObject>(notebook: ClientNotebook, obj: O): ClientCell<O> {
+export function newCell<O extends CellObject>(
+  notebook: ServerNotebook,
+  cellType: CellType,
+  source: CellSource,
+): ServerCell<O> {
+  let rval: FigureCell|FormulaCell|TextCell|PlotCell;
+  switch(cellType) {
+    case CellType.Figure:   rval = FigureCell.newCell(notebook, source); break;
+    case CellType.Formula:  rval = FormulaCell.newCell(notebook, source); break;
+    case CellType.Text:     rval = TextCell.newCell(notebook, source); break;
+    case CellType.Plot:     rval = PlotCell.newCell(notebook, source); break;
+    default: assertFalse();
+  }
+  return <ServerCell<O>><unknown>rval;
+}
+
+export function existingCell<O extends CellObject>(notebook: ServerNotebook, obj: O): ServerCell<O> {
   let rval: FigureCell|FormulaCell|TextCell|PlotCell;
   switch(obj.type) {
     case CellType.Figure:   rval = new FigureCell(notebook, <FigureCellObject><unknown>obj); break;
@@ -45,5 +61,5 @@ export function createCell<O extends CellObject>(notebook: ClientNotebook, obj: 
     case CellType.Plot:     rval = new PlotCell(notebook, <PlotCellObject><unknown>obj); break;
     default: assertFalse();
   }
-  return <ClientCell<O>><unknown>rval;
+  return <ServerCell<O>><unknown>rval;
 }

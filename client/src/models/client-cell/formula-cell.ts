@@ -20,23 +20,23 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 // Requirements
 
 import * as debug1 from "debug";
-const debug = debug1('client:plot-cell');
+const debug = debug1('client:formula-cell');
 
-import { PlotCellObject } from "../shared/cell";
-import { NotebookUpdate } from "../shared/server-responses";
+import { FormulaCellObject } from "../../shared/formula";
+import { NotebookUpdate } from "../../shared/server-responses";
 
 import { ClientNotebook } from "../client-notebook";
 
 import { ClientCell } from "./index";
-import { notebookUpdateSynopsis } from "../shared/debug-synopsis";
+import { notebookUpdateSynopsis } from "../../shared/debug-synopsis";
 
 // Exported Class
 
-export class PlotCell extends ClientCell<PlotCellObject> {
+export class FormulaCell extends ClientCell<FormulaCellObject> {
 
   // Public Constructor
 
-  public constructor(notebook: ClientNotebook, obj: PlotCellObject) {
+  public constructor(notebook: ClientNotebook, obj: FormulaCellObject) {
     super(notebook, obj);
   }
 
@@ -48,4 +48,3 @@ export class PlotCell extends ClientCell<PlotCellObject> {
   };
 
 }
-

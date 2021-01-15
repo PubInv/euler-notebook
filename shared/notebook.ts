@@ -59,11 +59,13 @@ export function cellInsertedFromNotebookChange(change: NotebookUpdate): CellInse
   return change;
 }
 
+// REVIEW: Some of these are similar to functions in client's dom.ts. Combine?
+
 export function inchesInPoints(inches: number): CssLength {
   return <CssLength>`${Math.round(inches * POINTS_PER_INCH)}pt`;
 }
 
-export function sizeInPoints(heightInches: number, widthInches: number): CssSize {
+export function cssSizeInPoints(widthInches: number, heightInches: number): CssSize {
   return {
     height: inchesInPoints(heightInches),
     width: inchesInPoints(widthInches),

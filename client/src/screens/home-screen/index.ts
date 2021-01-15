@@ -19,11 +19,13 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 // Requirements
 
+import { CssSelector } from "../../shared/common";
+import { UserName, UserPassword } from "../../shared/user";
+
 import { ClientUser } from "../../client-user";
 
 import { ScreenBase } from "../screen-base";
-import { $, $attach, CssSelector } from "../../dom";
-import { UserName, UserPassword } from "../../shared/user";
+import { $, $attach } from "../../dom";
 import { appInstance } from "../../app";
 import { FolderPath } from "../../shared/folder";
 

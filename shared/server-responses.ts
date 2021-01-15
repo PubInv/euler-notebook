@@ -22,14 +22,15 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 // Requirements
 
-import { CellId, CellObject } from "./cell";
+import { CellId, CellObject, CellIndex } from "./cell";
 import { RequestId, NotebookChangeRequest } from "./client-requests";
-import { ClientId, CssSize, SessionToken } from "./common";
+import { ClientId, CssSize, ElementId, SessionToken, SvgMarkup } from "./common";
 import { FolderObject, FolderPath, NotebookPath, FolderEntry, FolderName, NotebookEntry, NotebookName } from "./folder";
 import { NotebookObject } from "./notebook";
 import { StrokeId, Stroke } from "./stylus";
 import { CollaboratorObject, UserObject } from "./user";
 import { UserPermissions } from "./permissions";
+
 // Types
 
 // Server Responses
@@ -38,6 +39,11 @@ export type ServerResponse = ErrorResponse | FolderResponse | NotebookResponse |
 export interface ResponseBase {
   complete?: boolean;
   requestId?: RequestId; // REVIEW: Just 'id'?
+}
+
+export interface DisplayUpdate {
+  append?: SvgMarkup[],
+  delete?: ElementId[],
 }
 
 export interface ErrorResponse extends ResponseBase {
@@ -156,7 +162,7 @@ export interface CellDeleted {
 export interface CellInserted {
   type: 'cellInserted';
   cellObject: CellObject;
-  cellIndex: number;
+  cellIndex: CellIndex;
 }
 export interface CellMoved {
   type: 'cellMoved';
@@ -171,10 +177,12 @@ export interface CellResized {
 export interface StrokeDeleted {
   type: 'strokeDeleted';
   cellId: CellId;
+  displayUpdate: DisplayUpdate;
   strokeId: StrokeId;
 }
 export interface StrokeInserted {
   type: 'strokeInserted';
   cellId: CellId;
+  displayUpdate: DisplayUpdate;
   stroke: Stroke;
 }

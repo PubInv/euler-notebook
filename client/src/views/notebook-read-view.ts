@@ -19,19 +19,18 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 // Requirements
 
-import * as debug1 from "debug";
-const debug = debug1('client:figure-cell');
+// import * as debug1 from "debug";
+// const debug = debug1('client:notebook-read-view');
 
-import { CssClass, assert, CssLength, notImplementedError, PIXELS_PER_INCH, POINTS_PER_INCH, LengthInPixels, notImplementedWarning } from "../shared/common";
+import { assert, assertFalse, CssClass, notImplementedWarning } from "../shared/common";
 
-import { $newSvg, $allSvg, cssLength } from "../dom";
 import { HtmlElement } from "../html-element";
 
-import { Mode, NotebookReadScreen } from "../screens/notebook-read-screen/index";
+import { Mode } from "../screens/notebook-read-screen/index";
 
-import { CellReadView } from "./cell-read-view";
-import { CellDeleted, CellInserted, CellMoved, NotebookUpdate } from "../shared/server-responses";
-import { notebookUpdateSynopsis } from "../shared/debug-synopsis";
+import { PageReadView } from "./page-read-view";
+import { ClientNotebook } from "../models/client-notebook";
+import { cssSizeInPixels, pointsFromCssLength } from "../dom";
 
 // Types
 
@@ -50,22 +49,31 @@ export class NotebookReadView extends HtmlElement<'div'> {
 
   // Public Constructor
 
-  public constructor(screen: NotebookReadScreen, mode: Mode) {
+  public constructor(notebook: ClientNotebook, mode: Mode) {
+    // IMPORTANT: Call resize() after we are visible.
+    const pageViews = notebook.pages.map(page=>new PageReadView(notebook, page));
+    const $children = pageViews.map(pageView=>pageView.$elt);
 
-    super({ tag: 'div', appendTo: screen.$elt, class: <CssClass>'content' });
+    super({
+      tag: 'div',
+      class: <CssClass>'content',
+      children: $children,
+    });
 
-    this.screen = screen;
+    this.notebook = notebook;
+    this.pageViews = pageViews;
 
-    if (mode == Mode.Reading) {
-      this.marginPercent = 0.025;
-      this.pagesPerRow = 1;
-    } else {
-      assert(mode == Mode.Thumbnails);
-      this.marginPercent = 0.1;
-      this.pagesPerRow = 4;
+    switch(mode) {
+      case Mode.Reading:
+        this.marginPercent = 0.025;
+        this.pagesPerRow = 1;
+        break;
+      case Mode.Thumbnails:
+        this.marginPercent = 0.1;
+        this.pagesPerRow = 4;
+        break;
+      default: assertFalse();
     }
-    this.render();
-    this.resize();
   }
 
   // Public Instance Properties
@@ -76,148 +84,39 @@ export class NotebookReadView extends HtmlElement<'div'> {
 
   public resize(): void {
 
-    // NOTE: Can't use our own bounding rect when we are hidden.
-    //       This assumes our parent element is not hidden.
-    // TODO: assert parent element not hidden.
-    const viewWidth = this.$elt.getBoundingClientRect().width;
-
     // Calculate the size of the page thumbnails
     // TODO: Different pages could have different sizes.
-    const notebook = this.screen.notebook;
-    const pageAspectRatio = parseInt(notebook.pageSize.width) / parseInt(notebook.pageSize.height);
-    let pageWidth = viewWidth / (this.pagesPerRow + (this.pagesPerRow+1)*this.marginPercent);
-    const pageHeight = Math.round(pageWidth / pageAspectRatio);
-    const pageMargin = Math.round(pageWidth * this.marginPercent);
-    pageWidth = Math.round(pageWidth);
+    const viewWidth = this.$elt.getBoundingClientRect().width;
+    assert(viewWidth>0);
+    const pageAspectRatio = pointsFromCssLength(this.notebook.pageSize.width) / pointsFromCssLength(this.notebook.pageSize.height);
+    const w = viewWidth / (this.pagesPerRow + (this.pagesPerRow+1)*this.marginPercent);
+    const pageWidth = Math.round(w);
+    const pageHeight = Math.round(w / pageAspectRatio);
+    const pageMargin = Math.round(w * this.marginPercent);
 
-    // REVIEW: Update the stylesheet instead of each of the pages?
-    //         const stylesheet: CSSStyleSheet = <CSSStyleSheet>Array.from(document.styleSheets).find(s=>s.href && s.href.endsWith('drawing.css'));
-    //         const stylesheetRules: CSSStyleRule[] = <CSSStyleRule[]>Array.from(stylesheet.cssRules);
-    //         const pageRule = stylesheetRules.find(r=>r.selectorText == '.page')!;
-    //         pageRule.style.width = `${pageWidth}px`;
-    //         pageRule.style.height = `${pageHeight}px`;
-    //         pageRule.style.margin = `${pageMargin}px 0 0 ${pageMargin}px`;
-
-    const $pages: NodeListOf<SVGSVGElement> = $allSvg<'svg'>(this.$elt, '.page');
-    for (const $page of $pages) {
-      $page.style.width = `${pageWidth}px`;
-      $page.style.height = `${pageHeight}px`;
-      $page.style.margin = `${pageMargin}px 0 0 ${pageMargin}px`;
+    const cssSize = cssSizeInPixels(pageWidth, pageHeight);
+    for (const pageView of this.pageViews) {
+      pageView.resizeViaStyle(cssSize);
+      pageView.$elt.style.margin = `${pageMargin}px 0 0 ${pageMargin}px`;
     }
   }
 
   // NotebookView Interface Methods
 
   public onClosed(_reason: string): void {
+    // TODO: update our display to indicate the notebook is closed.
     notImplementedWarning("NotebookReadView onClosed");
   }
-
-  public onUpdate(update: NotebookUpdate): void {
-    debug(`onUpdate ${notebookUpdateSynopsis(update)}`);
-
-    // Update our data structure
-    switch (update.type) {
-      case 'cellDeleted':  this.onCellDeleted(update); break;
-      case 'cellInserted': this.onCellInserted(update); break;
-      case 'cellMoved':    this.onCellMoved(update); break;
-      default: /* Nothing to do */ break;
-    }
-  }
-
 
   // -- PRIVATE --
 
   // Private Instance Properties
 
   private marginPercent: number;
+  private notebook: ClientNotebook;
   private pagesPerRow: number;
-  private screen: NotebookReadScreen;
+  private pageViews: PageReadView[];
 
   // Private Instance Methods
-
-  private render(): void {
-    const notebook = this.screen.notebook;
-
-    // TODO: Different pages could be different sizes.
-    assert(notebook.pageSize.height.endsWith('pt'));
-    assert(notebook.pageSize.width.endsWith('pt'));
-
-    const pageWidthInPoints = parseInt(notebook.pageSize.width);
-    const pageHeightInPoints = parseInt(notebook.pageSize.height);
-    const viewBoxWidth: LengthInPixels = Math.round(pageWidthInPoints * PIXELS_PER_INCH / POINTS_PER_INCH);
-    const viewBoxHeight: LengthInPixels = Math.round(pageHeightInPoints * PIXELS_PER_INCH / POINTS_PER_INCH);
-
-    const topMargin = notebook.margins.top;
-    const leftMargin = notebook.margins.left;
-
-    const pagination = notebook.pagination;
-    let cellIndex = 0;
-    for (let pageIndex = 0;
-         pageIndex < pagination.length;
-         cellIndex += pagination[pageIndex], pageIndex++)
-    {
-      const $page = $newSvg({
-        tag: 'svg',
-        appendTo: this.$elt,
-        attrs: {
-          viewBox: `0 0 ${viewBoxWidth} ${viewBoxHeight}`,
-        },
-        class: <CssClass>'page',
-        listeners: {
-          click: e=>this.onPageClicked(e),
-          dblclick: e=>this.onPageDoubleClicked(e),
-        },
-      });
-
-      let x: number = cssLength(leftMargin, 'pt');
-      let y: number = cssLength(topMargin, 'pt');
-      for (let i=0; i<pagination[pageIndex]; i++) {
-        const cell = notebook.cells[cellIndex+i];
-        const readView = new CellReadView(cell, <CssLength>`${x}pt`, <CssLength>`${y}pt`);
-        const $cellSvg = readView.$svg;
-        // TODO: translate SVG by (leftMargin, y);
-        $page.appendChild($cellSvg);
-
-        // LATER: MathJax sets the height of equations SVGs in "ex" units.
-        const svgHeight = /* LATER: <CssLength|null>$cellSvg.getAttribute('height') || */ <CssLength>'72pt';
-
-        y += cssLength(svgHeight, 'pt');
-      }
-    }
-  }
-
-  // Private Event Handlers
-
-  private onCellDeleted(_update: CellDeleted): void {
-    notImplementedWarning("NotebookReadView onCellDeleted");
-  }
-
-  private onCellInserted(_update: CellInserted): void {
-    notImplementedWarning("NotebookReadView onCellInserted");
-  }
-
-  private onCellMoved(_update: CellMoved): void {
-    notImplementedWarning("NotebookReadView onCellMoved");
-  }
-
-  private onPageClicked(event: MouseEvent): void {
-    const $page = <SVGSVGElement>event.target;
-    console.log(`Page double clicked: ${$page.id}`);
-
-    // Unselect all other pages.
-    // REVIEW: Use selector to select only selected pages?
-    for (const $otherPage of $allSvg<'svg'>(this.$elt, '.page')) {
-      if ($otherPage == $page) { continue; }
-      $otherPage.classList.remove('selected');
-    }
-
-    // Select the page that was clicked on.
-    $page.classList.add('selected');
-  }
-
-  private onPageDoubleClicked(_event: MouseEvent): void {
-    // TODO: double-click on thumbnail should go to page, not cells.
-    notImplementedError("NotebookReadView onPageDoubleCLicked");
-  }
 
 }

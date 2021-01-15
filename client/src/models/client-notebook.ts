@@ -24,25 +24,28 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 import * as debug1 from "debug";
 const debug = debug1('client:client-notebook');
 
-import { CellId, CellObject, CellOrdinalPosition, CellPosition, CellRelativePosition, CellType } from "./shared/cell";
-import { assert, assertFalse, ClientId, CssSize, Html } from "./shared/common";
-import { notebookUpdateSynopsis } from "./shared/debug-synopsis";
-import { NotebookName, NotebookNameFromNotebookPath, NotebookPath } from "./shared/folder";
-import { PageMargins, Pagination } from "./shared/notebook";
-import { NotebookChangeRequest, ChangeNotebook, UseTool, OpenNotebook, DeleteCell, ResizeCell, InsertStroke, InsertEmptyCell, MoveCell, DeleteStroke } from "./shared/client-requests";
+import { CellId, CellObject, CellIndex, CellPosition, CellRelativePosition, CellType, PageIndex } from "../shared/cell";
+import { assert, assertFalse, ClientId, CssSize, Html } from "../shared/common";
+import { notebookUpdateSynopsis } from "../shared/debug-synopsis";
+import { NotebookName, NotebookNameFromNotebookPath, NotebookPath } from "../shared/folder";
+import { PageMargins, Pagination } from "../shared/notebook";
+import { NotebookChangeRequest, ChangeNotebook, UseTool, OpenNotebook, DeleteCell, ResizeCell, InsertStroke, InsertEmptyCell, MoveCell, DeleteStroke } from "../shared/client-requests";
 import {
   NotebookUpdated, NotebookOpened, NotebookResponse, NotebookClosed, NotebookUpdate, CellInserted, CellDeleted, CellMoved, NotebookCollaboratorConnected, NotebookCollaboratorDisconnected
-} from "./shared/server-responses";
-import { Stroke, StrokeId } from "./shared/stylus";
+} from "../shared/server-responses";
+import { Stroke, StrokeId } from "../shared/stylus";
+import { CollaboratorObject } from "../shared/user";
 
-import { createCell } from "./client-cell/instantiator";
+import { appInstance } from "../app";
 
-import { appInstance } from "./app";
 import { ClientCell } from "./client-cell";
-import { CollaboratorObject } from "./shared/user";
-import { logWarning } from "./error-handler";
+import { createCell } from "./client-cell/instantiator";
+import { logWarning } from "../error-handler";
+import { ClientPage } from "./client-page";
 
 // Types
+
+type NotebookId = number;
 
 export interface NotebookView {
   onClosed(reason: string): void;
@@ -103,7 +106,9 @@ export class ClientNotebook {
 
   // Public Instance Properties
 
-  public cells: ClientCell<any>[]; // REVIEW: Make function property that returns iterator?
+  public cells: ClientCell<CellObject>[]; // REVIEW: Make function property that returns iterator?
+  public pages: ClientPage[];
+  public readonly id: NotebookId;
   public readonly margins: PageMargins;
   public readonly path: NotebookPath;
   public readonly pageSize: CssSize;
@@ -130,7 +135,7 @@ export class ClientNotebook {
     return <Html>this.cells.map(cell=>{
       return cell.toDebugHtml();
     }).join('\n');
-}
+  }
 
   // Public Instance Methods
 
@@ -146,27 +151,27 @@ export class ClientNotebook {
     }
   }
 
-  public async deleteCell(cellId: CellId): Promise<void> {
+  public async deleteCellRequest(cellId: CellId): Promise<void> {
     const changeRequest: DeleteCell = { type: 'deleteCell', cellId };
     await this.sendUndoableChangeRequest(changeRequest);
   }
 
-  public async deleteStrokeFromCell(cellId: CellId, strokeId: StrokeId): Promise<void> {
+  public async deleteStrokeFromCellRequest(cellId: CellId, strokeId: StrokeId): Promise<void> {
     const changeRequest: DeleteStroke = { type: 'deleteStroke', cellId, strokeId };
     await this.sendUndoableChangeRequest(changeRequest)
   }
 
-  public async insertCell(cellType: CellType, afterId: CellRelativePosition): Promise<void> {
+  public async insertCellRequest(cellType: CellType, afterId: CellRelativePosition): Promise<void> {
     const changeRequest: InsertEmptyCell = { type: 'insertEmptyCell', cellType, afterId };
     await this.sendUndoableChangeRequest(changeRequest);
   }
 
-  public async insertStrokeIntoCell(cellId: CellId, stroke: Stroke): Promise<void> {
+  public async insertStrokeIntoCellRequest(cellId: CellId, stroke: Stroke): Promise<void> {
     const changeRequest: InsertStroke = { type: 'insertStroke', cellId, stroke };
     await this.sendUndoableChangeRequest(changeRequest)
   }
 
-  public async moveCell(cellId: CellId, targetCellId: CellId): Promise<void> {
+  public async moveCellRequest(cellId: CellId, targetCellId: CellId): Promise<void> {
     // The cell has been dragged onto the target cell.
     // If the cell was dragged down, then put the cell after the target.
     // If the cell was dragged up, then put the cell before the target.
@@ -189,7 +194,7 @@ export class ClientNotebook {
     await this.sendUndoableChangeRequest(changeRequest);
   }
 
-  public async redo(): Promise<void> {
+  public async redoRequest(): Promise<void> {
     // Returns true if there are more redos available.
     // Resubmit the change requests.
     assert(this.topOfUndoStack < this.undoStack.length);
@@ -207,12 +212,12 @@ export class ClientNotebook {
     }
   }
 
-  public async resizeCell(cellId: CellId, cssSize: CssSize): Promise<void> {
+  public async resizeCellRequest(cellId: CellId, cssSize: CssSize): Promise<void> {
     const changeRequest: ResizeCell = { type: 'resizeCell', cellId, cssSize };
     await this.sendUndoableChangeRequest(changeRequest);
   }
 
-  public async undo(): Promise<void> {
+  public async undoRequest(): Promise<void> {
     // Returns true if there are more undos available.
     assert(this.topOfUndoStack > 0);
     const entry = this.undoStack[--this.topOfUndoStack];
@@ -239,6 +244,7 @@ export class ClientNotebook {
 
   // Private Class Properties
 
+  private static nextId: NotebookId = 1;
   protected static openMap: Map<NotebookPath, OpenInfo> = new Map();
   protected static instanceMap: Map<NotebookPath, ClientNotebook> = new Map();
 
@@ -269,6 +275,7 @@ export class ClientNotebook {
     this.path = path;
     this.cellMap = new Map();
     this.cells = [];
+    this.id = ClientNotebook.nextId++;
     this.margins = obj.margins; // REVIEW: Deep copy?
     this.pageSize = obj.pageSize; // REVIEW: Deep copy?
     this.pagination = obj.pagination;
@@ -280,15 +287,25 @@ export class ClientNotebook {
 
     for (let cellIndex=0; cellIndex<obj.cells.length; cellIndex++) {
       const cellObject = obj.cells[cellIndex];
-      const cellUpdate: CellInserted = { type: 'cellInserted', cellObject, cellIndex }
-      this.onCellInserted(cellUpdate);
+      this.insertCell(cellObject, cellIndex);
     }
 
+    this.pages = [];
+    // let cellIndex = 0;
+    for (let pageIndex: PageIndex = 0;
+         pageIndex < 6; // TODO this.pagination.length;
+         pageIndex++)
+    {
+      // const numCells = pagination[pageIndex];
+      const page = new ClientPage(this, pageIndex, 0 /* TODO: cellIndex */, this.cells.length/* TODO: numCells */);
+      this.pages.push(page);
+      // cellIndex += pagination[pageIndex];
+    }
   }
 
   // Private Instance Properties
 
-  private cellMap: Map<CellId, ClientCell<any>>;
+  private cellMap: Map<CellId, ClientCell<CellObject>>;
   private readonly collaboratorMap: Map<ClientId, CollaboratorObject>;
   private terminated: boolean;  // TODO: Where to assert(!this.terminated)?
   private topOfUndoStack: number;       // Index of the top of the stack. May not be the length of the undoStack array if there have been some undos.
@@ -296,7 +313,7 @@ export class ClientNotebook {
 
   // Private Instance Property Functions
 
-  private cellIndex(id: CellId): CellOrdinalPosition {
+  private cellIndex(id: CellId): CellIndex {
     const rval = this.cells.findIndex(cell=>cell.id===id);
     assert(rval>=0);
     return rval;
@@ -309,6 +326,14 @@ export class ClientNotebook {
   }
 
   // Private Instance Methods
+
+  private insertCell(cellObject: CellObject, cellIndex: CellIndex): void {
+    // Do not call this method unless you are sure of what you are doing.
+    // You probably want to call insertCellRequest instead.
+    const cell = createCell(this, cellObject);
+    this.cells.splice(cellIndex, 0, cell);
+    this.cellMap.set(cell.id, cell);
+  }
 
   // private async sendChangeRequest(changeRequest: NotebookChangeRequest): Promise<ChangeRequestResults> {
   //   return this.sendChangeRequests([ changeRequest ]);
@@ -406,9 +431,7 @@ export class ClientNotebook {
 
   private onCellInserted(update: CellInserted): void {
     const { cellObject, cellIndex } = update;
-    const cell = createCell(this, cellObject);
-    this.cells.splice(cellIndex, 0, cell);
-    this.cellMap.set(cell.id, cell);
+    this.insertCell(cellObject, cellIndex);
   }
 
   private onCellMoved(update: CellMoved): void {
@@ -438,9 +461,9 @@ export class ClientNotebook {
     // Update our data structure
     switch (update.type) {
 
-      case 'cellDeleted': { this.onCellDeleted(update); break; }
-      case 'cellInserted': this.onCellInserted(update); break;
-      case 'cellMoved': { this.onCellMoved(update); break; }
+      case 'cellDeleted':   this.onCellDeleted(update); break;
+      case 'cellInserted':  this.onCellInserted(update); break;
+      case 'cellMoved':     this.onCellMoved(update); break;
 
       case 'cellResized':
       case 'strokeDeleted':

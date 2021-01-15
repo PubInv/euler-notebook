@@ -30,20 +30,19 @@ const debug = debug1(`server:${MODULE}`);
 
 // import { readdirSync, unlink, writeFileSync } from "fs"; // LATER: Eliminate synchronous file operations.
 
-import { CellObject, CellSource, CellId, CellPosition, CellType, FigureCellObject, TextCellObject, CellOrdinalPosition, PlotCellObject } from "./shared/cell";
-import { assert, assertFalse, CssClass, CssLength, deepCopy, escapeHtml, ExpectedError, Html, notImplementedError, PlainText, Timestamp } from "./shared/common";
+import { CellObject, CellSource, CellId, CellPosition, CellType, CellIndex } from "./shared/cell";
+import { assert, assertFalse, CssLength, deepCopy, ExpectedError, Html, notImplementedError, Timestamp } from "./shared/common";
 import { NotebookPath, NOTEBOOK_PATH_RE, NotebookName, FolderPath, NotebookEntry, Folder } from "./shared/folder";
-import { FormulaCellObject, PlainTextFormula, TexExpression, WolframExpression } from "./shared/formula";
-import { NotebookObject, NotebookWatcher, sizeInPoints, marginsInPoints } from "./shared/notebook";
+import { NotebookObject, NotebookWatcher, cssSizeInPoints, marginsInPoints } from "./shared/notebook";
 import {
   NotebookChangeRequest, MoveCell, InsertEmptyCell, DeleteCell, InsertStroke, DeleteStroke,
-  ChangeNotebook, UseTool, RequestId, NotebookRequest, OpenNotebook, CloseNotebook, ResizeCell, InsertCell,
+  ChangeNotebook, UseTool, RequestId, NotebookRequest, OpenNotebook, CloseNotebook, ResizeCell,
 } from "./shared/client-requests";
 import {
   NotebookUpdated, NotebookOpened, NotebookUpdate, CellInserted, CellDeleted, StrokeInserted, CellResized, CellMoved, StrokeDeleted, NotebookCollaboratorConnected, NotebookCollaboratorDisconnected,
 } from "./shared/server-responses";
-import { cellSynopsis, notebookChangeRequestSynopsis } from "./shared/debug-synopsis";
-import { EMPTY_STROKE_DATA } from "./shared/stylus";
+import { notebookChangeRequestSynopsis } from "./shared/debug-synopsis";
+import { strokePathId } from "./shared/stylus";
 import { OpenOptions, WatchedResource } from "./shared/watched-resource";
 import { UserPermission } from "./shared/permissions";
 
@@ -51,8 +50,8 @@ import { ServerSocket } from "./server-socket";
 import { createDirectory, deleteDirectory, FileName, readJsonFile, renameDirectory, writeJsonFile } from "./adapters/file-system";
 import { Permissions } from "./permissions";
 import { CollaboratorObject } from "./shared/user";
-import { plotUnivariate } from "./adapters/wolframscript";
-import { convertTexToSvg } from "./adapters/mathjax";
+import { existingCell, newCell } from "./server-cell/instantiator";
+import { ServerCell } from "./server-cell";
 
 export interface FindCellOptions {
   source?: CellSource;
@@ -79,14 +78,9 @@ interface ServerNotebookObject extends NotebookObject {
 
 // Constants
 
-const LETTER_PAGE_SIZE = sizeInPoints(8.5, 11);
+const LETTER_PAGE_SIZE = cssSizeInPoints(8.5, 11);
 const DEFAULT_LETTER_MARGINS = marginsInPoints(1,1,1,1);
-const DEFAULT_WIDTH = 6.5; // inches
 
-const DEFAULT_FORMULA_CSS_SIZE = sizeInPoints(1, DEFAULT_WIDTH);
-const DEFAULT_FIGURE_CSS_SIZE = sizeInPoints(3, DEFAULT_WIDTH);
-const DEFAULT_PLOT_CSS_SIZE = sizeInPoints(3, DEFAULT_WIDTH);
-const DEFAULT_TEXT_CSS_SIZE = sizeInPoints(1, DEFAULT_WIDTH);
 
 const FORMAT_VERSION = "0.0.19";
 
@@ -143,6 +137,8 @@ export class ServerNotebook extends WatchedResource<NotebookPath, ServerNotebook
   }
 
   public static async move(oldPath: NotebookPath, newPath: NotebookPath): Promise<NotebookEntry> {
+    // TODO: If notebook is open?
+
     // Called by the containing ServerFolder when one of its notebooks is renamed.
 
     this.close(oldPath, `Notebook is moving to ${newPath}.`)
@@ -215,16 +211,14 @@ export class ServerNotebook extends WatchedResource<NotebookPath, ServerNotebook
   public toHtml(): Html {
     if (this.isEmpty()) { return <Html>"<i>Notebook is empty.</i>"; }
     else {
-      return <Html>this.obj.cells.map(cellObject=>{
-        return ServerNotebook.cellToHtml(cellObject);
-      }).join('\n');
+      return <Html>this.cells.map(cell=>cell.toHtml()).join('\n');
     }
   }
 
   // Public Instance Property Functions
 
-  public allCells(): CellObject[] {
-    return this.obj.cells;
+  public allCells(): ServerCell<CellObject>[] {
+    return this.cells;
   }
 
   public get leftMargin(): CssLength {
@@ -236,6 +230,10 @@ export class ServerNotebook extends WatchedResource<NotebookPath, ServerNotebook
   }
 
   // Public Instance Methods
+
+  public nextId(): CellId {
+    return this.obj.nextId++;
+  }
 
   public async requestChanges(
     source: CellSource,
@@ -254,7 +252,6 @@ export class ServerNotebook extends WatchedResource<NotebookPath, ServerNotebook
       switch(changeRequest.type) {
         case 'deleteCell':   await this.applyDeleteCellRequest(source, changeRequest, updates, undoChangeRequests); break;
         case 'deleteStroke': await this.applyDeleteStrokeRequest(source, changeRequest, updates, undoChangeRequests); break;
-        case 'insertCell':   await this.applyInsertCellRequest(source, changeRequest, updates, undoChangeRequests); break;
         case 'insertEmptyCell':   await this.applyInsertEmptyCellRequest(source, changeRequest, updates, undoChangeRequests); break;
         case 'insertStroke': await this.applyInsertStrokeRequest(source, changeRequest, updates, undoChangeRequests); break;
         case 'moveCell':     await this.applyMoveCellRequest(source, changeRequest, updates, undoChangeRequests); break;
@@ -305,20 +302,10 @@ export class ServerNotebook extends WatchedResource<NotebookPath, ServerNotebook
   }
 
   private isEmpty(): boolean {
-    return this.obj.cells.length == 0;
+    return this.cells.length == 0;
   }
 
   // Private Class Methods
-
-  // REVIEW: This probably belongs somewhere else. Seems specific to the use.
-  private static cellToHtml(cell: CellObject): Html {
-    return <Html>`<div>
-<span class="collapsed">S${cell.id} ${cell.type} ${cell.source}</span>
-<div class="nested" style="display:none">
-  <tt>${escapeHtml(cellSynopsis(cell))}</tt>
-</div>
-</div>`;
-  }
 
   private static generateUniqueEphemeralPath(): NotebookPath {
     let timestamp = <Timestamp>Date.now();
@@ -346,6 +333,7 @@ export class ServerNotebook extends WatchedResource<NotebookPath, ServerNotebook
     super(path);
     this.obj = deepCopy(EMPTY_NOTEBOOK_OBJ);
     this.cellMap = new Map();
+    this.cells = [];
     this.ephemeral = options.ephemeral;
     this.reservedIds = new Set();
     this.sockets = new Set<ServerSocket>();
@@ -354,7 +342,8 @@ export class ServerNotebook extends WatchedResource<NotebookPath, ServerNotebook
   // Private Instance Properties
 
   // TODO: purge changes in queue that have been processed asynchronously.
-  private cellMap: Map<CellId, CellObject>;
+  private cellMap: Map<CellId, ServerCell<CellObject>>;
+  private cells: ServerCell<CellObject>[];
   private ephemeral?: boolean;     // Not persisted to the filesystem.
   private obj: ServerNotebookObject;
   private permissions!: Permissions;
@@ -364,14 +353,24 @@ export class ServerNotebook extends WatchedResource<NotebookPath, ServerNotebook
 
   // Private Instance Property Functions
 
-  private cellIndex(id: CellId): CellOrdinalPosition {
-    const rval = this.obj.cells.findIndex(cellObj=>cellObj.id===id);
+  private cellIndex(cellId: CellId): CellIndex {
+    const rval = this.cells.findIndex(cell=>cell.id===cellId);
     assert(rval>=0);
     return rval;
   }
 
-  private getCell<T extends CellObject>(id: CellId): T {
-    const rval = <T>this.cellMap.get(id);
+  private clientObject(): NotebookObject {
+    const rval: NotebookObject = {
+      margins: this.obj.margins,
+      pageSize: this.obj.pageSize,
+      pagination: this.obj.pagination,
+      cells: this.cells.map(cell=>cell.clientObject()),
+    };
+    return rval;
+  }
+
+  private getCell<T extends CellObject>(id: CellId): ServerCell<T> {
+    const rval = <ServerCell<T>>this.cellMap.get(id);
     assert(rval, `Cell ${id} doesn't exist.`);
     return rval;
   }
@@ -382,17 +381,16 @@ export class ServerNotebook extends WatchedResource<NotebookPath, ServerNotebook
     _source: CellSource,
     request: DeleteCell,
     updates: NotebookUpdate[],
-    undoChangeRequests: NotebookChangeRequest[],
+    _undoChangeRequests: NotebookChangeRequest[],
   ): Promise<void> {
 
     // Remove cell from the page and from the map.
     const cellId = request.cellId;
     assert(this.cellMap.has(cellId));
-    // const cellObject = this.getCell<T>(cellId);
-    const cellIndex = this.obj.cells.findIndex(cell => cell.id===cellId);
+    // const cell = this.getCell<T>(cellId);
+    const cellIndex = this.cellIndex(cellId);
     assert(cellIndex>=0);
-    const afterId = cellIndex === 0 ? CellPosition.Top : this.obj.cells[cellIndex-1].id;
-    const cellObj = this.obj.cells.splice(cellIndex, 1)[0];
+    // const afterId = cellIndex === 0 ? CellPosition.Top : this.cells[cellIndex-1].id;
     this.cellMap.delete(cellId);
 
     // TODO: Repaginate.
@@ -400,12 +398,13 @@ export class ServerNotebook extends WatchedResource<NotebookPath, ServerNotebook
     const update: CellDeleted = { type: 'cellDeleted', cellId };
     updates.push(update);
 
-    const undoChangeRequest: InsertCell = {
-      type: 'insertCell',
-      afterId,
-      cellObj,
-    };
-    undoChangeRequests.unshift(undoChangeRequest);
+    // TODO:
+    // const undoChangeRequest: InsertCell = {
+    //   type: 'insertCell',
+    //   afterId,
+    //   cell.object(),
+    // };
+    // undoChangeRequests.unshift(undoChangeRequest);
   }
 
   private async applyDeleteStrokeRequest(
@@ -415,53 +414,25 @@ export class ServerNotebook extends WatchedResource<NotebookPath, ServerNotebook
     undoChangeRequests: NotebookChangeRequest[],
   ): Promise<void> {
     const { cellId, strokeId } = request;
-    const cellObject = this.getCell(cellId);
-    const strokes = cellObject.strokeData.strokes;
-    const strokeIndex = strokes.findIndex(stroke=>stroke.id===strokeId);
-    assert(strokeIndex>=0, `Cannot find stroke c${cellId}s${strokeId}`);
+    const cell = this.getCell(cellId);
+    const stroke = cell.deleteStroke(strokeId);
 
-    const stroke = strokes.splice(strokeIndex, 1)[0];
+    // TODO: Update the displaySvg field
 
-    const update: StrokeDeleted = { type: 'strokeDeleted', cellId, strokeId };
+    // Construct the response
+    const pathId = strokePathId(cellId, strokeId);
+    const update: StrokeDeleted = {
+      type: 'strokeDeleted',
+      cellId,
+      displayUpdate: { delete: [ pathId ]},
+      strokeId,
+    };
     updates.push(update);
-
     const undoChangeRequest: InsertStroke = {
       type: 'insertStroke',
       cellId,
       stroke,
     }
-    undoChangeRequests.unshift(undoChangeRequest);
-  }
-
-  private async applyInsertCellRequest(
-    _source: CellSource,
-    request: InsertCell,
-    updates: NotebookUpdate[],
-    undoChangeRequests: NotebookChangeRequest[],
-  ): Promise<void> {
-
-    const { cellObj, afterId } = request;
-
-    let cellIndex: number;
-    // Insert top-level styles in the style order.
-    if (!afterId || afterId===CellPosition.Top) {
-      cellIndex = 0;
-    } else if (afterId===CellPosition.Bottom) {
-      cellIndex = this.obj.cells.length;
-    } else {
-      cellIndex = this.obj.cells.findIndex(cellObject => cellObject.id === afterId);
-      assert(cellIndex>=0);
-      cellIndex++;
-    }
-    this.obj.cells.splice(cellIndex, 0, cellObj);
-    this.cellMap.set(cellObj.id, cellObj);
-
-    // TODO: repaginate
-
-    const update: CellInserted = { type: 'cellInserted', cellObject: cellObj, cellIndex };
-    updates.push(update);
-
-    const undoChangeRequest: DeleteCell = { type: 'deleteCell', cellId: cellObj.id };
     undoChangeRequests.unshift(undoChangeRequest);
   }
 
@@ -471,68 +442,7 @@ export class ServerNotebook extends WatchedResource<NotebookPath, ServerNotebook
     updates: NotebookUpdate[],
     undoChangeRequests: NotebookChangeRequest[],
   ): Promise<void> {
-
-    let cellObject: CellObject;
-    const id = this.obj.nextId++;
-    switch(request.cellType) {
-      case CellType.Figure: {
-        const size = DEFAULT_FIGURE_CSS_SIZE;
-        const figureCellObject: FigureCellObject = {
-          id,
-          type: CellType.Figure,
-          inputText: <PlainText>"",
-          cssSize: deepCopy(size),
-          source,
-          strokeData: deepCopy(EMPTY_STROKE_DATA),
-        };
-        cellObject = figureCellObject;
-        break;
-      }
-      case CellType.Formula: {
-        const quadraticFormulaTex = <TexExpression>"x = \\frac{{ - b \\pm \\sqrt {b^2 - 4ac} }}{{2a}}";
-        const displaySvg = convertTexToSvg(quadraticFormulaTex, { class: <CssClass>'displaySvg' });
-        const formulaCellObject: FormulaCellObject = {
-          id,
-          type: CellType.Formula,
-          cssSize: deepCopy(DEFAULT_FORMULA_CSS_SIZE),
-          displaySvg,
-          inputText: <PlainText>"",
-          plainTextFormula: <PlainTextFormula>"",
-          source,
-          strokeData: deepCopy(EMPTY_STROKE_DATA),
-        }
-        cellObject = formulaCellObject;
-        break;
-      }
-      case CellType.Plot: {
-        const displaySvg = await plotUnivariate(<WolframExpression>"x^2 - 3", <WolframExpression>"x", { class: <CssClass>'displaySvg' });
-        const plotCellObject: PlotCellObject = {
-          id,
-          type: CellType.Plot,
-          cssSize: deepCopy(DEFAULT_PLOT_CSS_SIZE),
-          displaySvg,
-          formulaCellId: -1, // TODO:
-          inputText: <PlainText>"",
-          source,
-          strokeData: deepCopy(EMPTY_STROKE_DATA),
-        }
-        cellObject = plotCellObject;
-        break;
-      }
-      case CellType.Text: {
-        const textCellObject: TextCellObject = {
-          id,
-          type: CellType.Text,
-          cssSize: deepCopy(DEFAULT_TEXT_CSS_SIZE),
-          inputText: <PlainText>"",
-          source,
-          strokeData: deepCopy(EMPTY_STROKE_DATA),
-        }
-        cellObject = textCellObject;
-        break;
-      }
-      default: assertFalse();
-    }
+    const cell = newCell(this, request.cellType, source);
 
     let cellIndex: number;
     // Insert top-level styles in the style order.
@@ -540,19 +450,23 @@ export class ServerNotebook extends WatchedResource<NotebookPath, ServerNotebook
     if (!afterId || afterId===CellPosition.Top) {
       cellIndex = 0;
     } else if (afterId===CellPosition.Bottom) {
-      cellIndex = this.obj.cells.length;
+      cellIndex = this.cells.length;
     } else {
-      cellIndex = this.obj.cells.findIndex(cellObject => cellObject.id === afterId);
+      cellIndex = this.cellIndex(afterId);
       cellIndex++;
     }
-    this.obj.cells.splice(cellIndex, 0, cellObject);
-    this.cellMap.set(cellObject.id, cellObject);
+    this.cells.splice(cellIndex, 0, cell);
+    this.cellMap.set(cell.id, cell);
     // TODO: repaginate
 
-    const update: CellInserted = { type: 'cellInserted', cellObject, cellIndex };
+    const update: CellInserted = {
+      type: 'cellInserted',
+      cellObject: cell.clientObject(),
+      cellIndex
+    };
     updates.push(update);
 
-    const undoChangeRequest: DeleteCell = { type: 'deleteCell', cellId: id };
+    const undoChangeRequest: DeleteCell = { type: 'deleteCell', cellId: cell.id };
     undoChangeRequests.unshift(undoChangeRequest);
   }
 
@@ -563,19 +477,17 @@ export class ServerNotebook extends WatchedResource<NotebookPath, ServerNotebook
     undoChangeRequests: NotebookChangeRequest[],
   ): Promise<void> {
     const { cellId, stroke } = request;
-    const cellObject = this.getCell(request.cellId);
-    const strokeData = cellObject.strokeData;
+    const cell = this.getCell(request.cellId);
+    const displayUpdate = cell.insertStroke(stroke);
 
-    stroke.id = strokeData.nextId++;
-    cellObject.strokeData.strokes.push(request.stroke);
-
+    // Construct the response
     const update: StrokeInserted = {
       type: 'strokeInserted',
-      cellId: cellObject.id,
-      stroke: request.stroke
+      cellId: cell.id,
+      displayUpdate,
+      stroke: request.stroke,
     };
     updates.push(update);
-
     const undoChangeRequest: DeleteStroke = { type: 'deleteStroke', cellId, strokeId: stroke.id };
     undoChangeRequests.unshift(undoChangeRequest);
   }
@@ -594,19 +506,19 @@ export class ServerNotebook extends WatchedResource<NotebookPath, ServerNotebook
     let oldAfterId: number;
     const oldIndex: CellPosition = this.cellIndex(cellId);
     if (oldIndex == 0) { oldAfterId = 0; }
-    else if (oldIndex == this.obj.cells.length-1) { oldAfterId = -1; }
-    else { oldAfterId = this.obj.cells[oldIndex-1].id; }
+    else if (oldIndex == this.cells.length-1) { oldAfterId = -1; }
+    else { oldAfterId = this.cells[oldIndex-1].id; }
 
     let newIndex: CellPosition;
     if (afterId == 0) { newIndex = 0; }
-    else if (afterId == -1) { newIndex = this.obj.cells.length  - 1; }
+    else if (afterId == -1) { newIndex = this.cells.length  - 1; }
     else {
       newIndex = this.cellIndex(afterId);
       if (oldIndex > newIndex) { newIndex++; }
     }
 
-    this.obj.cells.splice(oldIndex, 1);
-    this.obj.cells.splice(newIndex, 0, cellObj);
+    this.cells.splice(oldIndex, 1);
+    this.cells.splice(newIndex, 0, cellObj);
 
     const update: CellMoved = { type: 'cellMoved', cellId, newIndex };
     updates.push(update);
@@ -624,11 +536,10 @@ export class ServerNotebook extends WatchedResource<NotebookPath, ServerNotebook
     const { cellId, cssSize } = request;
     assert(cssSize.height.endsWith('pt'));
     assert(cssSize.width.endsWith('pt'));
-    const cellObject = this.getCell(cellId);
-    const oldCssSize = deepCopy(cellObject.cssSize);
+    const cell = this.getCell(cellId);
+    const oldCssSize = deepCopy(cell.cssSize);
 
-    cellObject.cssSize.height = cssSize.height;
-    cellObject.cssSize.width = cssSize.width;
+    cell.setCssSize(cssSize);
 
     const update: CellResized = { type: 'cellResized', cellId, cssSize };
     updates.push(update);
@@ -645,9 +556,11 @@ export class ServerNotebook extends WatchedResource<NotebookPath, ServerNotebook
       assert(typeof obj == 'object');
       ServerNotebook.validateObject(obj);
       this.obj = obj; // REVIEW: Deep copy?
-      for (const cellObject of this.obj.cells) {
-        this.cellMap.set(cellObject.id, cellObject);
+      this.cells = obj.cells.map(cellObject=>existingCell(this, cellObject));
+      for (const cell of this.cells) {
+        this.cellMap.set(cell.id, cell);
       }
+      obj.cells = [];
     } else if (options.mustNotExist) {
       await this.saveNew();
 
@@ -689,7 +602,9 @@ export class ServerNotebook extends WatchedResource<NotebookPath, ServerNotebook
     assert(ServerNotebook.isValidNotebookPath(this.path));
     debug(`saving ${this.path}`);
 
+    this.obj.cells = this.cells.map(cell=>cell.persistentObject());
     await writeJsonFile(this.path, NOTEBOOK_FILENAME, this.obj);
+    this.obj.cells = [];
     this.saving = false;
   }
 
@@ -839,7 +754,7 @@ export class ServerNotebook extends WatchedResource<NotebookPath, ServerNotebook
       path: this.path,
       collaborators,
       permissions,
-      obj: this.obj,
+      obj: this.clientObject(),
       complete: true
     };
     socket.sendMessage(response);
@@ -1055,6 +970,7 @@ export function notebookPath(path: FolderPath, name: NotebookName): NotebookPath
 }
 
 // Helper Functions
+
 
 // function cellMatchesPattern(cell: CellObject, options: FindCellOptions): boolean {
 //   return    (!options.source || cell.source == options.source)

@@ -76,15 +76,13 @@ export class ResizerBar extends HtmlElement<'div'>  {
         // pointerover:    e=>this.onPointerOver(e),
         pointerup:      e=>this.onPointerUp(e),
       },
-      children: [
-        {
-          tag: 'button',
-          attrs: { tabindex: -1 },
-          classes: [ <CssClass>'insertCellBelowButton', <CssClass>'iconButton' ],
-          html: RIGHT_TRIANGLE_ENTITY,
-          asyncListeners: { click: e=>this.onInsertButtonClicked(e) },
-        }
-      ],
+      children: [{
+        tag: 'button',
+        attrs: { tabindex: -1 },
+        classes: [ <CssClass>'insertCellBelowButton', <CssClass>'iconButton' ],
+        html: RIGHT_TRIANGLE_ENTITY,
+        asyncListeners: { click: e=>this.onInsertButtonClicked(e) },
+      }],
     });
 
     this.callbackFunctions = callbackFunctions;

@@ -29,16 +29,11 @@ import { PlainTextFormula, TexExpression, WolframExpression } from "../shared/fo
 
 import { WolframScriptConfig } from "../config";
 import { logWarning } from "../error-handler";
-import { assert, CssClass, SvgMarkup } from "../shared/common";
+import { assert, SvgMarkup } from "../shared/common";
 
 // Types
 
 export interface NVPair { name: string; value: string }
-
-interface PlotOptions {
-  class?: CssClass;
-}
-
 
 // Constants
 
@@ -316,8 +311,7 @@ export function convertWolframToMTL(expr: WolframExpression) : PlainTextFormula 
   return <PlainTextFormula>expr.replace("==","=");
 }
 
-export async function plotUnivariate(expression: WolframExpression, symbol: WolframExpression, options?: PlotOptions): Promise<SvgMarkup> {
-  options = options || {};
+export async function plotUnivariate(expression: WolframExpression, symbol: WolframExpression): Promise<SvgMarkup> {
   // BIVARIATE SCRIPT: <WolframExpression>`ExportString[Plot3D[${expr},{${variables[0]},0,6 Pi},{${variables[1]},0,6 Pi}],"SVG"]`;
   const script = <WolframExpression>`ExportString[ExportString[Plot[${expression},{${symbol},0,6 Pi},PlotTheme->"Monochrome"],"SVG"], "Base64"]`;
   const dirtyEncoded = await execute(script);
@@ -327,9 +321,6 @@ export async function plotUnivariate(expression: WolframExpression, symbol: Wolf
   let svgMarkup = <SvgMarkup>(decoded.slice(XML_HEADER.length));
   assert(svgMarkup.startsWith('<svg '));
   assert(svgMarkup.endsWith('</svg>\n'));
-  if (options.class) {
-    svgMarkup = <SvgMarkup>svgMarkup.replace(/^<svg /, `<svg class="${options.class}" `);
-  }
   return svgMarkup;
 }
 

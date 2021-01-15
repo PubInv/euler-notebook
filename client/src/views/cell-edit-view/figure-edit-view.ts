@@ -27,8 +27,7 @@ import { NotebookUpdate } from "../../shared/server-responses";
 import { notebookUpdateSynopsis } from "../../shared/debug-synopsis";
 import { FigureCellObject } from "../../shared/cell";
 
-import { HtmlElementSpecification } from "../../dom";
-import { FigureCell } from "../../client-cell/figure-cell";
+import { FigureCell } from "../../models/client-cell/figure-cell";
 
 import { NotebookEditView } from "../notebook-edit-view";
 
@@ -45,11 +44,7 @@ export class FigureEditView extends CellEditView<FigureCellObject> {
   // Public Constructor
 
   public constructor(notebookEditView: NotebookEditView, cell: FigureCell) {
-    const contentSpec: HtmlElementSpecification<'div'> = {
-      tag: 'div',
-      classes: [ <CssClass>'content', <CssClass>'figureCell' ],
-    };
-    super(notebookEditView, cell, contentSpec);
+    super(notebookEditView, cell, <CssClass>'figureCell');
   }
 
   // Public Instance Methods

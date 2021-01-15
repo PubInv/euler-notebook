@@ -1,4 +1,3 @@
-import { CssClass, SvgMarkup } from "../shared/common";
 /*
 Math Tablet
 Copyright (C) 2019-21 Public Invention
@@ -26,6 +25,8 @@ import debug1 from "debug";
 const MODULE = __filename.split(/[/\\]/).slice(-1)[0].slice(0,-3);
 const debug = debug1(`server:${MODULE}`);
 
+import { SvgMarkup } from "../shared/common";
+
 import { mathjax } from "mathjax-full/js/mathjax.js";
 import { MathDocument } from "mathjax-full/js/core/MathDocument.js";
 import { TeX } from "mathjax-full/js/input/tex.js";
@@ -34,14 +35,9 @@ import { AllPackages } from "mathjax-full/js/input/tex/AllPackages.js";
 import { LiteAdaptor, liteAdaptor } from "mathjax-full/js/adaptors/liteAdaptor.js";
 import { RegisterHTMLHandler } from "mathjax-full/js/handlers/html.js";
 
-import { assert } from "../shared/common";
 import { TexExpression } from "../shared/formula";
 
 // Types
-
-interface ConvertOptions {
-  class?: CssClass;
-}
 
 // Constants
 
@@ -73,8 +69,7 @@ export function initialize(): void {
   gHtml = mathjax.document('', { InputJax: tex, OutputJax: svg });
 }
 
-export function convertTexToSvg(tex: TexExpression, options?: ConvertOptions): SvgMarkup {
-  options = options || {};
+export function convertTexToSvg(tex: TexExpression): SvgMarkup {
   debug(`Converting TeX: "${tex}"`);
   const node = gHtml.convert(tex, { display: false, em: 16, ex: 8, containerWidth: 80*16 });
   // Returns HTML of a 'mjx-container' element enclosing an "svg" element.
@@ -82,11 +77,5 @@ export function convertTexToSvg(tex: TexExpression, options?: ConvertOptions): S
   // assert(html.startsWith(MJX_HEADER));
   // assert(html.endsWith(MJX_FOOTER));
   // let svgMarkup = <SvgMarkup>html.slice(MJX_HEADER.length, -MJX_FOOTER.length);
-  let svgMarkup = <SvgMarkup>gAdaptor.innerHTML(node);
-  assert(svgMarkup.startsWith('<svg '));
-  assert(svgMarkup.endsWith('</svg>'));
-  if (options.class) {
-    svgMarkup = <SvgMarkup>svgMarkup.replace(/^<svg /, `<svg class="${options.class}" `);
-  }
-  return svgMarkup;
+  return <SvgMarkup>gAdaptor.innerHTML(node);
 }

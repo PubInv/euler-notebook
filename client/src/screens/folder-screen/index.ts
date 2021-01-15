@@ -26,7 +26,7 @@ import { FolderPath } from "../../shared/folder";
 import { FolderCollaboratorConnected, FolderCollaboratorDisconnected, FolderUpdate } from "../../shared/server-responses";
 
 import { ScreenBase } from "../screen-base";
-import { ClientFolder, ClientFolderWatcher, OpenFolderOptions } from "../../client-folder";
+import { ClientFolder, ClientFolderWatcher, OpenFolderOptions } from "../../models/client-folder";
 
 import { appInstance } from "../../app";
 

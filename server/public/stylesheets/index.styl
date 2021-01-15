@@ -23,7 +23,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
   --cell-left-margin 60px
   --header-button-padding 2px
   --header-height 30px
-  --page-aspect-ratio calc(8.5 / 11)
+  // --page-aspect-ratio calc(8.5 / 11)
   --searchbar-height 30px
   --sidebar-button-padding 4px
   --sidebar-width 60px
@@ -182,45 +182,6 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 .iconButton:hover
   background-color lightgray
 
-.inputPanel
-  border 1px solid #E0E0E0
-
-  .inputRow
-    align-items center
-    display flex
-
-  .messages
-    color red
-    font-size x-small
-    min-height 20px
-    padding 2px
-
-  .preview
-    min-height 60px
-    padding 8px
-
-  .selectors
-    padding 0 12px 0 8px
-
-  .stylusInputPanel
-    background-color #F8F8F8
-    display block
-    fill none
-    margin 6px 0 0 0
-    pen-action none
-    touch-action none
-    stroke black
-
-  select
-    display block
-    width 92px
-
-  textArea
-    display block
-    height 1in
-    padding 8px
-    width calc(100% - 8px)
-
 .notebookEditScreen
 
   .tools
@@ -270,13 +231,16 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
               width 16px
 
         >.content
+          border 1px solid #E0E0E0
           position relative
-          flex-grow 1
 
           >.displaySvg
-            position absolute
-            top 0
+            display block
+            fill none
             left 0
+            position absolute
+            stroke black
+            top 0
 
         >.rightMargin
           align-items center
@@ -383,16 +347,16 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 .notebookThumbnailsScreen
 .notebookReadScreen
   >.content
+    align-content flex-start
     background-color lightgray
     display flex
     flex-flow row wrap
 
-    .page
+    >.page
       background-color white
+      fill none
       outline 1px solid black
-
-    .page.selected
-        outline 2px solid blue
+      stroke black
 
 .screen
   height: calc(100% - var(--header-height))

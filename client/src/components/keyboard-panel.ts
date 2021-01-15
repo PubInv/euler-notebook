@@ -17,6 +17,9 @@ You should have received a copy of the GNU Affero General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
+// REVIEW: This component is not currently used. This file can be deleted.
+//         Leaving here for future reference.
+
 // Requirements
 
 import * as debug1 from "debug";
@@ -59,7 +62,7 @@ export class KeyboardPanel extends HtmlElement<'div'> {
 
     super({
       tag: 'div',
-      classes: [ <CssClass>'inputPanel', <CssClass>'keyboardPanel'],
+      classes: [ <CssClass>'keyboardPanel'],
       children: [ $textArea ],
     });
 

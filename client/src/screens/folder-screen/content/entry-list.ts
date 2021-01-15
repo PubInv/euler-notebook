@@ -21,11 +21,10 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 // Requirements
 
-import { assert } from "../../../shared/common";
+import { assert, ElementId } from "../../../shared/common";
 import { NotebookName, FolderName } from "../../../shared/folder";
 
-import { ElementId } from "../../../dom";
-import { ClientFolder } from "../../../client-folder";
+import { ClientFolder } from "../../../models/client-folder";
 import { HtmlElement } from "../../../html-element";
 
 import { EntryRow, EntryType, EntryTypeMap } from "./entry-row";

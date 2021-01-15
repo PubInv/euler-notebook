@@ -20,6 +20,8 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 // Requirements
 
+import { CellId } from "./cell";
+import { ElementId, SvgMarkup } from "./common";
 import { Stroke as MyScriptStroke } from "./myscript-types";
 
 // Types
@@ -53,6 +55,11 @@ export const EMPTY_STROKE_DATA: StrokeData = {
 
 // Exported Functions
 
+export function convertStrokeToPath(cellId: CellId, stroke: Stroke): SvgMarkup {
+  const shape = convertStrokeToPathShape(stroke);
+  return <SvgMarkup>`<path id="${strokePathId(cellId, stroke.id)}" d="${shape}"></path>`;
+}
+
 export function convertStrokeToPathShape(stroke: Stroke): PathDAttribute {
   if (stroke.x.length<2) {
     console.warn(`Have a stroke with too few data points: ${stroke.x.length}`)
@@ -64,3 +71,19 @@ export function convertStrokeToPathShape(stroke: Stroke): PathDAttribute {
   }
   return shape;
 }
+
+export function strokePathId(cellId: CellId, strokeId: StrokeId): ElementId {
+  return <ElementId>`c${cellId}s${strokeId}`;
+}
+
+// Helper Functions
+
+// function convertStrokesToSvg(cellId: CellId, cssSize: CssSize, strokeData: StrokeData): SvgMarkup {
+//   const paths: string[] = [];
+//   for (const stroke of strokeData.strokes) {
+//     const path = convertStrokeToPath(cellId, stroke);
+//     paths.push(path);
+//   }
+//   const svgMarkup = <SvgMarkup>`<svg class="svgPanel" height="${cssSize.height}" width="${cssSize.width}" fill="none" stroke="black">${paths.join('')}</svg>`;
+//   return svgMarkup;
+// }

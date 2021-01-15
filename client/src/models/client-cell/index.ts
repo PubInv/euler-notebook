@@ -22,13 +22,14 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 import * as debug1 from "debug";
 const debug = debug1('client:client-cell');
 
-import { CellId, CellObject, CellType } from "../shared/cell";
-import { assert, assertFalse, CssSize, escapeHtml, Html } from "../shared/common";
-import { NotebookUpdate } from "../shared/server-responses";
-import { cellBriefSynopsis, cellSynopsis, notebookUpdateSynopsis } from "../shared/debug-synopsis";
-import { Stroke, StrokeId } from "../shared/stylus";
+import { CellId, CellObject, CellType } from "../../shared/cell";
+import { assert, assertFalse, CssSelector, CssSize, ElementId, escapeHtml, Html } from "../../shared/common";
+import { DisplayUpdate, NotebookUpdate } from "../../shared/server-responses";
+import { cellBriefSynopsis, cellSynopsis, notebookUpdateSynopsis } from "../../shared/debug-synopsis";
+import { Stroke, StrokeId } from "../../shared/stylus";
 
 import { ClientNotebook } from "../client-notebook";
+import { $, $newSvg, $newSvgFromMarkup } from "../../dom";
 
 // Types
 
@@ -47,11 +48,24 @@ export abstract class ClientCell<O extends CellObject> {
     this.notebook = notebook;
     this.obj = obj;
     this.views = new Set();
+
+    // REVIEW: pt to px conversion?
+    const width = parseInt(obj.cssSize.width);
+    const height = parseInt(obj.cssSize.height);
+    const $svgSymbol = $newSvg({
+      tag: 'symbol',
+      id: <ElementId>`n${notebook.id}c${obj.id}`,
+      attrs: { viewBox: `0 0 ${width} ${height}` },
+      html: obj.displaySvg,
+    });
+    $(document, <CssSelector>'#svgContent').append($svgSymbol);
+    this.$svgSymbol = $svgSymbol;
   }
 
   // Public Instance Properties
 
-  public obj: O;
+  public obj: O;  // REVIEW: Maybe should be private?
+  public notebook: ClientNotebook;
 
   // Public Instance Property Functions
 
@@ -87,14 +101,17 @@ export abstract class ClientCell<O extends CellObject> {
         const strokeIndex = strokes.findIndex(stroke=>stroke.id==update.strokeId);
         assert(strokeIndex>=0);
         strokes.splice(strokeIndex, 1);
+        this.updateDisplay(update.displayUpdate);
         break;
       }
       case 'strokeInserted': {
         this.obj.strokeData.strokes.push(update.stroke);
+        this.updateDisplay(update.displayUpdate);
         break;
       }
       default: assertFalse();
     }
+
     for (const view of this.views) {
       view.onUpdate(update, ownRequest);
     }
@@ -103,26 +120,45 @@ export abstract class ClientCell<O extends CellObject> {
   public async delete(): Promise<void> {
     // Called when the 'X' button has been pressed in a cell.
     // Ask the notebook to delete us.
-    await this.notebook.deleteCell(this.id);
+    await this.notebook.deleteCellRequest(this.id);
   }
 
   public async deleteStroke(strokeId: StrokeId): Promise<void> {
-    await this.notebook.deleteStrokeFromCell(this.id, strokeId);
+    await this.notebook.deleteStrokeFromCellRequest(this.id, strokeId);
   }
 
   public async insertStroke(stroke: Stroke): Promise<void> {
-    await this.notebook.insertStrokeIntoCell(this.id, stroke);
+    await this.notebook.insertStrokeIntoCellRequest(this.id, stroke);
   }
 
   public async resize(cssSize: CssSize): Promise<void> {
     // Called when user finishes resizing a cell.
     // Ask the notebook to resize us.
-    await this.notebook.resizeCell(this.id, cssSize);
+    await this.notebook.resizeCellRequest(this.id, cssSize);
   }
+
+  // --- PRIVATE ---
 
   // Private Instance Properties
 
   protected views: Set<CellView>;
-  protected notebook: ClientNotebook;
+  protected $svgSymbol: SVGSymbolElement;
+
+  // Private Instance Methods
+
+  protected updateDisplay(displayUpdate: DisplayUpdate): void {
+    if (displayUpdate.delete) {
+      for (const elementId of displayUpdate.delete) {
+        $(this.$svgSymbol, `#${elementId}`).remove();
+      }
+    }
+
+    if (displayUpdate.append) {
+      for (const markup of displayUpdate.append) {
+        const $markup = $newSvgFromMarkup(markup);
+        this.$svgSymbol.append($markup);
+      }
+    }
+  }
 }
 

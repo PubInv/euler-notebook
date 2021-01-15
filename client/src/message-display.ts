@@ -23,9 +23,9 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 // Requirements
 
-import { CssClass, Html, errorMessageForUser } from "./shared/common";
+import { CssClass, Html, errorMessageForUser, ElementId } from "./shared/common";
 
-import { CLOSE_X_ENTITY, ElementId } from "./dom";
+import { CLOSE_X_ENTITY } from "./dom";
 import { HtmlElement } from "./html-element";
 
 // Types

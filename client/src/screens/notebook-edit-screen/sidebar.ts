@@ -21,11 +21,12 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 import { CssClass } from "../../shared/common";
 import { ButtonBar } from "../../components/button-bar";
-import { svgIconReferenceMarkup, $new } from "../../dom";
+import { CellType } from "../../shared/cell";
+
+import { svgIconReferenceMarkup, $new, CELL_ICONS } from "../../dom";
+import { StylusMode } from "../../components/stroke-panel";
 
 import { NotebookEditScreen } from "./index";
-import { CellType } from "../../shared/cell";
-import { StylusMode } from "../../components/stroke-panel";
 
 // Types
 
@@ -53,7 +54,7 @@ export class Sidebar extends ButtonBar {
     const $formulaModeButton = $new({
       tag: 'button',
       class: <CssClass>'iconButton',
-      html: svgIconReferenceMarkup('iconMonstrCalculator2'),
+      html: svgIconReferenceMarkup(CELL_ICONS.get(CellType.Formula)!),
       listeners: {
         click: (_e: MouseEvent): void =>{ this.onInsertModeChange(CellType.Formula); }
       },
@@ -64,7 +65,7 @@ export class Sidebar extends ButtonBar {
     const $textModeButton = $new({
       tag: 'button',
       class: <CssClass>'iconButton',
-      html: svgIconReferenceMarkup('iconMonstrText1'),
+      html: svgIconReferenceMarkup(CELL_ICONS.get(CellType.Text)!),
       listeners: {
         click: (_e: MouseEvent): void =>{ this.onInsertModeChange(CellType.Text); }
       },
@@ -75,7 +76,7 @@ export class Sidebar extends ButtonBar {
     const $figureModeButton = $new({
       tag: 'button',
       class: <CssClass>'iconButton',
-      html: svgIconReferenceMarkup('iconMonstrRuler30'),
+      html: svgIconReferenceMarkup(CELL_ICONS.get(CellType.Figure)!),
       listeners: {
         click: (_e: MouseEvent): void =>{ this.onInsertModeChange(CellType.Figure); }
       },
@@ -86,7 +87,7 @@ export class Sidebar extends ButtonBar {
     const $plotModeButton = $new({
       tag: 'button',
       class: <CssClass>'iconButton',
-      html: svgIconReferenceMarkup('iconMonstrChart20'),
+      html: svgIconReferenceMarkup(CELL_ICONS.get(CellType.Plot)!),
       listeners: {
         click: (_e: MouseEvent):void=>{ this.onInsertModeChange(CellType.Plot); }
       },
@@ -131,7 +132,7 @@ export class Sidebar extends ButtonBar {
       tag: 'button',
       class: <CssClass>'iconButton',
       html: svgIconReferenceMarkup('iconMonstrRedo4'),
-      asyncListeners: { click: async (_e: MouseEvent)=>{ await this.screen.notebook.redo(); }},
+      asyncListeners: { click: async (_e: MouseEvent)=>{ await this.screen.notebook.redoRequest(); }},
       title: "Redo",
       disabled: true,
     });
@@ -150,7 +151,7 @@ export class Sidebar extends ButtonBar {
       tag: 'button',
       class: <CssClass>'iconButton',
       html: svgIconReferenceMarkup('iconMonstrUndo4'),
-      asyncListeners: { click: async (_e: MouseEvent)=>{ await this.screen.notebook.undo(); }},
+      asyncListeners: { click: async (_e: MouseEvent)=>{ await this.screen.notebook.undoRequest(); }},
       title: "Undo",
       disabled: true,
     });

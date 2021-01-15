@@ -29,7 +29,8 @@ export type CellId = number;
 
 // Position of cell in the notebook.
 // Position 0 is the first cell of the notebook.
-export type CellOrdinalPosition = number;
+export type CellIndex = number;
+export type PageIndex = number;
 
 // Position a cell relative to another cell, or at the top or bottom of the notebook.
 export type CellRelativePosition = CellId | CellPosition;
@@ -54,10 +55,10 @@ export enum CellType {
 
 export interface CellObject {
   id: CellId;
-  inputText: PlainText,
   type: CellType;
   cssSize: CssSize;
-  displaySvg?: SvgMarkup;
+  displaySvg: SvgMarkup;
+  inputText: PlainText,
   source: CellSource;
   strokeData: StrokeData,
 }
@@ -113,3 +114,4 @@ export interface TransformationToolData {
   transformationName: string;
 }
 
+// Constants

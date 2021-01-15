@@ -21,21 +21,21 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 // Requirements
 
-import { Folder, FolderPath, NotebookName, FolderName, FolderEntry, NotebookEntry, FolderWatcher } from "./shared/folder";
+import { Folder, FolderPath, NotebookName, FolderName, FolderEntry, NotebookEntry, FolderWatcher } from "../shared/folder";
 import {
   FolderChangeRequest, ChangeFolder, OpenFolder,
   FolderCreateRequest, NotebookCreateRequest, FolderDeleteRequest, NotebookDeleteRequest, FolderRenameRequest, NotebookRenameRequest
-} from "./shared/client-requests";
+} from "../shared/client-requests";
 import {
   FolderUpdated, FolderResponse, FolderOpened, FolderClosed, FolderCollaboratorConnected, FolderCollaboratorDisconnected,
   FolderUpdate, FolderCreated, NotebookCreated, FolderRenamed, NotebookRenamed, FolderDeleted, NotebookDeleted,
-} from "./shared/server-responses"
+} from "../shared/server-responses"
 
-import { appInstance } from "./app";
-import { assert, assertFalse, ClientId } from "./shared/common";
-import { OpenOptions } from "./shared/watched-resource";
-import { CollaboratorObject } from "./shared/user";
-import { logWarning } from "./error-handler";
+import { appInstance } from "../app";
+import { assert, assertFalse, ClientId } from "../shared/common";
+import { OpenOptions } from "../shared/watched-resource";
+import { CollaboratorObject } from "../shared/user";
+import { logWarning } from "../error-handler";
 
 // Types
 

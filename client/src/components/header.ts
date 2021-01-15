@@ -25,12 +25,12 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 // import * as debug1 from "debug";
 // const debug = debug1('client:header');
 
-import { CssClass, Html, escapeHtml, RelativeUrl, ClientId, notImplementedError } from "../shared/common";
+import { CssClass, ElementId, Html, escapeHtml, RelativeUrl, ClientId, notImplementedError } from "../shared/common";
 import { Path } from "../shared/folder";
 import { CollaboratorObject, UserName } from "../shared/user";
 
 import { ButtonBar } from "./button-bar";
-import { $new, svgIconReferenceMarkup, ElementId, HtmlElementSpecification, $, EULER_NUMBER_ENTITY } from "../dom";
+import { $new, svgIconReferenceMarkup, HtmlElementSpecification, $, EULER_NUMBER_ENTITY } from "../dom";
 import { monitorPromise } from "../error-handler";
 // import { userSettingsInstance, InputMode } from "../user-settings";
 import { ClientUser } from "../client-user";

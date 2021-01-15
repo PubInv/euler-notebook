@@ -28,7 +28,7 @@ import { NotebookUpdate, NotebookCollaboratorConnected, NotebookCollaboratorDisc
 
 import { NotebookEditView } from "../../views/notebook-edit-view";
 
-import { ClientNotebook, NotebookView } from "../../client-notebook";
+import { ClientNotebook, NotebookView } from "../../models/client-notebook";
 
 import { ScreenBase } from "../screen-base";
 

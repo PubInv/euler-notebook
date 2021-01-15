@@ -24,24 +24,22 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 import * as debug1 from "debug";
 const debug = debug1('client:cell-edit-view');
 
-import { CellObject, CellId, CellType } from "../../shared/cell";
+import { CellObject, CellId } from "../../shared/cell";
 import {
   assert, Html, CssClass, CssLength, CssSize, LengthInPixels,
-  PIXELS_PER_INCH, POINTS_PER_INCH
+  PIXELS_PER_INCH, POINTS_PER_INCH, ElementId, SvgMarkup
 } from "../../shared/common";
 import { NotebookUpdate } from "../../shared/server-responses";
 import { Stroke, StrokeId } from "../../shared/stylus";
 
 import { HtmlElement } from "../../html-element";
 import {
-  $new, $newSvgFromMarkup, CLOSE_X_ENTITY, ElementId, HtmlElementOrSpecification, HtmlElementSpecification,
-  SvgIconId,
-  svgIconReferenceMarkup,
+  $new, $newSvg, CLOSE_X_ENTITY, CELL_ICONS, svgIconReferenceMarkup,
 } from "../../dom";
 
 import { Tools } from "../../screens/notebook-edit-screen/tools";
 import { CallbackFunctions as ResizerCallbackFunctions, ResizerBar } from "../../components/resizer-bar";
-import { CellView, ClientCell } from "../../client-cell";
+import { CellView, ClientCell } from "../../models/client-cell";
 import { showError } from "../../error-handler";
 import { StrokePanel, StrokePanelCallbacks, StylusMode } from "../../components/stroke-panel";
 import { NotebookEditView } from "../notebook-edit-view";
@@ -55,13 +53,6 @@ interface CellDragData {
 // Constants
 
 const CELL_MIME_TYPE = 'application/vnd.mathtablet.cell';
-
-const CELL_ICONS: Map<CellType, SvgIconId> = new Map([
-  [ CellType.Figure,  'iconMonstrPencil9' ],
-  [ CellType.Formula, 'iconMonstrCalculator2' ],
-  [ CellType.Plot,    'iconMonstrChart20' ],
-  [ CellType.Text,    'iconMonstrText1' ],
-]);
 
 // Exported Class
 
@@ -123,7 +114,7 @@ export abstract class CellEditView<O extends CellObject> extends HtmlElement<'di
   protected constructor(
     notebookEditView: NotebookEditView,
     cell: ClientCell<O>,
-    contentSpec: HtmlElementOrSpecification,
+    cssClass: CssClass,
   ) {
 
     const iconId = CELL_ICONS.get(cell.obj.type)!;
@@ -165,8 +156,25 @@ export abstract class CellEditView<O extends CellObject> extends HtmlElement<'di
       }],
     });
 
-    const contentInstantiated = contentSpec instanceof HTMLElement || contentSpec instanceof SVGElement;
-    const $content: HTMLDivElement = (!contentInstantiated ?  $new<'div'>(<HtmlElementSpecification<'div'>>contentSpec): <HTMLDivElement>contentSpec);
+    const $displaySvg = $newSvg<'svg'>({
+      tag: 'svg',
+      attrs: {
+        height: cell.obj.cssSize.height,
+        width: cell.obj.cssSize.width,
+      },
+      class: <CssClass>'displaySvg',
+      html: <SvgMarkup>`<use href="#n${cell.notebook.id}c${cell.id}"/>`,
+    });
+
+    const $content = $new<'div'>({
+      tag: 'div',
+      classes: [ <CssClass>'content', cssClass ],
+      styles: {
+        width: cell.obj.cssSize.width,
+        height: cell.obj.cssSize.height,
+      },
+      children: [ $displaySvg ]
+    });
 
     const $main = $new({
       tag: 'div',
@@ -211,12 +219,6 @@ export abstract class CellEditView<O extends CellObject> extends HtmlElement<'di
     this.cell = cell;
     this.notebookEditView = notebookEditView;
 
-    const displaySvg = cell.obj.displaySvg;
-    if (displaySvg) {
-      const $displaySvg = $newSvgFromMarkup(displaySvg);
-      $content.append($displaySvg);
-    }
-
     // Create a "stroke panel" for displaying and capturing stylus strokes
     const drawStroke = async (stroke: Stroke): Promise<void>=>{
       await this.cell.insertStroke(stroke)
@@ -243,26 +245,7 @@ export abstract class CellEditView<O extends CellObject> extends HtmlElement<'di
 
   // Private Instance Methods
 
-  // private createKeyboardSubpanel(cellObject: TextCellObject): KeyboardPanel {
-  //   const textChangeCallback: KeyboardCallbackFn = (_start: number, _end: number, _replacement: PlainText, _value: PlainText): void =>{
-  //     notImplementedError();
-  //     // const changeRequest: KeyboardInputRequest = { type: 'keyboardInputChange', cellId: style.id, start, end, replacement, value, };
-  //     // this.notebookEditView.screen.notebook.sendCellChangeRequest(changeRequest)
-  //     // .catch(err=>{
-  //     //   reportError(err, <Html>"Error sending keyboardInputChange from text cell");
-  //     // });
-  //   }
-  //   return new KeyboardPanel(cellObject.inputText, textChangeCallback);
-  // }
-
   // Private Event Handlers
-
-  // private onClicked(_event: MouseEvent): void {
-  //   debug(`onClicked`);
-  //   console.warn("Click to select not implemented.");
-  //   // Note: Shift-click or ctrl-click will extend the current selection.
-  //   // this.notebookEditView.selectCell(this, event.shiftKey, event.metaKey);
-  // }
 
   private async onDeleteButtonClicked(event: MouseEvent): Promise<void> {
     event.preventDefault(); // Don't take focus.

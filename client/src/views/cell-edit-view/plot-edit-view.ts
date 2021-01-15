@@ -27,8 +27,7 @@ import { CssClass } from "../../shared/common";
 import { notebookUpdateSynopsis } from "../../shared/debug-synopsis";
 import { NotebookUpdate } from "../../shared/server-responses";
 
-import { HtmlElementSpecification } from "../../dom";
-import { PlotCell } from "../../client-cell/plot-cell";
+import { PlotCell } from "../../models/client-cell/plot-cell";
 
 import { NotebookEditView } from "../notebook-edit-view";
 
@@ -47,11 +46,7 @@ export class PlotEditView extends CellEditView<PlotCellObject> {
   // Public Constructor
 
   public  constructor(notebookEditView: NotebookEditView, cell: PlotCell) {
-    const contentSpec: HtmlElementSpecification<'div'> = {
-      tag: 'div',
-      classes: [ <CssClass>'plotCell', <CssClass>'content' ],
-    };
-    super(notebookEditView, cell, contentSpec);
+    super(notebookEditView, cell, <CssClass>'plotCell');
   }
 
   // ClientNotebookWatcher Methods

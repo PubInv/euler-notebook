@@ -22,15 +22,14 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 import * as debug1 from "debug";
 const debug = debug1('client:stroke-panel');
 
-import { CssClass, SvgMarkup, CssSize, assert, assertFalse } from "../../shared/common";
-import { convertStrokeToPathShape, Stroke, StrokeData, StrokeId } from "../../shared/stylus";
+import { CssClass, assertFalse } from "../../shared/common";
+import { Stroke, StrokeId } from "../../shared/stylus";
 
-import { $, $newSvg, $newSvgFromMarkup, ElementId } from "../../dom";
 
 import { HtmlElement } from "../../html-element";
-import { CellResized, NotebookUpdate, StrokeDeleted, StrokeInserted } from "../../shared/server-responses";
+import { NotebookUpdate } from "../../shared/server-responses";
 import { notebookUpdateSynopsis } from "../../shared/debug-synopsis";
-import { CellId, CellObject } from "../../shared/cell";
+import { CellObject } from "../../shared/cell";
 
 import { StrokeDrawingPanel } from "./stroke-drawing-panel";
 import { StrokeSelectionPanel } from "./stroke-selection-panel";
@@ -66,23 +65,18 @@ export class StrokePanel extends HtmlElement<'div'> {
     callbacks: StrokePanelCallbacks,
     stylusMode: StylusMode,
   ) {
-    const { id: cellId, cssSize, strokeData } = cellObject;
-    const svgMarkup = convertStrokesToSvg(cellId, cssSize, strokeData);
-
-    const $svgPanel = $newSvgFromMarkup<'svg'>(svgMarkup);
+    const { cssSize, strokeData } = cellObject;
     const strokeDrawingPanel = new StrokeDrawingPanel(cssSize, (stroke)=>callbacks.drawStroke(stroke.data));
     const strokeSelectionPanel = new StrokeSelectionPanel(cssSize, strokeData, (strokeId)=>callbacks.eraseStroke(strokeId));
     super({
       tag: 'div',
-      classes: [ <CssClass>'inputPanel', <CssClass>'strokePanel'],
+      classes: [ <CssClass>'strokePanel'],
       children: [
         strokeDrawingPanel.$elt,
         strokeSelectionPanel.$elt,
-        $svgPanel,
       ]
     });
 
-    this.$svgPanel = $svgPanel;
     this.strokeDrawingPanel = strokeDrawingPanel;
     this.strokeSelectionPanel = strokeSelectionPanel;
     // REVIEW: Is stylusInput updated in-place?
@@ -115,19 +109,13 @@ export class StrokePanel extends HtmlElement<'div'> {
   public onUpdate(update: NotebookUpdate, ownRequest: boolean): void {
     debug(`onUpdate ${notebookUpdateSynopsis(update)}`);
     this.strokeSelectionPanel.onUpdate(update, ownRequest);
-    switch (update.type) {
-      case 'cellResized': this.onCellResized(update, ownRequest); break;
-      case 'strokeDeleted': this.onStrokeDeleted(update, ownRequest); break;
-      case 'strokeInserted': this.onStrokeInserted(update, ownRequest); break;
-      default: /* Nothing to do. */ break;
-    }
+    this.strokeDrawingPanel.onUpdate(update, ownRequest);
   };
 
   // -- PRIVATE --
 
   // Private Instance Properties
 
-  private $svgPanel: SVGSVGElement;
   private strokeDrawingPanel: StrokeDrawingPanel;
   private strokeSelectionPanel: StrokeSelectionPanel;
 
@@ -135,42 +123,6 @@ export class StrokePanel extends HtmlElement<'div'> {
 
   // Private Event Handlers
 
-  private onCellResized(update: CellResized, _ownRequest: boolean): void {
-    this.$svgPanel.setAttribute('height', update.cssSize.height);
-    assert(this.$svgPanel.getAttribute('width') === update.cssSize.width);
-    // TODO: Resize StylusInputPanel.
-  }
-
-  private onStrokeDeleted(update: StrokeDeleted, _ownRequest: boolean): void {
-    const $path = $(this.$svgPanel, `#${pathId(update.cellId, update.strokeId)}`);
-    $path.remove();
-  }
-
-  private onStrokeInserted(update: StrokeInserted, _ownRequest: boolean): void {
-    const shape = convertStrokeToPathShape(update.stroke);
-    const $path = $newSvg({ tag: 'path', id: pathId(update.cellId, update.stroke.id), attrs: { d: shape }});
-    this.$svgPanel.append($path);
-  }
 }
-
 
 // HELPER FUNCTIONS
-
-function convertStrokesToSvg(cellId: CellId, cssSize: CssSize, strokeData: StrokeData): SvgMarkup {
-  const paths: string[] = [];
-  for (const stroke of strokeData.strokes) {
-    const path = convertStrokeToPath(cellId, stroke);
-    paths.push(path);
-  }
-  const svgMarkup = <SvgMarkup>`<svg class="svgPanel" height="${cssSize.height}" width="${cssSize.width}" fill="none" stroke="black">${paths.join('')}</svg>`;
-  return svgMarkup;
-}
-
-function convertStrokeToPath(cellId: CellId, stroke: Stroke): SvgMarkup {
-  const shape = convertStrokeToPathShape(stroke);
-  return <SvgMarkup>`<path id="${pathId(cellId, stroke.id)}" d="${shape}"></path>`;
-}
-
-function pathId(cellId: CellId, strokeId: StrokeId): ElementId {
-  return <ElementId>`c${cellId}s${strokeId}`;
-}
