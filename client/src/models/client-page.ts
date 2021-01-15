@@ -23,11 +23,11 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 // const debug = debug1('client:client-page');
 
 import {
-  assert, CssLength, CssSelector, ElementId, LengthInPixels, LengthInPoints, SvgMarkup
+  CssSelector, ElementId, LengthInPixels, SvgMarkup, pixelsFromCssLength
 } from "../shared/common";
 import { CellIndex, PageIndex } from "../shared/cell";
 
-import { $, $newSvg, convertPointsToPixels, pixelsFromCssLength } from "../dom";
+import { $, $newSvg, } from "../dom";
 
 import { ClientNotebook } from "./client-notebook";
 
@@ -48,7 +48,6 @@ export class ClientPage {
     this.notebook = notebook;
     this.index = pageIndex;
 
-    // REVIEW: points to pixels conversion?
     const x = pixelsFromCssLength(notebook.margins.left);
     let y = pixelsFromCssLength(notebook.margins.top);
     let pageMarkup: SvgMarkup = <SvgMarkup>'';
@@ -81,21 +80,12 @@ export class ClientPage {
   // Public Instance Property Functions
 
   public get heightInPixels(): LengthInPixels {
-    return convertPointsToPixels(this.heightInPoints);
-  }
-
-  public get heightInPoints(): LengthInPoints {
-    return extractPointsFromCssLength(this.notebook.pageSize.height);
+    return pixelsFromCssLength(this.notebook.pageSize.height);
   }
 
   public get widthInPixels(): LengthInPixels {
-    return convertPointsToPixels(this.heightInPoints);
+    return pixelsFromCssLength(this.notebook.pageSize.width);
   }
-
-  public get widthInPoints(): LengthInPoints {
-    return extractPointsFromCssLength(this.notebook.pageSize.height);
-  }
-
 
   // --- PRIVATE ---
 
@@ -108,7 +98,4 @@ export class ClientPage {
 
 // Helper Functions
 
-function extractPointsFromCssLength(length: CssLength): LengthInPoints {
-  assert(length.endsWith('pt'));
-  return parseInt(length, 10);
-}
+

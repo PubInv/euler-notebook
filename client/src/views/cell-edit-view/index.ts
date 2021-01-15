@@ -27,7 +27,7 @@ const debug = debug1('client:cell-edit-view');
 import { CellObject, CellId } from "../../shared/cell";
 import {
   assert, Html, CssClass, CssLength, CssSize, LengthInPixels,
-  PIXELS_PER_INCH, POINTS_PER_INCH, ElementId, SvgMarkup
+  ElementId, SvgMarkup, cssLengthInPixels
 } from "../../shared/common";
 import { NotebookUpdate } from "../../shared/server-responses";
 import { Stroke, StrokeId } from "../../shared/stylus";
@@ -355,13 +355,11 @@ export abstract class CellEditView<O extends CellObject> extends HtmlElement<'di
 
     assert(this.resizingInitialHeight);
     const newHeightInPixels = this.resizingInitialHeight!+deltaY;
-    const newHeightInPoints = Math.round(newHeightInPixels * POINTS_PER_INCH / PIXELS_PER_INCH);
 
     delete this.resizingInitialHeight;
 
-    // TODO: Convert pixels to points
     const width = this.cell.obj.cssSize.width;
-    const height = <CssLength>`${newHeightInPoints}pt`;
+    const height = cssLengthInPixels(newHeightInPixels, 'px');
     const cssSize: CssSize = { width, height };
     // LATER: Some sort of visual indication that the resize request is outstanding.
     this.cell.resize(cssSize)

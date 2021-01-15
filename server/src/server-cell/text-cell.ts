@@ -23,9 +23,8 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 // const MODULE = __filename.split(/[/\\]/).slice(-1)[0].slice(0,-3);
 // const debug = debug1(`server:${MODULE}`);
 
-import { deepCopy, PlainText, SvgMarkup } from "../shared/common";
+import { deepCopy, PlainText, SvgMarkup, CssLength } from "../shared/common";
 import { CellSource, CellType, TextCellObject } from "../shared/cell";
-import { cssSizeInPoints } from "../shared/notebook";
 import { EMPTY_STROKE_DATA } from "../shared/stylus";
 
 import { ServerNotebook } from "../server-notebook";
@@ -34,8 +33,7 @@ import { ServerCell } from "./index";
 
 // Constants
 
-const DEFAULT_WIDTH = 6.5; // inches
-const DEFAULT_SIZE = cssSizeInPoints(DEFAULT_WIDTH, 1);
+const DEFAULT_HEIGHT = <CssLength>"1in";
 
 // Exported Class
 
@@ -47,7 +45,7 @@ export class TextCell extends ServerCell<TextCellObject> {
     const obj: TextCellObject = {
       id: notebook.nextId(),
       type: CellType.Text,
-      cssSize: deepCopy(DEFAULT_SIZE),
+      cssSize: this.initialCellSize(notebook, DEFAULT_HEIGHT),
       displaySvg: <SvgMarkup>'',
       inputText: <PlainText>"",
       source,

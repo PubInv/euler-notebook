@@ -22,7 +22,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 // import * as debug1 from "debug";
 // const debug = debug1('client:notebook-read-view');
 
-import { assert, assertFalse, CssClass, notImplementedWarning } from "../shared/common";
+import { assert, assertFalse, CssClass, notImplementedWarning, cssSizeInPixels, pixelsFromCssLength } from "../shared/common";
 
 import { HtmlElement } from "../html-element";
 
@@ -30,7 +30,6 @@ import { Mode } from "../screens/notebook-read-screen/index";
 
 import { PageReadView } from "./page-read-view";
 import { ClientNotebook } from "../models/client-notebook";
-import { cssSizeInPixels, pointsFromCssLength } from "../dom";
 
 // Types
 
@@ -88,13 +87,13 @@ export class NotebookReadView extends HtmlElement<'div'> {
     // TODO: Different pages could have different sizes.
     const viewWidth = this.$elt.getBoundingClientRect().width;
     assert(viewWidth>0);
-    const pageAspectRatio = pointsFromCssLength(this.notebook.pageSize.width) / pointsFromCssLength(this.notebook.pageSize.height);
+    const pageAspectRatio = pixelsFromCssLength(this.notebook.pageSize.width) / pixelsFromCssLength(this.notebook.pageSize.height);
     const w = viewWidth / (this.pagesPerRow + (this.pagesPerRow+1)*this.marginPercent);
     const pageWidth = Math.round(w);
     const pageHeight = Math.round(w / pageAspectRatio);
     const pageMargin = Math.round(w * this.marginPercent);
 
-    const cssSize = cssSizeInPixels(pageWidth, pageHeight);
+    const cssSize = cssSizeInPixels(pageWidth, pageHeight, 'px');
     for (const pageView of this.pageViews) {
       pageView.resizeViaStyle(cssSize);
       pageView.$elt.style.margin = `${pageMargin}px 0 0 ${pageMargin}px`;

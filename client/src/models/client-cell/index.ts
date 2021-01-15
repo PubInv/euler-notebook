@@ -23,7 +23,7 @@ import * as debug1 from "debug";
 const debug = debug1('client:client-cell');
 
 import { CellId, CellObject, CellType } from "../../shared/cell";
-import { assert, assertFalse, CssSelector, CssSize, ElementId, escapeHtml, Html } from "../../shared/common";
+import { assert, assertFalse, CssSelector, CssSize, ElementId, escapeHtml, Html, pixelsFromCssLength } from "../../shared/common";
 import { DisplayUpdate, NotebookUpdate } from "../../shared/server-responses";
 import { cellBriefSynopsis, cellSynopsis, notebookUpdateSynopsis } from "../../shared/debug-synopsis";
 import { Stroke, StrokeId } from "../../shared/stylus";
@@ -49,13 +49,12 @@ export abstract class ClientCell<O extends CellObject> {
     this.obj = obj;
     this.views = new Set();
 
-    // REVIEW: pt to px conversion?
-    const width = parseInt(obj.cssSize.width);
-    const height = parseInt(obj.cssSize.height);
+    const widthInPixels = pixelsFromCssLength(obj.cssSize.width);
+    const heightInPixels = pixelsFromCssLength(obj.cssSize.height);
     const $svgSymbol = $newSvg({
       tag: 'symbol',
       id: <ElementId>`n${notebook.id}c${obj.id}`,
-      attrs: { viewBox: `0 0 ${width} ${height}` },
+      attrs: { viewBox: `0 0 ${widthInPixels} ${heightInPixels}` },
       html: obj.displaySvg,
     });
     $(document, <CssSelector>'#svgContent').append($svgSymbol);

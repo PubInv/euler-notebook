@@ -20,7 +20,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 // Requirements
 
 import { CellObject } from "./cell";
-import { CssLength, CssSize, POINTS_PER_INCH } from "./common";
+import { CssLength, CssSize } from "./common";
 import { CellInserted, NotebookUpdate } from "./server-responses";
 import { Watcher } from "./watched-resource";
 
@@ -57,26 +57,4 @@ export function cellInsertedFromNotebookChange(change: NotebookUpdate): CellInse
   // TODO: Rename this function so it doesn't start with a capital letter.
   if (change.type != 'cellInserted') { throw new Error("Not StyleInserted change."); }
   return change;
-}
-
-// REVIEW: Some of these are similar to functions in client's dom.ts. Combine?
-
-export function inchesInPoints(inches: number): CssLength {
-  return <CssLength>`${Math.round(inches * POINTS_PER_INCH)}pt`;
-}
-
-export function cssSizeInPoints(widthInches: number, heightInches: number): CssSize {
-  return {
-    height: inchesInPoints(heightInches),
-    width: inchesInPoints(widthInches),
-  };
-}
-
-export function marginsInPoints(top: number, right: number, bottom: number, left: number): PageMargins {
-  return {
-    top: inchesInPoints(top),
-    right: inchesInPoints(right),
-    bottom: inchesInPoints(bottom),
-    left: inchesInPoints(left),
-  };
 }

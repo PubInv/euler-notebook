@@ -20,11 +20,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 // Requirements
 
 import {
-  assert, CssClass, CssLength, CssSelector, CssSize, ElementId, Html,
-  LengthInPixels,
-  LengthInPoints,
-  PIXELS_PER_INCH,
-  POINTS_PER_INCH,
+  assert, CssClass, CssSelector, ElementId, Html,
   RelativeUrl, SvgMarkup
 } from "./shared/common";
 import {
@@ -276,32 +272,6 @@ export function $svg<K extends keyof SVGElementTagNameMap>(root: Element|Documen
 //   $div.appendChild(document.createTextNode(str));
 //   return <Html>$div.innerHTML;
 // }
-
-export function cssLengthInPixels(length: number): CssLength {
-  return <CssLength>`${length}px`;
-}
-
-export function cssSizeInPixels(width: number, height: number): CssSize {
-  return {
-    width: cssLengthInPixels(width),
-    height: cssLengthInPixels(height),
-  };
-}
-
-export function convertPointsToPixels(length: LengthInPoints): LengthInPixels {
-  return Math.round(length * PIXELS_PER_INCH / POINTS_PER_INCH);
-}
-
-export function pixelsFromCssLength(length: CssLength): LengthInPixels {
-  // LATER: Allow other units besides points
-  return convertPointsToPixels(pointsFromCssLength(length));
-}
-
-export function pointsFromCssLength(length: CssLength): LengthInPoints {
-  // LATER: Allow unit conversions.
-  assert(length.endsWith('pt'));
-  return parseFloat(length);
-}
 
 export function svgIconReferenceMarkup(id: SvgIconId): SvgMarkup {
   return <SvgMarkup>`<svg class="icon"><use href="#${id}"/></svg>`

@@ -23,7 +23,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 // const MODULE = __filename.split(/[/\\]/).slice(-1)[0].slice(0,-3);
 // const debug = debug1(`server:${MODULE}`);
 
-import { assert, CssSize, escapeHtml, Html, SvgMarkup } from "../shared/common";
+import { assert, CssLength, CssSize, cssSizeInPixels, escapeHtml, Html, pixelsFromCssLength, SvgMarkup } from "../shared/common";
 import { CellId, CellObject, CellType } from "../shared/cell";
 import { convertStrokeToPath, Stroke, StrokeId } from "../shared/stylus";
 
@@ -105,6 +105,19 @@ export abstract class ServerCell<O extends CellObject> {
     const newPath = convertStrokeToPath(this.id, stroke);
     const displayUpdate: DisplayUpdate = { append: [ newPath ] };
     return displayUpdate;
+  }
+
+  // --- PRIVATE ---
+
+  // Private Class Methods
+
+  protected static initialCellSize(notebook: ServerNotebook, cssHeight: CssLength): CssSize {
+    const pageWidth = pixelsFromCssLength(notebook.obj.pageSize.width);
+    const leftMargin = pixelsFromCssLength(notebook.obj.margins.left);
+    const rightMargin = pixelsFromCssLength(notebook.obj.margins.right);
+    const width = pageWidth - leftMargin - rightMargin;
+    const height = pixelsFromCssLength(cssHeight);
+    return cssSizeInPixels(width, height, 'px');
   }
 
   // Private Instance Properties

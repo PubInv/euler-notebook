@@ -24,12 +24,11 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 export type ClientId = '{ClientId}'
 export type CssClass = '{CssClass}';
 export type CssLength = '{CssLength}';
-export type CssLengthUnits = 'in'|'pt'|'px';
+export type CssLengthUnit = 'in'|'pt'|'px';
 export type CssSelector = '{CssSelector}';
 export type ElementId = '{ElementId}';
 export type Html = '{Html}';
 export type LengthInPixels = number;
-export type LengthInPoints = number;
 export type Milliseconds = number;  // Time interval in milliseconds.
 export type PlainText = '{PlainText}';
 export type PositionInPixels = number;
@@ -55,8 +54,7 @@ export interface PromiseResolver<T> {
 // Constants
 
 const ASSERTION_FAILED_MSG = "Assertion failed.";
-export const PIXELS_PER_INCH = 96;  // REVIEW: May not be true???
-export const POINTS_PER_INCH = 72;
+export const PIXELS_PER_INCH = 96;
 
 // Exported Functions
 
@@ -66,6 +64,23 @@ export function assert(value: any, message?: string): void {
 
 export function assertFalse( message?: string): never {
   throw new Error(message || ASSERTION_FAILED_MSG);
+}
+
+export function cssLengthInPixels(length: number, unit: CssLengthUnit): CssLength {
+  let convertedLength: number;
+  switch(unit) {
+    case 'in': convertedLength = length * PIXELS_PER_INCH; break;
+    case 'px': convertedLength = length; break;
+    default: assertFalse();
+  }
+  return <CssLength>`${Math.round(convertedLength)}px`;
+}
+
+export function cssSizeInPixels(width: LengthInPixels, height: LengthInPixels, unit: CssLengthUnit): CssSize {
+  return {
+    width: cssLengthInPixels(width, unit),
+    height: cssLengthInPixels(height, unit),
+  };
 }
 
 export function deepCopy<T>(data: T): T {
@@ -108,6 +123,20 @@ export function notImplementedError(feature: string): never {
 
 export function notImplementedWarning(feature: string): void {
   console.warn(`${feature} is not yet implemented.`);
+}
+
+export function pixelsFromCssLength(cssLength: CssLength): LengthInPixels {
+  const originalLength = parseFloat(cssLength);
+  let unrounded: number;
+  if (cssLength.endsWith('px')) {
+    unrounded = originalLength;
+  } else if (cssLength.endsWith('in')) {
+    unrounded = originalLength * PIXELS_PER_INCH;
+  } else {
+    // LATER: Other units as needed.
+    assertFalse();
+  }
+  return Math.round(unrounded);
 }
 
 export function replaceStringSegment(s: string, start: number, end: number, replacement: string): string {

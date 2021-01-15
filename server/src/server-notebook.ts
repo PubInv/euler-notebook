@@ -31,9 +31,9 @@ const debug = debug1(`server:${MODULE}`);
 // import { readdirSync, unlink, writeFileSync } from "fs"; // LATER: Eliminate synchronous file operations.
 
 import { CellObject, CellSource, CellId, CellPosition, CellType, CellIndex } from "./shared/cell";
-import { assert, assertFalse, CssLength, deepCopy, ExpectedError, Html, notImplementedError, Timestamp } from "./shared/common";
+import { assert, assertFalse, CssLength, deepCopy, ExpectedError, Html, notImplementedError, Timestamp, cssSizeInPixels, CssLengthUnit, cssLengthInPixels } from "./shared/common";
 import { NotebookPath, NOTEBOOK_PATH_RE, NotebookName, FolderPath, NotebookEntry, Folder } from "./shared/folder";
-import { NotebookObject, NotebookWatcher, cssSizeInPoints, marginsInPoints } from "./shared/notebook";
+import { NotebookObject, NotebookWatcher, PageMargins } from "./shared/notebook";
 import {
   NotebookChangeRequest, MoveCell, InsertEmptyCell, DeleteCell, InsertStroke, DeleteStroke,
   ChangeNotebook, UseTool, RequestId, NotebookRequest, OpenNotebook, CloseNotebook, ResizeCell,
@@ -78,11 +78,11 @@ interface ServerNotebookObject extends NotebookObject {
 
 // Constants
 
-const LETTER_PAGE_SIZE = cssSizeInPoints(8.5, 11);
-const DEFAULT_LETTER_MARGINS = marginsInPoints(1,1,1,1);
+const LETTER_PAGE_SIZE = cssSizeInPixels(8.5, 11, 'in');
+const DEFAULT_LETTER_MARGINS = marginsInPixels(1,1,1,1, 'in');
 
 
-const FORMAT_VERSION = "0.0.19";
+const FORMAT_VERSION = "0.0.20";
 
 const EMPTY_NOTEBOOK_OBJ: ServerNotebookObject = {
   nextId: 1,
@@ -205,6 +205,8 @@ export class ServerNotebook extends WatchedResource<NotebookPath, ServerNotebook
   }
 
   // Public Instance Properties
+
+  public obj: ServerNotebookObject;
 
   // Public Instance Property Functions
 
@@ -345,7 +347,6 @@ export class ServerNotebook extends WatchedResource<NotebookPath, ServerNotebook
   private cellMap: Map<CellId, ServerCell<CellObject>>;
   private cells: ServerCell<CellObject>[];
   private ephemeral?: boolean;     // Not persisted to the filesystem.
-  private obj: ServerNotebookObject;
   private permissions!: Permissions;
   private reservedIds: Set<CellId>;
   private saving?: boolean;
@@ -971,6 +972,14 @@ export function notebookPath(path: FolderPath, name: NotebookName): NotebookPath
 
 // Helper Functions
 
+export function marginsInPixels(top: number, right: number, bottom: number, left: number, unit: CssLengthUnit = 'px'): PageMargins {
+  return {
+    top: cssLengthInPixels(top, unit),
+    right: cssLengthInPixels(right, unit),
+    bottom: cssLengthInPixels(bottom, unit),
+    left: cssLengthInPixels(left, unit),
+  };
+}
 
 // function cellMatchesPattern(cell: CellObject, options: FindCellOptions): boolean {
 //   return    (!options.source || cell.source == options.source)
