@@ -29,7 +29,7 @@ import { cellBriefSynopsis, cellSynopsis, notebookUpdateSynopsis } from "../../s
 import { Stroke, StrokeId } from "../../shared/stylus";
 
 import { ClientNotebook } from "../client-notebook";
-import { $, $newSvg, $newSvgFromMarkup } from "../../dom";
+import { $, $newSvg } from "../../dom";
 
 // Types
 
@@ -49,6 +49,7 @@ export abstract class ClientCell<O extends CellObject> {
     this.obj = obj;
     this.views = new Set();
 
+    // TODO: Delete SVG symbol from parent when cell is removed.
     const $svgSymbol = $newSvg({
       tag: 'symbol',
       id: <ElementId>`n${notebook.id}c${obj.id}`,
@@ -151,8 +152,12 @@ export abstract class ClientCell<O extends CellObject> {
 
     if (displayUpdate.append) {
       for (const markup of displayUpdate.append) {
-        const $markup = $newSvgFromMarkup(markup);
-        this.$svgSymbol.append($markup);
+        // Create an SVG element with the markup inside of it.
+        const $svg = $newSvg<'svg'>({ tag: 'svg', html: markup });
+        // Move all the nodes from the new SVG element our symbol definition.
+        while ($svg.childNodes.length > 0) {
+          this.$svgSymbol.appendChild($svg.childNodes[0]);
+        }
       }
     }
   }

@@ -27,7 +27,7 @@ import { assert } from './common';
 import {
   FolderRequest, ClientRequest, NotebookRequest, FolderChangeRequest, NotebookChangeRequest, UserRequest,
 } from './client-requests';
-import { FolderResponse, FolderUpdate, ServerResponse, NotebookResponse, NotebookUpdate, UserResponse } from "./server-responses";
+import { FolderResponse, FolderUpdate, ServerResponse, NotebookResponse, NotebookUpdate, UserResponse, DisplayUpdate } from "./server-responses";
 import { NotebookObject } from "./notebook";
 import { Stroke } from "./stylus";
 
@@ -73,6 +73,18 @@ export function clientUserMessageSynopsis(msg: UserRequest): string {
     case 'logout': rval += ` ${msg.sessionToken}`; break;
     default: rval += UNKNOWN_TYPE;
   }
+  return rval;
+}
+
+export function displayUpdateSynopsis(update: DisplayUpdate): string {
+  let rval = "DU[";
+  if (update.delete) {
+    rval += `D ` + update.delete.join(',');
+  }
+  if (update.append) {
+    rval += `A ` + update.append.map(markup=>markup.slice(0, 8)+"...").join(',');
+  }
+  rval += "]";
   return rval;
 }
 
@@ -126,7 +138,7 @@ export function notebookUpdateSynopsis(update: NotebookUpdate): string {
     case 'cellInserted':   rval += ` ${cellSynopsis(update.cellObject)}`; break;
     case 'cellMoved':      rval += ` C${update.cellId} to index ${update.newIndex}`; break;
     case 'cellResized':    rval += ` C${update.cellId} ${JSON.stringify(update.cssSize)}`; break;
-    case 'strokeInserted': rval += ` C${update.cellId} ${strokeSynopsis(update.stroke)}`; break;
+    case 'strokeInserted': rval += ` C${update.cellId} ${strokeSynopsis(update.stroke)} ${displayUpdateSynopsis(update.displayUpdate)}`; break;
     case 'strokeDeleted':  rval += ` C${update.cellId} S${update.strokeId}`; break;
     default: rval += UNKNOWN_TYPE;
   }
@@ -238,7 +250,7 @@ function serverUserResponseSynopsis(msg: UserResponse): string {
 }
 
 function strokeSynopsis(stroke: Stroke): string {
-  const prefixLen = Math.min(stroke.x.length, 3);
+  const prefixLen = Math.min(stroke.x.length, 2);
   const abbreviated = stroke.x.length > prefixLen;
   const xPrefix = stroke.x.slice(0, prefixLen);
   const points = xPrefix.map((x,i)=>{
