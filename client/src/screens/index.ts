@@ -106,8 +106,10 @@ export abstract class Screens {
 
   public static onResize(window: Window, event: UIEvent): void {
     // REVIEW: Notify all screens of resize?
+    //         Note that $elt.getBoundingClientRect() doesn't work if the element is not displayed,
+    //         so it might be more complicated for the screen to figure out it's size if it is not
+    //         shown. We could flag any screens that were hidden when a resize comes in, and notify
+    //         them that a resize occurred when they are shown.
     this.currentScreen?.onResize(window, event);
   }
-
-
 }

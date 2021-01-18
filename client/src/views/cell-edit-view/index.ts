@@ -34,7 +34,7 @@ import { Stroke, StrokeId } from "../../shared/stylus";
 
 import { HtmlElement } from "../../html-element";
 import {
-  $new, $newSvg, CLOSE_X_ENTITY, CELL_ICONS, svgIconReferenceMarkup,
+  $new, $newSvg, CLOSE_X_ENTITY, CELL_ICONS, svgIconReferenceMarkup, viewBoxFromCssSize,
 } from "../../dom";
 
 import { Tools } from "../../screens/notebook-edit-screen/tools";
@@ -160,6 +160,7 @@ export abstract class CellEditView<O extends CellObject> extends HtmlElement<'di
       tag: 'svg',
       attrs: {
         height: cell.obj.cssSize.height,
+        viewBox: viewBoxFromCssSize(cell.obj.cssSize),
         width: cell.obj.cssSize.width,
       },
       class: <CssClass>'displaySvg',

@@ -27,6 +27,7 @@ import { CssClass, SvgMarkup } from "../shared/common";
 import { ClientNotebook } from "../models/client-notebook";
 import { ClientPage } from "../models/client-page";
 import { SvgElement } from "../svg-element";
+import { viewBoxFromCssSize } from "../dom";
 
 // Exported Class
 
@@ -42,9 +43,9 @@ export class PageReadView extends SvgElement<'svg'> {
       tag: 'svg',
       class: <CssClass>'page',
       attrs: {
-        viewBox: `0 0 ${page.widthInPixels} ${page.heightInPixels}`,
+        viewBox: viewBoxFromCssSize(page.cssSize),
       },
-      html: <SvgMarkup>`<use href="#n${notebook.id}p${page.index}"/>`,
+      html: <SvgMarkup>`<use href="#n${notebook.id}p${page.index}" x="0" y="0"/>`,
       // listeners: {
       //   click: e=>this.onPageClicked(e),
       //   dblclick: e=>this.onPageDoubleClicked(e),

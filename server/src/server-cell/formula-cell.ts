@@ -66,7 +66,7 @@ export class FormulaCell extends ServerCell<FormulaCellObject> {
   // Public Instance Methods
 
   public displaySvg(): SvgMarkup {
-    const markup = <SvgMarkup>'<!-- Formula Cell SVG -->';
+    const markup = <SvgMarkup>'';
     const quadraticFormulaTex = <TexExpression>"x = \\frac{{ - b \\pm \\sqrt {b^2 - 4ac} }}{{2a}}";
     const formulaMarkup = convertTexToSvg(quadraticFormulaTex);
     // TODO: Strip <svg></svg>

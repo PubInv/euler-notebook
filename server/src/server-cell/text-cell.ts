@@ -63,7 +63,7 @@ export class TextCell extends ServerCell<TextCellObject> {
   // Public Instance Methods
 
   public displaySvg(): SvgMarkup {
-    const markup = <SvgMarkup>'<!-- Text Cell SVG -->';
+    const markup = <SvgMarkup>'';
     return super.displaySvg(markup);
   }
 

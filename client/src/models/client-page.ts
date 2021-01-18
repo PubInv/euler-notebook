@@ -23,11 +23,11 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 // const debug = debug1('client:client-page');
 
 import {
-  CssSelector, ElementId, LengthInPixels, SvgMarkup, pixelsFromCssLength
+  CssSelector, ElementId, SvgMarkup, pixelsFromCssLength, CssSize
 } from "../shared/common";
 import { CellIndex, PageIndex } from "../shared/cell";
 
-import { $, $newSvg, } from "../dom";
+import { $, $newSvg } from "../dom";
 
 import { ClientNotebook } from "./client-notebook";
 
@@ -48,11 +48,11 @@ export class ClientPage {
     this.notebook = notebook;
     this.index = pageIndex;
 
+    // Construct the SVG markup for the page.
+    // TODO: Just the cells of this page.
     const x = pixelsFromCssLength(notebook.margins.left);
     let y = pixelsFromCssLength(notebook.margins.top);
     let pageMarkup: SvgMarkup = <SvgMarkup>'';
-    // TODO: Just the cells of this page.
-
     for (let i = cellIndex; i < cellIndex+numCells; i++) {
       const cell = notebook.cells[i];
       const cellMarkup: SvgMarkup = <SvgMarkup>`<use href="#n${notebook.id}c${cell.id}" x="${x}" y="${y}"/>\n`;
@@ -63,12 +63,9 @@ export class ClientPage {
     const $svgSymbol = $newSvg({
       tag: 'symbol',
       id: <ElementId>`n${notebook.id}p${pageIndex}`,
-      attrs: {
-        viewBox: `0 0 ${this.widthInPixels} ${this.heightInPixels}`
-      },
       html: pageMarkup,
     });
-    $(document, <CssSelector>'#svgContent').append($svgSymbol);
+    $(document, <CssSelector>'#svgContent>defs').append($svgSymbol);
     // this.$svgSymbol = $svgSymbol;
 
   }
@@ -79,12 +76,8 @@ export class ClientPage {
 
   // Public Instance Property Functions
 
-  public get heightInPixels(): LengthInPixels {
-    return pixelsFromCssLength(this.notebook.pageSize.height);
-  }
-
-  public get widthInPixels(): LengthInPixels {
-    return pixelsFromCssLength(this.notebook.pageSize.width);
+  public get cssSize(): CssSize {
+    return this.notebook.pageSize;
   }
 
   // --- PRIVATE ---

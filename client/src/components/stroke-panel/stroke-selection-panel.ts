@@ -28,7 +28,7 @@ import { NotebookUpdate } from "../../shared/server-responses";
 import { notebookUpdateSynopsis } from "../../shared/debug-synopsis";
 
 import { SvgElement } from "../../svg-element";
-import { $newSvg, $svg } from "../../dom";
+import { $newSvg, $svg, viewBoxFromCssSize } from "../../dom";
 import { showError } from "../../error-handler";
 
 // Types
@@ -66,7 +66,11 @@ export class StrokeSelectionPanel extends SvgElement<'svg'> {
     debug(`Creating instance`)
     super({
       tag: 'svg',
-      attrs: { height: cssSize.height, width: cssSize.width },
+      attrs: {
+        height: cssSize.height,
+        viewBox: viewBoxFromCssSize(cssSize),
+        width: cssSize.width
+      },
       class: <CssClass>'strokeSelectionPanel',
       listeners: {
         pointercancel:  e=>this.onPointerCancel(e),

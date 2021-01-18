@@ -29,6 +29,7 @@ import { showError } from "../../error-handler";
 import { SvgElement } from "../../svg-element";
 import { notebookUpdateSynopsis } from "../../shared/debug-synopsis";
 import { NotebookUpdate } from "../../shared/server-responses";
+import { viewBoxFromCssSize } from "../../dom";
 
 
 // Types
@@ -62,7 +63,11 @@ export class StrokeDrawingPanel extends SvgElement<'svg'> {
     debug(`Creating instance`)
     super({
       tag: 'svg',
-      attrs: { height: cssSize.height, width: cssSize.width },
+      attrs: {
+        height: cssSize.height,
+        viewBox: viewBoxFromCssSize(cssSize),
+        width: cssSize.width,
+      },
       class: <CssClass>'strokeDrawingPanel',
       listeners: {
         pointercancel:  e=>this.onPointerCancel(e),

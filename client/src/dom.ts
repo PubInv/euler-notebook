@@ -20,7 +20,8 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 // Requirements
 
 import {
-  assert, CssClass, CssSelector, ElementId, Html,
+  assert, CssClass, CssSelector, CssSize, ElementId, Html,
+  pixelsFromCssLength,
   RelativeUrl, SvgMarkup
 } from "./shared/common";
 import {
@@ -275,6 +276,12 @@ export function $svg<K extends keyof SVGElementTagNameMap>(root: Element|Documen
 
 export function svgIconReferenceMarkup(id: SvgIconId): SvgMarkup {
   return <SvgMarkup>`<svg class="icon"><use href="#${id}"/></svg>`
+}
+
+export function viewBoxFromCssSize(cssSize: CssSize): string {
+  const width = pixelsFromCssLength(cssSize.width);
+  const height = pixelsFromCssLength(cssSize.height);
+  return `0 0 ${width} ${height}`;
 }
 
 // HELPER FUNCTIONS
