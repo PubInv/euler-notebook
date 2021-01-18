@@ -403,7 +403,7 @@ export class NotebookEditView extends HtmlElement<'div'> {
   private onCellDeleted(update: CellDeleted): void {
     const cellIndex = this.cellViewIndex(update.cellId);
     const cellView = this.cellViews.splice(cellIndex, 1)[0];
-    cellView.$elt.remove();
+    cellView.onCellDeleted(update);
   }
 
   private onCellInserted(update: CellInserted): void {

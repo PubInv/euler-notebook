@@ -424,8 +424,10 @@ export class ClientNotebook {
 
   private onCellDeleted(update: CellDeleted): void {
     const { cellId } = update;
-    this.cellMap.delete(cellId);
-    const cellIndex = this.cellIndex(cellId);
+    const cell = this.getCell(cellId);
+    cell.onCellDeleted(update);
+    this.cellMap.delete(cell.id);
+    const cellIndex = this.cellIndex(cell.id);
     this.cells.splice(cellIndex, 1);
   }
 
@@ -454,9 +456,8 @@ export class ClientNotebook {
   }
 
   private onUpdate(update: NotebookUpdate, ownRequest: boolean): void {
-    debug(`onUpdate ${notebookUpdateSynopsis(update)}`);
-
     // Process an individual notebook change from the server.
+    debug(`onUpdate ${notebookUpdateSynopsis(update)}`);
 
     // Update our data structure
     switch (update.type) {
@@ -476,6 +477,7 @@ export class ClientNotebook {
     }
 
     // Notify notebook views of the update.
+    // REVIEW: for deletions should we update the view before updating the model?
     for (const views of this.views) {
       views.onUpdate(update, ownRequest);
     }

@@ -29,7 +29,7 @@ import {
   assert, Html, CssClass, CssLength, CssSize, LengthInPixels,
   ElementId, SvgMarkup, cssLengthInPixels
 } from "../../shared/common";
-import { NotebookUpdate } from "../../shared/server-responses";
+import { CellDeleted, NotebookUpdate } from "../../shared/server-responses";
 import { Stroke, StrokeId } from "../../shared/stylus";
 
 import { HtmlElement } from "../../html-element";
@@ -106,6 +106,13 @@ export abstract class CellEditView<O extends CellObject> extends HtmlElement<'di
   public onUpdate(update: NotebookUpdate, ownRequest: boolean): void {
     this.strokePanel.onUpdate(update, ownRequest);
   };
+
+  // Public Instance Event Handlers
+
+  public onCellDeleted(_update: CellDeleted): void {
+    // REVIEW: Remove our "view" from the cell?
+    this.$elt.remove();
+  }
 
   // --- PRIVATE ---
 
@@ -253,7 +260,7 @@ export abstract class CellEditView<O extends CellObject> extends HtmlElement<'di
     event.stopPropagation(); // Prevent our own 'onClicked' handler from being called.
     debug(`onDeleteCellButtonClicked`);
     // TODO: Make the provisional change by hiding ourself? Or notify our container to hide us?
-    await this.cell.delete();
+    await this.cell.deleteRequest();
   }
 
   private onDragEnd(_event: DragEvent): void {

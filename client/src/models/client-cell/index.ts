@@ -24,7 +24,7 @@ const debug = debug1('client:client-cell');
 
 import { CellId, CellObject, CellType } from "../../shared/cell";
 import { assert, assertFalse, CssSelector, CssSize, ElementId, escapeHtml, Html } from "../../shared/common";
-import { DisplayUpdate, NotebookUpdate } from "../../shared/server-responses";
+import { CellDeleted, DisplayUpdate, NotebookUpdate } from "../../shared/server-responses";
 import { cellBriefSynopsis, cellSynopsis, notebookUpdateSynopsis } from "../../shared/debug-synopsis";
 import { Stroke, StrokeId } from "../../shared/stylus";
 
@@ -114,7 +114,7 @@ export abstract class ClientCell<O extends CellObject> {
     }
   };
 
-  public async delete(): Promise<void> {
+  public async deleteRequest(): Promise<void> {
     // Called when the 'X' button has been pressed in a cell.
     // Ask the notebook to delete us.
     await this.notebook.deleteCellRequest(this.id);
@@ -132,6 +132,12 @@ export abstract class ClientCell<O extends CellObject> {
     // Called when user finishes resizing a cell.
     // Ask the notebook to resize us.
     await this.notebook.resizeCellRequest(this.id, cssSize);
+  }
+
+  // Public Event Handlers
+
+  public onCellDeleted(_update: CellDeleted): void {
+    this.$svgSymbol.remove();
   }
 
   // --- PRIVATE ---
