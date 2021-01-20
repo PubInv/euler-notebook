@@ -380,7 +380,7 @@ export class ClientNotebook {
     // TODO: Enable undo buttons, enable redo buttons?
     const results = await this.sendChangeRequests(changeRequests);
     const undoChangeRequests = results.undoChangeRequests!;
-    assert(undoChangeRequests && undoChangeRequests.length>0);
+    // TODO: assert(undoChangeRequests && undoChangeRequests.length>0);
     const entry: UndoEntry = { changeRequests, undoChangeRequests };
     while(this.undoStack.length > this.topOfUndoStack) { this.undoStack.pop(); }
     this.undoStack.push(entry);

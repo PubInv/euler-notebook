@@ -392,6 +392,7 @@ export class ServerNotebook extends WatchedResource<NotebookPath, ServerNotebook
     const cellIndex = this.cellIndex(cellId);
     assert(cellIndex>=0);
     // const afterId = cellIndex === 0 ? CellPosition.Top : this.cells[cellIndex-1].id;
+    this.cells.splice(cellIndex, 1);
     this.cellMap.delete(cellId);
 
     // TODO: Repaginate.
