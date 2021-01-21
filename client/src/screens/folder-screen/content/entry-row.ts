@@ -98,7 +98,7 @@ export class EntryRow<K extends keyof EntryTypeMap> extends HtmlElement<'tr'> {
       appendTo: $parentElt,
       children: [
         // File or folder icon
-        { tag: 'td', html: svgIconReferenceMarkup(type==EntryType.Folder?'iconMonstrFolder2':'iconMonstrFile5') },
+        { tag: 'td', html: svgIconReferenceMarkup(type==EntryType.Folder?'iconMonstrFolder2':'iconMonstrBook14') },
 
         // Name cell.
         // Contains a link, an input box, and an error message.

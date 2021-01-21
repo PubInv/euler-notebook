@@ -20,6 +20,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 // Requirements
 
 import {
+  AbsoluteUrl,
   assert, CssClass, CssSelector, CssSize, ElementId, Html,
   pixelsFromCssLength,
   RelativeUrl, SvgMarkup
@@ -62,6 +63,7 @@ interface SyncListeners {
   keydown?: SyncListener<KeyboardEvent>;
   keypress?: SyncListener<KeyboardEvent>;
   keyup?: SyncListener<KeyboardEvent>;
+  load?: SyncListener</* TYPESCRIPT: */Event>;
   mousedown?: SyncListener<MouseEvent>;
   pointercancel?: SyncListener<PointerEvent>;
   pointerdown?: SyncListener<PointerEvent>;
@@ -87,7 +89,7 @@ interface NewCommonOptions {
   id?: ElementId;
   hidden?: boolean;
   listeners?: SyncListeners;
-  src?: RelativeUrl;
+  src?: AbsoluteUrl|RelativeUrl;
   style?: string;
   styles?: Styles;
   title?: string;
@@ -120,12 +122,13 @@ interface Styles {
 }
 
 // Keep this list in sync with server/views/iconmonstr.pug.
-export type SvgIconId = 'iconMonstrBug12' | 'iconMonstrCalculator2' | 'iconMonstrClothing18' | 'iconMonstrEraser2' | 'iconMonstrFile5' |
-                  'iconMonstrFile12' | 'iconMonstrFile15' | 'iconMonstrFolder2' | 'iconMonstrFolder5' |
-                  'iconMonstrFullScreen7' | 'iconMonstrNote23' |
-                  'iconMagnifier6' | 'iconMonstrPencil9' | 'iconMonstrPrinter6' | 'iconMonstrRedo4' | 'iconMonstrRefresh2' |
-                  'iconMonstrRuler30' | 'iconMonstrText1' | 'iconMonstrTrashcan2' | 'iconMonstrUndo4' | 'iconMonstrUser1' |
-                  'iconMonstrChart20' ;
+export type SvgIconId =
+  'iconMonstrArrow71' | 'iconMonstrArrow72' |'iconMonstrBook14' | 'iconMonstrBook17' | 'iconMonstrBug12' |
+  'iconMonstrCalculator2' | 'iconMonstrClothing18' | 'iconMonstrEraser2' | 'iconMonstrFile5' | 'iconMonstrFile12' |
+  'iconMonstrFile15' | 'iconMonstrFolder2' | 'iconMonstrFolder5' | 'iconMonstrFullScreen7' | 'iconMonstrHome6' |
+  'iconMonstrNote23' | 'iconMonstrMagnifier6' | 'iconMonstrPencil9' | 'iconMonstrPrinter6' |
+  'iconMonstrRedo4' | 'iconMonstrRefresh2' | 'iconMonstrRuler30' | 'iconMonstrText1' | 'iconMonstrTrashcan2' |
+  'iconMonstrUndo4' | 'iconMonstrUser1' | 'iconMonstrChart20' ;
 
 // Constants
 

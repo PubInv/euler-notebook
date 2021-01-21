@@ -33,6 +33,7 @@ import { ClientNotebook, NotebookView } from "../../models/client-notebook";
 import { ScreenBase } from "../screen-base";
 
 import { DebugPopup } from "./debug-popup";
+import { ReferencePanel } from "./reference-panel";
 import { SearchPanel } from "./search-panel";
 import { Sidebar } from "./sidebar";
 import { Tools } from "./tools";
@@ -67,10 +68,11 @@ export class NotebookEditScreen extends ScreenBase implements NotebookView {
         this.editView = new NotebookEditView(this, notebook);
         this.sidebar = new Sidebar(this);
         // TODO: this.tools = new Tools(this);
+        this.referencePanel = new ReferencePanel(/* this */);
         this.searchPanel = new SearchPanel(this);
         this.debugPopup = new DebugPopup(this);
 
-        this.$elt.append(this.sidebar.$elt, this.editView.$elt, this.searchPanel.$elt, this.debugPopup.$elt);
+        this.$elt.append(this.sidebar.$elt, this.editView.$elt, this.searchPanel.$elt, this.referencePanel.$elt, this.debugPopup.$elt);
       },
       (err)=>{
         this.displayError(err, <Html>`Error opening notebook <tt>${path}</tt>`);
@@ -83,6 +85,7 @@ export class NotebookEditScreen extends ScreenBase implements NotebookView {
   public debugPopup!: DebugPopup;
   public notebook!: ClientNotebook;
   public searchPanel!: SearchPanel;
+  public referencePanel!: ReferencePanel;
   public sidebar!: Sidebar;
   public tools!: Tools;
   public editView!: NotebookEditView;
@@ -96,8 +99,19 @@ export class NotebookEditScreen extends ScreenBase implements NotebookView {
     super.show();
   }
 
+  public toggleReferencePanel(): void {
+    if (this.referencePanel.isHidden) {
+      if (!this.searchPanel.isHidden) { this.searchPanel.hide(); }
+      this.referencePanel.show();
+      this.referencePanel.setFocus();
+    } else {
+      this.referencePanel.hide();
+    }
+  }
+
   public toggleSearchPanel(): void {
     if (this.searchPanel.isHidden) {
+      if (!this.referencePanel.isHidden) { this.referencePanel.hide(); }
       this.searchPanel.show();
       this.searchPanel.setFocus();
     } else {

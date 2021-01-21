@@ -74,8 +74,8 @@ export class SearchPanel extends HtmlElement<'div'> {
               tag: 'button',
               class: <CssClass>'smallIconButton',
               type: 'submit',
-              title: "Full screen",
-              html: svgIconReferenceMarkup('iconMagnifier6'),
+              title: "Search",
+              html: svgIconReferenceMarkup('iconMonstrMagnifier6'),
             }
           ],
           asyncListeners: {

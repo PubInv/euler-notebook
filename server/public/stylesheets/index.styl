@@ -314,6 +314,40 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
     .figureCell
       padding var(--svg-top-offset) 0px 0px var(--svg-left-offset)
 
+  >.referencePanel
+    background white
+    border 1px solid #808080
+    height calc(100% - var(--header-height))
+    left var(--sidebar-width)
+    position fixed
+    top var(--header-height)
+    width calc(75% - var(--sidebar-width))
+
+    >.referenceForm
+      border-bottom 1px solid #808080
+      display flex
+      justify-content space-between
+
+      >input[type=text]
+        background none
+        border none
+        flex 2
+      >input[type=text]:focus
+        outline none
+
+      >button[type=submit]
+        flex 0
+        height var(--header-height)
+        padding var(--header-button-padding)
+        width var(--header-width)
+
+    >.referenceFrame
+      overflow scroll
+      border none
+      width 100%
+      // TODO: Need to subtract form height from height.
+      height 100%
+
   >.searchPanel
     background #F0F0F0
     border 1px solid #808080
@@ -395,10 +429,6 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
       height 52px // why not? doesn't work!: calc(var(--sidebar-width) - 2 * var(--sidebar-button-padding))
       width 52px // why not? doesn't work!: calc(var(--sidebar-width)- 2 * var(--sidebar-button-padding))
 
-  button:disabled
-    svg
-      fill #808080
-
 .smallIconButton
   background none
   border none
@@ -445,6 +475,10 @@ body
   height 100%
   margin 0
   user-select none
+
+button:disabled
+  >svg
+    fill #808080
 
 html
   height 100%

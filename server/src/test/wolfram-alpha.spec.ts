@@ -1,5 +1,5 @@
 /*
-Math Tablet
+Euler Notebook / Math Tablet
 Copyright (C) 2019-21 Public Invention
 https://pubinv.github.io/PubInv/
 
@@ -180,6 +180,14 @@ describe("wolfram alpha", function() {
 
       assert.isOk(sr.results[0].knownConstant,'We want a constant out of this'.concat(<string>f));
     }
+  }).timeout(50000);
+
+  it.only("Fibonacci Identity is handled sensibly", async function(){
+
+    const f= "fibonacci identity"
+    const sr : SearchResults = await search_full(<PlainText>f);
+    console.log("Fibonacci Identity search Results:",sr);
+    assert.isAtLeast(sr.results.length,1, 'We should get at least one renderable result: '.concat(<string>f));
   }).timeout(50000);
 
   it("Test ability to extract equation string", async function() {

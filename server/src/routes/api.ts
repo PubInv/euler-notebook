@@ -29,6 +29,7 @@ import { DebugParams, DebugResults, SearchParams } from "../shared/api-calls";
 
 import { ServerNotebook } from "../server-notebook";
 import { search_full as wolframAlphaSearch } from "../adapters/wolframalpha";
+import { search as oeisSearch } from "../adapters/oeis";
 
 // Types
 
@@ -73,7 +74,19 @@ router.post('/search', async function(req: Request, res: Response, _next: NextFu
     const notebook = await ServerNotebook.open(params.notebookPath, { mustExist: true });
     try {
       debug(`Searching for: "${params.query}"`);
-      const results = await wolframAlphaSearch(params.query);
+      // HACK: dje says I should use Promise.all here, but haven't figure that out yet!! - rlr
+      const results_wolfram = await wolframAlphaSearch(params.query);
+      debug("WOLFRAM RESULTS");
+      debug(results_wolfram);
+      const results_oeis = await oeisSearch(params.query);
+      debug("OIES");
+      debug(results_oeis);
+      const results = { results:
+                        results_wolfram.results.concat(results_oeis.results)
+                      };
+ //     const results = results_oeis;
+      debug("TOTAL");
+      debug(results);
       res.json(results);
     } finally {
       notebook.close();

@@ -151,7 +151,6 @@ for ( var i = 0; i < from.length; i++ ) {
 //         .replace(/-+/g, '-');        // COLLAPSE DASHES
 
 return str;
-
 }
 
 
@@ -179,6 +178,7 @@ export async function search_full(_text: PlainText): Promise<SearchResults> {
   if (isIterable(pods)) {
     for (const p of pods) {
       for (const s of p.subpods) {
+        debug("s = ",s);
         // Note this is a bit odd; the title seems to mostly be empty in the subpod,
         // so we are using the title from the pod
         // NOTE: among other implicit assumption, this assumes there is only

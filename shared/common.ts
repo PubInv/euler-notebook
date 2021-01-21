@@ -21,6 +21,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 // Types
 
+export type AbsoluteUrl = '{AbsoluteUrl}';
 export type ClientId = '{ClientId}'
 export type CssClass = '{CssClass}';
 export type CssLength = '{CssLength}';

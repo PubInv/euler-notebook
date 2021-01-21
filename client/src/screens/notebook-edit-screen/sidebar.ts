@@ -164,9 +164,17 @@ export class Sidebar extends ButtonBar {
           // search
           tag: 'button',
           class: <CssClass>'iconButton',
-          html: svgIconReferenceMarkup('iconMagnifier6'),
+          html: svgIconReferenceMarkup('iconMonstrMagnifier6'),
           listeners: { click: (_e: MouseEvent): void =>{ this.screen.toggleSearchPanel(); }},
           title: "Search",
+        },
+        {
+          // reference
+          tag: 'button',
+          class: <CssClass>'iconButton',
+          html: svgIconReferenceMarkup('iconMonstrBook17'),
+          listeners: { click: (_e: MouseEvent): void =>{ this.screen.toggleReferencePanel(); }},
+          title: "Reference",
         },
         SEPARATOR,
         {

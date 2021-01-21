@@ -2,5 +2,6 @@
 set -e
 pushd server > /dev/null
 # mocha -r ./node_modules/ts-node/register test/export-LaTeX.spec.ts
-mocha -r ./node_modules/ts-node/register src/test/wolfram-alpha.spec.ts
+# mocha -r ./node_modules/ts-node/register src/test/wolfram-alpha.spec.ts
+mocha -r ./node_modules/ts-node/register src/test/oeis.spec.ts
 popd > /dev/null
