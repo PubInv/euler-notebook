@@ -323,7 +323,7 @@ export class ServerFolder extends Folder<ServerFolderWatcher> {
     if (!(permissions & UserPermission.Modify)) {
       const message = user ?
                       `You do not have permission to modify this folder.` :
-                      `You must be logged in to modify this folder.`;
+                      `You must log in to modify this folder.`;
       throw new ExpectedError(message)
     }
 
@@ -407,7 +407,7 @@ export class ServerFolder extends Folder<ServerFolderWatcher> {
     if (!(permissions & UserPermission.Read)) {
       const message = user ?
                       `This folder is not public and is not shared with you.` :
-                      `You must be logged in to access this folder.`;
+                      `You must log in to access this folder.`;
       throw new ExpectedError(message)
     }
 

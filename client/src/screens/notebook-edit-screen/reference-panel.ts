@@ -186,13 +186,8 @@ export class ReferencePanel extends HtmlElement<'div'> {
   private onIFrameUrlChange(url: AbsoluteUrl|ThirdPartyUrl): void {
     this.$urlInput.value = url;
     const disableBackForwardButtons = (url == THIRD_PARTY_URL);
-    console.log(`DISABLE? ${disableBackForwardButtons}`);
-    try {
-      this.$backButton.disabled = disableBackForwardButtons;
-      this.$forwardButton.disabled = disableBackForwardButtons;
-    } catch(e) {
-      console.log("ERROR DISABLING BUTTONS!");
-    }
+    this.$backButton.disabled = disableBackForwardButtons;
+    this.$forwardButton.disabled = disableBackForwardButtons;
   }
 
   private async onSubmit(event: /* TYPESCRIPT: Why not SubmitEvent? */Event): Promise<void> {

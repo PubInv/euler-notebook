@@ -536,8 +536,8 @@ export class ServerNotebook extends WatchedResource<NotebookPath, ServerNotebook
     undoChangeRequests: NotebookChangeRequest[],
   ): Promise<void> {
     const { cellId, cssSize } = request;
-    assert(cssSize.height.endsWith('pt'));
-    assert(cssSize.width.endsWith('pt'));
+    assert(cssSize.height.endsWith('px'));
+    assert(cssSize.width.endsWith('px'));
     const cell = this.getCell(cellId);
     const oldCssSize = deepCopy(cell.cssSize);
 
@@ -709,7 +709,7 @@ export class ServerNotebook extends WatchedResource<NotebookPath, ServerNotebook
     if (!(permissions & UserPermission.Modify)) {
       const message = user ?
                       `You do not have permission to modify this notebook.` :
-                      `You must be logged in to modify this notebook.`;
+                      `You must logged in to modify this notebook.`;
       throw new ExpectedError(message)
     }
 
@@ -732,7 +732,7 @@ export class ServerNotebook extends WatchedResource<NotebookPath, ServerNotebook
     if (!(permissions & UserPermission.Read)) {
       const message = user ?
                       `This notebook is not public and is not shared with you.` :
-                      `You must be logged in to access this notebook.`;
+                      `You must log in to access this notebook.`;
       throw new ExpectedError(message)
     }
 
