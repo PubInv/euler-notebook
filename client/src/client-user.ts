@@ -48,14 +48,14 @@ export class ClientUser {
   }
 
   public static async loginIfSavedToken(): Promise<boolean> {
-    const sessionToken = <SessionToken|null>window.sessionStorage.getItem(STORAGE_KEY);
+    const sessionToken = <SessionToken|null>window.localStorage.getItem(STORAGE_KEY);
     if (!sessionToken) { return false; }
     const msg: LoginUserWithToken = { type: 'user', operation: 'tokenLogin', sessionToken };
     try {
       await this.finishLogin(msg);
     } catch(err) {
       // REVIEW: Only delete session token if we get a specific error? E.g. token not found error?
-      window.sessionStorage.removeItem(STORAGE_KEY);
+      window.localStorage.removeItem(STORAGE_KEY);
       throw err;
     }
     return true;
@@ -63,11 +63,11 @@ export class ClientUser {
 
   public static logout(): void {
     assert(this.loggedInUser);
-    const sessionToken = <SessionToken>window.sessionStorage.getItem(STORAGE_KEY)!;
+    const sessionToken = <SessionToken>window.localStorage.getItem(STORAGE_KEY)!;
     assert(sessionToken);
     const msg: LogoutUser = { type: 'user', operation: 'logout', sessionToken }
     appInstance.socket.sendMessage(msg);
-    window.sessionStorage.removeItem(STORAGE_KEY);
+    window.localStorage.removeItem(STORAGE_KEY);
     this.loggedInUser = undefined;
     appInstance.header.onUserLogout();
   }
@@ -106,7 +106,7 @@ export class ClientUser {
     assert(responseMessages.length == 1);
     const response = responseMessages[0];
     const instance = new this(response.obj);
-    try { window.sessionStorage.setItem(STORAGE_KEY, response.sessionToken); }
+    try { window.localStorage.setItem(STORAGE_KEY, response.sessionToken); }
     catch(err) { logError(err); }
     this.loggedInUser = instance;
     appInstance.header.onUserLogin(instance);
