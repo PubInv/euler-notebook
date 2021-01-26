@@ -26,7 +26,7 @@ import { Html } from "./shared/common";
 import { Header } from "./components/header";
 
 import { addAsyncEventListener, addSyncEventListener, showError } from "./error-handler";
-import { Pathname, Screens } from "./screens";
+import { Pathname, ScreenManager } from "./screens/screen-manager";
 import { ClientSocket } from "./client-socket";
 import { MessageDisplay } from "./message-display";
 import { ClientUser } from "./client-user";
@@ -83,17 +83,17 @@ class App {
     this.header = new Header();
     $body.append(this.header.$elt);
 
-    Screens.initialize();
+    ScreenManager.initialize();
 
     // TODO: Show a "connecting..." spinner.
     this.socket = await ClientSocket.connect(`ws://${window.location.host}/`);
     try { await ClientUser.loginIfSavedToken(); }
     catch(err) { showError(err, <Html>`Please log in again. Cannot restore user session`); }
-    Screens.navigateTo(this.currentPath);
+    ScreenManager.navigateTo(this.currentPath);
   }
 
   private onHashChange(_event: HashChangeEvent): void {
-    Screens.navigateTo(this.currentPath);
+    ScreenManager.navigateTo(this.currentPath);
   }
 }
 

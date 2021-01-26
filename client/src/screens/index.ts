@@ -19,97 +19,46 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 // Requirements
 
-import { Html, assertFalse } from "../shared/common";
-import { FOLDER_PATH_RE, NOTEBOOK_PATH_RE, FolderPath, NotebookPath } from "../shared/folder";
+import { errorMessageForUser, Html } from "../shared/common";
+import { HtmlElementSpecification } from "../dom";
+import { HtmlElement } from "../html-element";
+import { logErrorIfUnexpected } from "../error-handler";
 
-import { ScreenBase } from "./screen-base";
-import { addSyncEventListener } from "../error-handler";
-import { FolderScreen } from "./folder-screen";
-import { HomeScreen } from "./home-screen";
-import { NotebookEditScreen } from "./notebook-edit-screen";
-import { Mode, NotebookReadScreen } from "./notebook-read-screen";
-
-// Types
-
-export type Pathname = '{Pathname}';
-
-// Constants
-
-const NOTEBOOK_PATH_WITH_VIEW_RE = new RegExp("^(" + NOTEBOOK_PATH_RE.toString().slice(2,-2) + ")\\?view=(read|edit)$");
+// Requirements
 
 // Exported Class
 
-export abstract class Screens {
+export abstract class Screen extends HtmlElement<'div'>{
 
-  // Public Class Methods
+  // Public Instance Properties
 
-  public static initialize(): void {
-    // REVIEW: Could resize come before DOMContentLoaded?
-    addSyncEventListener<UIEvent>(window, 'resize', e=>this.onResize(window, e), <Html>"Window resize event");
-  }
+  // Public Instance Methods
 
-  public static navigateTo(pathname: Pathname): void {
-    console.log(`Navigating to ${pathname}`);
+  // Public Event Handlers
 
-    if (this.currentScreen) { this.currentScreen.hide(); }
-
-    let nextScreen = this.instanceMap.get(pathname);
-    if (!nextScreen) {
-      nextScreen = this.createScreenForPathname(pathname);
-      this.$body.append(nextScreen.$elt);
-      this.instanceMap.set(pathname, nextScreen);
-    } else {
-      if (nextScreen == this.currentScreen) { assertFalse(); }
-    }
-    nextScreen.show();
-    this.currentScreen = nextScreen;
-  }
+  public abstract onResize(window: Window, event: UIEvent): void;
 
   // --- PRIVATE ---
 
-  // Private Class Properties
-
-  private static $body: HTMLBodyElement = <HTMLBodyElement>window.document.body;
-  private static instanceMap: Map<Pathname, ScreenBase> = new Map;
-  private static currentScreen: ScreenBase|undefined;
-
-  // Private Class Methods
-
-  private static createScreenForPathname(pathname: Pathname): ScreenBase {
-    if (pathname == <Pathname>'/') {
-      return new HomeScreen();
-    } else {
-      const match = NOTEBOOK_PATH_WITH_VIEW_RE.exec(pathname);
-      if (match) {
-        const path = <NotebookPath>match[1];
-        const view = match[5];
-        switch(view) {
-          case 'edit':
-            return new NotebookEditScreen(path);
-          case 'read':
-            return new NotebookReadScreen(path, Mode.Reading);
-          default:
-            assertFalse();
-            break;
-        }
-      } else if (NOTEBOOK_PATH_RE.test(pathname)) {
-        return new NotebookReadScreen(<NotebookPath>pathname, Mode.Thumbnails);
-      } else if (FOLDER_PATH_RE.test(pathname)) {
-        return new FolderScreen(<FolderPath>pathname);
-      } else  {
-        throw new Error("Invalid path.");
-      }
-    }
+  protected constructor(spec: HtmlElementSpecification<'div'>|HTMLElementTagNameMap['div']) {
+    super(spec);
   }
 
-  // Private Class Event Handlers
+  // Private Properties
 
-  public static onResize(window: Window, event: UIEvent): void {
-    // REVIEW: Notify all screens of resize?
-    //         Note that $elt.getBoundingClientRect() doesn't work if the element is not displayed,
-    //         so it might be more complicated for the screen to figure out it's size if it is not
-    //         shown. We could flag any screens that were hidden when a resize comes in, and notify
-    //         them that a resize occurred when they are shown.
-    this.currentScreen?.onResize(window, event);
+  // Private Instance Methods
+
+  protected displayError(err: Error, html: Html) {
+    logErrorIfUnexpected(err);
+    this.displayErrorMessage(<Html>`${html}: ${errorMessageForUser(err)}`);
   }
+
+  protected displayErrorMessage(html: Html) {
+    // Replaces the contents of the screen with an error message.
+
+    // LATER: Better way to display to display a closed message.
+    // LATER: Give user helpful instructions, e.g. "refresh the page, go to the parent folder, or go to the home folder."
+    this.$elt.innerHTML = `<div class="errorMessage">${html}</div>`;
+  }
+
 }

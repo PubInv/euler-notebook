@@ -30,7 +30,7 @@ import { NotebookReadView } from "../../views/notebook-read-view";
 
 import { ClientNotebook, NotebookView } from "../../models/client-notebook";
 
-import { ScreenBase } from "../screen-base";
+import { Screen } from "..";
 
 import { Sidebar } from "./sidebar";
 import { appInstance } from "../../app";
@@ -48,7 +48,7 @@ export enum Mode {
 
 // Exported Class
 
-export class NotebookReadScreen extends ScreenBase  implements NotebookView {
+export class NotebookReadScreen extends Screen  implements NotebookView {
 
   // Public Class Methods
 

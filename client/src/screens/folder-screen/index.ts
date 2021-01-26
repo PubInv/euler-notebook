@@ -25,7 +25,7 @@ import { CssClass, Html } from "../../shared/common";
 import { FolderPath } from "../../shared/folder";
 import { FolderCollaboratorConnected, FolderCollaboratorDisconnected, FolderUpdate } from "../../shared/server-responses";
 
-import { ScreenBase } from "../screen-base";
+import { Screen } from "..";
 import { ClientFolder, ClientFolderWatcher, OpenFolderOptions } from "../../models/client-folder";
 
 import { appInstance } from "../../app";
@@ -41,7 +41,7 @@ import { Sidebar } from "./sidebar";
 
 // Exported Class
 
-export class FolderScreen extends ScreenBase implements ClientFolderWatcher {
+export class FolderScreen extends Screen implements ClientFolderWatcher {
 
   // Public Class Methods
 

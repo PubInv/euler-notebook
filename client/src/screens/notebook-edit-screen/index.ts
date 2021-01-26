@@ -30,7 +30,7 @@ import { NotebookEditView } from "../../views/notebook-edit-view";
 
 import { ClientNotebook, NotebookView } from "../../models/client-notebook";
 
-import { ScreenBase } from "../screen-base";
+import { Screen } from "..";
 
 import { DebugPopup } from "./debug-popup";
 import { ReferencePanel } from "./reference-panel";
@@ -47,7 +47,7 @@ import { appInstance } from "../../app";
 
 // Exported Class
 
-export class NotebookEditScreen extends ScreenBase implements NotebookView {
+export class NotebookEditScreen extends Screen implements NotebookView {
 
   // Public Constructor
 

@@ -24,7 +24,7 @@ import { UserName, UserPassword } from "../../shared/user";
 
 import { ClientUser } from "../../client-user";
 
-import { ScreenBase } from "../screen-base";
+import { Screen } from "..";
 import { $, $attach } from "../../dom";
 import { appInstance } from "../../app";
 import { FolderPath } from "../../shared/folder";
@@ -44,7 +44,7 @@ interface LoginFormElements {
 
 // Exported Class
 
-export class HomeScreen extends ScreenBase {
+export class HomeScreen extends Screen {
 
   // Public Class Methods
 
