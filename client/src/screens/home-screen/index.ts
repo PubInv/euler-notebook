@@ -85,17 +85,23 @@ export class HomeScreen extends ScreenBase {
     const $target = <HTMLFormElement>e.target!;
     const formElements = <LoginFormElements><unknown>$target.elements;
 
+    // Clear any pre-existing error message
+    const $formErrorMessage = $<'div'>($target, '.errorMessage');
+    $formErrorMessage.innerHTML = '';
+
+    // Fetch and normalize the user inputs
     const userName = normalizeUserName(formElements.userName.value);
     formElements.userName.value = userName;
-
     const password = normalizePassword(formElements.password.value);
     formElements.password.value = password;
 
+    // Attempt the login.
+    // A login failure will throw an exception.
     try {
       const user = await ClientUser.loginWithPassword(userName, password);
       window.location.href = `/#${user.homePath}`;
     } catch(err) {
-      $($target, '.errorMessage').innerHTML = err.message;
+      $formErrorMessage.innerHTML = err.message;
     }
   }
 }
