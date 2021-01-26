@@ -65,9 +65,9 @@ export class StrokePanel extends HtmlElement<'div'> {
     callbacks: StrokePanelCallbacks,
     stylusMode: StylusMode,
   ) {
-    const { cssSize, strokeData } = cellObject;
-    const strokeDrawingPanel = new StrokeDrawingPanel(cssSize, (stroke)=>callbacks.drawStroke(stroke.data));
-    const strokeSelectionPanel = new StrokeSelectionPanel(cssSize, strokeData, (strokeId)=>callbacks.eraseStroke(strokeId));
+    const { strokeData } = cellObject;
+    const strokeDrawingPanel = new StrokeDrawingPanel((stroke)=>callbacks.drawStroke(stroke.data));
+    const strokeSelectionPanel = new StrokeSelectionPanel(strokeData, (strokeId)=>callbacks.eraseStroke(strokeId));
     super({
       tag: 'div',
       classes: [ <CssClass>'strokePanel'],

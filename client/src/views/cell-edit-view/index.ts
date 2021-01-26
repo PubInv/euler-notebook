@@ -34,7 +34,7 @@ import { Stroke, StrokeId } from "../../shared/stylus";
 
 import { HtmlElement } from "../../html-element";
 import {
-  $new, $newSvg, CLOSE_X_ENTITY, CELL_ICONS, svgIconReferenceMarkup, viewBoxFromCssSize,
+  $new, $newSvg, CLOSE_X_ENTITY, CELL_ICONS, svgIconReferenceMarkup,
 } from "../../dom";
 
 import { Tools } from "../../screens/notebook-edit-screen/tools";
@@ -43,6 +43,7 @@ import { CellView, ClientCell } from "../../models/client-cell";
 import { showError } from "../../error-handler";
 import { StrokePanel, StrokePanelCallbacks, StylusMode } from "../../components/stroke-panel";
 import { NotebookEditView } from "../notebook-edit-view";
+import { notebookUpdateSynopsis } from "../../shared/debug-synopsis";
 
 // Types
 
@@ -104,6 +105,15 @@ export abstract class CellEditView<O extends CellObject> extends HtmlElement<'di
   // Overridable ClientNotebookWatcher Methods
 
   public onUpdate(update: NotebookUpdate, ownRequest: boolean): void {
+    debug(`onUpdate ${notebookUpdateSynopsis(update)}`);
+    switch (update.type) {
+      case 'cellResized':
+        this.$content.style.height = update.cssSize.height;
+        this.$content.style.width = update.cssSize.width;
+        break;
+      default: /* Nothing to do. */ break;
+    }
+
     this.strokePanel.onUpdate(update, ownRequest);
   };
 
@@ -165,11 +175,7 @@ export abstract class CellEditView<O extends CellObject> extends HtmlElement<'di
 
     const $displaySvg = $newSvg<'svg'>({
       tag: 'svg',
-      attrs: {
-        height: cell.obj.cssSize.height,
-        viewBox: viewBoxFromCssSize(cell.obj.cssSize),
-        width: cell.obj.cssSize.width,
-      },
+      attrs: { height: "100%", width: "100%" },
       class: <CssClass>'displaySvg',
       html: <SvgMarkup>`<use href="#n${cell.notebook.id}c${cell.id}"/>`,
     });

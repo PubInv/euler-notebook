@@ -22,13 +22,13 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 import * as debug1 from "debug";
 const debug = debug1('client:stylus-drawing-panel');
 
-import { assert, CssClass, CssSize, ElementId, Html } from "../../shared/common";
+import { CssClass, ElementId, Html } from "../../shared/common";
 import { convertStrokeToPathShape, Stroke, StrokeData, StrokeId } from "../../shared/stylus";
 import { NotebookUpdate } from "../../shared/server-responses";
 import { notebookUpdateSynopsis } from "../../shared/debug-synopsis";
 
 import { SvgElement } from "../../svg-element";
-import { $newSvg, $svg, viewBoxFromCssSize } from "../../dom";
+import { $newSvg, $svg } from "../../dom";
 import { showError } from "../../error-handler";
 
 // Types
@@ -59,18 +59,13 @@ export class StrokeSelectionPanel extends SvgElement<'svg'> {
   // Public Constructor
 
   public constructor(
-    cssSize: CssSize,
     strokeData: StrokeData,
     eraseCallbackFn: EraseCallbackFn,
   ) {
     debug(`Creating instance`)
     super({
       tag: 'svg',
-      attrs: {
-        height: cssSize.height,
-        viewBox: viewBoxFromCssSize(cssSize),
-        width: cssSize.width
-      },
+      attrs: { height: "100%", width: "100%" },
       class: <CssClass>'strokeSelectionPanel',
       listeners: {
         pointercancel:  e=>this.onPointerCancel(e),
@@ -99,10 +94,6 @@ export class StrokeSelectionPanel extends SvgElement<'svg'> {
   public onUpdate(update: NotebookUpdate, _ownRequest: boolean): void {
     debug(`onUpdate ${notebookUpdateSynopsis(update)}`);
     switch (update.type) {
-      case 'cellResized':
-        this.$elt.setAttribute('height', update.cssSize.height);
-        assert(this.$elt.getAttribute('width') === update.cssSize.width);
-        break;
       case 'strokeDeleted':
         this.deleteStroke(update.strokeId);
         break;
