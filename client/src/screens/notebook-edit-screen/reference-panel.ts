@@ -1,5 +1,5 @@
 /*
-Math Tablet
+Euler Notebook
 Copyright (C) 2019-21 Public Invention
 https://pubinv.github.io/PubInv/
 

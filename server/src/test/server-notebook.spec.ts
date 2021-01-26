@@ -1,5 +1,5 @@
 /*
-Math Tablet
+Euler Notebook
 Copyright (C) 2019-21 Public Invention
 https://pubinv.github.io/PubInv/
 
@@ -29,7 +29,7 @@ import * as sinon from "sinon";
 import { EMPTY_SVG, Html, PlainText } from "../shared/common";
 import { EMPTY_FORMULA, FormulaCellObject } from "../shared/formula";
 import { NotebookUpdate, CellInserted, CellObject } from "../shared/notebook";
-import { NotebookChangeRequest, InsertCellRequest, StyleProperties, ToolData } from "../shared/math-tablet-api";
+import { NotebookChangeRequest, InsertCellRequest, StyleProperties, ToolData } from "../shared/euler-notebook-api";
 import { ServerNotebook, ObserverInstance }  from "../server-notebook";
 import { Config } from "../config";
 

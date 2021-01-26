@@ -1,5 +1,5 @@
 {
-  "name": "math-tablet-client",
+  "name": "euler-notebook-client",
   "version": "0.0.1",
   "private": true,
   "scripts": {
@@ -17,13 +17,13 @@
     "webpack": "^4.43.0",
     "webpack-cli": "^3.3.12"
   },
-  "description": "Math Tablet Client.",
+  "description": "Euler Notebook Client.",
   "main": "app.ts",
   "keywords": [],
   "author": "",
   "license": "AGPL-3.0-or-later",
   "repository": {
     "type": "git",
-    "url": "https://github.com/davidjeschke/math-tablet.git"
+    "url": "https://github.com/PubInv/euler-notebook.git"
   }
 }

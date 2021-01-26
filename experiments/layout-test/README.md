@@ -1,11 +1,11 @@
 # Layout Test
 
-This is an experiment to see what a completed math-tablet notebook might look like.
+This is an experiment to see what a completed euler-notebook notebook might look like.
 
 Open index.html locally in a browser, or:
 
 ```bash
-~/math-tablet/experiments/layout-test$ python -m SimpleHTTPServer
+~/euler-notebook/experiments/layout-test$ python -m SimpleHTTPServer
 ```
 
 Then navigate to `http://computername.local:8000/` in a browser on another device on the same network,

@@ -1,31 +1,31 @@
-# Math Tablet
+# Euler Notebook
 
-This directory contains the source code for the Math Tablet, a project of
+This directory contains the source code for the Euler Notebook, a project of
 [Public Invention](https://pubinv.github.io/PubInv/).
 
 ## Purpose
 
-Math Tablet seeks to make a useful math assistant for stylus-based tablets and other hand-written input means.
+Euler Notebook seeks to make a useful math assistant for stylus-based tablets and other hand-written input means.
 Our goal is have an expert assistant looking over our shoulder and helping as we do math the way we otherwise normally do,
 including drawing diagrams, performing calculations, and producing proofs.
 
 ## Governance
 
-Math Tablet was created by David Jeschke, and he is the Invention Coach and "Benevelont Dictator For Now" of this project.
+Euler Notebook was created by David Jeschke, and he is the Invention Coach and "Benevelont Dictator For Now" of this project.
 The project is currently licensed under the [Affero GPL](https://www.gnu.org/licenses/agpl-3.0.en.html).
 We are actively seeking volunteers and contributors.
 
 ## Supported Browsers and Devices
 
-For Math Tablet we use the __Google Chrome__ browser on computers and devices.
-There is a good chance that Math Tablet will not work properly on other browsers because we currently do not test them.
+For Euler Notebook we use the __Google Chrome__ browser on computers and devices.
+There is a good chance that Euler Notebook will not work properly on other browsers because we currently do not test them.
 
 As for devices with a stylus, we test with the __Apple iPad Pro__ (12.9" 3rd gen) and __Microsoft Surface Pro__ (6).
 Note that Google Chrome is not the default browser on either of these devices, so you will need to install it.
 
 We run the server on Apple Mac computers with the latest version of OS X.
 
-If you want Math Tablet to support other browsers, devices, or operating systems, [let us know](https://www.pubinv.org/contact-us/).
+If you want Euler Notebook to support other browsers, devices, or operating systems, [let us know](https://www.pubinv.org/contact-us/).
 
 ## Running Locally
 
@@ -43,19 +43,19 @@ Step 3: Install [node](https://nodejs.org/en/).
 Step 4: Create a credentials and configuration directory:
 
 ```bash
-cp -r ~/math-tablet/server/config-dir/ ~/.math-tablet
+cp -r ~/euler-notebook/server/config-dir/ ~/.euler-notebook
 ```
 
-Edit `~/.math-tablet/credentials.json` to insert your MyScript applicationKey and hmacKey.
+Edit `~/.euler-notebook/credentials.json` to insert your MyScript applicationKey and hmacKey.
 
 Step 4: Create a directory to store user notebooks.
-In your `HOME` directory, create a subdirectory <tt>math-tablet-usr</tt>:
+In your `HOME` directory, create a subdirectory <tt>euler-notebook-usr</tt>:
 
 ```bash
-mkdir -p ~/math-tablet-usr
+mkdir -p ~/euler-notebook-usr
 ```
 
-Step 5: Install dependencies, build, run unit tests, and run the math-tablet server:
+Step 5: Install dependencies, build, run unit tests, and run the euler-notebook server:
 
 ```bash
 scripts/go
@@ -79,13 +79,13 @@ you could consider a [Paperlike screen protector](https://paperlike.com).
 
 To delete any automatically-generated files run `scripts/clean`.
 
-To install libraries that math tablet depends on run `scripts/install`.
+To install libraries that euler notebook depends on run `scripts/install`.
 
-To build an executable math-tablet client and server from source run `scripts/build`.
+To build an executable euler-notebook client and server from source run `scripts/build`.
 
-To run unit tests after math tablet has been built run `scripts/test`.
+To run unit tests after euler notebook has been built run `scripts/test`.
 
-To start the math tablet server run `scripts/run`.
+To start the euler notebook server run `scripts/run`.
 
 The `scripts/go` command runs the above scripts in the order listed.
 
@@ -104,9 +104,9 @@ Static assets to be served by the web server are placed in the <tt>server/public
 If you modify a client source file you need to rebuild the client before re-running the server.
 This can be accomplished with `scripts/build && scripts/run`.
 
-To rebuild the client every time there are changes: `~/math-tablet/client$ npx webpack --watch`
+To rebuild the client every time there are changes: `~/euler-notebook/client$ npx webpack --watch`
 
-To restart the server every time there are changes: `~/math-tablet/server$ npx nodemon`
+To restart the server every time there are changes: `~/euler-notebook/server$ npx nodemon`
 
 ## Debugging
 

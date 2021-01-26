@@ -1,5 +1,5 @@
 {
-  "name": "math-tablet-server",
+  "name": "euler-notebook-server",
   "version": "0.0.1",
   "private": true,
   "scripts": {
@@ -62,7 +62,7 @@
     "ts-node": "^8.0.3",
     "typescript": "^3.5.3"
   },
-  "description": "Math Tablet Server.",
+  "description": "Euler Notebook Server.",
   "main": "app.js",
   "directories": {
     "test": "test"
@@ -72,6 +72,6 @@
   "license": "AGPL-3.0-or-later",
   "repository": {
     "type": "git",
-    "url": "https://github.com/davidjeschke/math-tablet.git"
+    "url": "https://github.com/PubInv/euler-notebook.git"
   }
 }

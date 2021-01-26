@@ -1,5 +1,5 @@
 /*
-Math Tablet
+Euler Notebook
 Copyright (C) 2019-21 Public Invention
 https://pubinv.github.io/PubInv/
 
@@ -28,7 +28,7 @@ import { NotebookPath, NOTEBOOK_PATH_RE } from "../shared/folder";
 
 import { ServerNotebook } from "../server-notebook";
 
-// import { NotebookName, NotebookChangeRequest } from "./shared/math-tablet-api";
+// import { NotebookName, NotebookChangeRequest } from "./shared/euler-notebook-api";
 
 const MODULE = __filename.split(/[/\\]/).slice(-1)[0].slice(0,-3);
 const debug = debug1(`server:${MODULE}`);

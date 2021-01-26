@@ -1,5 +1,5 @@
 /*
-  Math Tablet
+  Euler Notebook
   Copyright (C) 2019-21 Public Invention
   https://pubinv.github.io/PubInv/
 
@@ -30,7 +30,7 @@ import 'mocha';
 // import * as sinon from "sinon";
 
 import { FormulaCellObject, PlainTextFormula } from "../shared/formula";
-import { InsertCellRequest, TexExpression } from "../shared/math-tablet-api";
+import { InsertCellRequest, TexExpression } from "../shared/euler-notebook-api";
 import { ServerNotebook }  from "../server-notebook";
 
 import { ensureGlobalLoaded } from "./global";

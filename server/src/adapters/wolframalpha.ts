@@ -1,5 +1,5 @@
 /*
-Math Tablet
+Euler Notebook
 Copyright (C) 2019-21 Public Invention
 https://pubinv.github.io/PubInv/
 
@@ -44,7 +44,7 @@ const WolframAlphaAPI = require('wolfram-alpha-node');
 // Types
 
 export interface ApiKeys {
-  // This structure lives in ~/.math-tablet/credentials.json under "wolframalpha" key.
+  // This structure lives in ~/.euler-notebook/credentials.json under "wolframalpha" key.
   appid: string;
 }
 

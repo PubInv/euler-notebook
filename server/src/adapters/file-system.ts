@@ -1,5 +1,5 @@
 /*
-Math Tablet
+Euler Notebook
 Copyright (C) 2019-21 Public Invention
 https://pubinv.github.io/PubInv/
 
@@ -50,8 +50,8 @@ type Path = UserFilePath|FolderPath|NotebookPath;
 
 // Constants
 
-const CONFIG_DIR = '.math-tablet';
-const NOTEBOOKS_DIRECTORY = 'math-tablet-usr';
+const CONFIG_DIR = '.euler-notebook';
+const NOTEBOOKS_DIRECTORY = 'euler-notebook-usr';
 
 // Exported Functions
 

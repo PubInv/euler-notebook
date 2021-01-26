@@ -1,7 +1,7 @@
-# Math Tablet Ideas
+# Euler Notebook Ideas
 
 An unorganized list of ideas for new features and improvements
-to Math Tablet.
+to Euler Notebook.
 
 ## unorganized
 

@@ -1,5 +1,5 @@
 /*
-Math Tablet
+Euler Notebook
 Copyright (C) 2019-21 Public Invention
 https://pubinv.github.io/PubInv/
 
@@ -41,7 +41,7 @@ const debug = debug1(`server:${MODULE}`);
 // Types
 
 export interface ApiKeys {
-  // This structure lives in ~/.math-tablet/credentials.json under "myscript" key.
+  // This structure lives in ~/.euler-notebook/credentials.json under "myscript" key.
   applicationKey: string;
   hmacKey: string;
 }

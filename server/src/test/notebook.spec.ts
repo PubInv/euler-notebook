@@ -1,5 +1,5 @@
 /*
-Math Tablet
+Euler Notebook
 Copyright (C) 2019-21 Public Invention
 https://pubinv.github.io/PubInv/
 
@@ -27,7 +27,7 @@ import { assert } from "chai";
 import 'mocha';
 
 import { StyleType, VERSION }  from "../shared/notebook";
-import { NotebookChangeRequest, InsertCellRequest, StyleProperties } from "../shared/math-tablet-api";
+import { NotebookChangeRequest, InsertCellRequest, StyleProperties } from "../shared/euler-notebook-api";
 import { ServerNotebook }  from "../server-notebook";
 
 import { ensureGlobalLoaded } from "./global";
