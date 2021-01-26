@@ -23,7 +23,7 @@ mixin homeScreen
     h1 Euler Notebook
     form#loginForm
       label Username
-      input(type='text', name='userName')
+      input(type='text', name='userName', maxlength=12)
       label Password
       input(type='password', name='password')
       input(type='submit', value="Log in")

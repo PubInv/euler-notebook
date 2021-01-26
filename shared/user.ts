@@ -24,7 +24,7 @@ import { ClientId } from "./common";
 // Types
 
 export type UserId = number;
-export type UserName = '{UserName}';
+export type UserName = '{UserName}';  // See username constraint constants.
 export type UserPassword = '{UserPassword}';
 
 export interface CollaboratorObject {
@@ -43,4 +43,17 @@ export interface UserObject {
 
 // Constants
 
-export const USERNAME_RE = /^[a-z0-9_]+$/;
+// User passwords:
+//   * At least six characters
+//   * May not begin or end with whitespace.
+//       (Leading and trailing whitespace will be stripped before password is submitted.)
+export const USER_PASSWORD_MIN_LENGTH = 6;
+
+// Usernames:
+//   * Start with a letter.
+//   * Contains only one or more groups of lowercase letters and digits,...
+//   * ... with groups separated by underscores.
+//   * Minimum of two letters.
+//   * Maxumum of twelve letters.
+export const USERNAME_RE = /^[a-z][a-z0-9]+(_[a-z0-9]+)*$/; // Like \w but only lowercase letters.
+export const USERNAME_MAX_LENGTH = 12;

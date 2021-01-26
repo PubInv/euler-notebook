@@ -24,7 +24,7 @@ const debug = debug1(`server:${MODULE}`);
 import { assert, assertFalse, ExpectedError, SessionToken } from "./shared/common";
 import { LoginUserWithPassword, LoginUserWithToken, LogoutUser, RequestId, UserRequest } from "./shared/client-requests";
 import { clientUserMessageSynopsis } from "./shared/debug-synopsis";
-import { UserId, UserObject, UserName, UserPassword, USERNAME_RE } from "./shared/user";
+import { UserId, UserObject, UserName, UserPassword, USERNAME_RE, USERNAME_MAX_LENGTH, USER_PASSWORD_MIN_LENGTH } from "./shared/user";
 import { UserLoggedIn } from "./shared/server-responses";
 import { FolderPath } from "./shared/folder";
 
@@ -122,7 +122,7 @@ export class ServerUser {
 
     if (userName.length == 0) { throw new ExpectedError("Please specify username."); }
 
-    if (!USERNAME_RE.test(userName)) { throw new ExpectedError("Invalid username."); }
+    if (!USERNAME_RE.test(userName) || userName.length>USERNAME_MAX_LENGTH) { throw new ExpectedError("Invalid username."); }
 
     const path = <FolderPath>`/${userName}/`;
     let obj: ServerUserObject;
@@ -175,9 +175,10 @@ export class ServerUser {
     socket.logoutUser();
   }
 
-  private async onPasswordLogin(socket: ServerSocket, msg: LoginUserWithPassword): Promise<void> {
-    // TODO: validate username?
+  private onPasswordLogin(socket: ServerSocket, msg: LoginUserWithPassword): void {
+    // Throws an expected error with useful message if login fails.
     if (msg.password.length == 0) { throw new ExpectedError("Please specify password."); }
+    if (msg.password.length < USER_PASSWORD_MIN_LENGTH) { throw new ExpectedError(`Password must be at least ${USER_PASSWORD_MIN_LENGTH} characters.`); }
     if (msg.password != this.obj.password) { throw new ExpectedError("Password incorrect"); }
 
     const sessionToken = UserSession.login(this.userName);

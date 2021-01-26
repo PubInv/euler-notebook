@@ -84,8 +84,12 @@ export class HomeScreen extends ScreenBase {
     e.preventDefault();
     const $target = <HTMLFormElement>e.target!;
     const formElements = <LoginFormElements><unknown>$target.elements;
-    const userName = <UserName>formElements.userName.value.trim();
-    const password = <UserPassword>formElements.password.value.trim();
+
+    const userName = normalizeUserName(formElements.userName.value);
+    formElements.userName.value = userName;
+
+    const password = normalizePassword(formElements.password.value);
+    formElements.password.value = password;
 
     try {
       const user = await ClientUser.loginWithPassword(userName, password);
@@ -94,4 +98,21 @@ export class HomeScreen extends ScreenBase {
       $($target, '.errorMessage').innerHTML = err.message;
     }
   }
+}
+
+// Helper Functions
+
+function normalizeUserName(value: string): UserName {
+  // Strip leading and trailing spaces.
+  // Convert to all lower case.
+  // REVIEW: Strip interior spaces?
+  // REVIEW: Coalesce sequences of underscores to a single underscore?
+  // REVIEW: Strip leading and trailing underscores?
+  return <UserName>value.toLowerCase().trim();
+}
+
+function normalizePassword(value: string): UserPassword {
+  // Only normalizing of passwords is to trim leading and trailing whitespace
+  // in case the user cut and pasted the password and accidentally got some extra whitespace.
+  return <UserPassword>value.trim();
 }
