@@ -70,7 +70,7 @@ export class DebugConsole extends HtmlElement<'div'> {
   public addMessage(html: Html): void {
     const $message = $new<'div'>({ tag: 'div', html });
     this.$elt.append($message);
-    // TODO: scroll to bottom
+    this.scrollToBottom();
   }
 
   // Public Instance Event Handlers
@@ -80,6 +80,10 @@ export class DebugConsole extends HtmlElement<'div'> {
   // Private Instance Properties
 
   // Private Instance Methods
+
+  private scrollToBottom(): void {
+    this.$elt.scrollTop = this.$elt.scrollHeight;
+  }
 
   // Private Event Handlers
 

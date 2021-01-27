@@ -42,7 +42,7 @@ type PointerMap = Map<PointerId, PointerInfo>;
 type StrokeCallbackFn = (stroke: SvgStroke)=>Promise<void>;
 
 interface PointerInfo {
-  stroke?: SvgStroke;
+  stroke: SvgStroke;
 }
 
 // Constants
@@ -101,41 +101,46 @@ export class StrokeDrawingPanel extends SvgElement<'svg'> {
 
   // Private Instance Property Functions
 
-  private pointerInfo(event: PointerEvent): PointerInfo {
-    let rval = this.pointerMap.get(event.pointerId);
-    if (!rval) {
-      rval = {};
-      this.pointerMap.set(event.pointerId, rval);
-    }
-    return rval;
-  }
-
   // Private Instance Event Handlers
 
   private onPointerCancel(event: PointerEvent): void {
-    const message = `${event.pointerType} ${event.pointerId} ${event.type}`;
+    const pointerId = event.pointerId;
+    const message = `${event.pointerType} ${pointerId} ${event.type}`;
     debug(message);
     DebugConsole.addMessage(<Html>message);
 
-    // TODO: Cancel stroke?
+    this.pointerMap.delete(pointerId);
   }
 
   private onPointerDown(event: PointerEvent): void {
-    const message = `${event.pointerType} ${event.pointerId} ${event.type}`;
+
+    // Don't draw strokes with touch
+    // so we don't get stray marks when the user tries to scroll.
+    if (event.pointerType === 'touchx') {
+      DebugConsole.addMessage(<Html>`Ignoring touch ${event.type} ${event.pointerId}`);
+      return;
+    }
+
+    // Log the event for debugging
+    const pointerId = event.pointerId;
+    const message = `${event.pointerType} ${pointerId} ${event.type}`;
     debug(message);
     DebugConsole.addMessage(<Html>message);
 
-    this.$elt.setPointerCapture(event.pointerId);
-    const pi = this.pointerInfo(event);
-
-    if (pi.stroke) {
-      console.error(`Pointer ${event.pointerId} already has a stroke. Discarding.`);
-      pi.stroke.abort();
-      delete pi.stroke;
+    // Ensure there is not already a stroke in progress for this pointer.
+    // If there is, warn and discard it.
+    const existingPi = this.pointerMap.get(pointerId);
+    if (existingPi) {
+      console.error(`Pointer ${pointerId} already has a stroke. Discarding.`);
+      existingPi.stroke.abort();
     }
+
+    this.$elt.setPointerCapture(pointerId);
     const clientRect = this.$elt.getBoundingClientRect();
-    pi.stroke = SvgStroke.create(this.$elt);
-    pi.stroke.start(event, clientRect);
+    const stroke = SvgStroke.create(this.$elt);
+    stroke.start(event, clientRect);
+    const pi: PointerInfo = { stroke };
+    this.pointerMap.set(pointerId, pi);
   }
 
   // private onPointerEnter(_event: PointerEvent): void {
@@ -149,15 +154,18 @@ export class StrokeDrawingPanel extends SvgElement<'svg'> {
   // }
 
   private onPointerMove(event: PointerEvent): void {
+    // Check if we are extending a stroke. If not, abort.
+    const pi = this.pointerMap.get(event.pointerId);
+    if (!pi) { return; }
+
+    // // Log the event for debugging
     // const message = `${event.pointerType} ${event.pointerId} ${event.type}`;
     // debug(message);
     // DebugConsole.addMessage(<Html>message);
 
-    const pi = this.pointerInfo(event);
-    if (pi.stroke) {
-      const clientRect = this.$elt.getBoundingClientRect();
-      pi.stroke.extend(event, clientRect);
-    }
+    // Extend the stroke to the new (x,y) position
+    const clientRect = this.$elt.getBoundingClientRect();
+    pi.stroke.extend(event, clientRect);
   }
 
   // private onPointerOut(_event: PointerEvent): void {
@@ -171,20 +179,22 @@ export class StrokeDrawingPanel extends SvgElement<'svg'> {
   // }
 
   private onPointerUp(event: PointerEvent): void {
-    const message = `${event.pointerType} ${event.pointerId} ${event.type}`;
+    // Check if we are finishing a stroke. If not, abort.
+    // REVIEW: Remove pointer info from pointer map??
+    const pointerId = event.pointerId;
+    const pi = this.pointerMap.get(pointerId);
+    if (!pi) { return; }
+
+    // Log the event for debugging
+    const message = `${event.pointerType} ${pointerId} ${event.type}`;
     debug(message);
     DebugConsole.addMessage(<Html>message);
 
-    // REVIEW: Remove pointer info from pointer map??
-    const pi = this.pointerInfo(event);
+    // Complete the stroke
     const stroke = pi.stroke;
-    if (!stroke) {
-      console.warn(`Pointer ${event.pointerId} doesn't have a stroke. Ignoring.`);
-      return;
-    }
     const clientRect = this.$elt.getBoundingClientRect();
     stroke.end(event, clientRect);
-    delete pi.stroke;
+    this.pointerMap.delete(pointerId);
 
     // Notify the container that the stroke is finished.
     // Once the container has updated the underlying drawing, we can remove the stroke.
@@ -193,9 +203,7 @@ export class StrokeDrawingPanel extends SvgElement<'svg'> {
     .then(
       ()=>stroke.remove(),
       (err)=>showError(err, <Html>"Error updating stroke"),
-    )
-
-
+    );
   }
 
 }
