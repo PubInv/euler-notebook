@@ -24,6 +24,8 @@ const debug = debug1('client:stylus-drawing-panel');
 
 import { Html, CssClass } from "../../shared/common";
 
+import { DebugConsole } from "../../components/debug-console";
+
 import { SvgStroke } from "../../svg-stroke";
 import { showError } from "../../error-handler";
 import { SvgElement } from "../../svg-element";
@@ -111,15 +113,18 @@ export class StrokeDrawingPanel extends SvgElement<'svg'> {
   // Private Instance Event Handlers
 
   private onPointerCancel(event: PointerEvent): void {
-    debug(`${event.pointerType} ${event.pointerId} ${event.type}`);
-    // console.dir(event);
+    const message = `${event.pointerType} ${event.pointerId} ${event.type}`;
+    debug(message);
+    DebugConsole.addMessage(<Html>message);
 
     // TODO: Cancel stroke?
   }
 
   private onPointerDown(event: PointerEvent): void {
-    debug(`${event.pointerType} ${event.pointerId} ${event.type}`);
-    // console.dir(event);
+    const message = `${event.pointerType} ${event.pointerId} ${event.type}`;
+    debug(message);
+    DebugConsole.addMessage(<Html>message);
+
     this.$elt.setPointerCapture(event.pointerId);
     const pi = this.pointerInfo(event);
 
@@ -144,7 +149,10 @@ export class StrokeDrawingPanel extends SvgElement<'svg'> {
   // }
 
   private onPointerMove(event: PointerEvent): void {
-    // console.dir(event);
+    // const message = `${event.pointerType} ${event.pointerId} ${event.type}`;
+    // debug(message);
+    // DebugConsole.addMessage(<Html>message);
+
     const pi = this.pointerInfo(event);
     if (pi.stroke) {
       const clientRect = this.$elt.getBoundingClientRect();
@@ -163,9 +171,11 @@ export class StrokeDrawingPanel extends SvgElement<'svg'> {
   // }
 
   private onPointerUp(event: PointerEvent): void {
+    const message = `${event.pointerType} ${event.pointerId} ${event.type}`;
+    debug(message);
+    DebugConsole.addMessage(<Html>message);
+
     // REVIEW: Remove pointer info from pointer map??
-    debug(`${event.pointerType} ${event.pointerId} ${event.type}`);
-    // console.dir(event);
     const pi = this.pointerInfo(event);
     const stroke = pi.stroke;
     if (!stroke) {

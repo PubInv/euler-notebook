@@ -23,13 +23,14 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 import { Html } from "./shared/common";
 
+import { DebugConsole } from "./components/debug-console";
 import { Header } from "./components/header";
 
 import { addAsyncEventListener, addSyncEventListener, showError } from "./error-handler";
 import { Pathname, ScreenManager } from "./screens/screen-manager";
 import { ClientSocket } from "./client-socket";
-import { MessageDisplay } from "./message-display";
 import { ClientUser } from "./client-user";
+import { MessageDisplay } from "./message-display";
 
 // Types
 
@@ -78,10 +79,11 @@ class App {
   private async onDomContentLoaded(_event: Event): Promise<void> {
     // TODO: this.banner = Banner.attach($(document, '#banner'));
     const $body = <HTMLBodyElement>window.document.body;
-    MessageDisplay.initialize($body);
 
+    const messageDisplay = new MessageDisplay();
+    const debugConsole = new DebugConsole();
     this.header = new Header();
-    $body.append(this.header.$elt);
+    $body.append(messageDisplay.$elt, debugConsole.$elt, this.header.$elt);
 
     ScreenManager.initialize();
 

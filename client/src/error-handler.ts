@@ -26,8 +26,6 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 import { ExpectedError, Html, PlainText } from "./shared/common";
 
-import { messageDisplayInstance } from "./message-display";
-
 // Types
 
 export type AsyncListener<E extends Event> = (event: E)=>Promise<void>;
@@ -97,5 +95,5 @@ export function monitorPromise(promise: Promise<any>, message: Html): void {
 export function showError(err: Error, message?: Html): void {
   // Shows the error to the user, and logs it if appropriate.
   logErrorIfUnexpected(err, /* BUGBUG */<PlainText>message);
-  messageDisplayInstance.addError(err, message);
+  // messageDisplayInstance.addError(err, message);
 }

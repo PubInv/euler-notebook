@@ -23,7 +23,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 // Requirements
 
-import { CssClass, Html, errorMessageForUser, ElementId } from "./shared/common";
+import { CssClass, Html, errorMessageForUser, ElementId, assert } from "./shared/common";
 
 import { CLOSE_X_ENTITY } from "./dom";
 import { HtmlElement } from "./html-element";
@@ -40,28 +40,35 @@ interface MessageOptions {
 
 const AUTO_DISMISS_TIMEOUT_MS = 3000;
 
-// Exported singleton instance
-
-export let messageDisplayInstance: MessageDisplay;
-
 // Class
 
 export class MessageDisplay extends HtmlElement<'div'> {
 
+  // Public Class Properties
+
+  public static singleton?: MessageDisplay;
+
   // Public Class Methods
 
-  public static initialize($body: HTMLBodyElement): void {
-    messageDisplayInstance = new MessageDisplay($body);
+  public static addError(err: Error, message?: Html): void {
+    assert(this.singleton);
+    this.singleton!.addError(err, message);
+  }
+
+  public static addErrorMessage(message: Html): void {
+    assert(this.singleton);
+    this.singleton!.addErrorMessage(message);
   }
 
   // Public Constructor
 
-  public constructor($body: HTMLBodyElement) {
+  public constructor() {
+    assert(!MessageDisplay.singleton);
     super({
       tag: 'div',
       id: <ElementId>'messageDisplay',
-      appendTo: $body,
     });
+    MessageDisplay.singleton = this;
   }
 
   // Public Instance Methods
