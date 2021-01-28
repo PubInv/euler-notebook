@@ -23,15 +23,13 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 // const MODULE = __filename.split(/[/\\]/).slice(-1)[0].slice(0,-3);
 // const debug = debug1(`server:${MODULE}`);
 
-import { deepCopy, PlainText, SvgMarkup, CssLength } from "../shared/common";
-import { CellSource, CellType } from "../shared/cell";
-import { FormulaCellObject, PlainTextFormula, TexExpression } from "../shared/formula";
-import { EMPTY_STROKE_DATA } from "../shared/stylus";
+import { deepCopy, PlainText, SvgMarkup, CssLength } from "../../shared/common";
+import { CellSource, CellType, TextCellObject } from "../../shared/cell";
+import { EMPTY_STROKE_DATA } from "../../shared/stylus";
 
 import { ServerNotebook } from "../server-notebook";
 
 import { ServerCell } from "./index";
-import { convertTexToSvg } from "../adapters/mathjax";
 
 // Constants
 
@@ -39,18 +37,17 @@ const DEFAULT_HEIGHT = <CssLength>"1in";
 
 // Exported Class
 
-export class FormulaCell extends ServerCell<FormulaCellObject> {
+export class TextCell extends ServerCell<TextCellObject> {
 
   // Public Class Methods
 
-  public static newCell(notebook: ServerNotebook, source: CellSource): FormulaCell {
-    const obj: FormulaCellObject = {
+  public static newCell(notebook: ServerNotebook, source: CellSource): TextCell {
+    const obj: TextCellObject = {
       id: notebook.nextId(),
-      type: CellType.Formula,
+      type: CellType.Text,
       cssSize: this.initialCellSize(notebook, DEFAULT_HEIGHT),
       displaySvg: <SvgMarkup>'',
       inputText: <PlainText>"",
-      plainTextFormula: <PlainTextFormula>"",
       source,
       strokeData: deepCopy(EMPTY_STROKE_DATA),
     };
@@ -59,7 +56,7 @@ export class FormulaCell extends ServerCell<FormulaCellObject> {
 
   // Public Constructor
 
-  public constructor(notebook: ServerNotebook, obj: FormulaCellObject) {
+  public constructor(notebook: ServerNotebook, obj: TextCellObject) {
     super(notebook, obj);
   }
 
@@ -67,13 +64,7 @@ export class FormulaCell extends ServerCell<FormulaCellObject> {
 
   public displaySvg(): SvgMarkup {
     const markup = <SvgMarkup>'';
-    const quadraticFormulaTex = <TexExpression>"x = \\frac{{ - b \\pm \\sqrt {b^2 - 4ac} }}{{2a}}";
-    const formulaMarkup = convertTexToSvg(quadraticFormulaTex);
-    // TODO: Strip <svg></svg>
-    return super.displaySvg(<SvgMarkup>(markup + formulaMarkup));
-
-    // TODO: strip <svg></svg>
-    return markup;
+    return super.displaySvg(markup);
   }
 
 }

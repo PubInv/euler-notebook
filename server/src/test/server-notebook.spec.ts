@@ -30,7 +30,7 @@ import { EMPTY_SVG, Html, PlainText } from "../shared/common";
 import { EMPTY_FORMULA, FormulaCellObject } from "../shared/formula";
 import { NotebookUpdate, CellInserted, CellObject } from "../shared/notebook";
 import { NotebookChangeRequest, InsertCellRequest, StyleProperties, ToolData } from "../shared/euler-notebook-api";
-import { ServerNotebook, ObserverInstance }  from "../server-notebook";
+import { ServerNotebook, ObserverInstance }  from "../models/server-notebook";
 import { Config } from "../config";
 
 import { ensureGlobalLoaded } from "./global";

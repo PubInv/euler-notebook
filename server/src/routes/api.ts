@@ -27,7 +27,7 @@ import { NextFunction, Request, Response, Router } from "express";
 
 import { DebugParams, DebugResults, SearchParams } from "../shared/api-calls";
 
-import { ServerNotebook } from "../server-notebook";
+import { ServerNotebook } from "../models/server-notebook";
 import { search_full as wolframAlphaSearch } from "../adapters/wolframalpha";
 import { search as oeisSearch } from "../adapters/oeis";
 

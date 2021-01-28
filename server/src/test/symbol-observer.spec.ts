@@ -34,7 +34,7 @@ import {
   NotebookChangeRequest, InsertCellRequest, StyleChangeRequest, MoveCellRequest, DeleteCellRequest,
   StyleProperties
 } from "../shared/euler-notebook-api";
-import { ServerNotebook }  from "../server-notebook";
+import { ServerNotebook }  from "../models/server-notebook";
 
 import { ensureGlobalLoaded } from "./global";
 // import { CellType, InputType } from "../shared/cell";

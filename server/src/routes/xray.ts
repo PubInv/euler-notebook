@@ -26,7 +26,7 @@ import { NextFunction, Request, Response, Router } from "express";
 
 import { NotebookPath, NOTEBOOK_PATH_RE } from "../shared/folder";
 
-import { ServerNotebook } from "../server-notebook";
+import { ServerNotebook } from "../models/server-notebook";
 
 // import { NotebookName, NotebookChangeRequest } from "./shared/euler-notebook-api";
 

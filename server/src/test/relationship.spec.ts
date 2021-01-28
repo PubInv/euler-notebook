@@ -29,7 +29,7 @@ import 'mocha';
 import { FormulaCellObject, PlainTextFormula } from "../shared/formula";
 import { CellId, CellInserted, WolframExpression } from "../shared/notebook";
 import { InsertCellRequest, StyleChangeRequest } from "../shared/euler-notebook-api";
-import { ServerNotebook }  from "../server-notebook";
+import { ServerNotebook }  from "../models/server-notebook";
 
 import { ensureGlobalLoaded } from "./global";
 import { CellType, InputType } from "../shared/cell";

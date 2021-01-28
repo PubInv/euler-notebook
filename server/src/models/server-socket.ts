@@ -29,14 +29,14 @@ import { Request } from "express";
 import * as WebSocket from "ws";
 
 // TODO: Handle websocket lifecycle: closing, unexpected disconnects, errors, etc.
-import { assert, ClientId, PromiseResolver, errorMessageForUser } from "./shared/common";
-import { ClientRequest, } from "./shared/client-requests";
-import { ServerResponse, ErrorResponse, } from "./shared/server-responses";
+import { assert, ClientId, PromiseResolver, errorMessageForUser } from "../shared/common";
+import { ClientRequest, } from "../shared/client-requests";
+import { ServerResponse, ErrorResponse, } from "../shared/server-responses";
 
-import { logError, logWarning } from "./error-handler";
+import { logError, logWarning } from "../error-handler";
 import { ServerFolder } from "./server-folder";
 import { ServerNotebook } from "./server-notebook";
-import { clientMessageSynopsis, serverMessageSynopsis } from "./shared/debug-synopsis";
+import { clientMessageSynopsis, serverMessageSynopsis } from "../shared/debug-synopsis";
 import { ServerUser } from "./server-user";
 
 

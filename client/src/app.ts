@@ -23,7 +23,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 import { Html } from "./shared/common";
 
-import { DebugConsole } from "./components/debug-console";
+// import { DebugConsole } from "./components/debug-console";
 import { Header } from "./components/header";
 
 import { addAsyncEventListener, addSyncEventListener, showError } from "./error-handler";
@@ -81,9 +81,9 @@ class App {
     const $body = <HTMLBodyElement>window.document.body;
 
     const messageDisplay = new MessageDisplay();
-    const debugConsole = new DebugConsole();
+    // const debugConsole = new DebugConsole();
     this.header = new Header();
-    $body.append(messageDisplay.$elt, debugConsole.$elt, this.header.$elt);
+    $body.append(messageDisplay.$elt, /* debugConsole.$elt, */ this.header.$elt);
 
     ScreenManager.initialize();
 

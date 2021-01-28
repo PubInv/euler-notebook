@@ -30,26 +30,26 @@ const debug = debug1(`server:${MODULE}`);
 
 // import { readdirSync, unlink, writeFileSync } from "fs"; // LATER: Eliminate synchronous file operations.
 
-import { CellObject, CellSource, CellId, CellPosition, CellType, CellIndex } from "./shared/cell";
-import { assert, assertFalse, CssLength, deepCopy, ExpectedError, Html, notImplementedError, Timestamp, cssSizeInPixels, CssLengthUnit, cssLengthInPixels } from "./shared/common";
-import { NotebookPath, NOTEBOOK_PATH_RE, NotebookName, FolderPath, NotebookEntry, Folder } from "./shared/folder";
-import { NotebookObject, NotebookWatcher, PageMargins } from "./shared/notebook";
+import { CellObject, CellSource, CellId, CellPosition, CellType, CellIndex } from "../shared/cell";
+import { assert, assertFalse, CssLength, deepCopy, ExpectedError, Html, notImplementedError, Timestamp, cssSizeInPixels, CssLengthUnit, cssLengthInPixels } from "../shared/common";
+import { NotebookPath, NOTEBOOK_PATH_RE, NotebookName, FolderPath, NotebookEntry, Folder } from "../shared/folder";
+import { NotebookObject, NotebookWatcher, PageMargins } from "../shared/notebook";
 import {
   NotebookChangeRequest, MoveCell, InsertEmptyCell, DeleteCell, InsertStroke, DeleteStroke,
   ChangeNotebook, UseTool, RequestId, NotebookRequest, OpenNotebook, CloseNotebook, ResizeCell,
-} from "./shared/client-requests";
+} from "../shared/client-requests";
 import {
   NotebookUpdated, NotebookOpened, NotebookUpdate, CellInserted, CellDeleted, StrokeInserted, CellResized, CellMoved, StrokeDeleted, NotebookCollaboratorConnected, NotebookCollaboratorDisconnected,
-} from "./shared/server-responses";
-import { notebookChangeRequestSynopsis } from "./shared/debug-synopsis";
-import { strokePathId } from "./shared/stylus";
-import { OpenOptions, WatchedResource } from "./shared/watched-resource";
-import { UserPermission } from "./shared/permissions";
+} from "../shared/server-responses";
+import { notebookChangeRequestSynopsis } from "../shared/debug-synopsis";
+import { strokePathId } from "../shared/stylus";
+import { OpenOptions, WatchedResource } from "../shared/watched-resource";
+import { UserPermission } from "../shared/permissions";
 
 import { ServerSocket } from "./server-socket";
-import { createDirectory, deleteDirectory, FileName, readJsonFile, renameDirectory, writeJsonFile } from "./adapters/file-system";
+import { createDirectory, deleteDirectory, FileName, readJsonFile, renameDirectory, writeJsonFile } from "../adapters/file-system";
 import { Permissions } from "./permissions";
-import { CollaboratorObject } from "./shared/user";
+import { CollaboratorObject } from "../shared/user";
 import { existingCell, newCell } from "./server-cell/instantiator";
 import { ServerCell } from "./server-cell";
 

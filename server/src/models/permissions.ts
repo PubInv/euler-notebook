@@ -17,10 +17,10 @@ You should have received a copy of the GNU Affero General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-import { Path } from "./shared/folder";
-import { UserPermission, UserPermissions } from "./shared/permissions";
+import { Path } from "../shared/folder";
+import { UserPermission, UserPermissions } from "../shared/permissions";
 
-import { FileName, readJsonFile, writeJsonFile } from "./adapters/file-system";
+import { FileName, readJsonFile, writeJsonFile } from "../adapters/file-system";
 import { ServerUser } from "./server-user";
 
 // Requirements

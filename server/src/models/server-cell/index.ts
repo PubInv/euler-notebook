@@ -23,13 +23,13 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 // const MODULE = __filename.split(/[/\\]/).slice(-1)[0].slice(0,-3);
 // const debug = debug1(`server:${MODULE}`);
 
-import { assert, CssLength, CssSize, cssSizeInPixels, escapeHtml, Html, pixelsFromCssLength, SvgMarkup } from "../shared/common";
-import { CellId, CellObject, CellType } from "../shared/cell";
-import { convertStrokeToPath, Stroke, StrokeId } from "../shared/stylus";
+import { assert, CssLength, CssSize, cssSizeInPixels, escapeHtml, Html, pixelsFromCssLength, SvgMarkup } from "../../shared/common";
+import { CellId, CellObject, CellType } from "../../shared/cell";
+import { convertStrokeToPath, Stroke, StrokeId } from "../../shared/stylus";
 
 import { ServerNotebook } from "../server-notebook";
-import { DisplayUpdate } from "../shared/server-responses";
-import { cellSynopsis } from "../shared/debug-synopsis";
+import { DisplayUpdate } from "../../shared/server-responses";
+import { cellSynopsis } from "../../shared/debug-synopsis";
 
 // Types
 

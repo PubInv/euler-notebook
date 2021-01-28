@@ -27,22 +27,22 @@ import * as debug1 from "debug";
 const MODULE = __filename.split(/[/\\]/).slice(-1)[0].slice(0,-3);
 const debug = debug1(`server:${MODULE}`);
 
-import { assert, ExpectedError } from "./shared/common";
+import { assert, ExpectedError } from "../shared/common";
 import {
   Folder, FolderEntry, FolderName, FolderObject, FolderPath, FOLDER_PATH_RE, NotebookEntry,
   NotebookName, NotebookPath, FolderWatcher,
-} from "./shared/folder";
-import { ChangeFolder, CloseFolder, FolderRequest, OpenFolder, RequestId } from "./shared/client-requests";
-import { FolderUpdated, FolderOpened, FolderResponse, FolderUpdate, FolderCollaboratorDisconnected, FolderCollaboratorConnected } from "./shared/server-responses";
-import { UserPermission } from "./shared/permissions";
+} from "../shared/folder";
+import { ChangeFolder, CloseFolder, FolderRequest, OpenFolder, RequestId } from "../shared/client-requests";
+import { FolderUpdated, FolderOpened, FolderResponse, FolderUpdate, FolderCollaboratorDisconnected, FolderCollaboratorConnected } from "../shared/server-responses";
+import { UserPermission } from "../shared/permissions";
 
-import { createDirectory, deleteDirectory, readDirectory, renameDirectory } from "./adapters/file-system";
+import { createDirectory, deleteDirectory, readDirectory, renameDirectory } from "../adapters/file-system";
 import { ServerNotebook, notebookPath } from "./server-notebook";
-import { OpenOptions } from "./shared/watched-resource";
-import { logWarning } from "./error-handler";
+import { OpenOptions } from "../shared/watched-resource";
+import { logWarning } from "../error-handler";
 import { ServerSocket } from "./server-socket";
 import { Permissions } from "./permissions";
-import { CollaboratorObject } from "./shared/user";
+import { CollaboratorObject } from "../shared/user";
 
 // Types
 

@@ -28,7 +28,7 @@ import 'mocha';
 
 import { StyleType, VERSION }  from "../shared/notebook";
 import { NotebookChangeRequest, InsertCellRequest, StyleProperties } from "../shared/euler-notebook-api";
-import { ServerNotebook }  from "../server-notebook";
+import { ServerNotebook }  from "../models/server-notebook";
 
 import { ensureGlobalLoaded } from "./global";
 import { CssLength, PlainText } from "../shared/common";

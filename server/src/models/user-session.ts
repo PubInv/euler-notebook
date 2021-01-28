@@ -23,11 +23,11 @@ const debug = debug1(`server:${MODULE}`);
 
 import { randomBytes } from "crypto";
 
-import { deleteConfigFile, FileName, readConfigFile, writeConfigFile } from "./adapters/file-system";
+import { deleteConfigFile, FileName, readConfigFile, writeConfigFile } from "../adapters/file-system";
 
-import { assert, SessionToken } from "./shared/common";
-import { UserName } from "./shared/user";
-import { logError } from "./error-handler";
+import { assert, SessionToken } from "../shared/common";
+import { UserName } from "../shared/user";
+import { logError } from "../error-handler";
 
 // Requirements
 

@@ -30,7 +30,7 @@ const debug = debug1(`server:${MODULE}`);
 import { NextFunction, Request, Response, Router } from "express";
 
 import { NotebookPath, NOTEBOOK_PATH_RE } from "../shared/folder";
-import { ServerNotebook } from "../server-notebook";
+import { ServerNotebook } from "../models/server-notebook";
 import * as PDFDocument from "pdfkit";
 // @ts-ignore
 import * as SVGtoPDF from "svg-to-pdfkit";

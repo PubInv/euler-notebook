@@ -35,7 +35,7 @@ import { satisfies as semverSatisfies } from "semver";
 import { middleware as stylusMiddleware } from "stylus";
 
 import { assert } from "./shared/common";
-import { ServerSocket } from "./server-socket";
+import { ServerSocket } from "./models/server-socket";
 import { loadConfig } from "./config";
 import { initialize as initializeMathJax } from "./adapters/mathjax";
 import { start as startWolframscript } from "./adapters/wolframscript";
@@ -45,7 +45,7 @@ import { router as exportRouter } from "./routes/export";
 import { router as indexRouter } from "./routes/index";
 import { router as xrayRouter } from "./routes/xray";
 import { router as pdfRouter } from "./routes/pdf";
-import { UserSession } from "./user-session";
+import { UserSession } from "./models/user-session";
 
 // Constants
 

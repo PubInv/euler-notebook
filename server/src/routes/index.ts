@@ -26,9 +26,9 @@ import { NextFunction, Request, Response, Router } from "express";
 
 import { NotebookPath } from "../shared/folder";
 
-import { ServerSocket } from "../server-socket";
-import { ServerNotebook } from "../server-notebook";
-import { ServerFolder } from "../server-folder";
+import { ServerSocket } from "../models/server-socket";
+import { ServerNotebook } from "../models/server-notebook";
+import { ServerFolder } from "../models/server-folder";
 import { ClientId } from "../shared/common";
 
 const MODULE = __filename.split(/[/\\]/).slice(-1)[0].slice(0,-3);

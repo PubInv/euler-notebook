@@ -19,9 +19,9 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 // Requirements
 
-import { CellObject, CellSource, CellType, FigureCellObject, PlotCellObject, TextCellObject } from "../shared/cell";
-import { assertFalse } from "../shared/common";
-import { FormulaCellObject } from "../shared/formula";
+import { CellObject, CellSource, CellType, FigureCellObject, PlotCellObject, TextCellObject } from "../../shared/cell";
+import { assertFalse } from "../../shared/common";
+import { FormulaCellObject } from "../../shared/formula";
 
 import { ServerNotebook } from "../server-notebook";
 

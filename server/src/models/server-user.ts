@@ -21,19 +21,19 @@ import * as debug1 from "debug";
 const MODULE = __filename.split(/[/\\]/).slice(-1)[0].slice(0,-3);
 const debug = debug1(`server:${MODULE}`);
 
-import { assert, assertFalse, ExpectedError, SessionToken } from "./shared/common";
-import { LoginUserWithPassword, LoginUserWithToken, LogoutUser, RequestId, UserRequest } from "./shared/client-requests";
-import { clientUserMessageSynopsis } from "./shared/debug-synopsis";
-import { UserId, UserObject, UserName, UserPassword, USERNAME_RE, USERNAME_MAX_LENGTH, USER_PASSWORD_MIN_LENGTH } from "./shared/user";
-import { UserLoggedIn } from "./shared/server-responses";
-import { FolderPath } from "./shared/folder";
+import { assert, assertFalse, ExpectedError, SessionToken } from "../shared/common";
+import { LoginUserWithPassword, LoginUserWithToken, LogoutUser, RequestId, UserRequest } from "../shared/client-requests";
+import { clientUserMessageSynopsis } from "../shared/debug-synopsis";
+import { UserId, UserObject, UserName, UserPassword, USERNAME_RE, USERNAME_MAX_LENGTH, USER_PASSWORD_MIN_LENGTH } from "../shared/user";
+import { UserLoggedIn } from "../shared/server-responses";
+import { FolderPath } from "../shared/folder";
 
-import { FileName, readJsonFile } from "./adapters/file-system";
+import { FileName, readJsonFile } from "../adapters/file-system";
 
 import { ServerSocket } from "./server-socket";
 
 import { UserSession } from "./user-session";
-import { logWarning } from "./error-handler";
+import { logWarning } from "../error-handler";
 
 // Requirements
 
