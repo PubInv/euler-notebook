@@ -110,13 +110,14 @@ export class StrokeDrawingPanel extends SvgElement<'svg'> {
     DebugConsole.addMessage(<Html>message);
 
     this.pointerMap.delete(pointerId);
+    this.$elt.releasePointerCapture(pointerId);
   }
 
   private onPointerDown(event: PointerEvent): void {
 
     // Don't draw strokes with touch
     // so we don't get stray marks when the user tries to scroll.
-    if (event.pointerType === 'touchx') {
+    if (event.pointerType === 'touch') {
       DebugConsole.addMessage(<Html>`Ignoring touch ${event.type} ${event.pointerId}`);
       return;
     }
@@ -195,6 +196,7 @@ export class StrokeDrawingPanel extends SvgElement<'svg'> {
     const clientRect = this.$elt.getBoundingClientRect();
     stroke.end(event, clientRect);
     this.pointerMap.delete(pointerId);
+    this.$elt.releasePointerCapture(pointerId);
 
     // Notify the container that the stroke is finished.
     // Once the container has updated the underlying drawing, we can remove the stroke.
