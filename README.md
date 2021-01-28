@@ -27,6 +27,10 @@ We run the server on Apple Mac computers with the latest version of OS X.
 
 If you want Euler Notebook to support other browsers, devices, or operating systems, [let us know](https://www.pubinv.org/contact-us/).
 
+## Apple iPad Note
+
+You need to turn off the iPad's Scribble feature when using Euler Notebook (Settings -> Apple Pencil -> Scribble). If you don't turn it off, then when writing quickly with the Apple Pen every other stroke will be dropped.
+
 ## Running Locally
 
 Step 1: Create a [MyScript developer account](https://developer.myscript.com/getting-started/web)
