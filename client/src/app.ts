@@ -26,7 +26,8 @@ import { Html } from "./shared/common";
 // import { DebugConsole } from "./components/debug-console";
 import { Header } from "./components/header";
 
-import { addAsyncEventListener, addSyncEventListener, showError } from "./error-handler";
+import { addAsyncEventListener, addSyncEventListener } from "./dom";
+import { showError, ShowErrorDetail } from "./error-handler";
 import { Pathname, ScreenManager } from "./screens/screen-manager";
 import { ClientSocket } from "./client-socket";
 import { ClientUser } from "./client-user";
@@ -77,20 +78,39 @@ class App {
   // Private Event Handlers
 
   private async onDomContentLoaded(_event: Event): Promise<void> {
-    // TODO: this.banner = Banner.attach($(document, '#banner'));
-    const $body = <HTMLBodyElement>window.document.body;
 
+    // Add the top-level components to body that are not on a 'screen'.
+    // This includes the header bar and error message ticker.
+    const $body = <HTMLBodyElement>window.document.body;
     const messageDisplay = new MessageDisplay();
     // const debugConsole = new DebugConsole();
     this.header = new Header();
     $body.append(messageDisplay.$elt, /* debugConsole.$elt, */ this.header.$elt);
 
+    // Listen for low-level error messages on the body element,
+    // and display any in the message ticker.
+    // These are dispatched in error-handler.ts.
+    $body.addEventListener('showError', (e: Event)=>{
+      try {
+        const detail = <ShowErrorDetail>(<CustomEvent>e).detail;
+        messageDisplay.addError(detail.err, detail.message);
+      } catch (err) { console.dir(err); }
+    });
+
+    // Initialize the 'screen' system that provides navigation
+    // inside the one-page app.
     ScreenManager.initialize();
 
+    // Make our websocket connection with the server.
     // TODO: Show a "connecting..." spinner.
     this.socket = await ClientSocket.connect(`ws://${window.location.host}/`);
+
+    // If a user is logged in, as evidenced by a token in localStorage,
+    // then send the token to the server.
     try { await ClientUser.loginIfSavedToken(); }
     catch(err) { showError(err, <Html>`Please log in again. Cannot restore user session`); }
+
+    // Navigate to the screen indicated by our current URL.
     ScreenManager.navigateTo(this.currentPath);
   }
 

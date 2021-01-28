@@ -25,8 +25,9 @@ const debug = debug1('client:screen-manager');
 import { Html, assertFalse } from "../shared/common";
 import { FOLDER_PATH_RE, NOTEBOOK_PATH_RE, FolderPath, NotebookPath } from "../shared/folder";
 
+import { addSyncEventListener } from "../dom";
+
 import { Screen } from ".";
-import { addSyncEventListener } from "../error-handler";
 import { FolderScreen } from "./folder-screen";
 import { HomeScreen } from "./home-screen";
 import { NotebookEditScreen } from "./notebook-edit-screen";

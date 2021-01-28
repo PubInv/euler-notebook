@@ -28,38 +28,16 @@ import { ExpectedError, Html, PlainText } from "./shared/common";
 
 // Types
 
-export type AsyncListener<E extends Event> = (event: E)=>Promise<void>;
-export type SyncListener<E extends Event> = (event: E)=>void;
+export interface ShowErrorDetail {
+  err: Error,
+  message?: Html,
+}
 
 // Constants
 
 // Global Variables
 
 // Exported Functions
-
-export function addAsyncEventListener<E extends Event>(target: EventTarget, type: string, listener: AsyncListener<E>, message: Html): SyncListener<E> {
-  // Returns the actual listener added, in case the caller wants to remove it later.
-  // TODO: Type this so that callers don't have to specify the type of the event.
-  //       It should be inferred from the type parameter.
-  const wrappedListener = function(event: E): void {
-    try { monitorPromise(listener(event), message); }
-    catch (err) {showError(err, message); }
-  }
-  target.addEventListener(type, </* TYPESCRIPT: */EventListener>wrappedListener);
-  return wrappedListener;
-}
-
-export function addSyncEventListener<E extends Event>(target: EventTarget, type: string, listener: SyncListener<E>, message: Html): SyncListener<E> {
-  // Returns the actual listener added, in case the caller wants to remove it later.
-  // TODO: Type this so that callers don't have to specify the type of the event.
-  //       It should be inferred from the type parameter.
-  const wrappedListener = function(event: E): void {
-    try { listener(event); }
-    catch (err) { showError(err, message); }
-  }
-  target.addEventListener(type, </* TYPESCRIPT: */EventListener>wrappedListener);
-  return wrappedListener;
-}
 
 export function logError(err: Error, message?: string): void {
   // Makes a record of the error.
@@ -96,4 +74,11 @@ export function showError(err: Error, message?: Html): void {
   // Shows the error to the user, and logs it if appropriate.
   logErrorIfUnexpected(err, /* BUGBUG */<PlainText>message);
   // messageDisplayInstance.addError(err, message);
+
+  // To avoid circular dependencies on high-level error display code
+  // we dispatch the error as a custom event, which is listened for
+  // in the approprate place.
+  const detail: ShowErrorDetail = { err, message};
+  const event = new CustomEvent('showError', { detail });
+  document.body.dispatchEvent(event);
 }

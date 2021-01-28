@@ -25,16 +25,13 @@ import {
   pixelsFromCssLength,
   RelativeUrl, SvgMarkup
 } from "./shared/common";
-import {
-  SyncListener, addSyncEventListener, addAsyncEventListener, AsyncListener
-} from "./error-handler";
+import { showError, monitorPromise } from "./error-handler";
 import { CellType } from "./shared/cell";
 
 // Types
 
-interface Attributes {
-  [name: string]: boolean | number | string,
-}
+export type AsyncListener<E extends Event> = (event: E)=>Promise<void>;
+export type SyncListener<E extends Event> = (event: E)=>void;
 
 interface AsyncListeners {
   // REVIEW: Can we populate this automatically from the standard DOM types?
@@ -73,6 +70,10 @@ interface SyncListeners {
   pointerout?: SyncListener<PointerEvent>;
   pointerover?: SyncListener<PointerEvent>;
   pointerup?: SyncListener<PointerEvent>;
+}
+
+interface Attributes {
+  [name: string]: boolean | number | string,
 }
 
 interface DataAttributes {
@@ -269,6 +270,30 @@ export function $svg<K extends keyof SVGElementTagNameMap>(root: Element|Documen
 // export function $svgIconReference(id: SvgIconId): SVGSVGElement {
 //   return $outerSvg<'svg'>(svgIconReferenceMarkup(id));
 // }
+
+export function addAsyncEventListener<E extends Event>(target: EventTarget, type: string, listener: AsyncListener<E>, message: Html): SyncListener<E> {
+  // Returns the actual listener added, in case the caller wants to remove it later.
+  // TODO: Type this so that callers don't have to specify the type of the event.
+  //       It should be inferred from the type parameter.
+  const wrappedListener = function(event: E): void {
+    try { monitorPromise(listener(event), message); }
+    catch (err) {showError(err, message); }
+  }
+  target.addEventListener(type, </* TYPESCRIPT: */EventListener>wrappedListener);
+  return wrappedListener;
+}
+
+export function addSyncEventListener<E extends Event>(target: EventTarget, type: string, listener: SyncListener<E>, message: Html): SyncListener<E> {
+  // Returns the actual listener added, in case the caller wants to remove it later.
+  // TODO: Type this so that callers don't have to specify the type of the event.
+  //       It should be inferred from the type parameter.
+  const wrappedListener = function(event: E): void {
+    try { listener(event); }
+    catch (err) { showError(err, message); }
+  }
+  target.addEventListener(type, </* TYPESCRIPT: */EventListener>wrappedListener);
+  return wrappedListener;
+}
 
 // export function escapeHtml(str: string): Html {
 //   // From: http://shebang.brandonmintern.com/foolproof-html-escaping-in-javascript/
