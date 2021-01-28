@@ -28,6 +28,7 @@ import { ServerUser } from "./server-user";
 // Types
 
 export interface PermissionsObject {
+  // LATER: groups?: ...
   public?: boolean;
   users?: { [userName:string /* TYPESCRIPT: UserName */]: UserPermissions };
 }
@@ -42,10 +43,12 @@ const PERMISSIONS_FILENAME = <FileName>'permissions.json';
 
 export class Permissions {
 
-  // Public Class Properties
-  // Public Class Property Functions
-
   // Public Class Methods
+
+  public static async createOnDisk(path: Path, enclosingPermissions: Permissions): Promise<void> {
+    // NOTE: Does not create an instance of the class. Just writes the bits to disk.
+    await this.save(path, enclosingPermissions.obj);
+  }
 
   public static async load(path: Path): Promise<Permissions> {
     let obj: PermissionsObject;
@@ -59,19 +62,26 @@ export class Permissions {
     return instance;
   }
 
-  // Public Class Event Handlers
-  // Public Instance Properties
-
   // Public Instance Property Functions
 
   public getUserPermissions(user: ServerUser|undefined): UserPermissions {
-    let rval: UserPermissions = this.obj.public ? UserPermission.Read : UserPermission.None;
-    if (user) {
-      if (this.path.startsWith(`/${user.userName}/`)) {
-        // User is owner. Allow everything.
-        rval |= UserPermission.All;
-      } else if (this.obj.users && this.obj.users.hasOwnProperty(user.userName)) {
-        rval |= this.obj.users[user.userName];
+    let rval: UserPermissions;
+    if (user && this.path.startsWith(`/${user.userName}/`)) {
+      // User is owner. They have all permissions.
+      rval = UserPermission.All;
+    } else {
+      // Public notebooks are readable by defaults.
+      // Non-public notebooks have no default permissions.
+      const defaultPermissions = (this.obj.public ? UserPermission.Read : UserPermission.None);
+
+      if (user && this.obj.users && this.obj.users.hasOwnProperty(user.userName)) {
+        // User with explicit permissions is logged in.
+        // Add whatever explicit permissions are granted to the default permissions.
+        rval = defaultPermissions | this.obj.users[user.userName];
+      } else {
+        // No user is logged in, or user does not have explicit permissions.
+        // Use default permissions.
+        rval = defaultPermissions;
       }
     }
     return rval;
@@ -89,10 +99,11 @@ export class Permissions {
 
   // --- PRIVATE ---
 
-  // Private Class Properties
-  // Private Class Property Functions
   // Private Class Methods
-  // Private Class Event Handlers
+
+  private static async save(path: Path, obj: PermissionsObject): Promise<void> {
+    await writeJsonFile(path, PERMISSIONS_FILENAME, obj);
+  }
 
   // Private Constructor
 
@@ -110,12 +121,8 @@ export class Permissions {
 
   // Private Instance Methods
 
-  // LATER:
   private async save(): Promise<void> {
-    await writeJsonFile(this.path, PERMISSIONS_FILENAME, this.obj);
+    await Permissions.save(this.path, this.obj);
   }
-
-  // Private Instance Event Handlers
-
 }
 

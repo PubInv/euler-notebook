@@ -130,6 +130,12 @@ export class ServerNotebook extends WatchedResource<NotebookPath, ServerNotebook
 
   // Public Class Methods
 
+  public static async createOnDisk(path: NotebookPath, permissions: Permissions): Promise<void> {
+    const notebook = await this.open(path, { mustNotExist: true });
+    notebook.close();
+    await Permissions.createOnDisk(path, permissions);
+  }
+
   public static async delete(path: NotebookPath): Promise<void> {
     // REVIEW: Race conditions?
     this.close(path, "Notebook has been deleted."); // no-op if the notebook is not open.
@@ -252,12 +258,12 @@ export class ServerNotebook extends WatchedResource<NotebookPath, ServerNotebook
       assert(changeRequest);
       debug(`${source} change request: ${notebookChangeRequestSynopsis(changeRequest)}`);
       switch(changeRequest.type) {
-        case 'deleteCell':   await this.applyDeleteCellRequest(source, changeRequest, updates, undoChangeRequests); break;
-        case 'deleteStroke': await this.applyDeleteStrokeRequest(source, changeRequest, updates, undoChangeRequests); break;
-        case 'insertEmptyCell':   await this.applyInsertEmptyCellRequest(source, changeRequest, updates, undoChangeRequests); break;
-        case 'insertStroke': await this.applyInsertStrokeRequest(source, changeRequest, updates, undoChangeRequests); break;
-        case 'moveCell':     await this.applyMoveCellRequest(source, changeRequest, updates, undoChangeRequests); break;
-        case 'resizeCell':   await this.applyResizeCellRequest(source, changeRequest, updates, undoChangeRequests); break;
+        case 'deleteCell':   this.applyDeleteCellRequest(source, changeRequest, updates, undoChangeRequests); break;
+        case 'deleteStroke': this.applyDeleteStrokeRequest(source, changeRequest, updates, undoChangeRequests); break;
+        case 'insertEmptyCell':   this.applyInsertEmptyCellRequest(source, changeRequest, updates, undoChangeRequests); break;
+        case 'insertStroke': this.applyInsertStrokeRequest(source, changeRequest, updates, undoChangeRequests); break;
+        case 'moveCell':     this.applyMoveCellRequest(source, changeRequest, updates, undoChangeRequests); break;
+        case 'resizeCell':   this.applyResizeCellRequest(source, changeRequest, updates, undoChangeRequests); break;
         default: assertFalse();
       }
     }
@@ -378,12 +384,12 @@ export class ServerNotebook extends WatchedResource<NotebookPath, ServerNotebook
 
   // Private Instance Methods
 
-  private async applyDeleteCellRequest(
+  private applyDeleteCellRequest(
     _source: CellSource,
     request: DeleteCell,
     updates: NotebookUpdate[],
     _undoChangeRequests: NotebookChangeRequest[],
-  ): Promise<void> {
+  ): void {
 
     // Remove cell from the page and from the map.
     const cellId = request.cellId;
@@ -409,12 +415,12 @@ export class ServerNotebook extends WatchedResource<NotebookPath, ServerNotebook
     // undoChangeRequests.unshift(undoChangeRequest);
   }
 
-  private async applyDeleteStrokeRequest(
+  private applyDeleteStrokeRequest(
     _source: CellSource,
     request: DeleteStroke,
     updates: NotebookUpdate[],
     undoChangeRequests: NotebookChangeRequest[],
-  ): Promise<void> {
+  ): void {
     const { cellId, strokeId } = request;
     const cell = this.getCell(cellId);
     const stroke = cell.deleteStroke(strokeId);
@@ -438,12 +444,12 @@ export class ServerNotebook extends WatchedResource<NotebookPath, ServerNotebook
     undoChangeRequests.unshift(undoChangeRequest);
   }
 
-  private async applyInsertEmptyCellRequest(
+  private applyInsertEmptyCellRequest(
     source: CellSource,
     request: InsertEmptyCell,
     updates: NotebookUpdate[],
     undoChangeRequests: NotebookChangeRequest[],
-  ): Promise<void> {
+  ): void {
     const cell = newCell(this, request.cellType, source);
 
     let cellIndex: number;
@@ -472,12 +478,12 @@ export class ServerNotebook extends WatchedResource<NotebookPath, ServerNotebook
     undoChangeRequests.unshift(undoChangeRequest);
   }
 
-  private async applyInsertStrokeRequest(
+  private applyInsertStrokeRequest(
     _source: CellSource,
     request: InsertStroke,
     updates: NotebookUpdate[],
     undoChangeRequests: NotebookChangeRequest[],
-  ): Promise<void> {
+  ): void {
     const { cellId, stroke } = request;
     const cell = this.getCell(request.cellId);
     const displayUpdate = cell.insertStroke(stroke);
@@ -494,12 +500,12 @@ export class ServerNotebook extends WatchedResource<NotebookPath, ServerNotebook
     undoChangeRequests.unshift(undoChangeRequest);
   }
 
-  private async applyMoveCellRequest(
+  private applyMoveCellRequest(
     _source: CellSource,
     request: MoveCell,
     updates: NotebookUpdate[],
     undoChangeRequests: NotebookChangeRequest[],
-  ): Promise<void> {
+  ): void {
     const { cellId, afterId } = request;
     if (afterId == cellId) { throw new Error(`Style ${cellId} can't be moved after itself.`); }
 
@@ -529,12 +535,12 @@ export class ServerNotebook extends WatchedResource<NotebookPath, ServerNotebook
     undoChangeRequests.unshift(undoChangeRequest);
   }
 
-  private async applyResizeCellRequest(
+  private applyResizeCellRequest(
     _source: CellSource,
     request: ResizeCell,
     updates: NotebookUpdate[],
     undoChangeRequests: NotebookChangeRequest[],
-  ): Promise<void> {
+  ): void {
     const { cellId, cssSize } = request;
     assert(cssSize.height.endsWith('px'));
     assert(cssSize.width.endsWith('px'));
@@ -553,7 +559,6 @@ export class ServerNotebook extends WatchedResource<NotebookPath, ServerNotebook
   protected async initialize(options: OpenNotebookOptions): Promise<void> {
     if (options.mustExist) {
       assert(ServerNotebook.isValidNotebookPath(this.path));
-      // REVIEW: Create file-system readJsonFile function?
       const obj = await readJsonFile<ServerNotebookObject>(this.path, NOTEBOOK_FILENAME);
       assert(typeof obj == 'object');
       ServerNotebook.validateObject(obj);

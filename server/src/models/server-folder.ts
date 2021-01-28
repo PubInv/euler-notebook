@@ -70,6 +70,11 @@ export class ServerFolder extends Folder<ServerFolderWatcher> {
 
   // Public Class Methods
 
+  public static async createOnDisk(path: FolderPath, permissions: Permissions): Promise<void> {
+    await createDirectory(path);
+    await Permissions.createOnDisk(path, permissions);
+  }
+
   // Public Class Properties
 
   public static get allInstances(): ServerFolder[] /* LATER: IterableIterator<ServerFolder> */{
@@ -337,7 +342,7 @@ export class ServerFolder extends Folder<ServerFolderWatcher> {
           ServerFolder.validateFolderName(name)
           const path = childFolderPath(this.path, name);
           debug(`Creating folder: ${path}`);
-          await createDirectory(path);
+          await ServerFolder.createOnDisk(path, this.permissions);
           change = { type: 'folderCreated', entry: { name, path }};
           break;
         }
@@ -346,9 +351,7 @@ export class ServerFolder extends Folder<ServerFolderWatcher> {
           ServerNotebook.validateNotebookName(name);
           const path = notebookPath(this.path, name);
           debug(`Creating notebook: ${path}`);
-          const notebook = await ServerNotebook.open(path, { mustNotExist: true });
-          notebook.close();
-          debug(`Notebook created.`);
+          await ServerNotebook.createOnDisk(path, this.permissions);
           change = { type: 'notebookCreated', entry: { name, path }};
           break;
         }
