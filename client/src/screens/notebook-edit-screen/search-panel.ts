@@ -116,7 +116,7 @@ export class SearchPanel extends HtmlElement<'div'> {
     const query = <PlainText>this.$queryInput.value;
     const params: SearchParams = { notebookPath, query }
     const results = await apiSearch(params);
-    const html = `<ul>${results.results.map(formatSearchResult).join('\n')}</ul>`;
+    const html = <Html>`<h1>Wolfram Alpha</h1>\n${formatSearchResults(results.wolframAlpha)}\n<h1>OEIS</h1>\n${formatSearchResults(results.oeis)}\n`;
     $(this.$elt, '.searchResults').innerHTML = html;
   }
 
@@ -126,6 +126,43 @@ export class SearchPanel extends HtmlElement<'div'> {
 
 // Helper Function
 
+function formatSearchResults(results: SearchResult[]): Html {
+  return <Html>`<ul>${results.map(formatSearchResult).join('\n')}</ul>`
+}
+
 function formatSearchResult(r: SearchResult): Html {
-  return <Html>`<b>${escapeHtml(r.title!)}</b><pre>${r.text}</pre>`;
+  let rval = '<div>';
+
+  // LATER: Style with CSS, not <b>, <tt>, etc. elements.
+  if (r.title) {
+    rval += `<div><b>${escapeHtml(r.title)}</b></div>`;
+  }
+
+  if (r.html) {
+    rval += `<div>${r.html}</div>`;
+  }
+
+  if (r.text) {
+    rval += `<div>${escapeHtml(r.text)}</div>`;
+  }
+
+  if (r.formula) {
+    rval += `<div><tt>${escapeHtml(r.formula)}</tt></div>`;
+  }
+
+  if (r.knownConstant) {
+    rval += `<div><tt>${escapeHtml(r.knownConstant)}</tt></div>`;
+  }
+
+  if (r.wolframExpr) {
+    rval += `<div><tt>${escapeHtml(r.wolframExpr)}</tt></div>`;
+  }
+
+  // TODO: Format TeX expression!
+  if (r.texExpr) {
+    rval += `<div><tt>${escapeHtml(r.texExpr)}</tt></div>`;
+  }
+
+  rval += '</div>';
+  return <Html>rval;
 }

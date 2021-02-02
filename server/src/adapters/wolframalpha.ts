@@ -20,19 +20,15 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 import * as debug1 from "debug";
 
 import { PlainText } from "../shared/common";
-import { SearchResult, SearchResults } from "../shared/api-calls";
+import { WolframExpression,PlainTextFormula } from "../shared/formula";
+
+import { SearchResult } from "../shared/api-calls";
 import { loadCredentials } from "../config";
 import {
   convertEvaluatedWolframToTeX,
-  //  convertWolframToTeX,
   convertTeXtoWolfram,
   convertMTLToWolfram
 } from "./wolframscript";
-import {
-  PlainTextFormula,
-//  TexExpression,
-  WolframExpression
-} from "../shared/formula";
 
 
 const MODULE = __filename.split(/[/\\]/).slice(-1)[0].slice(0,-3);
@@ -80,7 +76,7 @@ async function ensureWolframAlphaAPIKeysLoaded(){
 
 // This is mostly a starting point for our WolframAPI work...
 // we expect the "full" results to be more useful
-export async function search(_text: PlainText): Promise<SearchResults> {
+export async function search(_text: PlainText): Promise<SearchResult[]> {
   if (!APPID) await ensureWolframAlphaAPIKeysLoaded();
 
   // This probably should not be done on every call;
@@ -91,7 +87,7 @@ export async function search(_text: PlainText): Promise<SearchResults> {
 
   debug(sr);
 
-  return <SearchResults>{results: [sr]};
+  return <SearchResult[]>[sr];
 }
 
 // This is exported so that we can use unit tests on it.
@@ -154,7 +150,7 @@ return str;
 }
 
 
-export async function search_full(_text: PlainText): Promise<SearchResults> {
+export async function search_full(_text: PlainText): Promise<SearchResult[]> {
   if (!APPID) await ensureWolframAlphaAPIKeysLoaded();
 
   // This probably should not be done on every call;
@@ -201,7 +197,7 @@ export async function search_full(_text: PlainText): Promise<SearchResults> {
                          <string>p.title === "Associated equation" ||
                          <string>p.title === "Equations" ||
                          p.id === "Equation") ?
-          <PlainText>s.plaintext : undefined;
+          <PlainTextFormula>s.plaintext : undefined;
 
         // This likewise is just a set of heuristics, no doubt there are cases
         // which are not needed. There are many unit conversions returned which
@@ -212,10 +208,10 @@ export async function search_full(_text: PlainText): Promise<SearchResults> {
           <PlainText>s.plaintext : undefined;
 
         if (formula) {
-          formula = <PlainText>string_to_slug(<string>formula);
+          formula = <PlainTextFormula>string_to_slug(<string>formula);
 //          console.log("formula",formula);
-          formula = <PlainText>await findEquationInAlphaResult(
-              <PlainText>formula);
+          formula = <PlainTextFormula>await findEquationInAlphaResult(
+              <PlainTextFormula>formula);
         }
 
 //        console.dir(formula);
@@ -235,5 +231,5 @@ export async function search_full(_text: PlainText): Promise<SearchResults> {
 
   debug(sr);
 
-  return <SearchResults>{results: sr};
+  return <SearchResult[]>sr;
 }

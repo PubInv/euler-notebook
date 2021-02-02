@@ -35,30 +35,17 @@ but highly relevant to us is "mathematica". These formulae appear
 to be in the Wolfram language, which makes it quite tractable to us.
 There does not appear to be a "LaTeX" formula available.
 
+Note for many terms a very rich and interesting set of data which
+is way too big for us to return is presented!
 
 */
 import * as debug1 from "debug";
 
-import { PlainText } from "../shared/common";
-import { SearchResult, SearchResults } from "../shared/api-calls";
-
-
+import { PlainText  } from "../shared/common";
+import { SearchResult } from "../shared/api-calls";
+import { WolframExpression } from "../shared/formula";
 
 import fetch, { Response } from "node-fetch";
-
-import {
-//  convertEvaluatedWolframToTeX,
-  //  convertWolframToTeX,
-//  convertTeXtoWolfram,
-//  convertMTLToWolfram
-} from "./wolframscript";
-import {
-//  PlainTextFormula,
-//  TexExpression,
-//  WolframExpression
-} from "../shared/formula";
-
-
 
 const MODULE = __filename.split(/[/\\]/).slice(-1)[0].slice(0,-3);
 const debug = debug1(`server:${MODULE}`);
@@ -74,7 +61,7 @@ const OEIS_URL_PREFIX = "https://oeis.org/search?fmt=json&q=";
 
 // This is mostly a starting point for our WolframAPI work...
 // we expect the "full" results to be more useful
-export async function search(_text: PlainText): Promise<SearchResults> {
+export async function search(_text: PlainText): Promise<SearchResult[]> {
 
   var url = `${OEIS_URL_PREFIX}${_text}`;
   try {
@@ -86,36 +73,29 @@ export async function search(_text: PlainText): Promise<SearchResults> {
     for(const r of json.results) {
       if (r.mathematica) {
         for(const m of r.mathematica) {
-          //        console.log(m);
-
           const sr : SearchResult =  { title: r.name,
-                                       text: undefined,
-                                       knownConstant: undefined,
-                                       formula: <PlainText>m
+                                       wolframExpr: <WolframExpression>m
                                    };
-//          console.log(sr);
           srs.push(sr);
         }
       } else {
-        const sr : SearchResult =  { title: r.name,
-                                       text: undefined,
-                                       knownConstant: undefined,
-                                       formula: undefined
+        const sr : SearchResult =  { title: _text,
+                                     text: r.name,
                                    };
-//        console.log(sr);
         srs.push(sr);
       }
     }
-    console.dir(srs);
-    return <SearchResults>{results: srs};
+    return <SearchResult[]> srs;
   } catch (error) {
     console.dir(error);
-    return <SearchResults>{results: []};
+    return <SearchResult[]>[];
   }
-   return <SearchResults>{results: ["internal error"]};
+   return <SearchResult[]>["internal error"];
 }
 
-
-export async function search_full(_text: PlainText): Promise<SearchResults> {
+// The question arises, should we attempt to return much
+// more here when one does a "full" search. There is much to return
+// from the OEIS.
+export async function search_full(_text: PlainText): Promise<SearchResult[]> {
   return search(_text);
 }

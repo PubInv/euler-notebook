@@ -74,17 +74,15 @@ router.post('/search', async function(req: Request, res: Response, _next: NextFu
     const notebook = await ServerNotebook.open(params.notebookPath, { mustExist: true });
     try {
       debug(`Searching for: "${params.query}"`);
-      // HACK: dje says I should use Promise.all here, but haven't figure that out yet!! - rlr
-      const results_wolfram = await wolframAlphaSearch(params.query);
-      debug("WOLFRAM RESULTS");
-      debug(results_wolfram);
-      const results_oeis = await oeisSearch(params.query);
-      debug("OIES");
-      debug(results_oeis);
-      const results = { results:
-                        results_wolfram.results.concat(results_oeis.results)
+      const wolfram_promise = wolframAlphaSearch(params.query);
+      const oeis_promise = oeisSearch(params.query);
+
+      const [results_wolfram,results_oeis] =
+        await Promise.all([wolfram_promise,oeis_promise]);
+
+      const results = { oeis: results_oeis,
+                        wolframAlpha: results_wolfram,
                       };
- //     const results = results_oeis;
       debug("TOTAL");
       debug(results);
       res.json(results);
