@@ -355,7 +355,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
         width var(--header-width)
 
     >.referenceFrame
-      overflow scroll
+      overflow auto
       border none
       width 100%
       // TODO: Need to subtract form height from height.
@@ -364,6 +364,8 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
   >.searchPanel
     background #F0F0F0
     border 1px solid #808080
+    display flex
+    flex-direction column
     height calc(100% - var(--header-height))
     left var(--sidebar-width)
     position fixed
@@ -371,7 +373,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
     width calc(75% - var(--sidebar-width))
 
     >.searchResults
-      overflow scroll
+      overflow auto
 
     >.searchForm
       border-bottom 1px solid #808080

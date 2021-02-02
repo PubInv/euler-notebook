@@ -127,7 +127,11 @@ export class SearchPanel extends HtmlElement<'div'> {
 // Helper Function
 
 function formatSearchResults(results: SearchResult[]): Html {
-  return <Html>`<ul>${results.map(formatSearchResult).join('\n')}</ul>`
+  if (results.length == 0) {
+    return <Html>`<div><i>No results.</i></div>`;
+  } else {
+    return <Html>`<ul>${results.map(formatSearchResult).join('\n')}</ul>`
+  }
 }
 
 function formatSearchResult(r: SearchResult): Html {
