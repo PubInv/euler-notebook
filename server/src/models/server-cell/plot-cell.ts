@@ -65,12 +65,14 @@ export class PlotCell extends ServerCell<PlotCellObject> {
 
   // Public Instance Methods
 
-  public displaySvg(): SvgMarkup {
+  // --- PRIVATE ---
+
+  protected updateDisplaySvg(): void {
     const markup = <SvgMarkup>'';
     // TODO: Need to cache the plot and return the cached version.
     // const plotMarkup = await plotUnivariate(<WolframExpression>"x^2 - 3", <WolframExpression>"x");
     // TODO: strip <svg></svg>
-    return super.displaySvg(<SvgMarkup>(markup /* + plotMarkup */));
+    super.updateDisplaySvg(<SvgMarkup>(markup /* + plotMarkup */));
   }
 
 }

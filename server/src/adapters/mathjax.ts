@@ -35,7 +35,7 @@ import { AllPackages } from "mathjax-full/js/input/tex/AllPackages.js";
 import { LiteAdaptor, liteAdaptor } from "mathjax-full/js/adaptors/liteAdaptor.js";
 import { RegisterHTMLHandler } from "mathjax-full/js/handlers/html.js";
 
-import { TexExpression } from "../shared/formula";
+import { EMPTY_TEX_EXPRESSION, TexExpression } from "../shared/formula";
 
 // Types
 
@@ -71,6 +71,11 @@ export function initialize(): void {
 
 export function convertTexToSvg(tex: TexExpression): SvgMarkup {
   debug(`Converting TeX: "${tex}"`);
+
+  // REVIEW: Is empty string appropriate empty SVG representation?
+  //         Or should it be "<svg></svg>"
+  if (tex == EMPTY_TEX_EXPRESSION) { return <SvgMarkup>''; }
+
   const node = gHtml.convert(tex, { display: false, em: 16, ex: 8, containerWidth: 80*16 });
   // Returns HTML of a 'mjx-container' element enclosing an "svg" element.
   // const html = <Html>gAdaptor.outerHTML(node);

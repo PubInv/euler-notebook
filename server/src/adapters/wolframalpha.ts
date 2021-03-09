@@ -17,34 +17,39 @@ You should have received a copy of the GNU Affero General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
+// Requirements
+
 import * as debug1 from "debug";
-
-import { PlainText } from "../shared/common";
-import { WolframExpression,PlainTextFormula } from "../shared/formula";
-
-import { SearchResult } from "../shared/api-calls";
-import { loadCredentials } from "../config";
-import {
-  convertEvaluatedWolframToTeX,
-  convertTeXtoWolfram,
-  convertMTLToWolfram
-} from "./wolframscript";
-
-
 const MODULE = __filename.split(/[/\\]/).slice(-1)[0].slice(0,-3);
 const debug = debug1(`server:${MODULE}`);
 
-// Requirements
 const WolframAlphaAPI = require('wolfram-alpha-node');
 
+import { assert, PlainText } from "../shared/common";
+import { SearchResult } from "../shared/api-calls";
+import { PlainTextFormula, WolframExpression } from "../shared/formula";
+
+import { convertEvaluatedWolframToTeX, convertTeXtoWolfram, convertPlainTextFormulaToWolfram } from "./wolframscript";
+
 // Types
+
+interface Api {
+  getFull: (fullQuery: FullQuery)=>Promise<FullResults>;
+  getShort: (query: PlainText)=>Promise<PlainText>;
+  // not used: getSpoken: (query: Query)=>Promise<?>
+}
 
 export interface ApiKeys {
   // This structure lives in ~/.euler-notebook/credentials.json under "wolframalpha" key.
   appid: string;
 }
 
-interface AlphaFullResult {
+interface FullQuery {
+  input: PlainText;
+  output: 'json';
+}
+
+interface FullResults {
   pods: Pod[];
 }
 
@@ -63,31 +68,22 @@ interface Subpod {
 
 // Global Variables
 
-let ApiKey: ApiKeys | null = null;
-let APPID: string | null = null;
-
-async function ensureWolframAlphaAPIKeysLoaded(){
-    const credentials = await loadCredentials();
-  ApiKey = credentials.wolframalpha;
-  APPID = ApiKey.appid;
-  };
+let gApi: Api;
 
 // Exported Functions
 
+export function initialize(apiKeys: ApiKeys): void {
+  gApi = WolframAlphaAPI(apiKeys.appid)
+}
+
 // This is mostly a starting point for our WolframAPI work...
 // we expect the "full" results to be more useful
-export async function search(_text: PlainText): Promise<SearchResult[]> {
-  if (!APPID) await ensureWolframAlphaAPIKeysLoaded();
-
-  // This probably should not be done on every call;
-  // it may be better to do an initialization
-  const waApi = WolframAlphaAPI(APPID);
-  const answer : PlainText = <PlainText>await waApi.getShort(_text);
-  const sr : SearchResult = { text: answer };
-
+export async function search(query: PlainText): Promise<SearchResult[]> {
+  assert(gApi);
+  const answer = await gApi.getShort(query);
+  const sr: SearchResult = { text: answer };
   debug(sr);
-
-  return <SearchResult[]>[sr];
+  return [sr];
 }
 
 // This is exported so that we can use unit tests on it.
@@ -105,7 +101,7 @@ export async function findEquationInAlphaResult(text: string) : Promise<string>
   try {
     var cand1 = <PlainText>string_to_slug(<string>cand0);
     console.log("CC1:",cand1);
-    var cand2 = convertMTLToWolfram(<PlainTextFormula>cand1);
+    var cand2 = convertPlainTextFormulaToWolfram(<PlainTextFormula>cand1);
     console.log("CC2:",cand2);
     var cand3 = await convertEvaluatedWolframToTeX(<WolframExpression>cand2);
     console.log("CC3:",cand3);
@@ -150,17 +146,14 @@ return str;
 }
 
 
-export async function search_full(_text: PlainText): Promise<SearchResult[]> {
-  if (!APPID) await ensureWolframAlphaAPIKeysLoaded();
-
-  // This probably should not be done on every call;
-  // it may be better to do an initialization
-  const waApi = WolframAlphaAPI(APPID);
-  const raw = <AlphaFullResult>(await waApi.getFull({input: _text, output:'json'}));
+export async function search_full(query: PlainText): Promise<SearchResult[]> {
+  assert(gApi);
+  const fullQuery: FullQuery = { input: query, output:'json' };
+  const fullResults = await gApi.getFull(fullQuery);
 
   // This code is Rob's attempt to find acceptable plaintext in what we get back...
   var sr : SearchResult[] = [];
-  const pods = raw.pods;
+  const pods = fullResults.pods;
 //  console.dir(pods,{depth:null});
   // now filter the pods to extract titles and plaintext from the subpods
 
@@ -231,5 +224,5 @@ export async function search_full(_text: PlainText): Promise<SearchResult[]> {
 
   debug(sr);
 
-  return <SearchResult[]>sr;
+  return sr;
 }

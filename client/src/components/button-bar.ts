@@ -17,15 +17,16 @@ You should have received a copy of the GNU Affero General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
+// REVIEW: This class does nothing and can be removed.
+
 // Requirements
 
-import { $configureAll, $all, HtmlElementSpecification } from "../dom";
+import { HtmlElementSpecification } from "../dom";
 import { HtmlElement } from "../html-element";
 
 // Class
 
 export class ButtonBar extends HtmlElement<'div'>{
-
 
   // --- PRIVATE ---
 
@@ -33,14 +34,6 @@ export class ButtonBar extends HtmlElement<'div'>{
 
   protected constructor(options: HtmlElementSpecification<'div'>) {
     super(options);
-
-    // Prevent buttons from taking focus when clicked.
-    // REVIEW: Code duplicated in sidebar.ts.
-    $configureAll($all(this.$elt, 'button'), {
-      // REVIEW: Use pointer event instead? Will this handle touches and stylus taps?
-      listeners: { mousedown: (e: MouseEvent)=>{ e.preventDefault(); }},
-    });
-
   }
 
   // Private Instance Properties

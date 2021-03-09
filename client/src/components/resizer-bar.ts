@@ -81,7 +81,7 @@ export class ResizerBar extends HtmlElement<'div'>  {
         attrs: { tabindex: -1 },
         classes: [ <CssClass>'insertCellBelowButton', <CssClass>'iconButton' ],
         html: RIGHT_TRIANGLE_ENTITY,
-        asyncListeners: { click: e=>this.onInsertButtonClicked(e) },
+        asyncButtonHandler: e=>this.onInsertButtonClicked(e),
       }],
     });
 

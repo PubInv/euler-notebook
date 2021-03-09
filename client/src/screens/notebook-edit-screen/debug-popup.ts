@@ -47,7 +47,7 @@ export class DebugPopup extends HtmlElement<'div'>{
           tag: 'button',
           class: <CssClass>'close',
           html: CLOSE_X_ENTITY,
-          listeners: { click: e=> this.onCloseClick(e), }
+          syncButtonHandler: e=> this.onCloseClick(e),
         }, {
           tag: 'div',
           class: <CssClass>'content',

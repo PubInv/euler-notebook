@@ -24,7 +24,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 import * as debug1 from "debug";
 const debug = debug1('client:cell-edit-view');
 
-import { CellObject, CellId } from "../../shared/cell";
+import { CellObject, CellId, CellType } from "../../shared/cell";
 import {
   assert, Html, CssClass, CssLength, CssSize, LengthInPixels,
   ElementId, SvgMarkup, cssLengthInPixels
@@ -34,7 +34,7 @@ import { Stroke, StrokeId } from "../../shared/stylus";
 
 import { HtmlElement } from "../../html-element";
 import {
-  $new, $newSvg, CLOSE_X_ENTITY, CELL_ICONS, svgIconReferenceMarkup,
+  $new, $newSvg, CLOSE_X_ENTITY, CELL_ICONS, svgIconReferenceMarkup, HtmlElementOrSpecification,
 } from "../../dom";
 
 import { Tools } from "../../screens/notebook-edit-screen/tools";
@@ -63,7 +63,7 @@ export abstract class CellEditView<O extends CellObject> extends HtmlElement<'di
 
   // Public Class Constants
 
-  static MISSING_ERROR = "<i>No primary representation.</i>";
+  // static MISSING_ERROR = "<i>No primary representation.</i>";
 
   // Public Class Methods
 
@@ -159,18 +159,29 @@ export abstract class CellEditView<O extends CellObject> extends HtmlElement<'di
       ],
     });
 
-    const $rightMargin = $new<'div'>({
-      tag: 'div',
-      class: <CssClass>'rightMargin',
-      children: [{
+    const rightMarginChildren: HtmlElementOrSpecification[] = [
+      {
         tag: 'button',
         attrs: { tabindex: -1 },
         classes:[ <CssClass>'deleteButton', <CssClass>'entityButton' ],
         html: CLOSE_X_ENTITY,
-        asyncListeners: {
-          click: e=>this.onDeleteButtonClicked(e),
-        },
-      }],
+        asyncButtonHandler: e=>this.onDeleteButtonClicked(e),
+      }
+    ];
+    // TODO: This should be provided by inherited formula-edit-view:
+    if (cell.type == CellType.Formula) {
+      rightMarginChildren.unshift({
+        tag: 'button',
+        attrs: { tabindex: -1 },
+        class: <CssClass>'iconButton',
+        html: svgIconReferenceMarkup(CELL_ICONS.get(CellType.Formula)!),
+        asyncButtonHandler: (e: MouseEvent)=>this.onRecognizeFormulaButtonClicked(e),
+      });
+    }
+    const $rightMargin = $new<'div'>({
+      tag: 'div',
+      class: <CssClass>'rightMargin',
+      children: rightMarginChildren,
     });
 
     const $displaySvg = $newSvg<'svg'>({
@@ -324,6 +335,22 @@ export abstract class CellEditView<O extends CellObject> extends HtmlElement<'di
 
   private async onInsertCell(): Promise<void> {
     await this.notebookEditView.insertCell(this.id);
+  }
+
+  private async onRecognizeFormulaButtonClicked(event: MouseEvent): Promise<void> {
+    // TODO: Disable button, show operation-in-progress indicator.
+    // TODO: Cancel if user leaves screen when recognition request outstanding
+    event.preventDefault(); // Don't take focus.
+    event.stopPropagation(); // Prevent our own 'onClicked' handler from being called.
+    debug(`onRecognizeFormulaButtonClicked`);
+    const response = await this.cell.recognizeFormulaRequest();
+    const alternatives = response.results.alternatives;
+
+    // TODO: Display alternatives.
+    // TODO: When alternative selected:
+    assert(alternatives.length>0);
+    const alternative = alternatives[0];
+    await this.cell.typesetFormulaRequest(alternative);
   }
 
   private onResizerCancel(): void {

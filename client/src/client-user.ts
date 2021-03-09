@@ -38,11 +38,12 @@ export class ClientUser {
 
   // Public Class Properties
 
-  public static loggedInUser: ClientUser|undefined = undefined;
+  public static loggedInUser?: ClientUser;
 
   // Public Class Methods
 
   public static loginWithPassword(userName: UserName, password: UserPassword): Promise<ClientUser> {
+    if (this.loggedInUser) { this.logout(); }
     const msg: LoginUserWithPassword = { type: 'user', operation: 'passwordLogin', userName, password };
     return this.finishLogin(msg);
   }
@@ -68,7 +69,7 @@ export class ClientUser {
     const msg: LogoutUser = { type: 'user', operation: 'logout', sessionToken }
     appInstance.socket.sendMessage(msg);
     window.localStorage.removeItem(STORAGE_KEY);
-    this.loggedInUser = undefined;
+    delete this.loggedInUser;
     appInstance.header.onUserLogout();
   }
 

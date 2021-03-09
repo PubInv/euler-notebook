@@ -81,10 +81,7 @@ export class StrokeSelectionPanel extends SvgElement<'svg'> {
 
     this.pointerMap = new Map();
     this.eraseCallbackFn = eraseCallbackFn;
-
-    for (const stroke of strokeData.strokes) {
-      this.insertStroke(stroke);
-    }
+    this.insertStrokes(strokeData);
   }
 
   // Public Instance Methods
@@ -94,6 +91,10 @@ export class StrokeSelectionPanel extends SvgElement<'svg'> {
   public onUpdate(update: NotebookUpdate, _ownRequest: boolean): void {
     debug(`onUpdate ${notebookUpdateSynopsis(update)}`);
     switch (update.type) {
+      case 'formulaTypeset':
+        this.deleteAllStrokes();
+        this.insertStrokes(update.strokeData);
+        break;
       case 'strokeDeleted':
         this.deleteStroke(update.strokeId);
         break;
@@ -124,6 +125,10 @@ export class StrokeSelectionPanel extends SvgElement<'svg'> {
 
   // Private Instance Methods
 
+  private deleteAllStrokes(): void {
+    this.$elt.innerHTML = '';
+  }
+
   private deleteStroke(strokeId: StrokeId): void {
     const $path = $svg(this.$elt, `#S${strokeId}`);
     $path.remove();
@@ -137,6 +142,12 @@ export class StrokeSelectionPanel extends SvgElement<'svg'> {
       attrs: { d },
     });
     this.$elt.append($path);
+  }
+
+  private insertStrokes(strokeData: StrokeData): void {
+    for (const stroke of strokeData.strokes) {
+      this.insertStroke(stroke);
+    }
   }
 
   private releaseCapture(pointerId: PointerId, pi: PointerInfo): void {

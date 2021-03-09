@@ -81,6 +81,7 @@ interface DataAttributes {
 }
 
 interface NewCommonOptions {
+  asyncButtonHandler?: AsyncListener<MouseEvent>;
   asyncListeners?: AsyncListeners;
   attrs?: Attributes;
   class?: CssClass;
@@ -93,6 +94,7 @@ interface NewCommonOptions {
   src?: AbsoluteUrl|RelativeUrl;
   style?: string;
   styles?: Styles;
+  syncButtonHandler?: SyncListener<MouseEvent>;
   title?: string;
   type?: string;
   value?: string;
@@ -125,9 +127,9 @@ interface Styles {
 // Keep this list in sync with server/views/iconmonstr.pug.
 export type SvgIconId =
   'iconMonstrArrow71' | 'iconMonstrArrow72' |'iconMonstrBook14' | 'iconMonstrBook17' | 'iconMonstrBug12' |
-  'iconMonstrCalculator2' | 'iconMonstrClothing18' | 'iconMonstrEraser2' | 'iconMonstrFile5' | 'iconMonstrFile12' |
+  'iconMonstrCalculator2' | 'iconMonstrClothing18' | 'iconMonstrEdit9Modified' | 'iconMonstrEraser2' | 'iconMonstrFile5' | 'iconMonstrFile12' |
   'iconMonstrFile15' | 'iconMonstrFolder2' | 'iconMonstrFolder5' | 'iconMonstrFullScreen7' | 'iconMonstrHome6' |
-  'iconMonstrNote23' | 'iconMonstrMagnifier6' | 'iconMonstrPencil9' | 'iconMonstrPrinter6' |
+  'iconMonstrMagnifier6' | 'iconMonstrPencil9' | 'iconMonstrPrinter6' |
   'iconMonstrRedo4' | 'iconMonstrRefresh2' | 'iconMonstrRuler30' | 'iconMonstrText1' | 'iconMonstrTrashcan2' |
   'iconMonstrUndo4' | 'iconMonstrUser1' | 'iconMonstrChart20' ;
 
@@ -217,8 +219,15 @@ export function $configure($elt: HTMLElement|SVGElement, options: NewCommonOptio
   if (options.hidden) { $elt.style.display = 'none'; }
 
   if (options.listeners) { attachSyncListeners($elt, options.listeners); }
+  if (options.syncButtonHandler) {
+    assert($elt instanceof HTMLButtonElement);
+    attachSyncButtonHandler(<HTMLButtonElement>$elt, options.syncButtonHandler);
+  }
   if (options.asyncListeners) { attachAsyncListeners($elt, options.asyncListeners); }
-
+  if (options.asyncButtonHandler) {
+    assert($elt instanceof HTMLButtonElement);
+    attachAsyncButtonHandler(<HTMLButtonElement>$elt, options.asyncButtonHandler);
+  }
   if (options.appendTo) { options.appendTo.appendChild($elt); }
   // else if (options.prependTo) { options.prependTo.insertBefore($elt, options.prependTo.firstChild); }
   else if (options.replaceInner) { options.replaceInner.innerHTML = ''; options.replaceInner.appendChild($elt); }
@@ -275,9 +284,10 @@ export function addAsyncEventListener<E extends Event>(target: EventTarget, type
   // Returns the actual listener added, in case the caller wants to remove it later.
   // TODO: Type this so that callers don't have to specify the type of the event.
   //       It should be inferred from the type parameter.
+  // REVIEW: Does anyone use the return value?
   const wrappedListener = function(event: E): void {
     try { monitorPromise(listener(event), message); }
-    catch (err) {showError(err, message); }
+    catch (err) { showError(err, message); }
   }
   target.addEventListener(type, </* TYPESCRIPT: */EventListener>wrappedListener);
   return wrappedListener;
@@ -287,6 +297,7 @@ export function addSyncEventListener<E extends Event>(target: EventTarget, type:
   // Returns the actual listener added, in case the caller wants to remove it later.
   // TODO: Type this so that callers don't have to specify the type of the event.
   //       It should be inferred from the type parameter.
+  // REVIEW: Does anyone use the return value?
   const wrappedListener = function(event: E): void {
     try { listener(event); }
     catch (err) { showError(err, message); }
@@ -330,6 +341,16 @@ function attachAttributes($elt: Element, attrs: Attributes): void {
   }
 }
 
+function attachAsyncButtonHandler($elt: HTMLButtonElement, handler: AsyncListener<MouseEvent>): void {
+  const specifier = elementSpecifier($elt);
+  addSyncEventListener($elt, 'mousedown', preventDefaultListener, <Html>`Internal error processing ${specifier} mousedown event.`);
+  addAsyncEventListener($elt, 'click', async (event: MouseEvent)=>{
+    $elt.disabled = true;
+    await handler(event);
+    $elt.disabled = false;
+  }, <Html>`Internal error processing ${specifier} click event.`);
+}
+
 function attachAsyncListeners($elt: Element, listeners: AsyncListeners): void {
   // REVIEW: Might be nice to pass a function to generate the error message to addSyncEventListener,
   //         so we don't have to do the work of generating the "specifier" unless an error actually occurs.
@@ -337,6 +358,12 @@ function attachAsyncListeners($elt: Element, listeners: AsyncListeners): void {
   for (const [ eventName, listener ] of Object.entries(listeners)) {
     addAsyncEventListener($elt, eventName, listener, <Html>`Internal error processing ${specifier} ${eventName} event.`);
   }
+}
+
+function attachSyncButtonHandler($elt: HTMLButtonElement, handler: SyncListener<MouseEvent>): void {
+  const specifier = elementSpecifier($elt);
+  addSyncEventListener($elt, 'mousedown', preventDefaultListener, <Html>`Internal error processing ${specifier} mousedown event.`);
+  addSyncEventListener($elt, 'click', handler, <Html>`Internal error processing ${specifier} click event.`);
 }
 
 function attachSyncListeners($elt: Element, listeners: SyncListeners): void {
@@ -357,4 +384,8 @@ function elementSpecifier($elt: Element): string {
     specifier += `.${$elt.classList.item(i)}`
   }
   return specifier;
+}
+
+function preventDefaultListener(event: Event): void {
+  event.preventDefault();
 }

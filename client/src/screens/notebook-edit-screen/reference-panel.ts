@@ -72,7 +72,7 @@ export class ReferencePanel extends HtmlElement<'div'> {
       class: <CssClass>'smallIconButton',
       type: 'submit',
       title: "Go back",
-      listeners: { click: e=>this.onBackButtonClicked(e) },
+      syncButtonHandler: e=>this.onBackButtonClicked(e),
       html: svgIconReferenceMarkup('iconMonstrArrow72'),
     });
 
@@ -81,7 +81,7 @@ export class ReferencePanel extends HtmlElement<'div'> {
       class: <CssClass>'smallIconButton',
       type: 'submit',
       title: "Go forward",
-      listeners: { click: e=>this.onForwardButtonClicked(e) },
+      syncButtonHandler: e=>this.onForwardButtonClicked(e),
       html: svgIconReferenceMarkup('iconMonstrArrow71'),
     });
 
@@ -101,14 +101,14 @@ export class ReferencePanel extends HtmlElement<'div'> {
               class: <CssClass>'smallIconButton',
               type: 'submit',
               title: "Go home",
-              listeners: { click: e=>this.onHomeButtonClicked(e) },
+              syncButtonHandler: e=>this.onHomeButtonClicked(e),
               html: svgIconReferenceMarkup('iconMonstrHome6'),
             }, {
               tag: 'button',
               class: <CssClass>'smallIconButton',
               type: 'submit',
               title: "Go to URL",
-              listeners: { click: e=>this.onGoButtonClicked(e) },
+              syncButtonHandler: e=>this.onGoButtonClicked(e),
               html: svgIconReferenceMarkup('iconMonstrBook17'),
             },
           ],

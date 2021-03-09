@@ -29,9 +29,9 @@ import { assert, assertFalse, ClientId, CssSize, Html } from "../shared/common";
 import { notebookUpdateSynopsis } from "../shared/debug-synopsis";
 import { NotebookName, NotebookNameFromNotebookPath, NotebookPath } from "../shared/folder";
 import { PageMargins, Pagination } from "../shared/notebook";
-import { NotebookChangeRequest, ChangeNotebook, UseTool, OpenNotebook, DeleteCell, ResizeCell, InsertStroke, InsertEmptyCell, MoveCell, DeleteStroke } from "../shared/client-requests";
+import { NotebookChangeRequest, ChangeNotebook, OpenNotebook, DeleteCell, ResizeCell, InsertStroke, InsertEmptyCell, MoveCell, DeleteStroke, TypesetFormula, RecognizeFormula } from "../shared/client-requests";
 import {
-  NotebookUpdated, NotebookOpened, NotebookResponse, NotebookClosed, NotebookUpdate, CellInserted, CellDeleted, CellMoved, NotebookCollaboratorConnected, NotebookCollaboratorDisconnected
+  NotebookUpdated, NotebookOpened, NotebookResponse, NotebookClosed, NotebookUpdate, CellInserted, CellDeleted, CellMoved, NotebookCollaboratorConnected, NotebookCollaboratorDisconnected, FormulaRecognized
 } from "../shared/server-responses";
 import { Stroke, StrokeId } from "../shared/stylus";
 import { CollaboratorObject } from "../shared/user";
@@ -42,6 +42,7 @@ import { ClientCell } from "./client-cell";
 import { createCell } from "./client-cell/instantiator";
 import { logWarning } from "../error-handler";
 import { ClientPage } from "./client-page";
+import { FormulaRecognitionAlternative } from "../shared/formula";
 
 // Types
 
@@ -96,7 +97,7 @@ export class ClientNotebook {
   // Public Class Event Handlers
 
   public static onServerResponse(msg: NotebookResponse, ownRequest: boolean): void {
-    // Opened response is handled when request promise is resolved.
+    // Opened response is handled when open request promise is resolved.
     // All other responses are forwarded to the instance.
     if (msg.operation == 'opened') { return; }
     const instance = this.instanceMap.get(msg.path)!;
@@ -156,6 +157,11 @@ export class ClientNotebook {
     await this.sendUndoableChangeRequest(changeRequest);
   }
 
+  public async typesetFormulaRequest(cellId: CellId, alternative: FormulaRecognitionAlternative): Promise<void> {
+    const changeRequest: TypesetFormula = { type: 'typesetFormula', cellId, alternative };
+    await this.sendUndoableChangeRequest(changeRequest);
+  }
+
   public async deleteStrokeFromCellRequest(cellId: CellId, strokeId: StrokeId): Promise<void> {
     const changeRequest: DeleteStroke = { type: 'deleteStroke', cellId, strokeId };
     await this.sendUndoableChangeRequest(changeRequest)
@@ -192,6 +198,18 @@ export class ClientNotebook {
       afterId,
     }
     await this.sendUndoableChangeRequest(changeRequest);
+  }
+
+  public async recognizeFormulaRequest(cellId: CellId): Promise<FormulaRecognized> {
+    const msg: RecognizeFormula = {
+      type: 'notebook',
+      path: this.path,
+      operation: 'recognizeFormula',
+      cellId,
+    };
+    const response = await appInstance.socket.sendRequest<FormulaRecognized>(msg);
+    assert(response.length == 1);
+    return response[0];
   }
 
   public async redoRequest(): Promise<void> {
@@ -233,11 +251,6 @@ export class ClientNotebook {
       for (const view of this.views) { view.onRedoStateChange(true); }
     }
 
-  }
-
-  public useTool(id: CellId): void {
-    const msg: UseTool = { type: 'notebook', operation: 'useTool', path: this.path, cellId: id };
-    appInstance.socket.sendMessage(msg);
   }
 
   // -- PRIVATE --
@@ -347,7 +360,7 @@ export class ClientNotebook {
       operation: 'change',
       path: this.path,
       changeRequests,
-    }
+    };
     const responseMessages = await appInstance.socket.sendRequest<NotebookUpdated>(msg);
     assert(responseMessages.length>=1);
     if (responseMessages.length == 1) {
@@ -411,6 +424,10 @@ export class ClientNotebook {
       case 'collaboratorConnected':     this.onCollaboratorConnected(msg); break;
       case 'collaboratorDisconnected':  this.onCollaboratorDisconnected(msg); break;
       case 'updated':                   this.onUpdated(msg, ownRequest); break;
+
+      // The following are handled when their request promise resolves.
+      case 'formulaRecognized': break;
+
       case 'opened':
       default: assertFalse();
     }
@@ -467,6 +484,7 @@ export class ClientNotebook {
       case 'cellMoved':     this.onCellMoved(update); break;
 
       case 'cellResized':
+      case 'formulaTypeset':
       case 'strokeDeleted':
       case 'strokeInserted': {
         const cell = this.getCell(update.cellId);

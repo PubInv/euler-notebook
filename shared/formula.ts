@@ -32,9 +32,25 @@ export type WolframExpression = '{WolframExpression}';
 
 export interface FormulaCellObject extends CellObject {
   type: CellType.Formula,
-  plainTextFormula: PlainTextFormula; // REVIEW: Does the client need this?
+  formula: FormulaObject;
+}
+
+export interface FormulaObject {
+  plain: PlainTextFormula;
+  tex: TexExpression;
+  wolfram: WolframExpression;
+}
+
+export interface FormulaRecognitionAlternative {
+  formula: FormulaObject;
+}
+
+export interface FormulaRecognitionResults {
+  alternatives: FormulaRecognitionAlternative[];
 }
 
 // CONSTANTS
 
 export const EMPTY_FORMULA = <PlainTextFormula>'';
+export const EMPTY_TEX_EXPRESSION = <TexExpression>'';
+export const EMPTY_WOLFRAM_EXPRESSION = <WolframExpression>'';

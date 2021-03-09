@@ -74,6 +74,7 @@ export class UndoStack {
     this.$redoButton = $redoButton;
     this.$undoButton = $undoButton;
 
+    // TODO: This should use the dom.ts asyncButtonHandler.
     $redoButton.addEventListener('click', event=>this.onRedo(event));
     $undoButton.addEventListener('click', event=>this.onUndo(event));
 

@@ -23,13 +23,14 @@ import * as debug1 from "debug";
 const debug = debug1('client:client-cell');
 
 import { CellId, CellObject, CellType } from "../../shared/cell";
-import { assert, assertFalse, CssSelector, CssSize, ElementId, escapeHtml, Html } from "../../shared/common";
-import { CellDeleted, DisplayUpdate, NotebookUpdate } from "../../shared/server-responses";
+import { assert, CssSelector, CssSize, ElementId, escapeHtml, Html } from "../../shared/common";
+import { CellDeleted, DisplayUpdate, FormulaRecognized, NotebookUpdate } from "../../shared/server-responses";
 import { cellBriefSynopsis, cellSynopsis, notebookUpdateSynopsis } from "../../shared/debug-synopsis";
 import { Stroke, StrokeId } from "../../shared/stylus";
 
 import { ClientNotebook } from "../client-notebook";
 import { $, $newSvg } from "../../dom";
+import { FormulaRecognitionAlternative } from "../../shared/formula";
 
 // Types
 
@@ -106,7 +107,6 @@ export abstract class ClientCell<O extends CellObject> {
         this.updateDisplay(update.displayUpdate);
         break;
       }
-      default: assertFalse();
     }
 
     for (const view of this.views) {
@@ -126,6 +126,15 @@ export abstract class ClientCell<O extends CellObject> {
 
   public async insertStroke(stroke: Stroke): Promise<void> {
     await this.notebook.insertStrokeIntoCellRequest(this.id, stroke);
+  }
+
+  public recognizeFormulaRequest(): Promise<FormulaRecognized> {
+    return this.notebook.recognizeFormulaRequest(this.id);
+  }
+
+  // TODO: Only on formula-cell?
+  public async typesetFormulaRequest(alternative: FormulaRecognitionAlternative): Promise<void> {
+    await this.notebook.typesetFormulaRequest(this.id, alternative);
   }
 
   public async resize(cssSize: CssSize): Promise<void> {

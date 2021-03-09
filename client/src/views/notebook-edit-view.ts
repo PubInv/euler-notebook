@@ -107,7 +107,7 @@ export class NotebookEditView extends HtmlElement<'div'> {
         attrs: { tabindex: -1 },
         classes: [ <CssClass>'insertCellAtTopButton', <CssClass>'iconButton' ],
         html: RIGHT_TRIANGLE_ENTITY,
-        asyncListeners: { click: e=>this.onInsertCellAtTopButtonClicked(e) },
+        asyncButtonHandler: e=>this.onInsertCellAtTopButtonClicked(e),
       }]
     });
 
@@ -309,11 +309,6 @@ export class NotebookEditView extends HtmlElement<'div'> {
     cellView.renderTools(this.container.tools);
     this.lastCellSelected = cellView;
     this.container.sidebar.$trashButton.disabled = false;
-  }
-
-  public useTool(id: CellId): void {
-    this.notebook.useTool(id);
-    this.setFocus();
   }
 
   // Public Instance Event Handlers

@@ -34,11 +34,14 @@ import * as nodeCleanup from "node-cleanup";
 import { satisfies as semverSatisfies } from "semver";
 import { middleware as stylusMiddleware } from "stylus";
 
-import { assert } from "./shared/common";
-import { ServerSocket } from "./models/server-socket";
-import { loadConfig } from "./config";
 import { initialize as initializeMathJax } from "./adapters/mathjax";
 import { start as startWolframscript } from "./adapters/wolframscript";
+import { initialize as initializeMyScript } from "./adapters/myscript";
+import { initialize as initializeWolframAlpha } from "./adapters/wolframalpha";
+
+import { assert } from "./shared/common";
+import { ServerSocket } from "./models/server-socket";
+import { loadConfig, loadCredentials } from "./config";
 
 import { router as apiRouter } from "./routes/api";
 import { router as exportRouter } from "./routes/export";
@@ -65,13 +68,15 @@ async function main() {
   process.once('SIGUSR2', function(){ cleanupHandler(null, 'SIGUSR2'); });
 
   const config = await loadConfig();
-  // const credentials = await loadCredentials();
+  const credentials = await loadCredentials();
 
   await UserSession.loadIfAvailable();
 
   // TODO: stopWolframscript before exiting.
   if (config.mathematica) { await startWolframscript(config.wolframscript); }
   initializeMathJax();
+  initializeMyScript(credentials.myscript);
+  initializeWolframAlpha(credentials.wolframalpha);
 
   const app: express.Express = express();
 

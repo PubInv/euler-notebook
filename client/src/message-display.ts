@@ -112,9 +112,7 @@ class Message extends HtmlElement<'div'> {
         tag: 'button',
         classes: [<CssClass>'close', <CssClass>'iconButton'],
         html: CLOSE_X_ENTITY,
-        listeners: {
-          click: (e)=>this.onCloseClick(e),
-        }
+        syncButtonHandler: (e)=>this.onCloseClick(e),
       }],
       appendTo: parent.$elt,
     });

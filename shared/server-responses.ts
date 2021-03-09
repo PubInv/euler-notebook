@@ -26,10 +26,11 @@ import { CellId, CellObject, CellIndex } from "./cell";
 import { RequestId, NotebookChangeRequest } from "./client-requests";
 import { ClientId, CssSize, ElementId, SessionToken, SvgMarkup } from "./common";
 import { FolderObject, FolderPath, NotebookPath, FolderEntry, FolderName, NotebookEntry, NotebookName } from "./folder";
+import { FormulaObject, FormulaRecognitionResults } from "./formula";
 import { NotebookObject } from "./notebook";
-import { StrokeId, Stroke } from "./stylus";
-import { CollaboratorObject, UserObject } from "./user";
 import { UserPermissions } from "./permissions";
+import { StrokeId, Stroke, StrokeData } from "./stylus";
+import { CollaboratorObject, UserObject } from "./user";
 
 // Types
 
@@ -79,10 +80,21 @@ export interface FolderUpdated extends FolderResponseBase {
   updates: FolderUpdate[];
 }
 
-export type NotebookResponse = NotebookClosed | NotebookCollaboratorConnected | NotebookCollaboratorDisconnected | NotebookOpened | NotebookUpdated;
+export type NotebookResponse =
+              FormulaRecognized |
+              NotebookClosed |
+              NotebookCollaboratorConnected |
+              NotebookCollaboratorDisconnected |
+              NotebookOpened |
+              NotebookUpdated;
 interface NotebookResponseBase extends ResponseBase {
   type: 'notebook',
   path: NotebookPath,
+}
+export interface FormulaRecognized extends NotebookResponseBase {
+  operation: 'formulaRecognized';
+  cellId: CellId,
+  results: FormulaRecognitionResults,
 }
 export interface NotebookClosed extends NotebookResponseBase {
   operation: 'closed';
@@ -154,7 +166,7 @@ export interface NotebookRenamed {
 
 // Notebook Updates
 
-export type NotebookUpdate = CellDeleted | CellInserted | CellMoved | CellResized | StrokeInserted | StrokeDeleted;
+export type NotebookUpdate = CellDeleted | CellInserted | CellMoved | CellResized | FormulaTypeset | StrokeInserted | StrokeDeleted;
 export interface CellDeleted {
   type: 'cellDeleted';
   cellId: CellId;
@@ -173,6 +185,13 @@ export interface CellResized {
   type: 'cellResized';
   cellId: CellId;
   cssSize: CssSize;
+}
+export interface FormulaTypeset {
+  type: 'formulaTypeset';
+  cellId: CellId;
+  displaySvg: SvgMarkup;
+  formula: FormulaObject;
+  strokeData: StrokeData;
 }
 export interface StrokeDeleted {
   type: 'strokeDeleted';

@@ -25,13 +25,16 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 import { deepCopy, PlainText, SvgMarkup, CssLength } from "../../shared/common";
 import { CellSource, CellType } from "../../shared/cell";
-import { FormulaCellObject, PlainTextFormula, TexExpression } from "../../shared/formula";
+import { FormulaCellObject, FormulaRecognitionAlternative } from "../../shared/formula";
 import { EMPTY_STROKE_DATA } from "../../shared/stylus";
 
 import { ServerNotebook } from "../server-notebook";
+import { ServerFormula } from "../server-formula";
 
 import { ServerCell } from "./index";
-import { convertTexToSvg } from "../../adapters/mathjax";
+import { NotebookChangeRequest } from "../../shared/client-requests";
+import { FormulaTypeset, NotebookUpdate } from "../../shared/server-responses";
+
 
 // Constants
 
@@ -44,13 +47,14 @@ export class FormulaCell extends ServerCell<FormulaCellObject> {
   // Public Class Methods
 
   public static newCell(notebook: ServerNotebook, source: CellSource): FormulaCell {
+    const formula = ServerFormula.createEmpty();
     const obj: FormulaCellObject = {
       id: notebook.nextId(),
       type: CellType.Formula,
       cssSize: this.initialCellSize(notebook, DEFAULT_HEIGHT),
       displaySvg: <SvgMarkup>'',
       inputText: <PlainText>"",
-      plainTextFormula: <PlainTextFormula>"",
+      formula: formula.obj,
       source,
       strokeData: deepCopy(EMPTY_STROKE_DATA),
     };
@@ -61,19 +65,51 @@ export class FormulaCell extends ServerCell<FormulaCellObject> {
 
   public constructor(notebook: ServerNotebook, obj: FormulaCellObject) {
     super(notebook, obj);
+    // IMPORTANT: ServerFormula and our FormulaCellObject share the same FormulaObject!
+    this.formula = new ServerFormula(obj.formula);
   }
 
   // Public Instance Methods
 
-  public displaySvg(): SvgMarkup {
-    const markup = <SvgMarkup>'';
-    const quadraticFormulaTex = <TexExpression>"x = \\frac{{ - b \\pm \\sqrt {b^2 - 4ac} }}{{2a}}";
-    const formulaMarkup = convertTexToSvg(quadraticFormulaTex);
-    // TODO: Strip <svg></svg>
-    return super.displaySvg(<SvgMarkup>(markup + formulaMarkup));
+  public typesetFormula(
+    alternative: FormulaRecognitionAlternative,
+    updates: NotebookUpdate[],
+    _undoChangeRequests: NotebookChangeRequest[],
+  ): void {
 
-    // TODO: strip <svg></svg>
-    return markup;
+    // REVIEW: Size of cell could change.
+    this.obj.strokeData = deepCopy(EMPTY_STROKE_DATA);
+    this.formula.updateFormula(alternative.formula);
+    this.updateDisplaySvg();
+
+    const update: FormulaTypeset = {
+      type: 'formulaTypeset',
+      cellId: this.id,
+      displaySvg: this.obj.displaySvg,
+      formula: this.obj.formula,
+      strokeData: this.obj.strokeData,
+    };
+    updates.push(update);
+
+    // TODO:
+    // const undoChangeRequest: ...
+    // undoChangeRequests.push(undoChangeRequest);
   }
+
+  // --- PRIVATE ---
+
+  // Private Instance Properties
+
+  private formula: ServerFormula;
+
+  // Private Instance Methods
+
+  protected updateDisplaySvg(): void {
+    // TODO: Formula numbering, etc.
+    // TODO: Strip <svg></svg>?
+    const formulaMarkup = this.formula.renderSvg();
+    return super.updateDisplaySvg(<SvgMarkup>(formulaMarkup));
+  }
+
 
 }

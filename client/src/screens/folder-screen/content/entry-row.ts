@@ -68,9 +68,7 @@ export class EntryRow<K extends keyof EntryTypeMap> extends HtmlElement<'tr'> {
       tag: 'button',
       class: <CssClass>'iconButton',
       html: PENCIL_ENTITY,
-      listeners: {
-        click: (e: MouseEvent)=>this.onPencilButtonClicked(e),
-      },
+      syncButtonHandler: (e: MouseEvent)=>this.onPencilButtonClicked(e),
     });
 
     const $checkmarkButton = $new({
@@ -78,18 +76,14 @@ export class EntryRow<K extends keyof EntryTypeMap> extends HtmlElement<'tr'> {
       class: <CssClass>'iconButton',
       style: 'display:none',
       html: CHECKMARK_ENTITY,
-      asyncListeners: {
-        click: (e: MouseEvent)=>this.onCheckmarkButtonClicked(e),
-      },
+      asyncButtonHandler: (e: MouseEvent)=>this.onCheckmarkButtonClicked(e),
     });
 
     const $xButton = $new({
       tag: 'button',
       class: <CssClass>'iconButton',
       html: CLOSE_X_ENTITY,
-      asyncListeners: {
-        click: (e: MouseEvent)=>this.onRemoveButtonClicked(e),
-      },
+      asyncButtonHandler: (e: MouseEvent)=>this.onRemoveButtonClicked(e),
     });
 
     super({

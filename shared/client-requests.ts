@@ -25,6 +25,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 import { CellId, CellRelativePosition, CellType } from "./cell";
 import { CssSize, PlainText, SessionToken } from "./common";
 import { FolderPath, NotebookPath, FolderName, NotebookName, } from "./folder";
+import { FormulaRecognitionAlternative } from "./formula";
 import { Stroke, StrokeId } from "./stylus";
 import { UserName, UserPassword } from "./user";
 
@@ -58,7 +59,11 @@ export interface OpenFolder extends FolderRequestBase {
 
 // Notebook Requests
 
-export type NotebookRequest = ChangeNotebook | CloseNotebook | OpenNotebook | UseTool;
+export type NotebookRequest =
+              ChangeNotebook |
+              CloseNotebook |
+              OpenNotebook |
+              RecognizeFormula;
 interface NotebookRequestBase extends RequestBase {
   type: 'notebook';
   path: NotebookPath;
@@ -74,9 +79,9 @@ export interface CloseNotebook extends NotebookRequestBase {
 export interface OpenNotebook extends NotebookRequestBase {
   operation: 'open';
 }
-export interface UseTool extends NotebookRequestBase {
-  operation: 'useTool';
-  cellId: CellId;
+export interface RecognizeFormula extends NotebookRequestBase {
+  operation: 'recognizeFormula',
+  cellId: CellId,
 }
 
 // User Requests
@@ -144,8 +149,17 @@ export type NotebookChangeRequest =
   InsertEmptyCell |
   InsertStroke |
   MoveCell |
+  TypesetFormula |
   ResizeCell;
-export interface DeleteCell {
+  export interface ChangeText {
+    type: 'keyboardInputChange';
+    cellId: CellId;
+    start: number;          // 0-based index of first character to replace.
+    end: number;            // 0-based index of character after last character to replace.
+    replacement: PlainText; // Replacement text.
+    value: PlainText;          // Full value of input text, may be able to eliminate.
+  }
+  export interface DeleteCell {
   type: 'deleteCell';
   cellId: CellId;
 }
@@ -164,14 +178,6 @@ export interface InsertStroke {
   cellId: CellId;
   stroke: Stroke;
 }
-export interface ChangeText {
-  type: 'keyboardInputChange';
-  cellId: CellId;
-  start: number;          // 0-based index of first character to replace.
-  end: number;            // 0-based index of character after last character to replace.
-  replacement: PlainText; // Replacement text.
-  value: PlainText;          // Full value of input text, may be able to eliminate.
-}
 export interface MoveCell {
   type: 'moveCell';
   cellId: CellId;
@@ -181,4 +187,9 @@ export interface ResizeCell {
   type: 'resizeCell';
   cellId: CellId;
   cssSize: CssSize;
+}
+export interface TypesetFormula {
+  type: 'typesetFormula';
+  cellId: CellId;
+  alternative: FormulaRecognitionAlternative;
 }

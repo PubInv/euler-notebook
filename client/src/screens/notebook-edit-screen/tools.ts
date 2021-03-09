@@ -87,7 +87,7 @@ export class Tools extends HtmlElement<'div'>{
     //     tag: 'button',
     //     class: <CssClass>'tool',
     //     html,
-    //     listeners: { 'click': _e=>this.screen.content.useTool(toolStyle.id) }
+    //     syncButtonHandler: _e=>this.screen.content.useTool(toolStyle.id),
     //   });
     //   this.$elt.appendChild($button);
     // }

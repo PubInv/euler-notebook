@@ -44,9 +44,7 @@ export class Sidebar extends ButtonBar {
       tag: 'button',
       class: <CssClass>'iconButton',
       html: svgIconReferenceMarkup('iconMonstrFolder5'),
-      asyncListeners: {
-        click: (e: MouseEvent)=>this.onNewFolderClicked(e)
-      },
+      asyncButtonHandler: (e: MouseEvent)=>this.onNewFolderClicked(e),
       title: "New folder",
     });
 
@@ -54,9 +52,7 @@ export class Sidebar extends ButtonBar {
       tag: 'button',
       class: <CssClass>'iconButton',
       html: svgIconReferenceMarkup('iconMonstrFile15'),
-      asyncListeners: {
-        click: (e: MouseEvent)=>this.onNewNotebookClicked(e)
-      },
+      asyncButtonHandler: (e: MouseEvent)=>this.onNewNotebookClicked(e),
       title: "New notebook",
     });
 

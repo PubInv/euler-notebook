@@ -62,9 +62,6 @@ export class FigureCell extends ServerCell<FigureCellObject> {
 
   // Public Instance Methods
 
-  public displaySvg(): SvgMarkup {
-    const markup = <SvgMarkup>'';
-    return super.displaySvg(markup);
-  }
+  // --- PRIVATE ---
 
 }

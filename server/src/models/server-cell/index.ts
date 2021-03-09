@@ -39,12 +39,18 @@ export abstract class ServerCell<O extends CellObject> {
 
   // Public Constructor
 
-  public constructor(notebook: ServerNotebook, obj: O) {
+  public constructor(
+    notebook: ServerNotebook,
+    obj: O, // IMPORTANT: We hold on to this object
+            //            Caller must not modify object after passing to constructor.
+  ) {
     this.notebook = notebook;
     this.obj = obj;
   }
 
   // Public Instance Properties
+
+  public obj: O;
 
   // Public Instance Property Functions
 
@@ -56,21 +62,6 @@ export abstract class ServerCell<O extends CellObject> {
   public setCssSize(value: CssSize): void {
     this.obj.cssSize.height = value.height;
     this.obj.cssSize.width = value.width;
-  }
-
-  public /* overridable */ displaySvg(priorMarkup?: SvgMarkup): SvgMarkup {
-    // REVIEW: Cache the displaySvg until the content changes?
-    priorMarkup = priorMarkup || <SvgMarkup>'';
-    const strokesMarkup = this.obj.strokeData.strokes.map(stroke=>convertStrokeToPath(this.id, stroke)).join('\n');
-    return <SvgMarkup>(priorMarkup + strokesMarkup);
-  }
-
-  public clientObject(): O {
-    const rval: O = {
-      ...this.obj,
-      displaySvg: this.displaySvg(),
-    };
-    return rval;
   }
 
   public persistentObject(): O {
@@ -123,9 +114,18 @@ export abstract class ServerCell<O extends CellObject> {
   // Private Instance Properties
 
   protected notebook: ServerNotebook;
-  protected obj: O;
 
   // Private Instance Property Functions
+
+  // Private Instance Methods
+
+  /* overridable */ protected updateDisplaySvg(embeddedMarkup?: SvgMarkup): void {
+    // REVIEW: Cache the displaySvg until the content changes?
+    embeddedMarkup = embeddedMarkup || <SvgMarkup>'';
+    const strokesMarkup = this.obj.strokeData.strokes.map(stroke=>convertStrokeToPath(this.id, stroke)).join('\n');
+    this.obj.displaySvg = <SvgMarkup>(embeddedMarkup + strokesMarkup);
+  }
+
 
 }
 

@@ -34,6 +34,7 @@ import fetch, { Response } from "node-fetch";
 
 import { TexExpression } from "../shared/formula";
 import { StrokeGroup } from "../shared/myscript-types";
+import { StrokeData } from "../shared/stylus";
 
 const MODULE = __filename.split(/[/\\]/).slice(-1)[0].slice(0,-3);
 const debug = debug1(`server:${MODULE}`);
@@ -141,7 +142,15 @@ interface SolverConfiguration {
 const LATEX_MIME_TYPE = 'application/x-latex';
 const MYSCRIPT_BATCH_API_URL = 'https://webdemoapi.myscript.com/api/v4.0/iink/batch';
 
+// Global Variables
+
+let gApiKeys: ApiKeys;
+
 // Exported Functions
+
+export function initialize(apiKeys: ApiKeys): void {
+  gApiKeys = apiKeys;
+}
 
 // export async function postJiixRequest(keys: ServerKeys, strokeGroups: StrokeGroup[]): Promise<Jiix> {
 //   debug(`Calling MyScript batch API for JIIX.`);
@@ -154,16 +163,19 @@ const MYSCRIPT_BATCH_API_URL = 'https://webdemoapi.myscript.com/api/v4.0/iink/ba
 //   return <Jiix>jiix;
 // }
 
-export async function postLatexRequest(keys: ApiKeys, strokeGroups: StrokeGroup[]): Promise<TexExpression> {
+export async function postLatexRequest(strokeData: StrokeData): Promise<TexExpression> {
 
   // If there aren't any strokes yet, return an empty TeX expression.
-  if (strokeGroups.length == 1 && strokeGroups[0].strokes.length == 0) {
+  if (strokeData.strokes.length == 0) {
     return <TexExpression>'';
   }
 
   debug(`Calling MyScript batch API for LaTeX.`);
+  const strokeGroups: StrokeGroup[] = [{
+    strokes: strokeData.strokes,
+  }];
   const batchRequest = batchRequestFromStrokes(strokeGroups);
-  const bodyText = await postRequest(keys, LATEX_MIME_TYPE, batchRequest);
+  const bodyText = await postRequest(gApiKeys, LATEX_MIME_TYPE, batchRequest);
   if (bodyText[0]=='{') {
     try {
       const errorResponse = JSON.parse(bodyText);

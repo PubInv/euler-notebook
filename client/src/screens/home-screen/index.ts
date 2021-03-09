@@ -19,7 +19,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 // Requirements
 
-import { CssSelector } from "../../shared/common";
+import { CssSelector, ExpectedError } from "../../shared/common";
 import { UserName, UserPassword } from "../../shared/user";
 
 import { ClientUser } from "../../client-user";
@@ -101,7 +101,8 @@ export class HomeScreen extends Screen {
       const user = await ClientUser.loginWithPassword(userName, password);
       window.location.href = `/#${user.homePath}`;
     } catch(err) {
-      $formErrorMessage.innerHTML = err.message;
+      if (err instanceof ExpectedError) { $formErrorMessage.innerHTML = err.message; }
+      else { throw err; }
     }
   }
 }

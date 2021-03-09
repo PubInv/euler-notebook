@@ -62,9 +62,11 @@ export class TextCell extends ServerCell<TextCellObject> {
 
   // Public Instance Methods
 
-  public displaySvg(): SvgMarkup {
-    const markup = <SvgMarkup>'';
-    return super.displaySvg(markup);
+  // --- PRIVATE ---
+
+  protected updateDisplaySvg(): void {
+    const markup = <SvgMarkup>''; // TODO: render text to SVG
+    super.updateDisplaySvg(<SvgMarkup>(markup /* + plotMarkup */));
   }
 
 }

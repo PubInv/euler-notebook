@@ -55,9 +55,7 @@ export class Sidebar extends ButtonBar {
       tag: 'button',
       class: <CssClass>'iconButton',
       html: svgIconReferenceMarkup(CELL_ICONS.get(CellType.Formula)!),
-      listeners: {
-        click: (_e: MouseEvent): void =>{ this.onInsertModeChange(CellType.Formula); }
-      },
+      syncButtonHandler: (_e: MouseEvent): void =>{ this.onInsertModeChange(CellType.Formula); },
       title: "Insert formula",
       disabled: (insertMode === CellType.Formula),
     });
@@ -66,9 +64,7 @@ export class Sidebar extends ButtonBar {
       tag: 'button',
       class: <CssClass>'iconButton',
       html: svgIconReferenceMarkup(CELL_ICONS.get(CellType.Text)!),
-      listeners: {
-        click: (_e: MouseEvent): void =>{ this.onInsertModeChange(CellType.Text); }
-      },
+      syncButtonHandler: (_e: MouseEvent): void =>{ this.onInsertModeChange(CellType.Text); },
       title: "Insert text",
       disabled: (insertMode === CellType.Text),
     });
@@ -77,9 +73,7 @@ export class Sidebar extends ButtonBar {
       tag: 'button',
       class: <CssClass>'iconButton',
       html: svgIconReferenceMarkup(CELL_ICONS.get(CellType.Figure)!),
-      listeners: {
-        click: (_e: MouseEvent): void =>{ this.onInsertModeChange(CellType.Figure); }
-      },
+      syncButtonHandler: (_e: MouseEvent): void =>{ this.onInsertModeChange(CellType.Figure); },
       title: "Insert figure cell",
       disabled: (insertMode === CellType.Figure),
     });
@@ -88,9 +82,7 @@ export class Sidebar extends ButtonBar {
       tag: 'button',
       class: <CssClass>'iconButton',
       html: svgIconReferenceMarkup(CELL_ICONS.get(CellType.Plot)!),
-      listeners: {
-        click: (_e: MouseEvent):void=>{ this.onInsertModeChange(CellType.Plot); }
-      },
+      syncButtonHandler: (_e: MouseEvent):void=>{ this.onInsertModeChange(CellType.Plot); },
       title: "Insert figure cell",
       disabled: (insertMode === CellType.Figure),
     });
@@ -99,9 +91,7 @@ export class Sidebar extends ButtonBar {
       tag: 'button',
       class: <CssClass>'iconButton',
       html: svgIconReferenceMarkup('iconMonstrPencil9'),
-      listeners: {
-        click: (_e: MouseEvent):void=>{ this.onStylusModeChange(StylusMode.Draw); }
-      },
+      syncButtonHandler: (_e: MouseEvent):void=>{ this.onStylusModeChange(StylusMode.Draw); },
       title: "Drawing mode",
       disabled: (stylusMode === StylusMode.Draw),
     });
@@ -110,9 +100,7 @@ export class Sidebar extends ButtonBar {
       tag: 'button',
       class: <CssClass>'iconButton',
       html: svgIconReferenceMarkup('iconMonstrEraser2'),
-      listeners: {
-        click: (_e: MouseEvent):void=>{ this.onStylusModeChange(StylusMode.Erase); }
-      },
+      syncButtonHandler: (_e: MouseEvent):void=>{ this.onStylusModeChange(StylusMode.Erase); },
       title: "Erasing mode",
       disabled: (stylusMode === StylusMode.Erase),
     });
@@ -121,10 +109,10 @@ export class Sidebar extends ButtonBar {
       tag: 'button',
       class: <CssClass>'iconButton',
       html: svgIconReferenceMarkup('iconMonstrBug12'),
-      listeners: { click: (_e)=>{
+      syncButtonHandler: (_e)=>{
         this.$bugButton.disabled = true;
         this.screen.debugPopup.show();
-      }},
+      },
       title: "Debug popup",
     });
 
@@ -132,7 +120,7 @@ export class Sidebar extends ButtonBar {
       tag: 'button',
       class: <CssClass>'iconButton',
       html: svgIconReferenceMarkup('iconMonstrRedo4'),
-      asyncListeners: { click: async (_e: MouseEvent)=>{ await this.screen.notebook.redoRequest(); }},
+      asyncButtonHandler: async (_e: MouseEvent)=>{ await this.screen.notebook.redoRequest(); },
       title: "Redo",
       disabled: true,
     });
@@ -141,9 +129,9 @@ export class Sidebar extends ButtonBar {
       tag: 'button',
       class: <CssClass>'iconButton',
       html: svgIconReferenceMarkup('iconMonstrTrashcan2'),
-      asyncListeners: { click: async (_e: MouseEvent)=>{
+      asyncButtonHandler: async (_e: MouseEvent)=>{
         await this.screen.editView.deleteSelectedCells();
-      }},
+      },
       title: "Trash",
     });
 
@@ -151,7 +139,7 @@ export class Sidebar extends ButtonBar {
       tag: 'button',
       class: <CssClass>'iconButton',
       html: svgIconReferenceMarkup('iconMonstrUndo4'),
-      asyncListeners: { click: async (_e: MouseEvent)=>{ await this.screen.notebook.undoRequest(); }},
+      asyncButtonHandler: async (_e: MouseEvent)=>{ await this.screen.notebook.undoRequest(); },
       title: "Undo",
       disabled: true,
     });
@@ -165,7 +153,7 @@ export class Sidebar extends ButtonBar {
           tag: 'button',
           class: <CssClass>'iconButton',
           html: svgIconReferenceMarkup('iconMonstrMagnifier6'),
-          listeners: { click: (_e: MouseEvent): void =>{ this.screen.toggleSearchPanel(); }},
+          syncButtonHandler: (_e: MouseEvent): void =>{ this.screen.toggleSearchPanel(); },
           title: "Search",
         },
         {
@@ -173,7 +161,7 @@ export class Sidebar extends ButtonBar {
           tag: 'button',
           class: <CssClass>'iconButton',
           html: svgIconReferenceMarkup('iconMonstrBook17'),
-          listeners: { click: (_e: MouseEvent): void =>{ this.screen.toggleReferencePanel(); }},
+          syncButtonHandler: (_e: MouseEvent): void =>{ this.screen.toggleReferencePanel(); },
           title: "Reference",
         },
         SEPARATOR,
@@ -182,21 +170,21 @@ export class Sidebar extends ButtonBar {
           tag: 'button',
           class: <CssClass>'iconButton',
           html: svgIconReferenceMarkup('iconMonstrFile12'),
-          listeners: { click: (_e: MouseEvent): void =>{ window.location.href = `/#${screen.notebook.path}`; }},
+          syncButtonHandler: (_e: MouseEvent): void =>{ window.location.href = `/#${screen.notebook.path}`; },
           title: "Thumbnail view",
         }, {
           // reading view
           tag: 'button',
           class: <CssClass>'iconButton',
           html: svgIconReferenceMarkup('iconMonstrFile5'),
-          listeners: { click: (_e: MouseEvent): void =>{ window.location.href = `/#${screen.notebook.path}?view=read`; }},
+          syncButtonHandler: (_e: MouseEvent): void =>{ window.location.href = `/#${screen.notebook.path}?view=read`; },
           title: "Reading view",
         }, {
           // edit view
           tag: 'button',
           class: <CssClass>'iconButton',
-          html: svgIconReferenceMarkup('iconMonstrNote23'),
-          // listeners: { click: (_e: MouseEvent)=>{ window.location.href = `/#${screen.notebook.path}?view=edit`; }},
+          html: svgIconReferenceMarkup('iconMonstrEdit9Modified'),
+          // syncButtonHandler: (_e: MouseEvent)=>{ window.location.href = `/#${screen.notebook.path}?view=edit`; },
           title: "Editing view",
           disabled: true,
         },
@@ -216,7 +204,7 @@ export class Sidebar extends ButtonBar {
           tag: 'button',
           class: <CssClass>'iconButton',
           html: svgIconReferenceMarkup('iconMonstrPrinter6'),
-          listeners: { click: e=>this.onExportToPdf(e) },
+          syncButtonHandler: e=>this.onExportToPdf(e),
           title: "Print notebook",
         },
         $debugButton,
@@ -225,9 +213,9 @@ export class Sidebar extends ButtonBar {
           tag: 'button',
           class: <CssClass>'iconButton',
           html: svgIconReferenceMarkup('iconMonstrClothing18'),
-          asyncListeners: { click: async (_e: MouseEvent)=>{
+          asyncButtonHandler: async (_e: MouseEvent)=>{
             await this.screen.editView.developmentButtonClicked();
-          }},
+          },
           title: "Development use only",
         },
         $trashButton,

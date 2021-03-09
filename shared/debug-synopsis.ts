@@ -25,7 +25,7 @@ import { CellObject, CellType } from "./cell";
 import { assert } from './common';
 //import { Notebook } from './notebook';
 import {
-  FolderRequest, ClientRequest, NotebookRequest, FolderChangeRequest, NotebookChangeRequest, UserRequest,
+  FolderRequest, ClientRequest, NotebookRequest, FolderChangeRequest, NotebookChangeRequest, UserRequest
 } from './client-requests';
 import { FolderResponse, FolderUpdate, ServerResponse, NotebookResponse, NotebookUpdate, UserResponse, DisplayUpdate } from "./server-responses";
 import { NotebookObject } from "./notebook";
@@ -138,6 +138,7 @@ export function notebookUpdateSynopsis(update: NotebookUpdate): string {
     case 'cellInserted':   rval += ` ${cellSynopsis(update.cellObject)}`; break;
     case 'cellMoved':      rval += ` C${update.cellId} to index ${update.newIndex}`; break;
     case 'cellResized':    rval += ` C${update.cellId} ${JSON.stringify(update.cssSize)}`; break;
+    case 'formulaTypeset': rval += ` C${update.cellId}`; break;
     case 'strokeInserted': rval += ` C${update.cellId} ${strokeSynopsis(update.stroke)} ${displayUpdateSynopsis(update.displayUpdate)}`; break;
     case 'strokeDeleted':  rval += ` C${update.cellId} S${update.strokeId}`; break;
     default: rval += UNKNOWN_TYPE;
@@ -199,7 +200,7 @@ function clientNotebookMessageSynopsis(msg: NotebookRequest): string {
       break;
     case 'close': break;
     case 'open': break;
-    case 'useTool': rval += `style ${msg.cellId}`; break;
+    case 'recognizeFormula': rval += ` C${msg.cellId}`; break;
     default: rval += UNKNOWN_TYPE;
   }
   return rval;

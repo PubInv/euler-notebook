@@ -62,7 +62,7 @@ export class Header extends ButtonBar {
       class: <CssClass>'iconButton',
       title: "Refresh page",
       html: svgIconReferenceMarkup('iconMonstrRefresh2'),
-      listeners: { click: _e=>window.location.reload() },
+      syncButtonHandler: _e=>window.location.reload(),
     };
 
     const fullscreenButton: HtmlElementSpecification<'button'> = {
@@ -71,7 +71,7 @@ export class Header extends ButtonBar {
       title: "Full screen",
       html: svgIconReferenceMarkup('iconMonstrFullScreen7'),
       disabled: !document.fullscreenEnabled,
-      listeners: { click: e=>this.onFullscreenButtonClicked(e) },
+      syncButtonHandler: e=>this.onFullscreenButtonClicked(e),
     };
 
     const $userButton = $new({
@@ -79,7 +79,7 @@ export class Header extends ButtonBar {
       class: <CssClass>'iconButton',
       title: "User settings",
       html: LOGGED_OUT_ICON,
-      listeners: { click: e=>this.onUserButtonClicked(e) },
+      syncButtonHandler: e=>this.onUserButtonClicked(e),
       disabled: true,
     });
 
@@ -97,7 +97,7 @@ export class Header extends ButtonBar {
           class: <CssClass>'entityButton',
           title: "Euler Notebook home",
           html: EULER_NUMBER_ENTITY,
-          listeners: { click: _e=>{ window.location.href = '/#/'; }},
+          syncButtonHandler: _e=>{ window.location.href = '/#/'; },
         // }, {
         //   tag: 'select',
         //   id: <ElementId>'inputMode',
@@ -212,7 +212,7 @@ export class Header extends ButtonBar {
         id: idForCollaboratorButton(obj.clientId),
         src: urlForSmallProfilePic(obj.userName),
       }],
-      listeners: { click: _e=>notImplementedError("Collaborator buttons") },
+      syncButtonHandler: _e=>notImplementedError("Collaborator buttons"),
     });
     this.$collaboratorsSpan.append($userButton);
   }

@@ -45,6 +45,16 @@ export class FormulaCell extends ClientCell<FormulaCellObject> {
   public onUpdate(update: NotebookUpdate, ownRequest: boolean): void {
     debug(`onUpdate ${notebookUpdateSynopsis(update)}`);
     super.onUpdate(update, ownRequest);
+
+    switch(update.type) {
+      case 'formulaTypeset': {
+        this.obj.strokeData = update.strokeData;
+        this.obj.displaySvg = update.displaySvg;
+        this.$svgSymbol.innerHTML = update.displaySvg;
+        this.obj.formula = update.formula;
+        break;
+      }
+    }
   };
 
 }

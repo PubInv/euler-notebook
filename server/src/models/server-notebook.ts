@@ -36,22 +36,27 @@ import { NotebookPath, NOTEBOOK_PATH_RE, NotebookName, FolderPath, NotebookEntry
 import { NotebookObject, NotebookWatcher, PageMargins } from "../shared/notebook";
 import {
   NotebookChangeRequest, MoveCell, InsertEmptyCell, DeleteCell, InsertStroke, DeleteStroke,
-  ChangeNotebook, UseTool, RequestId, NotebookRequest, OpenNotebook, CloseNotebook, ResizeCell,
+  ChangeNotebook, RequestId, NotebookRequest, OpenNotebook, CloseNotebook, ResizeCell, TypesetFormula, RecognizeFormula,
 } from "../shared/client-requests";
 import {
-  NotebookUpdated, NotebookOpened, NotebookUpdate, CellInserted, CellDeleted, StrokeInserted, CellResized, CellMoved, StrokeDeleted, NotebookCollaboratorConnected, NotebookCollaboratorDisconnected,
+  NotebookUpdated, NotebookOpened, NotebookUpdate, CellInserted, CellDeleted, StrokeInserted, CellResized, CellMoved, StrokeDeleted, NotebookCollaboratorConnected, NotebookCollaboratorDisconnected, FormulaRecognized,
 } from "../shared/server-responses";
 import { notebookChangeRequestSynopsis } from "../shared/debug-synopsis";
 import { strokePathId } from "../shared/stylus";
 import { OpenOptions, WatchedResource } from "../shared/watched-resource";
 import { UserPermission } from "../shared/permissions";
+import { CollaboratorObject } from "../shared/user";
+import { FormulaCellObject, FormulaRecognitionResults } from "../shared/formula";
+
+import { existingCell, newCell } from "./server-cell/instantiator";
+import { ServerCell } from "./server-cell";
+import { FormulaCell } from "./server-cell/formula-cell";
 
 import { ServerSocket } from "./server-socket";
 import { createDirectory, deleteDirectory, FileName, readJsonFile, renameDirectory, writeJsonFile } from "../adapters/file-system";
 import { Permissions } from "./permissions";
-import { CollaboratorObject } from "../shared/user";
-import { existingCell, newCell } from "./server-cell/instantiator";
-import { ServerCell } from "./server-cell";
+import { logError } from "../error-handler";
+import { ServerFormula } from "./server-formula";
 
 export interface FindCellOptions {
   source?: CellSource;
@@ -82,7 +87,7 @@ const LETTER_PAGE_SIZE = cssSizeInPixels(8.5, 11, 'in');
 const DEFAULT_LETTER_MARGINS = marginsInPixels(1,1,1,1, 'in');
 
 
-const FORMAT_VERSION = "0.0.20";
+const FORMAT_VERSION = "0.0.21";
 
 const EMPTY_NOTEBOOK_OBJ: ServerNotebookObject = {
   nextId: 1,
@@ -264,6 +269,7 @@ export class ServerNotebook extends WatchedResource<NotebookPath, ServerNotebook
         case 'insertStroke': this.applyInsertStrokeRequest(source, changeRequest, updates, undoChangeRequests); break;
         case 'moveCell':     this.applyMoveCellRequest(source, changeRequest, updates, undoChangeRequests); break;
         case 'resizeCell':   this.applyResizeCellRequest(source, changeRequest, updates, undoChangeRequests); break;
+        case 'typesetFormula':   this.applyTypesetFormulaRequest(source, changeRequest, updates, undoChangeRequests); break;
         default: assertFalse();
       }
     }
@@ -337,7 +343,10 @@ export class ServerNotebook extends WatchedResource<NotebookPath, ServerNotebook
 
   // Private Constructor
 
-  private constructor(path: NotebookPath, options: OpenNotebookOptions) {
+  private constructor(
+    path: NotebookPath,
+    options: OpenNotebookOptions,
+  ) {
     super(path);
     this.obj = deepCopy(EMPTY_NOTEBOOK_OBJ);
     this.cellMap = new Map();
@@ -366,20 +375,17 @@ export class ServerNotebook extends WatchedResource<NotebookPath, ServerNotebook
     return rval;
   }
 
-  private clientObject(): NotebookObject {
-    const rval: NotebookObject = {
-      margins: this.obj.margins,
-      pageSize: this.obj.pageSize,
-      pagination: this.obj.pagination,
-      cells: this.cells.map(cell=>cell.clientObject()),
-    };
-    return rval;
-  }
-
   private getCell<T extends CellObject>(id: CellId): ServerCell<T> {
     const rval = <ServerCell<T>>this.cellMap.get(id);
     assert(rval, `Cell ${id} doesn't exist.`);
     return rval;
+  }
+
+  private getFormulaCell(id: CellId): FormulaCell {
+    const cell = this.getCell<FormulaCellObject>(id);
+    assert(cell.type == CellType.Formula);
+    assert(cell instanceof FormulaCell);
+    return <FormulaCell>cell;
   }
 
   // Private Instance Methods
@@ -399,6 +405,7 @@ export class ServerNotebook extends WatchedResource<NotebookPath, ServerNotebook
     assert(cellIndex>=0);
     // const afterId = cellIndex === 0 ? CellPosition.Top : this.cells[cellIndex-1].id;
     this.cells.splice(cellIndex, 1);
+    this.obj.cells.splice(cellIndex, 1);
     this.cellMap.delete(cellId);
 
     // TODO: Repaginate.
@@ -464,12 +471,13 @@ export class ServerNotebook extends WatchedResource<NotebookPath, ServerNotebook
       cellIndex++;
     }
     this.cells.splice(cellIndex, 0, cell);
+    this.obj.cells.splice(cellIndex, 0, cell.obj);
     this.cellMap.set(cell.id, cell);
     // TODO: repaginate
 
     const update: CellInserted = {
       type: 'cellInserted',
-      cellObject: cell.clientObject(),
+      cellObject: cell.obj,
       cellIndex
     };
     updates.push(update);
@@ -509,7 +517,7 @@ export class ServerNotebook extends WatchedResource<NotebookPath, ServerNotebook
     const { cellId, afterId } = request;
     if (afterId == cellId) { throw new Error(`Style ${cellId} can't be moved after itself.`); }
 
-    const cellObj = this.getCell(cellId);
+    const cell = this.getCell(cellId);
 
     let oldAfterId: number;
     const oldIndex: CellPosition = this.cellIndex(cellId);
@@ -526,13 +534,26 @@ export class ServerNotebook extends WatchedResource<NotebookPath, ServerNotebook
     }
 
     this.cells.splice(oldIndex, 1);
-    this.cells.splice(newIndex, 0, cellObj);
+    this.obj.cells.splice(oldIndex, 1);
+    this.cells.splice(newIndex, 0, cell);
+    this.obj.cells.splice(newIndex, 0, cell.obj);
 
     const update: CellMoved = { type: 'cellMoved', cellId, newIndex };
     updates.push(update);
 
     const undoChangeRequest: MoveCell = { type: 'moveCell', cellId, afterId: oldAfterId };
     undoChangeRequests.unshift(undoChangeRequest);
+  }
+
+  private applyTypesetFormulaRequest(
+    _source: CellSource,
+    request: TypesetFormula,
+    updates: NotebookUpdate[],
+    undoChangeRequests: NotebookChangeRequest[],
+  ): void {
+    const { cellId, alternative } = request;
+    const cell = this.getFormulaCell(cellId);
+    cell.typesetFormula(alternative, updates, undoChangeRequests);
   }
 
   private applyResizeCellRequest(
@@ -567,7 +588,6 @@ export class ServerNotebook extends WatchedResource<NotebookPath, ServerNotebook
       for (const cell of this.cells) {
         this.cellMap.set(cell.id, cell);
       }
-      obj.cells = [];
     } else if (options.mustNotExist) {
       await this.saveNew();
 
@@ -609,9 +629,7 @@ export class ServerNotebook extends WatchedResource<NotebookPath, ServerNotebook
     assert(ServerNotebook.isValidNotebookPath(this.path));
     debug(`saving ${this.path}`);
 
-    this.obj.cells = this.cells.map(cell=>cell.persistentObject());
     await writeJsonFile(this.path, NOTEBOOK_FILENAME, this.obj);
-    this.obj.cells = [];
     this.saving = false;
   }
 
@@ -685,7 +703,7 @@ export class ServerNotebook extends WatchedResource<NotebookPath, ServerNotebook
       case 'change': await this.onChangeRequest(socket, msg); break;
       case 'close':  this.onCloseRequest(socket, msg); break;
       case 'open':  this.onOpenRequest(socket, msg); break;
-      case 'useTool': this.onUseToolRequest(socket, msg); break;
+      case 'recognizeFormula': this.onRecognizeFormula(socket, msg); break;
       default: assert(false); break;
     }
   }
@@ -761,7 +779,7 @@ export class ServerNotebook extends WatchedResource<NotebookPath, ServerNotebook
       path: this.path,
       collaborators,
       permissions,
-      obj: this.clientObject(),
+      obj: this.obj,
       complete: true
     };
     socket.sendMessage(response);
@@ -769,16 +787,28 @@ export class ServerNotebook extends WatchedResource<NotebookPath, ServerNotebook
     this.sendCollaboratorConnectedMessage(socket);
   }
 
-  private onUseToolRequest(_socket: ServerSocket, _msg: UseTool): void {
-    // debug(`useTool ${cellId}`);
-    notImplementedError("ServerNotebook onUseToolRequest");
-    // const style = this.getStyle(cellId);
-    // const source = style.source;
-    // if (!style) { throw new Error(`Notebook useTool style ID not found: ${cellId}`); }
-    // const observer = this.observers.get(source);
-    // const changeRequests = await observer!.useTool(style);
-    // const changes = await this.requestChanges(source, changeRequests);
-    // return changes;
+  private onRecognizeFormula(socket: ServerSocket, msg: RecognizeFormula): void {
+    // REVIEW: Should we be checking permissions?
+    const cell = this.getFormulaCell(msg.cellId);
+    ServerFormula.recognizeStrokes(cell.persistentObject().strokeData)
+    .then(
+      serverResults=>{
+        const results: FormulaRecognitionResults = { alternatives: serverResults.alternatives.map(a=>({ formula: a.formula.obj })) };
+        const response: FormulaRecognized = {
+          type: 'notebook',
+          path: this.path,
+          operation: 'formulaRecognized',
+          cellId: cell.id,
+          results,
+          complete: true,
+          requestId: msg.requestId,
+        };
+        console.dir(results, { depth: null });
+        socket.sendMessage(response);
+      },
+    ).catch(err=>{
+      logError(err, `Error recognizing strokes with MyScript.`);
+    });
   }
 
   // NOT USED

@@ -89,7 +89,7 @@ async function generatePdf(res: Writable, notebook: ServerNotebook): Promise<voi
     var curY = topMargin;
     debug(notebook.allCells());
     for (const cell of notebook.allCells()) {
-      SVGtoPDF(doc, cell.displaySvg, leftMargin, curY, null);
+      SVGtoPDF(doc, cell.obj.displaySvg, leftMargin, curY, null);
       curY += parseInt(cell.cssSize.height);
     }
 

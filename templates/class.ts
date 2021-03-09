@@ -1,6 +1,6 @@
 /*
 Euler Notebook
-Copyright (C) 20209 Public Invention
+Copyright (C) 2021 Public Invention
 https://pubinv.github.io/PubInv/
 
 This program is free software: you can redistribute it and/or modify
