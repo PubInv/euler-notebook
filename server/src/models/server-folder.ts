@@ -29,8 +29,8 @@ const debug = debug1(`server:${MODULE}`);
 
 import { assert, ExpectedError } from "../shared/common";
 import {
-  Folder, FolderEntry, FolderName, FolderObject, FolderPath, FOLDER_PATH_RE, NotebookEntry,
-  NotebookName, NotebookPath, FolderWatcher,
+  Folder, FolderEntry, FolderName, FolderObject, FolderPath, NotebookEntry,
+  NotebookName, NotebookPath,
 } from "../shared/folder";
 import { ChangeFolder, CloseFolder, FolderRequest, OpenFolder, RequestId } from "../shared/client-requests";
 import { FolderUpdated, FolderOpened, FolderResponse, FolderUpdate, FolderCollaboratorDisconnected, FolderCollaboratorConnected } from "../shared/server-responses";
@@ -38,7 +38,6 @@ import { UserPermission } from "../shared/permissions";
 
 import { createDirectory, deleteDirectory, readDirectory, renameDirectory } from "../adapters/file-system";
 import { ServerNotebook, notebookPath } from "./server-notebook";
-import { OpenOptions } from "../shared/watched-resource";
 import { logWarning } from "../error-handler";
 import { ServerSocket } from "./server-socket";
 import { Permissions } from "./permissions";
@@ -46,45 +45,59 @@ import { CollaboratorObject } from "../shared/user";
 
 // Types
 
-export interface OpenFolderOptions extends OpenOptions<ServerFolderWatcher> {
-  ephemeral?: boolean;    // true iff notebook not persisted to the file system and disappears after last close.
+interface InstanceInfo {
+  instance?: ServerFolder;
+  openPromise: Promise<ServerFolder>;
+  openTally: number;
+  watchers: Set<ServerFolderWatcher>;
 }
 
-export interface ServerFolderWatcher extends FolderWatcher {
+export interface OpenFolderOptions {
+  watcher?: ServerFolderWatcher;
+}
+
+export interface ServerFolderWatcher {
+  onChange(change: FolderUpdate, ownRequest: boolean): void
   onChanged(msg: FolderUpdated): void;
+  onClosed(reason: string): void;
 }
 
 // Exported Class
 
-export class ServerFolder extends Folder<ServerFolderWatcher> {
+export class ServerFolder extends Folder {
 
   // Public Class Properties
 
-  public static nameFromPath(path: FolderPath): FolderName {
-    const match = FOLDER_PATH_RE.exec(path);
-    if (!match) { throw new Error(`Invalid folder path: ${path}`); }
-    return <FolderName>match[2] || 'Root'; // REVIEW: Could use user name for the Root folder?
-  }
+  // Public Class Properties
 
   // Public Class Property Functions
 
+  public static get allInstances(): ServerFolder[] /* LATER: IterableIterator<ServerFolder> */{
+    // LATER: ServerFolder.instanceMap should only have folders, not notebooks and folders.
+    return <ServerFolder[]>Array.from(this.instanceMap.values()).filter(r=>r.instance).map(r=>r.instance);
+  }
+
+  public static isOpen(path: FolderPath): boolean {
+    return this.instanceMap.has(path);
+  }
+
   // Public Class Methods
+
+  public static async close(path: FolderPath, reason: string): Promise<void> {
+    const info = this.instanceMap.get(path);
+    if (!info) { return; }
+    const instance = await info.openPromise;
+    instance.terminate(reason);
+  }
 
   public static async createOnDisk(path: FolderPath, permissions: Permissions): Promise<void> {
     await createDirectory(path);
     await Permissions.createOnDisk(path, permissions);
   }
 
-  // Public Class Properties
-
-  public static get allInstances(): ServerFolder[] /* LATER: IterableIterator<ServerFolder> */{
-    // LATER: ServerFolder.instanceMap should only have folders, not notebooks and folders.
-    return <ServerFolder[]>Array.from(this.instanceMap.values()).filter(r=>r instanceof ServerFolder);
-  }
-
   public static async delete(path: FolderPath): Promise<void> {
-    this.close(path, "Folder is deleted"); // no-op if the folder is not open.
-    deleteDirectory(path, false /* not recursive */);
+    await this.close(path, "Folder is deleted"); // no-op if the folder is not open.
+    await deleteDirectory(path, false /* not recursive */);
   }
 
   public static async move(oldPath: FolderPath, newPath: FolderPath): Promise<FolderEntry> {
@@ -93,31 +106,80 @@ export class ServerFolder extends Folder<ServerFolderWatcher> {
     // REVIEW: If there is an existing *file* (not directory) at the new path then it will be overwritten silently.
     //         However, we don't expect random files to be floating around out notebook storage filesystem.
     await renameDirectory(oldPath, newPath);
-    return { path: newPath, name: this.nameFromPath(newPath) }
+    return { path: newPath, name: Folder.folderNameFromFolderPath(newPath) }
   }
 
-  public static open(path: FolderPath, options: OpenFolderOptions): Promise<ServerFolder> {
-    // IMPORTANT: This is a standard open pattern that all WatchedResource-derived classes should use.
-    //            Do not modify unless you know what you are doing!
-    const isOpen = this.isOpen(path);
-    const instance = isOpen ? this.getInstance(path) : new this(path, options);
-    instance.open(options, isOpen);
-    return instance.openPromise;
+  public static async open(path: FolderPath, options: OpenFolderOptions): Promise<ServerFolder> {
+    let info = this.instanceMap.get(path);
+    if (info) {
+      info.openTally++;
+    } else {
+      info = {
+        openPromise: this.openFirst(path, options),
+        openTally: 1,
+        watchers: new Set(),
+      };
+      this.instanceMap.set(path, info);
+    };
+    if (options.watcher) { info.watchers.add(options.watcher); }
+    return info.openPromise;
   }
 
-  public static validateFolderName(name: FolderName): void {
-    if (!this.isValidFolderName(name)) { throw new Error(`Invalid folder name: ${name}`); }
+  private static async openFirst(path: FolderPath, _options: OpenFolderOptions): Promise<ServerFolder> {
+
+    const notebooks: NotebookEntry[] = [];
+    const folders: FolderEntry[] = [];
+
+    const suffix = ServerNotebook.NOTEBOOK_DIR_SUFFIX;
+    const suffixLen = suffix.length;
+
+    const dirMap = await readDirectory(path);
+    for (const [filename, stats] of dirMap.entries()) {
+
+      // Skip hidden files and folders
+      if (filename.startsWith(".")) { /* skip hidden */ continue; }
+
+      // Skip non-directories
+      if (!stats.isDirectory()) { continue; }
+
+      // Notebooks are directories that end with .enb.
+      // Folders are all other directories.
+      if (filename.endsWith(suffix)) {
+        const nameWithoutSuffix: NotebookName = <NotebookName>filename.slice(0, -suffixLen);
+        if (!Folder.isValidNotebookName(nameWithoutSuffix)) {
+          logWarning(MODULE, `Skipping notebook with invalid name: '${filename}'`);
+          continue;
+        }
+        notebooks.push({ name: nameWithoutSuffix, path: <NotebookPath>`${path}${filename}` })
+      } else {
+        if (!Folder.isValidFolderName(<FolderName>filename)) {
+          logWarning(MODULE, `Skipping folder with invalid name: '${filename}'`);
+          continue;
+        }
+        folders.push({ name: <FolderName>filename, path: <FolderPath>`${path}${filename}/` })
+      }
+    }
+
+    const obj: FolderObject = {
+      folders,
+      notebooks,
+    };
+
+    const permissions = await Permissions.load(path);
+
+    // REVIEW: validate folderObject?
+    const info = this.getInfo(path);
+    assert(info);
+    const instance = info.instance = new this(path, obj, permissions);
+    return instance;
   }
 
   // Public Class Event Handlers
 
   public static async onClientRequest(socket: ServerSocket, msg: FolderRequest): Promise<void> {
     // Called by ServerSocket when a client sends a folder request.
-    let instance = </* TYPESCRIPT: shouldn't have to cast. */ServerFolder>this.instanceMap.get(msg.path);
-    if (!instance && msg.operation == 'open') {
-      instance = await this.open(msg.path, { mustExist: true });
-    }
-    assert(instance);
+    const info = this.instanceMap.get(msg.path);
+    const instance = await(info ? info.openPromise : this.open(msg.path, {}));
     await instance.onClientRequest(socket, msg);
   }
 
@@ -150,7 +212,40 @@ export class ServerFolder extends Folder<ServerFolderWatcher> {
     }
   }
 
+  // Public Instance Properties
+
   // Public Instance Methods
+
+  public /* override */ applyChange(change: FolderUpdate, ownRequest: boolean): void {
+    // Send deletion change notifications.
+    // Deletion change notifications are sent before the change happens so the watcher can
+    // examine the style or relationship being deleted before it disappears from the notebook.
+    const notifyBefore = (change.type == 'folderDeleted' || change.type == 'notebookDeleted');
+    if (notifyBefore) {
+      for (const watcher of this.watchers) { watcher.onChange(change, ownRequest); }
+    }
+    super.applyChange(change, ownRequest);
+
+    // Send non-deletion change notification.
+    if (!notifyBefore) {
+      for (const watcher of this.watchers) { watcher.onChange(change, ownRequest); }
+    }
+  }
+
+  public close(watcher?: ServerFolderWatcher): void {
+    assert(!this.terminated);
+    const info = ServerFolder.instanceMap.get(this.path)!;
+    assert(info);
+    if (watcher) {
+      const had = info.watchers.delete(watcher);
+      assert(had);
+    }
+    info.openTally--;
+    if (info.openTally == 0) {
+      // LATER: Set timer to destroy in the future.
+      this.terminate("Closed by all clients");
+    }
+  }
 
   // Public Event Handlers
 
@@ -158,11 +253,21 @@ export class ServerFolder extends Folder<ServerFolderWatcher> {
 
   // Private Class Properties
 
+  private static instanceMap = new Map<FolderPath, InstanceInfo>();
+
   // Private Class Property Functions
 
-  protected static getInstance(path: FolderPath): ServerFolder {
-    return <ServerFolder>super.getInstance(path);
+  private static getInfo(path: FolderPath): InstanceInfo {
+    const rval = this.instanceMap.get(path)!;
+    assert(rval);
+    return rval;
   }
+
+  // private static getInstance(path: FolderPath): ServerFolder {
+  //   const info = this.getInfo(path)!;
+  //   assert(info.instance);
+  //   return info.instance!;
+  // }
 
   // Private Class Methods
 
@@ -170,67 +275,29 @@ export class ServerFolder extends Folder<ServerFolderWatcher> {
 
   // Private Constructor
 
-  private constructor(path: FolderPath, _options: OpenFolderOptions) {
-    super(path);
+  private constructor(path: FolderPath, obj: FolderObject, permissions: Permissions) {
+    super(path, obj);
+    this.permissions = permissions;
     this.sockets = new Set<ServerSocket>();
   }
 
   // Private Instance Properties
 
-  private permissions!: Permissions;
+
+  // LATER: busyPromise.
+  private terminated?: boolean;
+
+  private permissions: Permissions;
   private sockets: Set<ServerSocket>;
 
   // Private Instance Property Functions
 
-  // Private Instance Methods
-
-  protected async initialize(options: OpenFolderOptions): Promise<void> {
-    if (options.mustExist) {
-      const notebooks: NotebookEntry[] = [];
-      const folders: FolderEntry[] = [];
-
-      const suffix = ServerNotebook.NOTEBOOK_DIR_SUFFIX;
-      const suffixLen = suffix.length;
-
-      const dirMap = await readDirectory(this.path);
-      for (const [filename, stats] of dirMap.entries()) {
-
-        // Skip hidden files and folders
-        if (filename.startsWith(".")) { /* skip hidden */ continue; }
-
-        // Skip non-directories
-        if (!stats.isDirectory()) { continue; }
-
-        // Notebooks are directories that end with .enb.
-        // Folders are all other directories.
-        if (filename.endsWith(suffix)) {
-          const nameWithoutSuffix: NotebookName = <NotebookName>filename.slice(0, -suffixLen);
-          if (!ServerFolder.isValidNotebookName(nameWithoutSuffix)) {
-            logWarning(MODULE, `Skipping notebook with invalid name: '${filename}'`);
-            continue;
-          }
-          notebooks.push({ name: nameWithoutSuffix, path: <NotebookPath>`${this.path}${filename}` })
-        } else {
-          if (!ServerFolder.isValidFolderName(<FolderName>filename)) {
-            logWarning(MODULE, `Skipping folder with invalid name: '${filename}'`);
-            continue;
-          }
-          folders.push({ name: <FolderName>filename, path: <FolderPath>`${this.path}${filename}/` })
-        }
-      }
-
-      const obj: FolderObject = {
-        path: this.path,
-        folders,
-        notebooks,
-      };
-      this.initializeFromObject(obj);
-
-      this.permissions = await Permissions.load(this.path);
-    } else {
-      assert(false);
-    }
+  private get watchers(): IterableIterator<ServerFolderWatcher> {
+    const info = ServerFolder.getInfo(this.path);
+    return info.watchers.values();
   }
+
+  // Private Instance Methods
 
   private removeSocket(socket: ServerSocket): void {
     const hadSocket = this.sockets.delete(socket);
@@ -286,8 +353,12 @@ export class ServerFolder extends Folder<ServerFolderWatcher> {
     }
   }
 
-  protected terminate(reason: string): void {
-    super.terminate(reason);
+  private terminate(reason: string): void {
+    assert(!this.terminated);
+    this.terminated = true;
+    const had = ServerFolder.instanceMap.delete(this.path);
+    assert(had);
+    for (const watcher of this.watchers) { watcher.onClosed(reason); }
   }
 
   // Private Instance Event Handlers
@@ -417,7 +488,6 @@ export class ServerFolder extends Folder<ServerFolderWatcher> {
     this.sockets.add(socket);
 
     // Send NotebookOpened message back to the requesting client.
-    const obj = this.toJSON();
     const collaborators: CollaboratorObject[] = [];
     for (const otherSocket of this.sockets) {
       if (otherSocket == socket || !otherSocket.user) { continue; }
@@ -435,7 +505,7 @@ export class ServerFolder extends Folder<ServerFolderWatcher> {
       path: this.path,
       collaborators,
       permissions,
-      obj,
+      obj: this.obj,
       complete: true
     };
     socket.sendMessage(response);

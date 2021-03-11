@@ -55,7 +55,7 @@ export class FolderScreen extends Screen implements ClientFolderWatcher {
       data: { path },
     });
 
-    const options: OpenFolderOptions = { mustExist: true, watcher: this };
+    const options: OpenFolderOptions = { watcher: this };
     ClientFolder.open(path, options)
     .then(
       (folder: ClientFolder)=>{

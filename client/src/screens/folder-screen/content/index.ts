@@ -44,8 +44,8 @@ export class Content extends HtmlElement<'div'> {
   public constructor(screen: FolderScreen) {
     super({ tag: 'div', class: <CssClass>'content' });
     this.screen = screen;
-    this.foldersList = new EntryList(this.$elt, screen.folder, EntryType.Folder, screen.folder.folders);
-    this.notebooksList = new EntryList(this.$elt, screen.folder, EntryType.Notebook, screen.folder.notebooks);
+    this.foldersList = new EntryList(this.$elt, screen.folder, EntryType.Folder, screen.folder.obj.folders);
+    this.notebooksList = new EntryList(this.$elt, screen.folder, EntryType.Notebook, screen.folder.obj.notebooks);
   }
 
   // Public Instance Properties

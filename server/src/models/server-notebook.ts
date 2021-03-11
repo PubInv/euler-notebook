@@ -32,7 +32,7 @@ const debug = debug1(`server:${MODULE}`);
 
 import { CellObject, CellSource, CellId, CellPosition, CellType, CellIndex } from "../shared/cell";
 import { assert, assertFalse, CssLength, deepCopy, ExpectedError, Html, notImplementedError, Timestamp, cssSizeInPixels, CssLengthUnit, cssLengthInPixels } from "../shared/common";
-import { NotebookPath, NOTEBOOK_PATH_RE, NotebookName, FolderPath, NotebookEntry, Folder } from "../shared/folder";
+import { Folder, NotebookPath, NOTEBOOK_PATH_RE, NotebookName, FolderPath, NotebookEntry } from "../shared/folder";
 import { NotebookObject, NotebookWatcher, PageMargins } from "../shared/notebook";
 import {
   NotebookChangeRequest, MoveCell, InsertEmptyCell, DeleteCell, InsertStroke, DeleteStroke,
@@ -43,7 +43,6 @@ import {
 } from "../shared/server-responses";
 import { notebookChangeRequestSynopsis } from "../shared/debug-synopsis";
 import { strokePathId } from "../shared/stylus";
-import { OpenOptions, WatchedResource } from "../shared/watched-resource";
 import { UserPermission } from "../shared/permissions";
 import { CollaboratorObject } from "../shared/user";
 import { FormulaCellObject, FormulaRecognitionResults } from "../shared/formula";
@@ -63,8 +62,11 @@ export interface FindCellOptions {
   notSource?: CellSource;
 }
 
-export interface OpenNotebookOptions extends OpenOptions<ServerNotebookWatcher> {
+export interface OpenNotebookOptions {
   ephemeral?: boolean;    // true iff notebook not persisted to the file system and disappears after last close.
+  mustExist?: boolean;
+  mustNotExist?: boolean;
+  watcher?: ServerNotebookWatcher;
 }
 
 interface RequestChangesOptions {
@@ -73,7 +75,9 @@ interface RequestChangesOptions {
 }
 
 export interface ServerNotebookWatcher extends NotebookWatcher {
+  onChange(change: NotebookUpdate, ownRequest: boolean): void
   onChanged(msg: NotebookUpdated): void;
+  onClosed(reason: string): void;
 }
 
 interface ServerNotebookObject extends NotebookObject {
@@ -102,7 +106,7 @@ const NOTEBOOK_FILENAME = <FileName>'notebook.json';
 
 // Exported Class
 
-export class ServerNotebook extends WatchedResource<NotebookPath, ServerNotebookWatcher> {
+export class ServerNotebook {
 
   // Public Class Constants
 
@@ -111,6 +115,10 @@ export class ServerNotebook extends WatchedResource<NotebookPath, ServerNotebook
   // Public Class Properties
 
   // Public Class Property Functions
+
+  public static isOpen(path: NotebookPath): boolean {
+    return this.instanceMap.has(path);
+  }
 
   public static isValidNotebookPath(path: NotebookPath): boolean {
     return NOTEBOOK_PATH_RE.test(path);
@@ -134,6 +142,20 @@ export class ServerNotebook extends WatchedResource<NotebookPath, ServerNotebook
   }
 
   // Public Class Methods
+
+  public static close(path: NotebookPath, reason: string): boolean {
+    // Closes the specified resource.
+    // All watchers are notified.
+    // Has no effect if the resource is not open.
+    // Returns true iff the resource was open.
+    if (this.isOpen(path)) {
+      const instance = this.getInstance(path);
+      instance.terminate(reason);
+      return true;
+    } else {
+      return false;
+    }
+  }
 
   public static async createOnDisk(path: NotebookPath, permissions: Permissions): Promise<void> {
     const notebook = await this.open(path, { mustNotExist: true });
@@ -161,8 +183,6 @@ export class ServerNotebook extends WatchedResource<NotebookPath, ServerNotebook
   }
 
   public static open(path: NotebookPath, options: OpenNotebookOptions): Promise<ServerNotebook> {
-    // IMPORTANT: This is a standard open pattern that all WatchedResource-derived classes should use.
-    //            Do not modify unless you know what you are doing!
     const isOpen = this.isOpen(path);
     const instance = isOpen ? this.getInstance(path) : new this(path, options);
     instance.open(options, isOpen);
@@ -218,6 +238,7 @@ export class ServerNotebook extends WatchedResource<NotebookPath, ServerNotebook
   // Public Instance Properties
 
   public obj: ServerNotebookObject;
+  public path: NotebookPath;
 
   // Public Instance Property Functions
 
@@ -227,8 +248,6 @@ export class ServerNotebook extends WatchedResource<NotebookPath, ServerNotebook
       return <Html>this.cells.map(cell=>cell.toHtml()).join('\n');
     }
   }
-
-  // Public Instance Property Functions
 
   public allCells(): ServerCell<CellObject>[] {
     return this.cells;
@@ -243,6 +262,19 @@ export class ServerNotebook extends WatchedResource<NotebookPath, ServerNotebook
   }
 
   // Public Instance Methods
+
+  public close(watcher?: ServerNotebookWatcher): void {
+    assert(!this.terminated);
+    const instance = ServerNotebook.getInstance(this.path);
+    if (watcher) {
+      const had = instance.watchers.delete(watcher);
+      assert(had);
+    }
+    if (--instance.openTally == 0) {
+      // LATER: Set timer to destroy in the future.
+      this.terminate("Closed by all clients");
+    }
+  }
 
   public nextId(): CellId {
     return this.obj.nextId++;
@@ -301,18 +333,30 @@ export class ServerNotebook extends WatchedResource<NotebookPath, ServerNotebook
     return cellId;
   }
 
-  // Public Event Handlers
+  public static validateObject(obj: ServerNotebookObject): void {
+    // Throws an exception with a descriptive message if the object is not a valid notebook object.
+    // LATER: More thorough validation of the object.
+    if (!obj.nextId) { throw new Error("Invalid notebook object JSON."); }
+    if (obj.formatVersion != FORMAT_VERSION) {
+      throw new ExpectedError(`Invalid notebook version ${obj.formatVersion}. Expect version ${FORMAT_VERSION}`);
+    }
+  }
+
+  // Public Instance Event Handlers
 
   // --- PRIVATE ---
 
   // Private Class Properties
 
+  protected static instanceMap: Map<NotebookPath, ServerNotebook> = new Map();
   private static lastEphemeralPathTimestamp: Timestamp = 0;
 
   // Private Class Property Functions
 
   protected static getInstance(path: NotebookPath): ServerNotebook {
-    return <ServerNotebook>super.getInstance(path);
+    const instance = this.instanceMap.get(path)!;
+    assert(instance);
+    return instance;
   }
 
   private isEmpty(): boolean {
@@ -330,13 +374,9 @@ export class ServerNotebook extends WatchedResource<NotebookPath, ServerNotebook
     return  <NotebookPath>`/eph${timestamp}${this.NOTEBOOK_DIR_SUFFIX}`;
   }
 
-  public static validateObject(obj: ServerNotebookObject): void {
-    // Throws an exception with a descriptive message if the object is not a valid notebook object.
-    // LATER: More thorough validation of the object.
-    if (!obj.nextId) { throw new Error("Invalid notebook object JSON."); }
-    if (obj.formatVersion != FORMAT_VERSION) {
-      throw new ExpectedError(`Invalid notebook version ${obj.formatVersion}. Expect version ${FORMAT_VERSION}`);
-    }
+  private static setInstance(path: NotebookPath, instance: ServerNotebook): void {
+    assert(!this.instanceMap.has(path));
+    this.instanceMap.set(path, instance);
   }
 
   // Private Class Event Handlers
@@ -347,7 +387,9 @@ export class ServerNotebook extends WatchedResource<NotebookPath, ServerNotebook
     path: NotebookPath,
     options: OpenNotebookOptions,
   ) {
-    super(path);
+    this.path = path;
+    this.openTally = 0;
+    this.watchers = new Set();
     this.obj = deepCopy(EMPTY_NOTEBOOK_OBJ);
     this.cellMap = new Map();
     this.cells = [];
@@ -357,6 +399,12 @@ export class ServerNotebook extends WatchedResource<NotebookPath, ServerNotebook
   }
 
   // Private Instance Properties
+
+  private initialized?: boolean;
+  private terminated?: boolean;
+  private openTally: number;
+  private openPromise!: Promise<this>;
+  private watchers: Set<ServerNotebookWatcher>; // REVIEW: Make private and provide enumerator?
 
   // TODO: purge changes in queue that have been processed asynchronously.
   private cellMap: Map<CellId, ServerCell<CellObject>>;
@@ -617,6 +665,22 @@ export class ServerNotebook extends WatchedResource<NotebookPath, ServerNotebook
     }
   }
 
+  private open(options: OpenNotebookOptions, isOpen: boolean): void {
+    if (!isOpen) {
+      ServerNotebook.setInstance(this.path, this);
+      this.openPromise = this.initialize(options).then(
+        ()=>{
+          this.initialized = true;
+          return this;
+        }
+      );
+    }
+    assert(options.mustExist || options.mustNotExist);
+    assert(!isOpen || !options.mustNotExist); // LATER: Throw exception with useful error message.
+    this.openTally++;
+    if (options.watcher) { this.watchers.add(options.watcher); }
+  }
+
   private async save(): Promise<void> {
     // LATER: A new save can be requested before the previous save completes,
     //        so wait until the previous save completes before attempting to save.
@@ -668,9 +732,13 @@ export class ServerNotebook extends WatchedResource<NotebookPath, ServerNotebook
     }
   }
 
-  protected terminate(reason: string): void {
-    // REVIEW: Notify watchers?
-    super.terminate(reason);
+  private terminate(reason: string): void {
+    assert(this.initialized);
+    assert(!this.terminated);
+    this.terminated = true;
+    const had = ServerNotebook.instanceMap.delete(this.path);
+    assert(had);
+    for (const watcher of this.watchers) { watcher.onClosed(reason); }
   }
 
   private async saveNew(): Promise<void> {
@@ -790,7 +858,7 @@ export class ServerNotebook extends WatchedResource<NotebookPath, ServerNotebook
   private onRecognizeFormula(socket: ServerSocket, msg: RecognizeFormula): void {
     // REVIEW: Should we be checking permissions?
     const cell = this.getFormulaCell(msg.cellId);
-    ServerFormula.recognizeStrokes(cell.persistentObject().strokeData)
+    ServerFormula.recognizeStrokes(cell.obj.strokeData)
     .then(
       serverResults=>{
         const results: FormulaRecognitionResults = { alternatives: serverResults.alternatives.map(a=>({ formula: a.formula.obj })) };

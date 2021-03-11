@@ -17,11 +17,10 @@ You should have received a copy of the GNU Affero General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-// Requirements
-
-import { assert, notImplementedError, assertFalse } from "./common";
+import { assert, assertFalse } from "./common";
 import { FolderUpdate } from "./server-responses";
-import { Watcher, WatchedResource } from "./watched-resource";
+
+// Requirements
 
 // Types
 
@@ -49,13 +48,8 @@ export interface Entry<N,P> {
 export type FolderEntry = Entry<FolderName, FolderPath>;
 
 export interface FolderObject {
-  path: FolderPath;
   notebooks: NotebookEntry[];
   folders: FolderEntry[];
-}
-
-export interface FolderWatcher extends Watcher {
-  onChange(change: FolderUpdate, ownRequest: boolean): void;
 }
 
 // An entry in a list of notebooks.
@@ -74,9 +68,16 @@ export const NOTEBOOK_PATH_RE = /^\/((\w+\/)*)(\w+)\.enb$/;
 
 // Exported Class
 
-export abstract class Folder<W extends FolderWatcher> extends WatchedResource<FolderPath, W> implements FolderObject {
+export class Folder {
 
+  // Public Class Properties
   // Public Class Property Functions
+
+  public static folderNameFromFolderPath(path: FolderPath): FolderName {
+    const match = FOLDER_PATH_RE.exec(path);
+    if (!match) { throw new Error(`Invalid folder path: ${path}`); }
+    return <FolderName>match[2] || 'Root'; // REVIEW: Could use user name for the Root folder?
+  }
 
   public static isValidFolderName(name: FolderName): boolean {
     return FOLDER_NAME_RE.test(name);
@@ -86,27 +87,26 @@ export abstract class Folder<W extends FolderWatcher> extends WatchedResource<Fo
     return NOTEBOOK_NAME_RE.test(name);
   }
 
+  public static notebookNameFromNotebookPath(path: NotebookPath): NotebookName {
+    const i = path.lastIndexOf('/');
+    return <NotebookName>path.slice(i);
+  }
+
   // Public Class Methods
 
-  public static validateObject(_obj: FolderObject): void {
-    // Throws an exception with a descriptive message if the object is not a valid folder object.
-    // TODO:
+  public static validateFolderName(name: FolderName): void {
+    if (!Folder.isValidFolderName(name)) { throw new Error(`Invalid folder name: ${name}`); }
   }
+
+  // Public Class Event Handlers
 
   // Public Instance Properties
 
-  public notebooks: NotebookEntry[];
-  public folders: FolderEntry[];
+  // REVIEW: Why not just have FolderObject?
+  public obj: FolderObject;
+  public path: FolderPath;
 
   // Public Instance Property Functions
-
-  public get isEmpty(): boolean {
-    return (this.folders.length + this.notebooks.length == 0);
-  }
-
-  public get name(): FolderName {
-    return notImplementedError("Folder name");
-  }
 
   public hasFolderNamed(
     name: FolderName,
@@ -118,7 +118,7 @@ export abstract class Folder<W extends FolderWatcher> extends WatchedResource<Fo
     const compareFn = sensitive ?
                         (entry:FolderEntry)=>entry.name==name :
                         (entry:FolderEntry)=>entry.name.toUpperCase() == nameUpperCase;
-    return !!this.folders.find(compareFn);
+    return !!this.obj.folders.find(compareFn);
   }
 
   public hasNotebookNamed(
@@ -131,100 +131,78 @@ export abstract class Folder<W extends FolderWatcher> extends WatchedResource<Fo
     const compareFn = sensitive ?
                         (entry:NotebookEntry)=>entry.name==name :
                         (entry:NotebookEntry)=>entry.name.toUpperCase() == nameUpperCase;
-    return !!this.notebooks.find(compareFn);
+    return !!this.obj.notebooks.find(compareFn);
   }
 
   // Public Instance Methods
 
-  public applyChange(change: FolderUpdate, ownRequest: boolean): void {
-    // Send deletion change notifications.
-    // Deletion change notifications are sent before the change happens so the watcher can
-    // examine the style or relationship being deleted before it disappears from the notebook.
-    const notifyBefore = (change.type == 'folderDeleted' || change.type == 'notebookDeleted');
-    if (notifyBefore) {
-      for (const watcher of this.watchers) { watcher.onChange(change, ownRequest); }
-    }
-
+  public /* overridable */ applyChange(change: FolderUpdate, _ownRequest: boolean): void {
     switch(change.type) {
       case 'folderCreated': {
-        this.folders.push(change.entry);
+        this.obj.folders.push(change.entry);
         break;
       }
       case 'folderDeleted': {
         const i = this.folderIndex(change.entry.name);
         assert(i>=0);
-        this.folders.splice(i,1);
+        this.obj.folders.splice(i,1);
         break;
       }
       case 'folderRenamed':  {
         const i = this.folderIndex(change.oldName);
         assert(i>=0);
-        this.folders[i] = change.entry;
+        this.obj.folders[i] = change.entry;
         break;
       }
       case 'notebookCreated': {
-        this.notebooks.push(change.entry);
+        this.obj.notebooks.push(change.entry);
         break;
       }
       case 'notebookDeleted': {
         const i = this.notebookIndex(change.entry.name);
         assert(i>=0);
-        this.notebooks.splice(i,1);
+        this.obj.notebooks.splice(i,1);
         break;
       }
       case 'notebookRenamed': {
         const i = this.notebookIndex(change.oldName);
         assert(i>=0);
-        this.notebooks[i] = change.entry;
+        this.obj.notebooks[i] = change.entry;
         break;
       }
       default: assertFalse();
     }
-
-    // Send non-deletion change notification.
-    if (!notifyBefore) {
-      for (const watcher of this.watchers) { watcher.onChange(change, ownRequest); }
-    }
   }
 
-  public toJSON(): FolderObject {
-    return { path: this.path, folders: this.folders, notebooks: this.notebooks };
-  }
+  // Public Instance Event Handlers
 
   // --- PRIVATE ---
 
-  // Private Constructor
-
-  public constructor(path: FolderPath) {
-    super(path);
-    this.folders = [];
-    this.notebooks = [];
-  }
-
-  // Private Instance Properties
-
-  // Private Instance Property Functions
+  // Private Class Properties
+  // Private Class Property Functions
 
   private folderIndex(name: FolderName): number {
-    return this.folders.findIndex(entry=>(entry.name==name));
+    return this.obj.folders.findIndex(entry=>(entry.name==name));
   }
 
   private notebookIndex(name: NotebookName): number {
-    return this.notebooks.findIndex(entry=>(entry.name==name));
+    return this.obj.notebooks.findIndex(entry=>(entry.name==name));
   }
 
+  // Private Class Methods
+  // Private Class Event Handlers
+
+  // Private Constructor
+
+  protected constructor(path: FolderPath, obj: FolderObject) {
+    this.path = path;
+    this.obj = obj;
+  }
+
+  // Private Instance Properties
+  // Private Instance Property Functions
   // Private Instance Methods
-
-  protected initializeFromObject(obj: FolderObject): void {
-    this.folders = obj.folders;
-    this.notebooks = obj.notebooks;
-  }
+  // Private Instance Event Handlers
 
 }
 
-// Exported Functions
-
-export function NotebookNameFromNotebookPath(path: NotebookPath): NotebookName {
-  const i = path.lastIndexOf('/');
-  return <NotebookName>path.slice(i);
-}

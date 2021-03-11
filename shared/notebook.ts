@@ -21,8 +21,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 import { CellObject } from "./cell";
 import { CssLength, CssSize } from "./common";
-import { CellInserted, NotebookUpdate } from "./server-responses";
-import { Watcher } from "./watched-resource";
+import { NotebookUpdate } from "./server-responses";
 
 // Types
 
@@ -36,8 +35,9 @@ export interface NotebookObject {
   pagination: Pagination;
 }
 
-export interface NotebookWatcher extends Watcher {
+export interface NotebookWatcher {
   onChange(change: NotebookUpdate, ownRequest: boolean): void;
+  onClosed(reason: string): void;
 }
 
 export interface PageMargins {
@@ -53,8 +53,3 @@ export interface PageMargins {
 
 // Helper Functions
 
-export function cellInsertedFromNotebookChange(change: NotebookUpdate): CellInserted {
-  // TODO: Rename this function so it doesn't start with a capital letter.
-  if (change.type != 'cellInserted') { throw new Error("Not StyleInserted change."); }
-  return change;
-}

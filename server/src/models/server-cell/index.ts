@@ -64,10 +64,6 @@ export abstract class ServerCell<O extends CellObject> {
     this.obj.cssSize.width = value.width;
   }
 
-  public persistentObject(): O {
-    return this.obj;
-  }
-
   public toHtml(): Html {
     return <Html>`<div>
 <span class="collapsed">S${this.id} ${this.type} ${this.obj.source}</span>

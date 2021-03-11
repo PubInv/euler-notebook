@@ -27,7 +27,7 @@ const debug = debug1('client:client-notebook');
 import { CellId, CellObject, CellIndex, CellPosition, CellRelativePosition, CellType, PageIndex } from "../shared/cell";
 import { assert, assertFalse, ClientId, CssSize, Html } from "../shared/common";
 import { notebookUpdateSynopsis } from "../shared/debug-synopsis";
-import { NotebookName, NotebookNameFromNotebookPath, NotebookPath } from "../shared/folder";
+import { Folder, NotebookName, NotebookPath } from "../shared/folder";
 import { PageMargins, Pagination } from "../shared/notebook";
 import { NotebookChangeRequest, ChangeNotebook, OpenNotebook, DeleteCell, ResizeCell, InsertStroke, InsertEmptyCell, MoveCell, DeleteStroke, TypesetFormula, RecognizeFormula } from "../shared/client-requests";
 import {
@@ -129,7 +129,7 @@ export class ClientNotebook {
 
   public get notebookName(): NotebookName {
     // REVIEW: Rename to just "name"?
-    return NotebookNameFromNotebookPath(this.path);
+    return Folder.notebookNameFromNotebookPath(this.path);
   }
 
   public toDebugHtml(): Html {

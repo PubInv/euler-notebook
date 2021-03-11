@@ -21,7 +21,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 // Requirements
 
-import { Folder, FolderPath, NotebookName, FolderName, FolderEntry, NotebookEntry, FolderWatcher } from "../shared/folder";
+import { FolderPath, NotebookName, FolderName, FolderEntry, NotebookEntry, Folder } from "../shared/folder";
 import {
   FolderChangeRequest, ChangeFolder, OpenFolder,
   FolderCreateRequest, NotebookCreateRequest, FolderDeleteRequest, NotebookDeleteRequest, FolderRenameRequest, NotebookRenameRequest
@@ -33,19 +33,29 @@ import {
 
 import { appInstance } from "../app";
 import { assert, assertFalse, ClientId } from "../shared/common";
-import { OpenOptions } from "../shared/watched-resource";
 import { CollaboratorObject } from "../shared/user";
 import { logWarning } from "../error-handler";
 
 // Types
 
-export interface ClientFolderWatcher extends FolderWatcher {
-  onCollaboratorConnected(msg: FolderCollaboratorConnected): void;
-  onCollaboratorDisconnected(msg: FolderCollaboratorDisconnected): void;
-
+interface InstanceInfo {
+  instance?: ClientFolder;
+  openPromise: Promise<ClientFolder>;
+  openTally: number;
+  watchers: Set<ClientFolderWatcher>;
 }
 
-export type OpenFolderOptions = OpenOptions<ClientFolderWatcher>;
+export interface ClientFolderWatcher {
+  onChange(change: FolderUpdate, ownRequest: boolean): void
+  // onChanged(msg: FolderUpdated): void;
+  onClosed(reason: string): void;
+  onCollaboratorConnected(msg: FolderCollaboratorConnected): void;
+  onCollaboratorDisconnected(msg: FolderCollaboratorDisconnected): void;
+}
+
+export interface OpenFolderOptions {
+  watcher?: ClientFolderWatcher;
+}
 
 // Constants
 
@@ -55,27 +65,48 @@ const MAX_UNTITLED_COUNT = 99;
 
 // Class
 
-export class ClientFolder extends Folder<ClientFolderWatcher> {
+export class ClientFolder extends Folder {
+
+  // Public Class Properties
+
+  // Public Class Property Functions
 
   // Public Class Methods
 
   public static async open(path: FolderPath, options: OpenFolderOptions): Promise<ClientFolder> {
-    // IMPORTANT: This is a standard open pattern that all WatchedResource-derived classes should use.
-    //            Do not modify unless you know what you are doing!
-    const isOpen = this.isOpen(path);
-    const instance = isOpen ? this.getInstance(path) : new this(path, options);
-    instance.open(options, isOpen);
-    return instance.openPromise;
+    let info = this.instanceMap.get(path);
+    if (info) {
+      info.openTally++;
+    } else {
+      info = {
+        openPromise: this.openFirst(path, options),
+        openTally: 1,
+        watchers: new Set(),
+      };
+      this.instanceMap.set(path, info);
+    };
+    if (options.watcher) { info.watchers.add(options.watcher); }
+    return info.openPromise;
   }
 
-  // Class Event Handlers
+  private static async openFirst(path: FolderPath, _options: OpenFolderOptions): Promise<ClientFolder> {
+    const message: OpenFolder = { type: 'folder', operation: 'open', path };
+    const responseMessages = await appInstance.socket.sendRequest<FolderOpened>(message);
+    assert(responseMessages.length == 1);
+    // REVIEW: validate folderObject?
+    const info = this.getInfo(path);
+    assert(info);
+    const instance = info.instance = new this(path, responseMessages[0]);
+    return instance;
+  }
+
+  // Public Class Event Handlers
 
   public static onServerResponse(msg: FolderResponse, ownRequest: boolean): void {
     // Opened response is handled when request promise is resolved.
     // All other responses are forwarded to the instance.
     if (msg.operation == 'opened') { return; }
-    const instance = <ClientFolder>this.instanceMap.get(msg.path)!;
-    assert(instance);
+    const instance = this.getInstance(msg.path);
     instance.onServerResponse(msg, ownRequest);
   }
 
@@ -88,6 +119,38 @@ export class ClientFolder extends Folder<ClientFolderWatcher> {
   }
 
   // Public Instance Methods
+
+  public /* override */ applyChange(change: FolderUpdate, ownRequest: boolean): void {
+    // Send deletion change notifications.
+    // Deletion change notifications are sent before the change happens so the watcher can
+    // examine the style or relationship being deleted before it disappears from the notebook.
+    const notifyBefore = (change.type == 'folderDeleted' || change.type == 'notebookDeleted');
+    if (notifyBefore) {
+      for (const watcher of this.watchers) { watcher.onChange(change, ownRequest); }
+    }
+
+    super.applyChange(change, ownRequest);
+
+    // Send non-deletion change notification.
+    if (!notifyBefore) {
+      for (const watcher of this.watchers) { watcher.onChange(change, ownRequest); }
+    }
+  }
+
+  public close(watcher?: ClientFolderWatcher): void {
+    assert(!this.terminated);
+    const info = ClientFolder.instanceMap.get(this.path)!;
+    assert(info);
+    if (watcher) {
+      const had = info.watchers.delete(watcher);
+      assert(had);
+    }
+    info.openTally--;
+    if (info.openTally == 0) {
+      // LATER: Set timer to destroy in the future.
+      this.terminate("Closed by all clients");
+    }
+  }
 
   public async newFolder(): Promise<FolderEntry> {
     const name = this.getUntitledFolderName();
@@ -137,26 +200,50 @@ export class ClientFolder extends Folder<ClientFolderWatcher> {
 
   // Private Class Properties
 
-  // Private Class Methods
+  private static instanceMap = new Map<FolderPath, InstanceInfo>();
 
-  protected static getInstance(path: FolderPath): ClientFolder {
-    return <ClientFolder>super.getInstance(path);
+  // Private Class Property Functions
+
+  private static getInfo(path: FolderPath): InstanceInfo {
+    const rval = this.instanceMap.get(path)!;
+    assert(rval);
+    return rval;
   }
+
+  private static getInstance(path: FolderPath): ClientFolder {
+    const info = this.getInfo(path);
+    assert(info.instance);
+    return info.instance!;
+  }
+
+  // Private Class Methods
 
   // Private Class Event Handlers
 
   // Private Constructor
 
-  private constructor(path: FolderPath, _options: OpenFolderOptions) {
-    super(path);
+  private constructor(
+    path: FolderPath,
+    msg: FolderOpened,
+  ) {
+    super(path, msg.obj);
     this.collaboratorMap = new Map();
+    for (const collaborator of msg.collaborators) {
+      this.collaboratorMap.set(collaborator.clientId, collaborator);
+    }
   }
 
   // Private Instance Properties
 
   private readonly collaboratorMap: Map<ClientId, CollaboratorObject>;
+  private terminated?: boolean;
 
   // Private Instance Property Functions
+
+  private get watchers(): IterableIterator<ClientFolderWatcher> {
+    const info = ClientFolder.getInfo(this.path);
+    return info.watchers.values();
+  }
 
   // Private Instance Methods
 
@@ -190,16 +277,6 @@ export class ClientFolder extends Folder<ClientFolderWatcher> {
     }
   }
 
-  protected async initialize(_options: OpenFolderOptions): Promise<void> {
-    const message: OpenFolder = { type: 'folder', operation: 'open', path: this.path };
-    const responseMessages = await appInstance.socket.sendRequest<FolderOpened>(message);
-    assert(responseMessages.length == 1);
-    const responseMessage = responseMessages[0];
-    Folder.validateObject(responseMessage.obj);
-    this.initializeFromObject(responseMessage.obj);
-    for (const collaborator of responseMessage.collaborators) { this.collaboratorMap.set(collaborator.clientId, collaborator); }
-  }
-
   private async sendChangeRequest<T extends FolderUpdate>(changeRequest: FolderChangeRequest): Promise<T> {
     const changes = await this.sendChangeRequests([ changeRequest ]);
     assert(changes.length == 1);
@@ -220,8 +297,12 @@ export class ClientFolder extends Folder<ClientFolderWatcher> {
     return responseMessages[0].updates;
   }
 
-  protected terminate(reason: string): void {
-    super.terminate(reason);
+  private terminate(reason: string): void {
+    assert(!this.terminated);
+    this.terminated = true;
+    const info = ClientFolder.getInfo(this.path);
+    ClientFolder.instanceMap.delete(this.path);
+    for (const watcher of info.watchers) { watcher.onClosed(reason); }
   }
 
   // Private Event Handlers
@@ -229,8 +310,7 @@ export class ClientFolder extends Folder<ClientFolderWatcher> {
   private onClosed(msg: FolderClosed, _ownRequest: boolean): void {
     // Message from the server that the folder has been closed by the server.
     // For example, if the folder was deleted or moved.
-    const had = ClientFolder.close(msg.path, msg.reason);
-    assert(had);
+    this.terminate(msg.reason);
   }
 
   private onCollaboratorConnected(msg: FolderCollaboratorConnected): void {
@@ -277,7 +357,7 @@ export class ClientFolder extends Folder<ClientFolderWatcher> {
       this.applyChange(change, ownRequest);
     }
 
-    // TODO: Notify watchers?
+    // REVIEW: Notify watchers?
   }
 
 }
