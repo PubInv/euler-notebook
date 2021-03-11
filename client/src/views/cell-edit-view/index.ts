@@ -32,7 +32,7 @@ import {
 import { CellDeleted, NotebookUpdate } from "../../shared/server-responses";
 import { Stroke, StrokeId } from "../../shared/stylus";
 
-import { DebugConsole } from "../../components/debug-console";
+// import { DebugConsole } from "../../components/debug-console";
 import { HtmlElement } from "../../html-element";
 import {
   $new, $newSvg, CLOSE_X_ENTITY, CELL_ICONS, svgIconReferenceMarkup, HtmlElementOrSpecification,
@@ -281,12 +281,12 @@ export abstract class CellEditView<O extends CellObject> extends HtmlElement<'di
     await this.cell.deleteRequest();
   }
 
-  private onDragEnd(event: DragEvent): void {
-    DebugConsole.addMessage(<Html>`Drag end: ${event.dataTransfer?.dropEffect}`);
+  private onDragEnd(_event: DragEvent): void {
+    // DebugConsole.addMessage(<Html>`Drag end: ${_event.dataTransfer?.dropEffect}`);
   }
 
   private onDragEnter(event: DragEvent): void {
-    DebugConsole.addMessage(<Html>"Drag enter");
+    // DebugConsole.addMessage(<Html>"Drag enter");
 
     // REVIEW: Very odd. If we try to get the data from the data transfer object we get an empty string
     //         even though the dataTranspfer.types array indicates that the data is there.
@@ -295,7 +295,7 @@ export abstract class CellEditView<O extends CellObject> extends HtmlElement<'di
 
     const dropAllowed = hasDragData(event);
     if (!dropAllowed) {
-      DebugConsole.addMessage(<Html>`Drag enter: aborting, no ${CELL_MIME_TYPE} data.`);
+      // DebugConsole.addMessage(<Html>`Drag enter: aborting, no ${CELL_MIME_TYPE} data.`);
       return;
     }
 
@@ -308,7 +308,7 @@ export abstract class CellEditView<O extends CellObject> extends HtmlElement<'di
     // REVIEW: See review comment in onDragEnter. Getting the drag data from the event.dataTransfer fails.
     const dropAllowed = hasDragData(event);
     if (!dropAllowed) {
-      DebugConsole.addMessage(<Html>`Drag over: aborting, no ${CELL_MIME_TYPE} data.`);
+      // DebugConsole.addMessage(<Html>`Drag over: aborting, no ${CELL_MIME_TYPE} data.`);
       return;
     }
 
@@ -317,7 +317,7 @@ export abstract class CellEditView<O extends CellObject> extends HtmlElement<'di
   }
 
   private onDragStart(event: DragEvent): void {
-    DebugConsole.addMessage(<Html>"Drag start");
+    // DebugConsole.addMessage(<Html>"Drag start");
     const cellDragData: CellDragData = {
       cellId: this.id,
     }
@@ -328,7 +328,7 @@ export abstract class CellEditView<O extends CellObject> extends HtmlElement<'di
 
   private async onDrop(event: DragEvent): Promise<void> {
     // TODO: Allow dropping on area below last cell.
-    DebugConsole.addMessage(<Html>"Dropping.");
+    // DebugConsole.addMessage(<Html>"Dropping.");
     const cellDragData = getDragData(event);
     if (!cellDragData) { return; }
     debug(`Dropped style ${cellDragData.cellId} onto style ${this.id}`);
