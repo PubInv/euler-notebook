@@ -20,7 +20,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 import { Path } from "../shared/folder";
 import { UserPermission, UserPermissions } from "../shared/permissions";
 
-import { FileName, readJsonFile, writeJsonFile } from "../adapters/file-system";
+import { deleteFile, FileName, readJsonFile, writeJsonFile } from "../adapters/file-system";
 import { ServerUser } from "./server-user";
 
 // Requirements
@@ -48,6 +48,10 @@ export class Permissions {
   public static async createOnDisk(path: Path, enclosingPermissions: Permissions): Promise<void> {
     // NOTE: Does not create an instance of the class. Just writes the bits to disk.
     await this.save(path, enclosingPermissions.obj);
+  }
+
+  public static async deleteOnDisk(path: Path): Promise<void> {
+    await deleteFile(path, PERMISSIONS_FILENAME);
   }
 
   public static async load(path: Path): Promise<Permissions> {

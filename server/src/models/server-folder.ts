@@ -73,13 +73,12 @@ export class ServerFolder extends Folder {
   // Public Class Property Functions
 
   public static get allInstances(): ServerFolder[] /* LATER: IterableIterator<ServerFolder> */{
-    // LATER: ServerFolder.instanceMap should only have folders, not notebooks and folders.
     return <ServerFolder[]>Array.from(this.instanceMap.values()).filter(r=>r.instance).map(r=>r.instance);
   }
 
-  public static isOpen(path: FolderPath): boolean {
-    return this.instanceMap.has(path);
-  }
+  // public static isOpen(path: FolderPath): boolean {
+  //   return this.instanceMap.has(path);
+  // }
 
   // Public Class Methods
 
@@ -96,26 +95,30 @@ export class ServerFolder extends Folder {
   }
 
   public static async delete(path: FolderPath): Promise<void> {
-    await this.close(path, "Folder is deleted"); // no-op if the folder is not open.
-    await deleteDirectory(path, false /* not recursive */);
+    // REVIEW: Folder could fail to be deleted because it is not empty, for instance.
+    //         Would it be better to "close" only on successful deletion?
+    await this.close(path, "Folder is being deleted"); // no-op if the folder is not open.
+    await Permissions.deleteOnDisk(path);
+    await deleteDirectory(path); // Note: not recursive. Will fail if directory not empty.
   }
 
   public static async move(oldPath: FolderPath, newPath: FolderPath): Promise<FolderEntry> {
     // Called by the containing ServerFolder when one of its subfolders is renamed.
-    await this.close(newPath, `Folder moving to ${newPath}`);
+    await this.close(newPath, `Folder is moving to ${newPath}.`);
     // REVIEW: If there is an existing *file* (not directory) at the new path then it will be overwritten silently.
     //         However, we don't expect random files to be floating around out notebook storage filesystem.
     await renameDirectory(oldPath, newPath);
     return { path: newPath, name: Folder.folderNameFromFolderPath(newPath) }
   }
 
-  public static async open(path: FolderPath, options: OpenFolderOptions): Promise<ServerFolder> {
+  public static async open(path: FolderPath, options?: OpenFolderOptions): Promise<ServerFolder> {
+    if (!options) { options = {}; }
     let info = this.instanceMap.get(path);
     if (info) {
       info.openTally++;
     } else {
       info = {
-        openPromise: this.openFirst(path, options),
+        openPromise: this.openFirst(path),
         openTally: 1,
         watchers: new Set(),
       };
@@ -123,55 +126,6 @@ export class ServerFolder extends Folder {
     };
     if (options.watcher) { info.watchers.add(options.watcher); }
     return info.openPromise;
-  }
-
-  private static async openFirst(path: FolderPath, _options: OpenFolderOptions): Promise<ServerFolder> {
-
-    const notebooks: NotebookEntry[] = [];
-    const folders: FolderEntry[] = [];
-
-    const suffix = ServerNotebook.NOTEBOOK_DIR_SUFFIX;
-    const suffixLen = suffix.length;
-
-    const dirMap = await readDirectory(path);
-    for (const [filename, stats] of dirMap.entries()) {
-
-      // Skip hidden files and folders
-      if (filename.startsWith(".")) { /* skip hidden */ continue; }
-
-      // Skip non-directories
-      if (!stats.isDirectory()) { continue; }
-
-      // Notebooks are directories that end with .enb.
-      // Folders are all other directories.
-      if (filename.endsWith(suffix)) {
-        const nameWithoutSuffix: NotebookName = <NotebookName>filename.slice(0, -suffixLen);
-        if (!Folder.isValidNotebookName(nameWithoutSuffix)) {
-          logWarning(MODULE, `Skipping notebook with invalid name: '${filename}'`);
-          continue;
-        }
-        notebooks.push({ name: nameWithoutSuffix, path: <NotebookPath>`${path}${filename}` })
-      } else {
-        if (!Folder.isValidFolderName(<FolderName>filename)) {
-          logWarning(MODULE, `Skipping folder with invalid name: '${filename}'`);
-          continue;
-        }
-        folders.push({ name: <FolderName>filename, path: <FolderPath>`${path}${filename}/` })
-      }
-    }
-
-    const obj: FolderObject = {
-      folders,
-      notebooks,
-    };
-
-    const permissions = await Permissions.load(path);
-
-    // REVIEW: validate folderObject?
-    const info = this.getInfo(path);
-    assert(info);
-    const instance = info.instance = new this(path, obj, permissions);
-    return instance;
   }
 
   // Public Class Event Handlers
@@ -234,8 +188,7 @@ export class ServerFolder extends Folder {
 
   public close(watcher?: ServerFolderWatcher): void {
     assert(!this.terminated);
-    const info = ServerFolder.instanceMap.get(this.path)!;
-    assert(info);
+    const info = ServerFolder.getInfo(this.path)!;
     if (watcher) {
       const had = info.watchers.delete(watcher);
       assert(had);
@@ -271,11 +224,59 @@ export class ServerFolder extends Folder {
 
   // Private Class Methods
 
+  private static async openFirst(path: FolderPath): Promise<ServerFolder> {
+
+    const dirMap = await readDirectory(path);
+
+    const notebooks: NotebookEntry[] = [];
+    const folders: FolderEntry[] = [];
+    const suffix = ServerNotebook.NOTEBOOK_DIR_SUFFIX;
+    const suffixLen = suffix.length;
+    for (const [filename, stats] of dirMap.entries()) {
+
+      // Skip hidden files and folders
+      if (filename.startsWith(".")) { /* skip hidden */ continue; }
+
+      // Skip non-directories
+      if (!stats.isDirectory()) { continue; }
+
+      // Notebooks are directories that end with .enb.
+      // Folders are all other directories.
+      if (filename.endsWith(suffix)) {
+        const nameWithoutSuffix: NotebookName = <NotebookName>filename.slice(0, -suffixLen);
+        if (!Folder.isValidNotebookName(nameWithoutSuffix)) {
+          logWarning(MODULE, `Skipping notebook with invalid name: '${filename}'`);
+          continue;
+        }
+        notebooks.push({ name: nameWithoutSuffix, path: <NotebookPath>`${path}${filename}` })
+      } else {
+        if (!Folder.isValidFolderName(<FolderName>filename)) {
+          logWarning(MODULE, `Skipping folder with invalid name: '${filename}'`);
+          continue;
+        }
+        folders.push({ name: <FolderName>filename, path: <FolderPath>`${path}${filename}/` })
+      }
+    }
+
+    const obj: FolderObject = { folders, notebooks };
+    const permissions = await Permissions.load(path);
+
+    // REVIEW: validate folderObject?
+    const info = this.getInfo(path);
+    assert(info);
+    const instance = info.instance = new this(path, obj, permissions);
+    return instance;
+  }
+
   // Private Class Event Handlers
 
   // Private Constructor
 
-  private constructor(path: FolderPath, obj: FolderObject, permissions: Permissions) {
+  private constructor(
+    path: FolderPath,
+    obj: FolderObject,
+    permissions: Permissions,
+  ) {
     super(path, obj);
     this.permissions = permissions;
     this.sockets = new Set<ServerSocket>();
@@ -283,12 +284,9 @@ export class ServerFolder extends Folder {
 
   // Private Instance Properties
 
-
-  // LATER: busyPromise.
-  private terminated?: boolean;
-
   private permissions: Permissions;
   private sockets: Set<ServerSocket>;
+  private terminated?: boolean;
 
   // Private Instance Property Functions
 
@@ -356,9 +354,9 @@ export class ServerFolder extends Folder {
   private terminate(reason: string): void {
     assert(!this.terminated);
     this.terminated = true;
-    const had = ServerFolder.instanceMap.delete(this.path);
-    assert(had);
-    for (const watcher of this.watchers) { watcher.onClosed(reason); }
+    const info = ServerFolder.getInfo(this.path);
+    ServerFolder.instanceMap.delete(this.path);
+    for (const watcher of info.watchers) { watcher.onClosed(reason); }
   }
 
   // Private Instance Event Handlers
@@ -429,7 +427,7 @@ export class ServerFolder extends Folder {
         case 'deleteFolder': {
           const name = changeRequest.name;
           const path = childFolderPath(this.path, name);
-          ServerFolder.delete(path);
+          await ServerFolder.delete(path);
           change = { type: 'folderDeleted', entry: { name, path }};
           break;
         }

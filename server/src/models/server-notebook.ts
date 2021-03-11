@@ -31,7 +31,7 @@ const debug = debug1(`server:${MODULE}`);
 // import { readdirSync, unlink, writeFileSync } from "fs"; // LATER: Eliminate synchronous file operations.
 
 import { CellObject, CellSource, CellId, CellPosition, CellType, CellIndex } from "../shared/cell";
-import { assert, assertFalse, CssLength, deepCopy, ExpectedError, Html, notImplementedError, Timestamp, cssSizeInPixels, CssLengthUnit, cssLengthInPixels } from "../shared/common";
+import { assert, assertFalse, CssLength, deepCopy, ExpectedError, Html, cssSizeInPixels, CssLengthUnit, cssLengthInPixels } from "../shared/common";
 import { Folder, NotebookPath, NOTEBOOK_PATH_RE, NotebookName, FolderPath, NotebookEntry } from "../shared/folder";
 import { NotebookObject, NotebookWatcher, PageMargins } from "../shared/notebook";
 import {
@@ -57,15 +57,21 @@ import { Permissions } from "./permissions";
 import { logError } from "../error-handler";
 import { ServerFormula } from "./server-formula";
 
+// Types
+
+interface InstanceInfo {
+  instance?: ServerNotebook;
+  openPromise: Promise<ServerNotebook>;
+  openTally: number;
+  watchers: Set<ServerNotebookWatcher>;
+}
+
 export interface FindCellOptions {
   source?: CellSource;
   notSource?: CellSource;
 }
 
 export interface OpenNotebookOptions {
-  ephemeral?: boolean;    // true iff notebook not persisted to the file system and disappears after last close.
-  mustExist?: boolean;
-  mustNotExist?: boolean;
   watcher?: ServerNotebookWatcher;
 }
 
@@ -88,8 +94,7 @@ interface ServerNotebookObject extends NotebookObject {
 // Constants
 
 const LETTER_PAGE_SIZE = cssSizeInPixels(8.5, 11, 'in');
-const DEFAULT_LETTER_MARGINS = marginsInPixels(1,1,1,1, 'in');
-
+const DEFAULT_LETTER_MARGINS = marginsInPixels(1, 1, 1, 1, 'in');
 
 const FORMAT_VERSION = "0.0.21";
 
@@ -116,9 +121,9 @@ export class ServerNotebook {
 
   // Public Class Property Functions
 
-  public static isOpen(path: NotebookPath): boolean {
-    return this.instanceMap.has(path);
-  }
+  // public static isOpen(path: NotebookPath): boolean {
+  //   return this.instanceMap.has(path);
+  // }
 
   public static isValidNotebookPath(path: NotebookPath): boolean {
     return NOTEBOOK_PATH_RE.test(path);
@@ -137,29 +142,29 @@ export class ServerNotebook {
   // Public Class Property Functions
 
   public static get allInstances(): ServerNotebook[]/* LATER: IterableIterator<ServerNotebook> */ {
-    // LATER: ServerNotebook.instanceMap should only have notebooks, not notebooks and folders.
-    return <ServerNotebook[]>Array.from(this.instanceMap.values()).filter(r=>r instanceof ServerNotebook);
+    return <ServerNotebook[]>Array.from(this.instanceMap.values()).filter(r=>r.instance).map(r=>r.instance);
   }
 
   // Public Class Methods
 
-  public static close(path: NotebookPath, reason: string): boolean {
-    // Closes the specified resource.
-    // All watchers are notified.
-    // Has no effect if the resource is not open.
-    // Returns true iff the resource was open.
-    if (this.isOpen(path)) {
-      const instance = this.getInstance(path);
-      instance.terminate(reason);
-      return true;
-    } else {
-      return false;
-    }
+  public static async close(path: NotebookPath, reason: string): Promise<void> {
+    const info = this.instanceMap.get(path);
+    if (!info) { return; }
+    const instance = await info.openPromise;
+    instance.terminate(reason);
   }
 
   public static async createOnDisk(path: NotebookPath, permissions: Permissions): Promise<void> {
-    const notebook = await this.open(path, { mustNotExist: true });
-    notebook.close();
+    assert(ServerNotebook.isValidNotebookPath(path));
+    try {
+      await createDirectory(path);
+    } catch(err) {
+      if (err.code == 'EEXIST') {
+        err = new ExpectedError(`Notebook '${path}' already exists.`);
+      }
+      throw err;
+    }
+    await writeJsonFile(path, NOTEBOOK_FILENAME, EMPTY_NOTEBOOK_OBJ)
     await Permissions.createOnDisk(path, permissions);
   }
 
@@ -182,27 +187,29 @@ export class ServerNotebook {
     return { path: newPath, name: this.nameFromPath(newPath) }
   }
 
-  public static open(path: NotebookPath, options: OpenNotebookOptions): Promise<ServerNotebook> {
-    const isOpen = this.isOpen(path);
-    const instance = isOpen ? this.getInstance(path) : new this(path, options);
-    instance.open(options, isOpen);
-    return instance.openPromise;
-  }
-
-  public static openEphemeral(): Promise<ServerNotebook> {
-    // For units testing, etc., to create a notebook that is not persisted to the filesystem.
-    return this.open(this.generateUniqueEphemeralPath(), { ephemeral: true, mustNotExist: true });
+  public static open(path: NotebookPath, options?: OpenNotebookOptions): Promise<ServerNotebook> {
+    if (!options) { options = {}; }
+    let info = this.instanceMap.get(path);
+    if (info) {
+      info.openTally++;
+    } else {
+      info = {
+        openPromise: this.openFirst(path),
+        openTally: 1,
+        watchers: new Set(),
+      };
+      this.instanceMap.set(path, info);
+    };
+    if (options.watcher) { info.watchers.add(options.watcher); }
+    return info.openPromise;
   }
 
   // Public Class Event Handlers
 
   public static async onClientRequest(socket: ServerSocket, msg: NotebookRequest): Promise<void> {
     // Called by ServerSocket when a client sends a notebook request.
-    let instance = </* TYPESCRIPT: shouldn't have to cast. */ServerNotebook>this.instanceMap.get(msg.path);
-    if (!instance && msg.operation == 'open') {
-      instance = await this.open(msg.path, { mustExist: true });
-    }
-    assert(instance);
+    const info = this.instanceMap.get(msg.path);
+    const instance = await(info ? info.openPromise : this.open(msg.path, {}));
     await instance.onClientRequest(socket, msg);
   }
 
@@ -265,12 +272,13 @@ export class ServerNotebook {
 
   public close(watcher?: ServerNotebookWatcher): void {
     assert(!this.terminated);
-    const instance = ServerNotebook.getInstance(this.path);
+    const info = ServerNotebook.getInfo(this.path)!;
     if (watcher) {
-      const had = instance.watchers.delete(watcher);
+      const had = info.watchers.delete(watcher);
       assert(had);
     }
-    if (--instance.openTally == 0) {
+    info.openTally--;
+    if (info.openTally == 0) {
       // LATER: Set timer to destroy in the future.
       this.terminate("Closed by all clients");
     }
@@ -336,7 +344,8 @@ export class ServerNotebook {
   public static validateObject(obj: ServerNotebookObject): void {
     // Throws an exception with a descriptive message if the object is not a valid notebook object.
     // LATER: More thorough validation of the object.
-    if (!obj.nextId) { throw new Error("Invalid notebook object JSON."); }
+
+    if (typeof obj != 'object' || !obj.nextId) { throw new Error("Invalid notebook object JSON."); }
     if (obj.formatVersion != FORMAT_VERSION) {
       throw new ExpectedError(`Invalid notebook version ${obj.formatVersion}. Expect version ${FORMAT_VERSION}`);
     }
@@ -348,16 +357,21 @@ export class ServerNotebook {
 
   // Private Class Properties
 
-  protected static instanceMap: Map<NotebookPath, ServerNotebook> = new Map();
-  private static lastEphemeralPathTimestamp: Timestamp = 0;
+  protected static instanceMap: Map<NotebookPath, InstanceInfo> = new Map();
 
   // Private Class Property Functions
 
-  protected static getInstance(path: NotebookPath): ServerNotebook {
-    const instance = this.instanceMap.get(path)!;
-    assert(instance);
-    return instance;
+  private static getInfo(path: NotebookPath): InstanceInfo {
+    const rval = this.instanceMap.get(path)!;
+    assert(rval);
+    return rval;
   }
+
+  // protected static getInstance(path: NotebookPath): ServerNotebook {
+  //   const info = this.getInfo(path)!;
+  //   assert(info.instance);
+  //   return info.instance!;
+  // }
 
   private isEmpty(): boolean {
     return this.cells.length == 0;
@@ -365,18 +379,27 @@ export class ServerNotebook {
 
   // Private Class Methods
 
-  private static generateUniqueEphemeralPath(): NotebookPath {
-    let timestamp = <Timestamp>Date.now();
-    if (timestamp <= this.lastEphemeralPathTimestamp) {
-      timestamp = this.lastEphemeralPathTimestamp+1;
-    }
-    this.lastEphemeralPathTimestamp = timestamp;
-    return  <NotebookPath>`/eph${timestamp}${this.NOTEBOOK_DIR_SUFFIX}`;
-  }
+      // await this.saveNew();
 
-  private static setInstance(path: NotebookPath, instance: ServerNotebook): void {
-    assert(!this.instanceMap.has(path));
-    this.instanceMap.set(path, instance);
+      // // TODO: This is a temporary workaround for the fact that you can't insert a cell if there
+      // //       are no cells in the notebook.
+      // await this.requestChanges('USER', [
+      //   { type: 'insertEmptyCell', cellType: CellType.Text, afterId: CellPosition.Top },
+      //   { type: 'insertEmptyCell', cellType: CellType.Formula, afterId: CellPosition.Bottom },
+      //   { type: 'insertEmptyCell', cellType: CellType.Formula, afterId: CellPosition.Bottom },
+      //   { type: 'insertEmptyCell', cellType: CellType.Formula, afterId: CellPosition.Bottom },
+      // ], {});
+
+  private static async openFirst(path: NotebookPath): Promise<ServerNotebook> {
+    assert(ServerNotebook.isValidNotebookPath(path));
+    const obj = await readJsonFile<ServerNotebookObject>(path, NOTEBOOK_FILENAME);
+    ServerNotebook.validateObject(obj);
+    const permissions = await Permissions.load(path);
+
+    const info = this.getInfo(path);
+    assert(info);
+    const instance = info.instance = new this(path, obj, permissions);
+    return instance;
   }
 
   // Private Class Event Handlers
@@ -385,35 +408,34 @@ export class ServerNotebook {
 
   private constructor(
     path: NotebookPath,
-    options: OpenNotebookOptions,
+    obj: ServerNotebookObject,
+    permissions: Permissions,
   ) {
     this.path = path;
-    this.openTally = 0;
-    this.watchers = new Set();
-    this.obj = deepCopy(EMPTY_NOTEBOOK_OBJ);
+    this.obj = obj;
+    this.permissions = permissions;
+
     this.cellMap = new Map();
     this.cells = [];
-    this.ephemeral = options.ephemeral;
+    for (const cellObject of this.obj.cells) {
+      const cell = existingCell(this, cellObject);
+      this.cells.push(cell);
+      this.cellMap.set(cell.id, cell);
+    }
     this.reservedIds = new Set();
     this.sockets = new Set<ServerSocket>();
   }
 
   // Private Instance Properties
 
-  private initialized?: boolean;
-  private terminated?: boolean;
-  private openTally: number;
-  private openPromise!: Promise<this>;
-  private watchers: Set<ServerNotebookWatcher>; // REVIEW: Make private and provide enumerator?
-
   // TODO: purge changes in queue that have been processed asynchronously.
   private cellMap: Map<CellId, ServerCell<CellObject>>;
   private cells: ServerCell<CellObject>[];
-  private ephemeral?: boolean;     // Not persisted to the filesystem.
   private permissions!: Permissions;
   private reservedIds: Set<CellId>;
   private saving?: boolean;
   private sockets: Set<ServerSocket>;
+  private terminated?: boolean;
 
   // Private Instance Property Functions
 
@@ -435,6 +457,11 @@ export class ServerNotebook {
     assert(cell instanceof FormulaCell);
     return <FormulaCell>cell;
   }
+
+  // private get watchers(): IterableIterator<ServerNotebookWatcher> {
+  //   const info = ServerNotebook.getInfo(this.path);
+  //   return info.watchers.values();
+  // }
 
   // Private Instance Methods
 
@@ -479,8 +506,6 @@ export class ServerNotebook {
     const { cellId, strokeId } = request;
     const cell = this.getCell(cellId);
     const stroke = cell.deleteStroke(strokeId);
-
-    // TODO: Update the displaySvg field
 
     // Construct the response
     const pathId = strokePathId(cellId, strokeId);
@@ -543,6 +568,10 @@ export class ServerNotebook {
     const { cellId, stroke } = request;
     const cell = this.getCell(request.cellId);
     const displayUpdate = cell.insertStroke(stroke);
+
+    console.log("STROKE INSERTED");
+    console.dir(cell.obj, { depth: null });
+    console.dir(this.obj, { depth: null });
 
     // Construct the response
     const update: StrokeInserted = {
@@ -625,37 +654,6 @@ export class ServerNotebook {
     undoChangeRequests.unshift(undoChangeRequest);
   }
 
-  protected async initialize(options: OpenNotebookOptions): Promise<void> {
-    if (options.mustExist) {
-      assert(ServerNotebook.isValidNotebookPath(this.path));
-      const obj = await readJsonFile<ServerNotebookObject>(this.path, NOTEBOOK_FILENAME);
-      assert(typeof obj == 'object');
-      ServerNotebook.validateObject(obj);
-      this.obj = obj; // REVIEW: Deep copy?
-      this.cells = obj.cells.map(cellObject=>existingCell(this, cellObject));
-      for (const cell of this.cells) {
-        this.cellMap.set(cell.id, cell);
-      }
-    } else if (options.mustNotExist) {
-      await this.saveNew();
-
-      // TODO: This is a temporary workaround for the fact that you can't insert a cell if there
-      //       are no cells in the notebook.
-      await this.requestChanges('USER', [
-        { type: 'insertEmptyCell', cellType: CellType.Text, afterId: CellPosition.Top },
-        { type: 'insertEmptyCell', cellType: CellType.Formula, afterId: CellPosition.Bottom },
-        { type: 'insertEmptyCell', cellType: CellType.Formula, afterId: CellPosition.Bottom },
-        { type: 'insertEmptyCell', cellType: CellType.Formula, afterId: CellPosition.Bottom },
-      ], {});
-
-    } else {
-      // LATER: Neither mustExist or mustNotExist specified. Open if it exists, or create if it doesn't exist.
-      //        Currently this is an illegal option configuration.
-      notImplementedError("ServerNoteboook Neither mustExist or mustNotExist specified");
-    }
-    this.permissions = await Permissions.load(this.path);
-  }
-
   private removeSocket(socket: ServerSocket): void {
     const hadSocket = this.sockets.delete(socket);
     assert(hadSocket);
@@ -665,32 +663,12 @@ export class ServerNotebook {
     }
   }
 
-  private open(options: OpenNotebookOptions, isOpen: boolean): void {
-    if (!isOpen) {
-      ServerNotebook.setInstance(this.path, this);
-      this.openPromise = this.initialize(options).then(
-        ()=>{
-          this.initialized = true;
-          return this;
-        }
-      );
-    }
-    assert(options.mustExist || options.mustNotExist);
-    assert(!isOpen || !options.mustNotExist); // LATER: Throw exception with useful error message.
-    this.openTally++;
-    if (options.watcher) { this.watchers.add(options.watcher); }
-  }
-
   private async save(): Promise<void> {
     // LATER: A new save can be requested before the previous save completes,
     //        so wait until the previous save completes before attempting to save.
     assert(!this.saving);
     this.saving = true;
 
-    // "Ephemeral" notebooks are not persisted in the filesystem.
-    if (this.ephemeral) { return; }
-
-    assert(ServerNotebook.isValidNotebookPath(this.path));
     debug(`saving ${this.path}`);
 
     await writeJsonFile(this.path, NOTEBOOK_FILENAME, this.obj);
@@ -733,34 +711,11 @@ export class ServerNotebook {
   }
 
   private terminate(reason: string): void {
-    assert(this.initialized);
     assert(!this.terminated);
     this.terminated = true;
-    const had = ServerNotebook.instanceMap.delete(this.path);
-    assert(had);
-    for (const watcher of this.watchers) { watcher.onClosed(reason); }
-  }
-
-  private async saveNew(): Promise<void> {
-    // "Ephemeral" notebooks are not persisted in the filesystem.
-    if (this.ephemeral) { return; }
-    assert(!this.saving);
-
-    // Create the directory if it does not exists.
-    // LATER: Don't attempt to create the directory every time we save. Only the first time.
-    this.saving = true;
-    try {
-      await createDirectory(this.path);
-    } catch(err) {
-      if (err.code == 'EEXIST') {
-        err = new ExpectedError(`Notebook '${this.path}' already exists.`);
-      }
-      throw err;
-    } finally {
-      this.saving = false;
-    }
-
-    await this.save();
+    const info = ServerNotebook.getInfo(this.path);
+    ServerNotebook.instanceMap.delete(this.path);
+    for (const watcher of info.watchers) { watcher.onClosed(reason); }
   }
 
   // Private Event Handlers

@@ -116,7 +116,6 @@ export class ServerSocket {
   }
 
   public logoutUser(): void {
-    console.log("SERVER SOCKET LOGOUT USER")
     assert(this._user);
     ServerFolder.onSocketUserLogout(this);
     ServerNotebook.onSocketUserLogout(this);

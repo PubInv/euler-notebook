@@ -64,9 +64,9 @@ export class TextCell extends ServerCell<TextCellObject> {
 
   // --- PRIVATE ---
 
-  protected updateDisplaySvg(): void {
+  protected /* override */ redrawDisplaySvg(): void {
     const markup = <SvgMarkup>''; // TODO: render text to SVG
-    super.updateDisplaySvg(<SvgMarkup>(markup /* + plotMarkup */));
+    super.redrawDisplaySvg(<SvgMarkup>(markup /* + plotMarkup */));
   }
 
 }

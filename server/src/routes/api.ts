@@ -48,7 +48,7 @@ export var router = Router();
 router.post('/debug', async function(req: Request, res: Response, _next: NextFunction) {
   try {
     const params: DebugParams = req.body;
-    const notebook = await ServerNotebook.open(params.notebookPath, { mustExist: true });
+    const notebook = await ServerNotebook.open(params.notebookPath);
     try {
       // const cellId = params.cellId || notebook.topLevelStyleOrder().slice(-1)[0];
       // const style = notebook.getStyle(cellId);
@@ -71,7 +71,7 @@ router.post('/debug', async function(req: Request, res: Response, _next: NextFun
 router.post('/search', async function(req: Request, res: Response, _next: NextFunction) {
   try {
     const params: SearchParams = req.body;
-    const notebook = await ServerNotebook.open(params.notebookPath, { mustExist: true });
+    const notebook = await ServerNotebook.open(params.notebookPath);
     try {
       debug(`Searching for: "${params.query}"`);
       const wolfram_promise = wolframAlphaSearch(params.query);

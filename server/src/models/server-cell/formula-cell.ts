@@ -80,7 +80,7 @@ export class FormulaCell extends ServerCell<FormulaCellObject> {
     // REVIEW: Size of cell could change.
     this.obj.strokeData = deepCopy(EMPTY_STROKE_DATA);
     this.formula.updateFormula(alternative.formula);
-    this.updateDisplaySvg();
+    this.redrawDisplaySvg();
 
     const update: FormulaTypeset = {
       type: 'formulaTypeset',
@@ -104,11 +104,11 @@ export class FormulaCell extends ServerCell<FormulaCellObject> {
 
   // Private Instance Methods
 
-  protected updateDisplaySvg(): void {
+  protected /* override */ redrawDisplaySvg(): void {
     // TODO: Formula numbering, etc.
     // TODO: Strip <svg></svg>?
     const formulaMarkup = this.formula.renderSvg();
-    return super.updateDisplaySvg(<SvgMarkup>(formulaMarkup));
+    return super.redrawDisplaySvg(<SvgMarkup>(formulaMarkup));
   }
 
 

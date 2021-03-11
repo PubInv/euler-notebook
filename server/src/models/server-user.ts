@@ -169,7 +169,6 @@ export class ServerUser {
   // Private Instance Event Handlers
 
   private onLogout(socket: ServerSocket, msg: LogoutUser, session: UserSession): void {
-    console.log("SERVER USER LOGOUT")
     assert(socket.user && socket.user.userName === session.userName);
     UserSession.logout(msg.sessionToken);
     socket.logoutUser();

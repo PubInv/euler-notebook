@@ -63,10 +63,13 @@ async function onPdfPage(req: Request, res: Response, next: NextFunction): Promi
   try {
     if (!ServerNotebook.isValidNotebookPath(notebookPath)) { return next(); }
     debug(`Exporting PDF of ${notebookPath}`);
-    const notebook: ServerNotebook = await ServerNotebook.open(notebookPath, { mustExist: true });
-    res.setHeader('Content-type', 'application/pdf');
-    await generatePdf(res, notebook);
-    notebook.close();
+    const notebook: ServerNotebook = await ServerNotebook.open(notebookPath);
+    try {
+      res.setHeader('Content-type', 'application/pdf');
+      await generatePdf(res, notebook);
+    } finally {
+      notebook.close();
+    }
   } catch(err) {
     res.status(404).send(`Can't export pdf of ${notebookPath}: ${err.message}`);
   }

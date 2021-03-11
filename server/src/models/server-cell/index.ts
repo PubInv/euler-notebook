@@ -79,7 +79,11 @@ export abstract class ServerCell<O extends CellObject> {
     const strokes = this.obj.strokeData.strokes;
     const strokeIndex = strokes.findIndex(stroke=>stroke.id===strokeId);
     assert(strokeIndex>=0, `Cannot find stroke c${this.id}s${strokeId}`);
-    return strokes.splice(strokeIndex, 1)[0];
+    const removedStroke = strokes.splice(strokeIndex, 1)[0];
+    // TODO: It is expensive to recompute the entire displaySvg
+    //       after every stroke change. How can we do it incrementally?
+    this.redrawDisplaySvg();
+    return removedStroke;
   }
 
   public insertStroke(stroke: Stroke): DisplayUpdate {
@@ -87,7 +91,9 @@ export abstract class ServerCell<O extends CellObject> {
     const strokeData = this.obj.strokeData;
     stroke.id = strokeData.nextId++;
     strokeData.strokes.push(stroke);
-
+    // TODO: It is expensive to recompute the entire displaySvg
+    //       after every stroke change. How can we do it incrementally?
+    this.redrawDisplaySvg();
     // Construct display update
     const newPath = convertStrokeToPath(this.id, stroke);
     const displayUpdate: DisplayUpdate = { append: [ newPath ] };
@@ -115,13 +121,12 @@ export abstract class ServerCell<O extends CellObject> {
 
   // Private Instance Methods
 
-  /* overridable */ protected updateDisplaySvg(embeddedMarkup?: SvgMarkup): void {
+  protected /* overridable */ redrawDisplaySvg(embeddedMarkup?: SvgMarkup): void {
     // REVIEW: Cache the displaySvg until the content changes?
     embeddedMarkup = embeddedMarkup || <SvgMarkup>'';
     const strokesMarkup = this.obj.strokeData.strokes.map(stroke=>convertStrokeToPath(this.id, stroke)).join('\n');
     this.obj.displaySvg = <SvgMarkup>(embeddedMarkup + strokesMarkup);
   }
-
 
 }
 

@@ -59,17 +59,17 @@ const NOTEBOOKS_DIRECTORY = 'euler-notebook-usr';
 
 export async function readConfigFile<T>(fileName: FileName) : Promise<T> {
   const path = <AbsolutePath>join(process.env.HOME!, CONFIG_DIR, fileName);
-  return await readJsonFile2<T>(path);
+  return await readJsonFileFromAbsolutePath<T>(path);
 }
 
 export async function deleteConfigFile(fileName: FileName): Promise<void> {
-  const path = <AbsolutePath>join(process.env.HOME!, CONFIG_DIR, fileName);
-  await fsUnlink(path);
+  const absPath = <AbsolutePath>join(process.env.HOME!, CONFIG_DIR, fileName);
+  await fsUnlink(absPath);
 }
 
 export async function writeConfigFile<T>(fileName: FileName, obj: T) : Promise<void> {
-  const path = <AbsolutePath>join(process.env.HOME!, CONFIG_DIR, fileName);
-  return await writeJsonFile2(path, obj);
+  const absPath = <AbsolutePath>join(process.env.HOME!, CONFIG_DIR, fileName);
+  return await writeJsonFileToAbsolutePath(absPath, obj);
 }
 
 // Notebook and Folder Functions
@@ -81,7 +81,7 @@ export async function createDirectory(path: Path): Promise<void> {
   await fsMkdir(absPath);
 }
 
-export async function deleteDirectory(path: Path, recursive: boolean): Promise<void> {
+export async function deleteDirectory(path: Path, recursive?: boolean): Promise<void> {
   const absPath = absolutePathToDirectory(path);
   debug(`${recursive?"Recursively D":"D"}eleting user folder: ${absPath}`)
   if (recursive) {
@@ -89,6 +89,11 @@ export async function deleteDirectory(path: Path, recursive: boolean): Promise<v
   } else {
     await fsRmdir(absPath);
   }
+}
+
+export async function deleteFile(path: Path, fileName: FileName): Promise<void> {
+  const absPath = absolutePathToFile(path, fileName);
+  await fsUnlink(absPath);
 }
 
 export async function readDirectory(path: Path): Promise<Map<FileName, Stats>> {
@@ -106,7 +111,7 @@ export async function readDirectory(path: Path): Promise<Map<FileName, Stats>> {
 
 export async function readJsonFile<T>(path: Path, fileName: FileName): Promise<T> {
   const absPath = absolutePathToFile(path, fileName);
-  return readJsonFile2<T>(absPath);
+  return readJsonFileFromAbsolutePath<T>(absPath);
 }
 
 export async function renameDirectory(oldPath: Path, newPath: Path): Promise<void> {
@@ -118,7 +123,7 @@ export async function renameDirectory(oldPath: Path, newPath: Path): Promise<voi
 
 export async function writeJsonFile<T>(path: Path, fileName: FileName, obj: T): Promise<void> {
   const absPath = absolutePathToFile(path, fileName);
-  await writeJsonFile2(absPath, obj);
+  await writeJsonFileToAbsolutePath(absPath, obj);
 }
 
 // Helper Functions
@@ -135,15 +140,19 @@ function absolutePathToFile(path: Path, fileName: FileName): AbsolutePath {
   return <AbsolutePath>join(absPath, fileName);
 }
 
-async function readJsonFile2<T>(absPath: AbsolutePath): Promise<T> {
+async function readJsonFileFromAbsolutePath<T>(absPath: AbsolutePath): Promise<T> {
   debug(`Reading JSON file: ${absPath}`);
+  // REVIEW: For large JSON files is there a way to parse as we read the file
+  //         so we don't have to read the whole JSON string into memory?
   const json = await fsReadFile(absPath, 'utf8');
   const rval = <T>JSON.parse(json);
   return rval;
 }
 
-async function writeJsonFile2<T>(absPath: AbsolutePath, obj: T): Promise<void> {
+async function writeJsonFileToAbsolutePath<T>(absPath: AbsolutePath, obj: T): Promise<void> {
   debug(`Writing JSON file: ${absPath}`);
+  // REVIEW: For large JSON files is there a way to generate JSON as we write the file
+  //         so we don't have to generate a large JSON string into memory?
   const json = JSON.stringify(obj);
   await fsWriteFile(absPath, json, 'utf8');
 }

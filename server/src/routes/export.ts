@@ -79,7 +79,7 @@ async function onExportPage(req: Request, res: Response, next: NextFunction): Pr
       return res.status(400).render('expected-error', locals)
     }
 
-    const notebook: ServerNotebook = await ServerNotebook.open(notebookPath, { mustExist: true });
+    const notebook: ServerNotebook = await ServerNotebook.open(notebookPath);
     try {
       const latex = "TODO: Not implemented." // await notebook.exportLatex();
 

@@ -82,7 +82,7 @@ async function onXrayPage(req: Request, res: Response, next: NextFunction): Prom
   try {
     debug(`Debug rendering: ${notebookPath}`);
     if (!ServerNotebook.isValidNotebookPath(notebookPath)) { return next(); }
-    const notebook: ServerNotebook = await ServerNotebook.open(notebookPath, { mustExist: true });
+    const notebook: ServerNotebook = await ServerNotebook.open(notebookPath);
     try {
       const notebookHtml = await notebook.toHtml();
       const html = `<html><head><style>${STYLESHEET}</style><script>${JAVASCRIPT}</script></head><body>${notebookHtml}</body>`;
