@@ -23,7 +23,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 import { Html } from "./shared/common";
 
-// import { DebugConsole } from "./components/debug-console";
+import { DebugConsole } from "./components/debug-console";
 import { Header } from "./components/header";
 
 import { addAsyncEventListener, addSyncEventListener } from "./dom";
@@ -83,9 +83,9 @@ class App {
     // This includes the header bar and error message ticker.
     const $body = <HTMLBodyElement>window.document.body;
     const messageDisplay = new MessageDisplay();
-    // const debugConsole = new DebugConsole();
+    const debugConsole = new DebugConsole();
     this.header = new Header();
-    $body.append(messageDisplay.$elt, /* debugConsole.$elt, */ this.header.$elt);
+    $body.append(messageDisplay.$elt, debugConsole.$elt, this.header.$elt);
 
     // Listen for low-level error messages on the body element,
     // and display any in the message ticker.

@@ -230,6 +230,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
           >.dragIcon
             color lightgray
+            cursor grab
             height 16px
             padding 6px 12px 6px 6px
             width 16px
@@ -473,9 +474,15 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
     touch-action none
 
   >.strokeDrawingPanel
+    // REVIEW: Is it possible to use a vector SVG cursor?
+    // TODO: Find or make a better cursor.
+    cursor url('/images/cursors/hand-with-stylus.cur'), auto
     stroke gray
 
   >.strokeSelectionPanel
+    // REVIEW: Is it possible to use a vector SVG cursor?
+    // TODO: Find or make a better cursor.
+    // TODO: Fix the hotspot on this eraser. Should be in the corner, not middle of the eraser.
     cursor  url('/images/cursors/eraser.cur'), auto
     stroke rgba(0,0,0,0.1)
     stroke-width 6

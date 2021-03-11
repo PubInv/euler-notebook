@@ -24,13 +24,14 @@ const debug = debug1('client:client-cell');
 
 import { CellId, CellObject, CellType } from "../../shared/cell";
 import { assert, CssSelector, CssSize, ElementId, escapeHtml, Html } from "../../shared/common";
-import { CellDeleted, DisplayUpdate, FormulaRecognized, NotebookUpdate } from "../../shared/server-responses";
 import { cellBriefSynopsis, cellSynopsis, notebookUpdateSynopsis } from "../../shared/debug-synopsis";
+import { FormulaRecognitionAlternative } from "../../shared/formula";
+import { CellDeleted, DisplayUpdate, FormulaRecognized, NotebookUpdate } from "../../shared/server-responses";
 import { Stroke, StrokeId } from "../../shared/stylus";
 
-import { ClientNotebook } from "../client-notebook";
 import { $, $newSvg } from "../../dom";
-import { FormulaRecognitionAlternative } from "../../shared/formula";
+
+import { ClientNotebook } from "../client-notebook";
 
 // Types
 
