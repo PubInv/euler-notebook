@@ -128,7 +128,7 @@ interface Styles {
 export type SvgIconId =
   'iconMonstrArrow71' | 'iconMonstrArrow72' |'iconMonstrBook14' | 'iconMonstrBook17' | 'iconMonstrBug12' |
   'iconMonstrCalculator2' | 'iconMonstrClothing18' | 'iconMonstrEdit9Modified' | 'iconMonstrEraser2' | 'iconMonstrFile5' | 'iconMonstrFile12' |
-  'iconMonstrFile15' | 'iconMonstrFolder2' | 'iconMonstrFolder5' | 'iconMonstrFullScreen7' | 'iconMonstrHome6' |
+  'iconMonstrFile15' | 'iconMonstrFolder2' | 'iconMonstrFolder5' | 'iconMonstrFullScreen7' | 'iconMonstrHome6' | 'iconMonstrInfo6' |
   'iconMonstrMagnifier6' | 'iconMonstrPencil9' | 'iconMonstrPrinter6' |
   'iconMonstrRedo4' | 'iconMonstrRefresh2' | 'iconMonstrRuler30' | 'iconMonstrText1' | 'iconMonstrTrashcan2' |
   'iconMonstrUndo4' | 'iconMonstrUser1' | 'iconMonstrChart20' ;
@@ -267,6 +267,15 @@ export function $newSvgFromMarkup<K extends keyof SVGElementTagNameMap>(markup: 
   assert($elt);
   // assert($elt instanceof SVGElement);  // REVIEW: <path> elements don't appear to mneet this instanceof test.
   if (options) { $configure($elt, options); }
+  return <SVGElementTagNameMap[K]>$elt;
+}
+
+export function $outerSvg<K extends keyof SVGElementTagNameMap>(markup: SvgMarkup): SVGElementTagNameMap[K] {
+  const $parent = document.createElement('div');
+  $parent.innerHTML = markup;
+  const $elt: SVGElement = <SVGElement>$parent.firstElementChild!;
+  assert($elt);
+  assert($elt instanceof SVGElement);
   return <SVGElementTagNameMap[K]>$elt;
 }
 

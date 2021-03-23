@@ -24,27 +24,30 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 import * as debug1 from "debug";
 const debug = debug1('client:cell-edit-view');
 
-import { CellObject, CellId, CellType } from "../../shared/cell";
+import { CellObject, CellId } from "../../shared/cell";
 import {
   assert, Html, CssClass, CssLength, CssSize, LengthInPixels,
   ElementId, SvgMarkup, cssLengthInPixels
 } from "../../shared/common";
 import { CellDeleted, NotebookUpdate } from "../../shared/server-responses";
 import { Stroke, StrokeId } from "../../shared/stylus";
+import { notebookUpdateSynopsis } from "../../shared/debug-synopsis";
 
 // import { DebugConsole } from "../../components/debug-console";
 import { HtmlElement } from "../../html-element";
 import {
   $new, $newSvg, CLOSE_X_ENTITY, CELL_ICONS, svgIconReferenceMarkup, HtmlElementOrSpecification,
 } from "../../dom";
+import { showError } from "../../error-handler";
 
 import { Tools } from "../../screens/notebook-edit-screen/tools";
-import { CallbackFunctions as ResizerCallbackFunctions, ResizerBar } from "../../components/resizer-bar";
 import { CellView, ClientCell } from "../../models/client-cell";
-import { showError } from "../../error-handler";
 import { StrokePanel, StrokePanelCallbacks, StylusMode } from "../../components/stroke-panel";
+
 import { NotebookEditView } from "../notebook-edit-view";
-import { notebookUpdateSynopsis } from "../../shared/debug-synopsis";
+
+import { CallbackFunctions as ResizerCallbackFunctions, ResizerBar } from "./resizer-bar";
+import { SuggestionPanel } from "./suggestion-panel";
 
 // Types
 
@@ -133,6 +136,7 @@ export abstract class CellEditView<O extends CellObject> extends HtmlElement<'di
     notebookEditView: NotebookEditView,
     cell: ClientCell<O>,
     cssClass: CssClass,
+    rightMarginButton?: HtmlElementOrSpecification,
   ) {
 
     const iconId = CELL_ICONS.get(cell.obj.type)!;
@@ -164,20 +168,20 @@ export abstract class CellEditView<O extends CellObject> extends HtmlElement<'di
       {
         tag: 'button',
         attrs: { tabindex: -1 },
+        class: <CssClass>'iconButton',
+        html: svgIconReferenceMarkup('iconMonstrInfo6'),
+        syncButtonHandler: (e: MouseEvent)=>this.onSuggestionsButtonClicked(e),
+      }, {
+        tag: 'button',
+        attrs: { tabindex: -1 },
         classes:[ <CssClass>'deleteButton', <CssClass>'entityButton' ],
         html: CLOSE_X_ENTITY,
         asyncButtonHandler: e=>this.onDeleteButtonClicked(e),
       }
     ];
     // TODO: This should be provided by inherited formula-edit-view:
-    if (cell.type == CellType.Formula) {
-      rightMarginChildren.unshift({
-        tag: 'button',
-        attrs: { tabindex: -1 },
-        class: <CssClass>'iconButton',
-        html: svgIconReferenceMarkup(CELL_ICONS.get(CellType.Formula)!),
-        asyncButtonHandler: (e: MouseEvent)=>this.onRecognizeFormulaButtonClicked(e),
-      });
+    if (rightMarginButton) {
+      rightMarginChildren.unshift(rightMarginButton);
     }
     const $rightMargin = $new<'div'>({
       tag: 'div',
@@ -221,6 +225,8 @@ export abstract class CellEditView<O extends CellObject> extends HtmlElement<'di
     };
     const resizerBar = new ResizerBar(resizerCallbackFunctions);
 
+    const suggestionPanel = new SuggestionPanel<O>(cell);
+
     super({
       tag: 'div',
       attrs: { tabindex: 0 },
@@ -229,6 +235,7 @@ export abstract class CellEditView<O extends CellObject> extends HtmlElement<'di
       children:[
         $main,
         resizerBar.$elt,
+        suggestionPanel.$elt,
       ],
       asyncListeners: {
         drop: e=>this.onDrop(e),
@@ -242,6 +249,7 @@ export abstract class CellEditView<O extends CellObject> extends HtmlElement<'di
 
     this.$content = $content;
     this.$main = $main;
+    this.suggestionPanel = suggestionPanel;
     this.cell = cell;
     this.notebookEditView = notebookEditView;
 
@@ -264,6 +272,7 @@ export abstract class CellEditView<O extends CellObject> extends HtmlElement<'di
   protected $content: HTMLDivElement;
   private $main: HTMLDivElement;
   private resizingInitialHeight?: LengthInPixels;
+  protected suggestionPanel: SuggestionPanel<O>;
   private notebookEditView: NotebookEditView;
   private strokePanel: StrokePanel;
 
@@ -339,22 +348,6 @@ export abstract class CellEditView<O extends CellObject> extends HtmlElement<'di
     await this.notebookEditView.insertCell(this.id);
   }
 
-  private async onRecognizeFormulaButtonClicked(event: MouseEvent): Promise<void> {
-    // TODO: Disable button, show operation-in-progress indicator.
-    // TODO: Cancel if user leaves screen when recognition request outstanding
-    event.preventDefault(); // Don't take focus.
-    event.stopPropagation(); // Prevent our own 'onClicked' handler from being called.
-    debug(`onRecognizeFormulaButtonClicked`);
-    const response = await this.cell.recognizeFormulaRequest();
-    const alternatives = response.results.alternatives;
-
-    // TODO: Display alternatives.
-    // TODO: When alternative selected:
-    assert(alternatives.length>0);
-    const alternative = alternatives[0];
-    await this.cell.typesetFormulaRequest(alternative);
-  }
-
   private onResizerCancel(): void {
     debug(`onResizerCancel`);
     delete this.resizingInitialHeight;
@@ -417,6 +410,9 @@ export abstract class CellEditView<O extends CellObject> extends HtmlElement<'di
     });
   }
 
+  private onSuggestionsButtonClicked(_event: MouseEvent): void {
+    this.suggestionPanel.toggleVisibility();
+  }
 }
 
 // Helper Functions
