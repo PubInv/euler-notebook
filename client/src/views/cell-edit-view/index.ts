@@ -179,7 +179,6 @@ export abstract class CellEditView<O extends CellObject> extends HtmlElement<'di
         asyncButtonHandler: e=>this.onDeleteButtonClicked(e),
       }
     ];
-    // TODO: This should be provided by inherited formula-edit-view:
     if (rightMarginButton) {
       rightMarginChildren.unshift(rightMarginButton);
     }

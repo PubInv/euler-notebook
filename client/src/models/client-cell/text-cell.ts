@@ -23,7 +23,7 @@ import * as debug1 from "debug";
 const debug = debug1('client:figure-cell');
 
 import { TextCellObject } from "../../shared/cell";
-import { NotebookUpdate } from "../../shared/server-responses";
+import { NotebookUpdate, TextRecognitionAlternative, TextRecognized } from "../../shared/server-responses";
 
 import { ClientNotebook } from "../client-notebook";
 
@@ -42,10 +42,30 @@ export class TextCell extends ClientCell<TextCellObject> {
 
   // Public Instance Methods
 
+  public recognizeTextRequest(): Promise<TextRecognized> {
+    return this.notebook.recognizeTextRequest(this.id);
+  }
+
+  public async typesetTextRequest(alternative: TextRecognitionAlternative): Promise<void> {
+    await this.notebook.typesetTextRequest(this.id, alternative);
+  }
+
+  // Public Instance Event Handlers
+
   public onUpdate(update: NotebookUpdate, ownRequest: boolean): void {
     debug(`onUpdate ${notebookUpdateSynopsis(update)}`);
     super.onUpdate(update, ownRequest);
-  };
+
+    switch(update.type) {
+      case 'textTypeset': {
+        this.obj.strokeData = update.strokeData;
+        this.obj.displaySvg = update.displaySvg;
+        this.$svgSymbol.innerHTML = update.displaySvg;
+        this.obj.inputText = update.inputText;
+        break;
+      }
+    }
+  }
 
 }
 

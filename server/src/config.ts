@@ -21,7 +21,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 import { FileName, readConfigFile } from "./adapters/file-system";
 
-import { ApiKeys as MyScriptApiKeys } from "./adapters/myscript";
+import { ApiKeys as MyScriptApiKeys } from "./adapters/myscript-lo";
 import { ApiKeys as WolframAlphaApiKeys } from "./adapters/wolframalpha";
 
 import { logWarning } from "./error-handler";

@@ -25,7 +25,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 import { CellId, CellRelativePosition, CellType } from "./cell";
 import { CssSize, PlainText, SessionToken } from "./common";
 import { FolderPath, NotebookPath, FolderName, NotebookName, } from "./folder";
-import { FormulaRecognitionAlternative } from "./formula";
+import { FormulaRecognitionAlternative, TextRecognitionAlternative } from "./server-responses";
 import { Stroke, StrokeId } from "./stylus";
 import { UserName, UserPassword } from "./user";
 
@@ -63,7 +63,8 @@ export type NotebookRequest =
               ChangeNotebook |
               CloseNotebook |
               OpenNotebook |
-              RecognizeFormula;
+              RecognizeFormula |
+              RecognizeText;
 interface NotebookRequestBase extends RequestBase {
   type: 'notebook';
   path: NotebookPath;
@@ -81,6 +82,10 @@ export interface OpenNotebook extends NotebookRequestBase {
 }
 export interface RecognizeFormula extends NotebookRequestBase {
   operation: 'recognizeFormula',
+  cellId: CellId,
+}
+export interface RecognizeText extends NotebookRequestBase {
+  operation: 'recognizeText',
   cellId: CellId,
 }
 
@@ -149,8 +154,10 @@ export type NotebookChangeRequest =
   InsertEmptyCell |
   InsertStroke |
   MoveCell |
+  ResizeCell |
   TypesetFormula |
-  ResizeCell;
+  TypesetText;
+
   export interface ChangeText {
     type: 'keyboardInputChange';
     cellId: CellId;
@@ -192,4 +199,9 @@ export interface TypesetFormula {
   type: 'typesetFormula';
   cellId: CellId;
   alternative: FormulaRecognitionAlternative;
+}
+export interface TypesetText {
+  type: 'typesetText';
+  cellId: CellId;
+  alternative: TextRecognitionAlternative;
 }

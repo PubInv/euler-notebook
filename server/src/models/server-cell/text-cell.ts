@@ -23,13 +23,15 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 // const MODULE = __filename.split(/[/\\]/).slice(-1)[0].slice(0,-3);
 // const debug = debug1(`server:${MODULE}`);
 
-import { deepCopy, PlainText, SvgMarkup, CssLength } from "../../shared/common";
+import { deepCopy, PlainText, SvgMarkup, CssLength, escapeHtml } from "../../shared/common";
 import { CellSource, CellType, TextCellObject } from "../../shared/cell";
 import { EMPTY_STROKE_DATA } from "../../shared/stylus";
 
 import { ServerNotebook } from "../server-notebook";
 
 import { ServerCell } from "./index";
+import { NotebookUpdate, TextRecognitionAlternative, TextTypeset } from "../../shared/server-responses";
+import { NotebookChangeRequest } from "../../shared/client-requests";
 
 // Constants
 
@@ -62,11 +64,37 @@ export class TextCell extends ServerCell<TextCellObject> {
 
   // Public Instance Methods
 
+  public typesetText(
+    alternative: TextRecognitionAlternative,
+    updates: NotebookUpdate[],
+    _undoChangeRequests: NotebookChangeRequest[],
+  ): void {
+
+    // REVIEW: Size of cell could change.
+    const inputText = alternative.text;
+    this.obj.strokeData = deepCopy(EMPTY_STROKE_DATA);
+    this.obj.inputText = inputText;
+    this.redrawDisplaySvg();
+
+    const update: TextTypeset = {
+      type: 'textTypeset',
+      cellId: this.id,
+      displaySvg: this.obj.displaySvg,
+      inputText,
+      strokeData: this.obj.strokeData,
+    };
+    updates.push(update);
+
+    // TODO:
+    // const undoChangeRequest: ...
+    // undoChangeRequests.push(undoChangeRequest);
+  }
+
   // --- PRIVATE ---
 
   protected /* override */ redrawDisplaySvg(): void {
-    const markup = <SvgMarkup>''; // TODO: render text to SVG
-    super.redrawDisplaySvg(<SvgMarkup>(markup /* + plotMarkup */));
+    const markup = <SvgMarkup>`<text y="12">${escapeHtml(this.obj.inputText)}</text>`;
+    super.redrawDisplaySvg(<SvgMarkup>(markup));
   }
 
 }

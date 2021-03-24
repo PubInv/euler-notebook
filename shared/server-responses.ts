@@ -24,15 +24,33 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 import { CellId, CellObject, CellIndex } from "./cell";
 import { RequestId, NotebookChangeRequest } from "./client-requests";
-import { ClientId, CssSize, ElementId, SessionToken, SvgMarkup } from "./common";
+import { ClientId, CssSize, ElementId, PlainText, SessionToken, SvgMarkup } from "./common";
 import { FolderObject, FolderPath, NotebookPath, FolderEntry, FolderName, NotebookEntry, NotebookName } from "./folder";
-import { FormulaObject, FormulaRecognitionResults } from "./formula";
+import { FormulaObject } from "./formula";
 import { NotebookObject } from "./notebook";
 import { UserPermissions } from "./permissions";
 import { StrokeId, Stroke, StrokeData } from "./stylus";
 import { CollaboratorObject, UserObject } from "./user";
 
-// Types
+// Supporting Types
+
+export interface FormulaRecognitionAlternative {
+  formula: FormulaObject;
+  svg: SvgMarkup;
+}
+
+export interface FormulaRecognitionResults {
+  alternatives: FormulaRecognitionAlternative[];
+}
+
+export interface TextRecognitionAlternative {
+  text: PlainText;
+}
+
+export interface TextRecognitionResults {
+  alternatives: TextRecognitionAlternative[];
+}
+
 
 // Server Responses
 
@@ -86,7 +104,8 @@ export type NotebookResponse =
               NotebookCollaboratorConnected |
               NotebookCollaboratorDisconnected |
               NotebookOpened |
-              NotebookUpdated;
+              NotebookUpdated |
+              TextRecognized;
 interface NotebookResponseBase extends ResponseBase {
   type: 'notebook',
   path: NotebookPath,
@@ -119,6 +138,11 @@ export interface NotebookUpdated extends NotebookResponseBase {
   updates: NotebookUpdate[];
   undoChangeRequests: NotebookChangeRequest[];
 }
+export interface TextRecognized extends NotebookResponseBase {
+  operation: 'textRecognized';
+  cellId: CellId,
+  results: TextRecognitionResults,
+}
 
 export type UserResponse = UserLoggedIn | UserLoggedOut;
 export interface UserResponseBase extends ResponseBase {
@@ -136,7 +160,13 @@ export interface UserLoggedOut extends UserResponseBase {
 
 // Folder Updates
 
-export type FolderUpdate = FolderCreated | FolderDeleted | FolderRenamed | NotebookCreated | NotebookDeleted | NotebookRenamed;
+export type FolderUpdate =
+              FolderCreated |
+              FolderDeleted |
+              FolderRenamed |
+              NotebookCreated |
+              NotebookDeleted |
+              NotebookRenamed;
 export interface FolderCreated {
   type: 'folderCreated';
   entry: FolderEntry;
@@ -166,7 +196,15 @@ export interface NotebookRenamed {
 
 // Notebook Updates
 
-export type NotebookUpdate = CellDeleted | CellInserted | CellMoved | CellResized | FormulaTypeset | StrokeInserted | StrokeDeleted;
+export type NotebookUpdate =
+              CellDeleted |
+              CellInserted |
+              CellMoved |
+              CellResized |
+              FormulaTypeset |
+              StrokeInserted |
+              StrokeDeleted |
+              TextTypeset;
 export interface CellDeleted {
   type: 'cellDeleted';
   cellId: CellId;
@@ -204,4 +242,11 @@ export interface StrokeInserted {
   cellId: CellId;
   displayUpdate: DisplayUpdate;
   stroke: Stroke;
+}
+export interface TextTypeset {
+  type: 'textTypeset';
+  cellId: CellId;
+  displaySvg: SvgMarkup;
+  inputText: PlainText;
+  strokeData: StrokeData;
 }

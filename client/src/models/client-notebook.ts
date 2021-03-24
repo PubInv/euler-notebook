@@ -29,9 +29,13 @@ import { assert, assertFalse, ClientId, CssSize, Html } from "../shared/common";
 import { notebookUpdateSynopsis } from "../shared/debug-synopsis";
 import { Folder, NotebookName, NotebookPath } from "../shared/folder";
 import { PageMargins, Pagination } from "../shared/notebook";
-import { NotebookChangeRequest, ChangeNotebook, OpenNotebook, DeleteCell, ResizeCell, InsertStroke, InsertEmptyCell, MoveCell, DeleteStroke, TypesetFormula, RecognizeFormula } from "../shared/client-requests";
 import {
-  NotebookUpdated, NotebookOpened, NotebookResponse, NotebookClosed, NotebookUpdate, CellInserted, CellDeleted, CellMoved, NotebookCollaboratorConnected, NotebookCollaboratorDisconnected, FormulaRecognized
+  NotebookChangeRequest, ChangeNotebook, OpenNotebook, DeleteCell, ResizeCell,
+  InsertStroke, InsertEmptyCell, MoveCell, DeleteStroke, TypesetFormula,
+  RecognizeFormula, RecognizeText, TypesetText
+} from "../shared/client-requests";
+import {
+  NotebookUpdated, NotebookOpened, NotebookResponse, NotebookClosed, NotebookUpdate, CellInserted, CellDeleted, CellMoved, NotebookCollaboratorConnected, NotebookCollaboratorDisconnected, FormulaRecognized, FormulaRecognitionAlternative, TextRecognitionAlternative, TextRecognized
 } from "../shared/server-responses";
 import { Stroke, StrokeId } from "../shared/stylus";
 import { CollaboratorObject } from "../shared/user";
@@ -42,7 +46,6 @@ import { ClientCell } from "./client-cell";
 import { createCell } from "./client-cell/instantiator";
 import { logWarning } from "../error-handler";
 import { ClientPage } from "./client-page";
-import { FormulaRecognitionAlternative } from "../shared/formula";
 
 // Types
 
@@ -157,11 +160,6 @@ export class ClientNotebook {
     await this.sendUndoableChangeRequest(changeRequest);
   }
 
-  public async typesetFormulaRequest(cellId: CellId, alternative: FormulaRecognitionAlternative): Promise<void> {
-    const changeRequest: TypesetFormula = { type: 'typesetFormula', cellId, alternative };
-    await this.sendUndoableChangeRequest(changeRequest);
-  }
-
   public async deleteStrokeFromCellRequest(cellId: CellId, strokeId: StrokeId): Promise<void> {
     const changeRequest: DeleteStroke = { type: 'deleteStroke', cellId, strokeId };
     await this.sendUndoableChangeRequest(changeRequest)
@@ -212,6 +210,18 @@ export class ClientNotebook {
     return response[0];
   }
 
+  public async recognizeTextRequest(cellId: CellId): Promise<TextRecognized> {
+    const msg: RecognizeText = {
+      type: 'notebook',
+      path: this.path,
+      operation: 'recognizeText',
+      cellId,
+    };
+    const response = await appInstance.socket.sendRequest<TextRecognized>(msg);
+    assert(response.length == 1);
+    return response[0];
+  }
+
   public async redoRequest(): Promise<void> {
     // Returns true if there are more redos available.
     // Resubmit the change requests.
@@ -232,6 +242,16 @@ export class ClientNotebook {
 
   public async resizeCellRequest(cellId: CellId, cssSize: CssSize): Promise<void> {
     const changeRequest: ResizeCell = { type: 'resizeCell', cellId, cssSize };
+    await this.sendUndoableChangeRequest(changeRequest);
+  }
+
+  public async typesetFormulaRequest(cellId: CellId, alternative: FormulaRecognitionAlternative): Promise<void> {
+    const changeRequest: TypesetFormula = { type: 'typesetFormula', cellId, alternative };
+    await this.sendUndoableChangeRequest(changeRequest);
+  }
+
+  public async typesetTextRequest(cellId: CellId, alternative: TextRecognitionAlternative): Promise<void> {
+    const changeRequest: TypesetText = { type: 'typesetText', cellId, alternative };
     await this.sendUndoableChangeRequest(changeRequest);
   }
 
@@ -425,8 +445,11 @@ export class ClientNotebook {
       case 'collaboratorDisconnected':  this.onCollaboratorDisconnected(msg); break;
       case 'updated':                   this.onUpdated(msg, ownRequest); break;
 
-      // The following are handled when their request promise resolves.
-      case 'formulaRecognized': break;
+      // The following are handled when their request promise resolves
+      // so we don't need to deal with them.
+      case 'formulaRecognized':
+      case 'textRecognized':
+        break;
 
       case 'opened':
       default: assertFalse();
@@ -486,7 +509,8 @@ export class ClientNotebook {
       case 'cellResized':
       case 'formulaTypeset':
       case 'strokeDeleted':
-      case 'strokeInserted': {
+      case 'strokeInserted':
+      case 'textTypeset': {
         const cell = this.getCell(update.cellId);
         cell.onUpdate(update, ownRequest);
         break;

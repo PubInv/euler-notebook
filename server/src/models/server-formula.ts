@@ -24,25 +24,12 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 // const debug = debug1(`server:${MODULE}`);
 
 import { EMPTY_FORMULA, EMPTY_TEX_EXPRESSION, EMPTY_WOLFRAM_EXPRESSION, FormulaObject, PlainTextFormula, TexExpression, WolframExpression } from "../shared/formula";
-import { StrokeData } from "../shared/stylus";
 
-import { postLatexRequest as myScriptLatexRequest } from "../adapters/myscript";
 import { convertPlainTextFormulaToWolfram, convertTeXtoWolfram, convertWolframToPlainTextFormula, convertWolframToTeX } from "../adapters/wolframscript";
-import { convertTexToSvg, convertTexToSvg as mathjaxConvertTextToSvg } from "../adapters/mathjax";
+import { convertTexToSvg as mathjaxConvertTextToSvg } from "../adapters/mathjax";
 import { SvgMarkup } from "../shared/common";
 
 // Types
-
-// Parallels shared/formula.ts/FormulaRecognitionAlternative
-interface ServerFormulaRecognitionAlternative {
-  formula: ServerFormula;
-  svg: SvgMarkup;
-}
-
-// Parallels shared/formula.ts/FormulaRecognitionResults
-interface ServerFormulaRecognitionResults {
-  alternatives: ServerFormulaRecognitionAlternative[];
-}
 
 // Constants
 
@@ -70,13 +57,6 @@ export class ServerFormula {
     const wolfram = await convertTeXtoWolfram(tex);
     const plain = convertWolframToPlainTextFormula(wolfram);
     return new this({ plain, tex, wolfram });
-  }
-
-  public static async recognizeStrokes(strokeData: StrokeData): Promise<ServerFormulaRecognitionResults> {
-    const tex = await myScriptLatexRequest(strokeData);
-    const formula = await this.createFromTeX(tex);
-    const svg = convertTexToSvg(tex);
-    return { alternatives: [ { formula, svg } ] };
   }
 
   // Public Class Event Handlers

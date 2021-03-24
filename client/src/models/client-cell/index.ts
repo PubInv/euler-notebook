@@ -25,8 +25,7 @@ const debug = debug1('client:client-cell');
 import { CellId, CellObject, CellType } from "../../shared/cell";
 import { assert, CssSelector, CssSize, ElementId, escapeHtml, Html } from "../../shared/common";
 import { cellBriefSynopsis, cellSynopsis, notebookUpdateSynopsis } from "../../shared/debug-synopsis";
-import { FormulaRecognitionAlternative } from "../../shared/formula";
-import { CellDeleted, DisplayUpdate, FormulaRecognized, NotebookUpdate } from "../../shared/server-responses";
+import { CellDeleted, DisplayUpdate, NotebookUpdate } from "../../shared/server-responses";
 import { Stroke, StrokeId } from "../../shared/stylus";
 
 import { $, $newSvg } from "../../dom";
@@ -127,15 +126,6 @@ export abstract class ClientCell<O extends CellObject> {
 
   public async insertStroke(stroke: Stroke): Promise<void> {
     await this.notebook.insertStrokeIntoCellRequest(this.id, stroke);
-  }
-
-  public recognizeFormulaRequest(): Promise<FormulaRecognized> {
-    return this.notebook.recognizeFormulaRequest(this.id);
-  }
-
-  // TODO: Only on formula-cell?
-  public async typesetFormulaRequest(alternative: FormulaRecognitionAlternative): Promise<void> {
-    await this.notebook.typesetFormulaRequest(this.id, alternative);
   }
 
   public async resize(cssSize: CssSize): Promise<void> {

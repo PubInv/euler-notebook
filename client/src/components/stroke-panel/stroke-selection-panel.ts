@@ -91,6 +91,7 @@ export class StrokeSelectionPanel extends SvgElement<'svg'> {
   public onUpdate(update: NotebookUpdate, _ownRequest: boolean): void {
     debug(`onUpdate ${notebookUpdateSynopsis(update)}`);
     switch (update.type) {
+      case 'textTypeset':
       case 'formulaTypeset':
         this.deleteAllStrokes();
         this.insertStrokes(update.strokeData);

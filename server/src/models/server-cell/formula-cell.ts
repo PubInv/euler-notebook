@@ -25,15 +25,15 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 import { deepCopy, PlainText, SvgMarkup, CssLength } from "../../shared/common";
 import { CellSource, CellType } from "../../shared/cell";
-import { FormulaCellObject, FormulaRecognitionAlternative } from "../../shared/formula";
+import { NotebookChangeRequest } from "../../shared/client-requests";
+import { FormulaCellObject } from "../../shared/formula";
+import { FormulaRecognitionAlternative, FormulaTypeset, NotebookUpdate } from "../../shared/server-responses";
 import { EMPTY_STROKE_DATA } from "../../shared/stylus";
 
 import { ServerNotebook } from "../server-notebook";
 import { ServerFormula } from "../server-formula";
 
 import { ServerCell } from "./index";
-import { NotebookChangeRequest } from "../../shared/client-requests";
-import { FormulaTypeset, NotebookUpdate } from "../../shared/server-responses";
 
 
 // Constants

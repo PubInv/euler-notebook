@@ -26,20 +26,25 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 // Requirements
 
+import * as debug1 from "debug";
+const MODULE = __filename.split(/[/\\]/).slice(-1)[0].slice(0,-3);
+const debug = debug1(`server:${MODULE}`);
+
 // REVIEW: Can we convert this to import notation?
 const Hex = require('crypto-js/enc-hex');
 const HmacSHA512 = require('crypto-js/hmac-sha512');
-import * as debug1 from "debug";
 import fetch, { Response } from "node-fetch";
 
+import { PlainText } from "../shared/common";
 import { TexExpression } from "../shared/formula";
 import { StrokeGroup } from "../shared/myscript-types";
 import { StrokeData } from "../shared/stylus";
 
-const MODULE = __filename.split(/[/\\]/).slice(-1)[0].slice(0,-3);
-const debug = debug1(`server:${MODULE}`);
 
 // Types
+
+type ContentType = 'Text'|'Math'|'Diagram'|'Raw Content'|'Text Document';
+type MimeType = 'application/x-latex' | 'text/plain';
 
 export interface ApiKeys {
   // This structure lives in ~/.euler-notebook/credentials.json under "myscript" key.
@@ -47,9 +52,10 @@ export interface ApiKeys {
   hmacKey: string;
 }
 
+
 interface BatchRequest {
   configuration?: Configuration;
-  contentType: 'Text'|'Math'|'Diagram'|'Raw Content'|'Text Document';
+  contentType: ContentType;
   // conversionState?:;
   // height?: number;
   strokeGroups: StrokeGroup[];
@@ -140,6 +146,7 @@ interface SolverConfiguration {
 
 // const JIIX_MIME_TYPE = 'application/vnd.myscript.jiix';
 const LATEX_MIME_TYPE = 'application/x-latex';
+const PLAINTEXT_MIME_TYPE = 'text/plain';
 const MYSCRIPT_BATCH_API_URL = 'https://webdemoapi.myscript.com/api/v4.0/iink/batch';
 
 // Global Variables
@@ -171,10 +178,8 @@ export async function postLatexRequest(strokeData: StrokeData): Promise<TexExpre
   }
 
   debug(`Calling MyScript batch API for LaTeX.`);
-  const strokeGroups: StrokeGroup[] = [{
-    strokes: strokeData.strokes,
-  }];
-  const batchRequest = batchRequestFromStrokes(strokeGroups);
+  const strokeGroups: StrokeGroup[] = [{ strokes: strokeData.strokes }];
+  const batchRequest = batchRequestFromStrokes(strokeGroups, 'Math', LATEX_MIME_TYPE);
   const bodyText = await postRequest(gApiKeys, LATEX_MIME_TYPE, batchRequest);
   if (bodyText[0]=='{') {
     try {
@@ -190,14 +195,45 @@ export async function postLatexRequest(strokeData: StrokeData): Promise<TexExpre
   return rval;
 }
 
+export async function postTextRequest(strokeData: StrokeData): Promise<PlainText> {
+
+  // If there aren't any strokes yet, return an empty TeX expression.
+  if (strokeData.strokes.length == 0) {
+    return <PlainText>'';
+  }
+
+  debug(`Calling MyScript batch API for Text.`);
+  const strokeGroups: StrokeGroup[] = [{ strokes: strokeData.strokes }];
+  const batchRequest = batchRequestFromStrokes(strokeGroups, 'Text', PLAINTEXT_MIME_TYPE);
+
+  console.log("POSTING MYSCRIPT TEXT REQUEST:");
+
+  const bodyText = await postRequest(gApiKeys, PLAINTEXT_MIME_TYPE, batchRequest);
+
+  console.log("MYSCRIPT TEXT REQUEST RETURNED:");
+  console.dir(bodyText);
+
+  if (bodyText[0]=='{') {
+    try {
+      const errorResponse = JSON.parse(bodyText);
+      if (isErrorResponse(errorResponse)) { throwRequestError(errorResponse); }
+    } catch(err) {
+      // REVIEW: Is is possible for valid LaTeX to start with a curly brace?
+      // Don't do anything. It could be LaTeX starting with a curly brace.
+    }
+  }
+  debug(`MyScript batch API recognized plain text: ${bodyText}`);
+  return <PlainText>bodyText;
+}
+
 // Helper Functions
 
-function batchRequestFromStrokes(strokeGroups: StrokeGroup[]): BatchRequest {
+function batchRequestFromStrokes(strokeGroups: StrokeGroup[], contentType: ContentType, mimeType: MimeType): BatchRequest {
   const rval: BatchRequest = {
     configuration: {
       math: {
         // REVIEW: What does this mimeTypes declaration do?
-        mimeTypes: [ 'application/x-latex' ],
+        mimeTypes: [ mimeType ],
         // solver: {
         //   enable: true,
         //   'fractional-part-digits': 3,
@@ -225,7 +261,7 @@ function batchRequestFromStrokes(strokeGroups: StrokeGroup[]): BatchRequest {
         }
       }
     },
-    contentType: 'Math',
+    contentType,
     strokeGroups,
     xDPI: 96,
     yDPI: 96,

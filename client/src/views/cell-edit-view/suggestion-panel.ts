@@ -17,12 +17,15 @@ You should have received a copy of the GNU Affero General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
+import { CellObject, CellType } from "../../shared/cell";
+import { assert, CssClass, escapeHtml, Html } from "../../shared/common";
+import { FormulaRecognitionAlternative, FormulaRecognitionResults, TextRecognitionAlternative, TextRecognitionResults } from "../../shared/server-responses";
+
 import { $new } from "../../dom";
 import { HtmlElement } from "../../html-element";
 import { ClientCell } from "../../models/client-cell";
-import { CellObject } from "../../shared/cell";
-import { assert, CssClass, Html } from "../../shared/common";
-import { FormulaRecognitionAlternative, FormulaRecognitionResults } from "../../shared/formula";
+import { FormulaCell } from "../../models/client-cell/formula-cell";
+import { TextCell } from "../../models/client-cell/text-cell";
 
 // Requirements
 
@@ -71,16 +74,33 @@ export class SuggestionPanel<O extends CellObject> extends HtmlElement<'div'> {
 
   // Public Instance Methods
 
-  public setRecognitionResults(results: FormulaRecognitionResults): void {
+  public setFormulaRecognitionResults(results: FormulaRecognitionResults): void {
     assert(results.alternatives.length>0);
     this.emptyRecognitionResults();
     for (const alternative of results.alternatives) {
       const $alternative = $new<'div'>({
         tag: 'div',
         asyncListeners: {
-          click: e=>this.onRecognitionAlternativeClicked(e, alternative),
+          click: e=>this.onRecognitionFormulaAlternativeClicked(e, alternative),
         },
         html: alternative.svg,
+      });
+      //const $svg = $outerSvg<'svg'>(alternative.svg);
+      this.$recognitionResults.append($alternative);
+    }
+    this.showOrHideNoSuggestionsMsg();
+  }
+
+  public setTextRecognitionResults(results: TextRecognitionResults): void {
+    assert(results.alternatives.length>0);
+    this.emptyRecognitionResults();
+    for (const alternative of results.alternatives) {
+      const $alternative = $new<'div'>({
+        tag: 'div',
+        asyncListeners: {
+          click: e=>this.onRecognitionTextAlternativeClicked(e, alternative),
+        },
+        html: escapeHtml(alternative.text),
       });
       //const $svg = $outerSvg<'svg'>(alternative.svg);
       this.$recognitionResults.append($alternative);
@@ -137,9 +157,20 @@ export class SuggestionPanel<O extends CellObject> extends HtmlElement<'div'> {
 
   // Private Instance Event Handlers
 
-  private async onRecognitionAlternativeClicked(_event: MouseEvent, alternative: FormulaRecognitionAlternative): Promise<void> {
+  private async onRecognitionFormulaAlternativeClicked(_event: MouseEvent, alternative: FormulaRecognitionAlternative): Promise<void> {
     // REVIEW: What do we do if error happens on the request?
-    await this.cell.typesetFormulaRequest(alternative);
+    assert(this.cell.obj.type == CellType.Formula);
+    const formulaCell = <FormulaCell><unknown>this.cell;
+    await formulaCell.typesetFormulaRequest(alternative);
+    this.emptyRecognitionResults();
+    if (this.noSuggestions()) { this.hide(); }
+  }
+
+  private async onRecognitionTextAlternativeClicked(_event: MouseEvent, alternative: TextRecognitionAlternative): Promise<void> {
+    // REVIEW: What do we do if error happens on the request?
+    assert(this.cell.obj.type == CellType.Text);
+    const textCell = <TextCell><unknown>this.cell;
+    await textCell.typesetTextRequest(alternative);
     this.emptyRecognitionResults();
     if (this.noSuggestions()) { this.hide(); }
   }

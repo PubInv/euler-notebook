@@ -36,7 +36,7 @@ import { middleware as stylusMiddleware } from "stylus";
 
 import { initialize as initializeMathJax } from "./adapters/mathjax";
 import { start as startWolframscript } from "./adapters/wolframscript";
-import { initialize as initializeMyScript } from "./adapters/myscript";
+import { initialize as initializeMyScript } from "./adapters/myscript-lo";
 import { initialize as initializeWolframAlpha } from "./adapters/wolframalpha";
 
 import { assert } from "./shared/common";

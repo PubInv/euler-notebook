@@ -22,7 +22,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 // Requirements
 
 import { CellObject, CellType } from "./cell";
-import { assert } from './common';
+import { assert, escapeHtml, PlainText } from './common';
 //import { Notebook } from './notebook';
 import {
   FolderRequest, ClientRequest, NotebookRequest, FolderChangeRequest, NotebookChangeRequest, UserRequest
@@ -45,7 +45,7 @@ const UNKNOWN_TYPE = " UNKNOWN!";
 // Exported Functions
 
 export function cellBriefSynopsis(cell: CellObject, indentationLevel: number = 0): string {
-  return `${indentation(indentationLevel)}C${cell.id} ${cellTypeString(cell.type)} ${cell.source}`;
+  return `${indentation(indentationLevel)}C${cell.id} ${cellTypeString(cell.type)} ${cell.source} ${abbreviatedTextInHtml(cell.inputText)}`;
 }
 
 export function cellSynopsis(cell: CellObject, indentationLevel: number = 0): string {
@@ -141,6 +141,7 @@ export function notebookUpdateSynopsis(update: NotebookUpdate): string {
     case 'formulaTypeset': rval += ` C${update.cellId}`; break;
     case 'strokeInserted': rval += ` C${update.cellId} ${strokeSynopsis(update.stroke)} ${displayUpdateSynopsis(update.displayUpdate)}`; break;
     case 'strokeDeleted':  rval += ` C${update.cellId} S${update.strokeId}`; break;
+    case 'textTypeset':    rval += ` C${update.cellId}`; break;
     default: rval += UNKNOWN_TYPE;
   }
   return rval;
@@ -168,6 +169,14 @@ export function serverMessageSynopsis(msg: ServerResponse): string {
 }
 
 // Helper Functions
+
+function abbreviatedTextInHtml(text: PlainText): string {
+  if (text.length<=20) {
+    return `"${escapeHtml(text)}"`;
+  } else {
+    return `"${escapeHtml(text.substring(0,19))}&hellip;"`;
+  }
+}
 
 function cellTypeString(type: CellType): string {
   const rval = CELL_TYPES.get(type)!;
@@ -201,6 +210,7 @@ function clientNotebookMessageSynopsis(msg: NotebookRequest): string {
     case 'close': break;
     case 'open': break;
     case 'recognizeFormula': rval += ` C${msg.cellId}`; break;
+    case 'recognizeText': rval += ` C${msg.cellId}`; break;
     default: rval += UNKNOWN_TYPE;
   }
   return rval;

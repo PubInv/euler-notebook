@@ -22,7 +22,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 import * as debug1 from "debug";
 const debug = debug1('client:text-edit-view');
 
-import { TextCellObject } from "../../shared/cell";
+import { CellType, TextCellObject } from "../../shared/cell";
 import { CssClass } from "../../shared/common";
 import { NotebookUpdate } from "../../shared/server-responses";
 import { notebookUpdateSynopsis, cellSynopsis } from "../../shared/debug-synopsis";
@@ -32,6 +32,7 @@ import { TextCell } from "../../models/client-cell/text-cell";
 import { NotebookEditView } from "../notebook-edit-view";
 
 import { CellEditView } from "./index";
+import { CELL_ICONS, HtmlElementSpecification, svgIconReferenceMarkup } from "../../dom";
 
 // Types
 
@@ -47,7 +48,17 @@ export class TextEditView extends CellEditView<TextCellObject> {
 
   public constructor(notebookEditView: NotebookEditView, cell: TextCell) {
     debug(`Constructing: ${cellSynopsis(cell.obj)}`);
-    super(notebookEditView, cell, <CssClass>'textCell');
+
+    // Create a button for the right margin that initiates recognizing the formula handwriting.
+    const rightMarginButton: HtmlElementSpecification<'button'> = {
+      tag: 'button',
+      attrs: { tabindex: -1 },
+      class: <CssClass>'iconButton',
+      html: svgIconReferenceMarkup(CELL_ICONS.get(CellType.Text)!),
+      asyncButtonHandler: (e: MouseEvent)=>this.onRecognizeButtonClicked(e),
+    };
+
+    super(notebookEditView, cell, <CssClass>'textCell', rightMarginButton);
   }
 
   // ClientNotebookWatcher Methods
@@ -66,8 +77,21 @@ export class TextEditView extends CellEditView<TextCellObject> {
 
   // Private Instance Property Functions
 
+  private get textCell(): TextCell {
+    return <TextCell>this.cell;
+  }
+
   // Private Instance Methods
 
   // Private Instance Event Handlers
+
+  private async onRecognizeButtonClicked(event: MouseEvent): Promise<void> {
+    // LATER: Cancel if user leaves screen when recognition request outstanding
+    event.stopPropagation(); // Prevent our own 'onClicked' handler from being called.
+    debug(`onRecognizeButtonClicked`);
+    const response = await this.textCell.recognizeTextRequest();
+    this.suggestionPanel.setTextRecognitionResults(response.results);
+    this.suggestionPanel.showIfHidden();
+  }
 
 }

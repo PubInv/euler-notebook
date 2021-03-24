@@ -30,22 +30,25 @@ const debug = debug1(`server:${MODULE}`);
 
 // import { readdirSync, unlink, writeFileSync } from "fs"; // LATER: Eliminate synchronous file operations.
 
-import { CellObject, CellSource, CellId, CellPosition, CellType, CellIndex } from "../shared/cell";
+import { CellObject, CellSource, CellId, CellPosition, CellType, CellIndex, TextCellObject } from "../shared/cell";
 import { assert, assertFalse, CssLength, deepCopy, ExpectedError, Html, cssSizeInPixels, CssLengthUnit, cssLengthInPixels } from "../shared/common";
 import { Folder, NotebookPath, NOTEBOOK_PATH_RE, NotebookName, FolderPath, NotebookEntry } from "../shared/folder";
 import { NotebookObject, NotebookWatcher, PageMargins } from "../shared/notebook";
 import {
   NotebookChangeRequest, MoveCell, InsertEmptyCell, DeleteCell, InsertStroke, DeleteStroke,
-  ChangeNotebook, RequestId, NotebookRequest, OpenNotebook, CloseNotebook, ResizeCell, TypesetFormula, RecognizeFormula,
+  ChangeNotebook, RequestId, NotebookRequest, OpenNotebook, CloseNotebook, ResizeCell,
+  TypesetFormula, RecognizeFormula, RecognizeText, TypesetText,
 } from "../shared/client-requests";
 import {
-  NotebookUpdated, NotebookOpened, NotebookUpdate, CellInserted, CellDeleted, StrokeInserted, CellResized, CellMoved, StrokeDeleted, NotebookCollaboratorConnected, NotebookCollaboratorDisconnected, FormulaRecognized,
+  NotebookUpdated, NotebookOpened, NotebookUpdate, CellInserted, CellDeleted, StrokeInserted,
+  CellResized, CellMoved, StrokeDeleted, NotebookCollaboratorConnected, NotebookCollaboratorDisconnected,
+  FormulaRecognized, TextRecognized, FormulaRecognitionAlternative, FormulaRecognitionResults
 } from "../shared/server-responses";
 import { notebookChangeRequestSynopsis } from "../shared/debug-synopsis";
 import { strokePathId } from "../shared/stylus";
 import { UserPermission } from "../shared/permissions";
 import { CollaboratorObject } from "../shared/user";
-import { FormulaCellObject, FormulaRecognitionResults } from "../shared/formula";
+import { FormulaCellObject } from "../shared/formula";
 
 import { existingCell, newCell } from "./server-cell/instantiator";
 import { ServerCell } from "./server-cell";
@@ -55,7 +58,8 @@ import { ServerSocket } from "./server-socket";
 import { createDirectory, deleteDirectory, FileName, readJsonFile, renameDirectory, writeJsonFile } from "../adapters/file-system";
 import { Permissions } from "./permissions";
 import { logError } from "../error-handler";
-import { ServerFormula } from "./server-formula";
+import { TextCell } from "./server-cell/text-cell";
+import { recognizeFormula, recognizeText } from "../adapters/myscript-hi";
 
 // Types
 
@@ -303,13 +307,14 @@ export class ServerNotebook {
       assert(changeRequest);
       debug(`${source} change request: ${notebookChangeRequestSynopsis(changeRequest)}`);
       switch(changeRequest.type) {
-        case 'deleteCell':   this.applyDeleteCellRequest(source, changeRequest, updates, undoChangeRequests); break;
-        case 'deleteStroke': this.applyDeleteStrokeRequest(source, changeRequest, updates, undoChangeRequests); break;
-        case 'insertEmptyCell':   this.applyInsertEmptyCellRequest(source, changeRequest, updates, undoChangeRequests); break;
-        case 'insertStroke': this.applyInsertStrokeRequest(source, changeRequest, updates, undoChangeRequests); break;
-        case 'moveCell':     this.applyMoveCellRequest(source, changeRequest, updates, undoChangeRequests); break;
-        case 'resizeCell':   this.applyResizeCellRequest(source, changeRequest, updates, undoChangeRequests); break;
-        case 'typesetFormula':   this.applyTypesetFormulaRequest(source, changeRequest, updates, undoChangeRequests); break;
+        case 'deleteCell':      this.applyDeleteCellRequest(source, changeRequest, updates, undoChangeRequests); break;
+        case 'deleteStroke':    this.applyDeleteStrokeRequest(source, changeRequest, updates, undoChangeRequests); break;
+        case 'insertEmptyCell': this.applyInsertEmptyCellRequest(source, changeRequest, updates, undoChangeRequests); break;
+        case 'insertStroke':    this.applyInsertStrokeRequest(source, changeRequest, updates, undoChangeRequests); break;
+        case 'moveCell':        this.applyMoveCellRequest(source, changeRequest, updates, undoChangeRequests); break;
+        case 'resizeCell':      this.applyResizeCellRequest(source, changeRequest, updates, undoChangeRequests); break;
+        case 'typesetFormula':  this.applyTypesetFormulaRequest(source, changeRequest, updates, undoChangeRequests); break;
+        case 'typesetText':     this.applyTypesetTextRequest(source, changeRequest, updates, undoChangeRequests); break;
         default: assertFalse();
       }
     }
@@ -456,6 +461,13 @@ export class ServerNotebook {
     assert(cell.type == CellType.Formula);
     assert(cell instanceof FormulaCell);
     return <FormulaCell>cell;
+  }
+
+  private getTextCell(id: CellId): TextCell {
+    const cell = this.getCell<TextCellObject>(id);
+    assert(cell.type == CellType.Text);
+    assert(cell instanceof TextCell);
+    return <TextCell>cell;
   }
 
   // private get watchers(): IterableIterator<ServerNotebookWatcher> {
@@ -629,6 +641,17 @@ export class ServerNotebook {
     cell.typesetFormula(alternative, updates, undoChangeRequests);
   }
 
+  private applyTypesetTextRequest(
+    _source: CellSource,
+    request: TypesetText,
+    updates: NotebookUpdate[],
+    undoChangeRequests: NotebookChangeRequest[],
+  ): void {
+    const { cellId, alternative } = request;
+    const cell = this.getTextCell(cellId);
+    cell.typesetText(alternative, updates, undoChangeRequests);
+  }
+
   private applyResizeCellRequest(
     _source: CellSource,
     request: ResizeCell,
@@ -723,6 +746,7 @@ export class ServerNotebook {
       case 'close':  this.onCloseRequest(socket, msg); break;
       case 'open':  this.onOpenRequest(socket, msg); break;
       case 'recognizeFormula': this.onRecognizeFormula(socket, msg); break;
+      case 'recognizeText': this.onRecognizeText(socket, msg); break;
       default: assert(false); break;
     }
   }
@@ -809,14 +833,38 @@ export class ServerNotebook {
   private onRecognizeFormula(socket: ServerSocket, msg: RecognizeFormula): void {
     // REVIEW: Should we be checking permissions?
     const cell = this.getFormulaCell(msg.cellId);
-    ServerFormula.recognizeStrokes(cell.obj.strokeData)
+    recognizeFormula(cell.obj.strokeData)
     .then(
       serverResults=>{
-        const results: FormulaRecognitionResults = { alternatives: serverResults.alternatives.map(a=>({ formula: a.formula.obj, svg: a.svg })) };
+        const alternatives: FormulaRecognitionAlternative[] = serverResults.alternatives.map(a=>({ formula: a.formula.obj, svg: a.svg }));
+        const results: FormulaRecognitionResults = { alternatives };
         const response: FormulaRecognized = {
           type: 'notebook',
           path: this.path,
           operation: 'formulaRecognized',
+          cellId: cell.id,
+          results,
+          complete: true,
+          requestId: msg.requestId,
+        };
+        console.dir(results, { depth: null });
+        socket.sendMessage(response);
+      },
+    ).catch(err=>{
+      logError(err, `Error recognizing strokes with MyScript.`);
+    });
+  }
+
+  private onRecognizeText(socket: ServerSocket, msg: RecognizeText): void {
+    // REVIEW: Should we be checking permissions?
+    const cell = this.getTextCell(msg.cellId);
+    recognizeText(cell.obj.strokeData)
+    .then(
+      results=>{
+        const response: TextRecognized = {
+          type: 'notebook',
+          path: this.path,
+          operation: 'textRecognized',
           cellId: cell.id,
           results,
           complete: true,
