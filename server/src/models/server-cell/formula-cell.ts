@@ -23,27 +23,28 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 // const MODULE = __filename.split(/[/\\]/).slice(-1)[0].slice(0,-3);
 // const debug = debug1(`server:${MODULE}`);
 
-import { deepCopy, PlainText, SvgMarkup, CssLength, Html } from "../../shared/common";
+import { deepCopy, PlainText, SvgMarkup, CssLength, Html, assert } from "../../shared/common";
 import { CellSource, CellType } from "../../shared/cell";
+import { RecognizeFormula } from "../../shared/client-requests";
 import { FormulaCellObject, FormulaObject } from "../../shared/formula";
 import { FormulaTypeset, NotebookSuggestionsUpdated, NotebookUpdated, SuggestionClass, SuggestionId, SuggestionObject, SuggestionUpdates } from "../../shared/server-responses";
 import { EMPTY_STROKE_DATA } from "../../shared/stylus";
 
+import { recognizeFormula } from "../../components/handwriting-recognizer";
 
 import { ServerNotebook } from "../server-notebook";
 import { ServerFormula } from "../server-formula";
 
-import { ServerCell } from "./index";
-import { SuggestionData, TypesetFormulaSuggestionData } from "../suggestion";
+import { PlotFormulaSuggestionData, SuggestionData, TypesetFormulaSuggestionData } from "../suggestion";
 import { ServerSocket } from "../server-socket";
-import { recognizeFormula } from "../../components/handwriting-recognizer";
-import { RecognizeFormula } from "../../shared/client-requests";
 
+import { ServerCell } from "./index";
 
 // Constants
 
 const DEFAULT_HEIGHT = <CssLength>"1in";
 
+const PLOT_FORMULA_SUGGESTION_CLASS = <SuggestionClass>'plotFormula';
 const TYPESET_FORMULA_SUGGESTION_CLASS = <SuggestionClass>'typesetFormula';
 
 // Exported Class
@@ -88,14 +89,11 @@ export class FormulaCell extends ServerCell<FormulaCellObject> {
     suggestionData: SuggestionData,
     /* out */ response: NotebookUpdated,
   ): void {
-    let handled: boolean = false;
+    let handled: boolean = true;
     switch(suggestionData.type) {
-      case 'typesetFormula': {
-        this.onTypesetFormulaRequest(suggestionData, response);
-        handled = true;
-        // TODO: update the suggestions to remove the typeset suggestion
-        break;
-      }
+      case 'plotFormula': this.onPlotFormulaRequest(suggestionData, response); break;
+      case 'typesetFormula': this.onTypesetFormulaRequest(suggestionData, response); break;
+      default: handled = false;
     }
     super.onAcceptSuggestionRequest(suggestionId, suggestionData, response, handled);
   }
@@ -120,6 +118,7 @@ export class FormulaCell extends ServerCell<FormulaCellObject> {
       cellId: this.id,
       add: addSuggestions,
       removeClasses: [ TYPESET_FORMULA_SUGGESTION_CLASS ],
+      removeIds: [],
     }];
     const response: NotebookSuggestionsUpdated = {
       type: 'notebook',
@@ -140,10 +139,31 @@ export class FormulaCell extends ServerCell<FormulaCellObject> {
 
   // Private Instance Methods
 
-  private changeFormula(obj: FormulaObject): void {
+  private changeFormula(
+    obj: FormulaObject,
+    /* out */ suggestionUpdates: SuggestionUpdates,
+  ): void {
+
+    // Remove any prior formula plotting suggestions
+    assert(suggestionUpdates.add);
+    assert(suggestionUpdates.removeClasses);
+    suggestionUpdates.removeClasses!.push(PLOT_FORMULA_SUGGESTION_CLASS);
+
     const newFormula = new ServerFormula(obj);
     this._formula = newFormula;
     this.obj.formula = newFormula.obj;
+    this.redrawDisplaySvg();
+
+    if (true /* TODO: Formula is plottable */) {
+      const data: PlotFormulaSuggestionData = { type: 'plotFormula' };
+      const suggestion: SuggestionObject = {
+        id: <SuggestionId>'plot',
+        class: PLOT_FORMULA_SUGGESTION_CLASS,
+        html: <Html>"Plot Formula",
+        data,
+      };
+      suggestionUpdates.add!.push(suggestion);
+    }
   }
 
   protected /* override */ redrawDisplaySvg(): void {
@@ -155,15 +175,43 @@ export class FormulaCell extends ServerCell<FormulaCellObject> {
 
   // Private Instance Event Handlers
 
+  private onPlotFormulaRequest(
+    _suggestionData: PlotFormulaSuggestionData,
+    /* out */ response: NotebookUpdated,
+  ): void {
+
+    // Remove the plot formula suggestions from the cell's suggestion panel.
+    // REVIEW: User may want to plot the formula additional times, possibly with different parameters.
+    const suggestionUpdates: SuggestionUpdates = {
+      cellId: this.id,
+      add: [],
+      removeClasses: [ PLOT_FORMULA_SUGGESTION_CLASS ],
+      removeIds: [],
+    };
+
+
+    response.suggestionUpdates = [ suggestionUpdates ];
+  }
+
   private onTypesetFormulaRequest(
     suggestionData: TypesetFormulaSuggestionData,
     /* out */ response: NotebookUpdated,
   ): void {
 
+    // Remove the typeset formula suggestions from the cell's suggestion panel.
+    // There may be more suggestion panel changes, depending on how the new
+    // formula is different from the old formula.
+    // REVIEW: Suggestions for other formula cells may need to change as a result of this formula changing.
+    const suggestionUpdates: SuggestionUpdates = {
+      cellId: this.id,
+      add: [],
+      removeClasses: [ TYPESET_FORMULA_SUGGESTION_CLASS ],
+      removeIds: [],
+    };
+
     // REVIEW: Size of cell could change.
     this.obj.strokeData = deepCopy(EMPTY_STROKE_DATA);
-    this.changeFormula(suggestionData.formula);
-    this.redrawDisplaySvg();
+    this.changeFormula(suggestionData.formula, suggestionUpdates);
 
     const update: FormulaTypeset = {
       type: 'formulaTypeset',
@@ -173,17 +221,12 @@ export class FormulaCell extends ServerCell<FormulaCellObject> {
       strokeData: this.obj.strokeData,
     };
     response.updates.push(update);
+    response.suggestionUpdates = [ suggestionUpdates ];
 
     // TODO:
     // const undoChangeRequest: ...
     // response.undoChangeRequests.push(undoChangeRequest);
 
-    // Remove the typeset formula suggestions from the cell's suggestion panel.
-    const suggestionUpdates: SuggestionUpdates = {
-      cellId: this.id,
-      removeClasses: [ TYPESET_FORMULA_SUGGESTION_CLASS ],
-    }
-    response.suggestionUpdates = [ suggestionUpdates ];
   }
 
 }

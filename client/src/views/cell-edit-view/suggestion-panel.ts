@@ -80,40 +80,37 @@ export class SuggestionPanel<O extends CellObject> extends HtmlElement<'div'> {
 
   public onSuggestionsUpdate(suggestionUpdates: SuggestionUpdates, _ownRequest: boolean): void {
 
+    console.dir(suggestionUpdates);
+
     // Remove any individual suggestions that are identified for removal.
-    if (suggestionUpdates.removeIds) {
-      for (const suggestionId of suggestionUpdates.removeIds) {
-        // TODO: Fail gracefully with warning if id is not found.
-        $(this.$elt, `#${suggestionId}`).remove();
-      }
+    for (const suggestionId of suggestionUpdates.removeIds) {
+      // TODO: Fail gracefully with warning if id is not found.
+      $(this.$elt, `#${suggestionId}`).remove();
     }
 
     // Remove any classes of suggestions that are identified for removal.
-    if (suggestionUpdates.removeClasses) {
-      for (const suggestionClass of suggestionUpdates.removeClasses) {
-        for (const $suggestionElt of $all(this.$elt, `.${suggestionClass}`)) {
-          $suggestionElt.remove();
-        }
+    for (const suggestionClass of suggestionUpdates.removeClasses) {
+      for (const $suggestionElt of $all(this.$elt, `.${suggestionClass}`)) {
+        $suggestionElt.remove();
       }
     }
 
     // Add any new suggestions that are specified.
-    if (suggestionUpdates.add) {
-      for (const suggestion of suggestionUpdates.add) {
-        const spec: HtmlElementSpecification<'div'> =  {
-          tag: 'div',
-          id: <ElementId>suggestion.id,
-          classes: [ <CssClass>suggestion.class, <CssClass>'suggestion' ],
-          asyncListeners: {
-            click: e=>this.onSuggestionClicked(e, suggestion.id, suggestion.data),
-          },
-          html: suggestion.html,
-        };
-        const $suggestion = $new<'div'>(spec);
-        //const $svg = $outerSvg<'svg'>(alternative.svg);
-        this.$elt.append($suggestion);
-      }
+    for (const suggestion of suggestionUpdates.add) {
+      const spec: HtmlElementSpecification<'div'> =  {
+        tag: 'div',
+        id: <ElementId>suggestion.id,
+        classes: [ <CssClass>suggestion.class, <CssClass>'suggestion' ],
+        asyncListeners: {
+          click: e=>this.onSuggestionClicked(e, suggestion.id, suggestion.data),
+        },
+        html: suggestion.html,
+      };
+      const $suggestion = $new<'div'>(spec);
+      //const $svg = $outerSvg<'svg'>(alternative.svg);
+      this.$elt.append($suggestion);
     }
+
     // If the suggestions panel is now empty, then display a message to that effect in the panel.
     const panelIsEmpty = this.$elt.childElementCount < 2;
     this.$noSuggestionsMsg.style.display = (panelIsEmpty ? '' : 'none');

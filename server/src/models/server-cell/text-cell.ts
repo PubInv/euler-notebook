@@ -25,7 +25,10 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 import { deepCopy, PlainText, SvgMarkup, CssLength, escapeHtml, Html } from "../../shared/common";
 import { CellSource, CellType, TextCellObject } from "../../shared/cell";
+import { RecognizeText } from "../../shared/client-requests";
 import { EMPTY_STROKE_DATA } from "../../shared/stylus";
+
+import { recognizeText } from "../../components/handwriting-recognizer";
 
 import { ServerNotebook } from "../server-notebook";
 
@@ -34,8 +37,6 @@ import { NotebookSuggestionsUpdated, NotebookUpdated, SuggestionClass, Suggestio
 
 import { SuggestionData, TypesetTextSuggestionData } from "../suggestion";
 import { ServerSocket } from "../server-socket";
-import { RecognizeText } from "../../shared/client-requests";
-import { recognizeText } from "../../components/handwriting-recognizer";
 
 // Constants
 
@@ -109,6 +110,7 @@ export class TextCell extends ServerCell<TextCellObject> {
       cellId: this.id,
       add: addSuggestions,
       removeClasses: [ TYPESET_TEXT_SUGGESTION_CLASS ],
+      removeIds: [],
     }];
     const response: NotebookSuggestionsUpdated = {
       type: 'notebook',
@@ -157,7 +159,9 @@ export class TextCell extends ServerCell<TextCellObject> {
     // Remove the typeset formula suggestions from the cell's suggestion panel.
     const suggestionUpdates: SuggestionUpdates = {
       cellId: this.id,
+      add: [],
       removeClasses: [ TYPESET_TEXT_SUGGESTION_CLASS ],
+      removeIds: [],
     }
     response.suggestionUpdates = [ suggestionUpdates ];
 

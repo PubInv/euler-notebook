@@ -46,9 +46,9 @@ export interface SuggestionObject {
 
 export interface SuggestionUpdates {
   cellId: CellId,
-  add?: SuggestionObject[],
-  removeIds?: SuggestionId[],
-  removeClasses?: SuggestionClass[],
+  add: SuggestionObject[],
+  removeIds: SuggestionId[],
+  removeClasses: SuggestionClass[],
 }
 
 // Server Responses

@@ -24,8 +24,13 @@ import { FormulaObject } from "../shared/formula";
 // Requirements
 
 export type SuggestionData =
+              PlotFormulaSuggestionData |
               TypesetFormulaSuggestionData |
               TypesetTextSuggestionData;
+
+export interface PlotFormulaSuggestionData {
+  type: 'plotFormula',
+}
 
 export interface TypesetFormulaSuggestionData {
   type: 'typesetFormula',
