@@ -23,9 +23,9 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 // Requirements
 
 import { CellId, CellRelativePosition, CellType } from "./cell";
-import { CssSize, PlainText, SessionToken } from "./common";
+import { CssSize, JsonObject, PlainText, SessionToken } from "./common";
 import { FolderPath, NotebookPath, FolderName, NotebookName, } from "./folder";
-import { FormulaRecognitionAlternative, TextRecognitionAlternative } from "./server-responses";
+import { SuggestionId } from "./server-responses";
 import { Stroke, StrokeId } from "./stylus";
 import { UserName, UserPassword } from "./user";
 
@@ -148,16 +148,21 @@ export interface NotebookRenameRequest {
 // Notebook Change Requests
 
 export type NotebookChangeRequest =
+  AcceptSuggestion |
   ChangeText |
   DeleteCell |
   DeleteStroke |
   InsertEmptyCell |
   InsertStroke |
   MoveCell |
-  ResizeCell |
-  TypesetFormula |
-  TypesetText;
+  ResizeCell;
 
+  export interface AcceptSuggestion {
+    type: 'acceptSuggestion';
+    cellId: CellId;
+    suggestionId: SuggestionId;
+    suggestionData: JsonObject;
+  }
   export interface ChangeText {
     type: 'keyboardInputChange';
     cellId: CellId;
@@ -194,14 +199,4 @@ export interface ResizeCell {
   type: 'resizeCell';
   cellId: CellId;
   cssSize: CssSize;
-}
-export interface TypesetFormula {
-  type: 'typesetFormula';
-  cellId: CellId;
-  alternative: FormulaRecognitionAlternative;
-}
-export interface TypesetText {
-  type: 'typesetText';
-  cellId: CellId;
-  alternative: TextRecognitionAlternative;
 }

@@ -17,17 +17,24 @@ You should have received a copy of the GNU Affero General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
+// IMPORTANT: Formulas should be treated as immutable objects.
+//            Do not modify formulas in place.
+//            Instead, create a new formula.
+
 // Requirements
 
 // import * as debug1 from "debug";
 // const MODULE = __filename.split(/[/\\]/).slice(-1)[0].slice(0,-3);
 // const debug = debug1(`server:${MODULE}`);
 
-import { EMPTY_FORMULA, EMPTY_TEX_EXPRESSION, EMPTY_WOLFRAM_EXPRESSION, FormulaObject, PlainTextFormula, TexExpression, WolframExpression } from "../shared/formula";
+import { SvgMarkup } from "../shared/common";
+import {
+  EMPTY_FORMULA, EMPTY_TEX_EXPRESSION, EMPTY_WOLFRAM_EXPRESSION, FormulaObject,
+  PlainTextFormula, TexExpression, WolframExpression
+} from "../shared/formula";
 
 import { convertPlainTextFormulaToWolfram, convertTeXtoWolfram, convertWolframToPlainTextFormula, convertWolframToTeX } from "../adapters/wolframscript";
 import { convertTexToSvg as mathjaxConvertTextToSvg } from "../adapters/mathjax";
-import { SvgMarkup } from "../shared/common";
 
 // Types
 
@@ -89,13 +96,6 @@ export class ServerFormula {
       this.cachedSvg = mathjaxConvertTextToSvg(this.obj.tex)
     }
     return this.cachedSvg;
-  }
-
-  public updateFormula(obj: FormulaObject): void {
-    this.obj.plain = obj.plain;
-    this.obj.tex = obj.tex;
-    this.obj.wolfram = obj.wolfram;
-    delete this.cachedSvg;
   }
 
   // Public Instance Event Handlers

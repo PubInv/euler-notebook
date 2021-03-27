@@ -26,6 +26,7 @@ import { CellObject, CellType } from "./cell";
 // This type is for the variation of plain-text math input that we accept.
 // Currently, it is the same as WolframExpression
 // except that we convert single equals to double equals.
+export type FormulaSymbol = '{FormulaSymbol}';
 export type PlainTextFormula = '{PlainTextFormula}';
 export type TexExpression = '{TexExpression}';
 export type WolframExpression = '{WolframExpression}';

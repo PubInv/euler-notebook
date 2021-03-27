@@ -45,6 +45,11 @@ export interface CssSize {
   width: CssLength;
 }
 
+export interface JsonObject {
+  // A vanilla JavaScript object that you can specify in JSON.
+  // TODO:
+}
+
 // REVIEW: This is also defined in server/common.ts.
 export interface PromiseResolver<T> {
   resolve: (s: T)=>void;

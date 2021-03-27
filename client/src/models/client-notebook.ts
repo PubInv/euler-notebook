@@ -25,17 +25,19 @@ import * as debug1 from "debug";
 const debug = debug1('client:client-notebook');
 
 import { CellId, CellObject, CellIndex, CellPosition, CellRelativePosition, CellType, PageIndex } from "../shared/cell";
-import { assert, assertFalse, ClientId, CssSize, Html } from "../shared/common";
+import { assert, assertFalse, ClientId, CssSize, Html, JsonObject } from "../shared/common";
 import { notebookUpdateSynopsis } from "../shared/debug-synopsis";
 import { Folder, NotebookName, NotebookPath } from "../shared/folder";
 import { PageMargins, Pagination } from "../shared/notebook";
 import {
   NotebookChangeRequest, ChangeNotebook, OpenNotebook, DeleteCell, ResizeCell,
-  InsertStroke, InsertEmptyCell, MoveCell, DeleteStroke, TypesetFormula,
-  RecognizeFormula, RecognizeText, TypesetText
+  InsertStroke, InsertEmptyCell, MoveCell, DeleteStroke,
+  RecognizeFormula, RecognizeText, AcceptSuggestion
 } from "../shared/client-requests";
 import {
-  NotebookUpdated, NotebookOpened, NotebookResponse, NotebookClosed, NotebookUpdate, CellInserted, CellDeleted, CellMoved, NotebookCollaboratorConnected, NotebookCollaboratorDisconnected, FormulaRecognized, FormulaRecognitionAlternative, TextRecognitionAlternative, TextRecognized
+  NotebookUpdated, NotebookOpened, NotebookResponse, NotebookClosed, NotebookUpdate,
+  CellInserted, CellDeleted, CellMoved, NotebookCollaboratorConnected,
+  NotebookCollaboratorDisconnected, NotebookSuggestionsUpdated, SuggestionId,
 } from "../shared/server-responses";
 import { Stroke, StrokeId } from "../shared/stylus";
 import { CollaboratorObject } from "../shared/user";
@@ -155,6 +157,11 @@ export class ClientNotebook {
     }
   }
 
+  public async acceptSuggestionRequest(cellId: CellId, suggestionId: SuggestionId, suggestionData: JsonObject): Promise<void> {
+    const changeRequest: AcceptSuggestion = { type: 'acceptSuggestion', cellId, suggestionId, suggestionData };
+    await this.sendUndoableChangeRequest(changeRequest);
+  }
+
   public async deleteCellRequest(cellId: CellId): Promise<void> {
     const changeRequest: DeleteCell = { type: 'deleteCell', cellId };
     await this.sendUndoableChangeRequest(changeRequest);
@@ -198,28 +205,26 @@ export class ClientNotebook {
     await this.sendUndoableChangeRequest(changeRequest);
   }
 
-  public async recognizeFormulaRequest(cellId: CellId): Promise<FormulaRecognized> {
+  // TEMPORARY: Remove when server automatically initiates recognition after a lull in stroke changes.
+  public recognizeFormulaRequest(cellId: CellId): void {
     const msg: RecognizeFormula = {
       type: 'notebook',
       path: this.path,
       operation: 'recognizeFormula',
       cellId,
     };
-    const response = await appInstance.socket.sendRequest<FormulaRecognized>(msg);
-    assert(response.length == 1);
-    return response[0];
+    appInstance.socket.sendMessage(msg);
   }
 
-  public async recognizeTextRequest(cellId: CellId): Promise<TextRecognized> {
+  // TEMPORARY: Remove when server automatically initiates recognition after a lull in stroke changes.
+  public recognizeTextRequest(cellId: CellId): void {
     const msg: RecognizeText = {
       type: 'notebook',
       path: this.path,
       operation: 'recognizeText',
       cellId,
     };
-    const response = await appInstance.socket.sendRequest<TextRecognized>(msg);
-    assert(response.length == 1);
-    return response[0];
+    appInstance.socket.sendMessage(msg);
   }
 
   public async redoRequest(): Promise<void> {
@@ -242,16 +247,6 @@ export class ClientNotebook {
 
   public async resizeCellRequest(cellId: CellId, cssSize: CssSize): Promise<void> {
     const changeRequest: ResizeCell = { type: 'resizeCell', cellId, cssSize };
-    await this.sendUndoableChangeRequest(changeRequest);
-  }
-
-  public async typesetFormulaRequest(cellId: CellId, alternative: FormulaRecognitionAlternative): Promise<void> {
-    const changeRequest: TypesetFormula = { type: 'typesetFormula', cellId, alternative };
-    await this.sendUndoableChangeRequest(changeRequest);
-  }
-
-  public async typesetTextRequest(cellId: CellId, alternative: TextRecognitionAlternative): Promise<void> {
-    const changeRequest: TypesetText = { type: 'typesetText', cellId, alternative };
     await this.sendUndoableChangeRequest(changeRequest);
   }
 
@@ -386,20 +381,27 @@ export class ClientNotebook {
     if (responseMessages.length == 1) {
       return responseMessages[0];
     } else {
+      // We received multiple NotebookUpdated responses. Combine them into a single one.
+      // REVIEW: Not sure this is the proper way to handle this. We should dispatch messages
+      //         as soon as they are received. Maybe the return value from a "request" (vs. "message")
+      //         is the last response received (i.e. the one with the 'complete' flag set).
+      //         Note that most requests are expected to have only one response anyway.
       const rval: NotebookUpdated = {
         type: 'notebook',
         path: this.path,
         operation: 'updated',
+        suggestionUpdates: [],
         updates: [],
         undoChangeRequests: [],
       };
       for (const responseMessage of responseMessages) {
         rval.updates.push(...responseMessage.updates);
-        // Undo change requests have to go in reverse order.
-        for (let i=responseMessage.undoChangeRequests.length; i>0; --i) {
-          const undoChangeRequest = responseMessage.undoChangeRequests[i-1];
-          rval.undoChangeRequests.unshift(undoChangeRequest);
-        }
+        rval.suggestionUpdates.push(...responseMessage.suggestionUpdates);
+      }
+      // Undo change requests have to go in reverse order.
+      for (let i=responseMessages.length; i>0; --i) {
+        const responseMessage = responseMessages[i];
+        rval.undoChangeRequests.push(...responseMessage.undoChangeRequests);
       }
       return rval;
     }
@@ -443,13 +445,8 @@ export class ClientNotebook {
       case 'closed':                    this.onClosed(msg, ownRequest); break;
       case 'collaboratorConnected':     this.onCollaboratorConnected(msg); break;
       case 'collaboratorDisconnected':  this.onCollaboratorDisconnected(msg); break;
+      case 'suggestionsUpdated':        this.onSuggestionsUpdated(msg, ownRequest); break;
       case 'updated':                   this.onUpdated(msg, ownRequest); break;
-
-      // The following are handled when their request promise resolves
-      // so we don't need to deal with them.
-      case 'formulaRecognized':
-      case 'textRecognized':
-        break;
 
       case 'opened':
       default: assertFalse();
@@ -487,11 +484,30 @@ export class ClientNotebook {
     this.cells.splice(newIndex, 0, cell);
   }
 
+  private onSuggestionsUpdated(msg: NotebookSuggestionsUpdated, ownRequest: boolean): void {
+    // Message from the server indicating this notebook suggestions have changed.
+    // Dispatch each update in turn.
+    for (const update of msg.suggestionUpdates) {
+      const cell = this.getCell(update.cellId);
+      cell.onSuggestionsUpdate(update, ownRequest);
+    }
+  }
 
   private onUpdated(msg: NotebookUpdated, ownRequest: boolean): void {
+
     // Message from the server indicating this notebook has changed.
+    // Dispatch each update in turn.
     for (const update of msg.updates) {
       this.onUpdate(update, ownRequest);
+    }
+
+    // If there are also suggestion panel updates,
+    // Dispatch each update in turn.
+    if (msg.suggestionUpdates) {
+      for (const update of msg.suggestionUpdates) {
+        const cell = this.getCell(update.cellId);
+        cell.onSuggestionsUpdate(update, ownRequest);
+      }
     }
   }
 

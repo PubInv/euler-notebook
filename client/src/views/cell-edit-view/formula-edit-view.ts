@@ -58,7 +58,7 @@ export class FormulaEditView extends CellEditView<FormulaCellObject> {
       attrs: { tabindex: -1 },
       class: <CssClass>'iconButton',
       html: svgIconReferenceMarkup(CELL_ICONS.get(CellType.Formula)!),
-      asyncButtonHandler: (e: MouseEvent)=>this.onRecognizeButtonClicked(e),
+      syncButtonHandler: (e: MouseEvent)=>this.onRecognizeButtonClicked(e),
     };
 
     super(notebookEditView, cell, <CssClass>'formulaCell', rightMarginButton);
@@ -81,21 +81,21 @@ export class FormulaEditView extends CellEditView<FormulaCellObject> {
 
   // Private Instance Property Functions
 
-  private get formulaCell(): FormulaCell {
-    return <FormulaCell>this.cell;
-  }
+  // private get formulaCell(): FormulaCell {
+  //   return <FormulaCell>this.cell;
+  // }
 
   // Private Instance Methods
 
   // Private Instance Event Handlers
 
-  private async onRecognizeButtonClicked(event: MouseEvent): Promise<void> {
+  private onRecognizeButtonClicked(event: MouseEvent): void {
     // LATER: Cancel if user leaves screen when recognition request outstanding
     event.stopPropagation(); // Prevent our own 'onClicked' handler from being called.
     debug(`onRecognizeButtonClicked`);
-    const response = await this.formulaCell.recognizeFormulaRequest();
-    this.suggestionPanel.setFormulaRecognitionResults(response.results);
-    this.suggestionPanel.showIfHidden();
+    this.cell.notebook.recognizeFormulaRequest(this.id);
+    // this.suggestionPanel.setFormulaRecognitionResults(response.results);
+    // this.suggestionPanel.showIfHidden();
   }
 
 }

@@ -28,8 +28,9 @@ import { CellId, CellObject, CellType } from "../../shared/cell";
 import { convertStrokeToPath, Stroke, StrokeId } from "../../shared/stylus";
 
 import { ServerNotebook } from "../server-notebook";
-import { DisplayUpdate } from "../../shared/server-responses";
+import { DisplayUpdate, NotebookUpdated, SuggestionId } from "../../shared/server-responses";
 import { cellSynopsis } from "../../shared/debug-synopsis";
+import { SuggestionData } from "../suggestion";
 
 // Types
 
@@ -98,6 +99,29 @@ export abstract class ServerCell<O extends CellObject> {
     const newPath = convertStrokeToPath(this.id, stroke);
     const displayUpdate: DisplayUpdate = { append: [ newPath ] };
     return displayUpdate;
+  }
+
+  // Public Instance Event Handlers
+
+  public /* overridable */ onAcceptSuggestionRequest(
+    _suggestionId: SuggestionId,
+    suggestionData: SuggestionData,
+    /* out */ _response: NotebookUpdated,
+    handled?: boolean,
+  ): void {
+
+    // LATER: Handle suggestions common to all cell types.
+    // switch(_suggestionData.type) {
+    //   case '':  {
+    //     ...
+    //     handled = true;
+    // }
+
+    if (!handled) {
+      // REVIEW: Use proper logging system.
+      console.warn(`'${suggestionData.type}' AcceptSuggestionRequest not handled.`)
+    }
+
   }
 
   // --- PRIVATE ---

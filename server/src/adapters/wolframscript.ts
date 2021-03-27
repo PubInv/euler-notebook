@@ -25,7 +25,7 @@ import * as debug1 from "debug";
 const MODULE = __filename.split(/[/\\]/).slice(-1)[0].slice(0,-3);
 const debug = debug1(`server:${MODULE}`);
 
-import { PlainTextFormula, TexExpression, WolframExpression } from "../shared/formula";
+import { FormulaSymbol, PlainTextFormula, TexExpression, WolframExpression } from "../shared/formula";
 
 import { WolframScriptConfig } from "../config";
 import { logWarning } from "../error-handler";
@@ -313,7 +313,7 @@ export function convertWolframToPlainTextFormula(expr: WolframExpression): Plain
   return <PlainTextFormula>expr.replace("==","=");
 }
 
-export async function plotUnivariate(expression: WolframExpression, symbol: WolframExpression): Promise<SvgMarkup> {
+export async function plotUnivariate(expression: WolframExpression, symbol: FormulaSymbol): Promise<SvgMarkup> {
   // BIVARIATE SCRIPT: <WolframExpression>`ExportString[Plot3D[${expr},{${variables[0]},0,6 Pi},{${variables[1]},0,6 Pi}],"SVG"]`;
   const script = <WolframExpression>`ExportString[ExportString[Plot[${expression},{${symbol},0,6 Pi},PlotTheme->"Monochrome"],"SVG"], "Base64"]`;
   const dirtyEncoded = await execute(script);

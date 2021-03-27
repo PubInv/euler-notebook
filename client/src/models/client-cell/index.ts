@@ -23,9 +23,9 @@ import * as debug1 from "debug";
 const debug = debug1('client:client-cell');
 
 import { CellId, CellObject, CellType } from "../../shared/cell";
-import { assert, CssSelector, CssSize, ElementId, escapeHtml, Html } from "../../shared/common";
+import { assert, CssSelector, CssSize, ElementId, escapeHtml, Html, JsonObject } from "../../shared/common";
 import { cellBriefSynopsis, cellSynopsis, notebookUpdateSynopsis } from "../../shared/debug-synopsis";
-import { CellDeleted, DisplayUpdate, NotebookUpdate } from "../../shared/server-responses";
+import { CellDeleted, DisplayUpdate, NotebookUpdate, SuggestionId, SuggestionUpdates } from "../../shared/server-responses";
 import { Stroke, StrokeId } from "../../shared/stylus";
 
 import { $, $newSvg } from "../../dom";
@@ -35,6 +35,7 @@ import { ClientNotebook } from "../client-notebook";
 // Types
 
 export interface CellView {
+  onSuggestionsUpdate(update: SuggestionUpdates, ownRequest: boolean): void;
   onUpdate(update: NotebookUpdate, ownRequest: boolean): void;
 }
 
@@ -81,8 +82,18 @@ export abstract class ClientCell<O extends CellObject> {
 
   // Public Instance Methods
 
+  public async acceptSuggestion(suggestionId: SuggestionId, suggestionData: JsonObject): Promise<void> {
+    await this.notebook.acceptSuggestionRequest(this.id, suggestionId, suggestionData);
+  }
+
   public addView(view: CellView): void {
     this.views.add(view);
+  }
+
+  public onSuggestionsUpdate(update: SuggestionUpdates, ownRequest: boolean): void {
+    for (const view of this.views) {
+      view.onSuggestionsUpdate(update, ownRequest);
+    }
   }
 
   public onUpdate(update: NotebookUpdate, ownRequest: boolean): void {

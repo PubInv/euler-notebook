@@ -20,7 +20,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 // Requirements
 
 import { CssSize, Html, PlainText, SvgMarkup } from "./common";
-import { TexExpression, WolframExpression } from "./formula";
+import { FormulaObject, FormulaSymbol, TexExpression, WolframExpression } from "./formula";
 import { StrokeData } from "./stylus";
 
 // Types
@@ -72,8 +72,10 @@ export interface FigureCellObject extends CellObject {
 
 export interface PlotCellObject extends CellObject {
   type: CellType.Plot,
+  formula: FormulaObject,
   formulaCellId: CellId,
-  // LATER: Identify the symbols used in the plot for each axis, etc.
+  formulaSymbol: FormulaSymbol,
+  plotMarkup: SvgMarkup, // REVIEW: Remove this field when we can synchronously generate plots.
 }
 
 export interface TextCellObject extends CellObject {

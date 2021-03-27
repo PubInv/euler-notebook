@@ -78,15 +78,6 @@ export class Sidebar extends ButtonBar {
       disabled: (insertMode === CellType.Figure),
     });
 
-    const $plotModeButton = $new({
-      tag: 'button',
-      class: <CssClass>'iconButton',
-      html: svgIconReferenceMarkup(CELL_ICONS.get(CellType.Plot)!),
-      syncButtonHandler: (_e: MouseEvent):void=>{ this.onInsertModeChange(CellType.Plot); },
-      title: "Insert figure cell",
-      disabled: (insertMode === CellType.Figure),
-    });
-
     const $drawModeButton = $new({
       tag: 'button',
       class: <CssClass>'iconButton',
@@ -195,7 +186,6 @@ export class Sidebar extends ButtonBar {
         $formulaModeButton,
         $textModeButton,
         $figureModeButton,
-        $plotModeButton,
         SEPARATOR,
         $undoButton,
         $redoButton,
@@ -231,7 +221,6 @@ export class Sidebar extends ButtonBar {
     this.$formulaModeButton = $formulaModeButton;
     this.$figureModeButton = $figureModeButton;
     this.$textModeButton = $textModeButton;
-    this.$plotModeButton = $plotModeButton;
     this.$drawModeButton = $drawModeButton;
     this.$eraseModeButton = $eraseModeButton;
   }
@@ -256,7 +245,6 @@ export class Sidebar extends ButtonBar {
   public $figureModeButton: HTMLButtonElement;
   public $formulaModeButton: HTMLButtonElement;
   public $textModeButton: HTMLButtonElement;
-  public $plotModeButton: HTMLButtonElement;
 
   // Private Instance Methods
 
@@ -273,7 +261,6 @@ export class Sidebar extends ButtonBar {
     this.$figureModeButton.disabled = (mode === CellType.Figure);
     this.$formulaModeButton.disabled = (mode === CellType.Formula);
     this.$textModeButton.disabled = (mode === CellType.Text);
-    this.$plotModeButton.disabled = (mode === CellType.Plot);
   }
 
   public onRedoStateChange(enabled: boolean): void {

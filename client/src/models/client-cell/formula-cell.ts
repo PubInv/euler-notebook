@@ -23,7 +23,7 @@ import * as debug1 from "debug";
 const debug = debug1('client:formula-cell');
 
 import { FormulaCellObject } from "../../shared/formula";
-import { FormulaRecognized, FormulaRecognitionAlternative, NotebookUpdate } from "../../shared/server-responses";
+import { NotebookUpdate } from "../../shared/server-responses";
 
 import { ClientNotebook } from "../client-notebook";
 
@@ -41,14 +41,6 @@ export class FormulaCell extends ClientCell<FormulaCellObject> {
   }
 
   // Public Instance Methods
-
-  public recognizeFormulaRequest(): Promise<FormulaRecognized> {
-    return this.notebook.recognizeFormulaRequest(this.id);
-  }
-
-  public async typesetFormulaRequest(alternative: FormulaRecognitionAlternative): Promise<void> {
-    await this.notebook.typesetFormulaRequest(this.id, alternative);
-  }
 
   // Public Instance Event Handlers
 

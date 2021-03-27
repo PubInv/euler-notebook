@@ -24,7 +24,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 import { CellId, CellObject, CellIndex } from "./cell";
 import { RequestId, NotebookChangeRequest } from "./client-requests";
-import { ClientId, CssSize, ElementId, PlainText, SessionToken, SvgMarkup } from "./common";
+import { ClientId, CssSize, ElementId, Html, JsonObject, PlainText, SessionToken, SvgMarkup } from "./common";
 import { FolderObject, FolderPath, NotebookPath, FolderEntry, FolderName, NotebookEntry, NotebookName } from "./folder";
 import { FormulaObject } from "./formula";
 import { NotebookObject } from "./notebook";
@@ -34,23 +34,22 @@ import { CollaboratorObject, UserObject } from "./user";
 
 // Supporting Types
 
-export interface FormulaRecognitionAlternative {
-  formula: FormulaObject;
-  svg: SvgMarkup;
+export type SuggestionId = '{SuggestionId}';
+export type SuggestionClass = '{SuggestionClass}';
+
+export interface SuggestionObject {
+  id: SuggestionId,
+  class?: SuggestionClass,
+  html: Html,
+  data: JsonObject,
 }
 
-export interface FormulaRecognitionResults {
-  alternatives: FormulaRecognitionAlternative[];
+export interface SuggestionUpdates {
+  cellId: CellId,
+  add?: SuggestionObject[],
+  removeIds?: SuggestionId[],
+  removeClasses?: SuggestionClass[],
 }
-
-export interface TextRecognitionAlternative {
-  text: PlainText;
-}
-
-export interface TextRecognitionResults {
-  alternatives: TextRecognitionAlternative[];
-}
-
 
 // Server Responses
 
@@ -99,21 +98,15 @@ export interface FolderUpdated extends FolderResponseBase {
 }
 
 export type NotebookResponse =
-              FormulaRecognized |
               NotebookClosed |
               NotebookCollaboratorConnected |
               NotebookCollaboratorDisconnected |
               NotebookOpened |
-              NotebookUpdated |
-              TextRecognized;
+              NotebookSuggestionsUpdated |
+              NotebookUpdated;
 interface NotebookResponseBase extends ResponseBase {
   type: 'notebook',
   path: NotebookPath,
-}
-export interface FormulaRecognized extends NotebookResponseBase {
-  operation: 'formulaRecognized';
-  cellId: CellId,
-  results: FormulaRecognitionResults,
 }
 export interface NotebookClosed extends NotebookResponseBase {
   operation: 'closed';
@@ -133,15 +126,15 @@ export interface NotebookOpened extends NotebookResponseBase {
   permissions: UserPermissions;
   obj: NotebookObject;
 }
+export interface NotebookSuggestionsUpdated extends NotebookResponseBase {
+  operation: 'suggestionsUpdated';
+  suggestionUpdates: SuggestionUpdates[];
+}
 export interface NotebookUpdated extends NotebookResponseBase {
   operation: 'updated';
   updates: NotebookUpdate[];
   undoChangeRequests: NotebookChangeRequest[];
-}
-export interface TextRecognized extends NotebookResponseBase {
-  operation: 'textRecognized';
-  cellId: CellId,
-  results: TextRecognitionResults,
+  suggestionUpdates: SuggestionUpdates[];
 }
 
 export type UserResponse = UserLoggedIn | UserLoggedOut;

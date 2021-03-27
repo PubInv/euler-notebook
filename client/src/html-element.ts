@@ -43,6 +43,8 @@ export class HtmlElement<K extends keyof HTMLElementTagNameMap> {
     return this.$elt.style.display == 'none';
   }
 
+  public get isShown(): boolean { return !this.isHidden; }
+
   // Public Instance Methods
 
   public appendTo(parent: HTMLElement|HtmlElement<any>): void {
@@ -55,16 +57,18 @@ export class HtmlElement<K extends keyof HTMLElementTagNameMap> {
     this.destroyed = true;
   }
 
-  public hide(): void {
+  public /* overridable */ hide(): void {
     this.$elt.style.display = 'none';
   }
+
+  public hideIfShown(): void { if (this.isShown) { this.hide(); } }
 
   public remove(): void {
     // REVIEW: Both 'remove' and 'destroy'?
     this.$elt.remove();
   }
 
-  public show(): void {
+  public /* overridable */ show(): void {
     // Per MDN: "A style declaration is reset by setting it to null or an empty string, ....
     //           Internet Explorer requires setting it to an empty string,..."
     // https://developer.mozilla.org/en-US/docs/Web/API/ElementCSSInlineStyle/style
@@ -74,9 +78,7 @@ export class HtmlElement<K extends keyof HTMLElementTagNameMap> {
     this.$elt.style.display = '';
   }
 
-  public showIfHidden(): void {
-    if (this.isHidden) { this.show(); }
-  }
+  public showIfHidden(): void { if (this.isHidden) { this.show(); } }
 
   public toggleVisibility(): void {
     if (this.isHidden) { this.show(); }

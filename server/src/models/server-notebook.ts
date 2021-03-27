@@ -37,12 +37,11 @@ import { NotebookObject, NotebookWatcher, PageMargins } from "../shared/notebook
 import {
   NotebookChangeRequest, MoveCell, InsertEmptyCell, DeleteCell, InsertStroke, DeleteStroke,
   ChangeNotebook, RequestId, NotebookRequest, OpenNotebook, CloseNotebook, ResizeCell,
-  TypesetFormula, RecognizeFormula, RecognizeText, TypesetText,
+  RecognizeFormula, RecognizeText, AcceptSuggestion,
 } from "../shared/client-requests";
 import {
   NotebookUpdated, NotebookOpened, NotebookUpdate, CellInserted, CellDeleted, StrokeInserted,
   CellResized, CellMoved, StrokeDeleted, NotebookCollaboratorConnected, NotebookCollaboratorDisconnected,
-  FormulaRecognized, TextRecognized, FormulaRecognitionAlternative, FormulaRecognitionResults
 } from "../shared/server-responses";
 import { notebookChangeRequestSynopsis } from "../shared/debug-synopsis";
 import { strokePathId } from "../shared/stylus";
@@ -57,9 +56,8 @@ import { FormulaCell } from "./server-cell/formula-cell";
 import { ServerSocket } from "./server-socket";
 import { createDirectory, deleteDirectory, FileName, readJsonFile, renameDirectory, writeJsonFile } from "../adapters/file-system";
 import { Permissions } from "./permissions";
-import { logError } from "../error-handler";
 import { TextCell } from "./server-cell/text-cell";
-import { recognizeFormula, recognizeText } from "../adapters/myscript-hi";
+import { SuggestionData } from "./suggestion";
 
 // Types
 
@@ -100,7 +98,11 @@ interface ServerNotebookObject extends NotebookObject {
 const LETTER_PAGE_SIZE = cssSizeInPixels(8.5, 11, 'in');
 const DEFAULT_LETTER_MARGINS = marginsInPixels(1, 1, 1, 1, 'in');
 
-const FORMAT_VERSION = "0.0.21";
+// IMPORTANT: We have not yet implemented automatic upgrading of notebooks to new format versions.
+//            At this point, if you change this number, then users will get an error opening their
+//            existing notebooks. This is fine as long as it is only David and Rob, but as soon as
+//            other people starting using the program then we need to implement the upgrading.
+const FORMAT_VERSION = "0.0.22";
 
 const EMPTY_NOTEBOOK_OBJ: ServerNotebookObject = {
   nextId: 1,
@@ -300,38 +302,38 @@ export class ServerNotebook {
     assert(!this.terminated);
     debug(`${source} change requests: ${changeRequests.length}`);
 
+    const response: NotebookUpdated = {
+      type: 'notebook',
+      path: this.path,
+      operation: 'updated',
+      suggestionUpdates: [],
+      updates: [],
+      undoChangeRequests: [],
+      complete: true,
+    }
+
     // Make the requested changes to the notebook.
-    const updates: NotebookUpdate[] = [];
-    const undoChangeRequests: NotebookChangeRequest[] = [];
     for (const changeRequest of changeRequests) {
       assert(changeRequest);
       debug(`${source} change request: ${notebookChangeRequestSynopsis(changeRequest)}`);
       switch(changeRequest.type) {
-        case 'deleteCell':      this.applyDeleteCellRequest(source, changeRequest, updates, undoChangeRequests); break;
-        case 'deleteStroke':    this.applyDeleteStrokeRequest(source, changeRequest, updates, undoChangeRequests); break;
-        case 'insertEmptyCell': this.applyInsertEmptyCellRequest(source, changeRequest, updates, undoChangeRequests); break;
-        case 'insertStroke':    this.applyInsertStrokeRequest(source, changeRequest, updates, undoChangeRequests); break;
-        case 'moveCell':        this.applyMoveCellRequest(source, changeRequest, updates, undoChangeRequests); break;
-        case 'resizeCell':      this.applyResizeCellRequest(source, changeRequest, updates, undoChangeRequests); break;
-        case 'typesetFormula':  this.applyTypesetFormulaRequest(source, changeRequest, updates, undoChangeRequests); break;
-        case 'typesetText':     this.applyTypesetTextRequest(source, changeRequest, updates, undoChangeRequests); break;
+        case 'acceptSuggestion': this.applyAcceptSuggestionRequest(source, changeRequest, response); break;
+        case 'deleteCell':       this.applyDeleteCellRequest(source, changeRequest, response); break;
+        case 'deleteStroke':     this.applyDeleteStrokeRequest(source, changeRequest, response); break;
+        case 'insertEmptyCell':  this.applyInsertEmptyCellRequest(source, changeRequest, response); break;
+        case 'insertStroke':     this.applyInsertStrokeRequest(source, changeRequest, response); break;
+        case 'moveCell':         this.applyMoveCellRequest(source, changeRequest, response); break;
+        case 'resizeCell':       this.applyResizeCellRequest(source, changeRequest, response); break;
         default: assertFalse();
       }
     }
 
-    const update: NotebookUpdated = {
-      type: 'notebook',
-      path: this.path,
-      operation: 'updated',
-      updates,
-      undoChangeRequests, // LATER: Only send undo information to client that requested the change.
-      complete: true,
-    }
+    // TODO: Only send undo information to client that requested the change.
     for (const socket of this.sockets) {
       if (socket === options.originatingSocket) {
-        socket.sendMessage({ requestId: options.requestId, ...update });
+        socket.sendMessage({ requestId: options.requestId, ...response });
       } else {
-        socket.sendMessage(update);
+        socket.sendMessage({ ...response, undoChangeRequests: [] });
       }
     }
 
@@ -456,7 +458,7 @@ export class ServerNotebook {
     return rval;
   }
 
-  private getFormulaCell(id: CellId): FormulaCell {
+  public getFormulaCell(id: CellId): FormulaCell {
     const cell = this.getCell<FormulaCellObject>(id);
     assert(cell.type == CellType.Formula);
     assert(cell instanceof FormulaCell);
@@ -477,11 +479,23 @@ export class ServerNotebook {
 
   // Private Instance Methods
 
+  private applyAcceptSuggestionRequest(
+    _source: CellSource,
+    request: AcceptSuggestion,
+    /* out */ response: NotebookUpdated,
+  ): void {
+    const cell = this.getCell(request.cellId);
+    cell.onAcceptSuggestionRequest(
+      request.suggestionId,
+      <SuggestionData>request.suggestionData,
+      response
+    );
+  }
+
   private applyDeleteCellRequest(
     _source: CellSource,
     request: DeleteCell,
-    updates: NotebookUpdate[],
-    _undoChangeRequests: NotebookChangeRequest[],
+    /* out */ response: NotebookUpdated,
   ): void {
 
     // Remove cell from the page and from the map.
@@ -498,7 +512,7 @@ export class ServerNotebook {
     // TODO: Repaginate.
 
     const update: CellDeleted = { type: 'cellDeleted', cellId };
-    updates.push(update);
+    response.updates.push(update);
 
     // TODO:
     // const undoChangeRequest: InsertCell = {
@@ -506,14 +520,13 @@ export class ServerNotebook {
     //   afterId,
     //   cell.object(),
     // };
-    // undoChangeRequests.unshift(undoChangeRequest);
+    // response.undoChangeRequests.unshift(undoChangeRequest);
   }
 
   private applyDeleteStrokeRequest(
     _source: CellSource,
     request: DeleteStroke,
-    updates: NotebookUpdate[],
-    undoChangeRequests: NotebookChangeRequest[],
+    /* out */ response: NotebookUpdated,
   ): void {
     const { cellId, strokeId } = request;
     const cell = this.getCell(cellId);
@@ -527,20 +540,19 @@ export class ServerNotebook {
       displayUpdate: { delete: [ pathId ]},
       strokeId,
     };
-    updates.push(update);
+    response.updates.push(update);
     const undoChangeRequest: InsertStroke = {
       type: 'insertStroke',
       cellId,
       stroke,
     }
-    undoChangeRequests.unshift(undoChangeRequest);
+    response.undoChangeRequests.unshift(undoChangeRequest);
   }
 
   private applyInsertEmptyCellRequest(
     source: CellSource,
     request: InsertEmptyCell,
-    updates: NotebookUpdate[],
-    undoChangeRequests: NotebookChangeRequest[],
+    /* out */ response: NotebookUpdated,
   ): void {
     const cell = newCell(this, request.cellType, source);
 
@@ -565,17 +577,16 @@ export class ServerNotebook {
       cellObject: cell.obj,
       cellIndex
     };
-    updates.push(update);
+    response.updates.push(update);
 
     const undoChangeRequest: DeleteCell = { type: 'deleteCell', cellId: cell.id };
-    undoChangeRequests.unshift(undoChangeRequest);
+    response.undoChangeRequests.unshift(undoChangeRequest);
   }
 
   private applyInsertStrokeRequest(
     _source: CellSource,
     request: InsertStroke,
-    updates: NotebookUpdate[],
-    undoChangeRequests: NotebookChangeRequest[],
+    /* out */ response: NotebookUpdated,
   ): void {
     const { cellId, stroke } = request;
     const cell = this.getCell(request.cellId);
@@ -588,16 +599,15 @@ export class ServerNotebook {
       displayUpdate,
       stroke: request.stroke,
     };
-    updates.push(update);
+    response.updates.push(update);
     const undoChangeRequest: DeleteStroke = { type: 'deleteStroke', cellId, strokeId: stroke.id };
-    undoChangeRequests.unshift(undoChangeRequest);
+    response.undoChangeRequests.unshift(undoChangeRequest);
   }
 
   private applyMoveCellRequest(
     _source: CellSource,
     request: MoveCell,
-    updates: NotebookUpdate[],
-    undoChangeRequests: NotebookChangeRequest[],
+    /* out */ response: NotebookUpdated,
   ): void {
     const { cellId, afterId } = request;
     if (afterId == cellId) { throw new Error(`Style ${cellId} can't be moved after itself.`); }
@@ -624,39 +634,16 @@ export class ServerNotebook {
     this.obj.cells.splice(newIndex, 0, cell.obj);
 
     const update: CellMoved = { type: 'cellMoved', cellId, newIndex };
-    updates.push(update);
+    response.updates.push(update);
 
     const undoChangeRequest: MoveCell = { type: 'moveCell', cellId, afterId: oldAfterId };
-    undoChangeRequests.unshift(undoChangeRequest);
-  }
-
-  private applyTypesetFormulaRequest(
-    _source: CellSource,
-    request: TypesetFormula,
-    updates: NotebookUpdate[],
-    undoChangeRequests: NotebookChangeRequest[],
-  ): void {
-    const { cellId, alternative } = request;
-    const cell = this.getFormulaCell(cellId);
-    cell.typesetFormula(alternative, updates, undoChangeRequests);
-  }
-
-  private applyTypesetTextRequest(
-    _source: CellSource,
-    request: TypesetText,
-    updates: NotebookUpdate[],
-    undoChangeRequests: NotebookChangeRequest[],
-  ): void {
-    const { cellId, alternative } = request;
-    const cell = this.getTextCell(cellId);
-    cell.typesetText(alternative, updates, undoChangeRequests);
+    response.undoChangeRequests.unshift(undoChangeRequest);
   }
 
   private applyResizeCellRequest(
     _source: CellSource,
     request: ResizeCell,
-    updates: NotebookUpdate[],
-    undoChangeRequests: NotebookChangeRequest[],
+    /* out */ response: NotebookUpdated,
   ): void {
     const { cellId, cssSize } = request;
     assert(cssSize.height.endsWith('px'));
@@ -667,10 +654,10 @@ export class ServerNotebook {
     cell.setCssSize(cssSize);
 
     const update: CellResized = { type: 'cellResized', cellId, cssSize };
-    updates.push(update);
+    response.updates.push(update);
 
     const undoChangeRequest: ResizeCell = { type: 'resizeCell', cellId, cssSize: oldCssSize };
-    undoChangeRequests.unshift(undoChangeRequest);
+    response.undoChangeRequests.unshift(undoChangeRequest);
   }
 
   private removeSocket(socket: ServerSocket): void {
@@ -745,8 +732,8 @@ export class ServerNotebook {
       case 'change': await this.onChangeRequest(socket, msg); break;
       case 'close':  this.onCloseRequest(socket, msg); break;
       case 'open':  this.onOpenRequest(socket, msg); break;
-      case 'recognizeFormula': this.onRecognizeFormula(socket, msg); break;
-      case 'recognizeText': this.onRecognizeText(socket, msg); break;
+      case 'recognizeFormula': await this.onRecognizeFormula(socket, msg); break;
+      case 'recognizeText': await this.onRecognizeText(socket, msg); break;
       default: assert(false); break;
     }
   }
@@ -830,52 +817,18 @@ export class ServerNotebook {
     this.sendCollaboratorConnectedMessage(socket);
   }
 
-  private onRecognizeFormula(socket: ServerSocket, msg: RecognizeFormula): void {
+  private async onRecognizeFormula(socket: ServerSocket, msg: RecognizeFormula): Promise<void> {
     // REVIEW: Should we be checking permissions?
-    const cell = this.getFormulaCell(msg.cellId);
-    recognizeFormula(cell.obj.strokeData)
-    .then(
-      serverResults=>{
-        const alternatives: FormulaRecognitionAlternative[] = serverResults.alternatives.map(a=>({ formula: a.formula.obj, svg: a.svg }));
-        const results: FormulaRecognitionResults = { alternatives };
-        const response: FormulaRecognized = {
-          type: 'notebook',
-          path: this.path,
-          operation: 'formulaRecognized',
-          cellId: cell.id,
-          results,
-          complete: true,
-          requestId: msg.requestId,
-        };
-        console.dir(results, { depth: null });
-        socket.sendMessage(response);
-      },
-    ).catch(err=>{
-      logError(err, `Error recognizing strokes with MyScript.`);
-    });
+    const cellId = msg.cellId;
+    const cell = this.getFormulaCell(cellId);
+    await cell.onRecognizeFormula(socket, msg);
   }
 
-  private onRecognizeText(socket: ServerSocket, msg: RecognizeText): void {
+  private async onRecognizeText(socket: ServerSocket, msg: RecognizeText): Promise<void> {
     // REVIEW: Should we be checking permissions?
-    const cell = this.getTextCell(msg.cellId);
-    recognizeText(cell.obj.strokeData)
-    .then(
-      results=>{
-        const response: TextRecognized = {
-          type: 'notebook',
-          path: this.path,
-          operation: 'textRecognized',
-          cellId: cell.id,
-          results,
-          complete: true,
-          requestId: msg.requestId,
-        };
-        console.dir(results, { depth: null });
-        socket.sendMessage(response);
-      },
-    ).catch(err=>{
-      logError(err, `Error recognizing strokes with MyScript.`);
-    });
+    const cellId = msg.cellId;
+    const cell = this.getTextCell(cellId);
+    await cell.onRecognizeText(socket, msg);
   }
 
   // NOT USED

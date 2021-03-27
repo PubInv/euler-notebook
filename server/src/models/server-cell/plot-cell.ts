@@ -23,13 +23,15 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 // const MODULE = __filename.split(/[/\\]/).slice(-1)[0].slice(0,-3);
 // const debug = debug1(`server:${MODULE}`);
 
-import { deepCopy, PlainText, SvgMarkup, CssLength } from "../../shared/common";
-import { CellSource, CellType, PlotCellObject } from "../../shared/cell";
+import { deepCopy, PlainText, CssLength, SvgMarkup } from "../../shared/common";
+import { CellId, CellSource, CellType, PlotCellObject } from "../../shared/cell";
 import { EMPTY_STROKE_DATA } from "../../shared/stylus";
 
 import { ServerNotebook } from "../server-notebook";
 
 import { ServerCell } from "./index";
+import { plotFormula } from "../../components/formula-plotter";
+import { FormulaSymbol } from "../../shared/formula";
 // import { plotUnivariate } from "../adapters/wolframscript";
 // import { WolframExpression } from "../shared/formula";
 
@@ -43,16 +45,29 @@ export class PlotCell extends ServerCell<PlotCellObject> {
 
   // Public Class Methods
 
-  public static newCell(notebook: ServerNotebook, source: CellSource): PlotCell {
+  public static async create(notebook: ServerNotebook, source: CellSource, formulaCellId: CellId): Promise<PlotCell> {
+
+    const formulaCell = notebook.getFormulaCell(formulaCellId);
+    const formula = formulaCell.formula;
+
+    console.warn("ASSUMING PLOT VARIABLE IS x. NEED TO GENERALIZE");
+    const formulaSymbol = <FormulaSymbol>'x';
+
+    const plotMarkup = await plotFormula(formula, formulaSymbol);
+
     const obj: PlotCellObject = {
       id: notebook.nextId(),
       type: CellType.Plot,
       cssSize: this.initialCellSize(notebook, DEFAULT_HEIGHT),
-      displaySvg: <SvgMarkup>'',
-      formulaCellId: -1, // TODO:
-      inputText: <PlainText>"",
+      displaySvg: <SvgMarkup>'', // REVIEW: Define shared EMPTY_SVG constant for this?
+      inputText: <PlainText>"", // REVIEW: Plain text representation of plot parameters?
       source,
       strokeData: deepCopy(EMPTY_STROKE_DATA),
+
+      formula: formula.obj,
+      formulaCellId,
+      formulaSymbol,
+      plotMarkup,
     };
     return new this(notebook, obj);
   }
@@ -67,12 +82,12 @@ export class PlotCell extends ServerCell<PlotCellObject> {
 
   // --- PRIVATE ---
 
+  // Private Instance Properties
+
+  // Private Instance Methods
+
   protected /* override */ redrawDisplaySvg(): void {
-    const markup = <SvgMarkup>'';
-    // TODO: Need to cache the plot and return the cached version.
-    // const plotMarkup = await plotUnivariate(<WolframExpression>"x^2 - 3", <WolframExpression>"x");
-    // TODO: strip <svg></svg>
-    super.redrawDisplaySvg(<SvgMarkup>(markup /* + plotMarkup */));
+    super.redrawDisplaySvg(this.obj.plotMarkup);
   }
 
 }

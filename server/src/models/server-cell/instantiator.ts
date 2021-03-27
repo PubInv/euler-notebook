@@ -46,7 +46,7 @@ export function newCell<O extends CellObject>(
     case CellType.Figure:   rval = FigureCell.newCell(notebook, source); break;
     case CellType.Formula:  rval = FormulaCell.newCell(notebook, source); break;
     case CellType.Text:     rval = TextCell.newCell(notebook, source); break;
-    case CellType.Plot:     rval = PlotCell.newCell(notebook, source); break;
+    case CellType.Plot:     assertFalse();
     default: assertFalse();
   }
   return <ServerCell<O>><unknown>rval;

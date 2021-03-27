@@ -29,7 +29,7 @@ import {
   assert, Html, CssClass, CssLength, CssSize, LengthInPixels,
   ElementId, SvgMarkup, cssLengthInPixels
 } from "../../shared/common";
-import { CellDeleted, NotebookUpdate } from "../../shared/server-responses";
+import { CellDeleted, NotebookUpdate, SuggestionUpdates } from "../../shared/server-responses";
 import { Stroke, StrokeId } from "../../shared/stylus";
 import { notebookUpdateSynopsis } from "../../shared/debug-synopsis";
 
@@ -107,6 +107,10 @@ export abstract class CellEditView<O extends CellObject> extends HtmlElement<'di
   }
 
   // Overridable ClientNotebookWatcher Methods
+
+  public onSuggestionsUpdate(update: SuggestionUpdates, ownRequest: boolean): void {
+    this.suggestionPanel.onSuggestionsUpdate(update, ownRequest);
+  }
 
   public onUpdate(update: NotebookUpdate, ownRequest: boolean): void {
     debug(`onUpdate ${notebookUpdateSynopsis(update)}`);

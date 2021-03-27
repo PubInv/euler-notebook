@@ -17,15 +17,13 @@ You should have received a copy of the GNU Affero General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-import { CellObject, CellType } from "../../shared/cell";
-import { assert, CssClass, escapeHtml, Html } from "../../shared/common";
-import { FormulaRecognitionAlternative, FormulaRecognitionResults, TextRecognitionAlternative, TextRecognitionResults } from "../../shared/server-responses";
+import { CellObject } from "../../shared/cell";
+import { CssClass, ElementId, Html, JsonObject } from "../../shared/common";
+import { SuggestionId, SuggestionUpdates } from "../../shared/server-responses";
 
-import { $new } from "../../dom";
+import { $, $all, $new, HtmlElementSpecification } from "../../dom";
 import { HtmlElement } from "../../html-element";
 import { ClientCell } from "../../models/client-cell";
-import { FormulaCell } from "../../models/client-cell/formula-cell";
-import { TextCell } from "../../models/client-cell/text-cell";
 
 // Requirements
 
@@ -53,19 +51,14 @@ export class SuggestionPanel<O extends CellObject> extends HtmlElement<'div'> {
       html: <Html>"<i>No suggestions.</i>",
     });
 
-    const $recognitionResults = $new<'div'>({
-      tag: 'div',
-    });
-
     super({
       tag: 'div',
       class: <CssClass>'suggestionPanel',
-      children: [ $noSuggestionsMsg, $recognitionResults ],
+      children: [ $noSuggestionsMsg ],
       hidden: true,
     });
 
     this.$noSuggestionsMsg = $noSuggestionsMsg;
-    this.$recognitionResults = $recognitionResults;
     this.cell = cell;
   }
 
@@ -73,40 +66,6 @@ export class SuggestionPanel<O extends CellObject> extends HtmlElement<'div'> {
   // Public Instance Property Functions
 
   // Public Instance Methods
-
-  public setFormulaRecognitionResults(results: FormulaRecognitionResults): void {
-    assert(results.alternatives.length>0);
-    this.emptyRecognitionResults();
-    for (const alternative of results.alternatives) {
-      const $alternative = $new<'div'>({
-        tag: 'div',
-        asyncListeners: {
-          click: e=>this.onRecognitionFormulaAlternativeClicked(e, alternative),
-        },
-        html: alternative.svg,
-      });
-      //const $svg = $outerSvg<'svg'>(alternative.svg);
-      this.$recognitionResults.append($alternative);
-    }
-    this.showOrHideNoSuggestionsMsg();
-  }
-
-  public setTextRecognitionResults(results: TextRecognitionResults): void {
-    assert(results.alternatives.length>0);
-    this.emptyRecognitionResults();
-    for (const alternative of results.alternatives) {
-      const $alternative = $new<'div'>({
-        tag: 'div',
-        asyncListeners: {
-          click: e=>this.onRecognitionTextAlternativeClicked(e, alternative),
-        },
-        html: escapeHtml(alternative.text),
-      });
-      //const $svg = $outerSvg<'svg'>(alternative.svg);
-      this.$recognitionResults.append($alternative);
-    }
-    this.showOrHideNoSuggestionsMsg();
-  }
 
   public /* override */ show(): void {
     // We override show in order to position ourselves immediately above our parent element.
@@ -119,6 +78,58 @@ export class SuggestionPanel<O extends CellObject> extends HtmlElement<'div'> {
 
   // Public Instance Event Handlers
 
+  public onSuggestionsUpdate(suggestionUpdates: SuggestionUpdates, _ownRequest: boolean): void {
+
+    // Remove any individual suggestions that are identified for removal.
+    if (suggestionUpdates.removeIds) {
+      for (const suggestionId of suggestionUpdates.removeIds) {
+        // TODO: Fail gracefully with warning if id is not found.
+        $(this.$elt, `#${suggestionId}`).remove();
+      }
+    }
+
+    // Remove any classes of suggestions that are identified for removal.
+    if (suggestionUpdates.removeClasses) {
+      for (const suggestionClass of suggestionUpdates.removeClasses) {
+        for (const $suggestionElt of $all(this.$elt, `.${suggestionClass}`)) {
+          $suggestionElt.remove();
+        }
+      }
+    }
+
+    // Add any new suggestions that are specified.
+    if (suggestionUpdates.add) {
+      for (const suggestion of suggestionUpdates.add) {
+        const spec: HtmlElementSpecification<'div'> =  {
+          tag: 'div',
+          id: <ElementId>suggestion.id,
+          classes: [ <CssClass>suggestion.class, <CssClass>'suggestion' ],
+          asyncListeners: {
+            click: e=>this.onSuggestionClicked(e, suggestion.id, suggestion.data),
+          },
+          html: suggestion.html,
+        };
+        const $suggestion = $new<'div'>(spec);
+        //const $svg = $outerSvg<'svg'>(alternative.svg);
+        this.$elt.append($suggestion);
+      }
+    }
+    // If the suggestions panel is now empty, then display a message to that effect in the panel.
+    const panelIsEmpty = this.$elt.childElementCount < 2;
+    this.$noSuggestionsMsg.style.display = (panelIsEmpty ? '' : 'none');
+
+    // If suggestions were added, and we are hidden, then show ourself
+    // to alert the user of the new suggestions.
+    // If the update removes all suggestions, then hide ourself
+    // as we no longer have anything to offer.
+    const suggestionsAdded = suggestionUpdates.add && suggestionUpdates.add.length>0;
+    if (suggestionsAdded) {
+      this.showIfHidden();
+    } else if (panelIsEmpty) {
+      this.hideIfShown();
+    }
+  }
+
   // --- PRIVATE ---
 
   // Private Class Properties
@@ -129,50 +140,19 @@ export class SuggestionPanel<O extends CellObject> extends HtmlElement<'div'> {
   // Private Instance Properties
 
   private $noSuggestionsMsg: HTMLDivElement;
-  private $recognitionResults: HTMLDivElement;
   private cell: ClientCell<O>;
 
   // Private Instance Property Functions
 
-  private noSuggestions(): boolean {
-    // Returns true iff there are no suggestions in the suggestions panel.
-    return this.$recognitionResults.childElementCount == 0;
-  }
 
   // Private Instance Methods
 
-  private emptyRecognitionResults(): void {
-    this.$recognitionResults.innerHTML = '';
-    this.showOrHideNoSuggestionsMsg();
-  }
-
-  private showOrHideNoSuggestionsMsg(): void {
-    // Shows the "No suggestions" message if there are no suggestions
-    // in the panel. Otherwise, hides it.
-    // Call this at every point where we add or remove suggestions
-    // to the panel.
-    const show = this.noSuggestions();
-    this.$noSuggestionsMsg.style.display = (show ? '' : 'none');
-  }
-
   // Private Instance Event Handlers
 
-  private async onRecognitionFormulaAlternativeClicked(_event: MouseEvent, alternative: FormulaRecognitionAlternative): Promise<void> {
+  private async onSuggestionClicked(_event: MouseEvent, suggestionId: SuggestionId, suggestionData: JsonObject): Promise<void> {
     // REVIEW: What do we do if error happens on the request?
-    assert(this.cell.obj.type == CellType.Formula);
-    const formulaCell = <FormulaCell><unknown>this.cell;
-    await formulaCell.typesetFormulaRequest(alternative);
-    this.emptyRecognitionResults();
-    if (this.noSuggestions()) { this.hide(); }
+    await this.cell.acceptSuggestion(suggestionId, suggestionData);
   }
 
-  private async onRecognitionTextAlternativeClicked(_event: MouseEvent, alternative: TextRecognitionAlternative): Promise<void> {
-    // REVIEW: What do we do if error happens on the request?
-    assert(this.cell.obj.type == CellType.Text);
-    const textCell = <TextCell><unknown>this.cell;
-    await textCell.typesetTextRequest(alternative);
-    this.emptyRecognitionResults();
-    if (this.noSuggestions()) { this.hide(); }
-  }
 }
 

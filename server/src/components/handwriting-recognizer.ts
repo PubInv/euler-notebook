@@ -20,27 +20,32 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 // Requirements
 
 import { StrokeData } from "../shared/stylus";
-import { TextRecognitionResults } from "../shared/server-responses";
 import { ServerFormula } from "../models/server-formula";
-import { postLatexRequest, postTextRequest } from "./myscript-lo";
-import { SvgMarkup } from "../shared/common";
+import { postLatexRequest, postTextRequest } from "../adapters/myscript";
+import { PlainText, SvgMarkup } from "../shared/common";
 
 // Types
 
-// Parallels shared/formula.ts/FormulaRecognitionAlternative
-interface ServerFormulaRecognitionAlternative {
+export interface FormulaRecognitionAlternative {
   formula: ServerFormula;
   svg: SvgMarkup;
 }
 
-// Parallels shared/formula.ts/FormulaRecognitionResults
-interface ServerFormulaRecognitionResults {
-  alternatives: ServerFormulaRecognitionAlternative[];
+export interface FormulaRecognitionResults {
+  alternatives: FormulaRecognitionAlternative[];
+}
+
+export interface TextRecognitionAlternative {
+  text: PlainText;
+}
+
+export interface TextRecognitionResults {
+  alternatives: TextRecognitionAlternative[];
 }
 
 // Exported Functions
 
-export async function recognizeFormula(strokeData: StrokeData): Promise<ServerFormulaRecognitionResults> {
+export async function recognizeFormula(strokeData: StrokeData): Promise<FormulaRecognitionResults> {
   const tex = await postLatexRequest(strokeData);
   const formula = await ServerFormula.createFromTeX(tex);
   const svg = formula.renderSvg();

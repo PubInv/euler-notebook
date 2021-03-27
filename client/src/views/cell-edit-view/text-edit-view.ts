@@ -55,7 +55,7 @@ export class TextEditView extends CellEditView<TextCellObject> {
       attrs: { tabindex: -1 },
       class: <CssClass>'iconButton',
       html: svgIconReferenceMarkup(CELL_ICONS.get(CellType.Text)!),
-      asyncButtonHandler: (e: MouseEvent)=>this.onRecognizeButtonClicked(e),
+      syncButtonHandler: (e: MouseEvent)=>this.onRecognizeButtonClicked(e),
     };
 
     super(notebookEditView, cell, <CssClass>'textCell', rightMarginButton);
@@ -77,21 +77,21 @@ export class TextEditView extends CellEditView<TextCellObject> {
 
   // Private Instance Property Functions
 
-  private get textCell(): TextCell {
-    return <TextCell>this.cell;
-  }
+  // private get textCell(): TextCell {
+  //   return <TextCell>this.cell;
+  // }
 
   // Private Instance Methods
 
   // Private Instance Event Handlers
 
-  private async onRecognizeButtonClicked(event: MouseEvent): Promise<void> {
+  private onRecognizeButtonClicked(event: MouseEvent): void {
     // LATER: Cancel if user leaves screen when recognition request outstanding
     event.stopPropagation(); // Prevent our own 'onClicked' handler from being called.
     debug(`onRecognizeButtonClicked`);
-    const response = await this.textCell.recognizeTextRequest();
-    this.suggestionPanel.setTextRecognitionResults(response.results);
-    this.suggestionPanel.showIfHidden();
+    this.cell.notebook.recognizeTextRequest(this.id);
+    // this.suggestionPanel.setTextRecognitionResults(response.results);
+    // this.suggestionPanel.showIfHidden();
   }
 
 }
