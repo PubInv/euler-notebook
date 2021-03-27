@@ -26,7 +26,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 import { deepCopy, PlainText, SvgMarkup, CssLength, Html, assert } from "../../shared/common";
 import { CellSource, CellType } from "../../shared/cell";
 import { RecognizeFormula } from "../../shared/client-requests";
-import { FormulaCellObject, FormulaObject } from "../../shared/formula";
+import { FormulaCellObject, FormulaObject, FormulaSymbol } from "../../shared/formula";
 import { FormulaTypeset, NotebookSuggestionsUpdated, NotebookUpdated, SuggestionClass, SuggestionId, SuggestionObject, SuggestionUpdates } from "../../shared/server-responses";
 import { EMPTY_STROKE_DATA } from "../../shared/stylus";
 
@@ -39,6 +39,8 @@ import { PlotFormulaSuggestionData, SuggestionData, TypesetFormulaSuggestionData
 import { ServerSocket } from "../server-socket";
 
 import { ServerCell } from "./index";
+import { PlotCell } from "./plot-cell";
+import { monitorPromise } from "../../error-handler";
 
 // Constants
 
@@ -154,16 +156,37 @@ export class FormulaCell extends ServerCell<FormulaCellObject> {
     this.obj.formula = newFormula.obj;
     this.redrawDisplaySvg();
 
-    if (true /* TODO: Formula is plottable */) {
-      const data: PlotFormulaSuggestionData = { type: 'plotFormula' };
-      const suggestion: SuggestionObject = {
-        id: <SuggestionId>'plot',
-        class: PLOT_FORMULA_SUGGESTION_CLASS,
-        html: <Html>"Plot Formula",
-        data,
-      };
-      suggestionUpdates.add!.push(suggestion);
-    }
+    monitorPromise(this.plotFormulaForSuggestion(), `Error plotting formula ${this.id} for suggestion panel.`);
+  }
+
+  private async plotFormulaForSuggestion(): Promise<void> {
+    if (false /* TODO: Formula is not plottable */) { return; }
+
+    const formulaSymbol: FormulaSymbol = <FormulaSymbol>'x'; // TODO:
+    // REVIEW: If formula cell gets changed or deleted before we finish plotting? */
+    const plotCellObject = await PlotCell.plotFormula(this.notebook, this.id, this.formula, formulaSymbol);
+    const data: PlotFormulaSuggestionData = { type: 'plotFormula', plotCellObject, afterId: this.id };
+    const suggestionObject: SuggestionObject = {
+      id: <SuggestionId>'plot',
+      class: PLOT_FORMULA_SUGGESTION_CLASS,
+      html: <Html>"Plot Formula", // TODO: Mini representation of plot
+      data,
+    };
+    const suggestionUpdates: SuggestionUpdates = {
+      cellId: this.id,
+      add: [ suggestionObject ],
+      removeClasses: [],
+      removeIds: [],
+    };
+    const response: NotebookSuggestionsUpdated = {
+      type: 'notebook',
+      path: this.notebook.path,
+      operation: 'suggestionsUpdated',
+      suggestionUpdates: [ suggestionUpdates ],
+    };
+    // TODO: add suggestion to persistent suggestions
+
+    // TODO: send out suggestion to client.
   }
 
   protected /* override */ redrawDisplaySvg(): void {
@@ -176,7 +199,7 @@ export class FormulaCell extends ServerCell<FormulaCellObject> {
   // Private Instance Event Handlers
 
   private onPlotFormulaRequest(
-    _suggestionData: PlotFormulaSuggestionData,
+    suggestionData: PlotFormulaSuggestionData,
     /* out */ response: NotebookUpdated,
   ): void {
 
@@ -189,6 +212,11 @@ export class FormulaCell extends ServerCell<FormulaCellObject> {
       removeIds: [],
     };
 
+    const { afterId, plotCellObject } = suggestionData;
+    plotCellObject.id = this.notebook.nextId();
+    plotCellObject.source = 'USER'; // TODO:
+
+    // TODO: Insert plotCellObject after afterId.
 
     response.suggestionUpdates = [ suggestionUpdates ];
   }

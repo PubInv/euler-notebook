@@ -206,12 +206,7 @@ export async function postTextRequest(strokeData: StrokeData): Promise<PlainText
   const strokeGroups: StrokeGroup[] = [{ strokes: strokeData.strokes }];
   const batchRequest = batchRequestFromStrokes(strokeGroups, 'Text', PLAINTEXT_MIME_TYPE);
 
-  console.log("POSTING MYSCRIPT TEXT REQUEST:");
-
   const bodyText = await postRequest(gApiKeys, PLAINTEXT_MIME_TYPE, batchRequest);
-
-  console.log("MYSCRIPT TEXT REQUEST RETURNED:");
-  console.dir(bodyText);
 
   if (bodyText[0]=='{') {
     try {

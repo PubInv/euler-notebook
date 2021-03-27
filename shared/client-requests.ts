@@ -22,7 +22,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 // Requirements
 
-import { CellId, CellRelativePosition, CellType } from "./cell";
+import { CellId, CellObject, CellRelativePosition, CellType } from "./cell";
 import { CssSize, JsonObject, PlainText, SessionToken } from "./common";
 import { FolderPath, NotebookPath, FolderName, NotebookName, } from "./folder";
 import { SuggestionId } from "./server-responses";
@@ -152,6 +152,7 @@ export type NotebookChangeRequest =
   ChangeText |
   DeleteCell |
   DeleteStroke |
+  InsertCell |
   InsertEmptyCell |
   InsertStroke |
   MoveCell |
@@ -179,6 +180,11 @@ export interface DeleteStroke {
   type: 'deleteStroke';
   cellId: CellId;
   strokeId: StrokeId;
+}
+export interface InsertCell {
+  type: 'insertCell';
+  cellObject: CellObject,
+  afterId: CellRelativePosition;
 }
 export interface InsertEmptyCell {
   type: 'insertEmptyCell';

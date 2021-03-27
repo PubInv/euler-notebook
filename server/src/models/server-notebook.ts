@@ -37,7 +37,7 @@ import { NotebookObject, NotebookWatcher, PageMargins } from "../shared/notebook
 import {
   NotebookChangeRequest, MoveCell, InsertEmptyCell, DeleteCell, InsertStroke, DeleteStroke,
   ChangeNotebook, RequestId, NotebookRequest, OpenNotebook, CloseNotebook, ResizeCell,
-  RecognizeFormula, RecognizeText, AcceptSuggestion,
+  RecognizeFormula, RecognizeText, AcceptSuggestion, InsertCell,
 } from "../shared/client-requests";
 import {
   NotebookUpdated, NotebookOpened, NotebookUpdate, CellInserted, CellDeleted, StrokeInserted,
@@ -320,6 +320,7 @@ export class ServerNotebook {
         case 'acceptSuggestion': this.applyAcceptSuggestionRequest(source, changeRequest, response); break;
         case 'deleteCell':       this.applyDeleteCellRequest(source, changeRequest, response); break;
         case 'deleteStroke':     this.applyDeleteStrokeRequest(source, changeRequest, response); break;
+        case 'insertCell':       this.applyInsertCellRequest(source, changeRequest, response); break;
         case 'insertEmptyCell':  this.applyInsertEmptyCellRequest(source, changeRequest, response); break;
         case 'insertStroke':     this.applyInsertStrokeRequest(source, changeRequest, response); break;
         case 'moveCell':         this.applyMoveCellRequest(source, changeRequest, response); break;
@@ -328,7 +329,6 @@ export class ServerNotebook {
       }
     }
 
-    // TODO: Only send undo information to client that requested the change.
     for (const socket of this.sockets) {
       if (socket === options.originatingSocket) {
         socket.sendMessage({ requestId: options.requestId, ...response });
@@ -549,16 +549,52 @@ export class ServerNotebook {
     response.undoChangeRequests.unshift(undoChangeRequest);
   }
 
+  private applyInsertCellRequest(
+    source: CellSource,
+    request: InsertCell,
+    /* out */ response: NotebookUpdated,
+  ): void {
+    const { afterId, cellObject } = request;
+    cellObject.id = this.nextId();
+    cellObject.source = source;
+    const cell = existingCell(this, cellObject);
+
+    let cellIndex: number;
+    // Insert top-level styles in the style order.
+    if (!afterId || afterId===CellPosition.Top) {
+      cellIndex = 0;
+    } else if (afterId===CellPosition.Bottom) {
+      cellIndex = this.cells.length;
+    } else {
+      cellIndex = this.cellIndex(afterId);
+      cellIndex++;
+    }
+    this.cells.splice(cellIndex, 0, cell);
+    this.obj.cells.splice(cellIndex, 0, cell.obj);
+    this.cellMap.set(cell.id, cell);
+    // TODO: repaginate
+
+    const update: CellInserted = {
+      type: 'cellInserted',
+      cellObject: cell.obj,
+      cellIndex
+    };
+    response.updates.push(update);
+
+    const undoChangeRequest: DeleteCell = { type: 'deleteCell', cellId: cell.id };
+    response.undoChangeRequests.unshift(undoChangeRequest);
+  }
+
   private applyInsertEmptyCellRequest(
     source: CellSource,
     request: InsertEmptyCell,
     /* out */ response: NotebookUpdated,
   ): void {
-    const cell = newCell(this, request.cellType, source);
+    const { afterId, cellType } = request;
+    const cell = newCell(this, cellType, source);
 
     let cellIndex: number;
     // Insert top-level styles in the style order.
-    const afterId = request.afterId;
     if (!afterId || afterId===CellPosition.Top) {
       cellIndex = 0;
     } else if (afterId===CellPosition.Bottom) {

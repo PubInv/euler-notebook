@@ -34,3 +34,7 @@ export function logError(/* TODO: component, */ err: Error, message?: string /* 
 export function logWarning(module: string, message: string): void {
   console.warn(`WARNING: ${module}: ${message}`);
 }
+
+export function monitorPromise(promise: Promise<void>, message: string): void {
+  promise.catch(err=>logError(err, message));
+}

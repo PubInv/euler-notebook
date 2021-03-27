@@ -24,7 +24,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 // const debug = debug1(`server:${MODULE}`);
 
 import { deepCopy, PlainText, CssLength, SvgMarkup } from "../../shared/common";
-import { CellId, CellSource, CellType, PlotCellObject } from "../../shared/cell";
+import { CellId, CellType, PlotCellObject } from "../../shared/cell";
 import { EMPTY_STROKE_DATA } from "../../shared/stylus";
 
 import { ServerNotebook } from "../server-notebook";
@@ -32,6 +32,7 @@ import { ServerNotebook } from "../server-notebook";
 import { ServerCell } from "./index";
 import { plotFormula } from "../../components/formula-plotter";
 import { FormulaSymbol } from "../../shared/formula";
+import { ServerFormula } from "../server-formula";
 // import { plotUnivariate } from "../adapters/wolframscript";
 // import { WolframExpression } from "../shared/formula";
 
@@ -45,23 +46,17 @@ export class PlotCell extends ServerCell<PlotCellObject> {
 
   // Public Class Methods
 
-  public static async create(notebook: ServerNotebook, source: CellSource, formulaCellId: CellId): Promise<PlotCell> {
-
-    const formulaCell = notebook.getFormulaCell(formulaCellId);
-    const formula = formulaCell.formula;
-
-    console.warn("ASSUMING PLOT VARIABLE IS x. NEED TO GENERALIZE");
-    const formulaSymbol = <FormulaSymbol>'x';
+  public static async plotFormula(notebook: ServerNotebook, formulaCellId: CellId, formula: ServerFormula, formulaSymbol: FormulaSymbol): Promise<PlotCellObject> {
 
     const plotMarkup = await plotFormula(formula, formulaSymbol);
 
     const obj: PlotCellObject = {
-      id: notebook.nextId(),
+      id: 0,
       type: CellType.Plot,
       cssSize: this.initialCellSize(notebook, DEFAULT_HEIGHT),
       displaySvg: <SvgMarkup>'', // REVIEW: Define shared EMPTY_SVG constant for this?
       inputText: <PlainText>"", // REVIEW: Plain text representation of plot parameters?
-      source,
+      source: 'USER', // REVIEW: "UNKNOWN"?
       strokeData: deepCopy(EMPTY_STROKE_DATA),
 
       formula: formula.obj,
@@ -69,7 +64,7 @@ export class PlotCell extends ServerCell<PlotCellObject> {
       formulaSymbol,
       plotMarkup,
     };
-    return new this(notebook, obj);
+    return obj;
   }
 
   // Public Constructor

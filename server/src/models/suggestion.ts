@@ -17,6 +17,7 @@ You should have received a copy of the GNU Affero General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
+import { CellRelativePosition, PlotCellObject } from "../shared/cell";
 import { PlainText } from "../shared/common";
 import { FormulaObject } from "../shared/formula";
 
@@ -30,6 +31,8 @@ export type SuggestionData =
 
 export interface PlotFormulaSuggestionData {
   type: 'plotFormula',
+  afterId: CellRelativePosition,
+  plotCellObject: PlotCellObject,
 }
 
 export interface TypesetFormulaSuggestionData {
