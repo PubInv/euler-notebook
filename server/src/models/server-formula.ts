@@ -81,13 +81,11 @@ export class ServerFormula {
 
   // Public Instance Property Functions
 
-  public get tex(): TexExpression {
-    return this.obj.tex;
-  }
+  public get plain(): PlainTextFormula { return this.obj.plain; }
 
-  public get wolfram(): WolframExpression {
-    return this.obj.wolfram;
-  }
+  public get tex(): TexExpression { return this.obj.tex; }
+
+  public get wolfram(): WolframExpression { return this.obj.wolfram; }
 
   // Public Instance Methods
 

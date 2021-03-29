@@ -160,6 +160,8 @@ export class FormulaCell extends ServerCell<FormulaCellObject> {
   }
 
   private async plotFormulaForSuggestion(): Promise<void> {
+    // REVIEW: If ServerFormulas are immutable, then maybe the
+    //         cache the plot with the formula?
     if (false /* TODO: Formula is not plottable */) { return; }
 
     const formulaSymbol: FormulaSymbol = <FormulaSymbol>'x'; // TODO:
@@ -172,21 +174,8 @@ export class FormulaCell extends ServerCell<FormulaCellObject> {
       html: <Html>"Plot Formula", // TODO: Mini representation of plot
       data,
     };
-    const suggestionUpdates: SuggestionUpdates = {
-      cellId: this.id,
-      add: [ suggestionObject ],
-      removeClasses: [],
-      removeIds: [],
-    };
-    const response: NotebookSuggestionsUpdated = {
-      type: 'notebook',
-      path: this.notebook.path,
-      operation: 'suggestionsUpdated',
-      suggestionUpdates: [ suggestionUpdates ],
-    };
-    // TODO: add suggestion to persistent suggestions
 
-    // TODO: send out suggestion to client.
+    this.updateSuggestions([ suggestionObject ], [], []);
   }
 
   protected /* override */ redrawDisplaySvg(): void {
@@ -212,13 +201,12 @@ export class FormulaCell extends ServerCell<FormulaCellObject> {
       removeIds: [],
     };
 
+    // REVIEW: This duplicates code from ServerNotebook.applyInsertCellRequest.
     const { afterId, plotCellObject } = suggestionData;
-    plotCellObject.id = this.notebook.nextId();
-    plotCellObject.source = 'USER'; // TODO:
 
-    // TODO: Insert plotCellObject after afterId.
-
-    response.suggestionUpdates = [ suggestionUpdates ];
+    const update = this.notebook.createCellFromObject(plotCellObject, 'USER' /* TODO: */, afterId);
+    response.updates.push(update);
+    response.suggestionUpdates.push(suggestionUpdates);
   }
 
   private onTypesetFormulaRequest(

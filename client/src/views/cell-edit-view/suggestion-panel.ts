@@ -80,8 +80,6 @@ export class SuggestionPanel<O extends CellObject> extends HtmlElement<'div'> {
 
   public onSuggestionsUpdate(suggestionUpdates: SuggestionUpdates, _ownRequest: boolean): void {
 
-    console.dir(suggestionUpdates);
-
     // Remove any individual suggestions that are identified for removal.
     for (const suggestionId of suggestionUpdates.removeIds) {
       // TODO: Fail gracefully with warning if id is not found.

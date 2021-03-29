@@ -30,7 +30,7 @@ const debug = debug1(`server:${MODULE}`);
 
 // import { readdirSync, unlink, writeFileSync } from "fs"; // LATER: Eliminate synchronous file operations.
 
-import { CellObject, CellSource, CellId, CellPosition, CellType, CellIndex, TextCellObject } from "../shared/cell";
+import { CellObject, CellSource, CellId, CellPosition, CellType, CellIndex, TextCellObject, CellRelativePosition } from "../shared/cell";
 import { assert, assertFalse, CssLength, deepCopy, ExpectedError, Html, cssSizeInPixels, CssLengthUnit, cssLengthInPixels } from "../shared/common";
 import { Folder, NotebookPath, NOTEBOOK_PATH_RE, NotebookName, FolderPath, NotebookEntry } from "../shared/folder";
 import { NotebookObject, NotebookWatcher, PageMargins } from "../shared/notebook";
@@ -41,7 +41,7 @@ import {
 } from "../shared/client-requests";
 import {
   NotebookUpdated, NotebookOpened, NotebookUpdate, CellInserted, CellDeleted, StrokeInserted,
-  CellResized, CellMoved, StrokeDeleted, NotebookCollaboratorConnected, NotebookCollaboratorDisconnected,
+  CellResized, CellMoved, StrokeDeleted, NotebookCollaboratorConnected, NotebookCollaboratorDisconnected, ServerResponse,
 } from "../shared/server-responses";
 import { notebookChangeRequestSynopsis } from "../shared/debug-synopsis";
 import { strokePathId } from "../shared/stylus";
@@ -266,6 +266,18 @@ export class ServerNotebook {
     return this.cells;
   }
 
+  public cellIndexFromAfterId(afterId: CellId): CellIndex {
+    let rval: CellIndex;
+    if (!afterId || afterId===CellPosition.Top) {
+      rval = 0;
+    } else if (afterId===CellPosition.Bottom) {
+      rval = this.cells.length;
+    } else {
+      rval = this.cellIndex(afterId)+1;
+    }
+    return rval;
+  }
+
   public get leftMargin(): CssLength {
     return this.obj.margins.left;
   }
@@ -275,6 +287,12 @@ export class ServerNotebook {
   }
 
   // Public Instance Methods
+
+  public broadcastMessage(response: ServerResponse): void {
+    for (const socket of this.sockets) {
+      socket.sendMessage(response)
+    }
+  }
 
   public close(watcher?: ServerNotebookWatcher): void {
     assert(!this.terminated);
@@ -288,6 +306,24 @@ export class ServerNotebook {
       // LATER: Set timer to destroy in the future.
       this.terminate("Closed by all clients");
     }
+  }
+
+  public createCellFromObject(cellObject: CellObject, source: CellSource, afterId: CellRelativePosition): CellInserted {
+    let cellIndex: number = this.cellIndexFromAfterId(afterId);
+    cellObject.id = this.nextId();
+    cellObject.source = source;
+    const cell = existingCell(this, cellObject);
+    this.cells.splice(cellIndex, 0, cell);
+    this.obj.cells.splice(cellIndex, 0, cell.obj);
+    this.cellMap.set(cell.id, cell);
+
+    const rval: CellInserted = {
+      type: 'cellInserted',
+      cellObject: cell.obj,
+      cellIndex
+    };
+
+    return rval;
   }
 
   public nextId(): CellId {
@@ -555,33 +591,15 @@ export class ServerNotebook {
     /* out */ response: NotebookUpdated,
   ): void {
     const { afterId, cellObject } = request;
-    cellObject.id = this.nextId();
-    cellObject.source = source;
-    const cell = existingCell(this, cellObject);
 
-    let cellIndex: number;
     // Insert top-level styles in the style order.
-    if (!afterId || afterId===CellPosition.Top) {
-      cellIndex = 0;
-    } else if (afterId===CellPosition.Bottom) {
-      cellIndex = this.cells.length;
-    } else {
-      cellIndex = this.cellIndex(afterId);
-      cellIndex++;
-    }
-    this.cells.splice(cellIndex, 0, cell);
-    this.obj.cells.splice(cellIndex, 0, cell.obj);
-    this.cellMap.set(cell.id, cell);
+    const update = this.createCellFromObject(cellObject, source, afterId);
+
     // TODO: repaginate
 
-    const update: CellInserted = {
-      type: 'cellInserted',
-      cellObject: cell.obj,
-      cellIndex
-    };
     response.updates.push(update);
 
-    const undoChangeRequest: DeleteCell = { type: 'deleteCell', cellId: cell.id };
+    const undoChangeRequest: DeleteCell = { type: 'deleteCell', cellId: update.cellObject.id };
     response.undoChangeRequests.unshift(undoChangeRequest);
   }
 

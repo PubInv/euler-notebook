@@ -28,7 +28,7 @@ import { CellId, CellObject, CellType } from "../../shared/cell";
 import { convertStrokeToPath, Stroke, StrokeId } from "../../shared/stylus";
 
 import { ServerNotebook } from "../server-notebook";
-import { DisplayUpdate, NotebookUpdated, SuggestionId } from "../../shared/server-responses";
+import { DisplayUpdate, NotebookSuggestionsUpdated, NotebookUpdated, SuggestionClass, SuggestionId, SuggestionObject, SuggestionUpdates } from "../../shared/server-responses";
 import { cellSynopsis } from "../../shared/debug-synopsis";
 import { SuggestionData } from "../suggestion";
 
@@ -135,6 +135,31 @@ export abstract class ServerCell<O extends CellObject> {
     const width = pageWidth - leftMargin - rightMargin;
     const height = pixelsFromCssLength(cssHeight);
     return cssSizeInPixels(width, height, 'px');
+  }
+
+  protected updateSuggestions(
+    add: SuggestionObject[],
+    removeIds: SuggestionId[],
+    removeClasses: SuggestionClass[],
+  ): void {
+
+    // TODO: update persistent suggestions
+
+    const suggestionUpdates: SuggestionUpdates = {
+      cellId: this.id,
+      add,
+      removeClasses,
+      removeIds,
+    };
+
+    const response: NotebookSuggestionsUpdated = {
+      type: 'notebook',
+      path: this.notebook.path,
+      operation: 'suggestionsUpdated',
+      suggestionUpdates: [ suggestionUpdates ],
+    };
+
+    this.notebook.broadcastMessage(response);
   }
 
   // Private Instance Properties

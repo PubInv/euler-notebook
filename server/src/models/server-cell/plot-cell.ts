@@ -23,7 +23,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 // const MODULE = __filename.split(/[/\\]/).slice(-1)[0].slice(0,-3);
 // const debug = debug1(`server:${MODULE}`);
 
-import { deepCopy, PlainText, CssLength, SvgMarkup } from "../../shared/common";
+import { deepCopy, PlainText, CssLength } from "../../shared/common";
 import { CellId, CellType, PlotCellObject } from "../../shared/cell";
 import { EMPTY_STROKE_DATA } from "../../shared/stylus";
 
@@ -54,9 +54,9 @@ export class PlotCell extends ServerCell<PlotCellObject> {
       id: 0,
       type: CellType.Plot,
       cssSize: this.initialCellSize(notebook, DEFAULT_HEIGHT),
-      displaySvg: <SvgMarkup>'', // REVIEW: Define shared EMPTY_SVG constant for this?
+      displaySvg: plotMarkup,
       inputText: <PlainText>"", // REVIEW: Plain text representation of plot parameters?
-      source: 'USER', // REVIEW: "UNKNOWN"?
+      source: 'USER',
       strokeData: deepCopy(EMPTY_STROKE_DATA),
 
       formula: formula.obj,
