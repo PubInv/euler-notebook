@@ -23,18 +23,25 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 // const MODULE = __filename.split(/[/\\]/).slice(-1)[0].slice(0,-3);
 // const debug = debug1(`server:${MODULE}`);
 
-import { deepCopy, PlainText, CssLength } from "../../shared/common";
+import { deepCopy, PlainText, CssLength, SvgMarkup } from "../../shared/common";
 import { CellId, CellType, PlotCellObject } from "../../shared/cell";
 import { EMPTY_STROKE_DATA } from "../../shared/stylus";
 
 import { ServerNotebook } from "../server-notebook";
 
 import { ServerCell } from "./index";
-import { plotFormula } from "../../components/formula-plotter";
+import { plot } from "../../components/formula-plotter";
 import { FormulaSymbol } from "../../shared/formula";
 import { ServerFormula } from "../server-formula";
 // import { plotUnivariate } from "../adapters/wolframscript";
 // import { WolframExpression } from "../shared/formula";
+
+// Types
+
+interface PlotFormulaReturnValue {
+  plotCellObject: PlotCellObject;
+  thumbnailPlotMarkup: SvgMarkup;
+}
 
 // Constants
 
@@ -46,15 +53,15 @@ export class PlotCell extends ServerCell<PlotCellObject> {
 
   // Public Class Methods
 
-  public static async plotFormula(notebook: ServerNotebook, formulaCellId: CellId, formula: ServerFormula, formulaSymbol: FormulaSymbol): Promise<PlotCellObject> {
+  public static async plotFormula(notebook: ServerNotebook, formulaCellId: CellId, formula: ServerFormula, formulaSymbol: FormulaSymbol): Promise<PlotFormulaReturnValue> {
 
-    const plotMarkup = await plotFormula(formula, formulaSymbol);
+    const { fullPlotMarkup, thumbnailPlotMarkup } = await plot(formula, formulaSymbol);
 
-    const obj: PlotCellObject = {
+    const plotCellObject: PlotCellObject = {
       id: 0,
       type: CellType.Plot,
       cssSize: this.initialCellSize(notebook, DEFAULT_HEIGHT),
-      displaySvg: plotMarkup,
+      displaySvg: fullPlotMarkup,
       inputText: <PlainText>"", // REVIEW: Plain text representation of plot parameters?
       source: 'USER',
       strokeData: deepCopy(EMPTY_STROKE_DATA),
@@ -62,9 +69,10 @@ export class PlotCell extends ServerCell<PlotCellObject> {
       formula: formula.obj,
       formulaCellId,
       formulaSymbol,
-      plotMarkup,
+      plotMarkup: fullPlotMarkup,
     };
-    return obj;
+
+    return { plotCellObject, thumbnailPlotMarkup };
   }
 
   // Public Constructor

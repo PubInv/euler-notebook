@@ -166,12 +166,12 @@ export class FormulaCell extends ServerCell<FormulaCellObject> {
 
     const formulaSymbol: FormulaSymbol = <FormulaSymbol>'x'; // TODO:
     // REVIEW: If formula cell gets changed or deleted before we finish plotting? */
-    const plotCellObject = await PlotCell.plotFormula(this.notebook, this.id, this.formula, formulaSymbol);
+    const { plotCellObject, thumbnailPlotMarkup } = await PlotCell.plotFormula(this.notebook, this.id, this.formula, formulaSymbol);
     const data: PlotFormulaSuggestionData = { type: 'plotFormula', plotCellObject, afterId: this.id };
     const suggestionObject: SuggestionObject = {
       id: <SuggestionId>'plot',
       class: PLOT_FORMULA_SUGGESTION_CLASS,
-      html: <Html>"Plot Formula", // TODO: Mini representation of plot
+      html: <Html>thumbnailPlotMarkup,
       data,
     };
 
