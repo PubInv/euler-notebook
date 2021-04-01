@@ -27,7 +27,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 // Exported Class
 
-class Foo {
+export class Foo {
 
   // Public Class Properties
   // Public Class Property Functions

@@ -64,4 +64,10 @@ export class FigureCell extends ServerCell<FigureCellObject> {
 
   // --- PRIVATE ---
 
+  // Private Instance Event Handlers
+
+  protected async onStrokeInactivityTimeout(): Promise<void> {
+    console.log(`Figure cell stroke inactivity timeout c${this.id}`);
+  }
+
 }

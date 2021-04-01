@@ -19,13 +19,12 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 // Requirements
 
-// import * as debug1 from "debug";
-// const MODULE = __filename.split(/[/\\]/).slice(-1)[0].slice(0,-3);
-// const debug = debug1(`server:${MODULE}`);
+import * as debug1 from "debug";
+const MODULE = __filename.split(/[/\\]/).slice(-1)[0].slice(0,-3);
+const debug = debug1(`server:${MODULE}`);
 
 import { deepCopy, PlainText, SvgMarkup, CssLength, Html, assert } from "../../shared/common";
 import { CellSource, CellType } from "../../shared/cell";
-import { RecognizeFormula } from "../../shared/client-requests";
 import { FormulaCellObject, FormulaObject, FormulaSymbol } from "../../shared/formula";
 import { FormulaTypeset, NotebookSuggestionsUpdated, NotebookUpdated, SuggestionClass, SuggestionId, SuggestionObject, SuggestionUpdates } from "../../shared/server-responses";
 import { EMPTY_STROKE_DATA } from "../../shared/stylus";
@@ -36,11 +35,11 @@ import { ServerNotebook } from "../server-notebook";
 import { ServerFormula } from "../server-formula";
 
 import { PlotFormulaSuggestionData, SuggestionData, TypesetFormulaSuggestionData } from "../suggestion";
-import { ServerSocket } from "../server-socket";
 
 import { ServerCell } from "./index";
 import { PlotCell } from "./plot-cell";
 import { monitorPromise } from "../../error-handler";
+import { AcceptSuggestion } from "../../shared/client-requests";
 
 // Constants
 
@@ -85,53 +84,6 @@ export class FormulaCell extends ServerCell<FormulaCellObject> {
   // Public Instance Methods
 
   // Public Instance Event Handlers
-
-  public /* override */ onAcceptSuggestionRequest(
-    suggestionId: SuggestionId,
-    suggestionData: SuggestionData,
-    /* out */ response: NotebookUpdated,
-  ): void {
-    let handled: boolean = true;
-    switch(suggestionData.type) {
-      case 'plotFormula': this.onPlotFormulaRequest(suggestionData, response); break;
-      case 'typesetFormula': this.onTypesetFormulaRequest(suggestionData, response); break;
-      default: handled = false;
-    }
-    super.onAcceptSuggestionRequest(suggestionId, suggestionData, response, handled);
-  }
-
-  public async onRecognizeFormula(socket: ServerSocket, msg: RecognizeFormula): Promise<void> {
-    const results = await recognizeFormula(this.obj.strokeData)
-    const addSuggestions: SuggestionObject[] = results.alternatives.map((alternative, index)=>{
-      const id = <SuggestionId>`recognizedFormula${index}`;
-      const data: TypesetFormulaSuggestionData = {
-        type: 'typesetFormula',
-        formula: alternative.formula.obj,
-      };
-      const suggestion: SuggestionObject = {
-        id,
-        class: TYPESET_FORMULA_SUGGESTION_CLASS,
-        data,
-        html: <Html>alternative.svg,
-      };
-      return suggestion;
-    });
-    const updates: SuggestionUpdates[] = [{
-      cellId: this.id,
-      add: addSuggestions,
-      removeClasses: [ TYPESET_FORMULA_SUGGESTION_CLASS ],
-      removeIds: [],
-    }];
-    const response: NotebookSuggestionsUpdated = {
-      type: 'notebook',
-      path: this.notebook.path,
-      operation: 'suggestionsUpdated',
-      suggestionUpdates: updates,
-      complete: true,
-      requestId: msg.requestId,
-    };
-    socket.sendMessage(response);
-  }
 
   // --- PRIVATE ---
 
@@ -178,6 +130,38 @@ export class FormulaCell extends ServerCell<FormulaCellObject> {
     this.updateSuggestions([ suggestionObject ], [], []);
   }
 
+  private async recognizeStrokes(): Promise<void> {
+    const results = await recognizeFormula(this.obj.strokeData)
+    const addSuggestions: SuggestionObject[] = results.alternatives.map((alternative, index)=>{
+      const id = <SuggestionId>`recognizedFormula${index}`;
+      const data: TypesetFormulaSuggestionData = {
+        type: 'typesetFormula',
+        formula: alternative.formula.obj,
+      };
+      const suggestion: SuggestionObject = {
+        id,
+        class: TYPESET_FORMULA_SUGGESTION_CLASS,
+        data,
+        html: <Html>alternative.svg,
+      };
+      return suggestion;
+    });
+    const updates: SuggestionUpdates[] = [{
+      cellId: this.id,
+      add: addSuggestions,
+      removeClasses: [ TYPESET_FORMULA_SUGGESTION_CLASS ],
+      removeIds: [],
+    }];
+    const response: NotebookSuggestionsUpdated = {
+      type: 'notebook',
+      path: this.notebook.path,
+      operation: 'suggestionsUpdated',
+      suggestionUpdates: updates,
+    };
+
+    this.notebook.broadcastMessage(response);
+  }
+
   protected /* override */ redrawDisplaySvg(): void {
     // TODO: Formula numbering, etc.
     // TODO: Strip <svg></svg>?
@@ -186,6 +170,22 @@ export class FormulaCell extends ServerCell<FormulaCellObject> {
   }
 
   // Private Instance Event Handlers
+
+  protected /* override */ onAcceptSuggestionRequest(
+    source: CellSource,
+    request: AcceptSuggestion,
+    /* out */ response: NotebookUpdated,
+  ): void {
+    const suggestionData = <SuggestionData>request.suggestionData;
+
+    let handled: boolean = true;
+    switch(suggestionData.type) {
+      case 'plotFormula': this.onPlotFormulaRequest(suggestionData, response); break;
+      case 'typesetFormula': this.onTypesetFormulaRequest(suggestionData, response); break;
+      default: handled = false;
+    }
+    super.onAcceptSuggestionRequest(source, request, response, handled);
+  }
 
   private onPlotFormulaRequest(
     suggestionData: PlotFormulaSuggestionData,
@@ -207,6 +207,11 @@ export class FormulaCell extends ServerCell<FormulaCellObject> {
     const update = this.notebook.createCellFromObject(plotCellObject, 'USER' /* TODO: */, afterId);
     response.updates.push(update);
     response.suggestionUpdates.push(suggestionUpdates);
+  }
+
+  protected async onStrokeInactivityTimeout(): Promise<void> {
+    debug(`Formula cell stroke inactivity timeout c${this.id}`);
+    await this.recognizeStrokes();
   }
 
   private onTypesetFormulaRequest(

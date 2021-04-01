@@ -30,21 +30,17 @@ const debug = debug1(`server:${MODULE}`);
 
 // import { readdirSync, unlink, writeFileSync } from "fs"; // LATER: Eliminate synchronous file operations.
 
-import { CellObject, CellSource, CellId, CellPosition, CellType, CellIndex, TextCellObject, CellRelativePosition } from "../shared/cell";
-import { assert, assertFalse, CssLength, deepCopy, ExpectedError, Html, cssSizeInPixels, CssLengthUnit, cssLengthInPixels } from "../shared/common";
+import { CellObject, CellSource, CellId, CellPosition, CellType, CellIndex, CellRelativePosition } from "../shared/cell";
+import { assert, assertFalse, CssLength, ExpectedError, Html, cssSizeInPixels, CssLengthUnit, cssLengthInPixels } from "../shared/common";
 import { Folder, NotebookPath, NOTEBOOK_PATH_RE, NotebookName, FolderPath, NotebookEntry } from "../shared/folder";
 import { NotebookObject, NotebookWatcher, PageMargins } from "../shared/notebook";
 import {
-  NotebookChangeRequest, MoveCell, InsertEmptyCell, DeleteCell, InsertStroke, DeleteStroke,
-  ChangeNotebook, RequestId, NotebookRequest, OpenNotebook, CloseNotebook, ResizeCell,
-  RecognizeFormula, RecognizeText, AcceptSuggestion, InsertCell,
+  NotebookChangeRequest, MoveCell, InsertEmptyCell, DeleteCell, ChangeNotebook, RequestId, NotebookRequest, OpenNotebook, CloseNotebook, InsertCell,
 } from "../shared/client-requests";
 import {
-  NotebookUpdated, NotebookOpened, NotebookUpdate, CellInserted, CellDeleted, StrokeInserted,
-  CellResized, CellMoved, StrokeDeleted, NotebookCollaboratorConnected, NotebookCollaboratorDisconnected, ServerResponse,
+  NotebookUpdated, NotebookOpened, NotebookUpdate, CellInserted, CellDeleted, CellMoved, NotebookCollaboratorConnected, NotebookCollaboratorDisconnected, ServerResponse,
 } from "../shared/server-responses";
 import { notebookChangeRequestSynopsis } from "../shared/debug-synopsis";
-import { strokePathId } from "../shared/stylus";
 import { UserPermission } from "../shared/permissions";
 import { CollaboratorObject } from "../shared/user";
 import { FormulaCellObject } from "../shared/formula";
@@ -56,8 +52,6 @@ import { FormulaCell } from "./server-cell/formula-cell";
 import { ServerSocket } from "./server-socket";
 import { createDirectory, deleteDirectory, FileName, readJsonFile, renameDirectory, writeJsonFile } from "../adapters/file-system";
 import { Permissions } from "./permissions";
-import { TextCell } from "./server-cell/text-cell";
-import { SuggestionData } from "./suggestion";
 
 // Types
 
@@ -353,14 +347,18 @@ export class ServerNotebook {
       assert(changeRequest);
       debug(`${source} change request: ${notebookChangeRequestSynopsis(changeRequest)}`);
       switch(changeRequest.type) {
-        case 'acceptSuggestion': this.applyAcceptSuggestionRequest(source, changeRequest, response); break;
+        case 'acceptSuggestion':
+        case 'deleteStroke':
+        case 'insertStroke':
+        case 'resizeCell':  {
+          const cell = this.getCell(changeRequest.cellId);
+          cell.onChangeRequest(source, changeRequest, response);
+          break;
+        }
         case 'deleteCell':       this.applyDeleteCellRequest(source, changeRequest, response); break;
-        case 'deleteStroke':     this.applyDeleteStrokeRequest(source, changeRequest, response); break;
         case 'insertCell':       this.applyInsertCellRequest(source, changeRequest, response); break;
         case 'insertEmptyCell':  this.applyInsertEmptyCellRequest(source, changeRequest, response); break;
-        case 'insertStroke':     this.applyInsertStrokeRequest(source, changeRequest, response); break;
         case 'moveCell':         this.applyMoveCellRequest(source, changeRequest, response); break;
-        case 'resizeCell':       this.applyResizeCellRequest(source, changeRequest, response); break;
         default: assertFalse();
       }
     }
@@ -498,15 +496,15 @@ export class ServerNotebook {
     const cell = this.getCell<FormulaCellObject>(id);
     assert(cell.type == CellType.Formula);
     assert(cell instanceof FormulaCell);
-    return <FormulaCell>cell;
+    return <FormulaCell><unknown>cell;
   }
 
-  private getTextCell(id: CellId): TextCell {
-    const cell = this.getCell<TextCellObject>(id);
-    assert(cell.type == CellType.Text);
-    assert(cell instanceof TextCell);
-    return <TextCell>cell;
-  }
+  // private getTextCell(id: CellId): TextCell {
+  //   const cell = this.getCell<TextCellObject>(id);
+  //   assert(cell.type == CellType.Text);
+  //   assert(cell instanceof TextCell);
+  //   return <TextCell>cell;
+  // }
 
   // private get watchers(): IterableIterator<ServerNotebookWatcher> {
   //   const info = ServerNotebook.getInfo(this.path);
@@ -514,19 +512,6 @@ export class ServerNotebook {
   // }
 
   // Private Instance Methods
-
-  private applyAcceptSuggestionRequest(
-    _source: CellSource,
-    request: AcceptSuggestion,
-    /* out */ response: NotebookUpdated,
-  ): void {
-    const cell = this.getCell(request.cellId);
-    cell.onAcceptSuggestionRequest(
-      request.suggestionId,
-      <SuggestionData>request.suggestionData,
-      response
-    );
-  }
 
   private applyDeleteCellRequest(
     _source: CellSource,
@@ -557,32 +542,6 @@ export class ServerNotebook {
     //   cell.object(),
     // };
     // response.undoChangeRequests.unshift(undoChangeRequest);
-  }
-
-  private applyDeleteStrokeRequest(
-    _source: CellSource,
-    request: DeleteStroke,
-    /* out */ response: NotebookUpdated,
-  ): void {
-    const { cellId, strokeId } = request;
-    const cell = this.getCell(cellId);
-    const stroke = cell.deleteStroke(strokeId);
-
-    // Construct the response
-    const pathId = strokePathId(cellId, strokeId);
-    const update: StrokeDeleted = {
-      type: 'strokeDeleted',
-      cellId,
-      displayUpdate: { delete: [ pathId ]},
-      strokeId,
-    };
-    response.updates.push(update);
-    const undoChangeRequest: InsertStroke = {
-      type: 'insertStroke',
-      cellId,
-      stroke,
-    }
-    response.undoChangeRequests.unshift(undoChangeRequest);
   }
 
   private applyInsertCellRequest(
@@ -637,27 +596,6 @@ export class ServerNotebook {
     response.undoChangeRequests.unshift(undoChangeRequest);
   }
 
-  private applyInsertStrokeRequest(
-    _source: CellSource,
-    request: InsertStroke,
-    /* out */ response: NotebookUpdated,
-  ): void {
-    const { cellId, stroke } = request;
-    const cell = this.getCell(request.cellId);
-    const displayUpdate = cell.insertStroke(stroke);
-
-    // Construct the response
-    const update: StrokeInserted = {
-      type: 'strokeInserted',
-      cellId: cell.id,
-      displayUpdate,
-      stroke: request.stroke,
-    };
-    response.updates.push(update);
-    const undoChangeRequest: DeleteStroke = { type: 'deleteStroke', cellId, strokeId: stroke.id };
-    response.undoChangeRequests.unshift(undoChangeRequest);
-  }
-
   private applyMoveCellRequest(
     _source: CellSource,
     request: MoveCell,
@@ -691,26 +629,6 @@ export class ServerNotebook {
     response.updates.push(update);
 
     const undoChangeRequest: MoveCell = { type: 'moveCell', cellId, afterId: oldAfterId };
-    response.undoChangeRequests.unshift(undoChangeRequest);
-  }
-
-  private applyResizeCellRequest(
-    _source: CellSource,
-    request: ResizeCell,
-    /* out */ response: NotebookUpdated,
-  ): void {
-    const { cellId, cssSize } = request;
-    assert(cssSize.height.endsWith('px'));
-    assert(cssSize.width.endsWith('px'));
-    const cell = this.getCell(cellId);
-    const oldCssSize = deepCopy(cell.cssSize);
-
-    cell.setCssSize(cssSize);
-
-    const update: CellResized = { type: 'cellResized', cellId, cssSize };
-    response.updates.push(update);
-
-    const undoChangeRequest: ResizeCell = { type: 'resizeCell', cellId, cssSize: oldCssSize };
     response.undoChangeRequests.unshift(undoChangeRequest);
   }
 
@@ -786,8 +704,6 @@ export class ServerNotebook {
       case 'change': await this.onChangeRequest(socket, msg); break;
       case 'close':  this.onCloseRequest(socket, msg); break;
       case 'open':  this.onOpenRequest(socket, msg); break;
-      case 'recognizeFormula': await this.onRecognizeFormula(socket, msg); break;
-      case 'recognizeText': await this.onRecognizeText(socket, msg); break;
       default: assert(false); break;
     }
   }
@@ -869,20 +785,6 @@ export class ServerNotebook {
     socket.sendMessage(response);
 
     this.sendCollaboratorConnectedMessage(socket);
-  }
-
-  private async onRecognizeFormula(socket: ServerSocket, msg: RecognizeFormula): Promise<void> {
-    // REVIEW: Should we be checking permissions?
-    const cellId = msg.cellId;
-    const cell = this.getFormulaCell(cellId);
-    await cell.onRecognizeFormula(socket, msg);
-  }
-
-  private async onRecognizeText(socket: ServerSocket, msg: RecognizeText): Promise<void> {
-    // REVIEW: Should we be checking permissions?
-    const cellId = msg.cellId;
-    const cell = this.getTextCell(cellId);
-    await cell.onRecognizeText(socket, msg);
   }
 
   // NOT USED

@@ -209,8 +209,6 @@ function clientNotebookMessageSynopsis(msg: NotebookRequest): string {
       break;
     case 'close': break;
     case 'open': break;
-    case 'recognizeFormula': rval += ` C${msg.cellId}`; break;
-    case 'recognizeText': rval += ` C${msg.cellId}`; break;
     default: rval += UNKNOWN_TYPE;
   }
   return rval;

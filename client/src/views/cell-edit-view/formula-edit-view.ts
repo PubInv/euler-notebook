@@ -34,8 +34,6 @@ import { FormulaCell } from "../../models/client-cell/formula-cell";
 import { NotebookEditView } from "../notebook-edit-view";
 
 import { CellEditView } from "./index";
-import { CELL_ICONS, HtmlElementSpecification, svgIconReferenceMarkup } from "../../dom";
-import { CellType } from "../../shared/cell";
 
 // Types
 
@@ -52,16 +50,7 @@ export class FormulaEditView extends CellEditView<FormulaCellObject> {
   public constructor(notebookEditView: NotebookEditView, cell: FormulaCell) {
     debug(`Creating instance: style ${cell.obj.id}`);
 
-    // Create a button for the right margin that initiates recognizing the formula handwriting.
-    const rightMarginButton: HtmlElementSpecification<'button'> = {
-      tag: 'button',
-      attrs: { tabindex: -1 },
-      class: <CssClass>'iconButton',
-      html: svgIconReferenceMarkup(CELL_ICONS.get(CellType.Formula)!),
-      syncButtonHandler: (e: MouseEvent)=>this.onRecognizeButtonClicked(e),
-    };
-
-    super(notebookEditView, cell, <CssClass>'formulaCell', rightMarginButton);
+    super(notebookEditView, cell, <CssClass>'formulaCell');
   }
 
   // Public Instance Methods
@@ -88,15 +77,6 @@ export class FormulaEditView extends CellEditView<FormulaCellObject> {
   // Private Instance Methods
 
   // Private Instance Event Handlers
-
-  private onRecognizeButtonClicked(event: MouseEvent): void {
-    // LATER: Cancel if user leaves screen when recognition request outstanding
-    event.stopPropagation(); // Prevent our own 'onClicked' handler from being called.
-    debug(`onRecognizeButtonClicked`);
-    this.cell.notebook.recognizeFormulaRequest(this.id);
-    // this.suggestionPanel.setFormulaRecognitionResults(response.results);
-    // this.suggestionPanel.showIfHidden();
-  }
 
 }
 

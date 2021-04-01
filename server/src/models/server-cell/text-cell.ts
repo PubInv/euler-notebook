@@ -19,13 +19,12 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 // Requirements
 
-// import * as debug1 from "debug";
-// const MODULE = __filename.split(/[/\\]/).slice(-1)[0].slice(0,-3);
-// const debug = debug1(`server:${MODULE}`);
+import * as debug1 from "debug";
+const MODULE = __filename.split(/[/\\]/).slice(-1)[0].slice(0,-3);
+const debug = debug1(`server:${MODULE}`);
 
 import { deepCopy, PlainText, SvgMarkup, CssLength, escapeHtml, Html } from "../../shared/common";
 import { CellSource, CellType, TextCellObject } from "../../shared/cell";
-import { RecognizeText } from "../../shared/client-requests";
 import { EMPTY_STROKE_DATA } from "../../shared/stylus";
 
 import { recognizeText } from "../../components/handwriting-recognizer";
@@ -36,7 +35,7 @@ import { ServerCell } from "./index";
 import { NotebookSuggestionsUpdated, NotebookUpdated, SuggestionClass, SuggestionId, SuggestionObject, SuggestionUpdates, TextTypeset } from "../../shared/server-responses";
 
 import { SuggestionData, TypesetTextSuggestionData } from "../suggestion";
-import { ServerSocket } from "../server-socket";
+import { AcceptSuggestion } from "../../shared/client-requests";
 
 // Constants
 
@@ -73,24 +72,11 @@ export class TextCell extends ServerCell<TextCellObject> {
 
   // Public Instance Event Handlers
 
-  public /* override */ onAcceptSuggestionRequest(
-    suggestionId: SuggestionId,
-    suggestionData: SuggestionData,
-    /* out */ response: NotebookUpdated,
-  ): void {
-    let handled: boolean = false;
-    switch(suggestionData.type) {
-      case 'typesetText': {
-        this.typesetText(suggestionData, response);
-        handled = true;
-        // TODO: update the suggestions to remove the typeset suggestion
-        break;
-      }
-    }
-    super.onAcceptSuggestionRequest(suggestionId, suggestionData, response, handled);
-  }
+  // --- PRIVATE ---
 
-  public async onRecognizeText(socket: ServerSocket, msg: RecognizeText): Promise<void> {
+  // Private Instance Methods
+
+  private async recognizeStrokes(): Promise<void> {
     const results = await recognizeText(this.obj.strokeData)
     const addSuggestions: SuggestionObject[] = results.alternatives.map((alternative, index)=>{
       const id = <SuggestionId>`recognizedText${index}`;
@@ -117,13 +103,10 @@ export class TextCell extends ServerCell<TextCellObject> {
       path: this.notebook.path,
       operation: 'suggestionsUpdated',
       suggestionUpdates: updates,
-      complete: true,
-      requestId: msg.requestId,
     };
-    socket.sendMessage(response);
-  }
 
-  // --- PRIVATE ---
+    this.notebook.broadcastMessage(response);
+  }
 
   protected /* override */ redrawDisplaySvg(): void {
     const markup = <SvgMarkup>`<text y="12">${escapeHtml(this.obj.inputText)}</text>`;
@@ -132,7 +115,27 @@ export class TextCell extends ServerCell<TextCellObject> {
 
   // Private Instance Event Handlers
 
-  private typesetText(
+  protected /* override */ onAcceptSuggestionRequest(
+    source: CellSource,
+    request: AcceptSuggestion,
+    /* out */ response: NotebookUpdated,
+  ): void {
+    const suggestionData = <SuggestionData>request.suggestionData;
+
+    let handled: boolean = true;
+    switch(suggestionData.type) {
+      case 'typesetText': this.onTypesetTextRequest(suggestionData, response); break;
+      default: handled = false;
+    }
+    super.onAcceptSuggestionRequest(source, request, response, handled);
+  }
+
+  protected async onStrokeInactivityTimeout(): Promise<void> {
+    debug(`Text cell stroke inactivity timeout c${this.id}`);
+    await this.recognizeStrokes();
+  }
+
+  private onTypesetTextRequest(
     suggestionData: TypesetTextSuggestionData,
     /* out */ response: NotebookUpdated,
   ): void {

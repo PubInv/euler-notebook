@@ -62,9 +62,7 @@ export interface OpenFolder extends FolderRequestBase {
 export type NotebookRequest =
               ChangeNotebook |
               CloseNotebook |
-              OpenNotebook |
-              RecognizeFormula |
-              RecognizeText;
+              OpenNotebook;
 interface NotebookRequestBase extends RequestBase {
   type: 'notebook';
   path: NotebookPath;
@@ -79,14 +77,6 @@ export interface CloseNotebook extends NotebookRequestBase {
 }
 export interface OpenNotebook extends NotebookRequestBase {
   operation: 'open';
-}
-export interface RecognizeFormula extends NotebookRequestBase {
-  operation: 'recognizeFormula',
-  cellId: CellId,
-}
-export interface RecognizeText extends NotebookRequestBase {
-  operation: 'recognizeText',
-  cellId: CellId,
 }
 
 // User Requests

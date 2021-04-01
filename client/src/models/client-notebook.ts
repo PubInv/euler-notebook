@@ -32,7 +32,7 @@ import { PageMargins, Pagination } from "../shared/notebook";
 import {
   NotebookChangeRequest, ChangeNotebook, OpenNotebook, DeleteCell, ResizeCell,
   InsertStroke, InsertEmptyCell, MoveCell, DeleteStroke,
-  RecognizeFormula, RecognizeText, AcceptSuggestion
+  AcceptSuggestion
 } from "../shared/client-requests";
 import {
   NotebookUpdated, NotebookOpened, NotebookResponse, NotebookClosed, NotebookUpdate,
@@ -203,28 +203,6 @@ export class ClientNotebook {
       afterId,
     }
     await this.sendUndoableChangeRequest(changeRequest);
-  }
-
-  // TEMPORARY: Remove when server automatically initiates recognition after a lull in stroke changes.
-  public recognizeFormulaRequest(cellId: CellId): void {
-    const msg: RecognizeFormula = {
-      type: 'notebook',
-      path: this.path,
-      operation: 'recognizeFormula',
-      cellId,
-    };
-    appInstance.socket.sendMessage(msg);
-  }
-
-  // TEMPORARY: Remove when server automatically initiates recognition after a lull in stroke changes.
-  public recognizeTextRequest(cellId: CellId): void {
-    const msg: RecognizeText = {
-      type: 'notebook',
-      path: this.path,
-      operation: 'recognizeText',
-      cellId,
-    };
-    appInstance.socket.sendMessage(msg);
   }
 
   public async redoRequest(): Promise<void> {

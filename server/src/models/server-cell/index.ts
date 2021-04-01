@@ -23,16 +23,22 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 // const MODULE = __filename.split(/[/\\]/).slice(-1)[0].slice(0,-3);
 // const debug = debug1(`server:${MODULE}`);
 
-import { assert, CssLength, CssSize, cssSizeInPixels, escapeHtml, Html, pixelsFromCssLength, SvgMarkup } from "../../shared/common";
-import { CellId, CellObject, CellType } from "../../shared/cell";
-import { convertStrokeToPath, Stroke, StrokeId } from "../../shared/stylus";
+import { assert, CssLength, CssSize, cssSizeInPixels, deepCopy, escapeHtml, Html, Milliseconds, pixelsFromCssLength, SvgMarkup } from "../../shared/common";
+import { CellId, CellObject, CellSource, CellType } from "../../shared/cell";
+import { convertStrokeToPath, strokePathId } from "../../shared/stylus";
 
 import { ServerNotebook } from "../server-notebook";
-import { DisplayUpdate, NotebookSuggestionsUpdated, NotebookUpdated, SuggestionClass, SuggestionId, SuggestionObject, SuggestionUpdates } from "../../shared/server-responses";
+import { CellResized, DisplayUpdate, NotebookSuggestionsUpdated, NotebookUpdated, StrokeDeleted, StrokeInserted, SuggestionClass, SuggestionId, SuggestionObject, SuggestionUpdates } from "../../shared/server-responses";
 import { cellSynopsis } from "../../shared/debug-synopsis";
 import { SuggestionData } from "../suggestion";
+import { AcceptSuggestion, DeleteStroke, InsertStroke, NotebookChangeRequest, ResizeCell } from "../../shared/client-requests";
+import { InactivityTimeout } from "../../shared/inactivity-timeout";
 
 // Types
+
+// Constants
+
+const STROKE_INACTIVITY_INTERVAL: Milliseconds = 5000;
 
 // Exported Class
 
@@ -47,6 +53,7 @@ export abstract class ServerCell<O extends CellObject> {
   ) {
     this.notebook = notebook;
     this.obj = obj;
+    this.strokeInactivityTimeout = new InactivityTimeout(STROKE_INACTIVITY_INTERVAL, ()=>{ return this.onStrokeInactivityTimeout(); });
   }
 
   // Public Instance Properties
@@ -60,11 +67,6 @@ export abstract class ServerCell<O extends CellObject> {
 
   public get cssSize(): CssSize { return this.obj.cssSize; }
 
-  public setCssSize(value: CssSize): void {
-    this.obj.cssSize.height = value.height;
-    this.obj.cssSize.width = value.width;
-  }
-
   public toHtml(): Html {
     return <Html>`<div>
 <span class="collapsed">S${this.id} ${this.type} ${this.obj.source}</span>
@@ -76,52 +78,19 @@ export abstract class ServerCell<O extends CellObject> {
 
   // Public Instance Methods
 
-  public deleteStroke(strokeId: StrokeId): Stroke {
-    const strokes = this.obj.strokeData.strokes;
-    const strokeIndex = strokes.findIndex(stroke=>stroke.id===strokeId);
-    assert(strokeIndex>=0, `Cannot find stroke c${this.id}s${strokeId}`);
-    const removedStroke = strokes.splice(strokeIndex, 1)[0];
-    // TODO: It is expensive to recompute the entire displaySvg
-    //       after every stroke change. How can we do it incrementally?
-    this.redrawDisplaySvg();
-    return removedStroke;
-  }
-
-  public insertStroke(stroke: Stroke): DisplayUpdate {
-    // Add the stroke to the list of strokes
-    const strokeData = this.obj.strokeData;
-    stroke.id = strokeData.nextId++;
-    strokeData.strokes.push(stroke);
-    // TODO: It is expensive to recompute the entire displaySvg
-    //       after every stroke change. How can we do it incrementally?
-    this.redrawDisplaySvg();
-    // Construct display update
-    const newPath = convertStrokeToPath(this.id, stroke);
-    const displayUpdate: DisplayUpdate = { append: [ newPath ] };
-    return displayUpdate;
-  }
-
   // Public Instance Event Handlers
 
-  public /* overridable */ onAcceptSuggestionRequest(
-    _suggestionId: SuggestionId,
-    suggestionData: SuggestionData,
-    /* out */ _response: NotebookUpdated,
-    handled?: boolean,
+  public /* overridable */ onChangeRequest(
+    source: CellSource,
+    changeRequest: NotebookChangeRequest,
+    /* out */ response: NotebookUpdated,
   ): void {
-
-    // LATER: Handle suggestions common to all cell types.
-    // switch(_suggestionData.type) {
-    //   case '':  {
-    //     ...
-    //     handled = true;
-    // }
-
-    if (!handled) {
-      // REVIEW: Use proper logging system.
-      console.warn(`'${suggestionData.type}' AcceptSuggestionRequest not handled.`)
+    switch(changeRequest.type) {
+      case 'acceptSuggestion': this.onAcceptSuggestionRequest(source, changeRequest, response); break;
+      case 'deleteStroke':     this.onDeleteStrokeRequest(source, changeRequest, response); break;
+      case 'insertStroke':     this.onInsertStrokeRequest(source, changeRequest, response); break;
+      case 'resizeCell':       this.onResizeCellRequest(source, changeRequest, response); break;
     }
-
   }
 
   // --- PRIVATE ---
@@ -165,6 +134,7 @@ export abstract class ServerCell<O extends CellObject> {
   // Private Instance Properties
 
   protected notebook: ServerNotebook;
+  protected strokeInactivityTimeout: InactivityTimeout;
 
   // Private Instance Property Functions
 
@@ -177,5 +147,123 @@ export abstract class ServerCell<O extends CellObject> {
     this.obj.displaySvg = <SvgMarkup>(embeddedMarkup + strokesMarkup);
   }
 
+  // Private Instance Event Handlers
+
+  protected /* overridable */ onAcceptSuggestionRequest(
+    _source: CellSource,
+    request: AcceptSuggestion,
+    /* out */ _response: NotebookUpdated,
+    handled?: boolean,
+  ): void {
+    const suggestionData = <SuggestionData>request.suggestionData;
+
+    // LATER: Handle suggestions common to all cell types.
+    // switch(_suggestionData.type) {
+    //   case '':  {
+    //     ...
+    //     handled = true;
+    // }
+
+    if (!handled) {
+      // REVIEW: Use proper logging system.
+      console.warn(`'${suggestionData.type}' AcceptSuggestionRequest not handled.`)
+    }
+
+  }
+
+  protected /* overridable */ onDeleteStrokeRequest(
+    _source: CellSource,
+    request: DeleteStroke,
+    /* out */ response: NotebookUpdated,
+  ): void {
+    const { strokeId } = request;
+
+    const strokes = this.obj.strokeData.strokes;
+    const strokeIndex = strokes.findIndex(stroke=>stroke.id===strokeId);
+    assert(strokeIndex>=0, `Cannot find stroke c${this.id}s${strokeId}`);
+    const removedStroke = strokes.splice(strokeIndex, 1)[0];
+    // TODO: It is expensive to recompute the entire displaySvg
+    //       after every stroke change. How can we do it incrementally?
+    this.redrawDisplaySvg();
+
+    // Construct the response
+    const pathId = strokePathId(this.id, strokeId);
+    const update: StrokeDeleted = {
+      type: 'strokeDeleted',
+      cellId: this.id,
+      displayUpdate: { delete: [ pathId ]},
+      strokeId,
+    };
+    response.updates.push(update);
+
+    const undoChangeRequest: InsertStroke = {
+      type: 'insertStroke',
+      cellId: this.id,
+      stroke: removedStroke,
+    }
+    response.undoChangeRequests.unshift(undoChangeRequest);
+
+    // Strokes have changed, so wait for a few seconds of inactivity
+    // before attempting to recognize the modified strokes.
+    this.strokeInactivityTimeout.startOrPostpone();
+  }
+
+  protected /* overridable */ onInsertStrokeRequest(
+    _source: CellSource,
+    request: InsertStroke,
+    /* out */ response: NotebookUpdated,
+  ): void {
+    const { stroke } = request;
+
+    // Add the stroke to the list of strokes
+    const strokeData = this.obj.strokeData;
+    stroke.id = strokeData.nextId++;
+    strokeData.strokes.push(stroke);
+    // TODO: It is expensive to recompute the entire displaySvg
+    //       after every stroke change. How can we do it incrementally?
+    this.redrawDisplaySvg();
+    // Construct display update
+    const newPath = convertStrokeToPath(this.id, stroke);
+    const displayUpdate: DisplayUpdate = { append: [ newPath ] };
+
+    // Construct the response
+    const update: StrokeInserted = {
+      type: 'strokeInserted',
+      cellId: this.id,
+      displayUpdate,
+      stroke: request.stroke,
+    };
+    response.updates.push(update);
+
+    const undoChangeRequest: DeleteStroke = { type: 'deleteStroke', cellId: this.id, strokeId: stroke.id };
+    response.undoChangeRequests.unshift(undoChangeRequest);
+
+    // Strokes have changed, so wait for a few seconds of inactivity
+    // before attempting to recognize the modified strokes.
+    this.strokeInactivityTimeout.startOrPostpone();
+  }
+
+  protected /* overridable */ onResizeCellRequest(
+    _source: CellSource,
+    request: ResizeCell,
+    /* out */ response: NotebookUpdated,
+  ): void {
+    const { cssSize: newCssSize } = request;
+    assert(newCssSize.height.endsWith('px'));
+    assert(newCssSize.width.endsWith('px'));
+    const oldCssSize = deepCopy(this.cssSize);
+
+    this.obj.cssSize.height = newCssSize.height;
+    this.obj.cssSize.width = newCssSize.width;
+
+    const update: CellResized = { type: 'cellResized', cellId: this.id, cssSize: newCssSize };
+    response.updates.push(update);
+
+    const undoChangeRequest: ResizeCell = { type: 'resizeCell', cellId: this.id, cssSize: oldCssSize };
+    response.undoChangeRequests.unshift(undoChangeRequest);
+  }
+
+  // Inherited classes will trigger recognizing their strokes appropriate for their cell type.
+  protected abstract onStrokeInactivityTimeout(): Promise<void>;
 }
 

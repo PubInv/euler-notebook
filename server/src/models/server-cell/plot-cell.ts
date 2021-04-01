@@ -93,4 +93,10 @@ export class PlotCell extends ServerCell<PlotCellObject> {
     super.redrawDisplaySvg(this.obj.plotMarkup);
   }
 
+  // Private Instance Event Handlers
+
+  protected async onStrokeInactivityTimeout(): Promise<void> {
+    console.log(`Plot cell stroke inactivity timeout c${this.id}`);
+  }
+
 }
