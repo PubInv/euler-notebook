@@ -21,9 +21,9 @@ import * as debug1 from "debug";
 const MODULE = __filename.split(/[/\\]/).slice(-1)[0].slice(0,-3);
 const debug = debug1(`tests:${MODULE}`);
 
-import { initialize as initializeMathJax } from "../adapters/mathjax";
-import { start as startWolframscript, stop as stopWolframscript } from "../adapters/wolframscript";
-import { loadConfig /* , loadCredentials */ } from "../config";
+import { initialize as initializeMathJax } from "../src/adapters/mathjax";
+import { start as startWolframscript, stop as stopWolframscript } from "../src/adapters/wolframscript";
+import { loadConfig /* , loadCredentials */ } from "../src/config";
 
 // Exported functions
 
@@ -38,7 +38,7 @@ before("Loading config and starting WolframScript.", async function() {
   this.timeout(10*1000);
   debug(`Global before`);
   const config = await loadConfig();
-  if (!config.mathematica) { throw new Error(`Unit tests require WolframScript.`); }
+  if (!config.wolframscript) { throw new Error(`Unit tests require WolframScript.`); }
   // const credentials = await loadCredentials();
   debug(`  Starting WolframScript.`);
   await startWolframscript(config.wolframscript);

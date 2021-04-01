@@ -21,16 +21,16 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 import * as debug1 from "debug";
 const MODULE = __filename.split(/[/\\]/).slice(-1)[0].slice(0,-3);
 const debug = debug1(`tests:${MODULE}`);
-import { loadConfig /* , loadCredentials */ } from "../config";
+import { loadConfig /* , loadCredentials */ } from "../src/config";
 
 
 import { search,
 //         search_full
-       } from "../adapters/oeis";
-import { PlainText,} from "../shared/common";
-import { SearchResults } from "../shared/api-calls";
+       } from "../src/adapters/oeis";
+import { PlainText,} from "../src/shared/common";
+import { SearchResults } from "../src/shared/api-calls";
 import { assert } from "chai";
-import { start as startWolframscript, stop as stopWolframscript } from "../adapters/wolframscript";
+import { start as startWolframscript, stop as stopWolframscript } from "../src/adapters/wolframscript";
 
 // Constants
 
@@ -51,7 +51,7 @@ before("Loading config and starting WolframScript.", async function() {
   this.timeout(10*1000);
   debug(`Global before`);
   const config = await loadConfig();
-  if (!config.mathematica) { throw new Error(`Unit tests require WolframScript.`); }
+  if (!config.wolframscript) { throw new Error(`Unit tests require WolframScript.`); }
   // const credentials = await loadCredentials();
   debug(`  Starting WolframScript.`);
   await startWolframscript(config.wolframscript);

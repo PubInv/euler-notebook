@@ -29,13 +29,13 @@ const latex = require('node-latex'); // REVIEW: why not import?
 import 'mocha';
 // import * as sinon from "sinon";
 
-import { FormulaCellObject, PlainTextFormula } from "../shared/formula";
+import { FormulaCellObject, PlainTextFormula } from "../src/shared/formula";
 import { InsertCellRequest, TexExpression } from "../shared/euler-notebook-api";
-import { ServerNotebook }  from "../models/server-notebook";
+import { ServerNotebook }  from "../src/models/server-notebook";
 
 import { ensureGlobalLoaded } from "./global";
-import { CellType, InputType } from "../shared/cell";
-import { EMPTY_SVG, PlainText } from "../shared/common";
+import { CellType, InputType } from "../src/shared/cell";
+import { EMPTY_SVG, PlainText } from "../src/shared/common";
 ensureGlobalLoaded();
 
 // Unit Tests

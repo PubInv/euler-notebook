@@ -73,7 +73,7 @@ async function main() {
   await UserSession.loadIfAvailable();
 
   // TODO: stopWolframscript before exiting.
-  if (config.mathematica) { await startWolframscript(config.wolframscript); }
+  if (config.wolframscript) { await startWolframscript(config.wolframscript); }
   initializeMathJax();
   initializeMyScript(credentials.myscript);
   initializeWolframAlpha(credentials.wolframalpha);

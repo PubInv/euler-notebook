@@ -26,14 +26,14 @@ import { assert } from "chai";
 import 'mocha';
 // import * as sinon from "sinon";
 
-import { FormulaCellObject, PlainTextFormula } from "../shared/formula";
-import { CellId, CellInserted, WolframExpression } from "../shared/notebook";
+import { FormulaCellObject, PlainTextFormula } from "../src/shared/formula";
+import { CellId, CellInserted, WolframExpression } from "../src/shared/notebook";
 import { InsertCellRequest, StyleChangeRequest } from "../shared/euler-notebook-api";
-import { ServerNotebook }  from "../models/server-notebook";
+import { ServerNotebook }  from "../src/models/server-notebook";
 
 import { ensureGlobalLoaded } from "./global";
-import { CellType, InputType } from "../shared/cell";
-import { EMPTY_SVG, PlainText } from "../shared/common";
+import { CellType, InputType } from "../src/shared/cell";
+import { EMPTY_SVG, PlainText } from "../src/shared/common";
 ensureGlobalLoaded();
 
 // Unit Tests

@@ -66,6 +66,6 @@ export interface SearchResult {
   raw?: object;
   formula?: PlainTextFormula; // if present, this is would a syntactically correct wolfram language expression
   knownConstant?: PlainText;
-  wolframExpr?: WolframExpression; // if present, and mathematica/wolfram expression
+  wolframExpr?: WolframExpression; // if present, and wolfram expression
   texExpr?: TexExpression; // if present, renderable TeX expression
 }

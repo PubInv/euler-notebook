@@ -26,15 +26,15 @@ import { assert } from "chai";
 import 'mocha';
 // import * as sinon from "sinon";
 
-import { /* FormulaCellData, */ PlainTextFormula } from "../shared/formula";
+import { /* FormulaCellData, */ PlainTextFormula } from "../src/shared/formula";
 import {
   CellObject, RelationshipObject, CellId
-} from "../shared/notebook";
+} from "../src/shared/notebook";
 import {
   NotebookChangeRequest, InsertCellRequest, StyleChangeRequest, MoveCellRequest, DeleteCellRequest,
   StyleProperties
 } from "../shared/euler-notebook-api";
-import { ServerNotebook }  from "../models/server-notebook";
+import { ServerNotebook }  from "../src/models/server-notebook";
 
 import { ensureGlobalLoaded } from "./global";
 // import { CellType, InputType } from "../shared/cell";

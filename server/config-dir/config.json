@@ -4,8 +4,7 @@
     "@comment": "node-latex options. See https://www.npmjs.com/package/node-latex",
     "cmd": "/Library/TeX/texbin/pdflatex"
   },
-  "mathematica": {},
-  "@wolframscript": {
+  "wolframscript": {
     "@path": "/usr/local/bin/wolframscript"
   }
 }

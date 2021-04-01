@@ -32,8 +32,7 @@ const MODULE = __filename.split(/[/\\]/).slice(-1)[0].slice(0,-3);
 // Types
 
 export interface Config {
-  mathematica?: MathematicaConfig;
-  nodeLatex?: NoteLatexConfig;
+  nodeLatex?: NodeLatexConfig;
   wolframscript?: WolframScriptConfig;
 }
 
@@ -47,10 +46,7 @@ export interface JsonWebTokenKeys {
   secret: string;
 }
 
-export interface MathematicaConfig {
-}
-
-export interface NoteLatexConfig {
+export interface NodeLatexConfig {
   // See https://www.npmjs.com/package/node-latex.
   // Currently we don't need these definitions.
   // We just pass the object to node-latex.

@@ -26,15 +26,15 @@ import { assert } from "chai";
 import 'mocha';
 import * as sinon from "sinon";
 
-import { EMPTY_SVG, Html, PlainText } from "../shared/common";
-import { EMPTY_FORMULA, FormulaCellObject } from "../shared/formula";
-import { NotebookUpdate, CellInserted, CellObject } from "../shared/notebook";
+import { EMPTY_SVG, Html, PlainText } from "../src/shared/common";
+import { EMPTY_FORMULA, FormulaCellObject } from "../src/shared/formula";
+import { NotebookUpdate, CellInserted, CellObject } from "../src/shared/notebook";
 import { NotebookChangeRequest, InsertCellRequest, StyleProperties, ToolData } from "../shared/euler-notebook-api";
-import { ServerNotebook, ObserverInstance }  from "../models/server-notebook";
-import { Config } from "../config";
+import { ServerNotebook, ObserverInstance }  from "../src/models/server-notebook";
+import { Config } from "../src/config";
 
 import { ensureGlobalLoaded } from "./global";
-import { CellType, InputType } from "../shared/cell";
+import { CellType, InputType } from "../src/shared/cell";
 ensureGlobalLoaded();
 
 // Test Observer Class

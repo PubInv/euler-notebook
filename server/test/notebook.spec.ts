@@ -26,13 +26,13 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 import { assert } from "chai";
 import 'mocha';
 
-import { StyleType, VERSION }  from "../shared/notebook";
+import { StyleType, VERSION }  from "../src/shared/notebook";
 import { NotebookChangeRequest, InsertCellRequest, StyleProperties } from "../shared/euler-notebook-api";
-import { ServerNotebook }  from "../models/server-notebook";
+import { ServerNotebook }  from "../src/models/server-notebook";
 
 import { ensureGlobalLoaded } from "./global";
-import { CssLength, PlainText } from "../shared/common";
-import { CellType, InputType, TextCellObject } from "../shared/cell";
+import { CssLength, PlainText } from "../src/shared/common";
+import { CellType, InputType, TextCellObject } from "../src/shared/cell";
 ensureGlobalLoaded();
 
 // Unit Tests
