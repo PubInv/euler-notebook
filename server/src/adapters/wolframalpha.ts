@@ -100,13 +100,13 @@ export async function findEquationInAlphaResult(text: string) : Promise<string>
 
   try {
     var cand1 = <PlainText>string_to_slug(<string>cand0);
-    console.log("CC1:",cand1);
+    // console.log("CC1:",cand1);
     var cand2 = convertPlainTextFormulaToWolfram(<PlainTextFormula>cand1);
-    console.log("CC2:",cand2);
+    // console.log("CC2:",cand2);
     var cand3 = await convertEvaluatedWolframToTeX(<WolframExpression>cand2);
-    console.log("CC3:",cand3);
+    // console.log("CC3:",cand3);
     var cand4 = await convertTeXtoWolfram(cand3);
-    console.log("CC4:",cand4);
+    // console.log("CC4:",cand4);
   } catch(e) {
     console.log("error finding equation in:"+text,e);
     return cand0;

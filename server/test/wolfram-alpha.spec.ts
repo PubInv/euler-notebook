@@ -18,17 +18,22 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
 // Requirements
-import * as debug1 from "debug";
-const MODULE = __filename.split(/[/\\]/).slice(-1)[0].slice(0,-3);
-const debug = debug1(`tests:${MODULE}`);
-import { loadConfig /* , loadCredentials */ } from "../src/config";
 
+// import * as debug1 from "debug";
+// const MODULE = __filename.split(/[/\\]/).slice(-1)[0].slice(0,-3);
+// const debug = debug1(`tests:${MODULE}`);
+
+import { assert } from "chai";
+
+import { PlainText } from "../src/shared/common";
 
 import { search, search_full,findEquationInAlphaResult } from "../src/adapters/wolframalpha";
-import { PlainText,} from "../src/shared/common";
-import { SearchResults } from "../src/shared/api-calls";
-import { assert } from "chai";
-import { start as startWolframscript, stop as stopWolframscript } from "../src/adapters/wolframscript";
+
+import { requireWolframAlpha } from "./require-wolframalpha";
+import { requireWolframScript } from "./require-wolframscript";
+
+requireWolframAlpha();
+requireWolframScript();
 
 // Constants
 
@@ -116,87 +121,69 @@ const ResultsAsGottenFromAlpha = [
   //   desired: 'x = (-b ± sqrt(b^2 - 4 a c))/(2 a'},
 ];
 
-before("Loading config and starting WolframScript.", async function() {
-  // REVIEW: It is a little fragile that we count on initializing things in the same order
-  //         as server/src/app.ts/main(). Both should call the same high-level initialization
-  //         function that insures the initialization is done in the same order.
-  this.timeout(10*1000);
-  debug(`Global before`);
-  const config = await loadConfig();
-  if (!config.wolframscript) { throw new Error(`Unit tests require WolframScript.`); }
-  // const credentials = await loadCredentials();
-  debug(`  Starting WolframScript.`);
-  await startWolframscript(config.wolframscript);
-  debug(`  Global before finished.`);
-});
-
-after("Stopping WolframScript.", async function(){
-  this.timeout(10*1000);
-  debug(`Global after.`);
-  debug(`  Stopping WolframScript.`);
-  await stopWolframscript();
-  debug(`  Global after finished.`);
-});
-
 // Unit Tests
+
 describe("wolfram alpha", function() {
+  this.timeout(10000);
+
   // This is timing out. There is a discussion on stackexchange about
   // returning a promise instead, but I do not have time to study it now. -rlr
   it("Searches", async function(){
-    const short : SearchResults = await search(<PlainText>"Specific heat of carbon");
-    assert.isAtLeast(short.results.length,1, 'We should get at least one renderable result');
-    const gas : SearchResults = await search_full(<PlainText>"Ideal Gas Law");
-    assert.isAtLeast(gas.results.length,1, 'We should get at least one renderable result');
-  }).timeout(5000);
+    const short = await search(<PlainText>"Specific heat of carbon");
+    assert.isAtLeast(short.length, 1, 'We should get at least one renderable result');
+    const gas = await search_full(<PlainText>"Ideal Gas Law");
+    assert.isAtLeast(gas.length, 1, 'We should get at least one renderable result');
+  });
+
   it("Quadratic equation", async function(){
-    const sr : SearchResults = await search_full(<PlainText>"quadratic equation");
-    assert.isAtLeast(sr.results.length,1, 'We should get at least one renderable result');
-    assert.isOk(sr.results[0].formula,'We want a formula out of this');
+    const sr = await search_full(<PlainText>"quadratic equation");
+    assert.isAtLeast(sr.length,1, 'We should get at least one renderable result');
+    assert.isOk(sr[0].formula,'We want a formula out of this');
   });
+
   it("Relativistic Energy", async function(){
-    const sr : SearchResults = await search_full(<PlainText>"convert mass to energy");
-    assert.isAtLeast(sr.results.length,1, 'We should get at least one renderable result');
-    assert.isOk(sr.results[0].formula,'We want a formula out of this');
+    const sr = await search_full(<PlainText>"convert mass to energy");
+    assert.isAtLeast(sr.length, 1, 'We should get at least one renderable result');
+    assert.isOk(sr[0].formula,'We want a formula out of this');
   });
-  it("Test all Formula Queries", async function(){
-    for(const f of QueriesThatMayReturnFormula) {
-      const sr : SearchResults = await search_full(<PlainText>f);
-      assert.isAtLeast(sr.results.length,1, 'We should get at least one renderable result: '.concat(<string>f));
-      assert.isOk(sr.results[0].formula,'We want a formula out of this'.concat(<string>f));
-    }
-  }).timeout(50000);
 
-  it("Non-formula queries don't crash", async function(){
-    for(const f of NonFormulaQueries ) {
-      const sr : SearchResults = await search_full(<PlainText>f);
-      assert.isAtLeast(sr.results.length,1, 'We should get at least one renderable result');
-    }
-  }).timeout(5000);
+  for(const f of QueriesThatMayReturnFormula) {
+    it(`Formula query '${f}'`, async function(){
+      const sr = await search_full(<PlainText>f);
+      assert.isAtLeast(sr.length, 1, 'We should get at least one renderable result: '.concat(<string>f));
+      assert.isOk(sr[0].formula,'We want a formula out of this'.concat(<string>f));
+    });
+  }
 
-  it("Test Constant Queries", async function(){
-    for(const f of QueriesThatMayReturnConstants) {
-      const sr : SearchResults = await search_full(<PlainText>f);
-      assert.isAtLeast(sr.results.length,1, 'We should get at least one renderable result: '.concat(<string>f));
+  for(const f of NonFormulaQueries ) {
+    it(`Non-formula queriy '${f}'`, async function(){
+      const sr = await search_full(<PlainText>f);
+      assert.isAtLeast(sr.length, 1, 'We should get at least one renderable result');
+    });
+  }
 
-      assert.isOk(sr.results[0].knownConstant,'We want a constant out of this'.concat(<string>f));
-    }
-  }).timeout(50000);
+  for(const f of QueriesThatMayReturnConstants) {
+    it(`Constant query '${f}'`, async function(){
+      const sr = await search_full(<PlainText>f);
+      assert.isAtLeast(sr.length, 1, 'We should get at least one renderable result: '.concat(<string>f));
+      assert.isOk(sr[0].knownConstant,'We want a constant out of this'.concat(<string>f));
+    });
+  }
 
-  it.only("Fibonacci Identity is handled sensibly", async function(){
-
+  it("Fibonacci Identity is handled sensibly", async function(){
     const f= "fibonacci identity"
-    const sr : SearchResults = await search_full(<PlainText>f);
-    console.log("Fibonacci Identity search Results:",sr);
-    assert.isAtLeast(sr.results.length,1, 'We should get at least one renderable result: '.concat(<string>f));
-  }).timeout(50000);
-
-  it("Test ability to extract equation string", async function() {
-    for(const f of ResultsAsGottenFromAlpha) {
-      const extracted = await findEquationInAlphaResult(f.result);
-      console.log(f);
-      console.log(extracted);
-      assert.equal(extracted,f.desired);
-    }
+    const sr = await search_full(<PlainText>f);
+    // console.log("Fibonacci Identity search Results:",sr);
+    assert.isAtLeast(sr.length, 1, 'We should get at least one renderable result: '.concat(<string>f));
   });
+
+  for(const f of ResultsAsGottenFromAlpha) {
+    it(`Equation string '${f}'`, async function() {
+      const extracted = await findEquationInAlphaResult(f.result);
+      // console.log(f);
+      // console.log(extracted);
+      assert.equal(extracted,f.desired);
+    });
+  }
 
 });

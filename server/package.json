@@ -6,7 +6,7 @@
     "check-types": "tsc -p tsconfig.no-output.json",
     "clean": "git clean -dfqx",
     "start": "npx ts-node src/app.ts",
-    "test": "mocha -r ts-node/register src/test/*.spec.ts",
+    "test": "mocha -r ts-node/register test/*.spec.ts",
     "verify": "npm run clean && npm install && npm run check-types && npm test && npm start"
   },
   "dependencies": {

@@ -17,46 +17,22 @@ You should have received a copy of the GNU Affero General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-// Requirements
-
 // import * as debug1 from "debug";
 // const MODULE = __filename.split(/[/\\]/).slice(-1)[0].slice(0,-3);
 // const debug = debug1(`tests:${MODULE}`);
 
-import { search } from "../src/adapters/oeis";
-import { PlainText,} from "../src/shared/common";
-import { assert } from "chai";
+import { initialize as initializeWolframAlpha } from "../src/adapters/wolframalpha";
+import { loadCredentials } from "../src/config";
 
-// Constants
+// Exported functions
 
-const QueriesThatMayReturnFormula = [
-  "fibonacci",
-  "A1", // Number of groups of order n.
-];
+export function requireWolframAlpha() { }
 
-// these DO NOT provide a formula
-const NonFormulaQueries = [
-    "bullfrog",
-];
+// Global before/after
 
-// Unit Tests
-
-describe("oeis", function() {
-  this.timeout(5000);
-
-  for(const f of NonFormulaQueries ) {
-    it(`Non-formula query '${f}' doesn't crash`, async function(){
-      const sr = await search(<PlainText>f);
-      assert.isAtLeast(sr.length, 0);
-    });
-  }
-
-  for(const f of QueriesThatMayReturnFormula) {
-    it(`Formula query ${f}`, async function(){
-      const sr = await search(<PlainText>f);
-      assert.isAtLeast(sr.length, 1);
-      assert.isOk(sr[0].wolframExpr);
-    });
-  }
-
+before("Initializing WolframAlpha", async function() {
+  this.timeout(10*1000);
+  const credentials = await loadCredentials();
+  if (!credentials.wolframalpha) { throw new Error(`Unit tests require WolframAlpha credentials.`); }
+  initializeWolframAlpha(credentials.wolframalpha);
 });

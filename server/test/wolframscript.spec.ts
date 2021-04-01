@@ -38,9 +38,11 @@ import { execute, checkEquiv, convertTeXtoWolfram } from "../src/adapters/wolfra
 import { assert } from "chai";
 import 'mocha';
 
-import { ensureGlobalLoaded } from "./global";
-import { WolframExpression } from "../src/shared/notebook";
-ensureGlobalLoaded();
+import { WolframExpression } from "../src/shared/formula";
+
+import { requireWolframScript } from "./require-wolframscript";
+
+requireWolframScript();
 
 // Constants
 
@@ -180,7 +182,7 @@ describe("wolframTeXConversion", function(){
     const expr = TEX_TEST_CASES[0][0];
     const r = TEX_TEST_CASES[0][1];
     const result = await convertTeXtoWolfram(expr);
-    console.log("result",result);
+    // console.log("result",result);
     assert.equal(result, r);
   });
 
@@ -188,7 +190,7 @@ describe("wolframTeXConversion", function(){
     const expr = TEX_TEST_CASES[1][0];
     const r = TEX_TEST_CASES[1][1];
     const result = await convertTeXtoWolfram(expr);
-    console.log("result",result);
+    // console.log("result",result);
     assert.equal(result, r);
   });
 
