@@ -115,7 +115,9 @@ export class TextCell extends ServerCell<TextCellObject> {
   }
 
   protected /* override */ redrawDisplaySvg(): void {
-    const markup = <SvgMarkup>`<text y="12">${escapeHtml(this.obj.inputText)}</text>`;
+    const fontCapHeightInPx = 12; // TODO:
+    const y = Math.round(this.heightInPx/2 + fontCapHeightInPx/2);
+    const markup = <SvgMarkup>`<text y="${y}">${escapeHtml(this.obj.inputText)}</text>`;
     super.redrawDisplaySvg(<SvgMarkup>(markup));
   }
 

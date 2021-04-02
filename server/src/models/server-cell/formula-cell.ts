@@ -100,8 +100,8 @@ export class FormulaCell extends ServerCell<FormulaCellObject> {
   // Private Instance Property Functions
 
   private formulaNumberMarkup(): SvgMarkup {
-    const fontSizeInPt = 12;
-    const fontCapHeightInPx = 12;
+    const fontSizeInPt = 12;  // TODO:
+    const fontCapHeightInPx = 12; // TODO:
     const fontEmInPix = convertLength(fontSizeInPt, 'pt', 'px');
     const x = Math.round(this.widthInPx - fontEmInPix*4);
     const y = Math.round(this.heightInPx/2 + fontCapHeightInPx/2);

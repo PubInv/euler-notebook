@@ -24,7 +24,7 @@ const debug = debug1('client:client-cell');
 
 import { CellId, CellObject, CellType } from "../../shared/cell";
 import { assert, ElementId, escapeHtml, Html, JsonObject } from "../../shared/common";
-import { CssSelector, CssSize } from "../../shared/css";
+import { CssClass, CssSelector, CssSize } from "../../shared/css";
 import { cellBriefSynopsis, cellSynopsis, notebookUpdateSynopsis } from "../../shared/debug-synopsis";
 import { CellDeleted, DisplayUpdate, NotebookUpdate, SuggestionId, SuggestionUpdates } from "../../shared/server-responses";
 import { Stroke, StrokeId } from "../../shared/stylus";
@@ -41,6 +41,13 @@ export interface CellView {
 }
 
 
+const CELL_SYMBOL_CLASS = new Map<CellType,CssClass>([
+  [ CellType.Figure, <CssClass>'figureCell' ],
+  [ CellType.Formula, <CssClass>'formulaCell' ],
+  [ CellType.Plot, <CssClass>'plotCell' ],
+  [ CellType.Text, <CssClass>'textCell' ],
+]);
+
 // Exported Class
 
 export abstract class ClientCell<O extends CellObject> {
@@ -56,6 +63,7 @@ export abstract class ClientCell<O extends CellObject> {
     const $svgSymbol = $newSvg({
       tag: 'symbol',
       id: <ElementId>`n${notebook.id}c${obj.id}`,
+      class: CELL_SYMBOL_CLASS.get(obj.type),
       html: obj.displaySvg,
     });
     $(document, <CssSelector>'#svgContent>defs').append($svgSymbol);
