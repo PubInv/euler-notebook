@@ -22,8 +22,9 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 // Requirements
 
+import { JsonObject, PlainText, SessionToken } from "./common";
+import { CssSize } from "./css";
 import { CellId, CellObject, CellRelativePosition, CellType } from "./cell";
-import { CssSize, JsonObject, PlainText, SessionToken } from "./common";
 import { FolderPath, NotebookPath, FolderName, NotebookName, } from "./folder";
 import { SuggestionId } from "./server-responses";
 import { Stroke, StrokeId } from "./stylus";

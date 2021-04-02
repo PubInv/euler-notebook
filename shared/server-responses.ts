@@ -24,7 +24,8 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 import { CellId, CellObject, CellIndex } from "./cell";
 import { RequestId, NotebookChangeRequest } from "./client-requests";
-import { ClientId, CssSize, ElementId, Html, JsonObject, PlainText, SessionToken, SvgMarkup } from "./common";
+import { ClientId, ElementId, Html, JsonObject, PlainText, SessionToken, SvgMarkup } from "./common";
+import { CssSize } from "./css";
 import { FolderObject, FolderPath, NotebookPath, FolderEntry, FolderName, NotebookEntry, NotebookName } from "./folder";
 import { FormulaObject } from "./formula";
 import { NotebookObject } from "./notebook";

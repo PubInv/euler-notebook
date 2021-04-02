@@ -19,7 +19,8 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 // Requirements
 
-import { CssSelector, ExpectedError } from "../../shared/common";
+import { ExpectedError } from "../../shared/common";
+import { CssSelector } from "../../shared/css";
 import { UserName, UserPassword } from "../../shared/user";
 
 import { ClientUser } from "../../client-user";

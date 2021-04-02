@@ -20,7 +20,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 // Requirements
 
 import { CellId } from "../../shared/cell";
-import { CssClass } from "../../shared/common";
+import { CssClass } from "../../shared/css";
 
 import { HtmlElement } from "../../html-element";
 import { NotebookEditScreen } from ".";

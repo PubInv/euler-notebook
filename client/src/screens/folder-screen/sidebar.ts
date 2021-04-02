@@ -19,7 +19,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 // Requirements
 
-import { CssClass } from "../../shared/common";
+import { CssClass } from "../../shared/css";
 import { $new, svgIconReferenceMarkup } from "../../dom";
 import { FolderScreen } from ".";
 import { ButtonBar } from "../../components/button-bar";

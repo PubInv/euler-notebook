@@ -19,7 +19,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 // Requirements
 
-import { CssClass } from "../../shared/common";
+import { CssClass } from "../../shared/css";
 import { svgIconReferenceMarkup } from "../../dom";
 import { ButtonBar } from "../../components/button-bar";
 import { Mode, NotebookReadScreen } from "./index";

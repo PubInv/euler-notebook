@@ -23,7 +23,8 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 // const MODULE = __filename.split(/[/\\]/).slice(-1)[0].slice(0,-3);
 // const debug = debug1(`server:${MODULE}`);
 
-import { assert, CssLength, CssSize, cssSizeInPixels, deepCopy, escapeHtml, Html, Milliseconds, pixelsFromCssLength, SvgMarkup } from "../../shared/common";
+import { assert, deepCopy, escapeHtml, Html, Milliseconds, SvgMarkup } from "../../shared/common";
+import { CssLength, CssSize, cssSizeInPixels, LengthInPixels, pixelsFromCssLength } from "../../shared/css";
 import { CellId, CellObject, CellSource, CellType } from "../../shared/cell";
 import { convertStrokeToPath, strokePathId } from "../../shared/stylus";
 
@@ -62,6 +63,10 @@ export abstract class ServerCell<O extends CellObject> {
 
   // Public Instance Property Functions
 
+  public get heightInPx(): LengthInPixels {
+    return pixelsFromCssLength(this.obj.cssSize.height);
+  }
+
   public get id(): CellId { return this.obj.id; }
   public get type(): CellType { return this.obj.type; }
 
@@ -74,6 +79,10 @@ export abstract class ServerCell<O extends CellObject> {
   <tt>${escapeHtml(cellSynopsis(this.obj))}</tt>
 </div>
 </div>`;
+  }
+
+  public get widthInPx(): LengthInPixels {
+    return pixelsFromCssLength(this.obj.cssSize.width);
   }
 
   // Public Instance Methods

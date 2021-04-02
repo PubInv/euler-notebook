@@ -31,7 +31,8 @@ const debug = debug1(`server:${MODULE}`);
 // import { readdirSync, unlink, writeFileSync } from "fs"; // LATER: Eliminate synchronous file operations.
 
 import { CellObject, CellSource, CellId, CellPosition, CellType, CellIndex, CellRelativePosition } from "../shared/cell";
-import { assert, assertFalse, CssLength, ExpectedError, Html, cssSizeInPixels, CssLengthUnit, cssLengthInPixels } from "../shared/common";
+import { assert, assertFalse, ExpectedError, Html } from "../shared/common";
+import { CssLength, cssSizeInPixels, CssLengthUnit, cssLengthInPixels } from "../shared/css";
 import { Folder, NotebookPath, NOTEBOOK_PATH_RE, NotebookName, FolderPath, NotebookEntry } from "../shared/folder";
 import { NotebookObject, NotebookWatcher, PageMargins } from "../shared/notebook";
 import {

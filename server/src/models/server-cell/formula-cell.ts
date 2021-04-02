@@ -23,9 +23,10 @@ import * as debug1 from "debug";
 const MODULE = __filename.split(/[/\\]/).slice(-1)[0].slice(0,-3);
 const debug = debug1(`server:${MODULE}`);
 
-import { deepCopy, PlainText, SvgMarkup, CssLength, Html, assert } from "../../shared/common";
+import { deepCopy, PlainText, SvgMarkup, Html, assert } from "../../shared/common";
+import { convertLength, CssLength } from "../../shared/css";
 import { CellSource, CellType } from "../../shared/cell";
-import { FormulaCellObject, FormulaObject, FormulaSymbol } from "../../shared/formula";
+import { FormulaCellObject, FormulaNumber, FormulaObject, FormulaSymbol } from "../../shared/formula";
 import { FormulaTypeset, NotebookSuggestionsUpdated, NotebookUpdated, SuggestionClass, SuggestionId, SuggestionObject, SuggestionUpdates } from "../../shared/server-responses";
 import { EMPTY_STROKE_DATA } from "../../shared/stylus";
 
@@ -75,9 +76,14 @@ export class FormulaCell extends ServerCell<FormulaCellObject> {
     super(notebook, obj);
     // IMPORTANT: ServerFormula and our FormulaCellObject share the same FormulaObject!
     this._formula = new ServerFormula(obj.formula);
+    this.formulaNumber = obj.id;
   }
 
   // Public Instance Properties
+
+  public formulaNumber: FormulaNumber;
+
+  // Public Instance Property Functions
 
   public get formula(): ServerFormula { return this._formula; }
 
@@ -90,6 +96,17 @@ export class FormulaCell extends ServerCell<FormulaCellObject> {
   // Private Instance Properties
 
   private _formula: ServerFormula;
+
+  // Private Instance Property Functions
+
+  private formulaNumberMarkup(): SvgMarkup {
+    const fontSizeInPt = 12;
+    const fontCapHeightInPx = 12;
+    const fontEmInPix = convertLength(fontSizeInPt, 'pt', 'px');
+    const x = Math.round(this.widthInPx - fontEmInPix*4);
+    const y = Math.round(this.heightInPx/2 + fontCapHeightInPx/2);
+    return <SvgMarkup>`<text class="formulaNumber" x="${x}" y="${y}">(${this.formulaNumber})</text>`;
+  }
 
   // Private Instance Methods
 
@@ -166,7 +183,9 @@ export class FormulaCell extends ServerCell<FormulaCellObject> {
     // TODO: Formula numbering, etc.
     // TODO: Strip <svg></svg>?
     const formulaMarkup = this._formula.renderSvg();
-    return super.redrawDisplaySvg(<SvgMarkup>(formulaMarkup));
+
+    // Our parent class will add any strokes drawn on this cell.
+    return super.redrawDisplaySvg(<SvgMarkup>(formulaMarkup + this.formulaNumberMarkup()));
   }
 
   // Private Instance Event Handlers

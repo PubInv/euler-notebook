@@ -23,13 +23,15 @@ import { CellObject, CellType } from "./cell";
 
 // Types
 
+export type FormulaNumber = number; // TYPESCRIPT: Positive integer?
+export type FormulaSymbol = '{FormulaSymbol}';
+export type TexExpression = '{TexExpression}';
+export type WolframExpression = '{WolframExpression}';
+
 // This type is for the variation of plain-text math input that we accept.
 // Currently, it is the same as WolframExpression
 // except that we convert single equals to double equals.
-export type FormulaSymbol = '{FormulaSymbol}';
 export type PlainTextFormula = '{PlainTextFormula}';
-export type TexExpression = '{TexExpression}';
-export type WolframExpression = '{WolframExpression}';
 
 export interface FormulaCellObject extends CellObject {
   type: CellType.Formula,

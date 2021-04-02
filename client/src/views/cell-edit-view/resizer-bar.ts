@@ -24,7 +24,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 import * as debug1 from "debug";
 const debug = debug1('client:resizer-bar');
 
-import { CssClass, LengthInPixels, PositionInPixels } from "../../shared/common";
+import { CssClass, LengthInPixels, PositionInPixels } from "../../shared/css";
 import { RIGHT_TRIANGLE_ENTITY } from "../../dom";
 import { HtmlElement } from "../../html-element";
 

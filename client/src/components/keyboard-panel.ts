@@ -24,7 +24,8 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 import * as debug1 from "debug";
 
-import { CssClass, PlainText } from "../shared/common";
+import { PlainText } from "../shared/common";
+import { CssClass } from "../shared/css";
 
 import { $new } from "../dom";
 const debug = debug1('client:keyboard-panel');

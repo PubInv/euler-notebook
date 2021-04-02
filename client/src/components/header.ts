@@ -25,7 +25,8 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 // import * as debug1 from "debug";
 // const debug = debug1('client:header');
 
-import { CssClass, ElementId, Html, escapeHtml, RelativeUrl, ClientId, notImplementedError } from "../shared/common";
+import { ElementId, Html, escapeHtml, RelativeUrl, ClientId, notImplementedError } from "../shared/common";
+import { CssClass } from "../shared/css";
 import { Path } from "../shared/folder";
 import { CollaboratorObject, UserName } from "../shared/user";
 

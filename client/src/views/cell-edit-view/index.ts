@@ -25,10 +25,8 @@ import * as debug1 from "debug";
 const debug = debug1('client:cell-edit-view');
 
 import { CellObject, CellId } from "../../shared/cell";
-import {
-  assert, Html, CssClass, CssLength, CssSize, LengthInPixels,
-  ElementId, SvgMarkup, cssLengthInPixels
-} from "../../shared/common";
+import { assert, Html, ElementId, SvgMarkup } from "../../shared/common";
+import { CssClass, CssLength, CssSize, LengthInPixels, cssLengthInPixels } from "../../shared/css";
 import { CellDeleted, NotebookUpdate, SuggestionUpdates } from "../../shared/server-responses";
 import { Stroke, StrokeId } from "../../shared/stylus";
 import { notebookUpdateSynopsis } from "../../shared/debug-synopsis";

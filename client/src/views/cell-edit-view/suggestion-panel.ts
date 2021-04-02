@@ -18,7 +18,8 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
 import { CellObject } from "../../shared/cell";
-import { CssClass, ElementId, Html, JsonObject } from "../../shared/common";
+import { ElementId, Html, JsonObject } from "../../shared/common";
+import { CssClass } from "../../shared/css";
 import { SuggestionId, SuggestionUpdates } from "../../shared/server-responses";
 
 import { $, $all, $new, HtmlElementSpecification } from "../../dom";

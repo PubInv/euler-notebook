@@ -19,7 +19,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 // Requirements
 
-import { CssClass } from "../../shared/common";
+import { CssClass } from "../../shared/css";
 import { $, CLOSE_X_ENTITY } from "../../dom";
 import { HtmlElement } from "../../html-element";
 import { NotebookEditScreen } from ".";

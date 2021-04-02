@@ -28,7 +28,8 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 // Requirements
 
-import { CssClass, escapeHtml, Html, PlainText } from "../../shared/common";
+import { escapeHtml, Html, PlainText } from "../../shared/common";
+import { CssClass } from "../../shared/css";
 import { $, $new, svgIconReferenceMarkup } from "../../dom";
 
 import { HtmlElement } from "../../html-element";

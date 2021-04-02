@@ -20,7 +20,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 // Requirements
 
 import { CellObject } from "./cell";
-import { CssLength, CssSize } from "./common";
+import { CssLength, CssSize } from "./css";
 import { NotebookUpdate } from "./server-responses";
 
 // Types

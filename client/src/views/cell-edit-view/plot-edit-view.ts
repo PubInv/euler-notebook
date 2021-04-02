@@ -23,7 +23,7 @@ import * as debug1 from "debug";
 const debug = debug1('client:formula-cell');
 
 import { PlotCellObject } from "../../shared/cell";
-import { CssClass } from "../../shared/common";
+import { CssClass } from "../../shared/css";
 import { notebookUpdateSynopsis } from "../../shared/debug-synopsis";
 import { NotebookUpdate } from "../../shared/server-responses";
 

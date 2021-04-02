@@ -19,12 +19,8 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 // Requirements
 
-import {
-  AbsoluteUrl,
-  assert, CssClass, CssSelector, CssSize, ElementId, Html,
-  pixelsFromCssLength,
-  RelativeUrl, SvgMarkup
-} from "./shared/common";
+import { AbsoluteUrl, assert, ElementId, Html, RelativeUrl, SvgMarkup } from "./shared/common";
+import { CssClass, CssSelector, CssSize, pixelsFromCssLength } from "./shared/css";
 import { showError, monitorPromise } from "./error-handler";
 import { CellType } from "./shared/cell";
 

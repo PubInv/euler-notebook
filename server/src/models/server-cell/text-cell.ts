@@ -23,7 +23,8 @@ import * as debug1 from "debug";
 const MODULE = __filename.split(/[/\\]/).slice(-1)[0].slice(0,-3);
 const debug = debug1(`server:${MODULE}`);
 
-import { deepCopy, PlainText, SvgMarkup, CssLength, escapeHtml, Html } from "../../shared/common";
+import { deepCopy, PlainText, SvgMarkup, escapeHtml, Html } from "../../shared/common";
+import { CssLength } from "../../shared/css";
 import { CellSource, CellType, TextCellObject } from "../../shared/cell";
 import { EMPTY_STROKE_DATA } from "../../shared/stylus";
 
@@ -75,6 +76,11 @@ export class TextCell extends ServerCell<TextCellObject> {
   // --- PRIVATE ---
 
   // Private Instance Methods
+
+  private changeText(text: PlainText): void {
+    this.obj.inputText = text;
+    this.redrawDisplaySvg();
+  }
 
   private async recognizeStrokes(): Promise<void> {
     const results = await recognizeText(this.obj.strokeData)
@@ -143,8 +149,7 @@ export class TextCell extends ServerCell<TextCellObject> {
     // REVIEW: Size of cell could change.
     const inputText = suggestionData.text;
     this.obj.strokeData = deepCopy(EMPTY_STROKE_DATA);
-    this.obj.inputText = inputText;
-    this.redrawDisplaySvg();
+    this.changeText(inputText);
 
     const update: TextTypeset = {
       type: 'textTypeset',

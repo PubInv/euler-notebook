@@ -23,7 +23,7 @@ import * as debug1 from "debug";
 const debug = debug1('client:text-edit-view');
 
 import { TextCellObject } from "../../shared/cell";
-import { CssClass } from "../../shared/common";
+import { CssClass } from "../../shared/css";
 import { NotebookUpdate } from "../../shared/server-responses";
 import { notebookUpdateSynopsis, cellSynopsis } from "../../shared/debug-synopsis";
 

@@ -21,7 +21,8 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 // Requirements
 
-import { AbsoluteUrl, assert, CssClass } from "../../shared/common";
+import { AbsoluteUrl, assert } from "../../shared/common";
+import { CssClass } from "../../shared/css";
 import { $new, svgIconReferenceMarkup } from "../../dom";
 
 import { HtmlElement } from "../../html-element";

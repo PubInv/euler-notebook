@@ -26,7 +26,8 @@ import * as debug1 from "debug";
 const debug = debug1('client:notebook-edit-view');
 
 import { CellId, CellObject, CellIndex, CellPosition, CellRelativePosition, CellType } from "../shared/cell";
-import { CssClass, assert, Html, notImplementedError, notImplementedWarning } from "../shared/common";
+import { assert, Html, notImplementedError, notImplementedWarning } from "../shared/common";
+import { CssClass } from "../shared/css";
 import { DebugParams } from "../shared/api-calls";
 import { notebookUpdateSynopsis } from "../shared/debug-synopsis";
 import { CellDeleted, CellInserted, CellMoved, NotebookUpdate } from "../shared/server-responses";

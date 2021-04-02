@@ -24,7 +24,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 import * as debug1 from "debug";
 const debug = debug1('client:formula-edit-view');
 
-import { CssClass } from "../../shared/common";
+import { CssClass } from "../../shared/css";
 import { FormulaCellObject } from "../../shared/formula";
 import { NotebookUpdate } from "../../shared/server-responses";
 import { notebookUpdateSynopsis } from "../../shared/debug-synopsis";

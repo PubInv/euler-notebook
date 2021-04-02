@@ -137,7 +137,7 @@ messages from a specific file by prefixing it with a minus sign. See the documen
 To run a specific file of unit tests, in the server directory:
 
 ```bash
-DEBUG="server:example" npx mocha -r ./node_modules/ts-node/register src/test/example.spec.ts
+DEBUG="server:example" npx mocha -r ./node_modules/ts-node/register test/example.spec.ts
 ```
 
 ## Credits

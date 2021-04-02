@@ -22,7 +22,8 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 // import * as debug1 from "debug";
 // const debug = debug1('client:cell-read-view');
 
-import { CssClass, SvgMarkup } from "../shared/common";
+import { SvgMarkup } from "../shared/common";
+import { CssClass } from "../shared/css";
 
 import { ClientNotebook } from "../models/client-notebook";
 import { ClientPage } from "../models/client-page";

@@ -22,7 +22,8 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 // Requirements
 
-import { CssClass, Html } from "../../shared/common";
+import { Html } from "../../shared/common";
+import { CssClass } from "../../shared/css";
 import { NotebookPath } from "../../shared/folder";
 import { NotebookUpdate, NotebookCollaboratorConnected, NotebookCollaboratorDisconnected } from "../../shared/server-responses";
 

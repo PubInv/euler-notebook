@@ -22,7 +22,8 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 import * as debug1 from "debug";
 const debug = debug1('client:notebook-read-screen');
 
-import { assert, CssClass, Html } from "../../shared/common";
+import { assert, Html } from "../../shared/common";
+import { CssClass } from "../../shared/css";
 import { NotebookUpdate, NotebookCollaboratorConnected, NotebookCollaboratorDisconnected } from "../../shared/server-responses";
 import { NotebookPath } from "../../shared/folder";
 

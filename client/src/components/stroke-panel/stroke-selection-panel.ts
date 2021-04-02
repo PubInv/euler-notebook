@@ -22,7 +22,8 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 import * as debug1 from "debug";
 const debug = debug1('client:stylus-drawing-panel');
 
-import { CssClass, ElementId, Html } from "../../shared/common";
+import { ElementId, Html } from "../../shared/common";
+import { CssClass } from "../../shared/css";
 import { convertStrokeToPathShape, Stroke, StrokeData, StrokeId } from "../../shared/stylus";
 import { NotebookUpdate } from "../../shared/server-responses";
 import { notebookUpdateSynopsis } from "../../shared/debug-synopsis";

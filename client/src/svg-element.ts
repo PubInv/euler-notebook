@@ -20,7 +20,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 // Requirements
 
 import { $newSvg, SvgElementSpecification } from "./dom";
-import { CssSize } from "./shared/common";
+import { CssSize } from "./shared/css";
 
 // Types
 

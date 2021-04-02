@@ -23,7 +23,8 @@ import * as debug1 from "debug";
 const debug = debug1('client:client-cell');
 
 import { CellId, CellObject, CellType } from "../../shared/cell";
-import { assert, CssSelector, CssSize, ElementId, escapeHtml, Html, JsonObject } from "../../shared/common";
+import { assert, ElementId, escapeHtml, Html, JsonObject } from "../../shared/common";
+import { CssSelector, CssSize } from "../../shared/css";
 import { cellBriefSynopsis, cellSynopsis, notebookUpdateSynopsis } from "../../shared/debug-synopsis";
 import { CellDeleted, DisplayUpdate, NotebookUpdate, SuggestionId, SuggestionUpdates } from "../../shared/server-responses";
 import { Stroke, StrokeId } from "../../shared/stylus";

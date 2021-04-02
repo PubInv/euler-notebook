@@ -25,7 +25,8 @@ import * as debug1 from "debug";
 const debug = debug1('client:client-notebook');
 
 import { CellId, CellObject, CellIndex, CellPosition, CellRelativePosition, CellType, PageIndex } from "../shared/cell";
-import { assert, assertFalse, ClientId, CssSize, Html, JsonObject } from "../shared/common";
+import { assert, assertFalse, ClientId, Html, JsonObject } from "../shared/common";
+import { CssSize } from "../shared/css";
 import { notebookUpdateSynopsis } from "../shared/debug-synopsis";
 import { Folder, NotebookName, NotebookPath } from "../shared/folder";
 import { PageMargins, Pagination } from "../shared/notebook";

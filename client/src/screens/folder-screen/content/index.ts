@@ -21,7 +21,8 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 // TODO: Animate the when adding or removing folders and notebooks
 // TODO: When another user makes a change show an indicator of what user made the change.
 
-import { CssClass, assertFalse } from "../../../shared/common";
+import { assertFalse } from "../../../shared/common";
+import { CssClass } from "../../../shared/css";
 import { FolderName, NotebookName } from "../../../shared/folder";
 import { FolderUpdate } from "../../../shared/server-responses";
 

@@ -23,27 +23,16 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 export type AbsoluteUrl = '{AbsoluteUrl}';
 export type ClientId = '{ClientId}'
-export type CssClass = '{CssClass}';
-export type CssLength = '{CssLength}';
-export type CssLengthUnit = 'in'|'pt'|'px';
-export type CssSelector = '{CssSelector}';
 export type ElementId = '{ElementId}';
 export type Html = '{Html}';
-export type LengthInPixels = number;
 export type Milliseconds = number;  // Time interval in milliseconds.
 export type PlainText = '{PlainText}';
-export type PositionInPixels = number;
 export type RelativeUrl = '{RelativeUrl}';
 export type SessionToken = '{SessionToken}';
 export type SvgMarkup = '{SvgMarkup}';
 export type Timestamp = number;     // Number of milliseconds since Jan 1, 1970 as returned by Date.now().
 
 type StackTrace = '{StackTrace}';
-
-export interface CssSize {
-  height: CssLength;
-  width: CssLength;
-}
 
 export interface JsonObject {
   // A vanilla JavaScript object that you can specify in JSON.
@@ -60,7 +49,6 @@ export interface PromiseResolver<T> {
 // Constants
 
 const ASSERTION_FAILED_MSG = "Assertion failed.";
-export const PIXELS_PER_INCH = 96;
 
 // Exported Functions
 
@@ -72,30 +60,13 @@ export function assertFalse( message?: string): never {
   throw new Error(message || ASSERTION_FAILED_MSG);
 }
 
-export function cssLengthInPixels(length: number, unit: CssLengthUnit): CssLength {
-  let convertedLength: number;
-  switch(unit) {
-    case 'in': convertedLength = length * PIXELS_PER_INCH; break;
-    case 'px': convertedLength = length; break;
-    default: assertFalse();
-  }
-  return <CssLength>`${Math.round(convertedLength)}px`;
-}
-
-export function cssSizeInPixels(width: LengthInPixels, height: LengthInPixels, unit: CssLengthUnit): CssSize {
-  return {
-    width: cssLengthInPixels(width, unit),
-    height: cssLengthInPixels(height, unit),
-  };
-}
-
 export function deepCopy<T>(data: T): T {
   return JSON.parse(JSON.stringify(data));
 }
 
-export function emptySvg(cssSize: CssSize): SvgMarkup {
-  return <SvgMarkup>`<svg height="${cssSize.height}" width="${cssSize.width}"></svg>`;
-}
+// export function emptySvg(cssSize: CssSize): SvgMarkup {
+//   return <SvgMarkup>`<svg height="${cssSize.height}" width="${cssSize.width}"></svg>`;
+// }
 
 export function errorMessageForUser(err: Error): Html {
   return <Html>(err instanceof ExpectedError ? escapeHtml(err.message) : "An unexpected error occurred.");
@@ -131,20 +102,6 @@ export function notImplementedWarning(feature: string): void {
   console.warn(`${feature} is not yet implemented.`);
 }
 
-export function pixelsFromCssLength(cssLength: CssLength): LengthInPixels {
-  const originalLength = parseFloat(cssLength);
-  let unrounded: number;
-  if (cssLength.endsWith('px')) {
-    unrounded = originalLength;
-  } else if (cssLength.endsWith('in')) {
-    unrounded = originalLength * PIXELS_PER_INCH;
-  } else {
-    // LATER: Other units as needed.
-    assertFalse();
-  }
-  return Math.round(unrounded);
-}
-
 export function replaceStringSegment(s: string, start: number, end: number, replacement: string): string {
   return `${s.slice(0, start)}${replacement}${s.slice(end)}`;
 }
@@ -171,3 +128,5 @@ export class ExpectedError extends Error {
     super(message);
   }
 }
+
+// Helper Functions

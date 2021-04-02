@@ -22,9 +22,8 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 // import * as debug1 from "debug";
 // const debug = debug1('client:client-page');
 
-import {
-  CssSelector, ElementId, SvgMarkup, pixelsFromCssLength, CssSize
-} from "../shared/common";
+import { ElementId, SvgMarkup, } from "../shared/common";
+import { CssSelector, pixelsFromCssLength, CssSize } from "../shared/css";
 import { CellIndex, PageIndex } from "../shared/cell";
 
 import { $, $newSvg } from "../dom";
