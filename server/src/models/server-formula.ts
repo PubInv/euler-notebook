@@ -35,6 +35,7 @@ import {
 
 import { convertPlainTextFormulaToWolfram, convertTeXtoWolfram, convertWolframToPlainTextFormula, convertWolframToTeX } from "../adapters/wolframscript";
 import { convertTexToSvg as mathjaxConvertTextToSvg } from "../adapters/mathjax";
+import { Jiix } from "../adapters/myscript";
 
 // Types
 
@@ -52,6 +53,10 @@ export class ServerFormula {
 
   public static createEmpty(): ServerFormula {
     return new this({ plain: EMPTY_FORMULA, tex: EMPTY_TEX_EXPRESSION, wolfram: EMPTY_WOLFRAM_EXPRESSION });
+  }
+
+  public static createFromJiix(_jiix: Jiix): ServerFormula {
+    throw new Error("Not implemented.");
   }
 
   public static async createFromPlainText(plain: PlainTextFormula): Promise<ServerFormula> {

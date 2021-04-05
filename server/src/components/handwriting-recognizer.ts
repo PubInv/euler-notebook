@@ -21,7 +21,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 import { StrokeData } from "../shared/stylus";
 import { ServerFormula } from "../models/server-formula";
-import { postLatexRequest, postTextRequest } from "../adapters/myscript";
+import { /* postJiixRequest, */ postLatexRequest, postTextRequest } from "../adapters/myscript";
 import { PlainText, SvgMarkup } from "../shared/common";
 
 // Types
@@ -46,6 +46,9 @@ export interface TextRecognitionResults {
 // Exported Functions
 
 export async function recognizeFormula(strokeData: StrokeData): Promise<FormulaRecognitionResults> {
+  // LATER:
+  // const jiix = await postJiixRequest(strokeData);
+  // const formula = ServerFormula.createFromJiix(jiix);
   const tex = await postLatexRequest(strokeData);
   const formula = await ServerFormula.createFromTeX(tex);
   const svg = formula.renderSvg();

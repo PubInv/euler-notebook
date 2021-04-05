@@ -40,6 +40,7 @@ export interface CellView {
   onUpdate(update: NotebookUpdate, ownRequest: boolean): void;
 }
 
+// Constants
 
 const CELL_SYMBOL_CLASS = new Map<CellType,CssClass>([
   [ CellType.Figure, <CssClass>'figureCell' ],

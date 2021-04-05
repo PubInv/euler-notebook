@@ -44,7 +44,7 @@ import { StrokeData } from "../shared/stylus";
 // Types
 
 type ContentType = 'Text'|'Math'|'Diagram'|'Raw Content'|'Text Document';
-type MimeType = 'application/x-latex' | 'text/plain';
+type MimeType = 'application/vnd.myscript.jiix' | 'application/x-latex' | 'text/plain';
 
 export interface ApiKeys {
   // This structure lives in ~/.euler-notebook/credentials.json under "myscript" key.
@@ -89,11 +89,13 @@ interface ExportConfiguration {
 }
 
 interface Expression {
-  'bounding-box': BoundingBox;
+  'bounding-box'?: BoundingBox;
   id: string;
-  items: Item[];
-  operands: Expression[];
+  items?: Item[];
+  label?: string;
+  operands?: Expression[];
   type: string;
+  value?: number;
 }
 
 interface Item {
@@ -110,7 +112,7 @@ export interface Jiix {
   // See https://developer.myscript.com/docs/interactive-ink/1.3/reference/jiix/
   type: 'Math';
   expressions: Expression[];
-  'bounding-box': BoundingBox;
+  'bounding-box'?: BoundingBox;
   id: string;
   version: '2';
 }
@@ -144,7 +146,7 @@ interface SolverConfiguration {
 
 // Constants
 
-// const JIIX_MIME_TYPE = 'application/vnd.myscript.jiix';
+const JIIX_MIME_TYPE = 'application/vnd.myscript.jiix';
 const LATEX_MIME_TYPE = 'application/x-latex';
 const PLAINTEXT_MIME_TYPE = 'text/plain';
 const MYSCRIPT_BATCH_API_URL = 'https://webdemoapi.myscript.com/api/v4.0/iink/batch';
@@ -159,16 +161,18 @@ export function initialize(apiKeys: ApiKeys): void {
   gApiKeys = apiKeys;
 }
 
-// export async function postJiixRequest(keys: ServerKeys, strokeGroups: StrokeGroup[]): Promise<Jiix> {
-//   debug(`Calling MyScript batch API for JIIX.`);
-//   const batchRequest = batchRequestFromStrokes(strokeGroups);
-//   const bodyText = await postRequest(keys, JIIX_MIME_TYPE, batchRequest);
-//   const jiix: Jiix|ErrorResponse = JSON.parse(bodyText);
-//   if (isErrorResponse(jiix)) { throwRequestError(jiix); }
-//   debug(`MyScript batch API recognized JIIX.`);
-//   // TYPESCRIPT: Why is this cast necessary?
-//   return <Jiix>jiix;
-// }
+export async function postJiixRequest(strokeData: StrokeData): Promise<Jiix> {
+  debug(`Calling MyScript batch API for JIIX.`);
+  // REVIEW: What to return if there aren't any strokes at all (e.g. user erased last stroke)?
+  const strokeGroups: StrokeGroup[] = [{ strokes: strokeData.strokes }];
+  const batchRequest = batchRequestFromStrokes(strokeGroups, 'Math', JIIX_MIME_TYPE);
+  const bodyText = await postRequest(gApiKeys, JIIX_MIME_TYPE, batchRequest);
+  const jiix: Jiix|ErrorResponse = JSON.parse(bodyText);
+  if (isErrorResponse(jiix)) { throwRequestError(jiix); }
+  debug(`MyScript batch API recognized JIIX.`);
+  console.log(JSON.stringify(jiix, null, 2));
+  return jiix;
+}
 
 export async function postLatexRequest(strokeData: StrokeData): Promise<TexExpression> {
 

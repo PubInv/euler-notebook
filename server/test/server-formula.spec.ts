@@ -24,14 +24,22 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 // const MODULE = __filename.split(/[/\\]/).slice(-1)[0].slice(0,-3);
 // const debug = debug1(`tests:${MODULE}`);
 
+// Requirements
+
 // import { assert } from "chai";
 import 'mocha';
 import { ServerFormula } from "../src/models/server-formula";
 import { PlainTextFormula } from "../src/shared/formula";
 
 import { requireWolframScript } from "./require-wolframscript";
+import { JIIX_FORMULA_TABLE } from "./jiix-data";
+import { assert } from '../src/shared/common';
 
 requireWolframScript();
+
+// Test Data
+
+// Unit Tests
 
 describe("ServerFormula", function(){
 
@@ -41,4 +49,13 @@ describe("ServerFormula", function(){
     console.dir(serverFormula);
   });
 
+  for (const jiixFormulaEntry of JIIX_FORMULA_TABLE) {
+    const { plain, jiix, tex, wolfram } = jiixFormulaEntry;
+    it(`Creates formula from JIIX for: ${plain}`, function(){
+      const serverFormula = ServerFormula.createFromJiix(jiix);
+      assert(serverFormula.plain == plain);
+      assert(serverFormula.tex == tex);
+      assert(serverFormula.wolfram == wolfram);
+    });
+  }
 })
