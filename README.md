@@ -15,6 +15,12 @@ Euler Notebook was created by David Jeschke, and he is the Invention Coach and "
 The project is currently licensed under the [Affero GPL](https://www.gnu.org/licenses/agpl-3.0.en.html).
 We are actively seeking volunteers and contributors.
 
+## Principles
+
+Euler Notebook aims to uphold certain principles:
+1. Math has been done for 300 years in a conventional way with convential syntax, typography, and style. Using Euler Notebook should feel like doing math on paper, only better.
+2. There are powerful computer programming systems; Euler Notebook is not one of them. We are not attempting to create a programming system, but a math system.
+
 ## Supported Browsers and Devices
 
 For Euler Notebook we use the __Google Chrome__ browser on computers and devices.
