@@ -29,7 +29,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 import { SvgMarkup } from "../shared/common";
 import {
-  EMPTY_FORMULA, EMPTY_TEX_EXPRESSION, EMPTY_WOLFRAM_EXPRESSION, FormulaObject,
+  EMPTY_PLAINTEXT_FORMULA, EMPTY_TEX_EXPRESSION, EMPTY_WOLFRAM_EXPRESSION, FormulaObject,
   PlainTextFormula, TexExpression, WolframExpression
 } from "../shared/formula";
 
@@ -41,6 +41,12 @@ import { Jiix } from "../adapters/myscript";
 
 // Constants
 
+export const EMPTY_FORMULA_OBJECT: FormulaObject = {
+  plain: EMPTY_PLAINTEXT_FORMULA,
+  tex: EMPTY_TEX_EXPRESSION,
+  wolfram: EMPTY_WOLFRAM_EXPRESSION
+};
+
 // Global Variables
 
 // Exported Class
@@ -51,12 +57,12 @@ export class ServerFormula {
   // Public Class Property Functions
   // Public Class Methods
 
-  public static createEmpty(): ServerFormula {
-    return new this({ plain: EMPTY_FORMULA, tex: EMPTY_TEX_EXPRESSION, wolfram: EMPTY_WOLFRAM_EXPRESSION });
-  }
-
   public static createFromJiix(_jiix: Jiix): ServerFormula {
     throw new Error("Not implemented.");
+  }
+
+  public static createFromObject(obj: FormulaObject): ServerFormula {
+    return new this(obj);
   }
 
   public static async createFromPlainText(plain: PlainTextFormula): Promise<ServerFormula> {
@@ -72,13 +78,6 @@ export class ServerFormula {
   }
 
   // Public Class Event Handlers
-
-  public constructor(
-    obj: FormulaObject, // IMPORTANT: We hold on to this object.
-                        //            Caller must not modify object after passing to constructor.
-  ) {
-    this.obj = obj;
-  }
 
   // Public Instance Properties
 
@@ -110,7 +109,13 @@ export class ServerFormula {
   // Private Class Methods
   // Private Class Event Handlers
 
-  // Public Constructor
+  // Private Constructor
+
+  private constructor(obj: FormulaObject) {
+    // IMPORTANT: We hold on to the object.
+    //            Caller must not modify object after passing to constructor.
+    this.obj = obj;
+  }
 
   // Private Instance Properties
 
@@ -121,4 +126,3 @@ export class ServerFormula {
   // Private Instance Event Handlers
 
 }
-

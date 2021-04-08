@@ -19,22 +19,20 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 // Requirements
 
-import { Html, PlainText, SvgMarkup } from "./common";
+import { NotebookChangeRequest } from "./client-requests";
+import {  Html, PlainText, SvgMarkup } from "./common";
 import { CssSize } from "./css";
-import { FormulaObject, FormulaSymbol, TexExpression, WolframExpression } from "./formula";
-import { StrokeData } from "./stylus";
+import { convertStrokeToPath, StrokeData } from "./stylus";
 
 // Types
 
 export type CellId = number;
-
-// Position of cell in the notebook.
-// Position 0 is the first cell of the notebook.
-export type CellIndex = number;
+export type CellIndex = number; // Position of cell in the notebook. 0 is first cell.
 export type PageIndex = number;
-
-// Position a cell relative to another cell, or at the top or bottom of the notebook.
-export type CellRelativePosition = CellId | CellPosition;
+export type CellRelativePosition = CellId | CellPosition; // Position relative to another cell, or at the top or bottom of the notebook.
+export type SuggestionId = '{SuggestionId}';
+export type SuggestionClass = '{SuggestionClass}';
+export type Suggestions = SuggestionObject[];
 
 export const CELL_SOURCES = [
   'SYSTEM',
@@ -58,63 +56,21 @@ export interface CellObject {
   id: CellId;
   type: CellType;
   cssSize: CssSize;
-  displaySvg: SvgMarkup;
   inputText: PlainText,
   source: CellSource;
   strokeData: StrokeData,
+  suggestions: Suggestions,
 }
 
-// HERE TEMPORARILY:
-// Move them into their own files when they become classes.
-
-export interface FigureCellObject extends CellObject {
-  type: CellType.Figure,
+export interface SuggestionObject {
+  id: SuggestionId,
+  class?: SuggestionClass,
+  html: Html,
+  changeRequests: NotebookChangeRequest[],
 }
 
-export interface PlotCellObject extends CellObject {
-  type: CellType.Plot,
-  formula: FormulaObject,
-  formulaCellId: CellId,
-  formulaSymbol: FormulaSymbol,
-  plotMarkup: SvgMarkup, // REVIEW: Remove this field when we can synchronously generate plots.
+// Exported Functions
+
+export function renderBaseCell(obj: CellObject): SvgMarkup {
+  return <SvgMarkup>obj.strokeData.strokes.map(stroke=>convertStrokeToPath(obj.id, stroke)).join('\n')
 }
-
-export interface TextCellObject extends CellObject {
-  type: CellType.Text,
-}
-
-// LEGACY??
-
-export type Symbol = '{Symbol}';
-
-export interface SymbolData {
-  name: Symbol;
-  value?: string;
-}
-
-export interface SymbolTable {
-  [symbol: string]: SymbolConstraints;
-}
-
-export type SymbolConstraint = WolframExpression;
-export type SymbolConstraints = SymbolConstraint[];
-
-
-export type ToolName = string;
-export interface ToolData {
-  name: ToolName;
-  // REVIEW: This is a sum type, not a product type.
-  //         i.e. we use either the html field or the tex field but never both.
-  html?: Html;
-  tex?: TexExpression;
-  data?: any; // Black-box info that gets passed back to tool creator when tool is used.
-  origin_id?: number;
-}
-
-export interface TransformationToolData {
-  transformation: WolframExpression;
-  output: WolframExpression;
-  transformationName: string;
-}
-
-// Constants

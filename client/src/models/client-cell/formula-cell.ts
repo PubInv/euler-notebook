@@ -22,13 +22,14 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 import * as debug1 from "debug";
 const debug = debug1('client:formula-cell');
 
-import { FormulaCellObject } from "../../shared/formula";
+import { FormulaCellObject, FormulaNumber, renderFormulaCell } from "../../shared/formula";
 import { NotebookUpdate } from "../../shared/server-responses";
 
 import { ClientNotebook } from "../client-notebook";
 
 import { ClientCell } from "./index";
 import { notebookUpdateSynopsis } from "../../shared/debug-synopsis";
+import { SvgMarkup } from "../../shared/common";
 
 // Exported Class
 
@@ -38,7 +39,14 @@ export class FormulaCell extends ClientCell<FormulaCellObject> {
 
   public constructor(notebook: ClientNotebook, obj: FormulaCellObject) {
     super(notebook, obj);
+
+    // TODO:
+    this.formulaNumber = obj.id;
   }
+
+  // Public Instance Properties
+
+  public formulaNumber: FormulaNumber;
 
   // Public Instance Methods
 
@@ -49,14 +57,16 @@ export class FormulaCell extends ClientCell<FormulaCellObject> {
     super.onUpdate(update, ownRequest);
 
     switch(update.type) {
-      case 'formulaTypeset': {
-        this.obj.strokeData = update.strokeData;
-        this.obj.displaySvg = update.displaySvg;
-        this.$svgSymbol.innerHTML = update.displaySvg;
-        this.obj.formula = update.formula;
-        break;
-      }
+      case 'formulaTypeset': this.refreshDisplay(); break;
     }
+  }
+
+  // --- PRIVATE ---
+
+  // Private Instance Property Functions
+
+  protected render(): SvgMarkup {
+    return renderFormulaCell(this.obj, this.formulaNumber);
   }
 
 }

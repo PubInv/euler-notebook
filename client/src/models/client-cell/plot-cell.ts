@@ -22,13 +22,14 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 import * as debug1 from "debug";
 const debug = debug1('client:plot-cell');
 
-import { PlotCellObject } from "../../shared/cell";
+import { PlotCellObject, renderPlotCell } from "../../shared/plot";
 import { NotebookUpdate } from "../../shared/server-responses";
 
 import { ClientNotebook } from "../client-notebook";
 
 import { ClientCell } from "./index";
 import { notebookUpdateSynopsis } from "../../shared/debug-synopsis";
+import { SvgMarkup } from "../../shared/common";
 
 // Exported Class
 
@@ -46,6 +47,14 @@ export class PlotCell extends ClientCell<PlotCellObject> {
     debug(`onUpdate ${notebookUpdateSynopsis(update)}`);
     super.onUpdate(update, ownRequest);
   };
+
+  // --- PRIVATE ---
+
+  // Private Instance Property Functions
+
+  protected render(): SvgMarkup {
+    return renderPlotCell(this.obj);
+  }
 
 }
 

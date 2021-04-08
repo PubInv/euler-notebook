@@ -22,13 +22,13 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 // Requirements
 
-import { JsonObject, PlainText, SessionToken } from "./common";
+import { PlainText, SessionToken } from "./common";
 import { CssSize } from "./css";
 import { CellId, CellObject, CellRelativePosition, CellType } from "./cell";
 import { FolderPath, NotebookPath, FolderName, NotebookName, } from "./folder";
-import { SuggestionId } from "./server-responses";
-import { Stroke, StrokeId } from "./stylus";
+import { Stroke, StrokeData, StrokeId } from "./stylus";
 import { UserName, UserPassword } from "./user";
+import { FormulaObject } from "./formula";
 
 // Types
 
@@ -139,30 +139,16 @@ export interface NotebookRenameRequest {
 // Notebook Change Requests
 
 export type NotebookChangeRequest =
-  AcceptSuggestion |
-  ChangeText |
   DeleteCell |
   DeleteStroke |
   InsertCell |
   InsertEmptyCell |
   InsertStroke |
   MoveCell |
-  ResizeCell;
+  ResizeCell |
+  TypesetFormula |
+  TypesetText;
 
-  export interface AcceptSuggestion {
-    type: 'acceptSuggestion';
-    cellId: CellId;
-    suggestionId: SuggestionId;
-    suggestionData: JsonObject;
-  }
-  export interface ChangeText {
-    type: 'keyboardInputChange';
-    cellId: CellId;
-    start: number;          // 0-based index of first character to replace.
-    end: number;            // 0-based index of character after last character to replace.
-    replacement: PlainText; // Replacement text.
-    value: PlainText;          // Full value of input text, may be able to eliminate.
-  }
   export interface DeleteCell {
   type: 'deleteCell';
   cellId: CellId;
@@ -179,7 +165,7 @@ export interface InsertCell {
 }
 export interface InsertEmptyCell {
   type: 'insertEmptyCell';
-  cellType: CellType;
+  cellType: CellType,
   afterId: CellRelativePosition;
 }
 export interface InsertStroke {
@@ -196,4 +182,18 @@ export interface ResizeCell {
   type: 'resizeCell';
   cellId: CellId;
   cssSize: CssSize;
+}
+export interface TypesetFormula {
+  // NOTE: This can be used to undo typesetting as well.
+  type: 'typesetFormula';
+  cellId: CellId;
+  formula: FormulaObject;
+  strokeData: StrokeData;
+}
+export interface TypesetText {
+  // NOTE: This can be used to undo typesetting as well.
+  type: 'typesetText';
+  cellId: CellId;
+  text: PlainText;
+  strokeData: StrokeData;
 }

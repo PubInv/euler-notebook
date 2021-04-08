@@ -19,8 +19,11 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 // Requirements
 
-import { CellObject } from "./cell";
+import { CellId, CellIndex, CellObject, CellPosition, CellRelativePosition } from "./cell";
+import { assert, assertFalse } from "./common";
 import { CssLength, CssSize } from "./css";
+import { NotebookPath } from "./folder";
+import { FormulaCellObject } from "./formula";
 import { NotebookUpdate } from "./server-responses";
 
 // Types
@@ -50,6 +53,163 @@ export interface PageMargins {
 // Constants
 
 // Exported Class
+
+export class Notebook {
+
+  // Public Class Properties
+  // Public Class Property Functions
+  // Public Class Methods
+  // Public Class Event Handlers
+
+  // Public Instance Properties
+
+  public readonly path: NotebookPath;
+
+  // Public Instance Property Functions
+
+  public afterIdForCell(cellId: CellId): CellRelativePosition {
+    const cellIndex = this.cellIndex(cellId);
+    let rval: CellRelativePosition;
+    if (cellIndex == 0) { rval = CellPosition.Top }
+    else if (cellIndex == this.obj.cells.length-1) { rval = CellPosition.Bottom }
+    else { rval = this.obj.cells[cellIndex-1].id; }
+    return rval;
+  }
+
+  public cellIndex(id: CellId): CellIndex {
+    const rval = this.obj.cells.findIndex(cell=>cell.id===id);
+    assert(rval>=0);
+    return rval;
+  }
+
+  // REVIEW: Return an iterator?
+  public cellObjects(): CellObject[] {
+    return this.obj.cells;
+  }
+
+  public isEmpty(): boolean {
+    return this.obj.cells.length == 0;
+  }
+
+  public get margins(): PageMargins { return this.obj.margins; };
+  public get pageSize(): CssSize { return this.obj.pageSize; };
+  public get pagination(): Pagination { return this.obj.pagination; };
+
+
+  // Public Instance Methods
+  // Public Instance Event Handlers
+
+  // --- PRIVATE ---
+
+  // Private Class Properties
+  // Private Class Property Functions
+  // Private Class Methods
+  // Private Class Event Handlers
+
+  // Private Constructor
+
+  protected constructor(path: NotebookPath, obj: NotebookObject) {
+    this.path = path;
+    this.obj = obj;
+    this.cellObjectMap = new Map(this.obj.cells.map(cellObject=>[ cellObject.id, cellObject ]));
+  }
+
+  // Private Instance Properties
+
+  protected readonly obj: NotebookObject;
+  protected readonly cellObjectMap: Map<CellId, CellObject>;
+
+  // Private Instance Property Functions
+
+  // Private Instance Methods
+
+  protected getCellObject<T extends CellObject>(cellId: CellId): T {
+    const rval = this.cellObjectMap.get(cellId)!;
+    assert(rval);
+    return <T>rval;
+  }
+
+  protected /* overridable */ applyUpdate(update: NotebookUpdate): void {
+    switch (update.type) {
+      case 'cellDeleted': {
+        const { cellId } = update;
+        this.deleteCellObject(cellId);
+        break;
+      }
+      case 'cellInserted': {
+        const { cellObject, afterId } = update;
+        this.insertCellObject(cellObject, afterId);
+        break;
+      }
+      case 'cellMoved': {
+        const { cellId, afterId } = update;
+        const cellObject = this.deleteCellObject(cellId);
+        this.insertCellObject(cellObject, afterId);
+        break;
+      }
+      case 'cellResized': {
+        const { cellId, cssSize } = update;
+        const cellObject = this.getCellObject(cellId);
+        cellObject.cssSize.width = cssSize.width;
+        cellObject.cssSize.height = cssSize.height;
+        break;
+      }
+      case 'formulaTypeset': {
+        const { cellId, formula, strokeData } = update;
+        const cellObject = this.getCellObject<FormulaCellObject>(cellId);
+        cellObject.formula = formula;
+        cellObject.strokeData = strokeData;
+        break;
+      }
+      case 'strokeDeleted': {
+        const { cellId, strokeId } = update;
+        const cellObject = this.getCellObject(cellId);
+        const strokes = cellObject.strokeData.strokes;
+        const strokeIndex = strokes.findIndex(stroke=>stroke.id==strokeId);
+        assert(strokeIndex>=0);
+        strokes.splice(strokeIndex, 1);
+        break;
+      }
+      case 'strokeInserted': {
+        const { cellId, stroke } = update;
+        const cellObject = this.getCellObject(cellId);
+        cellObject.strokeData.strokes.push(stroke);
+        break;
+      }
+      case 'textTypeset': {
+        const { cellId, text, strokeData } = update;
+        const cellObject = this.getCellObject(cellId);
+        cellObject.inputText = text;
+        cellObject.strokeData = strokeData;
+        break;
+      }
+      default: assertFalse();
+    }
+  }
+
+  private deleteCellObject(cellId: CellId): CellObject {
+    const cellIndex = this.cellIndex(cellId);
+    const cellObject = this.obj.cells[cellIndex];
+    this.obj.cells.splice(cellIndex, 1);
+    this.cellObjectMap.delete(cellId);
+    return cellObject;
+}
+
+  private insertCellObject(cellObject: CellObject, afterId: CellRelativePosition): void {
+    if (afterId == CellPosition.Top) {
+      this.obj.cells.unshift(cellObject);
+    } else if (afterId == CellPosition.Bottom) {
+      this.obj.cells.push(cellObject);
+    } else {
+      const cellIndex = this.cellIndex(afterId);
+      this.obj.cells.splice(cellIndex, 0, cellObject);
+    }
+    this.cellObjectMap.set(cellObject.id, cellObject);
+  }
+
+  // Private Instance Event Handlers
+
+}
 
 // Helper Functions
 

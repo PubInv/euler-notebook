@@ -103,10 +103,13 @@ export class Folder {
   // Public Instance Properties
 
   // REVIEW: Why not just have FolderObject?
-  public obj: FolderObject;
-  public path: FolderPath;
+  public readonly path: FolderPath;
 
   // Public Instance Property Functions
+
+  // REVIEW: Should these return an iterator? Don't want caller modifying returned arrays.
+  public get notebookEntries(): NotebookEntry[] { return this.obj.notebooks; }
+  public get folderEntries(): FolderEntry[] { return this.obj.folders; }
 
   public hasFolderNamed(
     name: FolderName,
@@ -136,44 +139,6 @@ export class Folder {
 
   // Public Instance Methods
 
-  public /* overridable */ applyChange(change: FolderUpdate, _ownRequest: boolean): void {
-    switch(change.type) {
-      case 'folderCreated': {
-        this.obj.folders.push(change.entry);
-        break;
-      }
-      case 'folderDeleted': {
-        const i = this.folderIndex(change.entry.name);
-        assert(i>=0);
-        this.obj.folders.splice(i,1);
-        break;
-      }
-      case 'folderRenamed':  {
-        const i = this.folderIndex(change.oldName);
-        assert(i>=0);
-        this.obj.folders[i] = change.entry;
-        break;
-      }
-      case 'notebookCreated': {
-        this.obj.notebooks.push(change.entry);
-        break;
-      }
-      case 'notebookDeleted': {
-        const i = this.notebookIndex(change.entry.name);
-        assert(i>=0);
-        this.obj.notebooks.splice(i,1);
-        break;
-      }
-      case 'notebookRenamed': {
-        const i = this.notebookIndex(change.oldName);
-        assert(i>=0);
-        this.obj.notebooks[i] = change.entry;
-        break;
-      }
-      default: assertFalse();
-    }
-  }
-
   // Public Instance Event Handlers
 
   // --- PRIVATE ---
@@ -200,8 +165,51 @@ export class Folder {
   }
 
   // Private Instance Properties
+
+  protected readonly obj: FolderObject;
+
   // Private Instance Property Functions
+
   // Private Instance Methods
+
+  protected /* overridable */ applyUpdate(update: FolderUpdate, _ownRequest: boolean): void {
+    switch(update.type) {
+      case 'folderCreated': {
+        this.obj.folders.push(update.entry);
+        break;
+      }
+      case 'folderDeleted': {
+        const i = this.folderIndex(update.entry.name);
+        assert(i>=0);
+        this.obj.folders.splice(i,1);
+        break;
+      }
+      case 'folderRenamed':  {
+        const i = this.folderIndex(update.oldName);
+        assert(i>=0);
+        this.obj.folders[i] = update.entry;
+        break;
+      }
+      case 'notebookCreated': {
+        this.obj.notebooks.push(update.entry);
+        break;
+      }
+      case 'notebookDeleted': {
+        const i = this.notebookIndex(update.entry.name);
+        assert(i>=0);
+        this.obj.notebooks.splice(i,1);
+        break;
+      }
+      case 'notebookRenamed': {
+        const i = this.notebookIndex(update.oldName);
+        assert(i>=0);
+        this.obj.notebooks[i] = update.entry;
+        break;
+      }
+      default: assertFalse();
+    }
+  }
+
   // Private Instance Event Handlers
 
 }

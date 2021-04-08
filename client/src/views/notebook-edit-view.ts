@@ -25,7 +25,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 import * as debug1 from "debug";
 const debug = debug1('client:notebook-edit-view');
 
-import { CellId, CellObject, CellIndex, CellPosition, CellRelativePosition, CellType } from "../shared/cell";
+import { CellId, CellObject, CellPosition, CellRelativePosition, CellType } from "../shared/cell";
 import { assert, Html, notImplementedError, notImplementedWarning } from "../shared/common";
 import { CssClass } from "../shared/css";
 import { DebugParams } from "../shared/api-calls";
@@ -112,16 +112,17 @@ export class NotebookEditView extends HtmlElement<'div'> {
       }]
     });
 
-    this.cellViews = [];
+    this.cellViewMap = new Map();
     this.container = container;
     this.insertMode = CellType.Formula;
     this._stylusMode = StylusMode.Draw;
     this.notebook = notebook;
 
-    for (let cellIndex=0; cellIndex<notebook.cells.length; cellIndex++) {
-      const cellObject = notebook.cells[cellIndex].obj;
-      const cellUpdate: CellInserted = { type: 'cellInserted', cellObject, cellIndex }
+    let afterId: CellRelativePosition = CellPosition.Top;
+    for (const cellObject of notebook.cellObjects()) {
+      const cellUpdate: CellInserted = { type: 'cellInserted', cellObject, afterId }
       this.onCellInserted(cellUpdate);
+      afterId = cellObject.id;
     }
   }
 
@@ -138,7 +139,7 @@ export class NotebookEditView extends HtmlElement<'div'> {
 
   public set stylusMode(value: StylusMode) {
     this._stylusMode = value;
-    for (const cellView of this.cellViews) {
+    for (const cellView of this.cellViewMap.values()) {
       cellView.stylusMode = value;
     }
   }
@@ -186,12 +187,11 @@ export class NotebookEditView extends HtmlElement<'div'> {
     // WAS: this.screen.debugPopup.showContents(results.html);
   }
 
-  public async insertCell(afterId: CellRelativePosition): Promise<void> {
-    debug("Insert Cell");
+  public async insertCellRequest(afterId: CellRelativePosition): Promise<void> {
     await this.notebook.insertCellRequest(this.insertMode, afterId);
   }
 
-  public async moveCell(movedCellId: CellId, droppedCellId: CellId): Promise<void> {
+  public async moveCellRequest(movedCellId: CellId, droppedCellId: CellId): Promise<void> {
     debug(`Move cell: ${movedCellId}, ${droppedCellId}`);
     // REVIEW: Placeholder move?
     await this.notebook.moveCellRequest(movedCellId, droppedCellId);
@@ -274,7 +274,7 @@ export class NotebookEditView extends HtmlElement<'div'> {
 
   // REVIEW: Not actually asynchronous. Have synchronous alternative for internal use?
   public async unselectAll(noEmit?: boolean): Promise<void> {
-    for (const cellView of this.cellViews) {
+    for (const cellView of this.cellViewMap.values()) {
       if (cellView.isSelected()) { cellView.unselect(); }
     }
     delete this.lastCellSelected;
@@ -334,30 +334,30 @@ export class NotebookEditView extends HtmlElement<'div'> {
 
   // Private Instance Properties
 
-  private cellViews:CellEditView<CellObject>[];
+  private cellViewMap: Map<CellId, CellEditView<CellObject>>;
   private container: NotebookEditScreen;
   private lastCellSelected?: CellEditView<CellObject>;
   private notebook: ClientNotebook;
 
   // Private Instance Property Functions
 
-  private cellViewFromId<O extends CellObject>(cellId: CellId): CellEditView<O> {
-    const cellView = this.cellViews.find(cellView => cellView.id===cellId);
-    assert(cellView);
-    return <CellEditView<O>>cellView;
+  private getCellView<O extends CellObject>(cellId: CellId): CellEditView<O> {
+    const rval = this.cellViewMap.get(cellId)!;
+    assert(rval);
+    return <CellEditView<O>>rval;
   }
 
   private cellViewFromElement<O extends CellObject>($elt: HTMLDivElement): CellEditView<O> {
     // Strip 'C' prefix from cell ID to get the style id.
     const cellId: CellId = parseInt($elt.id.slice(1), 10);
-    return this.cellViewFromId(cellId);
+    return this.getCellView(cellId);
   }
 
-  private cellViewIndex(cellId: CellId): CellIndex {
-    const rval = this.cellViews.findIndex(cellView => cellView.id === cellId);
-    assert(rval>=0);
-    return rval;
-  }
+  // private cellViewIndex(cellId: CellId): CellIndex {
+  //   const rval = this.cellViews.findIndex(cellView => cellView.id === cellId);
+  //   assert(rval>=0);
+  //   return rval;
+  // }
 
   private firstCell<O extends CellObject>(): CellEditView<O> | undefined {
     const $elt = <HTMLDivElement|null>this.$elt.firstElementChild;
@@ -381,12 +381,23 @@ export class NotebookEditView extends HtmlElement<'div'> {
 
   // Private Instance Methods
 
-  private insertCellViewAtIndex(cellView: CellEditView<CellObject>, cellIndex: CellIndex): void {
-    this.cellViews.splice(cellIndex, 0, cellView);
-    const $precedingElt = cellIndex===0 ?
-              $(this.$elt, '.insertCellAtTopButton') :
-              this.cellViews[cellIndex-1].$elt;
-    $precedingElt.after(cellView.$elt)
+  private deleteCellView(cellId: CellId): CellEditView<CellObject> {
+    const cellView =  this.getCellView(cellId);
+    cellView.$elt.remove();
+    this.cellViewMap.delete(cellId);
+    return cellView;
+  }
+
+  private insertCellView(cellView: CellEditView<CellObject>, afterId: CellRelativePosition): void {
+    this.cellViewMap.set(cellView.id, cellView);
+    if (afterId == CellPosition.Top) {
+      $(this.$elt, '.insertCellAtTopButton').after(cellView.$elt);
+    } else if (afterId == CellPosition.Bottom) {
+      this.$elt.append(cellView.$elt);
+    } else {
+      const precedingCellView = this.getCellView(afterId);
+      precedingCellView.$elt.after(cellView.$elt);
+    }
   }
 
   // Private Event Handlers
@@ -397,31 +408,27 @@ export class NotebookEditView extends HtmlElement<'div'> {
   }
 
   private onCellDeleted(update: CellDeleted): void {
-    const cellIndex = this.cellViewIndex(update.cellId);
-    const cellView = this.cellViews.splice(cellIndex, 1)[0];
+    const { cellId } = update;
+    const cellView = this.deleteCellView(cellId);
     cellView.onCellDeleted(update);
   }
 
   private onCellInserted(update: CellInserted): void {
-    const { cellObject, cellIndex } = update;
+    const { cellObject, afterId } = update;
     const cell = this.notebook.getCell(cellObject.id);
     const cellView = createCellView(this, cell);
-    this.insertCellViewAtIndex(cellView, cellIndex);
+    this.insertCellView(cellView, afterId);
   }
 
   private onCellMoved(update: CellMoved): void {
-    const { cellId, newIndex } = update;
-
-    // Remove cell view from its existing position
-    const cellIndex = this.cellViewIndex(cellId);
-    const cellView = this.cellViews.splice(cellIndex, 1)[0];
-    cellView.$elt.remove();
-    this.insertCellViewAtIndex(cellView, newIndex);
+    const { cellId, afterId } = update;
+    const cellView = this.deleteCellView(cellId);
+    this.insertCellView(cellView, afterId);
   }
 
   private async onInsertCellAtTopButtonClicked(event: MouseEvent): Promise<void> {
     event.preventDefault(); // Don't take focus.
-    await this.insertCell(CellPosition.Top);
+    await this.insertCellRequest(CellPosition.Top);
   }
 
   private onFocus(_event: FocusEvent): void {

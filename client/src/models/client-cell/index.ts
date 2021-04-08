@@ -23,15 +23,16 @@ import * as debug1 from "debug";
 const debug = debug1('client:client-cell');
 
 import { CellId, CellObject, CellType } from "../../shared/cell";
-import { assert, ElementId, escapeHtml, Html, JsonObject } from "../../shared/common";
+import { ElementId, escapeHtml, Html, SvgMarkup } from "../../shared/common";
 import { CssClass, CssSelector, CssSize } from "../../shared/css";
 import { cellBriefSynopsis, cellSynopsis, notebookUpdateSynopsis } from "../../shared/debug-synopsis";
-import { CellDeleted, DisplayUpdate, NotebookUpdate, SuggestionId, SuggestionUpdates } from "../../shared/server-responses";
-import { Stroke, StrokeId } from "../../shared/stylus";
+import { NotebookUpdate, SuggestionUpdates } from "../../shared/server-responses";
+import { Stroke, StrokeId, convertStrokeToPath, strokePathId } from "../../shared/stylus";
 
 import { $, $newSvg } from "../../dom";
 
 import { ClientNotebook } from "../client-notebook";
+import { NotebookChangeRequest } from "../../shared/client-requests";
 
 // Types
 
@@ -65,10 +66,10 @@ export abstract class ClientCell<O extends CellObject> {
       tag: 'symbol',
       id: <ElementId>`n${notebook.id}c${obj.id}`,
       class: CELL_SYMBOL_CLASS.get(obj.type),
-      html: obj.displaySvg,
     });
     $(document, <CssSelector>'#svgContent>defs').append($svgSymbol);
     this.$svgSymbol = $svgSymbol;
+    this.refreshDisplay();
   }
 
   // Public Instance Properties
@@ -92,13 +93,35 @@ export abstract class ClientCell<O extends CellObject> {
 
   // Public Instance Methods
 
-  public async acceptSuggestion(suggestionId: SuggestionId, suggestionData: JsonObject): Promise<void> {
-    await this.notebook.acceptSuggestionRequest(this.id, suggestionId, suggestionData);
+  public async requestChanges(changeRequests: NotebookChangeRequest[]): Promise<void> {
+    await this.notebook.requestChanges(changeRequests);
   }
 
   public addView(view: CellView): void {
     this.views.add(view);
   }
+
+  public async deleteRequest(): Promise<void> {
+    // Called when the 'X' button has been pressed in a cell.
+    // Ask the notebook to delete us.
+    await this.notebook.deleteCellRequest(this.id);
+  }
+
+  public async deleteStrokeRequest(strokeId: StrokeId): Promise<void> {
+    await this.notebook.deleteStrokeFromCellRequest(this.id, strokeId);
+  }
+
+  public async insertStrokeRequest(stroke: Stroke): Promise<void> {
+    await this.notebook.insertStrokeIntoCellRequest(this.id, stroke);
+  }
+
+  public async resizeRequest(cssSize: CssSize): Promise<void> {
+    // Called when user finishes resizing a cell.
+    // Ask the notebook to resize us.
+    await this.notebook.resizeCellRequest(this.id, cssSize);
+  }
+
+  // Public Event Handlers
 
   public onSuggestionsUpdate(update: SuggestionUpdates, ownRequest: boolean): void {
     for (const view of this.views) {
@@ -110,22 +133,23 @@ export abstract class ClientCell<O extends CellObject> {
     debug(`onUpdate C${this.id} ${notebookUpdateSynopsis(update)}`);
 
     switch(update.type) {
-      case 'cellResized': {
-        this.obj.cssSize.width = update.cssSize.width;
-        this.obj.cssSize.height = update.cssSize.height;
+      case 'cellDeleted': {
+        this.$svgSymbol.remove();
         break;
       }
       case 'strokeDeleted': {
-        const strokes = this.obj.strokeData.strokes;
-        const strokeIndex = strokes.findIndex(stroke=>stroke.id==update.strokeId);
-        assert(strokeIndex>=0);
-        strokes.splice(strokeIndex, 1);
-        this.updateDisplay(update.displayUpdate);
+        const { strokeId } = update;
+        const elementId = strokePathId(this.id, strokeId);
+        $(this.$svgSymbol, `#${elementId}`).remove();
         break;
       }
       case 'strokeInserted': {
-        this.obj.strokeData.strokes.push(update.stroke);
-        this.updateDisplay(update.displayUpdate);
+        const { stroke } = update;
+        const svgMarkup = convertStrokeToPath(this.id, stroke);
+        const $svg = $newSvg<'svg'>({ tag: 'svg', html: svgMarkup });
+        while ($svg.childNodes.length > 0) {
+          this.$svgSymbol.appendChild($svg.childNodes[0]);
+        }
         break;
       }
     }
@@ -135,32 +159,6 @@ export abstract class ClientCell<O extends CellObject> {
     }
   };
 
-  public async deleteRequest(): Promise<void> {
-    // Called when the 'X' button has been pressed in a cell.
-    // Ask the notebook to delete us.
-    await this.notebook.deleteCellRequest(this.id);
-  }
-
-  public async deleteStroke(strokeId: StrokeId): Promise<void> {
-    await this.notebook.deleteStrokeFromCellRequest(this.id, strokeId);
-  }
-
-  public async insertStroke(stroke: Stroke): Promise<void> {
-    await this.notebook.insertStrokeIntoCellRequest(this.id, stroke);
-  }
-
-  public async resize(cssSize: CssSize): Promise<void> {
-    // Called when user finishes resizing a cell.
-    // Ask the notebook to resize us.
-    await this.notebook.resizeCellRequest(this.id, cssSize);
-  }
-
-  // Public Event Handlers
-
-  public onCellDeleted(_update: CellDeleted): void {
-    this.$svgSymbol.remove();
-  }
-
   // --- PRIVATE ---
 
   // Private Instance Properties
@@ -168,25 +166,15 @@ export abstract class ClientCell<O extends CellObject> {
   protected views: Set<CellView>;
   protected $svgSymbol: SVGSymbolElement;
 
+  // Private Instance Property Functions
+
+  protected abstract render(): SvgMarkup;
+
   // Private Instance Methods
 
-  protected updateDisplay(displayUpdate: DisplayUpdate): void {
-    if (displayUpdate.delete) {
-      for (const elementId of displayUpdate.delete) {
-        $(this.$svgSymbol, `#${elementId}`).remove();
-      }
-    }
-
-    if (displayUpdate.append) {
-      for (const markup of displayUpdate.append) {
-        // Create an SVG element with the markup inside of it.
-        const $svg = $newSvg<'svg'>({ tag: 'svg', html: markup });
-        // Move all the nodes from the new SVG element our symbol definition.
-        while ($svg.childNodes.length > 0) {
-          this.$svgSymbol.appendChild($svg.childNodes[0]);
-        }
-      }
-    }
+  protected refreshDisplay(): void {
+    const svgMarkup = this.render();
+    this.$svgSymbol.innerHTML = svgMarkup;
   }
 }
 

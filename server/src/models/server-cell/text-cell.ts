@@ -23,9 +23,10 @@ import * as debug1 from "debug";
 const MODULE = __filename.split(/[/\\]/).slice(-1)[0].slice(0,-3);
 const debug = debug1(`server:${MODULE}`);
 
-import { deepCopy, PlainText, SvgMarkup, escapeHtml, Html } from "../../shared/common";
+import { deepCopy, PlainText, escapeHtml, Html, SvgMarkup } from "../../shared/common";
 import { CssLength } from "../../shared/css";
-import { CellSource, CellType, TextCellObject } from "../../shared/cell";
+import { CellId, CellSource, CellType, SuggestionClass, SuggestionId, SuggestionObject } from "../../shared/cell";
+import { TextCellObject, renderTextCell } from "../../shared/text";
 import { EMPTY_STROKE_DATA } from "../../shared/stylus";
 
 import { recognizeText } from "../../components/handwriting-recognizer";
@@ -33,10 +34,9 @@ import { recognizeText } from "../../components/handwriting-recognizer";
 import { ServerNotebook } from "../server-notebook";
 
 import { ServerCell } from "./index";
-import { NotebookSuggestionsUpdated, NotebookUpdated, SuggestionClass, SuggestionId, SuggestionObject, SuggestionUpdates, TextTypeset } from "../../shared/server-responses";
+import { NotebookSuggestionsUpdated, SuggestionUpdates } from "../../shared/server-responses";
 
-import { SuggestionData, TypesetTextSuggestionData } from "../suggestion";
-import { AcceptSuggestion } from "../../shared/client-requests";
+import { NotebookChangeRequest } from "../../shared/client-requests";
 
 // Constants
 
@@ -50,23 +50,29 @@ export class TextCell extends ServerCell<TextCellObject> {
 
   // Public Class Methods
 
-  public static newCell(notebook: ServerNotebook, source: CellSource): TextCell {
-    const obj: TextCellObject = {
-      id: notebook.nextId(),
+  public static newCellObject(notebook: ServerNotebook, id: CellId, source: CellSource): TextCellObject {
+    const rval: TextCellObject = {
+      id,
       type: CellType.Text,
       cssSize: this.initialCellSize(notebook, DEFAULT_HEIGHT),
-      displaySvg: <SvgMarkup>'',
       inputText: <PlainText>"",
       source,
       strokeData: deepCopy(EMPTY_STROKE_DATA),
+      suggestions: [],
     };
-    return new this(notebook, obj);
+    return rval;
   }
 
   // Public Constructor
 
   public constructor(notebook: ServerNotebook, obj: TextCellObject) {
     super(notebook, obj);
+  }
+
+  // Public Instance Property Functions
+
+  public /* override */ displaySvg(): SvgMarkup {
+    return renderTextCell(this.obj);
   }
 
   // Public Instance Methods
@@ -77,23 +83,20 @@ export class TextCell extends ServerCell<TextCellObject> {
 
   // Private Instance Methods
 
-  private changeText(text: PlainText): void {
-    this.obj.inputText = text;
-    this.redrawDisplaySvg();
-  }
-
   private async recognizeStrokes(): Promise<void> {
     const results = await recognizeText(this.obj.strokeData)
     const addSuggestions: SuggestionObject[] = results.alternatives.map((alternative, index)=>{
       const id = <SuggestionId>`recognizedText${index}`;
-      const data: TypesetTextSuggestionData = {
+      const data: NotebookChangeRequest[] = [{
         type: 'typesetText',
+        cellId: this.id,
         text: alternative.text,
-      };
+        strokeData: EMPTY_STROKE_DATA,
+      }];
       const suggestion: SuggestionObject = {
         id,
         class: TYPESET_TEXT_SUGGESTION_CLASS,
-        data,
+        changeRequests: data,
         html: <Html>escapeHtml(alternative.text),
       };
       return suggestion;
@@ -114,67 +117,11 @@ export class TextCell extends ServerCell<TextCellObject> {
     this.notebook.broadcastMessage(response);
   }
 
-  protected /* override */ redrawDisplaySvg(): void {
-    const fontCapHeightInPx = 12; // TODO:
-    const y = Math.round(this.heightInPx/2 + fontCapHeightInPx/2);
-    const markup = <SvgMarkup>`<text y="${y}">${escapeHtml(this.obj.inputText)}</text>`;
-    super.redrawDisplaySvg(<SvgMarkup>(markup));
-  }
-
   // Private Instance Event Handlers
-
-  protected /* override */ onAcceptSuggestionRequest(
-    source: CellSource,
-    request: AcceptSuggestion,
-    /* out */ response: NotebookUpdated,
-  ): void {
-    const suggestionData = <SuggestionData>request.suggestionData;
-
-    let handled: boolean = true;
-    switch(suggestionData.type) {
-      case 'typesetText': this.onTypesetTextRequest(suggestionData, response); break;
-      default: handled = false;
-    }
-    super.onAcceptSuggestionRequest(source, request, response, handled);
-  }
 
   protected async onStrokeInactivityTimeout(): Promise<void> {
     debug(`Text cell stroke inactivity timeout c${this.id}`);
     await this.recognizeStrokes();
-  }
-
-  private onTypesetTextRequest(
-    suggestionData: TypesetTextSuggestionData,
-    /* out */ response: NotebookUpdated,
-  ): void {
-
-    // REVIEW: Size of cell could change.
-    const inputText = suggestionData.text;
-    this.obj.strokeData = deepCopy(EMPTY_STROKE_DATA);
-    this.changeText(inputText);
-
-    const update: TextTypeset = {
-      type: 'textTypeset',
-      cellId: this.id,
-      displaySvg: this.obj.displaySvg,
-      inputText,
-      strokeData: this.obj.strokeData,
-    };
-    response.updates.push(update);
-
-    // TODO:
-    // const undoChangeRequest: ...
-    // response.undoChangeRequests.push(undoChangeRequest);
-
-    // Remove the typeset formula suggestions from the cell's suggestion panel.
-    const suggestionUpdates: SuggestionUpdates = {
-      cellId: this.id,
-      add: [],
-      removeClasses: [ TYPESET_TEXT_SUGGESTION_CLASS ],
-      removeIds: [],
-    }
-    response.suggestionUpdates = [ suggestionUpdates ];
-
   }
 
 }

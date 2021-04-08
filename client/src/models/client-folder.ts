@@ -21,6 +21,10 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 // Requirements
 
+import * as debug1 from "debug";
+const debug = debug1('client:client-notebook');
+
+import { assert, assertFalse, ClientId } from "../shared/common";
 import { FolderPath, NotebookName, FolderName, FolderEntry, NotebookEntry, Folder } from "../shared/folder";
 import {
   FolderChangeRequest, ChangeFolder, OpenFolder,
@@ -30,9 +34,9 @@ import {
   FolderUpdated, FolderResponse, FolderOpened, FolderClosed, FolderCollaboratorConnected, FolderCollaboratorDisconnected,
   FolderUpdate, FolderCreated, NotebookCreated, FolderRenamed, NotebookRenamed, FolderDeleted, NotebookDeleted,
 } from "../shared/server-responses"
+import { folderUpdateSynopsis } from "../shared/debug-synopsis";
 
 import { appInstance } from "../app";
-import { assert, assertFalse, ClientId } from "../shared/common";
 import { CollaboratorObject } from "../shared/user";
 import { logWarning } from "../error-handler";
 
@@ -119,23 +123,6 @@ export class ClientFolder extends Folder {
   }
 
   // Public Instance Methods
-
-  public /* override */ applyChange(change: FolderUpdate, ownRequest: boolean): void {
-    // Send deletion change notifications.
-    // Deletion change notifications are sent before the change happens so the watcher can
-    // examine the style or relationship being deleted before it disappears from the notebook.
-    const notifyBefore = (change.type == 'folderDeleted' || change.type == 'notebookDeleted');
-    if (notifyBefore) {
-      for (const watcher of this.watchers) { watcher.onChange(change, ownRequest); }
-    }
-
-    super.applyChange(change, ownRequest);
-
-    // Send non-deletion change notification.
-    if (!notifyBefore) {
-      for (const watcher of this.watchers) { watcher.onChange(change, ownRequest); }
-    }
-  }
 
   public close(watcher?: ClientFolderWatcher): void {
     assert(!this.terminated);
@@ -247,6 +234,23 @@ export class ClientFolder extends Folder {
 
   // Private Instance Methods
 
+  protected /* override */ applyUpdate(change: FolderUpdate, ownRequest: boolean): void {
+    // Send deletion change notifications.
+    // Deletion change notifications are sent before the change happens so the watcher can
+    // examine the style or relationship being deleted before it disappears from the notebook.
+    const notifyBefore = (change.type == 'folderDeleted' || change.type == 'notebookDeleted');
+    if (notifyBefore) {
+      for (const watcher of this.watchers) { watcher.onChange(change, ownRequest); }
+    }
+
+    super.applyUpdate(change, ownRequest);
+
+    // Send non-deletion change notification.
+    if (!notifyBefore) {
+      for (const watcher of this.watchers) { watcher.onChange(change, ownRequest); }
+    }
+  }
+
   private getUntitledFolderName(): FolderName {
     // Returns "untitled_folder" if that name is not already used.
     // Otherwise, returns "untitled_folder_2", or "untitled_folder_3", etc.
@@ -353,11 +357,16 @@ export class ClientFolder extends Folder {
     // Apply changes to the notebook data structure, and notify the view of the change.
     // If the change is not a delete, then update the data structure first, then notify the view.
     // Otherwise, notify the view of the change, then update the data structure.
-    for (const change of msg.updates) {
-      this.applyChange(change, ownRequest);
+    for (const update of msg.updates) {
+      this.onUpdate(update, ownRequest);
     }
 
     // REVIEW: Notify watchers?
+  }
+
+  private onUpdate(update: FolderUpdate, ownRequest: boolean): void {
+    debug(`onUpdate ${folderUpdateSynopsis(update)}`);
+    this.applyUpdate(update, ownRequest);
   }
 
 }

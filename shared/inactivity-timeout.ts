@@ -60,11 +60,11 @@ export class InactivityTimeout {
   public start(intervalOverride?: Milliseconds): void {
     assert(!this.isRunning);
     if (this.callbackPromise) {
-      console.log(`Starting timeout when callback running.`);
+      // console.log(`Starting timeout when callback running.`);
       this.startedDuringCallbackAt = Date.now();
     } else {
       const interval = (typeof intervalOverride == 'number' ? intervalOverride : this.interval);
-      console.log(`Starting timeout timer: ${interval}ms`);
+      // console.log(`Starting timeout timer: ${interval}ms`);
       this.timeoutId = setTimeout(()=>this.onTimeoutExpired(), interval);
     }
   }
@@ -75,7 +75,7 @@ export class InactivityTimeout {
   }
 
   public stop(): void {
-    console.log(`Stopping timeout.`);
+    // console.log(`Stopping timeout.`);
     assert(this.isRunning);
     clearTimeout(this.timeoutId);
     delete this.timeoutId;
@@ -93,21 +93,21 @@ export class InactivityTimeout {
   // Private Class Event Handlers
 
   private onTimeoutExpired() {
-    console.log(`Timeout expired.`);
+    // console.log(`Timeout expired.`);
     delete this.timeoutId;
     this.callbackPromise = this.callback().finally(()=>{
-      console.log(`Timeout callback finished.`)
+      // console.log(`Timeout callback finished.`)
       delete this.callbackPromise;
       if (this.startedDuringCallbackAt) {
         const elapsed = Date.now() - this.startedDuringCallbackAt;
         delete this.startedDuringCallbackAt;
         const interval = Math.max(this.interval - elapsed, 0);
-        console.log(`Resuming timer: ${interval}ms`);
+        // console.log(`Resuming timer: ${interval}ms`);
         this.start(interval);
       }
     }).catch(err=>{
       // TODO: How to log errors properly on server and client?
-      console.log(`Error in inactivity-timeout callback.`);
+      console.error(`Error in inactivity-timeout callback.`);
       console.dir(err);
     });
   }

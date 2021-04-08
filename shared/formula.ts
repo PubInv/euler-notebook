@@ -20,6 +20,8 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 // Requirements
 
 import { CellObject, CellType } from "./cell";
+import { SvgMarkup } from "./common";
+import { convertLength, CssSize, pixelsFromCssLength } from "./css";
 
 // Types
 
@@ -44,8 +46,31 @@ export interface FormulaObject {
   wolfram: WolframExpression;
 }
 
-// CONSTANTS
+// Constants
 
-export const EMPTY_FORMULA = <PlainTextFormula>'';
+export const EMPTY_PLAINTEXT_FORMULA = <PlainTextFormula>'';
 export const EMPTY_TEX_EXPRESSION = <TexExpression>'';
 export const EMPTY_WOLFRAM_EXPRESSION = <WolframExpression>'';
+
+// Exported Functions
+
+export function renderFormulaCell(obj: FormulaCellObject, formulaNumber: FormulaNumber): SvgMarkup {
+  let markup: SvgMarkup = <SvgMarkup>'';
+  // TODO: formula markup itself.
+  markup += formulaNumberMarkup(formulaNumber, obj.cssSize);
+  return <SvgMarkup>markup;
+}
+
+// Helper Functions
+
+function formulaNumberMarkup(formulaNumber: FormulaNumber, cssSize: CssSize): SvgMarkup {
+  const heightInPx = pixelsFromCssLength(cssSize.height);
+  const widthInPx = pixelsFromCssLength(cssSize.width);
+  const fontSizeInPt = 12;  // TODO:
+  const fontCapHeightInPx = 12; // TODO:
+  const fontEmInPix = convertLength(fontSizeInPt, 'pt', 'px');
+  const x = Math.round(widthInPx - fontEmInPix*4);
+  const y = Math.round(heightInPx/2 + fontCapHeightInPx/2);
+  return <SvgMarkup>`<text class="formulaNumber" x="${x}" y="${y}">(${formulaNumber})</text>`;
+}
+

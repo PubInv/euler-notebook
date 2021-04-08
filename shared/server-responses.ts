@@ -22,9 +22,9 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 // Requirements
 
-import { CellId, CellObject, CellIndex } from "./cell";
+import { CellId, CellObject, CellRelativePosition, SuggestionClass, SuggestionId, SuggestionObject } from "./cell";
 import { RequestId, NotebookChangeRequest } from "./client-requests";
-import { ClientId, ElementId, Html, JsonObject, PlainText, SessionToken, SvgMarkup } from "./common";
+import { ClientId, PlainText, SessionToken } from "./common";
 import { CssSize } from "./css";
 import { FolderObject, FolderPath, NotebookPath, FolderEntry, FolderName, NotebookEntry, NotebookName } from "./folder";
 import { FormulaObject } from "./formula";
@@ -34,16 +34,6 @@ import { StrokeId, Stroke, StrokeData } from "./stylus";
 import { CollaboratorObject, UserObject } from "./user";
 
 // Supporting Types
-
-export type SuggestionId = '{SuggestionId}';
-export type SuggestionClass = '{SuggestionClass}';
-
-export interface SuggestionObject {
-  id: SuggestionId,
-  class?: SuggestionClass,
-  html: Html,
-  data: JsonObject,
-}
 
 export interface SuggestionUpdates {
   cellId: CellId,
@@ -58,11 +48,6 @@ export type ServerResponse = ErrorResponse | FolderResponse | NotebookResponse |
 export interface ResponseBase {
   complete?: boolean;
   requestId?: RequestId; // REVIEW: Just 'id'?
-}
-
-export interface DisplayUpdate {
-  append?: SvgMarkup[],
-  delete?: ElementId[],
 }
 
 export interface ErrorResponse extends ResponseBase {
@@ -206,12 +191,12 @@ export interface CellDeleted {
 export interface CellInserted {
   type: 'cellInserted';
   cellObject: CellObject;
-  cellIndex: CellIndex;
+  afterId: CellRelativePosition;
 }
 export interface CellMoved {
   type: 'cellMoved';
   cellId: CellId;
-  newIndex: number; // After cell is removed from its existing position, this is the index of where it should be inserted.
+  afterId: CellRelativePosition;
 }
 export interface CellResized {
   type: 'cellResized';
@@ -221,26 +206,22 @@ export interface CellResized {
 export interface FormulaTypeset {
   type: 'formulaTypeset';
   cellId: CellId;
-  displaySvg: SvgMarkup;
   formula: FormulaObject;
   strokeData: StrokeData;
 }
 export interface StrokeDeleted {
   type: 'strokeDeleted';
   cellId: CellId;
-  displayUpdate: DisplayUpdate;
   strokeId: StrokeId;
 }
 export interface StrokeInserted {
   type: 'strokeInserted';
   cellId: CellId;
-  displayUpdate: DisplayUpdate;
   stroke: Stroke;
 }
 export interface TextTypeset {
   type: 'textTypeset';
   cellId: CellId;
-  displaySvg: SvgMarkup;
-  inputText: PlainText;
+  text: PlainText;
   strokeData: StrokeData;
 }

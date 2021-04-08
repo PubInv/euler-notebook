@@ -22,7 +22,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 import * as debug1 from "debug";
 const debug = debug1('client:screen-manager');
 
-import { Html, assertFalse } from "../shared/common";
+import { Html, assertFalse, assert } from "../shared/common";
 import { FOLDER_PATH_RE, NOTEBOOK_PATH_RE, FolderPath, NotebookPath } from "../shared/folder";
 
 import { addSyncEventListener } from "../dom";
@@ -64,7 +64,7 @@ export abstract class ScreenManager {
       this.$body.append(nextScreen.$elt);
       this.instanceMap.set(pathname, nextScreen);
     } else {
-      if (nextScreen == this.currentScreen) { assertFalse(); }
+      assert(nextScreen != this.currentScreen);
     }
     nextScreen.show();
     this.currentScreen = nextScreen;
@@ -93,9 +93,7 @@ export abstract class ScreenManager {
             return new NotebookEditScreen(path);
           case 'read':
             return new NotebookReadScreen(path, Mode.Reading);
-          default:
-            assertFalse();
-            break;
+          default: assertFalse();
         }
       } else if (NOTEBOOK_PATH_RE.test(pathname)) {
         return new NotebookReadScreen(<NotebookPath>pathname, Mode.Thumbnails);

@@ -41,8 +41,8 @@ export class ClientPage {
   public constructor(
     notebook: ClientNotebook,
     pageIndex: PageIndex,
-    cellIndex: CellIndex,
-    numCells: number,
+    _cellIndex: CellIndex,
+    _numCells: number,
   ) {
     this.notebook = notebook;
     this.index = pageIndex;
@@ -52,8 +52,7 @@ export class ClientPage {
     const x = pixelsFromCssLength(notebook.margins.left);
     let y = pixelsFromCssLength(notebook.margins.top);
     let pageMarkup: SvgMarkup = <SvgMarkup>'';
-    for (let i = cellIndex; i < cellIndex+numCells; i++) {
-      const cell = notebook.cells[i];
+    for (const cell of notebook.cells()) {
       const cellMarkup: SvgMarkup = <SvgMarkup>`<use href="#n${notebook.id}c${cell.id}" x="${x}" y="${y}"/>\n`;
       pageMarkup += cellMarkup; // <SvgMarkup>(pageMarkup + cellMarkup);
       y += pixelsFromCssLength(cell.obj.cssSize.height);

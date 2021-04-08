@@ -24,21 +24,20 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 import * as debug1 from "debug";
 const debug = debug1('client:client-notebook');
 
-import { CellId, CellObject, CellIndex, CellPosition, CellRelativePosition, CellType, PageIndex } from "../shared/cell";
-import { assert, assertFalse, ClientId, Html, JsonObject } from "../shared/common";
+import { CellId, CellObject, CellPosition, CellRelativePosition, CellType, PageIndex } from "../shared/cell";
+import { assert, assertFalse, ClientId, Html } from "../shared/common";
 import { CssSize } from "../shared/css";
 import { notebookUpdateSynopsis } from "../shared/debug-synopsis";
 import { Folder, NotebookName, NotebookPath } from "../shared/folder";
-import { PageMargins, Pagination } from "../shared/notebook";
+import { Notebook } from "../shared/notebook";
 import {
   NotebookChangeRequest, ChangeNotebook, OpenNotebook, DeleteCell, ResizeCell,
-  InsertStroke, InsertEmptyCell, MoveCell, DeleteStroke,
-  AcceptSuggestion
+  InsertStroke, MoveCell, DeleteStroke, InsertEmptyCell
 } from "../shared/client-requests";
 import {
   NotebookUpdated, NotebookOpened, NotebookResponse, NotebookClosed, NotebookUpdate,
-  CellInserted, CellDeleted, CellMoved, NotebookCollaboratorConnected,
-  NotebookCollaboratorDisconnected, NotebookSuggestionsUpdated, SuggestionId,
+  NotebookCollaboratorConnected,
+  NotebookCollaboratorDisconnected, NotebookSuggestionsUpdated,
 } from "../shared/server-responses";
 import { Stroke, StrokeId } from "../shared/stylus";
 import { CollaboratorObject } from "../shared/user";
@@ -80,7 +79,7 @@ interface UndoEntry {
 
 // Exported Class
 
-export class ClientNotebook {
+export class ClientNotebook extends Notebook {
 
   // Public Class Methods
 
@@ -113,15 +112,18 @@ export class ClientNotebook {
 
   // Public Instance Properties
 
-  public cells: ClientCell<CellObject>[]; // REVIEW: Make function property that returns iterator?
   public pages: ClientPage[];
   public readonly id: NotebookId;
-  public readonly margins: PageMargins;
-  public readonly path: NotebookPath;
-  public readonly pageSize: CssSize;
-  public readonly pagination: Pagination;
 
   // Public Instance Property Functions
+
+  public *cells(): Iterable<ClientCell<CellObject>> {
+    for (const cellObject of this.obj.cells) {
+      const cell = this.cellMap.get(cellObject.id)!;
+      assert(cell);
+      yield cell;
+    }
+  }
 
   public get collaborators(): IterableIterator<CollaboratorObject> {
     return this.collaboratorMap.values();
@@ -139,7 +141,8 @@ export class ClientNotebook {
   }
 
   public toDebugHtml(): Html {
-    return <Html>this.cells.map(cell=>{
+    return <Html>this.obj.cells.map(cellObject=>{
+      const cell = this.getCell(cellObject.id);
       return cell.toDebugHtml();
     }).join('\n');
   }
@@ -156,11 +159,6 @@ export class ClientNotebook {
       // LATER: Set timer to destroy in the future.
       this.terminate("Closed by client");
     }
-  }
-
-  public async acceptSuggestionRequest(cellId: CellId, suggestionId: SuggestionId, suggestionData: JsonObject): Promise<void> {
-    const changeRequest: AcceptSuggestion = { type: 'acceptSuggestion', cellId, suggestionId, suggestionData };
-    await this.sendUndoableChangeRequest(changeRequest);
   }
 
   public async deleteCellRequest(cellId: CellId): Promise<void> {
@@ -195,7 +193,7 @@ export class ClientNotebook {
     let afterId: CellRelativePosition;
     if (cellIndex<targetIndex) { afterId = targetCellId; }
     else {
-      if (targetIndex>0) { afterId = this.cells[targetIndex-1].id; }
+      if (targetIndex>0) { afterId = this.obj.cells[targetIndex-1].id; }
       else { afterId = CellPosition.Top; }
     }
     const changeRequest: MoveCell = {
@@ -222,6 +220,10 @@ export class ClientNotebook {
     if (this.topOfUndoStack == 1) {
       for (const view of this.views) { view.onUndoStateChange(true); }
     }
+  }
+
+  public async requestChanges(changeRequests: NotebookChangeRequest[]): Promise<void> {
+    await this.sendChangeRequests(changeRequests);
   }
 
   public async resizeCellRequest(cellId: CellId, cssSize: CssSize): Promise<void> {
@@ -278,24 +280,15 @@ export class ClientNotebook {
   // Private Constructor
 
   private constructor(path: NotebookPath, msg: NotebookOpened) { //notebookObject: NotebookObject) {
-    const obj = msg.obj;
-    this.path = path;
-    this.cellMap = new Map();
-    this.cells = [];
+    super(path, msg.obj);
+
     this.id = ClientNotebook.nextId++;
-    this.margins = obj.margins; // REVIEW: Deep copy?
-    this.pageSize = obj.pageSize; // REVIEW: Deep copy?
-    this.pagination = obj.pagination;
+    this.cellMap = new Map(this.obj.cells.map(cellObject=>[ cellObject.id, createCell(this, cellObject) ]));
     this.terminated = false;
     this.topOfUndoStack = 0;
     this.undoStack = [];
 
     this.collaboratorMap = new Map(msg.collaborators.map(c=>[c.clientId,c]));
-
-    for (let cellIndex=0; cellIndex<obj.cells.length; cellIndex++) {
-      const cellObject = obj.cells[cellIndex];
-      this.insertCell(cellObject, cellIndex);
-    }
 
     this.pages = [];
     // let cellIndex = 0;
@@ -304,7 +297,7 @@ export class ClientNotebook {
          pageIndex++)
     {
       // const numCells = pagination[pageIndex];
-      const page = new ClientPage(this, pageIndex, 0 /* TODO: cellIndex */, this.cells.length/* TODO: numCells */);
+      const page = new ClientPage(this, pageIndex, 0 /* TODO: cellIndex */, this.obj.cells.length/* TODO: numCells */);
       this.pages.push(page);
       // cellIndex += pagination[pageIndex];
     }
@@ -320,12 +313,6 @@ export class ClientNotebook {
 
   // Private Instance Property Functions
 
-  private cellIndex(id: CellId): CellIndex {
-    const rval = this.cells.findIndex(cell=>cell.id===id);
-    assert(rval>=0);
-    return rval;
-  }
-
   private get views(): Set<NotebookView> {
     const openInfo = ClientNotebook.openMap.get(this.path)!;
     assert(openInfo);
@@ -333,14 +320,6 @@ export class ClientNotebook {
   }
 
   // Private Instance Methods
-
-  private insertCell(cellObject: CellObject, cellIndex: CellIndex): void {
-    // Do not call this method unless you are sure of what you are doing.
-    // You probably want to call insertCellRequest instead.
-    const cell = createCell(this, cellObject);
-    this.cells.splice(cellIndex, 0, cell);
-    this.cellMap.set(cell.id, cell);
-  }
 
   // private async sendChangeRequest(changeRequest: NotebookChangeRequest): Promise<ChangeRequestResults> {
   //   return this.sendChangeRequests([ changeRequest ]);
@@ -438,31 +417,6 @@ export class ClientNotebook {
     this.terminate(msg.reason);
   }
 
-  private onCellDeleted(update: CellDeleted): void {
-    const { cellId } = update;
-    const cell = this.getCell(cellId);
-    cell.onCellDeleted(update);
-    this.cellMap.delete(cell.id);
-    const cellIndex = this.cellIndex(cell.id);
-    this.cells.splice(cellIndex, 1);
-  }
-
-  private onCellInserted(update: CellInserted): void {
-    const { cellObject, cellIndex } = update;
-    this.insertCell(cellObject, cellIndex);
-  }
-
-  private onCellMoved(update: CellMoved): void {
-    const { cellId, newIndex } = update;
-
-    // Remove cell from its existing position.
-    const cellIndex = this.cellIndex(cellId);
-    const cell = this.cells.splice(cellIndex, 1)[0];
-
-    // Insert cell into its new position.
-    this.cells.splice(newIndex, 0, cell);
-  }
-
   private onSuggestionsUpdated(msg: NotebookSuggestionsUpdated, ownRequest: boolean): void {
     // Message from the server indicating this notebook suggestions have changed.
     // Dispatch each update in turn.
@@ -494,12 +448,24 @@ export class ClientNotebook {
     // Process an individual notebook change from the server.
     debug(`onUpdate ${notebookUpdateSynopsis(update)}`);
 
+    this.applyUpdate(update);
+
     // Update our data structure
     switch (update.type) {
 
-      case 'cellDeleted':   this.onCellDeleted(update); break;
-      case 'cellInserted':  this.onCellInserted(update); break;
-      case 'cellMoved':     this.onCellMoved(update); break;
+      case 'cellDeleted': {
+        const { cellId } = update;
+        const cell = this.getCell(cellId);
+        cell.onUpdate(update, ownRequest);
+        this.cellMap.delete(cell.id);
+        break;
+      }
+      case 'cellInserted': {
+        const { cellObject } = update;
+        const cell = createCell(this, cellObject);
+        this.cellMap.set(cell.id, cell);
+        break;
+      }
 
       case 'cellResized':
       case 'formulaTypeset':
@@ -510,7 +476,6 @@ export class ClientNotebook {
         cell.onUpdate(update, ownRequest);
         break;
       }
-      default: assertFalse();
     }
 
     // Notify notebook views of the update.

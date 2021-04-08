@@ -256,10 +256,10 @@ export abstract class CellEditView<O extends CellObject> extends HtmlElement<'di
 
     // Create a "stroke panel" for displaying and capturing stylus strokes
     const drawStroke = async (stroke: Stroke): Promise<void>=>{
-      await this.cell.insertStroke(stroke)
+      await this.cell.insertStrokeRequest(stroke)
     };
     const eraseStroke = async (strokeId: StrokeId): Promise<void>=>{
-      await this.cell.deleteStroke(strokeId);
+      await this.cell.deleteStrokeRequest(strokeId);
     };
     const callbacks: StrokePanelCallbacks = { drawStroke, eraseStroke };
     this.strokePanel = new StrokePanel(cell.obj, callbacks, notebookEditView.stylusMode);
@@ -342,11 +342,11 @@ export abstract class CellEditView<O extends CellObject> extends HtmlElement<'di
     const cellDragData = getDragData(event);
     if (!cellDragData) { return; }
     debug(`Dropped style ${cellDragData.cellId} onto style ${this.id}`);
-    await this.notebookEditView.moveCell(cellDragData.cellId, this.id);
+    await this.notebookEditView.moveCellRequest(cellDragData.cellId, this.id);
   }
 
   private async onInsertCell(): Promise<void> {
-    await this.notebookEditView.insertCell(this.id);
+    await this.notebookEditView.insertCellRequest(this.id);
   }
 
   private onResizerCancel(): void {
@@ -399,7 +399,7 @@ export abstract class CellEditView<O extends CellObject> extends HtmlElement<'di
     const height = cssLengthInPixels(newHeightInPixels, 'px');
     const cssSize: CssSize = { width, height };
     // LATER: Some sort of visual indication that the resize request is outstanding.
-    this.cell.resize(cssSize)
+    this.cell.resizeRequest(cssSize)
     .catch((err: Error)=>{
       // TODO: What to do here?
       showError(err, <Html>"Error submitting resize");

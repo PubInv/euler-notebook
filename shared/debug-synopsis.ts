@@ -27,7 +27,7 @@ import { assert, escapeHtml, PlainText } from './common';
 import {
   FolderRequest, ClientRequest, NotebookRequest, FolderChangeRequest, NotebookChangeRequest, UserRequest
 } from './client-requests';
-import { FolderResponse, FolderUpdate, ServerResponse, NotebookResponse, NotebookUpdate, UserResponse, DisplayUpdate } from "./server-responses";
+import { FolderResponse, FolderUpdate, ServerResponse, NotebookResponse, NotebookUpdate, UserResponse,  SuggestionUpdates } from "./server-responses";
 import { NotebookObject } from "./notebook";
 import { Stroke } from "./stylus";
 
@@ -76,18 +76,6 @@ export function clientUserMessageSynopsis(msg: UserRequest): string {
   return rval;
 }
 
-export function displayUpdateSynopsis(update: DisplayUpdate): string {
-  let rval = "DU[";
-  if (update.delete) {
-    rval += `D ` + update.delete.join(',');
-  }
-  if (update.append) {
-    rval += `A ` + update.append.map(markup=>markup.slice(0, 8)+"...").join(',');
-  }
-  rval += "]";
-  return rval;
-}
-
 export function folderChangeRequestSynopsis(request: FolderChangeRequest): string {
   let rval: string = request.type;
   switch(request.type) {
@@ -116,14 +104,28 @@ export function folderChangeSynopsis(change: FolderUpdate): string {
   return rval;
 }
 
+export function folderUpdateSynopsis(update: FolderUpdate): string {
+  let rval: string = update.type;
+  switch(update.type) {
+    case 'folderCreated':   rval += ` ${update.entry.name}`; break;
+    case 'folderDeleted':   rval += ` ${update.entry.name}`; break;
+    case 'folderRenamed':   rval += ` ${update.oldName}=>${update.entry.name}`; break;
+    case 'notebookCreated': rval += ` ${update.entry.name}`; break;
+    case 'notebookDeleted': rval += ` ${update.entry.name}`; break;
+    case 'notebookRenamed': rval += ` ${update.oldName}=>${update.entry.name}`; break;
+    default: rval += UNKNOWN_TYPE;
+  }
+  return rval;
+}
+
 export function notebookChangeRequestSynopsis(request: NotebookChangeRequest): string {
   let rval: string = request.type;
   switch(request.type) {
     case 'deleteCell':          rval += ` C${request.cellId}`; break;
     case 'deleteStroke':        rval += ` C${request.cellId} S${request.strokeId}`; break;
-    case 'insertEmptyCell':          rval += ` TODO:`; break;
-    case 'insertStroke':        rval +=  ` C${request.cellId} ${strokeSynopsis(request.stroke)}`; break;
-    case 'keyboardInputChange': rval += ` TODO:`; break;
+    case 'insertCell':          rval += ` C${request.cellObject.type} after ${request.afterId}`; break;
+    case 'insertEmptyCell':     rval += ` type ${request.cellType} after ${request.afterId}`; break;
+    case 'insertStroke':        rval += ` C${request.cellId} ${strokeSynopsis(request.stroke)}`; break;
     case 'moveCell':            rval += ` C${request.cellId} A${request.afterId}`; break;
     case 'resizeCell':          rval += ` C${request.cellId} ${JSON.stringify(request.cssSize)}`; break;
     default: rval += UNKNOWN_TYPE;
@@ -135,11 +137,11 @@ export function notebookUpdateSynopsis(update: NotebookUpdate): string {
   let rval: string = update.type;
   switch(update.type) {
     case 'cellDeleted':    rval += ` P${update.cellId}`; break;
-    case 'cellInserted':   rval += ` ${cellSynopsis(update.cellObject)}`; break;
-    case 'cellMoved':      rval += ` C${update.cellId} to index ${update.newIndex}`; break;
+    case 'cellInserted':   rval += ` ${cellSynopsis(update.cellObject)} after ${update.afterId}`; break;
+    case 'cellMoved':      rval += ` C${update.cellId} after ${update.afterId}`; break;
     case 'cellResized':    rval += ` C${update.cellId} ${JSON.stringify(update.cssSize)}`; break;
     case 'formulaTypeset': rval += ` C${update.cellId}`; break;
-    case 'strokeInserted': rval += ` C${update.cellId} ${strokeSynopsis(update.stroke)} ${displayUpdateSynopsis(update.displayUpdate)}`; break;
+    case 'strokeInserted': rval += ` C${update.cellId} ${strokeSynopsis(update.stroke)}`; break;
     case 'strokeDeleted':  rval += ` C${update.cellId} S${update.strokeId}`; break;
     case 'textTypeset':    rval += ` C${update.cellId}`; break;
     default: rval += UNKNOWN_TYPE;
@@ -239,6 +241,7 @@ function serverNotebookResponseSynopsis(msg: NotebookResponse): string {
     case 'collaboratorConnected': rval += ` obj: ${JSON.stringify(msg.obj)}`; break;
     case 'collaboratorDisconnected': rval += ` clientId: ${msg.clientId}`; break;
     case 'opened': rval += ` cols: ${msg.collaborators.map(c=>c.userName).join(",")}`; break;
+    case 'suggestionsUpdated': rval += ` ${suggestionUpdatesSynopsis(msg.suggestionUpdates)}`; break;
     case 'updated': {
       for (const change of msg.updates) { rval += ` ${notebookUpdateSynopsis(change)};`; }
       break;
@@ -267,4 +270,20 @@ function strokeSynopsis(stroke: Stroke): string {
     return `(${x.toFixed(2)},${y.toFixed(2)})`;
   });
   return `S${stroke.id}[${points.join(',')}${abbreviated?"...":""}]`
+}
+
+function suggestionUpdatesSynopsis(suggestionUpdates: SuggestionUpdates[]): string {
+  return suggestionUpdates.map(update=>{
+    const sections: string[] = [];
+    if (update.add.length>0) {
+      sections.push("add:" + update.add.map(e=>`#${e.id}.${e.class}`).join(','));
+    }
+    if (update.removeClasses.length>0) {
+      sections.push(`removeClasses: ${update.removeClasses.join(',')}`);
+    }
+    if (update.removeIds.length>0) {
+      sections.push(`removeIds:(${update.removeIds.join(',')}`);
+    }
+    return `[C${update.cellId} ${sections.join(";")}`;
+  }).join(',');
 }

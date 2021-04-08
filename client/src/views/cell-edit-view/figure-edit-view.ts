@@ -25,7 +25,7 @@ const debug = debug1('client:figure-edit-view');
 import { CssClass } from "../../shared/css";
 import { NotebookUpdate } from "../../shared/server-responses";
 import { notebookUpdateSynopsis } from "../../shared/debug-synopsis";
-import { FigureCellObject } from "../../shared/cell";
+import { FigureCellObject } from "../../shared/figure";
 
 import { FigureCell } from "../../models/client-cell/figure-cell";
 

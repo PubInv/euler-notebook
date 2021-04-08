@@ -25,7 +25,8 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 import { deepCopy, PlainText, SvgMarkup } from "../../shared/common";
 import { CssLength } from "../../shared/css";
-import { CellSource, CellType, FigureCellObject } from "../../shared/cell";
+import { CellId, CellSource, CellType } from "../../shared/cell";
+import { FigureCellObject, renderFigureCell } from "../../shared/figure";
 import { EMPTY_STROKE_DATA } from "../../shared/stylus";
 
 import { ServerNotebook } from "../server-notebook";
@@ -42,23 +43,29 @@ export class FigureCell extends ServerCell<FigureCellObject> {
 
   // Public Class Methods
 
-  public static newCell(notebook: ServerNotebook, source: CellSource): FigureCell {
-    const obj: FigureCellObject = {
-      id: notebook.nextId(),
+  public static newCellObject(notebook: ServerNotebook, id: CellId, source: CellSource): FigureCellObject {
+    const rval: FigureCellObject = {
+      id,
       type: CellType.Figure,
       cssSize: this.initialCellSize(notebook, DEFAULT_HEIGHT),
-      displaySvg: <SvgMarkup>'',
       inputText: <PlainText>"",
       source,
       strokeData: deepCopy(EMPTY_STROKE_DATA),
+      suggestions: [],
     };
-    return new this(notebook, obj);
+    return rval;
   }
 
   // Public Constructor
 
   public constructor(notebook: ServerNotebook, obj: FigureCellObject) {
     super(notebook, obj);
+  }
+
+  // Public Instance Property Functions
+
+  public /* override */ displaySvg(): SvgMarkup {
+    return renderFigureCell(this.obj);
   }
 
   // Public Instance Methods

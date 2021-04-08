@@ -32,8 +32,8 @@ import { FormulaSymbol } from "../shared/formula";
 // Types
 
 interface PlotReturnValue {
-  fullPlotMarkup: SvgMarkup,
-  thumbnailPlotMarkup: SvgMarkup,
+  plotMarkup: SvgMarkup,
+  thumbnailMarkup: SvgMarkup,
 }
 
 // Constants
@@ -46,10 +46,10 @@ const THUMBNAIL_SCALE_DIVISOR = 8;
 
 export async function plot(formula: ServerFormula, symbol: FormulaSymbol): Promise<PlotReturnValue> {
   debug(`Plotting: symbol ${symbol}, formula ${formula.plain}`);
-  const fullPlotMarkup = await plotUnivariate(formula.obj.wolfram, symbol);
+  const plotMarkup = await plotUnivariate(formula.obj.wolfram, symbol);
   // debug(`Plot markup: ${fullPlotMarkup}`);
-  const thumbnailPlotMarkup = thumbnailPlotFromFullPlot(fullPlotMarkup);
-  return { fullPlotMarkup, thumbnailPlotMarkup };
+  const thumbnailMarkup = thumbnailPlotFromFullPlot(plotMarkup);
+  return { plotMarkup, thumbnailMarkup };
 }
 
 // Helper Functions

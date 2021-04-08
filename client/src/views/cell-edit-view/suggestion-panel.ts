@@ -18,13 +18,14 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
 import { CellObject } from "../../shared/cell";
-import { ElementId, Html, JsonObject } from "../../shared/common";
+import { ElementId, Html } from "../../shared/common";
 import { CssClass } from "../../shared/css";
-import { SuggestionId, SuggestionUpdates } from "../../shared/server-responses";
+import { SuggestionUpdates } from "../../shared/server-responses";
 
 import { $, $all, $new, HtmlElementSpecification } from "../../dom";
 import { HtmlElement } from "../../html-element";
 import { ClientCell } from "../../models/client-cell";
+import { NotebookChangeRequest } from "../../shared/client-requests";
 
 // Requirements
 
@@ -101,7 +102,7 @@ export class SuggestionPanel<O extends CellObject> extends HtmlElement<'div'> {
         id: <ElementId>suggestion.id,
         classes: [ <CssClass>suggestion.class, <CssClass>'suggestion' ],
         asyncListeners: {
-          click: e=>this.onSuggestionClicked(e, suggestion.id, suggestion.data),
+          click: e=>this.onSuggestionClicked(e, suggestion.changeRequests),
         },
         html: suggestion.html,
       };
@@ -145,9 +146,9 @@ export class SuggestionPanel<O extends CellObject> extends HtmlElement<'div'> {
 
   // Private Instance Event Handlers
 
-  private async onSuggestionClicked(_event: MouseEvent, suggestionId: SuggestionId, suggestionData: JsonObject): Promise<void> {
+  private async onSuggestionClicked(_event: MouseEvent, changeRequests: NotebookChangeRequest[]): Promise<void> {
     // REVIEW: What do we do if error happens on the request?
-    await this.cell.acceptSuggestion(suggestionId, suggestionData);
+    await this.cell.requestChanges(changeRequests);
   }
 
 }

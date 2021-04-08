@@ -22,13 +22,14 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 import * as debug1 from "debug";
 const debug = debug1('client:figure-cell');
 
-import { FigureCellObject } from "../../shared/cell";
+import { FigureCellObject, renderFigureCell } from "../../shared/figure";
 import { NotebookUpdate } from "../../shared/server-responses";
 
 import { ClientNotebook } from "../client-notebook";
 
 import { ClientCell } from "./index";
 import { notebookUpdateSynopsis } from "../../shared/debug-synopsis";
+import { SvgMarkup } from "../../shared/common";
 
 // Exported Class
 
@@ -40,6 +41,7 @@ export class FigureCell extends ClientCell<FigureCellObject> {
     super(notebook, obj);
   }
 
+
   // Public Instance Methods
 
   public onUpdate(update: NotebookUpdate, ownRequest: boolean): void {
@@ -50,4 +52,11 @@ export class FigureCell extends ClientCell<FigureCellObject> {
     // }
   };
 
+  // --- PRIVATE ---
+
+  // Private Instance Property Functions
+
+  protected render(): SvgMarkup {
+    return renderFigureCell(this.obj);
+  }
 }

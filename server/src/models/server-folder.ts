@@ -134,7 +134,7 @@ export class ServerFolder extends Folder {
     // Called by ServerSocket when a client sends a folder request.
     const info = this.instanceMap.get(msg.path);
     const instance = await(info ? info.openPromise : this.open(msg.path, {}));
-    await instance.onClientRequest(socket, msg);
+    instance.onClientRequest(socket, msg);
   }
 
   public static onSocketClosed(socket: ServerSocket): void {
@@ -170,21 +170,21 @@ export class ServerFolder extends Folder {
 
   // Public Instance Methods
 
-  public /* override */ applyChange(change: FolderUpdate, ownRequest: boolean): void {
-    // Send deletion change notifications.
-    // Deletion change notifications are sent before the change happens so the watcher can
-    // examine the style or relationship being deleted before it disappears from the notebook.
-    const notifyBefore = (change.type == 'folderDeleted' || change.type == 'notebookDeleted');
-    if (notifyBefore) {
-      for (const watcher of this.watchers) { watcher.onChange(change, ownRequest); }
-    }
-    super.applyChange(change, ownRequest);
+  // public /* override */ applyUpdate(change: FolderUpdate, ownRequest: boolean): void {
+  //   // Send deletion change notifications.
+  //   // Deletion change notifications are sent before the change happens so the watcher can
+  //   // examine the style or relationship being deleted before it disappears from the notebook.
+  //   const notifyBefore = (change.type == 'folderDeleted' || change.type == 'notebookDeleted');
+  //   if (notifyBefore) {
+  //     for (const watcher of this.watchers) { watcher.onChange(change, ownRequest); }
+  //   }
+  //   super.applyUpdate(change, ownRequest);
 
-    // Send non-deletion change notification.
-    if (!notifyBefore) {
-      for (const watcher of this.watchers) { watcher.onChange(change, ownRequest); }
-    }
-  }
+  //   // Send non-deletion change notification.
+  //   if (!notifyBefore) {
+  //     for (const watcher of this.watchers) { watcher.onChange(change, ownRequest); }
+  //   }
+  // }
 
   public close(watcher?: ServerFolderWatcher): void {
     assert(!this.terminated);
@@ -290,10 +290,10 @@ export class ServerFolder extends Folder {
 
   // Private Instance Property Functions
 
-  private get watchers(): IterableIterator<ServerFolderWatcher> {
-    const info = ServerFolder.getInfo(this.path);
-    return info.watchers.values();
-  }
+  // private get watchers(): IterableIterator<ServerFolderWatcher> {
+  //   const info = ServerFolder.getInfo(this.path);
+  //   return info.watchers.values();
+  // }
 
   // Private Instance Methods
 
@@ -361,10 +361,10 @@ export class ServerFolder extends Folder {
 
   // Private Instance Event Handlers
 
-  private async onClientRequest(socket: ServerSocket, msg: FolderRequest): Promise<void> {
+  private onClientRequest(socket: ServerSocket, msg: FolderRequest): void {
     assert(!this.terminated);
     switch(msg.operation) {
-      case 'change': await this.onChangeRequest(socket, msg); break;
+      case 'change': this.onChangeRequest(socket, msg); break;
       case 'close':  this.onCloseRequest(socket, msg); break;
       case 'open':   this.onOpenRequest(socket, msg); break;
       default:       assert(false); break;
@@ -457,7 +457,7 @@ export class ServerFolder extends Folder {
       }
 
       // REVIEW: Apply delete changes after notification?
-      this.applyChange(change, false);
+      this.applyUpdate(change, false);
       changes.push(change);
     }
     const update: FolderUpdated = { type: 'folder', operation: 'updated', path: this.path, updates: changes, complete: true };

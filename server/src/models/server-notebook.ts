@@ -30,23 +30,25 @@ const debug = debug1(`server:${MODULE}`);
 
 // import { readdirSync, unlink, writeFileSync } from "fs"; // LATER: Eliminate synchronous file operations.
 
-import { CellObject, CellSource, CellId, CellPosition, CellType, CellIndex, CellRelativePosition } from "../shared/cell";
-import { assert, assertFalse, ExpectedError, Html } from "../shared/common";
+import { CellObject, CellSource, CellId, CellType, CellRelativePosition } from "../shared/cell";
+import { assert, assertFalse, deepCopy, ExpectedError, Html, Milliseconds } from "../shared/common";
 import { CssLength, cssSizeInPixels, CssLengthUnit, cssLengthInPixels } from "../shared/css";
 import { Folder, NotebookPath, NOTEBOOK_PATH_RE, NotebookName, FolderPath, NotebookEntry } from "../shared/folder";
-import { NotebookObject, NotebookWatcher, PageMargins } from "../shared/notebook";
+import { Notebook, NotebookObject, NotebookWatcher, PageMargins } from "../shared/notebook";
 import {
-  NotebookChangeRequest, MoveCell, InsertEmptyCell, DeleteCell, ChangeNotebook, RequestId, NotebookRequest, OpenNotebook, CloseNotebook, InsertCell,
+  NotebookChangeRequest, MoveCell, DeleteCell, ChangeNotebook, RequestId, NotebookRequest, OpenNotebook, CloseNotebook, InsertCell, DeleteStroke, InsertStroke, ResizeCell, TypesetFormula, TypesetText,
 } from "../shared/client-requests";
 import {
-  NotebookUpdated, NotebookOpened, NotebookUpdate, CellInserted, CellDeleted, CellMoved, NotebookCollaboratorConnected, NotebookCollaboratorDisconnected, ServerResponse,
+  NotebookUpdated, NotebookOpened, NotebookUpdate, CellInserted, CellDeleted, CellMoved, NotebookCollaboratorConnected, NotebookCollaboratorDisconnected, ServerResponse, StrokeInserted, StrokeDeleted, CellResized, FormulaTypeset, TextTypeset,
 } from "../shared/server-responses";
-import { notebookChangeRequestSynopsis } from "../shared/debug-synopsis";
+import { notebookChangeRequestSynopsis, notebookUpdateSynopsis } from "../shared/debug-synopsis";
 import { UserPermission } from "../shared/permissions";
 import { CollaboratorObject } from "../shared/user";
 import { FormulaCellObject } from "../shared/formula";
+import { InactivityTimeout } from "../shared/inactivity-timeout";
+import { TextCellObject } from "../shared/text";
 
-import { existingCell, newCell } from "./server-cell/instantiator";
+import { existingCell, newCellObject } from "./server-cell/instantiator";
 import { ServerCell } from "./server-cell";
 import { FormulaCell } from "./server-cell/formula-cell";
 
@@ -83,9 +85,10 @@ export interface ServerNotebookWatcher extends NotebookWatcher {
   onClosed(reason: string): void;
 }
 
-interface ServerNotebookObject extends NotebookObject {
+interface PersistentServerNotebookObject {
   formatVersion: string;
-  nextId: CellId;
+  nextCellId: CellId;
+  obj: NotebookObject;
 }
 
 // Constants
@@ -97,22 +100,26 @@ const DEFAULT_LETTER_MARGINS = marginsInPixels(1, 1, 1, 1, 'in');
 //            At this point, if you change this number, then users will get an error opening their
 //            existing notebooks. This is fine as long as it is only David and Rob, but as soon as
 //            other people starting using the program then we need to implement the upgrading.
-const FORMAT_VERSION = "0.0.22";
+const FORMAT_VERSION = "0.0.24";
 
-const EMPTY_NOTEBOOK_OBJ: ServerNotebookObject = {
-  nextId: 1,
-  cells: [],
-  margins: DEFAULT_LETTER_MARGINS,
-  pageSize: LETTER_PAGE_SIZE,
+const EMPTY_NOTEBOOK_OBJ: PersistentServerNotebookObject = {
   formatVersion: FORMAT_VERSION,
-  pagination: [],
+  nextCellId: 1,
+  obj: {
+    cells: [],
+    margins: DEFAULT_LETTER_MARGINS,
+    pageSize: LETTER_PAGE_SIZE,
+    pagination: [],
+  },
 }
 
 const NOTEBOOK_FILENAME = <FileName>'notebook.json';
 
+const SAVE_INACTIVITY_INTERVAL: Milliseconds = 5000; // How long the notebook is quiescent before it is saved.
+
 // Exported Class
 
-export class ServerNotebook {
+export class ServerNotebook extends Notebook {
 
   // Public Class Constants
 
@@ -211,7 +218,7 @@ export class ServerNotebook {
     // Called by ServerSocket when a client sends a notebook request.
     const info = this.instanceMap.get(msg.path);
     const instance = await(info ? info.openPromise : this.open(msg.path, {}));
-    await instance.onClientRequest(socket, msg);
+    instance.onClientRequest(socket, msg);
   }
 
   public static onSocketClosed(socket: ServerSocket): void {
@@ -245,32 +252,14 @@ export class ServerNotebook {
 
   // Public Instance Properties
 
-  public obj: ServerNotebookObject;
-  public path: NotebookPath;
-
   // Public Instance Property Functions
 
-  public toHtml(): Html {
-    if (this.isEmpty()) { return <Html>"<i>Notebook is empty.</i>"; }
-    else {
-      return <Html>this.cells.map(cell=>cell.toHtml()).join('\n');
+  public *cells2(): Iterable<ServerCell<CellObject>> {
+    for (const cellObject of this.obj.cells) {
+      const cell = this.cellMap.get(cellObject.id)!;
+      assert(cell);
+      yield cell;
     }
-  }
-
-  public allCells(): ServerCell<CellObject>[] {
-    return this.cells;
-  }
-
-  public cellIndexFromAfterId(afterId: CellId): CellIndex {
-    let rval: CellIndex;
-    if (!afterId || afterId===CellPosition.Top) {
-      rval = 0;
-    } else if (afterId===CellPosition.Bottom) {
-      rval = this.cells.length;
-    } else {
-      rval = this.cellIndex(afterId)+1;
-    }
-    return rval;
   }
 
   public get leftMargin(): CssLength {
@@ -279,6 +268,17 @@ export class ServerNotebook {
 
   public get topMargin(): CssLength {
     return this.obj.margins.top;
+  }
+
+  public toHtml(): Html {
+    if (this.isEmpty()) { return <Html>"<i>Notebook is empty.</i>"; }
+    else {
+      let html: Html = <Html>"";
+      for (const cell of this.cells2()) {
+        html += cell.toHtml();
+      }
+      return html;
+    }
   }
 
   // Public Instance Methods
@@ -303,33 +303,13 @@ export class ServerNotebook {
     }
   }
 
-  public createCellFromObject(cellObject: CellObject, source: CellSource, afterId: CellRelativePosition): CellInserted {
-    let cellIndex: number = this.cellIndexFromAfterId(afterId);
-    cellObject.id = this.nextId();
-    cellObject.source = source;
-    const cell = existingCell(this, cellObject);
-    this.cells.splice(cellIndex, 0, cell);
-    this.obj.cells.splice(cellIndex, 0, cell.obj);
-    this.cellMap.set(cell.id, cell);
+  public nextCellId(): CellId { return this._nextCellId++; }
 
-    const rval: CellInserted = {
-      type: 'cellInserted',
-      cellObject: cell.obj,
-      cellIndex
-    };
-
-    return rval;
-  }
-
-  public nextId(): CellId {
-    return this.obj.nextId++;
-  }
-
-  public async requestChanges(
+  public requestChanges(
     source: CellSource,
     changeRequests: NotebookChangeRequest[],
     options: RequestChangesOptions,
-  ): Promise<void> {
+  ): void {
     assert(!this.terminated);
     debug(`${source} change requests: ${changeRequests.length}`);
 
@@ -343,25 +323,10 @@ export class ServerNotebook {
       complete: true,
     }
 
-    // Make the requested changes to the notebook.
     for (const changeRequest of changeRequests) {
-      assert(changeRequest);
-      debug(`${source} change request: ${notebookChangeRequestSynopsis(changeRequest)}`);
-      switch(changeRequest.type) {
-        case 'acceptSuggestion':
-        case 'deleteStroke':
-        case 'insertStroke':
-        case 'resizeCell':  {
-          const cell = this.getCell(changeRequest.cellId);
-          cell.onChangeRequest(source, changeRequest, response);
-          break;
-        }
-        case 'deleteCell':       this.applyDeleteCellRequest(source, changeRequest, response); break;
-        case 'insertCell':       this.applyInsertCellRequest(source, changeRequest, response); break;
-        case 'insertEmptyCell':  this.applyInsertEmptyCellRequest(source, changeRequest, response); break;
-        case 'moveCell':         this.applyMoveCellRequest(source, changeRequest, response); break;
-        default: assertFalse();
-      }
+      const [ updates, undoChangeRequests ] = this.requestChange(changeRequest);
+      for (const update of updates) { response.updates.push(update); }
+      for (let i=undoChangeRequests.length;i>0;i--) { response.undoChangeRequests.unshift(undoChangeRequests[i-1]); }
     }
 
     for (const socket of this.sockets) {
@@ -372,22 +337,15 @@ export class ServerNotebook {
       }
     }
 
-    // REVIEW: If other batches of changes are being processed at the same time?
-    // TODO: Set/restart a timer for the save so we save only once when the document reaches a quiescent state.
-    await this.save();
+    // TODO: If server is terminated with Ctrl+C and save is pending, then save before exiting.
+    this.saveTimeout.startOrPostpone();
   }
 
-  public reserveId(): CellId {
-    const cellId = this.obj.nextId++;
-    this.reservedIds.add(cellId);
-    return cellId;
-  }
-
-  public static validateObject(obj: ServerNotebookObject): void {
+  public static validateObject(obj: PersistentServerNotebookObject): void {
     // Throws an exception with a descriptive message if the object is not a valid notebook object.
     // LATER: More thorough validation of the object.
 
-    if (typeof obj != 'object' || !obj.nextId) { throw new Error("Invalid notebook object JSON."); }
+    if (typeof obj != 'object' || !obj.nextCellId) { throw new Error("Invalid notebook object JSON."); }
     if (obj.formatVersion != FORMAT_VERSION) {
       throw new ExpectedError(`Invalid notebook version ${obj.formatVersion}. Expect version ${FORMAT_VERSION}`);
     }
@@ -409,32 +367,11 @@ export class ServerNotebook {
     return rval;
   }
 
-  // protected static getInstance(path: NotebookPath): ServerNotebook {
-  //   const info = this.getInfo(path)!;
-  //   assert(info.instance);
-  //   return info.instance!;
-  // }
-
-  private isEmpty(): boolean {
-    return this.cells.length == 0;
-  }
-
   // Private Class Methods
-
-      // await this.saveNew();
-
-      // // TODO: This is a temporary workaround for the fact that you can't insert a cell if there
-      // //       are no cells in the notebook.
-      // await this.requestChanges('USER', [
-      //   { type: 'insertEmptyCell', cellType: CellType.Text, afterId: CellPosition.Top },
-      //   { type: 'insertEmptyCell', cellType: CellType.Formula, afterId: CellPosition.Bottom },
-      //   { type: 'insertEmptyCell', cellType: CellType.Formula, afterId: CellPosition.Bottom },
-      //   { type: 'insertEmptyCell', cellType: CellType.Formula, afterId: CellPosition.Bottom },
-      // ], {});
 
   private static async openFirst(path: NotebookPath): Promise<ServerNotebook> {
     assert(ServerNotebook.isValidNotebookPath(path));
-    const obj = await readJsonFile<ServerNotebookObject>(path, NOTEBOOK_FILENAME);
+    const obj = await readJsonFile<PersistentServerNotebookObject>(path, NOTEBOOK_FILENAME);
     ServerNotebook.validateObject(obj);
     const permissions = await Permissions.load(path);
 
@@ -450,21 +387,18 @@ export class ServerNotebook {
 
   private constructor(
     path: NotebookPath,
-    obj: ServerNotebookObject,
+    persistentObj: PersistentServerNotebookObject,
     permissions: Permissions,
   ) {
-    this.path = path;
-    this.obj = obj;
+    super(path, persistentObj.obj);
+    this._nextCellId = persistentObj.nextCellId;
     this.permissions = permissions;
-
+    this.saveTimeout = new InactivityTimeout(SAVE_INACTIVITY_INTERVAL, ()=>{ return this.save(); })
     this.cellMap = new Map();
-    this.cells = [];
     for (const cellObject of this.obj.cells) {
       const cell = existingCell(this, cellObject);
-      this.cells.push(cell);
       this.cellMap.set(cell.id, cell);
     }
-    this.reservedIds = new Set();
     this.sockets = new Set<ServerSocket>();
   }
 
@@ -472,24 +406,18 @@ export class ServerNotebook {
 
   // TODO: purge changes in queue that have been processed asynchronously.
   private cellMap: Map<CellId, ServerCell<CellObject>>;
-  private cells: ServerCell<CellObject>[];
+  private _nextCellId: CellId;
   private permissions!: Permissions;
-  private reservedIds: Set<CellId>;
+  private saveTimeout: InactivityTimeout;
   private saving?: boolean;
   private sockets: Set<ServerSocket>;
   private terminated?: boolean;
 
   // Private Instance Property Functions
 
-  private cellIndex(cellId: CellId): CellIndex {
-    const rval = this.cells.findIndex(cell=>cell.id===cellId);
-    assert(rval>=0);
-    return rval;
-  }
-
   private getCell<T extends CellObject>(id: CellId): ServerCell<T> {
-    const rval = <ServerCell<T>>this.cellMap.get(id);
-    assert(rval, `Cell ${id} doesn't exist.`);
+    const rval = <ServerCell<T>>this.cellMap.get(id)!;
+    assert(rval);
     return rval;
   }
 
@@ -514,123 +442,143 @@ export class ServerNotebook {
 
   // Private Instance Methods
 
-  private applyDeleteCellRequest(
-    _source: CellSource,
-    request: DeleteCell,
-    /* out */ response: NotebookUpdated,
-  ): void {
+  private convertChangeRequestsToUpdates(request: NotebookChangeRequest): [ NotebookUpdate[], NotebookChangeRequest[] ] {
+    // Helper function for requestChange method.
+    // Does not make any changes to the notebook.
+    const updates: NotebookUpdate[] = [];
+    const undoChangeRequests: NotebookChangeRequest[] = [];
 
-    // Remove cell from the page and from the map.
-    const cellId = request.cellId;
-    assert(this.cellMap.has(cellId));
-    // const cell = this.getCell<T>(cellId);
-    const cellIndex = this.cellIndex(cellId);
-    assert(cellIndex>=0);
-    // const afterId = cellIndex === 0 ? CellPosition.Top : this.cells[cellIndex-1].id;
-    this.cells.splice(cellIndex, 1);
-    this.obj.cells.splice(cellIndex, 1);
-    this.cellMap.delete(cellId);
+    switch(request.type) {
+      case 'deleteCell': {
+        const { cellId } = request;
+        const update: CellDeleted = { type: 'cellDeleted', cellId };
+        updates.push(update);
 
-    // TODO: Repaginate.
+        const afterId: CellRelativePosition = this.afterIdForCell(cellId);
+        const undoChangeRequest: InsertCell = {
+          type: 'insertCell',
+          afterId,
+          cellObject: this.getCellObject(cellId),
+        };
+        undoChangeRequests.unshift(undoChangeRequest);
+        break;
+      }
+      case 'deleteStroke': {
+        const { cellId, strokeId } = request;
+        const update: StrokeDeleted = {
+          type: 'strokeDeleted',
+          cellId,
+          strokeId,
+        };
+        updates.push(update);
 
-    const update: CellDeleted = { type: 'cellDeleted', cellId };
-    response.updates.push(update);
+        const cellObject = this.getCellObject(cellId);
+        const stroke = cellObject.strokeData.strokes.find(stroke=>stroke.id==strokeId)!
+        assert(stroke);
+        const undoChangeRequest: InsertStroke = { type: 'insertStroke', cellId, stroke };
+        undoChangeRequests.unshift(undoChangeRequest);
+        break;
+      }
+      case 'insertCell': {
+        const { afterId, cellObject } = request;
+        const cellId = cellObject.id = this.nextCellId();
+        cellObject.source = 'USER'; // TODO:
+        const update: CellInserted = {
+          type: 'cellInserted',
+          cellObject,
+          afterId,
+        };
+        updates.push(update);
 
-    // TODO:
-    // const undoChangeRequest: InsertCell = {
-    //   type: 'insertCell',
-    //   afterId,
-    //   cell.object(),
-    // };
-    // response.undoChangeRequests.unshift(undoChangeRequest);
-  }
+        const undoChangeRequest: DeleteCell = { type: 'deleteCell', cellId };
+        undoChangeRequests.unshift(undoChangeRequest);
+        break;
+      }
+      case 'insertEmptyCell': {
+        const { afterId, cellType } = request;
+        const cellId = this.nextCellId();
+        const source: CellSource = 'USER'; // TODO:
+        const cellObject: CellObject = newCellObject(this, cellType, cellId, source);
+        const update: CellInserted = {
+          type: 'cellInserted',
+          cellObject,
+          afterId,
+        };
+        updates.push(update);
 
-  private applyInsertCellRequest(
-    source: CellSource,
-    request: InsertCell,
-    /* out */ response: NotebookUpdated,
-  ): void {
-    const { afterId, cellObject } = request;
+        const undoChangeRequest: DeleteCell = { type: 'deleteCell', cellId };
+        undoChangeRequests.unshift(undoChangeRequest);
+        break;
+      }
+      case 'insertStroke': {
+        const { cellId, stroke } = request;
+        const cellObject = this.getCellObject(cellId);
+        stroke.id = cellObject.strokeData.nextId++;
 
-    // Insert top-level styles in the style order.
-    const update = this.createCellFromObject(cellObject, source, afterId);
+        const update: StrokeInserted = {
+          type: 'strokeInserted',
+          cellId,
+          stroke,
+        };
+        updates.push(update);
 
-    // TODO: repaginate
+        const undoChangeRequest: DeleteStroke = { type: 'deleteStroke', cellId, strokeId: stroke.id };
+        undoChangeRequests.unshift(undoChangeRequest);
+        break;
+      }
+      case 'moveCell': {
+        const { cellId, afterId } = request;
+        const priorAfterId = this.afterIdForCell(cellId);
+        assert(afterId != cellId); // Cell can't be moved after itself.
+        assert(afterId != priorAfterId); // Cell must move.
 
-    response.updates.push(update);
+        const update: CellMoved = { type: 'cellMoved', cellId, afterId };
+        updates.push(update);
 
-    const undoChangeRequest: DeleteCell = { type: 'deleteCell', cellId: update.cellObject.id };
-    response.undoChangeRequests.unshift(undoChangeRequest);
-  }
+        const undoChangeRequest: MoveCell = { type: 'moveCell', cellId, afterId: priorAfterId };
+        undoChangeRequests.unshift(undoChangeRequest);
+        break;
+      }
+      case 'resizeCell':  {
+        const { cellId, cssSize } = request;
+        assert(cssSize.height.endsWith('px'));
+        assert(cssSize.width.endsWith('px'));
 
-  private applyInsertEmptyCellRequest(
-    source: CellSource,
-    request: InsertEmptyCell,
-    /* out */ response: NotebookUpdated,
-  ): void {
-    const { afterId, cellType } = request;
-    const cell = newCell(this, cellType, source);
+        const update: CellResized = { type: 'cellResized', cellId, cssSize };
+        updates.push(update);
 
-    let cellIndex: number;
-    // Insert top-level styles in the style order.
-    if (!afterId || afterId===CellPosition.Top) {
-      cellIndex = 0;
-    } else if (afterId===CellPosition.Bottom) {
-      cellIndex = this.cells.length;
-    } else {
-      cellIndex = this.cellIndex(afterId);
-      cellIndex++;
+        const cellObject = this.getCellObject(cellId);
+        const oldCssSize = deepCopy(cellObject.cssSize);
+        const undoChangeRequest: ResizeCell = { type: 'resizeCell', cellId, cssSize: oldCssSize };
+        undoChangeRequests.unshift(undoChangeRequest);
+        break;
+      }
+      case 'typesetFormula': {
+        const { cellId, formula, strokeData } = request;
+
+        const update: FormulaTypeset = { type: 'formulaTypeset', cellId, formula, strokeData };
+        updates.push(update);
+
+        const cellObject = this.getCellObject<FormulaCellObject>(cellId);
+        const undoChangeRequest: TypesetFormula = { type: 'typesetFormula', cellId, formula: cellObject.formula, strokeData: cellObject.strokeData };
+        undoChangeRequests.unshift(undoChangeRequest);
+        break;
+      }
+      case 'typesetText': {
+        const { cellId, text, strokeData } = request;
+
+        const update: TextTypeset = { type: 'textTypeset', cellId, text, strokeData };
+        updates.push(update);
+
+        const cellObject = this.getCellObject<TextCellObject>(cellId);
+        const undoChangeRequest: TypesetText = { type: 'typesetText', cellId, text: cellObject.inputText, strokeData: cellObject.strokeData };
+        undoChangeRequests.unshift(undoChangeRequest);
+        break;
+      }
+      default: assertFalse();
     }
-    this.cells.splice(cellIndex, 0, cell);
-    this.obj.cells.splice(cellIndex, 0, cell.obj);
-    this.cellMap.set(cell.id, cell);
-    // TODO: repaginate
 
-    const update: CellInserted = {
-      type: 'cellInserted',
-      cellObject: cell.obj,
-      cellIndex
-    };
-    response.updates.push(update);
-
-    const undoChangeRequest: DeleteCell = { type: 'deleteCell', cellId: cell.id };
-    response.undoChangeRequests.unshift(undoChangeRequest);
-  }
-
-  private applyMoveCellRequest(
-    _source: CellSource,
-    request: MoveCell,
-    /* out */ response: NotebookUpdated,
-  ): void {
-    const { cellId, afterId } = request;
-    if (afterId == cellId) { throw new Error(`Style ${cellId} can't be moved after itself.`); }
-
-    const cell = this.getCell(cellId);
-
-    let oldAfterId: number;
-    const oldIndex: CellPosition = this.cellIndex(cellId);
-    if (oldIndex == 0) { oldAfterId = 0; }
-    else if (oldIndex == this.cells.length-1) { oldAfterId = -1; }
-    else { oldAfterId = this.cells[oldIndex-1].id; }
-
-    let newIndex: CellPosition;
-    if (afterId == 0) { newIndex = 0; }
-    else if (afterId == -1) { newIndex = this.cells.length  - 1; }
-    else {
-      newIndex = this.cellIndex(afterId);
-      if (oldIndex > newIndex) { newIndex++; }
-    }
-
-    this.cells.splice(oldIndex, 1);
-    this.obj.cells.splice(oldIndex, 1);
-    this.cells.splice(newIndex, 0, cell);
-    this.obj.cells.splice(newIndex, 0, cell.obj);
-
-    const update: CellMoved = { type: 'cellMoved', cellId, newIndex };
-    response.updates.push(update);
-
-    const undoChangeRequest: MoveCell = { type: 'moveCell', cellId, afterId: oldAfterId };
-    response.undoChangeRequests.unshift(undoChangeRequest);
+    return [ updates, undoChangeRequests ];
   }
 
   private removeSocket(socket: ServerSocket): void {
@@ -642,6 +590,18 @@ export class ServerNotebook {
     }
   }
 
+  private requestChange(request: NotebookChangeRequest): [ NotebookUpdate[], NotebookChangeRequest[] ] {
+    debug(`Change request: ${notebookChangeRequestSynopsis(request)}`);
+    const rval = this.convertChangeRequestsToUpdates(request);
+
+    // Apply the updates to the notebook.
+    for (const update of rval[0]) {
+      this.onUpdate(update);
+    }
+    return rval;
+  }
+
+
   private async save(): Promise<void> {
     // LATER: A new save can be requested before the previous save completes,
     //        so wait until the previous save completes before attempting to save.
@@ -650,7 +610,12 @@ export class ServerNotebook {
 
     debug(`saving ${this.path}`);
 
-    await writeJsonFile(this.path, NOTEBOOK_FILENAME, this.obj);
+    const psno: PersistentServerNotebookObject = {
+      formatVersion: FORMAT_VERSION,
+      nextCellId: this._nextCellId,
+      obj: this.obj,
+    };
+    await writeJsonFile<PersistentServerNotebookObject>(this.path, NOTEBOOK_FILENAME, psno);
     this.saving = false;
   }
 
@@ -699,33 +664,17 @@ export class ServerNotebook {
 
   // Private Event Handlers
 
-  private async onClientRequest(socket: ServerSocket, msg: NotebookRequest): Promise<void> {
+  private  onClientRequest(socket: ServerSocket, msg: NotebookRequest): void {
     assert(!this.terminated);
     switch(msg.operation) {
-      case 'change': await this.onChangeRequest(socket, msg); break;
-      case 'close':  this.onCloseRequest(socket, msg); break;
-      case 'open':  this.onOpenRequest(socket, msg); break;
+      case 'change': this.onClientChangeRequest(socket, msg); break;
+      case 'close':  this.onClientCloseRequest(socket, msg); break;
+      case 'open':  this.onClientOpenRequest(socket, msg); break;
       default: assert(false); break;
     }
   }
 
-  private onSocketClosed(socket: ServerSocket): void {
-    this.removeSocket(socket);
-    this.sendCollaboratorDisconnectedMessage(socket);
-  }
-
-  private onSocketUserLogin(socket: ServerSocket): void {
-    this.sendCollaboratorConnectedMessage(socket);
-  }
-
-  private onSocketUserLogout(socket: ServerSocket): void {
-    console.log("SERVER NOTEBOOK ON SOCKET USER LOGOUT");
-    this.sendCollaboratorDisconnectedMessage(socket);
-  }
-
-  // Client Message Event Handlers
-
-  private async onChangeRequest(socket: ServerSocket, msg: ChangeNotebook): Promise<void> {
+  private onClientChangeRequest(socket: ServerSocket, msg: ChangeNotebook): void {
 
     // Verify the user has permission to modify the notebook.
     const user = socket.user;
@@ -738,17 +687,17 @@ export class ServerNotebook {
     }
 
     const options: RequestChangesOptions = { originatingSocket: socket, requestId: msg.requestId };
-    await this.requestChanges('USER', msg.changeRequests, options);
+    this.requestChanges('USER', msg.changeRequests, options);
   }
 
-  private onCloseRequest(socket: ServerSocket, _msg: CloseNotebook): void {
+  private onClientCloseRequest(socket: ServerSocket, _msg: CloseNotebook): void {
     // NOTE: No response is expected for a close request.
     assert(this.sockets.has(socket));
     this.removeSocket(socket);
     this.sendCollaboratorDisconnectedMessage(socket);
   }
 
-  private onOpenRequest(socket: ServerSocket, msg: OpenNotebook): void {
+  private onClientOpenRequest(socket: ServerSocket, msg: OpenNotebook): void {
 
     // Check if the user has permission to open this notebook.
     const user = socket.user;
@@ -788,192 +737,57 @@ export class ServerNotebook {
     this.sendCollaboratorConnectedMessage(socket);
   }
 
-  // NOT USED
+  private onSocketClosed(socket: ServerSocket): void {
+    this.removeSocket(socket);
+    this.sendCollaboratorDisconnectedMessage(socket);
+  }
 
-//   public async exportLatex(): Promise<TexExpression> {
-//     const ourPreamble = <TexExpression>`\\documentclass[12pt]{article}
-// \\usepackage{amsmath}
-// \\usepackage{amssymb}
-// \\usepackage[normalem]{ulem}
-// \\usepackage{graphicx}
-// \\usepackage{epstopdf}
-// \\epstopdfDeclareGraphicsRule{.gif}{png}{.png}{convert gif:#1 png:\\OutputFile}
-// \\AppendGraphicsExtensions{.gif}
-// \\begin{document}
-// \\title{Magic Math Table}
-// \\author{me}
-// \\maketitle
-// `;
-//     const close = <TexExpression>`\\end{document}`;
+  private onSocketUserLogin(socket: ServerSocket): void {
+    this.sendCollaboratorConnectedMessage(socket);
+  }
 
-//     // Our basic approach is to apply a function to each
-//     // top level style in order. This function will preferentially
-//     // take the LaTeX if there is any.
-//     function displayFormula(f : string) : string {
-//       return `\\begin{align}\n ${f} \\end{align}\n`;
-//     }
-//     const tlso = this.topLevelStyleOrder();
-//     const cells = [];
-//     debug("TOP LEVEL",tlso);
-//     for(const tls of tlso) {
-//       var retLaTeX = "";
-//       // REVIEW: Does this search need to be recursive?
-//       const latex = this.findStyles({ type: 'TEX-EXPRESSION' }, tls);
-//       if (latex.length > 1) { // here we have to have some disambiguation
-//         retLaTeX += "ambiguous: " +displayFormula(latex[0].data);
-//       } else if (latex.length == 1) {  // here it is obvious, maybe...
-//         retLaTeX += displayFormula(latex[0].data);
-//       }
+  private onSocketUserLogout(socket: ServerSocket): void {
+    console.log("SERVER NOTEBOOK ON SOCKET USER LOGOUT");
+    this.sendCollaboratorDisconnectedMessage(socket);
+  }
 
+  private onUpdate(update: NotebookUpdate): void {
+    // Process an individual notebook change from the server.
+    debug(`onUpdate ${notebookUpdateSynopsis(update)}`);
 
-//       // REVIEW: Does this search need to be recursive?
-//       const image = this.findStyles({ type: 'IMAGE-URL', role: 'PLOT' }, tls);
-//       if (image.length > 0) {
-//         const plot = image[0];
-//         const apath = this.absoluteDirectoryPath();
-//         // The notebook name is both a part of the plot.data,
-//         // AND is a part of the absolute path. So we take only
-//         // the final file name of local.data here.
-//         const final = plot.data.split("/");
-//         const graphics = `\\includegraphics{${apath}/${final[2]}}`;
-//         retLaTeX += graphics;
-//         retLaTeX += `\n`;
-//         if (image.length > 1) {
-//           retLaTeX += " more than one plot, not sure how to handle that";
-//         }
-//       }
+    // Apply the update to our base data structure.
+    this.applyUpdate(update);
 
-      // TODO: Handle embedded PNGS & SVGs.
-      //       We started putting SVGs of plots, etc. inline
-      //       so the code here that reads the SVG files needs to be updated.
-      // Now we search for .PNGs --- most likely generated from
-      // .svgs, but not necessarily, which allows the possibility
-      // of photographs being included in output later.
-      // REVIEW: Does this search need to be recursive?
-      // const svgs = this.findStyles({ type: 'SVG-MARKUP', recursive: true }, tls);
-      // debug("SVGS:",svgs);
-      // debug("tlso:",styleObject);
-      // for(const s of svgs) {
-      //   // NOTE: At present, this is using a BUFFER, which is volatile.
-      //   // It does not correctly survive resets of the notebook.
-      //   // In fact when we output the file to a file, we need to change
-      //   // the notebook do have a durable 'PNG-FILE' type generated from
-      //   // the buffer. This may seem awkward, but it keeps the
-      //   // function "ruleConvertSvgToPng" completely pure and static,
-      //   // which is a paradigm worth preserving. However, this means
-      //   // we have to handle the data being null until we have consistent
-      //   // file handling.
-      //   if (s.data) {
-      //     const b: Buffer = await apiFunctionWrapper(s.data);
-      //     const ts = Date.now();
-      //     console.log(tls);
-      //     console.log(ts);
-      //     const filename = `image-${s.id}-${ts}.png`;
-      //     console.log("filename",filename);
-      //     const apath = this.absoluteDirectoryPath();
-      //     var abs_filename = `${apath}/${filename}`;
-      //     const directory = apath;
+    // Apply the update to any data structure extensions to the base data structure.
+    switch (update.type) {
 
-      //     var foundfile = "";
-      //     debug("BEGIN", directory);
-      //     var files = readdirSync(directory);
-      //     debug("files", files);
-      //     // TODO: We removed timestamp from the style, so we need to make whatever changes are necessary here.
-      //     // for (const file of files) {
-      //     //   // I don't know why this is needed!
-      //     //   if (fileIsLaterVersionThan(s.id, s.timestamp, file)) {
-      //     //     foundfile = file;
-      //     //   }
-      //     // }
-      //     debug("END");
-      //     if (foundfile) {
-      //       abs_filename = `${apath}/${foundfile}`;
-      //     } else {
-      //       writeFileSync(abs_filename, b);
-      //       debug("directory",directory);
-      //       var files = readdirSync(directory);
+      case 'cellDeleted': {
+        const { cellId } = update;
+        assert(this.cellMap.has(cellId));
+        this.cellMap.delete(cellId);
+        // REVIEW: Notify the cell it has been deleted?
+        break;
+      }
+      case 'cellInserted': {
+        const { cellObject } = update;
+        // TODO: Source???
+        const cell = existingCell(this, cellObject);
+        this.cellMap.set(cell.id, cell);
+        break;
+      }
 
-      //       for (const file of files) {
-      //         debug("file",file);
-      //         // I don't know why this is needed!
-      //         if (fileIsEarlierVersionThan(s.id,ts,file)) {
-      //           unlink(join(directory, file), err  => {
-      //             if (err) throw err;
-      //           });
-      //         }
-      //       }
-      //     }
-      //     const graphics = `\\includegraphics{${abs_filename}}`;
-      //     retLaTeX += graphics;
-      //   }
-      // }
-    //   cells.push(retLaTeX);
-    // }
+      case 'cellResized':
+      case 'formulaTypeset':
+      case 'strokeDeleted':
+      case 'strokeInserted':
+      case 'textTypeset': {
+        const cell = this.getCell(update.cellId);
+        cell.onUpdate(update);
+        break;
+      }
+    }
 
-  //   const finalTeX = <TexExpression>(ourPreamble + cells.join('\n') + close);
-  //   debug("finalTeX", finalTeX);
-  //   return finalTeX;
-  // }
-
-
-  // public getCellThatMayNotExist(id: CellId): CellObject|undefined {
-  //   // TODO: Eliminate. Change usages to .findStyle.
-  //   return this.cellMap.get(id);
-  // }
-
-  // public precedingCellId(_id: CellId): CellId {
-  //   notImplementedError();
-  //   // // Returns the id of the style immediately before the top-level style specified.
-  //   // // TODO: On different pages.
-  //   // const i = this.pages[0].cellIds.indexOf(id);
-  //   // assert(i>=0);
-  //   // if (i<1) { return 0; }
-  //   // return this.pages[0].cellIds[i-1];
-  // }
-
-  // public findCell(options: FindCellOptions): CellObject|undefined {
-  //   // REVIEW: If we don't need to throw on multiple matches, then we can terminate the search
-  //   //         after we find the first match.
-  //   // Like findStyles but expects to find zero or one matching style.
-  //   // If it finds more than one matching style then it returns the first and outputs a warning.
-  //   const styles = this.findCells(options);
-  //   if (styles.length > 0) {
-  //     if (styles.length > 1) {
-  //       // TODO: On the server, this should use the logging system rather than console output.
-  //       console.warn(`More than one style found for ${JSON.stringify(options)}`);
-  //     }
-  //     return styles[0];
-  //   } else {
-  //     return undefined;
-  //   }
-  // }
-
-  // public findCells(
-  //   options: FindCellOptions,
-  //   rval: CellObject[] = []
-  // ): CellObject[] {
-  //   // Option to throw if style not found.
-  //   const cellObjects = this.topLevelCells();
-  //   // REVIEW: Use filter with predicate instead of explicit loop.
-  //   for (const cellObject of cellObjects) {
-  //     if (cellMatchesPattern(cellObject, options)) { rval.push(cellObject); }
-  //   }
-  //   return rval;
-  // }
-
-  // public hasCellId(cellId: CellId): boolean {
-  //   return this.cellMap.has(cellId);
-  // }
-
-  // public hasCell(
-  //   options: FindCellOptions,
-  // ): boolean {
-  //   // Returns true iff findStyles with the same parameters would return a non-empty list.
-  //   // OPTIMIZATION: Return true when we find the first matching style.
-  //   // NOTE: We don't use 'findStyle' because that throws on multiple matches.
-  //   const styles = this.findCells(options);
-  //   return styles.length>0;
-  // }
+  }
 
 }
 
@@ -993,51 +807,3 @@ export function marginsInPixels(top: number, right: number, bottom: number, left
     left: cssLengthInPixels(left, unit),
   };
 }
-
-// function cellMatchesPattern(cell: CellObject, options: FindCellOptions): boolean {
-//   return    (!options.source || cell.source == options.source)
-//          && (!options.notSource || cell.source != options.notSource);
-// }
-
-// function emptyStrokeData(height: number, width: number): StrokeData {
-//   return {
-//     size: { height: <CssLength>`${height*72}pt`, width: <CssLength>`${width*72}pt` },
-//     strokeGroups: [ { strokes: [] }, ]
-//   };
-// }
-
-// function apiFunctionWrapper(data: string) : Promise<Buffer> {
-//   // from : https://stackoverflow.com/questions/5010288/how-to-make-a-function-wait-until-a-callback-has-been-called-using-node-js
-//   // myFunction wraps the above API call into a Promise
-//   // and handles the callbacks with resolve and reject
-//   // @ts-ignore
-//   return new Promise((resolve, reject) => {
-//     // @ts-ignore
-//     svg2img(data,function(error, buffer) {
-//       resolve(buffer);
-//     });
-//   });
-// };
-
-// function getTimeStampOfCompatibleFileName(id: number, name: string) : number|undefined{
-//   const parts = name.split('-');
-//   if (parts.length < 3) return;
-//   if (parseInt(parts[1]) != id) return;
-//   const third = parts[2];
-//   const nametsAndExtension = third.split('.');
-//   if (nametsAndExtension.length < 2) return;
-//   return parseInt(nametsAndExtension[0]);
-// }
-
-// function fileIsEarlierVersionThan(id: number, ts: number|undefined, name: string) : boolean {
-//   if (!ts) return false;
-//   const filets = getTimeStampOfCompatibleFileName(id, name);
-//   return !!filets && ts>filets;
-// }
-
-// function fileIsLaterVersionThan(id:number, ts: number|undefined, name: string) : boolean {
-//   if (!ts) return false;
-//   const filets = getTimeStampOfCompatibleFileName(id, name);
-//   return !!filets && ts<filets;
-// }
-

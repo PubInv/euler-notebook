@@ -25,7 +25,8 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 import { deepCopy, PlainText, SvgMarkup } from "../../shared/common";
 import { CssLength } from "../../shared/css";
-import { CellId, CellType, PlotCellObject } from "../../shared/cell";
+import { CellId, CellType } from "../../shared/cell";
+import { PlotCellObject, renderPlotCell } from "../../shared/plot";
 import { EMPTY_STROKE_DATA } from "../../shared/stylus";
 
 import { ServerNotebook } from "../server-notebook";
@@ -40,7 +41,7 @@ import { ServerFormula } from "../server-formula";
 // Types
 
 interface PlotFormulaReturnValue {
-  plotCellObject: PlotCellObject;
+  cellObject: PlotCellObject;
   thumbnailPlotMarkup: SvgMarkup;
 }
 
@@ -56,24 +57,24 @@ export class PlotCell extends ServerCell<PlotCellObject> {
 
   public static async plotFormula(notebook: ServerNotebook, formulaCellId: CellId, formula: ServerFormula, formulaSymbol: FormulaSymbol): Promise<PlotFormulaReturnValue> {
 
-    const { fullPlotMarkup, thumbnailPlotMarkup } = await plot(formula, formulaSymbol);
+    const { plotMarkup, thumbnailMarkup } = await plot(formula, formulaSymbol);
 
-    const plotCellObject: PlotCellObject = {
+    const cellObject: PlotCellObject = {
       id: 0,
       type: CellType.Plot,
       cssSize: this.initialCellSize(notebook, DEFAULT_HEIGHT),
-      displaySvg: fullPlotMarkup,
       inputText: <PlainText>"", // REVIEW: Plain text representation of plot parameters?
       source: 'USER',
       strokeData: deepCopy(EMPTY_STROKE_DATA),
+      suggestions: [],
 
       formula: formula.obj,
       formulaCellId,
       formulaSymbol,
-      plotMarkup: fullPlotMarkup,
+      plotMarkup,
     };
 
-    return { plotCellObject, thumbnailPlotMarkup };
+    return { cellObject, thumbnailPlotMarkup: thumbnailMarkup };
   }
 
   // Public Constructor
@@ -88,11 +89,13 @@ export class PlotCell extends ServerCell<PlotCellObject> {
 
   // Private Instance Properties
 
-  // Private Instance Methods
+  // Public Instance Property Functions
 
-  protected /* override */ redrawDisplaySvg(): void {
-    super.redrawDisplaySvg(this.obj.plotMarkup);
+  public /* override */ displaySvg(): SvgMarkup {
+    return renderPlotCell(this.obj);
   }
+
+  // Private Instance Methods
 
   // Private Instance Event Handlers
 

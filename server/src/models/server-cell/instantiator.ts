@@ -19,7 +19,10 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 // Requirements
 
-import { CellObject, CellSource, CellType, FigureCellObject, PlotCellObject, TextCellObject } from "../../shared/cell";
+import { CellId, CellObject, CellSource, CellType } from "../../shared/cell";
+import { FigureCellObject } from "../../shared/figure";
+import { PlotCellObject } from "../../shared/plot";
+import { TextCellObject } from "../../shared/text";
 import { assertFalse } from "../../shared/common";
 import { FormulaCellObject } from "../../shared/formula";
 
@@ -36,20 +39,21 @@ import { ServerCell } from "./index";
 
 // Exports
 
-export function newCell<O extends CellObject>(
+export function newCellObject(
   notebook: ServerNotebook,
   cellType: CellType,
+  cellId: CellId,
   source: CellSource,
-): ServerCell<O> {
-  let rval: FigureCell|FormulaCell|TextCell|PlotCell;
+): CellObject {
+  let rval: CellObject;
   switch(cellType) {
-    case CellType.Figure:   rval = FigureCell.newCell(notebook, source); break;
-    case CellType.Formula:  rval = FormulaCell.newCell(notebook, source); break;
-    case CellType.Text:     rval = TextCell.newCell(notebook, source); break;
+    case CellType.Figure:   rval = FigureCell.newCellObject(notebook, cellId, source); break;
+    case CellType.Formula:  rval = FormulaCell.newCellObject(notebook, cellId, source); break;
+    case CellType.Text:     rval = TextCell.newCellObject(notebook, cellId, source); break;
     case CellType.Plot:     assertFalse();
     default: assertFalse();
   }
-  return <ServerCell<O>><unknown>rval;
+  return rval;
 }
 
 export function existingCell<O extends CellObject>(notebook: ServerNotebook, obj: O): ServerCell<O> {

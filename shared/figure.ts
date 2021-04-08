@@ -17,30 +17,19 @@ You should have received a copy of the GNU Affero General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-import { CellRelativePosition, PlotCellObject } from "../shared/cell";
-import { PlainText } from "../shared/common";
-import { FormulaObject } from "../shared/formula";
-
-
 // Requirements
 
-export type SuggestionData =
-              PlotFormulaSuggestionData |
-              TypesetFormulaSuggestionData |
-              TypesetTextSuggestionData;
+import { CellObject, CellType, renderBaseCell } from "./cell";
+import { SvgMarkup } from "./common";
 
-export interface PlotFormulaSuggestionData {
-  type: 'plotFormula',
-  afterId: CellRelativePosition,
-  plotCellObject: PlotCellObject,
+// Types
+
+export interface FigureCellObject extends CellObject {
+  type: CellType.Figure,
 }
 
-export interface TypesetFormulaSuggestionData {
-  type: 'typesetFormula',
-  formula: FormulaObject,
-}
+// Exported Functions
 
-export interface TypesetTextSuggestionData {
-  type: 'typesetText',
-  text: PlainText,
+export function renderFigureCell(obj: FigureCellObject): SvgMarkup {
+  return renderBaseCell(obj);
 }

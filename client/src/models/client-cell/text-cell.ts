@@ -22,13 +22,14 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 import * as debug1 from "debug";
 const debug = debug1('client:figure-cell');
 
-import { TextCellObject } from "../../shared/cell";
+import { renderTextCell, TextCellObject } from "../../shared/text";
 import { NotebookUpdate } from "../../shared/server-responses";
 
 import { ClientNotebook } from "../client-notebook";
 
 import { ClientCell } from "./index";
 import { notebookUpdateSynopsis } from "../../shared/debug-synopsis";
+import { SvgMarkup } from "../../shared/common";
 
 // Exported Class
 
@@ -49,15 +50,15 @@ export class TextCell extends ClientCell<TextCellObject> {
     super.onUpdate(update, ownRequest);
 
     switch(update.type) {
-      case 'textTypeset': {
-        this.obj.strokeData = update.strokeData;
-        this.obj.displaySvg = update.displaySvg;
-        this.$svgSymbol.innerHTML = update.displaySvg;
-        this.obj.inputText = update.inputText;
-        break;
-      }
+      case 'textTypeset': this.refreshDisplay(); break;
     }
   }
+
+  // --- PRIVATE ---
+
+  // Private Instance Property Functions
+
+  protected render(): SvgMarkup { return renderTextCell(this.obj); }
 
 }
 

@@ -19,7 +19,10 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 // Requirements
 
-import { CellObject, CellType, FigureCellObject, PlotCellObject, TextCellObject } from "../../shared/cell";
+import { CellObject, CellType } from "../../shared/cell";
+import { FigureCellObject } from "../../shared/figure";
+import { PlotCellObject } from "../../shared/plot";
+import { TextCellObject } from "../../shared/text";
 import { assertFalse } from "../../shared/common";
 import { FormulaCellObject } from "../../shared/formula";
 
