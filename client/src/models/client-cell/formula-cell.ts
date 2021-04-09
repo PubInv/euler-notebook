@@ -22,7 +22,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 import * as debug1 from "debug";
 const debug = debug1('client:formula-cell');
 
-import { FormulaCellObject, FormulaNumber, renderFormulaCell } from "../../shared/formula";
+import { FormulaCellObject, FormulaNumber, renderFormulaCell, TexExpression } from "../../shared/formula";
 import { NotebookUpdate } from "../../shared/server-responses";
 
 import { ClientNotebook } from "../client-notebook";
@@ -30,6 +30,7 @@ import { ClientNotebook } from "../client-notebook";
 import { ClientCell } from "./index";
 import { notebookUpdateSynopsis } from "../../shared/debug-synopsis";
 import { SvgMarkup } from "../../shared/common";
+import { appendSvgFromTex } from "../../adapters/mathjax";
 
 // Exported Class
 
@@ -42,6 +43,7 @@ export class FormulaCell extends ClientCell<FormulaCellObject> {
 
     // TODO:
     this.formulaNumber = obj.id;
+    this.refreshDisplay();
   }
 
   // Public Instance Properties
@@ -64,6 +66,18 @@ export class FormulaCell extends ClientCell<FormulaCellObject> {
   // --- PRIVATE ---
 
   // Private Instance Property Functions
+
+  protected /* override */ refreshDisplay(): void {
+    const svgMarkup = this.render();
+    this.$svgSymbol.innerHTML = svgMarkup;
+
+    const tex = this.obj.formula.tex;
+    if (tex != <TexExpression>'') {
+      appendSvgFromTex(this.$svgSymbol, tex).catch(
+        (err)=>{ console.dir(err); }
+      );
+    }
+  }
 
   protected render(): SvgMarkup {
     return renderFormulaCell(this.obj, this.formulaNumber);

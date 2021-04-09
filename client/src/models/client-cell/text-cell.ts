@@ -39,6 +39,7 @@ export class TextCell extends ClientCell<TextCellObject> {
 
   public constructor(notebook: ClientNotebook, obj: TextCellObject) {
     super(notebook, obj);
+    this.refreshDisplay();
   }
 
   // Public Instance Methods

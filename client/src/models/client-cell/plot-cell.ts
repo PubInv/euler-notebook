@@ -39,6 +39,7 @@ export class PlotCell extends ClientCell<PlotCellObject> {
 
   public constructor(notebook: ClientNotebook, obj: PlotCellObject) {
     super(notebook, obj);
+    this.refreshDisplay();
   }
 
   // Public Instance Methods

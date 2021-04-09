@@ -39,6 +39,7 @@ export class FigureCell extends ClientCell<FigureCellObject> {
 
   public constructor(notebook: ClientNotebook, obj: FigureCellObject) {
     super(notebook, obj);
+    this.refreshDisplay();
   }
 
 

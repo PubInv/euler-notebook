@@ -69,7 +69,6 @@ export abstract class ClientCell<O extends CellObject> {
     });
     $(document, <CssSelector>'#svgContent>defs').append($svgSymbol);
     this.$svgSymbol = $svgSymbol;
-    this.refreshDisplay();
   }
 
   // Public Instance Properties
