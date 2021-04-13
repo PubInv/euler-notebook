@@ -27,7 +27,7 @@ import { assert, SvgMarkup } from "../shared/common";
 
 import { ServerFormula } from "../models/server-formula";
 import { plotUnivariate } from "../adapters/wolframscript";
-import { FormulaSymbol } from "../shared/formula";
+import { FormulaSymbol, WolframExpression } from "../shared/formula";
 
 // Types
 
@@ -44,9 +44,11 @@ const THUMBNAIL_SCALE_DIVISOR = 8;
 
 // Exported Functions
 
-export async function plot(formula: ServerFormula, symbol: FormulaSymbol): Promise<PlotReturnValue> {
-  debug(`Plotting: symbol ${symbol}, formula ${formula.plain}`);
-  const plotMarkup = await plotUnivariate(formula.obj.wolfram, symbol);
+export async function plot(_formula: ServerFormula, symbol: FormulaSymbol): Promise<PlotReturnValue> {
+  throw new Error("Not implemented");
+  const wolframExpression = <WolframExpression>'TODO: get wolfram expression from formula';
+  debug(`Plotting: symbol ${symbol}, formula ${wolframExpression}`);
+  const plotMarkup = await plotUnivariate(wolframExpression, symbol);
   // debug(`Plot markup: ${fullPlotMarkup}`);
   const thumbnailMarkup = thumbnailPlotFromFullPlot(plotMarkup);
   return { plotMarkup, thumbnailMarkup };

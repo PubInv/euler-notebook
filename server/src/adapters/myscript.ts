@@ -34,24 +34,26 @@ const debug = debug1(`server:${MODULE}`);
 const Hex = require('crypto-js/enc-hex');
 const HmacSHA512 = require('crypto-js/hmac-sha512');
 import fetch, { Response } from "node-fetch";
+import { logErrorMessage } from "../error-handler";
 
-import { PlainText } from "../shared/common";
-import { TexExpression } from "../shared/formula";
+import { assert, PlainText } from "../shared/common";
+import { MathMlMarkup } from "../shared/mathml";
 import { StrokeGroup } from "../shared/myscript-types";
 import { StrokeData } from "../shared/stylus";
+
+import { BoundingBox, MathNode } from "./myscript-expression";
 
 
 // Types
 
 type ContentType = 'Text'|'Math'|'Diagram'|'Raw Content'|'Text Document';
-type MimeType = 'application/vnd.myscript.jiix' | 'application/x-latex' | 'text/plain';
+type MimeType = 'application/mathml+xml' | 'application/vnd.myscript.jiix' | 'application/x-latex' | 'text/plain';
 
 export interface ApiKeys {
   // This structure lives in ~/.euler-notebook/credentials.json under "myscript" key.
   applicationKey: string;
   hmacKey: string;
 }
-
 
 interface BatchRequest {
   configuration?: Configuration;
@@ -65,55 +67,28 @@ interface BatchRequest {
   yDPI?: number;
 }
 
-interface BoundingBox {
-  x: number;
-  y: number;
-  width: number;
-  height: number;
-}
-
 interface Configuration {
   math: MathConfiguration;
   lang: /* TYPESCRIPT: Locale */string;
   export: ExportConfiguration;
 }
 
-interface ErrorResponse {
-  code: string;
-  message: string;
-}
+// interface ErrorResponse {
+//   code: string;
+//   message: string;
+// }
 
 interface ExportConfiguration {
   'image-resolution': number;
   jiix: JiixConfiguration;
 }
 
-interface Expression {
-  'bounding-box'?: BoundingBox;
-  id: string;
-  items?: Item[];
-  label?: string;
-  operands?: Expression[];
-  type: string;
-  value?: number;
-}
-
-interface Item {
-  F: number[];
-  id: string;
-  T: number[];
-  timestamp: /* TYPESCRIPT: TimestampString */string;
-  type: 'stroke';
-  X: number[];
-  Y: number[];
-}
-
-export interface Jiix {
+export interface JiixMathBlock {
   // See https://developer.myscript.com/docs/interactive-ink/1.3/reference/jiix/
   type: 'Math';
-  expressions: Expression[];
-  'bounding-box'?: BoundingBox;
   id: string;
+  expressions: MathNode[];
+  'bounding-box'?: BoundingBox;
   version: '2';
 }
 
@@ -147,7 +122,9 @@ interface SolverConfiguration {
 // Constants
 
 const JIIX_MIME_TYPE = 'application/vnd.myscript.jiix';
-const LATEX_MIME_TYPE = 'application/x-latex';
+// const LATEX_MIME_TYPE = 'application/x-latex';
+const MATHML_PREFIX = "<math";
+const MATHML_MIME_TYPE = 'application/mathml+xml'; // application/mathml-presentation+xml';
 const PLAINTEXT_MIME_TYPE = 'text/plain';
 const MYSCRIPT_BATCH_API_URL = 'https://webdemoapi.myscript.com/api/v4.0/iink/batch';
 
@@ -161,42 +138,41 @@ export function initialize(apiKeys: ApiKeys): void {
   gApiKeys = apiKeys;
 }
 
-export async function postJiixRequest(strokeData: StrokeData): Promise<Jiix> {
+export async function postJiixRequest(strokeData: StrokeData): Promise<JiixMathBlock> {
   debug(`Calling MyScript batch API for JIIX.`);
   // REVIEW: What to return if there aren't any strokes at all (e.g. user erased last stroke)?
   const strokeGroups: StrokeGroup[] = [{ strokes: strokeData.strokes }];
   const batchRequest = batchRequestFromStrokes(strokeGroups, 'Math', JIIX_MIME_TYPE);
   const bodyText = await postRequest(gApiKeys, JIIX_MIME_TYPE, batchRequest);
-  const jiix: Jiix|ErrorResponse = JSON.parse(bodyText);
-  if (isErrorResponse(jiix)) { throwRequestError(jiix); }
+  const jiix = <JiixMathBlock>JSON.parse(bodyText);
   debug(`MyScript batch API recognized JIIX.`);
-  console.log(JSON.stringify(jiix, null, 2));
   return jiix;
 }
 
-export async function postLatexRequest(strokeData: StrokeData): Promise<TexExpression> {
+// export async function postLatexRequest(strokeData: StrokeData): Promise<TexExpression> {
 
-  // If there aren't any strokes yet, return an empty TeX expression.
-  if (strokeData.strokes.length == 0) {
-    return <TexExpression>'';
-  }
+//   // If there aren't any strokes yet, return an empty TeX expression.
+//   if (strokeData.strokes.length == 0) {
+//     return EMPTY_TEX_EXPRESSION;
+//   }
 
-  debug(`Calling MyScript batch API for LaTeX.`);
+//   debug(`Calling MyScript batch API for LaTeX.`);
+//   const strokeGroups: StrokeGroup[] = [{ strokes: strokeData.strokes }];
+//   const batchRequest = batchRequestFromStrokes(strokeGroups, 'Math', LATEX_MIME_TYPE);
+//   const bodyText = await postRequest(gApiKeys, LATEX_MIME_TYPE, batchRequest);
+//   const rval = cleanLatex(<TexExpression>bodyText);
+//   debug(`MyScript batch API recognized LaTeX: ${rval}`);
+//   return rval;
+// }
+
+export async function postMmlRequest(strokeData: StrokeData): Promise<MathMlMarkup> {
+  debug(`Calling MyScript batch API for MathML.`);
   const strokeGroups: StrokeGroup[] = [{ strokes: strokeData.strokes }];
-  const batchRequest = batchRequestFromStrokes(strokeGroups, 'Math', LATEX_MIME_TYPE);
-  const bodyText = await postRequest(gApiKeys, LATEX_MIME_TYPE, batchRequest);
-  if (bodyText[0]=='{') {
-    try {
-      const errorResponse = JSON.parse(bodyText);
-      if (isErrorResponse(errorResponse)) { throwRequestError(errorResponse); }
-    } catch(err) {
-      // REVIEW: Is is possible for valid LaTeX to start with a curly brace?
-      // Don't do anything. It could be LaTeX starting with a curly brace.
-    }
-  }
-  const rval = cleanLatex(<TexExpression>bodyText);
-  debug(`MyScript batch API recognized LaTeX: ${rval}`);
-  return rval;
+  const batchRequest = batchRequestFromStrokes(strokeGroups, 'Math', MATHML_MIME_TYPE);
+  const mmlRaw = await postRequest<MathMlMarkup>(gApiKeys, MATHML_MIME_TYPE, batchRequest);
+  const mml = <MathMlMarkup>mmlRaw.trim();
+  assert(mml.startsWith(MATHML_PREFIX));
+  return mml;
 }
 
 export async function postTextRequest(strokeData: StrokeData): Promise<PlainText> {
@@ -210,19 +186,9 @@ export async function postTextRequest(strokeData: StrokeData): Promise<PlainText
   const strokeGroups: StrokeGroup[] = [{ strokes: strokeData.strokes }];
   const batchRequest = batchRequestFromStrokes(strokeGroups, 'Text', PLAINTEXT_MIME_TYPE);
 
-  const bodyText = await postRequest(gApiKeys, PLAINTEXT_MIME_TYPE, batchRequest);
-
-  if (bodyText[0]=='{') {
-    try {
-      const errorResponse = JSON.parse(bodyText);
-      if (isErrorResponse(errorResponse)) { throwRequestError(errorResponse); }
-    } catch(err) {
-      // REVIEW: Is is possible for valid LaTeX to start with a curly brace?
-      // Don't do anything. It could be LaTeX starting with a curly brace.
-    }
-  }
-  debug(`MyScript batch API recognized plain text: ${bodyText}`);
-  return <PlainText>bodyText;
+  const rval = await postRequest(gApiKeys, PLAINTEXT_MIME_TYPE, batchRequest);
+  debug(`MyScript batch API recognized plain text: ${rval}`);
+  return <PlainText>rval;
 }
 
 // Helper Functions
@@ -268,30 +234,30 @@ function batchRequestFromStrokes(strokeGroups: StrokeGroup[], contentType: Conte
   return rval;
 }
 
-function cleanLatex(latexExport: number|TexExpression): TexExpression {
-  // Function from MyScript provided examples.
-  // Not sure what is wrong with their LaTeX output, but they feel the need to clean it up.
-  // Might be because their output is not compatible with KaTeX or something like that.
-  if (typeof latexExport === 'number') {
-    latexExport = <TexExpression>latexExport.toString();
-  }
-  if (latexExport.includes('\\\\')) {
-    const steps = '\\begin{align*}' + latexExport + '\\end{align*}';
-    return <TexExpression>steps.replace("\\overrightarrow", "\\vec")
-      .replace("\\begin{aligned}", "")
-      .replace("\\end{aligned}", "")
-      .replace("\\llbracket", "\\lbracket")
-      .replace("\\rrbracket", "\\rbracket")
-      .replace("\\widehat", "\\hat")
-      .replace(new RegExp("(align.{1})", "g"), "aligned");
-  }
-  return <TexExpression>latexExport
-    .replace("\\overrightarrow", "\\vec")
-    .replace("\\llbracket", "\\lbracket")
-    .replace("\\rrbracket", "\\rbracket")
-    .replace("\\widehat", "\\hat")
-    .replace(new RegExp("(align.{1})", "g"), "aligned");
-}
+// function cleanLatex(latexExport: number|TexExpression): TexExpression {
+//   // Function from MyScript provided examples.
+//   // Not sure what is wrong with their LaTeX output, but they feel the need to clean it up.
+//   // Might be because their output is not compatible with KaTeX or something like that.
+//   if (typeof latexExport === 'number') {
+//     latexExport = <TexExpression>latexExport.toString();
+//   }
+//   if (latexExport.includes('\\\\')) {
+//     const steps = '\\begin{align*}' + latexExport + '\\end{align*}';
+//     return <TexExpression>steps.replace("\\overrightarrow", "\\vec")
+//       .replace("\\begin{aligned}", "")
+//       .replace("\\end{aligned}", "")
+//       .replace("\\llbracket", "\\lbracket")
+//       .replace("\\rrbracket", "\\rbracket")
+//       .replace("\\widehat", "\\hat")
+//       .replace(new RegExp("(align.{1})", "g"), "aligned");
+//   }
+//   return <TexExpression>latexExport
+//     .replace("\\overrightarrow", "\\vec")
+//     .replace("\\llbracket", "\\lbracket")
+//     .replace("\\rrbracket", "\\rbracket")
+//     .replace("\\widehat", "\\hat")
+//     .replace(new RegExp("(align.{1})", "g"), "aligned");
+// }
 
 function computeHmac(keys: ApiKeys, body: string): string {
   const hmac = HmacSHA512(body, keys.applicationKey + keys.hmacKey);
@@ -299,11 +265,7 @@ function computeHmac(keys: ApiKeys, body: string): string {
   return hex;
 }
 
-function isErrorResponse(response: Jiix|ErrorResponse): response is ErrorResponse {
-  return response.hasOwnProperty('code');
-}
-
-async function postRequest(keys: ApiKeys, accept: string, batchRequest: BatchRequest): Promise<string> {
+async function postRequest<T extends string>(keys: ApiKeys, accept: string, batchRequest: BatchRequest): Promise<T> {
   const body = JSON.stringify(batchRequest);
   const hmac = computeHmac(keys, body);
   const headers = {
@@ -313,10 +275,17 @@ async function postRequest(keys: ApiKeys, accept: string, batchRequest: BatchReq
     applicationKey: keys.applicationKey,
     hmac,
   }
-  const response: Response = await fetch(MYSCRIPT_BATCH_API_URL, { method: 'POST', headers, body });
-  return await response.text();
-}
-
-function throwRequestError(errorResponse: ErrorResponse): never {
-  throw new Error(`MyScript batch API call error: ${errorResponse.code} ${errorResponse.message}`);
+  let response: Response;
+  // try {
+    response = await fetch(MYSCRIPT_BATCH_API_URL, { method: 'POST', headers, body });
+  // } catch(err) {
+  //   // REVIEW: Should we catch errors here to look for common connectivity issues?
+  //   throw new Error();
+  // }
+  const text = await response.text();
+  if (!response.ok) {
+    logErrorMessage(`MyScript REST Error: ${text}`);
+    throw new Error(`HTTP Error for MyScript: ${response.status} ${response.statusText}`);
+  }
+  return <T>text;
 }

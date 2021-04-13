@@ -46,7 +46,7 @@ describe("ServerFormula", function(){
   it("Creates a formula", async function(){
     const plainText = <PlainTextFormula>"x^2";
     const serverFormula = await ServerFormula.createFromPlainText(plainText);
-    console.dir(serverFormula);
+    // console.dir(serverFormula);
   });
 
   for (const jiixFormulaEntry of JIIX_FORMULA_TABLE) {

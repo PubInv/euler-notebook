@@ -27,9 +27,9 @@ const WolframAlphaAPI = require('wolfram-alpha-node');
 
 import { assert, PlainText } from "../shared/common";
 import { SearchResult } from "../shared/api-calls";
-import { PlainTextFormula, WolframExpression } from "../shared/formula";
+// import { WolframExpression } from "../shared/formula";
 
-import { convertEvaluatedWolframToTeX, convertTeXtoWolfram, convertPlainTextFormulaToWolfram } from "./wolframscript";
+import {  } from "./wolframscript";
 
 // Types
 
@@ -86,64 +86,63 @@ export async function search(query: PlainText): Promise<SearchResult[]> {
   return [sr];
 }
 
-// This is exported so that we can use unit tests on it.
-// This is expected to be heuristic and highly dependent
-// on Wolfram Alpha's internal style.
-// The input is a string returned by Wolfram Alpha, typically like this:
-//
-export async function findEquationInAlphaResult(text: string) : Promise<string>
-{
-  const exprs = text.split(/[\|\n]/);
-  const cand0 = exprs[0].trim();
+// export async function findEquationInAlphaResult(text: string) : Promise<string> {
+//   // This is exported so that we can use unit tests on it.
+//   // This is expected to be heuristic and highly dependent
+//   // on Wolfram Alpha's internal style.
+//   // The input is a string returned by Wolfram Alpha, typically like this:
+//   //
+//   const exprs = text.split(/[\|\n]/);
+//   const cand0 = exprs[0].trim();
 
-  // a variety of unpredictable error cases force the use of a try-catch here...
+//   // a variety of unpredictable error cases force the use of a try-catch here...
 
-  try {
-    var cand1 = <PlainText>string_to_slug(<string>cand0);
-    // console.log("CC1:",cand1);
-    var cand2 = convertPlainTextFormulaToWolfram(<PlainTextFormula>cand1);
-    // console.log("CC2:",cand2);
-    var cand3 = await convertEvaluatedWolframToTeX(<WolframExpression>cand2);
-    // console.log("CC3:",cand3);
-    var cand4 = await convertTeXtoWolfram(cand3);
-    // console.log("CC4:",cand4);
-  } catch(e) {
-    console.log("error finding equation in:"+text,e);
-    return cand0;
-  }
-  return cand4;
-}
+//   try {
+//     var cand1 = <PlainText>string_to_slug(<string>cand0);
+//     // console.log("CC1:",cand1);
+//     var cand2 = convertPlainTextFormulaToWolfram(<PlainTextFormula>cand1);
+//     // console.log("CC2:",cand2);
+//     var cand3 = await convertEvaluatedWolframToTeX(<WolframExpression>cand2);
+//     // console.log("CC3:",cand3);
+//     var cand4 = await convertTeXtoWolfram(cand3);
+//     // console.log("CC4:",cand4);
+//   } catch(e) {
+//     console.log("error finding equation in:"+text,e);
+//     return cand0;
+//   }
+//   return cand4;
+// }
 
-// https://gist.github.com/kostasx/7516158
-// Note: This is experimental. We don't really
-// want to covert the greek letter alpha to a,
-// because a may also appear in the formula.
-function string_to_slug(strx: string):string {
+// // https://gist.github.com/kostasx/7516158
+// // Note: This is experimental. We don't really
+// // want to covert the greek letter alpha to a,
+// // because a may also appear in the formula.
+// function string_to_slug(strx: string):string {
 
-  let str : string   = strx.replace(/^\s+|\s+$/g, '') // TRIM WHITESPACE AT BOTH ENDS.
-  //          .toLowerCase();            // CONVERT TO LOWERCASE
-  ;
+//   let str : string   = strx.replace(/^\s+|\s+$/g, '') // TRIM WHITESPACE AT BOTH ENDS.
+//   //          .toLowerCase();            // CONVERT TO LOWERCASE
+//   ;
 
-let from = [ "ου", "ΟΥ", "Ού", "ού", "αυ", "ΑΥ", "Αύ", "αύ", "ευ", "ΕΥ", "Εύ", "εύ", "α", "Α", "ά", "Ά", "β", "Β", "γ", "Γ", "δ", "Δ", "ε", "Ε", "έ", "Έ", "ζ", "Ζ", "η", "Η", "ή", "Ή", "θ", "Θ", "ι", "Ι", "ί", "Ί", "ϊ", "ΐ", "Ϊ", "κ", "Κ", "λ", "Λ", "μ", "Μ", "ν", "Ν", "ξ", "Ξ", "ο", "Ο", "ό", "Ό", "π", "Π", "ρ", "Ρ", "σ", "Σ", "ς", "τ", "Τ", "υ", "Υ", "ύ", "Ύ", "ϋ", "ΰ", "Ϋ", "φ", "Φ", "χ", "Χ", "ψ", "Ψ", "ω", "Ω", "ώ", "Ώ" ];
-let to   = [ "ou", "ou", "ou", "ou", "au", "au", "au", "au", "eu", "eu", "eu", "eu", "a", "a", "a", "a", "b", "b", "g", "g", "d", "d", "e", "e", "e", "e", "z", "z", "i", "i", "i", "i", "th", "th", "i", "i", "i", "i", "i", "i", "i", "k", "k", "l", "l", "m", "m", "n", "n", "ks", "ks", "o", "o", "o", "o", "p", "p", "r", "r", "s", "s", "s", "t", "t", "y", "y", "y", "y", "y", "y", "y", "f", "f", "x", "x", "ps", "ps", "o", "o", "o", "o" ];
+//   let from = [ "ου", "ΟΥ", "Ού", "ού", "αυ", "ΑΥ", "Αύ", "αύ", "ευ", "ΕΥ", "Εύ", "εύ", "α", "Α", "ά", "Ά", "β", "Β", "γ", "Γ", "δ", "Δ", "ε", "Ε", "έ", "Έ", "ζ", "Ζ", "η", "Η", "ή", "Ή", "θ", "Θ", "ι", "Ι", "ί", "Ί", "ϊ", "ΐ", "Ϊ", "κ", "Κ", "λ", "Λ", "μ", "Μ", "ν", "Ν", "ξ", "Ξ", "ο", "Ο", "ό", "Ό", "π", "Π", "ρ", "Ρ", "σ", "Σ", "ς", "τ", "Τ", "υ", "Υ", "ύ", "Ύ", "ϋ", "ΰ", "Ϋ", "φ", "Φ", "χ", "Χ", "ψ", "Ψ", "ω", "Ω", "ώ", "Ώ" ];
+//   let to   = [ "ou", "ou", "ou", "ou", "au", "au", "au", "au", "eu", "eu", "eu", "eu", "a", "a", "a", "a", "b", "b", "g", "g", "d", "d", "e", "e", "e", "e", "z", "z", "i", "i", "i", "i", "th", "th", "i", "i", "i", "i", "i", "i", "i", "k", "k", "l", "l", "m", "m", "n", "n", "ks", "ks", "o", "o", "o", "o", "p", "p", "r", "r", "s", "s", "s", "t", "t", "y", "y", "y", "y", "y", "y", "y", "f", "f", "x", "x", "ps", "ps", "o", "o", "o", "o" ];
 
-for ( var i = 0; i < from.length; i++ ) {
+//   for ( var i = 0; i < from.length; i++ ) {
 
-    while( str.indexOf( from[i]) !== -1 ){
+//     while( str.indexOf( from[i]) !== -1 ){
 
-        str = str.replace( from[i], to[i] );    // CONVERT GREEK CHARACTERS TO LATIN LETTERS
+//         str = str.replace( from[i], to[i] );    // CONVERT GREEK CHARACTERS TO LATIN LETTERS
 
-    }
+//     }
 
-}
+//   }
 
-  // we need many of these symbols in our expression!
-//str = str.replace(/[^a-z0-9 -]/g, '') // REMOVE INVALID CHARS
-//         .replace(/\s+/g, '-')        // COLLAPSE WHITESPACE AND REPLACE BY DASH -
-//         .replace(/-+/g, '-');        // COLLAPSE DASHES
+//   // // we need many of these symbols in our expression!
+//   //str = str.replace(/[^a-z0-9 -]/g, '') // REMOVE INVALID CHARS
+//   //         .replace(/\s+/g, '-')        // COLLAPSE WHITESPACE AND REPLACE BY DASH -
+//   //         .replace(/-+/g, '-');        // COLLAPSE DASHES
 
-return str;
-}
+//   return str;
+// }
 
 
 export async function search_full(query: PlainText): Promise<SearchResult[]> {
@@ -184,13 +183,13 @@ export async function search_full(query: PlainText): Promise<SearchResult[]> {
         // That means we may have to slightly extand that module (it is open source
         // and quite small, easily extendable with a pull request.
 
-        // This is just a set of heuristics that works pretty well...
-        var formula = (p.id === "Associated Equation" ||
-                         <string>p.title === "Associated equations" ||
-                         <string>p.title === "Associated equation" ||
-                         <string>p.title === "Equations" ||
-                         p.id === "Equation") ?
-          <PlainTextFormula>s.plaintext : undefined;
+        // // This is just a set of heuristics that works pretty well...
+        // var formula = (p.id === "Associated Equation" ||
+        //                  <string>p.title === "Associated equations" ||
+        //                  <string>p.title === "Associated equation" ||
+        //                  <string>p.title === "Equations" ||
+        //                  p.id === "Equation") ?
+        //   s.plaintext : undefined;
 
         // This likewise is just a set of heuristics, no doubt there are cases
         // which are not needed. There are many unit conversions returned which
@@ -200,19 +199,18 @@ export async function search_full(query: PlainText): Promise<SearchResult[]> {
                       <string>p.title === "Commodity price") ?
           <PlainText>s.plaintext : undefined;
 
-        if (formula) {
-          formula = <PlainTextFormula>string_to_slug(<string>formula);
-//          console.log("formula",formula);
-          formula = <PlainTextFormula>await findEquationInAlphaResult(
-              <PlainTextFormula>formula);
-        }
+        // if (formula) {
+        //   formula = string_to_slug(<string>formula);
+        //   console.log("formula",formula);
+        //   formula = await findEquationInAlphaResult(formula);
+        // }
 
 //        console.dir(formula);
 //        console.dir(known);
         sr.push(
           { title: p.title,
             text: s.plaintext,
-            formula: formula,
+            // formula: formula,
             knownConstant: known});
       }
     }
@@ -220,7 +218,7 @@ export async function search_full(query: PlainText): Promise<SearchResult[]> {
 
   // Now we simply sort by whether or not we have found a formula to put the formulae first
   sr.sort((a,_b) => a.knownConstant ? -1 : 1);
-  sr.sort((a,_b) => a.formula ? -1 : 1);
+  // sr.sort((a,_b) => a.formula ? -1 : 1);
 
   debug(sr);
 

@@ -26,7 +26,7 @@ const MODULE = __filename.split(/[/\\]/).slice(-1)[0].slice(0,-3);
 const debug = debug1(`server:${MODULE}`);
 
 import { SvgMarkup } from "../shared/common";
-
+import { MathMlMarkup } from "../shared/mathml";
 import { mathjax } from "mathjax-full/js/mathjax.js";
 import { MathDocument } from "mathjax-full/js/core/MathDocument.js";
 import { TeX } from "mathjax-full/js/input/tex.js";
@@ -35,7 +35,6 @@ import { AllPackages } from "mathjax-full/js/input/tex/AllPackages.js";
 import { LiteAdaptor, liteAdaptor } from "mathjax-full/js/adaptors/liteAdaptor.js";
 import { RegisterHTMLHandler } from "mathjax-full/js/handlers/html.js";
 
-import { EMPTY_TEX_EXPRESSION, TexExpression } from "../shared/formula";
 
 // Types
 
@@ -69,18 +68,32 @@ export function initialize(): void {
   gHtml = mathjax.document('', { InputJax: tex, OutputJax: svg });
 }
 
-export function convertTexToSvg(tex: TexExpression): SvgMarkup {
-  debug(`Converting TeX: "${tex}"`);
-
-  // REVIEW: Is empty string appropriate empty SVG representation?
-  //         Or should it be "<svg></svg>"
-  if (tex == EMPTY_TEX_EXPRESSION) { return <SvgMarkup>''; }
-
-  const node = gHtml.convert(tex, { display: false, em: 16, ex: 8, containerWidth: 80*16 });
+export function convertMmlToSvg(mathMlMarkup: MathMlMarkup): SvgMarkup {
+  debug(`Converting MathML to SVG`);
+  debug(`MathML is: ${mathMlMarkup}`);
+  const node = gHtml.convert(mathMlMarkup, { display: false, em: 16, ex: 8, containerWidth: 80*16 });
   // Returns HTML of a 'mjx-container' element enclosing an "svg" element.
   // const html = <Html>gAdaptor.outerHTML(node);
   // assert(html.startsWith(MJX_HEADER));
   // assert(html.endsWith(MJX_FOOTER));
   // let svgMarkup = <SvgMarkup>html.slice(MJX_HEADER.length, -MJX_FOOTER.length);
-  return <SvgMarkup>gAdaptor.innerHTML(node);
+  const svgMarkup = <SvgMarkup>gAdaptor.innerHTML(node);
+  debug(`SVG Markup is: ${svgMarkup}`);
+  return svgMarkup;
 }
+
+// export function convertTexToSvg(tex: TexExpression): SvgMarkup {
+//   debug(`Converting TeX: "${tex}"`);
+
+//   // REVIEW: Is empty string appropriate empty SVG representation?
+//   //         Or should it be "<svg></svg>"
+//   if (tex == EMPTY_TEX_EXPRESSION) { return <SvgMarkup>''; }
+
+//   const node = gHtml.convert(tex, { display: false, em: 16, ex: 8, containerWidth: 80*16 });
+//   // Returns HTML of a 'mjx-container' element enclosing an "svg" element.
+//   // const html = <Html>gAdaptor.outerHTML(node);
+//   // assert(html.startsWith(MJX_HEADER));
+//   // assert(html.endsWith(MJX_FOOTER));
+//   // let svgMarkup = <SvgMarkup>html.slice(MJX_HEADER.length, -MJX_FOOTER.length);
+//   return <SvgMarkup>gAdaptor.innerHTML(node);
+// }

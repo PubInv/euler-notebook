@@ -117,6 +117,11 @@ export function stackTrace(): StackTrace {
   return rval;
 }
 
+export function zeroPad(s: string, length: number): string {
+  const numZeroes = length - s.length;
+  return numZeroes>0 ? '0'.repeat(numZeroes)+s : s;
+}
+
 // Exported Classes
 
 export class ExpectedError extends Error {

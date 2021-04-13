@@ -31,6 +31,10 @@ export function logError(/* TODO: component, */ err: Error, message?: string /* 
   console.dir(err);
 }
 
+export function logErrorMessage(message: string): void {
+  console.error(`ERROR: ${message}`);
+}
+
 export function logWarning(module: string, message: string): void {
   console.warn(`WARNING: ${module}: ${message}`);
 }

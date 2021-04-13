@@ -17,15 +17,16 @@ You should have received a copy of the GNU Affero General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
+import { assert, ElementId, Html } from "../../shared/common";
 import { CellObject } from "../../shared/cell";
-import { ElementId, Html } from "../../shared/common";
+import { NotebookChangeRequest } from "../../shared/client-requests";
 import { CssClass } from "../../shared/css";
 import { SuggestionUpdates } from "../../shared/server-responses";
 
+import { renderMathMlTreeToSvgElement } from "../../adapters/mathjax";
 import { $, $all, $new, HtmlElementSpecification } from "../../dom";
 import { HtmlElement } from "../../html-element";
 import { ClientCell } from "../../models/client-cell";
-import { NotebookChangeRequest } from "../../shared/client-requests";
 
 // Requirements
 
@@ -104,8 +105,14 @@ export class SuggestionPanel<O extends CellObject> extends HtmlElement<'div'> {
         asyncListeners: {
           click: e=>this.onSuggestionClicked(e, suggestion.changeRequests),
         },
-        html: suggestion.html,
       };
+      if (suggestion.formulaMathMlTree) {
+        const $svg = renderMathMlTreeToSvgElement(suggestion.formulaMathMlTree);
+        spec.children = [ $svg ];
+      } else {
+        assert(spec.html); // Must have either formulaMathMlTree or html.
+        spec.html = suggestion.html!;
+      }
       const $suggestion = $new<'div'>(spec);
       //const $svg = $outerSvg<'svg'>(alternative.svg);
       this.$elt.append($suggestion);

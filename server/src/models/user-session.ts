@@ -23,7 +23,7 @@ const debug = debug1(`server:${MODULE}`);
 
 import { randomBytes } from "crypto";
 
-import { deleteConfigFile, FileName, readConfigFile, writeConfigFile } from "../adapters/file-system";
+import { deleteConfigFile, FileName, readConfigFile, writeConfigFile as writeConfigFileSync } from "../adapters/file-system";
 
 import { assert, SessionToken } from "../shared/common";
 import { UserName } from "../shared/user";
@@ -52,6 +52,7 @@ const SESSIONS_FILENAME = <FileName>'sessions.json';
 export class UserSession {
 
   // Public Class Properties
+
   // Public Class Property Functions
 
   public static generateSessionToken(): SessionToken {
@@ -61,6 +62,16 @@ export class UserSession {
   public static getSession(sessionToken: SessionToken): UserSession|undefined {
     return this.instances.get(sessionToken);
   }
+
+  public static persistentObject(): UserSessionsObject {
+    const obj: UserSessionsObject = {};
+    for (const [sessionToken, session] of this.instances.entries()) {
+      obj[sessionToken] = session.obj;
+    }
+    return obj;
+  }
+
+  // Public Class Methods
 
   public static async loadIfAvailable(): Promise<void> {
     let obj: UserSessionsObject;
@@ -82,17 +93,6 @@ export class UserSession {
     }
   }
 
-  public static async save(): Promise<void> {
-    debug("Saving sessions file.")
-    const obj: UserSessionsObject = {};
-    for (const [sessionToken, session] of this.instances.entries()) {
-      obj[sessionToken] = session.obj;
-    }
-    await writeConfigFile(SESSIONS_FILENAME, obj);
-  }
-
-  // Public Class Methods
-
   public static login(userName: UserName): SessionToken {
     const sessionToken = this.generateSessionToken();
     assert(!this.instances.has(sessionToken));
@@ -104,6 +104,18 @@ export class UserSession {
   public static logout(sessionToken: SessionToken): void {
     const had = UserSession.instances.delete(sessionToken);
     assert(had);
+  }
+
+  // public static async save(): Promise<void> {
+  //   debug("Saving sessions file.");
+  //   const obj = this.persistentObject();
+  //   await writeConfigFile(SESSIONS_FILENAME, obj);
+  // }
+
+  public static saveSync(): void {
+    debug("Saving sessions file.");
+    const obj = this.persistentObject();
+    writeConfigFileSync(SESSIONS_FILENAME, obj);
   }
 
   // Public Class Event Handlers

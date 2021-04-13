@@ -19,7 +19,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 // Requirements
 
-import { mkdir, readdir, readFile, rename, rmdir, stat, writeFile, Stats, unlink } from "fs";
+import { mkdir, readdir, readFile, rename, rmdir, stat, writeFile, writeFileSync, Stats, unlink } from "fs";
 import { join } from "path";
 import { promisify } from "util";
 
@@ -67,9 +67,14 @@ export async function deleteConfigFile(fileName: FileName): Promise<void> {
   await fsUnlink(absPath);
 }
 
-export async function writeConfigFile<T>(fileName: FileName, obj: T) : Promise<void> {
+export async function writeConfigFile<T>(fileName: FileName, obj: T): Promise<void> {
   const absPath = <AbsolutePath>join(process.env.HOME!, CONFIG_DIR, fileName);
   return await writeJsonFileToAbsolutePath(absPath, obj);
+}
+
+export function writeConfigFileSync<T>(fileName: FileName, obj: T): void {
+  const absPath = <AbsolutePath>join(process.env.HOME!, CONFIG_DIR, fileName);
+  writeJsonFileToAbsolutePathSync(absPath, obj);
 }
 
 // Notebook and Folder Functions
@@ -155,5 +160,13 @@ async function writeJsonFileToAbsolutePath<T>(absPath: AbsolutePath, obj: T): Pr
   //         so we don't have to generate a large JSON string into memory?
   const json = JSON.stringify(obj);
   await fsWriteFile(absPath, json, 'utf8');
+}
+
+function writeJsonFileToAbsolutePathSync<T>(absPath: AbsolutePath, obj: T): void {
+  debug(`Writing JSON file synchronously: ${absPath}`);
+  // REVIEW: For large JSON files is there a way to generate JSON as we write the file
+  //         so we don't have to generate a large JSON string into memory?
+  const json = JSON.stringify(obj);
+  writeFileSync(absPath, json, 'utf8');
 }
 

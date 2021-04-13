@@ -23,7 +23,7 @@ import * as debug1 from "debug";
 const MODULE = __filename.split(/[/\\]/).slice(-1)[0].slice(0,-3);
 const debug = debug1(`server:${MODULE}`);
 
-import { deepCopy, PlainText, Html, SvgMarkup } from "../../shared/common";
+import { deepCopy, PlainText, SvgMarkup } from "../../shared/common";
 import { CssLength } from "../../shared/css";
 import { CellId, CellSource, CellType, SuggestionClass, SuggestionId, SuggestionObject } from "../../shared/cell";
 import { FormulaCellObject, FormulaNumber, renderFormulaCell } from "../../shared/formula";
@@ -141,7 +141,8 @@ export class FormulaCell extends ServerCell<FormulaCellObject> {
   // }
 
   private async recognizeStrokes(): Promise<void> {
-    const results = await recognizeFormula(this.obj.strokeData)
+    debug(`Recognizing strokes`);
+    const results = await recognizeFormula(this.obj.strokeData);
     const addSuggestions: SuggestionObject[] = results.alternatives.map((alternative, index)=>{
       const id = <SuggestionId>`recognizedFormula${index}`;
       const data: NotebookChangeRequest[] = [{
@@ -154,7 +155,7 @@ export class FormulaCell extends ServerCell<FormulaCellObject> {
         id,
         class: TYPESET_FORMULA_SUGGESTION_CLASS,
         changeRequests: data,
-        html: <Html>alternative.svg,
+        formulaMathMlTree: alternative.formula.mathMlTree,
       };
       return suggestion;
     });
@@ -178,6 +179,8 @@ export class FormulaCell extends ServerCell<FormulaCellObject> {
 
   protected async onStrokeInactivityTimeout(): Promise<void> {
     debug(`Formula cell stroke inactivity timeout c${this.id}`);
+    // LATER: Display recognition error to user if one occurs.
+    //        Currently it will just log the error, but fails silently from the user's perspective.
     await this.recognizeStrokes();
   }
 

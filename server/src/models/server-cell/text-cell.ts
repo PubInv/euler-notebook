@@ -121,6 +121,8 @@ export class TextCell extends ServerCell<TextCellObject> {
 
   protected async onStrokeInactivityTimeout(): Promise<void> {
     debug(`Text cell stroke inactivity timeout c${this.id}`);
+    // LATER: Display recognition error to user if one occurs.
+    //        Currently it will just log the error, but fails silently from the user's perspective.
     await this.recognizeStrokes();
   }
 

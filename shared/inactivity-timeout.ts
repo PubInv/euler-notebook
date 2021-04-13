@@ -106,9 +106,9 @@ export class InactivityTimeout {
         this.start(interval);
       }
     }).catch(err=>{
-      // TODO: How to log errors properly on server and client?
-      console.error(`Error in inactivity-timeout callback.`);
-      console.dir(err);
+     // TODO: How to log errors properly in code that must run server and client?
+     console.error(`Error in inactivity-timeout callback.`);
+     console.dir(err);
     });
   }
 

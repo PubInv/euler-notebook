@@ -19,14 +19,13 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 // Requirements
 
-import { Jiix } from "../src/adapters/myscript";
-import { PlainTextFormula, TexExpression, WolframExpression } from "../src/shared/formula";
+import { JiixMathBlock } from "../src/adapters/myscript";
+import { TexExpression, WolframExpression } from "../src/shared/formula";
 
 // Types
 
 interface JiixFormulaEntry {
-  plain: PlainTextFormula,
-  jiix: Jiix,
+  jiix: JiixMathBlock,
   tex: TexExpression,
   wolfram: WolframExpression,
 }
@@ -36,7 +35,6 @@ interface JiixFormulaEntry {
 
 export const JIIX_FORMULA_TABLE: JiixFormulaEntry[] = [
   {
-    plain: <PlainTextFormula>'1+1',
     jiix: {
       "type": "Math",
       "expressions": [
@@ -65,7 +63,6 @@ export const JIIX_FORMULA_TABLE: JiixFormulaEntry[] = [
     tex: <TexExpression>"1+1",
     wolfram: <WolframExpression>"1+1",
   }, {
-    plain: <PlainTextFormula>'x^2',
     jiix: {
       "type": "Math",
       "expressions": [

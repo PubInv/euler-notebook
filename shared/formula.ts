@@ -22,6 +22,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 import { CellObject, CellType } from "./cell";
 import { SvgMarkup } from "./common";
 import { convertLength, CssSize, pixelsFromCssLength } from "./css";
+import { MathMlTree } from "./mathml";
 
 // Types
 
@@ -30,25 +31,18 @@ export type FormulaSymbol = '{FormulaSymbol}';
 export type TexExpression = '{TexExpression}';
 export type WolframExpression = '{WolframExpression}';
 
-// This type is for the variation of plain-text math input that we accept.
-// Currently, it is the same as WolframExpression
-// except that we convert single equals to double equals.
-export type PlainTextFormula = '{PlainTextFormula}';
-
 export interface FormulaCellObject extends CellObject {
   type: CellType.Formula,
   formula: FormulaObject;
 }
 
 export interface FormulaObject {
-  plain: PlainTextFormula;
-  tex: TexExpression;
-  wolfram: WolframExpression;
+  mathMlTree: MathMlTree;
+  // wolfram: WolframExpression;
 }
 
 // Constants
 
-export const EMPTY_PLAINTEXT_FORMULA = <PlainTextFormula>'';
 export const EMPTY_TEX_EXPRESSION = <TexExpression>'';
 export const EMPTY_WOLFRAM_EXPRESSION = <WolframExpression>'';
 

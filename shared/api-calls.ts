@@ -25,7 +25,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 import { CellId } from "./cell";
 import { Html, PlainText } from "./common";
 import { NotebookPath } from "./folder";
-import { PlainTextFormula, TexExpression, WolframExpression } from "./formula";
+import { TexExpression, WolframExpression } from "./formula";
 
 // Types
 
@@ -64,7 +64,7 @@ export interface SearchResult {
   text?: PlainText; // a short summary
   html?: Html;
   raw?: object;
-  formula?: PlainTextFormula; // if present, this is would a syntactically correct wolfram language expression
+  // formula?: PlainTextFormula; // if present, this is would a syntactically correct wolfram language expression
   knownConstant?: PlainText;
   wolframExpr?: WolframExpression; // if present, and wolfram expression
   texExpr?: TexExpression; // if present, renderable TeX expression

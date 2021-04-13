@@ -25,11 +25,12 @@ import * as debug1 from "debug";
 const MODULE = __filename.split(/[/\\]/).slice(-1)[0].slice(0,-3);
 const debug = debug1(`server:${MODULE}`);
 
-import { FormulaSymbol, PlainTextFormula, TexExpression, WolframExpression } from "../shared/formula";
+import { assert, SvgMarkup } from "../shared/common";
+import { FormulaSymbol, TexExpression, WolframExpression } from "../shared/formula";
+import { MathMlMarkup } from "../shared/mathml";
 
 import { WolframScriptConfig } from "../config";
 import { logWarning } from "../error-handler";
-import { assert, SvgMarkup } from "../shared/common";
 
 // Types
 
@@ -71,6 +72,18 @@ let gServerStoppingPromise: Promise<void>|undefined = undefined;
 
 // Exported functions
 
+export async function convertMmltoWolfram(mml: MathMlMarkup) : Promise<WolframExpression> {
+  const escaped = <WolframExpression>mml.replace(/\\/g,"\\\\");
+  const expression = <WolframExpression>`InputForm[ToExpression["${escaped}", MathMLForm]]`;
+  return execute(expression);
+}
+
+// export async function convertTeXtoWolfram(tex: TexExpression) : Promise<WolframExpression> {
+//   const wrapped = <WolframExpression>`InputForm[ToExpression["${tex}", TeXForm]]`;
+//   const escaped = <WolframExpression>wrapped.replace(/\\/g,"\\\\");
+//   return execute(escaped);
+// }
+
 export async function execute(command: WolframExpression): Promise<WolframExpression> {
   // Wait for the server to start.
   if (!gServerStartingPromise) { throw new Error("Can't execute -- WolframScript not started."); }
@@ -88,12 +101,6 @@ export async function execute(command: WolframExpression): Promise<WolframExpres
     );
   });
   return gExecutingPromise;
-}
-
-export async function convertTeXtoWolfram(tex: string) : Promise<WolframExpression> {
-  const wrapped = <WolframExpression>`InputForm[ToExpression["${tex}", TeXForm]]`;
-  const escaped = <WolframExpression>wrapped.replace(/\\/g,"\\\\");
-  return execute(escaped);
 }
 
 export async function start(config?: WolframScriptConfig): Promise<void> {
@@ -302,16 +309,6 @@ export async function convertEvaluatedWolframToTeX(text: WolframExpression): Pro
 //       return <TexExpression>'';
 //     }
 // }
-
-// This is to simple an explanation, but generally the Math Table Langauge used the equality (=) sign
-// to mean universal equality. Wolfram uses it to mean assignment, and == for boolean relations, which can at least be simplified.
-export function convertPlainTextFormulaToWolfram(expr: PlainTextFormula): WolframExpression {
-  return <WolframExpression>expr.replace("=","==");
-}
-
-export function convertWolframToPlainTextFormula(expr: WolframExpression): PlainTextFormula {
-  return <PlainTextFormula>expr.replace("==","=");
-}
 
 export async function plotUnivariate(expression: WolframExpression, symbol: FormulaSymbol): Promise<SvgMarkup> {
   // BIVARIATE SCRIPT: <WolframExpression>`ExportString[Plot3D[${expr},{${variables[0]},0,6 Pi},{${variables[1]},0,6 Pi}],"SVG"]`;

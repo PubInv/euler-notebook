@@ -22,6 +22,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 import { NotebookChangeRequest } from "./client-requests";
 import {  Html, PlainText, SvgMarkup } from "./common";
 import { CssSize } from "./css";
+import { MathMlTree } from "./mathml";
 import { convertStrokeToPath, StrokeData } from "./stylus";
 
 // Types
@@ -65,7 +66,8 @@ export interface CellObject {
 export interface SuggestionObject {
   id: SuggestionId,
   class?: SuggestionClass,
-  html: Html,
+  formulaMathMlTree?: MathMlTree,
+  html?: Html,
   changeRequests: NotebookChangeRequest[],
 }
 

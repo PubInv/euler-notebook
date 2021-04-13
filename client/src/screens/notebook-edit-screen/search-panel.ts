@@ -151,9 +151,9 @@ function formatSearchResult(r: SearchResult): Html {
     rval += `<div>${escapeHtml(r.text)}</div>`;
   }
 
-  if (r.formula) {
-    rval += `<div><tt>${escapeHtml(r.formula)}</tt></div>`;
-  }
+  // if (r.formula) {
+  //   rval += `<div><tt>${escapeHtml(r.formula)}</tt></div>`;
+  // }
 
   if (r.knownConstant) {
     rval += `<div><tt>${escapeHtml(r.knownConstant)}</tt></div>`;

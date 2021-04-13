@@ -28,24 +28,18 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 // const debug = debug1(`server:${MODULE}`);
 
 import { SvgMarkup } from "../shared/common";
-import {
-  EMPTY_PLAINTEXT_FORMULA, EMPTY_TEX_EXPRESSION, EMPTY_WOLFRAM_EXPRESSION, FormulaObject,
-  PlainTextFormula, TexExpression, WolframExpression
-} from "../shared/formula";
+import { FormulaObject } from "../shared/formula";
+import { EMPTY_MML_TREE, MathMlMarkup, MathMlTree, serializeTreeToMathMlMarkup } from "../shared/mathml";
 
-import { convertPlainTextFormulaToWolfram, convertTeXtoWolfram, convertWolframToPlainTextFormula, convertWolframToTeX } from "../adapters/wolframscript";
-import { convertTexToSvg as mathjaxConvertTextToSvg } from "../adapters/mathjax";
-import { Jiix } from "../adapters/myscript";
+// import { convertMmltoWolfram } from "../adapters/wolframscript";
+import { convertMmlToSvg } from "../adapters/mathjax";
+// import { Jiix } from "../adapters/myscript";
 
 // Types
 
 // Constants
 
-export const EMPTY_FORMULA_OBJECT: FormulaObject = {
-  plain: EMPTY_PLAINTEXT_FORMULA,
-  tex: EMPTY_TEX_EXPRESSION,
-  wolfram: EMPTY_WOLFRAM_EXPRESSION
-};
+export const EMPTY_FORMULA_OBJECT: FormulaObject = { mathMlTree: EMPTY_MML_TREE };
 
 // Global Variables
 
@@ -57,24 +51,13 @@ export class ServerFormula {
   // Public Class Property Functions
   // Public Class Methods
 
-  public static createFromJiix(_jiix: Jiix): ServerFormula {
-    throw new Error("Not implemented.");
-  }
-
   public static createFromObject(obj: FormulaObject): ServerFormula {
     return new this(obj);
   }
 
-  public static async createFromPlainText(plain: PlainTextFormula): Promise<ServerFormula> {
-    const wolfram = convertPlainTextFormulaToWolfram(plain);
-    const tex = await convertWolframToTeX(wolfram);
-    return new this({ plain, tex, wolfram });
-  }
-
-  public static async createFromTeX(tex: TexExpression): Promise<ServerFormula> {
-    const wolfram = await convertTeXtoWolfram(tex);
-    const plain = convertWolframToPlainTextFormula(wolfram);
-    return new this({ plain, tex, wolfram });
+  public static createFromMathMlTree(mathMlTree: MathMlTree): ServerFormula {
+    // const wolfram = await convertMmltoWolfram(mml);
+    return new this({ mathMlTree });
   }
 
   // Public Class Event Handlers
@@ -85,20 +68,20 @@ export class ServerFormula {
 
   // Public Instance Property Functions
 
-  public get plain(): PlainTextFormula { return this.obj.plain; }
+  // public get wolfram(): WolframExpression { return this.obj.wolfram; }
 
-  public get tex(): TexExpression { return this.obj.tex; }
+  public get mathMlTree(): MathMlTree { return this.obj.mathMlTree;}
 
-  public get wolfram(): WolframExpression { return this.obj.wolfram; }
+  public mathMl(): MathMlMarkup { return serializeTreeToMathMlMarkup(this.obj.mathMlTree); }
 
-  // Public Instance Methods
-
-  public renderSvg(): SvgMarkup {
+  public svg(): SvgMarkup {
     if (!this.cachedSvg) {
-      this.cachedSvg = mathjaxConvertTextToSvg(this.obj.tex)
+      this.cachedSvg = convertMmlToSvg(this.mathMl());
     }
     return this.cachedSvg;
   }
+
+  // Public Instance Methods
 
   // Public Instance Event Handlers
 

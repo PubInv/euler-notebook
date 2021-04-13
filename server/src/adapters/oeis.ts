@@ -46,6 +46,7 @@ import { SearchResult } from "../shared/api-calls";
 import { WolframExpression } from "../shared/formula";
 
 import fetch, { Response } from "node-fetch";
+import { logError } from "../error-handler";
 
 const MODULE = __filename.split(/[/\\]/).slice(-1)[0].slice(0,-3);
 const debug = debug1(`server:${MODULE}`);
@@ -86,8 +87,8 @@ export async function search(_text: PlainText): Promise<SearchResult[]> {
       }
     }
     return <SearchResult[]> srs;
-  } catch (error) {
-    console.dir(error);
+  } catch (err) {
+    logError(err, `Error in OEIS search`);
     return <SearchResult[]>[];
   }
    return <SearchResult[]>["internal error"];
