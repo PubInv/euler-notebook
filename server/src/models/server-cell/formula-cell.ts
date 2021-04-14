@@ -26,14 +26,14 @@ const debug = debug1(`server:${MODULE}`);
 import { deepCopy, PlainText, SvgMarkup } from "../../shared/common";
 import { CssLength } from "../../shared/css";
 import { CellId, CellSource, CellType, SuggestionClass, SuggestionId, SuggestionObject } from "../../shared/cell";
-import { FormulaCellObject, FormulaNumber, renderFormulaCell } from "../../shared/formula";
+import { EMPTY_FORMULA_OBJECT, FormulaCellObject, FormulaNumber, renderFormulaCell } from "../../shared/formula";
 import { NotebookSuggestionsUpdated, SuggestionUpdates } from "../../shared/server-responses";
 import { EMPTY_STROKE_DATA } from "../../shared/stylus";
 
 import { recognizeFormula } from "../../components/handwriting-recognizer";
 
 import { ServerNotebook } from "../server-notebook";
-import { EMPTY_FORMULA_OBJECT, ServerFormula } from "../server-formula";
+import { ServerFormula } from "../server-formula";
 
 import { ServerCell } from "./index";
 import { NotebookChangeRequest } from "../../shared/client-requests";
@@ -57,7 +57,7 @@ export class FormulaCell extends ServerCell<FormulaCellObject> {
       type: CellType.Formula,
       cssSize: this.initialCellSize(notebook, DEFAULT_HEIGHT),
       inputText: <PlainText>"",
-      formula: EMPTY_FORMULA_OBJECT,
+      formula: deepCopy(EMPTY_FORMULA_OBJECT),
       source,
       strokeData: deepCopy(EMPTY_STROKE_DATA),
       suggestions: [],

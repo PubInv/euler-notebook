@@ -19,7 +19,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 // Requirements
 
-import { CellObject, CellId, CellType } from "./cell";
+import { CellObject, CellId, CellType, renderBaseCell } from "./cell";
 import { SvgMarkup } from "./common";
 import { FormulaObject, FormulaSymbol } from "./formula";
 
@@ -36,5 +36,5 @@ export interface PlotCellObject extends CellObject {
 // Exported Functions
 
 export function renderPlotCell(obj: PlotCellObject): SvgMarkup {
-  return obj.plotMarkup;
+  return renderBaseCell(obj, obj.plotMarkup);
 }

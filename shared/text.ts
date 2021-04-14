@@ -36,6 +36,5 @@ export function renderTextCell(obj: TextCellObject): SvgMarkup {
   const fontCapHeightInPx = 12; // TODO:
   const y = Math.round(heightInPx/2 + fontCapHeightInPx/2);
   const markup = <SvgMarkup>`<text y="${y}">${escapeHtml(obj.inputText)}</text>`;
-  const baseMarkup = renderBaseCell(obj);
-  return <SvgMarkup>(markup + baseMarkup);
+  return renderBaseCell(obj, markup);
 }

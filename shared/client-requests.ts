@@ -29,6 +29,7 @@ import { FolderPath, NotebookPath, FolderName, NotebookName, } from "./folder";
 import { Stroke, StrokeData, StrokeId } from "./stylus";
 import { UserName, UserPassword } from "./user";
 import { FormulaObject } from "./formula";
+import { FigureObject } from "./figure";
 
 // Types
 
@@ -146,6 +147,7 @@ export type NotebookChangeRequest =
   InsertStroke |
   MoveCell |
   ResizeCell |
+  TypesetFigure |
   TypesetFormula |
   TypesetText;
 
@@ -182,6 +184,13 @@ export interface ResizeCell {
   type: 'resizeCell';
   cellId: CellId;
   cssSize: CssSize;
+}
+export interface TypesetFigure {
+  // NOTE: This can be used to undo typesetting as well.
+  type: 'typesetFigure';
+  cellId: CellId;
+  figure: FigureObject;
+  strokeData: StrokeData;
 }
 export interface TypesetFormula {
   // NOTE: This can be used to undo typesetting as well.

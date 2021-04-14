@@ -29,7 +29,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 import { SvgMarkup } from "../shared/common";
 import { FormulaObject } from "../shared/formula";
-import { EMPTY_MML_TREE, MathMlMarkup, MathMlTree, serializeTreeToMathMlMarkup } from "../shared/mathml";
+import { MathMlMarkup, MathMlTree, serializeTreeToMathMlMarkup } from "../shared/mathml";
 
 // import { convertMmltoWolfram } from "../adapters/wolframscript";
 import { convertMmlToSvg } from "../adapters/mathjax";
@@ -38,8 +38,6 @@ import { convertMmlToSvg } from "../adapters/mathjax";
 // Types
 
 // Constants
-
-export const EMPTY_FORMULA_OBJECT: FormulaObject = { mathMlTree: EMPTY_MML_TREE };
 
 // Global Variables
 

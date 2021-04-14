@@ -19,6 +19,10 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 // Requirements
 
+import * as debug1 from "debug";
+const MODULE = __filename.split(/[/\\]/).slice(-1)[0].slice(0,-3);
+const debug = debug1(`server:${MODULE}`);
+
 import { StrokeData } from "../shared/stylus";
 import { assert, assertFalse, PlainText, zeroPad } from "../shared/common";
 import {
@@ -30,12 +34,21 @@ import {
 import {
   UNICODE_MIDDLE_DOT, UNICODE_MULTIPLICATION_SIGN, UNICODE_DIVISION_SIGN,
   MathNode, OperatorNode, RelationNode,
-} from "../adapters/myscript-expression";
-import { postJiixRequest, /* postMmlRequest, */ postTextRequest } from "../adapters/myscript";
+} from "../adapters/myscript-math";
+import {  JiixDiagramBlock, JiixMathBlock, postJiixRequest, /* postMmlRequest, */ postTextRequest } from "../adapters/myscript";
 
 import { ServerFormula } from "../models/server-formula";
+import { FigureObject } from "../shared/figure";
 
 // Types
+
+export interface FigureRecognitionAlternative {
+  figureObject: FigureObject;
+}
+
+export interface FigureRecognitionResults {
+  alternatives: FigureRecognitionAlternative[];
+}
 
 export interface FormulaRecognitionAlternative {
   formula: ServerFormula;
@@ -55,15 +68,29 @@ export interface TextRecognitionResults {
 
 // Exported Functions
 
-export async function recognizeFormula(strokeData: StrokeData): Promise<FormulaRecognitionResults> {
-  // console.log("RECOGNIZING FORMULA");
+export async function recognizeFigure(strokeData: StrokeData): Promise<FigureRecognitionResults> {
+  debug(`Recognizing figure.`);
+  const jiix = await postJiixRequest<JiixDiagramBlock>('Diagram', strokeData);
+  console.log(JSON.stringify(jiix, null, 2));
 
-  const jiix = await postJiixRequest(strokeData);
+  const alternative: FigureRecognitionAlternative = {
+    figureObject: {
+      elements: jiix.elements
+    }
+  };
+  return { alternatives: [ alternative ] };
+}
+
+export async function recognizeFormula(strokeData: StrokeData): Promise<FormulaRecognitionResults> {
+  debug(`Recognizing formula.`);
+
+  const jiix = await postJiixRequest<JiixMathBlock>('Math', strokeData);
   console.log(JSON.stringify(jiix, null, 2));
 
   // const mml = await postMmlRequest(strokeData);
   // console.dir(mml);
 
+  // TODO: If user writes multiple expressions then we should separate them into distinct cells.
   const alternatives = jiix.expressions.map((jiixExpression, _i)=>{
     //console.log(`Option ${i}`);
     const mathMlTree = convertJiixExpressionToMathMlExpression(jiixExpression);
@@ -77,6 +104,7 @@ export async function recognizeFormula(strokeData: StrokeData): Promise<FormulaR
 }
 
 export async function recognizeText(strokeData: StrokeData): Promise<TextRecognitionResults> {
+  debug(`Recognizing text.`);
   const text = await postTextRequest(strokeData);
   return { alternatives: [ { text } ] };
 }

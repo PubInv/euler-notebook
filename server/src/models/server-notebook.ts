@@ -36,10 +36,10 @@ import { CssLength, cssSizeInPixels, CssLengthUnit, cssLengthInPixels } from "..
 import { Folder, NotebookPath, NOTEBOOK_PATH_RE, NotebookName, FolderPath, NotebookEntry } from "../shared/folder";
 import { Notebook, NotebookObject, NotebookWatcher, PageMargins } from "../shared/notebook";
 import {
-  NotebookChangeRequest, MoveCell, DeleteCell, ChangeNotebook, RequestId, NotebookRequest, OpenNotebook, CloseNotebook, InsertCell, DeleteStroke, InsertStroke, ResizeCell, TypesetFormula, TypesetText,
+  NotebookChangeRequest, MoveCell, DeleteCell, ChangeNotebook, RequestId, NotebookRequest, OpenNotebook, CloseNotebook, InsertCell, DeleteStroke, InsertStroke, ResizeCell, TypesetFormula, TypesetText, TypesetFigure,
 } from "../shared/client-requests";
 import {
-  NotebookUpdated, NotebookOpened, NotebookUpdate, CellInserted, CellDeleted, CellMoved, NotebookCollaboratorConnected, NotebookCollaboratorDisconnected, ServerResponse, StrokeInserted, StrokeDeleted, CellResized, FormulaTypeset, TextTypeset,
+  NotebookUpdated, NotebookOpened, NotebookUpdate, CellInserted, CellDeleted, CellMoved, NotebookCollaboratorConnected, NotebookCollaboratorDisconnected, ServerResponse, StrokeInserted, StrokeDeleted, CellResized, FormulaTypeset, TextTypeset, FigureTypeset,
 } from "../shared/server-responses";
 import { notebookChangeRequestSynopsis, notebookUpdateSynopsis } from "../shared/debug-synopsis";
 import { UserPermission } from "../shared/permissions";
@@ -55,6 +55,7 @@ import { FormulaCell } from "./server-cell/formula-cell";
 import { ServerSocket } from "./server-socket";
 import { createDirectory, deleteDirectory, FileName, readJsonFile, renameDirectory, writeJsonFile } from "../adapters/file-system";
 import { Permissions } from "./permissions";
+import { FigureCellObject } from "../shared/figure";
 
 // Types
 
@@ -550,6 +551,17 @@ export class ServerNotebook extends Notebook {
         const cellObject = this.getCellObject(cellId);
         const oldCssSize = deepCopy(cellObject.cssSize);
         const undoChangeRequest: ResizeCell = { type: 'resizeCell', cellId, cssSize: oldCssSize };
+        undoChangeRequests.unshift(undoChangeRequest);
+        break;
+      }
+      case 'typesetFigure': {
+        const { cellId, figure, strokeData } = request;
+
+        const update: FigureTypeset = { type: 'figureTypeset', cellId, figure, strokeData };
+        updates.push(update);
+
+        const cellObject = this.getCellObject<FigureCellObject>(cellId);
+        const undoChangeRequest: TypesetFigure = { type: 'typesetFigure', cellId, figure: cellObject.figure, strokeData: cellObject.strokeData };
         undoChangeRequests.unshift(undoChangeRequest);
         break;
       }

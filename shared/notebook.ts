@@ -22,6 +22,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 import { CellId, CellIndex, CellObject, CellPosition, CellRelativePosition } from "./cell";
 import { assert, assertFalse } from "./common";
 import { CssLength, CssSize } from "./css";
+import { FigureCellObject } from "./figure";
 import { NotebookPath } from "./folder";
 import { FormulaCellObject } from "./formula";
 import { NotebookUpdate } from "./server-responses";
@@ -152,6 +153,13 @@ export class Notebook {
         const cellObject = this.getCellObject(cellId);
         cellObject.cssSize.width = cssSize.width;
         cellObject.cssSize.height = cssSize.height;
+        break;
+      }
+      case 'figureTypeset': {
+        const { cellId, figure, strokeData } = update;
+        const cellObject = this.getCellObject<FigureCellObject>(cellId);
+        cellObject.figure = figure;
+        cellObject.strokeData = strokeData;
         break;
       }
       case 'formulaTypeset': {

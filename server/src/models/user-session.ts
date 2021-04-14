@@ -23,7 +23,7 @@ const debug = debug1(`server:${MODULE}`);
 
 import { randomBytes } from "crypto";
 
-import { deleteConfigFile, FileName, readConfigFile, writeConfigFile as writeConfigFileSync } from "../adapters/file-system";
+import { deleteConfigFile, FileName, readConfigFile, writeConfigFile } from "../adapters/file-system";
 
 import { assert, SessionToken } from "../shared/common";
 import { UserName } from "../shared/user";
@@ -106,17 +106,17 @@ export class UserSession {
     assert(had);
   }
 
-  // public static async save(): Promise<void> {
-  //   debug("Saving sessions file.");
-  //   const obj = this.persistentObject();
-  //   await writeConfigFile(SESSIONS_FILENAME, obj);
-  // }
-
-  public static saveSync(): void {
+  public static async save(): Promise<void> {
     debug("Saving sessions file.");
     const obj = this.persistentObject();
-    writeConfigFileSync(SESSIONS_FILENAME, obj);
+    await writeConfigFile(SESSIONS_FILENAME, obj);
   }
+
+  // public static saveSync(): void {
+  //   debug("Saving sessions file.");
+  //   const obj = this.persistentObject();
+  //   writeConfigFileSync(SESSIONS_FILENAME, obj);
+  // }
 
   // Public Class Event Handlers
 

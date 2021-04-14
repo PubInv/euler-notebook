@@ -40,14 +40,15 @@ import { assert, PlainText } from "../shared/common";
 import { MathMlMarkup } from "../shared/mathml";
 import { StrokeGroup } from "../shared/myscript-types";
 import { StrokeData } from "../shared/stylus";
+import { DiagramItemBlock } from "../shared/figure";
 
-import { BoundingBox, MathNode } from "./myscript-expression";
+import { BoundingBox, MathNode } from "./myscript-math";
 
 
 // Types
 
 type ContentType = 'Text'|'Math'|'Diagram'|'Raw Content'|'Text Document';
-type MimeType = 'application/mathml+xml' | 'application/vnd.myscript.jiix' | 'application/x-latex' | 'text/plain';
+type MimeType = 'application/mathml+xml' | 'application/vnd.myscript.jiix' | 'application/x-latex' | 'image/svg+xml' | 'text/plain';
 
 export interface ApiKeys {
   // This structure lives in ~/.euler-notebook/credentials.json under "myscript" key.
@@ -83,13 +84,22 @@ interface ExportConfiguration {
   jiix: JiixConfiguration;
 }
 
-export interface JiixMathBlock {
-  // See https://developer.myscript.com/docs/interactive-ink/1.3/reference/jiix/
-  type: 'Math';
+interface JiixBlockBase {
   id: string;
-  expressions: MathNode[];
   'bounding-box'?: BoundingBox;
   version: '2';
+}
+
+export interface JiixDiagramBlock extends JiixBlockBase {
+  // See https://developer.myscript.com/docs/interactive-ink/1.4/reference/jiix/
+  type: 'Diagram';
+  elements: DiagramItemBlock[];
+}
+
+export interface JiixMathBlock extends JiixBlockBase {
+  // See https://developer.myscript.com/docs/interactive-ink/1.4/reference/jiix/
+  type: 'Math';
+  expressions: MathNode[];
 }
 
 interface JiixConfiguration {
@@ -121,12 +131,17 @@ interface SolverConfiguration {
 
 // Constants
 
+const MYSCRIPT_BATCH_API_URL = 'https://webdemoapi.myscript.com/api/v4.0/iink/batch';
+
 const JIIX_MIME_TYPE = 'application/vnd.myscript.jiix';
 // const LATEX_MIME_TYPE = 'application/x-latex';
-const MATHML_PREFIX = "<math";
 const MATHML_MIME_TYPE = 'application/mathml+xml'; // application/mathml-presentation+xml';
 const PLAINTEXT_MIME_TYPE = 'text/plain';
-const MYSCRIPT_BATCH_API_URL = 'https://webdemoapi.myscript.com/api/v4.0/iink/batch';
+// const SVG_MIME_TYPE = 'image/svg+xml';
+
+const MATHML_PREFIX = "<math";
+// const SVG_PREFIX = "<svg";
+
 
 // Global Variables
 
@@ -138,14 +153,14 @@ export function initialize(apiKeys: ApiKeys): void {
   gApiKeys = apiKeys;
 }
 
-export async function postJiixRequest(strokeData: StrokeData): Promise<JiixMathBlock> {
-  debug(`Calling MyScript batch API for JIIX.`);
+export async function postJiixRequest<T extends JiixBlockBase>(contentType: ContentType, strokeData: StrokeData): Promise<T> {
+  debug(`Calling MyScript batch API for JIIX ${contentType}.`);
   // REVIEW: What to return if there aren't any strokes at all (e.g. user erased last stroke)?
   const strokeGroups: StrokeGroup[] = [{ strokes: strokeData.strokes }];
-  const batchRequest = batchRequestFromStrokes(strokeGroups, 'Math', JIIX_MIME_TYPE);
+  const batchRequest = batchRequestFromStrokes(strokeGroups, contentType, JIIX_MIME_TYPE);
   const bodyText = await postRequest(gApiKeys, JIIX_MIME_TYPE, batchRequest);
-  const jiix = <JiixMathBlock>JSON.parse(bodyText);
-  debug(`MyScript batch API recognized JIIX.`);
+  const jiix = <T>JSON.parse(bodyText);
+  assert(jiix.version == '2');
   return jiix;
 }
 
@@ -169,11 +184,21 @@ export async function postMmlRequest(strokeData: StrokeData): Promise<MathMlMark
   debug(`Calling MyScript batch API for MathML.`);
   const strokeGroups: StrokeGroup[] = [{ strokes: strokeData.strokes }];
   const batchRequest = batchRequestFromStrokes(strokeGroups, 'Math', MATHML_MIME_TYPE);
-  const mmlRaw = await postRequest<MathMlMarkup>(gApiKeys, MATHML_MIME_TYPE, batchRequest);
+  const mmlRaw = await postRequest(gApiKeys, MATHML_MIME_TYPE, batchRequest);
   const mml = <MathMlMarkup>mmlRaw.trim();
   assert(mml.startsWith(MATHML_PREFIX));
   return mml;
 }
+
+// export async function postSvgRequest(strokeData: StrokeData): Promise<SvgMarkup> {
+//   debug(`Calling MyScript batch API for SVG.`);
+//   const strokeGroups: StrokeGroup[] = [{ strokes: strokeData.strokes }];
+//   const batchRequest = batchRequestFromStrokes(strokeGroups, 'Diagram', SVG_MIME_TYPE);
+//   const svgRaw = await postRequest(gApiKeys, SVG_MIME_TYPE, batchRequest);
+//   const svg = <SvgMarkup>svgRaw.trim();
+//   assert(svg.startsWith(SVG_PREFIX));
+//   return svg;
+// }
 
 export async function postTextRequest(strokeData: StrokeData): Promise<PlainText> {
 
@@ -265,12 +290,12 @@ function computeHmac(keys: ApiKeys, body: string): string {
   return hex;
 }
 
-async function postRequest<T extends string>(keys: ApiKeys, accept: string, batchRequest: BatchRequest): Promise<T> {
+async function postRequest<T extends string>(keys: ApiKeys, mimeType: MimeType, batchRequest: BatchRequest): Promise<T> {
   const body = JSON.stringify(batchRequest);
   const hmac = computeHmac(keys, body);
   const headers = {
     // NOTE: application/json is the return type for errors.
-    Accept: `${accept},application/json`,
+    Accept: `${mimeType},application/json`,
     'Content-Type': "application/json",
     applicationKey: keys.applicationKey,
     hmac,

@@ -48,9 +48,10 @@ export class FigureCell extends ClientCell<FigureCellObject> {
   public onUpdate(update: NotebookUpdate, ownRequest: boolean): void {
     debug(`onUpdate ${notebookUpdateSynopsis(update)}`);
     super.onUpdate(update, ownRequest);
-    // switch (update.type) {
-    //   default: /* Nothing to do */ break;
-    // }
+
+    switch(update.type) {
+      case 'figureTypeset': this.refreshDisplay(); break;
+    }
   };
 
   // --- PRIVATE ---

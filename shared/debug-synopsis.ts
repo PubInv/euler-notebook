@@ -140,6 +140,7 @@ export function notebookUpdateSynopsis(update: NotebookUpdate): string {
     case 'cellInserted':   rval += ` ${cellSynopsis(update.cellObject)} after ${update.afterId}`; break;
     case 'cellMoved':      rval += ` C${update.cellId} after ${update.afterId}`; break;
     case 'cellResized':    rval += ` C${update.cellId} ${JSON.stringify(update.cssSize)}`; break;
+    case 'figureTypeset':  rval += ` C${update.cellId}`; break;
     case 'formulaTypeset': rval += ` C${update.cellId}`; break;
     case 'strokeInserted': rval += ` C${update.cellId} ${strokeSynopsis(update.stroke)}`; break;
     case 'strokeDeleted':  rval += ` C${update.cellId} S${update.strokeId}`; break;

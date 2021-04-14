@@ -73,6 +73,7 @@ export interface SuggestionObject {
 
 // Exported Functions
 
-export function renderBaseCell(obj: CellObject): SvgMarkup {
-  return <SvgMarkup>obj.strokeData.strokes.map(stroke=>convertStrokeToPath(obj.id, stroke)).join('\n')
+export function renderBaseCell(obj: CellObject, inheritedMarkup: SvgMarkup): SvgMarkup {
+  const strokeMarkup = <SvgMarkup>obj.strokeData.strokes.map(stroke=>convertStrokeToPath(obj.id, stroke)).join('\n');
+  return <SvgMarkup>(inheritedMarkup + strokeMarkup);
 }

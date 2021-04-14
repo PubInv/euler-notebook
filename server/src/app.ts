@@ -160,26 +160,23 @@ main().then(
 // Helper Functions
 
 async function asyncCleanupHandler(_signal: string): Promise<void> {
-  // WAS: await UserSession.save();
+  debug("Saving user session tokens.");
+  await UserSession.save();
+  debug("User session tokens saved.");
 }
 
 function cleanupHandler(exitCode: number|null, signal: string|null): boolean {
   // NOTE: Put all cleanup in asyncCleanupHandler unless it must be done for
   //       non-signal exits.
   if (signal) {
-    debug(`Cleanup handler called for signal: ${signal}`);
-
-    // Synchronous cleanup tasks
-    debug("Saving user session.");
-    UserSession.saveSync();
-
+    debug(`Node cleanup handler called for signal: ${signal}`);
     asyncCleanupHandler(signal).finally(()=>{ process.kill(process.pid, signal); })
     nodeCleanup.uninstall(); // don't call cleanup handler again
     return false;
   } else {
     // Process always exits after the cleanup handlers for non-signals.
     // We cannot do any asynchronous cleanup.
-    debug(`Cleanup handler called with exit code: ${exitCode}`);
+    debug(`Node cleanup handler called with exit code: ${exitCode}`);
     return true;
   }
 }

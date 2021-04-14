@@ -110,7 +110,7 @@ export class SuggestionPanel<O extends CellObject> extends HtmlElement<'div'> {
         const $svg = renderMathMlTreeToSvgElement(suggestion.formulaMathMlTree);
         spec.children = [ $svg ];
       } else {
-        assert(spec.html); // Must have either formulaMathMlTree or html.
+        assert(suggestion.html); // Must have either formulaMathMlTree or html.
         spec.html = suggestion.html!;
       }
       const $suggestion = $new<'div'>(spec);

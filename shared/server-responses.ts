@@ -26,6 +26,7 @@ import { CellId, CellObject, CellRelativePosition, SuggestionClass, SuggestionId
 import { RequestId, NotebookChangeRequest } from "./client-requests";
 import { ClientId, PlainText, SessionToken } from "./common";
 import { CssSize } from "./css";
+import { FigureObject } from "./figure";
 import { FolderObject, FolderPath, NotebookPath, FolderEntry, FolderName, NotebookEntry, NotebookName } from "./folder";
 import { FormulaObject } from "./formula";
 import { NotebookObject } from "./notebook";
@@ -180,6 +181,7 @@ export type NotebookUpdate =
               CellInserted |
               CellMoved |
               CellResized |
+              FigureTypeset |
               FormulaTypeset |
               StrokeInserted |
               StrokeDeleted |
@@ -202,6 +204,12 @@ export interface CellResized {
   type: 'cellResized';
   cellId: CellId;
   cssSize: CssSize;
+}
+export interface FigureTypeset {
+  type: 'figureTypeset';
+  cellId: CellId;
+  figure: FigureObject;
+  strokeData: StrokeData;
 }
 export interface FormulaTypeset {
   type: 'formulaTypeset';

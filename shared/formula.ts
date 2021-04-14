@@ -19,10 +19,10 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 // Requirements
 
-import { CellObject, CellType } from "./cell";
+import { CellObject, CellType, renderBaseCell } from "./cell";
 import { SvgMarkup } from "./common";
 import { convertLength, CssSize, pixelsFromCssLength } from "./css";
-import { MathMlTree } from "./mathml";
+import { EMPTY_MML_TREE, MathMlTree } from "./mathml";
 
 // Types
 
@@ -46,13 +46,14 @@ export interface FormulaObject {
 export const EMPTY_TEX_EXPRESSION = <TexExpression>'';
 export const EMPTY_WOLFRAM_EXPRESSION = <WolframExpression>'';
 
+export const EMPTY_FORMULA_OBJECT: FormulaObject = { mathMlTree: EMPTY_MML_TREE };
+
 // Exported Functions
 
 export function renderFormulaCell(obj: FormulaCellObject, formulaNumber: FormulaNumber): SvgMarkup {
-  let markup: SvgMarkup = <SvgMarkup>'';
   // TODO: formula markup itself.
-  markup += formulaNumberMarkup(formulaNumber, obj.cssSize);
-  return <SvgMarkup>markup;
+  const markup = formulaNumberMarkup(formulaNumber, obj.cssSize);
+  return renderBaseCell(obj, markup);
 }
 
 // Helper Functions

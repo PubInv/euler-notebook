@@ -468,6 +468,7 @@ export class ClientNotebook extends Notebook {
       }
 
       case 'cellResized':
+      case 'figureTypeset':
       case 'formulaTypeset':
       case 'strokeDeleted':
       case 'strokeInserted':
