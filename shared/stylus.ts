@@ -22,13 +22,13 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 import { CellId } from "./cell";
 import { ElementId, SvgMarkup } from "./common";
-import { Stroke as MyScriptStroke } from "./myscript-types";
+import { Stroke, StrokeId } from "./myscript-types";
 
 // Types
 
-type PathDAttribute = '{PathDAttribute}';
+export type { Stroke, StrokeId }
 
-export type StrokeId = number;
+type PathDAttribute = '{PathDAttribute}';
 
 export type StrokeRelativePosition = StrokeId | StrokePosition;
 
@@ -38,12 +38,8 @@ export enum StrokePosition {
 }
 
 export interface StrokeData {
-  nextId: StrokeId;
+  nextId: number;
   strokes: Stroke[];
-}
-
-export interface Stroke extends MyScriptStroke {
-  id: StrokeId;
 }
 
 // Constants
@@ -72,7 +68,7 @@ export function convertStrokeToPathShape(stroke: Stroke): PathDAttribute {
   return shape;
 }
 
-export function strokePathId(cellId: CellId, strokeId: StrokeId): ElementId {
+export function strokePathId(cellId: CellId, strokeId?: StrokeId): ElementId {
   return <ElementId>`c${cellId}s${strokeId}`;
 }
 

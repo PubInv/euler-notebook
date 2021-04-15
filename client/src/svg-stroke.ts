@@ -20,7 +20,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 // Requirements
 
 import { $newSvg } from "./dom";
-import { Stroke } from "./shared/stylus";
+import { Stroke, StrokeId } from "./shared/stylus";
 
 // Types
 
@@ -76,7 +76,7 @@ export class SvgStroke {
   private constructor($container: SVGSVGElement) {
     this.$path = $newSvg({ tag: 'path', appendTo: $container });
     this.pathData = '';
-    this.data = { id: 0, x: [], y: [], /* TODO: t: [], p: [], tx: [], ty: [] */};
+    this.data = { id: <StrokeId>'0', x: [], y: [], /* TODO: t: [], p: [], tx: [], ty: [] */};
   }
 
   // Private Instance Properties

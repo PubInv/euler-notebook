@@ -26,7 +26,7 @@ import { PlainText, SessionToken } from "./common";
 import { CssSize } from "./css";
 import { CellId, CellObject, CellRelativePosition, CellType } from "./cell";
 import { FolderPath, NotebookPath, FolderName, NotebookName, } from "./folder";
-import { Stroke, StrokeData, StrokeId } from "./stylus";
+import { Stroke, StrokeId, StrokeData } from "./stylus";
 import { UserName, UserPassword } from "./user";
 import { FormulaObject } from "./formula";
 import { FigureObject } from "./figure";

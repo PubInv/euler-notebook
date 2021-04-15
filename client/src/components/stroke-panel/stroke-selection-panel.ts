@@ -192,7 +192,7 @@ export class StrokeSelectionPanel extends SvgElement<'svg'> {
     if ($downElt && $downElt.tagName == 'path') {
       const match = STROKE_ID_RE.exec($downElt.id);
       if (match) {
-        const strokeId = parseInt(match[1], 10);
+        const strokeId = <StrokeId>match[1];
         this.setCapture(event.pointerId, pi, <SVGPathElement>$downElt, strokeId);
       }
     }

@@ -56,6 +56,7 @@ import { ServerSocket } from "./server-socket";
 import { createDirectory, deleteDirectory, FileName, readJsonFile, renameDirectory, writeJsonFile } from "../adapters/file-system";
 import { Permissions } from "./permissions";
 import { FigureCellObject } from "../shared/figure";
+import { StrokeId } from "../shared/stylus";
 
 // Types
 
@@ -514,7 +515,7 @@ export class ServerNotebook extends Notebook {
       case 'insertStroke': {
         const { cellId, stroke } = request;
         const cellObject = this.getCellObject(cellId);
-        stroke.id = cellObject.strokeData.nextId++;
+        stroke.id = <StrokeId>(cellObject.strokeData.nextId++).toString();
 
         const update: StrokeInserted = {
           type: 'strokeInserted',

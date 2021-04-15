@@ -47,6 +47,11 @@ import { BoundingBox, MathNode } from "./myscript-math";
 
 // Types
 
+// See:
+//  * https://developer.myscript.com/docs/interactive-ink/1.4/web/rest/architecture/
+//  * https://developer.myscript.com/docs/interactive-ink/1.4/web/reference/configuration-rest/
+//  * https://swaggerui.myscript.com
+
 type ContentType = 'Text'|'Math'|'Diagram'|'Raw Content'|'Text Document';
 type MimeType = 'application/mathml+xml' | 'application/vnd.myscript.jiix' | 'application/x-latex' | 'image/svg+xml' | 'text/plain';
 
@@ -59,11 +64,11 @@ export interface ApiKeys {
 interface BatchRequest {
   configuration?: Configuration;
   contentType: ContentType;
-  // conversionState?:;
-  // height?: number;
+  conversionState?: 'DIGITAL_EDIT'|'DIGITAL_PUBLISH';
+  height?: number;
   strokeGroups: StrokeGroup[];
-  // theme?: string;
-  // width?: number;
+  theme?: string;
+  width?: number;
   xDPI?: number;
   yDPI?: number;
 }
@@ -222,7 +227,6 @@ function batchRequestFromStrokes(strokeGroups: StrokeGroup[], contentType: Conte
   const rval: BatchRequest = {
     configuration: {
       math: {
-        // REVIEW: What does this mimeTypes declaration do?
         mimeTypes: [ mimeType ],
         // solver: {
         //   enable: true,
@@ -242,7 +246,7 @@ function batchRequestFromStrokes(strokeGroups: StrokeGroup[], contentType: Conte
       export: {
         'image-resolution': 300,
         jiix: {
-          'bounding-box': false,
+          'bounding-box': true,
           strokes: false,
           text: {
             chars: false,

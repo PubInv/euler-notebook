@@ -19,18 +19,21 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 // Exported Types
 
+type PointerType = 'PEN'|'TOUCH'|'ERASER';
+export type StrokeId = '{StrokeId}';
+
 export interface StrokeGroup {
-  // penStyle?: string;
-  // penStyleClasses?: string;
+  penStyle?: string;
+  penStyleClasses?: string;
   strokes: Stroke[];
 }
 
 export interface Stroke {
-  // id?: string;
-  // p?: number[];
-  // pointerId?: number;
-  // pointerType?: 'PEN'|'TOUCH'|'ERASER';
-  // t?: number[];
+  id: StrokeId; // Optional for MyScript but we are going to require it.
+  p?: number[];
+  pointerId?: number;
+  pointerType?: PointerType;
+  t?: number[];
   x: number[];
   y: number[];
 }

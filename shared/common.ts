@@ -60,6 +60,14 @@ export function assertFalse( message?: string): never {
   throw new Error(message || ASSERTION_FAILED_MSG);
 }
 
+export function chunkArray<T>(arr: T[], chunkSize: number): T[][] {
+  assert(chunkSize>0);
+  var rval = [];
+  for (let i=0, len=arr.length; i<len; i+=chunkSize)
+    rval.push(arr.slice(i,i+chunkSize));
+  return rval;
+}
+
 export function deepCopy<T>(data: T): T {
   return JSON.parse(JSON.stringify(data));
 }

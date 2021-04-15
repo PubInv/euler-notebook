@@ -29,7 +29,7 @@ import {
 } from './client-requests';
 import { FolderResponse, FolderUpdate, ServerResponse, NotebookResponse, NotebookUpdate, UserResponse,  SuggestionUpdates } from "./server-responses";
 import { NotebookObject } from "./notebook";
-import { Stroke } from "./stylus";
+import { Stroke } from "./myscript-types";
 
 // Constants
 
