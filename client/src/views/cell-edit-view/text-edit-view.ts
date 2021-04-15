@@ -47,7 +47,6 @@ export class TextEditView extends CellEditView<TextCellObject> {
 
   public constructor(notebookEditView: NotebookEditView, cell: TextCell) {
     debug(`Constructing: ${cellSynopsis(cell.obj)}`);
-
     super(notebookEditView, cell, <CssClass>'textCell');
   }
 
@@ -56,9 +55,9 @@ export class TextEditView extends CellEditView<TextCellObject> {
   public onUpdate(update: NotebookUpdate, ownRequest: boolean): void {
     debug(`onUpdate C${this.id} ${notebookUpdateSynopsis(update)}`);
     super.onUpdate(update, ownRequest);
-    // switch (update.type) {
-    //   default: /* Nothing to do */ break;
-    // }
+    switch(update.type) {
+      case 'textTypeset': this.refreshDisplay(); break;
+    }
   }
 
   // -- PRIVATE --

@@ -23,13 +23,12 @@ import * as debug1 from "debug";
 const debug = debug1('client:client-cell');
 
 import { CellId, CellObject, CellType } from "../../shared/cell";
-import { ElementId, escapeHtml, Html, SvgMarkup } from "../../shared/common";
-import { CssClass, CssSelector, CssSize } from "../../shared/css";
+import { assert, escapeHtml, Html, SvgMarkup } from "../../shared/common";
+import { CssSize } from "../../shared/css";
 import { cellBriefSynopsis, cellSynopsis, notebookUpdateSynopsis } from "../../shared/debug-synopsis";
 import { NotebookUpdate, SuggestionUpdates } from "../../shared/server-responses";
-import { Stroke, StrokeId, convertStrokeToPath, strokePathId } from "../../shared/stylus";
+import { Stroke, StrokeId } from "../../shared/stylus";
 
-import { $, $newSvg } from "../../dom";
 
 import { ClientNotebook } from "../client-notebook";
 import { NotebookChangeRequest } from "../../shared/client-requests";
@@ -43,12 +42,12 @@ export interface CellView {
 
 // Constants
 
-const CELL_SYMBOL_CLASS = new Map<CellType,CssClass>([
-  [ CellType.Figure, <CssClass>'figureCell' ],
-  [ CellType.Formula, <CssClass>'formulaCell' ],
-  [ CellType.Plot, <CssClass>'plotCell' ],
-  [ CellType.Text, <CssClass>'textCell' ],
-]);
+// const CELL_SYMBOL_CLASS = new Map<CellType,CssClass>([
+//   [ CellType.Figure, <CssClass>'figureCell' ],
+//   [ CellType.Formula, <CssClass>'formulaCell' ],
+//   [ CellType.Plot, <CssClass>'plotCell' ],
+//   [ CellType.Text, <CssClass>'textCell' ],
+// ]);
 
 // Exported Class
 
@@ -60,15 +59,6 @@ export abstract class ClientCell<O extends CellObject> {
     this.notebook = notebook;
     this.obj = obj;
     this.views = new Set();
-
-    // TODO: Delete SVG symbol from parent when cell is removed.
-    const $svgSymbol = $newSvg({
-      tag: 'symbol',
-      id: <ElementId>`n${notebook.id}c${obj.id}`,
-      class: CELL_SYMBOL_CLASS.get(obj.type),
-    });
-    $(document, <CssSelector>'#svgContent>defs').append($svgSymbol);
-    this.$svgSymbol = $svgSymbol;
   }
 
   // Public Instance Properties
@@ -80,6 +70,12 @@ export abstract class ClientCell<O extends CellObject> {
 
   public get id(): CellId { return this.obj.id; }
   public get type(): CellType { return this.obj.type; }
+
+  public /* overridable */ renderToSvg(_x: number, _y: number, innerMarkup?: SvgMarkup): SvgMarkup {
+    assert(innerMarkup);
+    // TODO: offset by x, y by wrapping in g element with translate.
+    return innerMarkup!;
+  }
 
   public toDebugHtml(): Html {
     return <Html>`<div>
@@ -130,29 +126,6 @@ export abstract class ClientCell<O extends CellObject> {
 
   public onUpdate(update: NotebookUpdate, ownRequest: boolean): void {
     debug(`onUpdate C${this.id} ${notebookUpdateSynopsis(update)}`);
-
-    switch(update.type) {
-      case 'cellDeleted': {
-        this.$svgSymbol.remove();
-        break;
-      }
-      case 'strokeDeleted': {
-        const { strokeId } = update;
-        const elementId = strokePathId(this.id, strokeId);
-        $(this.$svgSymbol, `#${elementId}`).remove();
-        break;
-      }
-      case 'strokeInserted': {
-        const { stroke } = update;
-        const svgMarkup = convertStrokeToPath(this.id, stroke);
-        const $svg = $newSvg<'svg'>({ tag: 'svg', html: svgMarkup });
-        while ($svg.childNodes.length > 0) {
-          this.$svgSymbol.appendChild($svg.childNodes[0]);
-        }
-        break;
-      }
-    }
-
     for (const view of this.views) {
       view.onUpdate(update, ownRequest);
     }
@@ -163,17 +136,10 @@ export abstract class ClientCell<O extends CellObject> {
   // Private Instance Properties
 
   protected views: Set<CellView>;
-  protected $svgSymbol: SVGSymbolElement;
 
   // Private Instance Property Functions
 
-  protected abstract render(): SvgMarkup;
-
   // Private Instance Methods
 
-  protected refreshDisplay(): void {
-    const svgMarkup = this.render();
-    this.$svgSymbol.innerHTML = svgMarkup;
-  }
 }
 

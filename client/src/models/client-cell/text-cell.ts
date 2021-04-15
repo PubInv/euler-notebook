@@ -19,17 +19,15 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 // Requirements
 
-import * as debug1 from "debug";
-const debug = debug1('client:figure-cell');
+// import * as debug1 from "debug";
+// const debug = debug1('client:figure-cell');
 
+import { SvgMarkup } from "../../shared/common";
 import { renderTextCell, TextCellObject } from "../../shared/text";
-import { NotebookUpdate } from "../../shared/server-responses";
 
 import { ClientNotebook } from "../client-notebook";
 
 import { ClientCell } from "./index";
-import { notebookUpdateSynopsis } from "../../shared/debug-synopsis";
-import { SvgMarkup } from "../../shared/common";
 
 // Exported Class
 
@@ -39,27 +37,25 @@ export class TextCell extends ClientCell<TextCellObject> {
 
   public constructor(notebook: ClientNotebook, obj: TextCellObject) {
     super(notebook, obj);
-    this.refreshDisplay();
+  }
+
+  // Public Instance Property Functions
+
+  public renderToSvg(x: number, y: number): SvgMarkup {
+    const innerMarkup = renderTextCell(this.obj);
+    return super.renderToSvg(x, y, innerMarkup);
   }
 
   // Public Instance Methods
 
   // Public Instance Event Handlers
 
-  public onUpdate(update: NotebookUpdate, ownRequest: boolean): void {
-    debug(`onUpdate ${notebookUpdateSynopsis(update)}`);
-    super.onUpdate(update, ownRequest);
-
-    switch(update.type) {
-      case 'textTypeset': this.refreshDisplay(); break;
-    }
-  }
+  // public /* override */onUpdate(update: NotebookUpdate, ownRequest: boolean): void {
+  //   debug(`onUpdate ${notebookUpdateSynopsis(update)}`);
+  //   super.onUpdate(update, ownRequest);
+  // }
 
   // --- PRIVATE ---
-
-  // Private Instance Property Functions
-
-  protected render(): SvgMarkup { return renderTextCell(this.obj); }
 
 }
 

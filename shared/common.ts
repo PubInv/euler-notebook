@@ -50,6 +50,9 @@ export interface PromiseResolver<T> {
 
 const ASSERTION_FAILED_MSG = "Assertion failed.";
 
+// REVIEW: Should this be "<svg ...></svg>"?
+export const EMPTY_SVG_MARKUP = <SvgMarkup>'';
+
 // Exported Functions
 
 export function assert(value: any, message?: string): void {

@@ -29,10 +29,6 @@ mixin homeScreen
       input(type='submit', value="Log in")
       div.errorMessage
 
-mixin svgContent
-  svg(id="svgContent", style="display:none")
-    defs
-
 doctype html
 html(lang='en')
   head
@@ -49,5 +45,4 @@ html(lang='en')
     script(type='module', src='/javascripts/app.js')
   body
     +svgIcons
-    +svgContent
     +homeScreen

@@ -54,9 +54,9 @@ export class FigureEditView extends CellEditView<FigureCellObject> {
   public onUpdate(update: NotebookUpdate, ownRequest: boolean): void {
     debug(`onUpdate: C${this.id} ${notebookUpdateSynopsis(update)}`);
     super.onUpdate(update, ownRequest);
-    // switch (update.type) {
-    //   default: /* Nothing to do */ break;
-    // }
+    switch(update.type) {
+      case 'figureTypeset': this.refreshDisplay(); break;
+    }
   }
 
   // -- PRIVATE --

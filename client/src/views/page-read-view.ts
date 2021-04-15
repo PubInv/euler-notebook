@@ -23,7 +23,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 // const debug = debug1('client:cell-read-view');
 
 import { SvgMarkup } from "../shared/common";
-import { CssClass } from "../shared/css";
+import { CssClass, pixelsFromCssLength } from "../shared/css";
 
 import { ClientNotebook } from "../models/client-notebook";
 import { ClientPage } from "../models/client-page";
@@ -40,13 +40,25 @@ export class PageReadView extends SvgElement<'svg'> {
     notebook: ClientNotebook,
     page: ClientPage,
   ) {
+
+    // Construct the SVG markup for the page.
+    // TODO: Just the cells of this page.
+    const x = pixelsFromCssLength(notebook.margins.left);
+    let y = pixelsFromCssLength(notebook.margins.top);
+    let pageMarkup: SvgMarkup = <SvgMarkup>'';
+    for (const cell of notebook.cells()) {
+      const cellMarkup = cell.renderToSvg(x, y);
+      pageMarkup += cellMarkup;
+      y += pixelsFromCssLength(cell.obj.cssSize.height);
+    }
+
     super({
       tag: 'svg',
       class: <CssClass>'page',
       attrs: {
         viewBox: viewBoxFromCssSize(page.cssSize),
       },
-      html: <SvgMarkup>`<use href="#n${notebook.id}p${page.index}" x="0" y="0"/>`,
+      html: pageMarkup,
       // listeners: {
       //   click: e=>this.onPageClicked(e),
       //   dblclick: e=>this.onPageDoubleClicked(e),

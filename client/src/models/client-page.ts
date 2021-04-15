@@ -22,11 +22,9 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 // import * as debug1 from "debug";
 // const debug = debug1('client:client-page');
 
-import { ElementId, SvgMarkup, } from "../shared/common";
-import { CssSelector, pixelsFromCssLength, CssSize } from "../shared/css";
+import { CssSize } from "../shared/css";
 import { CellIndex, PageIndex } from "../shared/cell";
 
-import { $, $newSvg } from "../dom";
 
 import { ClientNotebook } from "./client-notebook";
 
@@ -46,26 +44,6 @@ export class ClientPage {
   ) {
     this.notebook = notebook;
     this.index = pageIndex;
-
-    // Construct the SVG markup for the page.
-    // TODO: Just the cells of this page.
-    const x = pixelsFromCssLength(notebook.margins.left);
-    let y = pixelsFromCssLength(notebook.margins.top);
-    let pageMarkup: SvgMarkup = <SvgMarkup>'';
-    for (const cell of notebook.cells()) {
-      const cellMarkup: SvgMarkup = <SvgMarkup>`<use href="#n${notebook.id}c${cell.id}" x="${x}" y="${y}"/>\n`;
-      pageMarkup += cellMarkup; // <SvgMarkup>(pageMarkup + cellMarkup);
-      y += pixelsFromCssLength(cell.obj.cssSize.height);
-    }
-
-    const $svgSymbol = $newSvg({
-      tag: 'symbol',
-      id: <ElementId>`n${notebook.id}p${pageIndex}`,
-      html: pageMarkup,
-    });
-    $(document, <CssSelector>'#svgContent>defs').append($svgSymbol);
-    // this.$svgSymbol = $svgSymbol;
-
   }
 
   // Public Instance Properties
@@ -82,7 +60,6 @@ export class ClientPage {
 
   // Private Instance Properties
 
-  // private $svgSymbol: SVGSymbolElement;
   private notebook: ClientNotebook;
   // private pageNo: PageNumber;
 }

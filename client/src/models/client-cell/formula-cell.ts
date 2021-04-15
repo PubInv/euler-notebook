@@ -19,17 +19,15 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 // Requirements
 
-import * as debug1 from "debug";
-const debug = debug1('client:formula-cell');
+// import * as debug1 from "debug";
+// const debug = debug1('client:formula-cell');
 
+import { SvgMarkup } from "../../shared/common";
 import { FormulaCellObject, FormulaNumber, renderFormulaCell } from "../../shared/formula";
-import { NotebookUpdate } from "../../shared/server-responses";
 
 import { ClientNotebook } from "../client-notebook";
 
 import { ClientCell } from "./index";
-import { notebookUpdateSynopsis } from "../../shared/debug-synopsis";
-import { SvgMarkup } from "../../shared/common";
 import { renderMathMlTreeToSvgElement } from "../../adapters/mathjax";
 
 // Exported Class
@@ -43,40 +41,32 @@ export class FormulaCell extends ClientCell<FormulaCellObject> {
 
     // TODO:
     this.formulaNumber = obj.id;
-    this.refreshDisplay();
   }
 
   // Public Instance Properties
 
   public formulaNumber: FormulaNumber;
 
+  // Public Instance Property Functions
+
+  public renderToSvg(x: number, y: number): SvgMarkup {
+    const $svg = renderMathMlTreeToSvgElement(this.obj.formula.mathMlTree);
+    const formulaMarkup = $svg.outerHTML;
+    const otherMarkup = renderFormulaCell(this.obj, this.formulaNumber);
+    const innerMarkup = <SvgMarkup>(otherMarkup + formulaMarkup);
+    return super.renderToSvg(x, y, innerMarkup);
+  }
+
   // Public Instance Methods
 
   // Public Instance Event Handlers
 
-  public onUpdate(update: NotebookUpdate, ownRequest: boolean): void {
-    debug(`onUpdate ${notebookUpdateSynopsis(update)}`);
-    super.onUpdate(update, ownRequest);
-
-    switch(update.type) {
-      case 'formulaTypeset': this.refreshDisplay(); break;
-    }
-  }
+  // public /* override */ onUpdate(update: NotebookUpdate, ownRequest: boolean): void {
+  //   debug(`onUpdate ${notebookUpdateSynopsis(update)}`);
+  //   super.onUpdate(update, ownRequest);
+  // }
 
   // --- PRIVATE ---
 
-  // Private Instance Property Functions
-
-  protected /* override */ refreshDisplay(): void {
-    const svgMarkup = this.render();
-    this.$svgSymbol.innerHTML = svgMarkup;
-
-    const $svg = renderMathMlTreeToSvgElement(this.obj.formula.mathMlTree);
-    this.$svgSymbol.appendChild($svg);
-  }
-
-  protected render(): SvgMarkup {
-    return renderFormulaCell(this.obj, this.formulaNumber);
-  }
 
 }

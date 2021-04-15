@@ -23,22 +23,23 @@ import * as debug1 from "debug";
 const MODULE = __filename.split(/[/\\]/).slice(-1)[0].slice(0,-3);
 const debug = debug1(`server:${MODULE}`);
 
-import { StrokeData } from "../shared/stylus";
-import { assert, assertFalse, PlainText, zeroPad } from "../shared/common";
+import { assert, assertFalse, PlainText, SvgMarkup, zeroPad } from "../shared/common";
+import { LengthInPixels } from "../shared/css";
+import { FigureObject } from "../shared/figure";
 import {
   Math, MathMlTree, Mn, Mi, Mrow, Msub, Msup, Msubsup, Mo, Mfrac,
   Msqrt, Munder, Munderover, Mover
   // serializeTreeToMathMlMarkup,
 } from "../shared/mathml";
+import { StrokeData } from "../shared/stylus";
 
 import {
   UNICODE_MIDDLE_DOT, UNICODE_MULTIPLICATION_SIGN, UNICODE_DIVISION_SIGN,
   MathNode, OperatorNode, RelationNode,
 } from "../adapters/myscript-math";
-import {  JiixDiagramBlock, JiixMathBlock, postJiixRequest, /* postMmlRequest, */ postTextRequest } from "../adapters/myscript";
+import {  JiixMathBlock, postJiixRequest, postSvgRequest, postTextRequest } from "../adapters/myscript";
 
 import { ServerFormula } from "../models/server-formula";
-import { FigureObject } from "../shared/figure";
 
 // Types
 
@@ -66,25 +67,58 @@ export interface TextRecognitionResults {
   alternatives: TextRecognitionAlternative[];
 }
 
+// Constants
+
+const SVG_START_TAG_RE = /^<svg[^>]*>\s*/;
+const SVG_END_TAG_RE = /\s*<\/svg>\s*$/;
 // Exported Functions
 
-export async function recognizeFigure(strokeData: StrokeData): Promise<FigureRecognitionResults> {
-  debug(`Recognizing figure.`);
-  const jiix = await postJiixRequest<JiixDiagramBlock>('Diagram', strokeData);
-  console.log(JSON.stringify(jiix, null, 2));
 
+export async function recognizeFigure(
+  width: LengthInPixels,
+  height: LengthInPixels,
+  strokeData: StrokeData,
+): Promise<FigureRecognitionResults> {
+
+  debug(`Recognizing figure.`);
+
+  // LATER: Get the JIIX version for a "content"-level view of the diagram.
+  //        Unfortunately you can't get the JIIX and SVG back in one call, so you have to call twice.
+  //        GraphML is another possible high-level format.
+  // const jiix = await postJiixRequest<JiixDiagramBlock>('Diagram', strokeData);
+  // console.log(JSON.stringify(jiix, null, 2));
+
+  console.log("RECOGNIZING DIAGRAM AS SVG:");
+  const svgMarkupRaw = await postSvgRequest(width, height, strokeData);
+  console.log(svgMarkupRaw);
+
+  // HACK ALERT: This is fragile matching regular expressions.
+  //             But not as heavyweight as parsing XML...
+  const matchStart = SVG_START_TAG_RE.exec(svgMarkupRaw)!;
+  assert(matchStart);
+  const startIndex = matchStart[0].length;
+  const matchEnd = SVG_END_TAG_RE.exec(svgMarkupRaw)!;
+  assert(matchEnd);
+  const endIndex = -matchEnd[0].length;
+  const svgInnerMarkup = svgMarkupRaw.slice(startIndex, endIndex);
+  const svgMarkup = <SvgMarkup>`<g transform="scale(4 4)">${svgInnerMarkup}</g>`;
   const alternative: FigureRecognitionAlternative = {
     figureObject: {
-      elements: jiix.elements
+      // content: jiix.elements,
+      presentation: svgMarkup,
     }
   };
   return { alternatives: [ alternative ] };
 }
 
-export async function recognizeFormula(strokeData: StrokeData): Promise<FormulaRecognitionResults> {
+export async function recognizeFormula(
+  width: LengthInPixels,
+  height: LengthInPixels,
+  strokeData: StrokeData,
+): Promise<FormulaRecognitionResults> {
   debug(`Recognizing formula.`);
 
-  const jiix = await postJiixRequest<JiixMathBlock>('Math', strokeData);
+  const jiix = await postJiixRequest<JiixMathBlock>(width, height, 'Math', strokeData);
   console.log(JSON.stringify(jiix, null, 2));
 
   // const mml = await postMmlRequest(strokeData);
@@ -103,9 +137,13 @@ export async function recognizeFormula(strokeData: StrokeData): Promise<FormulaR
   return { alternatives };
 }
 
-export async function recognizeText(strokeData: StrokeData): Promise<TextRecognitionResults> {
+export async function recognizeText(
+  width: LengthInPixels,
+  height: LengthInPixels,
+  strokeData: StrokeData,
+): Promise<TextRecognitionResults> {
   debug(`Recognizing text.`);
-  const text = await postTextRequest(strokeData);
+  const text = await postTextRequest(width, height, strokeData);
   return { alternatives: [ { text } ] };
 }
 

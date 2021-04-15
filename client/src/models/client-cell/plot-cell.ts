@@ -19,17 +19,15 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 // Requirements
 
-import * as debug1 from "debug";
-const debug = debug1('client:plot-cell');
+// import * as debug1 from "debug";
+// const debug = debug1('client:plot-cell');
 
+import { SvgMarkup } from "../../shared/common";
 import { PlotCellObject, renderPlotCell } from "../../shared/plot";
-import { NotebookUpdate } from "../../shared/server-responses";
 
 import { ClientNotebook } from "../client-notebook";
 
 import { ClientCell } from "./index";
-import { notebookUpdateSynopsis } from "../../shared/debug-synopsis";
-import { SvgMarkup } from "../../shared/common";
 
 // Exported Class
 
@@ -39,23 +37,23 @@ export class PlotCell extends ClientCell<PlotCellObject> {
 
   public constructor(notebook: ClientNotebook, obj: PlotCellObject) {
     super(notebook, obj);
-    this.refreshDisplay();
+  }
+
+  // Public Instance Property Functions
+
+  public renderToSvg(x: number, y: number): SvgMarkup {
+    const innerMarkup = renderPlotCell(this.obj);
+    return super.renderToSvg(x, y, innerMarkup);
   }
 
   // Public Instance Methods
 
-  public onUpdate(update: NotebookUpdate, ownRequest: boolean): void {
-    debug(`onUpdate ${notebookUpdateSynopsis(update)}`);
-    super.onUpdate(update, ownRequest);
-  };
+  // public /* override */ onUpdate(update: NotebookUpdate, ownRequest: boolean): void {
+  //   debug(`onUpdate ${notebookUpdateSynopsis(update)}`);
+  //   super.onUpdate(update, ownRequest);
+  // };
 
   // --- PRIVATE ---
-
-  // Private Instance Property Functions
-
-  protected render(): SvgMarkup {
-    return renderPlotCell(this.obj);
-  }
 
 }
 

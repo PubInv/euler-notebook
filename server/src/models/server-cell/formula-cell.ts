@@ -24,7 +24,7 @@ const MODULE = __filename.split(/[/\\]/).slice(-1)[0].slice(0,-3);
 const debug = debug1(`server:${MODULE}`);
 
 import { deepCopy, PlainText, SvgMarkup } from "../../shared/common";
-import { CssLength } from "../../shared/css";
+import { CssLength, pixelsFromCssLength } from "../../shared/css";
 import { CellId, CellSource, CellType, SuggestionClass, SuggestionId, SuggestionObject } from "../../shared/cell";
 import { EMPTY_FORMULA_OBJECT, FormulaCellObject, FormulaNumber, renderFormulaCell } from "../../shared/formula";
 import { NotebookSuggestionsUpdated, SuggestionUpdates } from "../../shared/server-responses";
@@ -142,7 +142,9 @@ export class FormulaCell extends ServerCell<FormulaCellObject> {
 
   private async recognizeStrokes(): Promise<void> {
     debug(`Recognizing strokes`);
-    const results = await recognizeFormula(this.obj.strokeData);
+    const width = pixelsFromCssLength(this.cssSize.width);
+    const height = pixelsFromCssLength(this.cssSize.height);
+    const results = await recognizeFormula(width, height, this.obj.strokeData);
     const addSuggestions: SuggestionObject[] = results.alternatives.map((alternative, index)=>{
       const id = <SuggestionId>`recognizedFormula${index}`;
       const data: NotebookChangeRequest[] = [{

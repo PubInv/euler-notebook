@@ -24,7 +24,7 @@ const MODULE = __filename.split(/[/\\]/).slice(-1)[0].slice(0,-3);
 const debug = debug1(`server:${MODULE}`);
 
 import { deepCopy, PlainText, escapeHtml, Html, SvgMarkup } from "../../shared/common";
-import { CssLength } from "../../shared/css";
+import { CssLength, pixelsFromCssLength } from "../../shared/css";
 import { CellId, CellSource, CellType, SuggestionClass, SuggestionId, SuggestionObject } from "../../shared/cell";
 import { TextCellObject, renderTextCell } from "../../shared/text";
 import { EMPTY_STROKE_DATA } from "../../shared/stylus";
@@ -84,7 +84,10 @@ export class TextCell extends ServerCell<TextCellObject> {
   // Private Instance Methods
 
   private async recognizeStrokes(): Promise<void> {
-    const results = await recognizeText(this.obj.strokeData)
+    debug(`Recognizing strokes`);
+    const width = pixelsFromCssLength(this.cssSize.width);
+    const height = pixelsFromCssLength(this.cssSize.height);
+   const results = await recognizeText(width, height, this.obj.strokeData)
     const addSuggestions: SuggestionObject[] = results.alternatives.map((alternative, index)=>{
       const id = <SuggestionId>`recognizedText${index}`;
       const data: NotebookChangeRequest[] = [{

@@ -58,9 +58,9 @@ export class FormulaEditView extends CellEditView<FormulaCellObject> {
   public onUpdate(update: NotebookUpdate, ownRequest: boolean): boolean {
     debug(`onUpdate C${this.id} ${notebookUpdateSynopsis(update)}`);
     super.onUpdate(update, ownRequest);
-    // switch (update.type) {
-    //   default: /* Nothing to do */ break;
-    // }
+    switch(update.type) {
+      case 'formulaTypeset': this.refreshDisplay(); break;
+    }
     return false;
   }
 

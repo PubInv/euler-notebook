@@ -25,16 +25,16 @@ import * as debug1 from "debug";
 const debug = debug1('client:cell-edit-view');
 
 import { CellObject, CellId } from "../../shared/cell";
-import { assert, Html, ElementId, SvgMarkup } from "../../shared/common";
+import { assert, Html, ElementId } from "../../shared/common";
 import { CssClass, CssLength, CssSize, LengthInPixels, cssLengthInPixels } from "../../shared/css";
 import { CellDeleted, NotebookUpdate, SuggestionUpdates } from "../../shared/server-responses";
-import { Stroke, StrokeId } from "../../shared/stylus";
+import { convertStrokeToPath, Stroke, StrokeId, strokePathId } from "../../shared/stylus";
 import { notebookUpdateSynopsis } from "../../shared/debug-synopsis";
 
 // import { DebugConsole } from "../../components/debug-console";
 import { HtmlElement } from "../../html-element";
 import {
-  $new, $newSvg, CLOSE_X_ENTITY, CELL_ICONS, svgIconReferenceMarkup, HtmlElementOrSpecification,
+  $new, $newSvg, CLOSE_X_ENTITY, CELL_ICONS, svgIconReferenceMarkup, HtmlElementOrSpecification, $,
 } from "../../dom";
 import { showError } from "../../error-handler";
 
@@ -113,10 +113,27 @@ export abstract class CellEditView<O extends CellObject> extends HtmlElement<'di
   public onUpdate(update: NotebookUpdate, ownRequest: boolean): void {
     debug(`onUpdate ${notebookUpdateSynopsis(update)}`);
     switch (update.type) {
-      case 'cellResized':
+      case 'cellResized': {
         this.$content.style.height = update.cssSize.height;
         this.$content.style.width = update.cssSize.width;
         break;
+      }
+      case 'strokeDeleted': {
+        const { strokeId } = update;
+        const elementId = strokePathId(this.id, strokeId);
+        $(this.$displaySvg, `#${elementId}`).remove();
+        break;
+      }
+      case 'strokeInserted': {
+        const { stroke } = update;
+        const svgMarkup = convertStrokeToPath(this.id, stroke);
+        const $svg = $newSvg<'svg'>({ tag: 'svg', html: svgMarkup });
+        while ($svg.childNodes.length > 0) {
+          this.$displaySvg.appendChild($svg.childNodes[0]);
+        }
+        break;
+      }
+
       default: /* Nothing to do. */ break;
     }
 
@@ -194,7 +211,6 @@ export abstract class CellEditView<O extends CellObject> extends HtmlElement<'di
       tag: 'svg',
       attrs: { height: "100%", width: "100%" },
       class: <CssClass>'displaySvg',
-      html: <SvgMarkup>`<use href="#n${cell.notebook.id}c${cell.id}"/>`,
     });
 
     const $content = $new<'div'>({
@@ -249,6 +265,7 @@ export abstract class CellEditView<O extends CellObject> extends HtmlElement<'di
     });
 
     this.$content = $content;
+    this.$displaySvg = $displaySvg;
     this.$main = $main;
     this.suggestionPanel = suggestionPanel;
     this.cell = cell;
@@ -266,11 +283,14 @@ export abstract class CellEditView<O extends CellObject> extends HtmlElement<'di
     $content.append(this.strokePanel.$elt);
 
     cell.addView(this);
+
+    this.refreshDisplay();
   }
 
   // Private Instance Properties
 
   protected $content: HTMLDivElement;
+  private $displaySvg: SVGSVGElement;
   private $main: HTMLDivElement;
   private resizingInitialHeight?: LengthInPixels;
   protected suggestionPanel: SuggestionPanel<O>;
@@ -280,6 +300,11 @@ export abstract class CellEditView<O extends CellObject> extends HtmlElement<'di
   // Private Instance Property Functions
 
   // Private Instance Methods
+
+  protected refreshDisplay(): void {
+    const svgMarkup = this.cell.renderToSvg(0, 0);
+    this.$displaySvg.innerHTML = svgMarkup;
+  }
 
   // Private Event Handlers
 

@@ -36,11 +36,11 @@ const HmacSHA512 = require('crypto-js/hmac-sha512');
 import fetch, { Response } from "node-fetch";
 import { logErrorMessage } from "../error-handler";
 
-import { assert, PlainText } from "../shared/common";
+import { assert, PlainText, SvgMarkup } from "../shared/common";
+import { LengthInPixels } from "../shared/css";
 import { MathMlMarkup } from "../shared/mathml";
-import { StrokeGroup } from "../shared/myscript-types";
+import { StrokeGroup, DiagramItemBlock } from "../shared/myscript-types";
 import { StrokeData } from "../shared/stylus";
-import { DiagramItemBlock } from "../shared/figure";
 
 import { BoundingBox, MathNode } from "./myscript-math";
 
@@ -64,7 +64,7 @@ export interface ApiKeys {
 interface BatchRequest {
   configuration?: Configuration;
   contentType: ContentType;
-  conversionState?: 'DIGITAL_EDIT'|'DIGITAL_PUBLISH';
+  conversionState?: 'DIGITAL_EDIT';
   height?: number;
   strokeGroups: StrokeGroup[];
   theme?: string;
@@ -85,8 +85,14 @@ interface Configuration {
 // }
 
 interface ExportConfiguration {
-  'image-resolution': number;
+  'image-resolution'?: number;
+  image?: ImageConfiguration;
   jiix: JiixConfiguration;
+}
+
+interface ImageConfiguration {
+  guides?: boolean;
+  viewport: BoundingBox;
 }
 
 interface JiixBlockBase {
@@ -142,10 +148,10 @@ const JIIX_MIME_TYPE = 'application/vnd.myscript.jiix';
 // const LATEX_MIME_TYPE = 'application/x-latex';
 const MATHML_MIME_TYPE = 'application/mathml+xml'; // application/mathml-presentation+xml';
 const PLAINTEXT_MIME_TYPE = 'text/plain';
-// const SVG_MIME_TYPE = 'image/svg+xml';
+const SVG_MIME_TYPE = 'image/svg+xml';
 
 const MATHML_PREFIX = "<math";
-// const SVG_PREFIX = "<svg";
+const SVG_PREFIX = "<svg";
 
 
 // Global Variables
@@ -158,11 +164,16 @@ export function initialize(apiKeys: ApiKeys): void {
   gApiKeys = apiKeys;
 }
 
-export async function postJiixRequest<T extends JiixBlockBase>(contentType: ContentType, strokeData: StrokeData): Promise<T> {
+export async function postJiixRequest<T extends JiixBlockBase>(
+  width: LengthInPixels,
+  height: LengthInPixels,
+  contentType: ContentType,
+  strokeData: StrokeData,
+): Promise<T> {
   debug(`Calling MyScript batch API for JIIX ${contentType}.`);
   // REVIEW: What to return if there aren't any strokes at all (e.g. user erased last stroke)?
   const strokeGroups: StrokeGroup[] = [{ strokes: strokeData.strokes }];
-  const batchRequest = batchRequestFromStrokes(strokeGroups, contentType, JIIX_MIME_TYPE);
+  const batchRequest = batchRequestFromStrokes(width, height, strokeGroups, contentType, JIIX_MIME_TYPE);
   const bodyText = await postRequest(gApiKeys, JIIX_MIME_TYPE, batchRequest);
   const jiix = <T>JSON.parse(bodyText);
   assert(jiix.version == '2');
@@ -185,27 +196,39 @@ export async function postJiixRequest<T extends JiixBlockBase>(contentType: Cont
 //   return rval;
 // }
 
-export async function postMmlRequest(strokeData: StrokeData): Promise<MathMlMarkup> {
+export async function postMmlRequest(
+  width: LengthInPixels,
+  height: LengthInPixels,
+  strokeData: StrokeData,
+): Promise<MathMlMarkup> {
   debug(`Calling MyScript batch API for MathML.`);
   const strokeGroups: StrokeGroup[] = [{ strokes: strokeData.strokes }];
-  const batchRequest = batchRequestFromStrokes(strokeGroups, 'Math', MATHML_MIME_TYPE);
+  const batchRequest = batchRequestFromStrokes(width, height, strokeGroups, 'Math', MATHML_MIME_TYPE);
   const mmlRaw = await postRequest(gApiKeys, MATHML_MIME_TYPE, batchRequest);
   const mml = <MathMlMarkup>mmlRaw.trim();
   assert(mml.startsWith(MATHML_PREFIX));
   return mml;
 }
 
-// export async function postSvgRequest(strokeData: StrokeData): Promise<SvgMarkup> {
-//   debug(`Calling MyScript batch API for SVG.`);
-//   const strokeGroups: StrokeGroup[] = [{ strokes: strokeData.strokes }];
-//   const batchRequest = batchRequestFromStrokes(strokeGroups, 'Diagram', SVG_MIME_TYPE);
-//   const svgRaw = await postRequest(gApiKeys, SVG_MIME_TYPE, batchRequest);
-//   const svg = <SvgMarkup>svgRaw.trim();
-//   assert(svg.startsWith(SVG_PREFIX));
-//   return svg;
-// }
+export async function postSvgRequest(
+  width: LengthInPixels,
+  height: LengthInPixels,
+  strokeData: StrokeData,
+): Promise<SvgMarkup> {
+  debug(`Calling MyScript batch API for SVG.`);
+  const strokeGroups: StrokeGroup[] = [{ strokes: strokeData.strokes }];
+  const batchRequest = batchRequestFromStrokes(width, height, strokeGroups, 'Diagram', SVG_MIME_TYPE);
+  const svgRaw = await postRequest(gApiKeys, SVG_MIME_TYPE, batchRequest);
+  const svg = <SvgMarkup>svgRaw.trim();
+  assert(svg.startsWith(SVG_PREFIX));
+  return svg;
+}
 
-export async function postTextRequest(strokeData: StrokeData): Promise<PlainText> {
+export async function postTextRequest(
+  width: LengthInPixels,
+  height: LengthInPixels,
+  strokeData: StrokeData,
+): Promise<PlainText> {
 
   // If there aren't any strokes yet, return an empty TeX expression.
   if (strokeData.strokes.length == 0) {
@@ -214,7 +237,7 @@ export async function postTextRequest(strokeData: StrokeData): Promise<PlainText
 
   debug(`Calling MyScript batch API for Text.`);
   const strokeGroups: StrokeGroup[] = [{ strokes: strokeData.strokes }];
-  const batchRequest = batchRequestFromStrokes(strokeGroups, 'Text', PLAINTEXT_MIME_TYPE);
+  const batchRequest = batchRequestFromStrokes(width, height, strokeGroups, 'Text', PLAINTEXT_MIME_TYPE);
 
   const rval = await postRequest(gApiKeys, PLAINTEXT_MIME_TYPE, batchRequest);
   debug(`MyScript batch API recognized plain text: ${rval}`);
@@ -223,9 +246,32 @@ export async function postTextRequest(strokeData: StrokeData): Promise<PlainText
 
 // Helper Functions
 
-function batchRequestFromStrokes(strokeGroups: StrokeGroup[], contentType: ContentType, mimeType: MimeType): BatchRequest {
+function batchRequestFromStrokes(
+  width: LengthInPixels,
+  height: LengthInPixels,
+  strokeGroups: StrokeGroup[],
+  contentType: ContentType,
+  mimeType: MimeType
+): BatchRequest {
   const rval: BatchRequest = {
     configuration: {
+      export: {
+        // 'image-resolution': 300,
+        // image: {
+        //   viewport: {
+        //     x: 0, y: 0, width, height
+        //   }
+        // },
+        jiix: {
+          'bounding-box': true,
+          strokes: false,
+          text: {
+            chars: false,
+            words: true
+          }
+        }
+      },
+      lang: 'en_US',
       math: {
         mimeTypes: [ mimeType ],
         // solver: {
@@ -242,21 +288,12 @@ function batchRequestFromStrokes(strokeGroups: StrokeGroup[], contentType: Conte
         //   top: 10
         // }
       },
-      lang: 'en_US',
-      export: {
-        'image-resolution': 300,
-        jiix: {
-          'bounding-box': true,
-          strokes: false,
-          text: {
-            chars: false,
-            words: true
-          }
-        }
-      }
     },
     contentType,
+    conversionState: 'DIGITAL_EDIT',
+    height,
     strokeGroups,
+    width,
     xDPI: 96,
     yDPI: 96,
   };
@@ -295,6 +332,8 @@ function computeHmac(keys: ApiKeys, body: string): string {
 }
 
 async function postRequest<T extends string>(keys: ApiKeys, mimeType: MimeType, batchRequest: BatchRequest): Promise<T> {
+  console.log("MYSCRIPT REQUEST");
+  console.log(JSON.stringify({ ...batchRequest, strokeGroups: null }, null, 2));
   const body = JSON.stringify(batchRequest);
   const hmac = computeHmac(keys, body);
   const headers = {

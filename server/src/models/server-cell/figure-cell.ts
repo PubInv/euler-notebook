@@ -24,7 +24,7 @@ const MODULE = __filename.split(/[/\\]/).slice(-1)[0].slice(0,-3);
 const debug = debug1(`server:${MODULE}`);
 
 import { deepCopy, Html, PlainText, SvgMarkup } from "../../shared/common";
-import { CssLength } from "../../shared/css";
+import { CssLength, pixelsFromCssLength } from "../../shared/css";
 import { CellId, CellSource, CellType, SuggestionClass, SuggestionId, SuggestionObject } from "../../shared/cell";
 import { EMPTY_FIGURE_OBJECT, FigureCellObject, renderFigureCell } from "../../shared/figure";
 import { EMPTY_STROKE_DATA } from "../../shared/stylus";
@@ -82,7 +82,9 @@ export class FigureCell extends ServerCell<FigureCellObject> {
 
   private async recognizeStrokes(): Promise<void> {
     debug(`Recognizing strokes`);
-    const results = await recognizeFigure(this.obj.strokeData);
+    const width = pixelsFromCssLength(this.cssSize.width);
+    const height = pixelsFromCssLength(this.cssSize.height);
+    const results = await recognizeFigure(width, height, this.obj.strokeData);
     const addSuggestions: SuggestionObject[] = results.alternatives.map((alternative, index)=>{
       const id = <SuggestionId>`recognizedFigure${index}`;
       const data: NotebookChangeRequest[] = [{
