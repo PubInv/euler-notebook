@@ -21,7 +21,7 @@ import * as debug1 from "debug";
 const debug = debug1('client:mathjax');
 
 import { assert, BoundingBox } from "../shared/common";
-import { CssLength, CssLengthMetrics, LengthInPixels, unroundedPixelsFromCssLength } from "../shared/css";
+import { CssLength, CssLengthMetrics, LengthInPixels, cssLengthInPixels } from "../shared/css";
 import { parseViewBoxAttribute, SvgMarkup, ViewBoxAttribute } from "../shared/svg";
 import { MathMlMarkup, MathMlTree, serializeTreeToMathMlMarkup } from "../shared/mathml";
 import { FormulaTypesetter, TypesettingResults } from "../shared/formula";
@@ -98,20 +98,16 @@ export class MathJaxTypesetter implements FormulaTypesetter {
 
     const widthAttr = <CssLength>$svg.getAttribute('width')!;
     assert(widthAttr);
-    const width = unroundedPixelsFromCssLength(widthAttr, CSS_LENGTH_METRICS)
+    const width = cssLengthInPixels(widthAttr, CSS_LENGTH_METRICS)
     const heightAttr = <CssLength>$svg.getAttribute('height')!;
     assert(heightAttr);
-    const height = unroundedPixelsFromCssLength(heightAttr, CSS_LENGTH_METRICS);
+    const height = cssLengthInPixels(heightAttr, CSS_LENGTH_METRICS);
     const viewBoxAttr = <ViewBoxAttribute>$svg.getAttribute('viewBox');
     const viewBox = parseViewBoxAttribute(viewBoxAttr);
-    console.dir($svg);
-    console.dir({ width, height });
-    console.dir(viewBox);
-    console.log(`SVG aspect ratio: ${width/height}`);
-    console.log(`VB aspect ratio: ${viewBox.width/viewBox.height}`);
+
     const scale = width/viewBox.width;
     // REVIEW: Not sure why we can't put both transforms onto one <g> element.
-    //         But to get this to work we need to nest them.
+    //         But to get this to work I needed to nest them.
     const transform1 = `translate(${-viewBox.x} ${-viewBox.y})`;
     const transform2 = `scale(${scale})`;
     const svgMarkup = <SvgMarkup>`<g transform="${transform2}"><g transform="${transform1}">${$svg.innerHTML}</g></g>`;
@@ -119,10 +115,7 @@ export class MathJaxTypesetter implements FormulaTypesetter {
     // REVIEW: Can we get the bounding box more directly from $svg?
     const boundingBox: BoundingBox = { x: 0, y: 0, width, height };
 
-    const rval: TypesettingResults = {
-      svgMarkup,
-      boundingBox,
-    }
+    const rval: TypesettingResults = { svgMarkup, boundingBox };
     return rval;
   }
 

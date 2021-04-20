@@ -72,34 +72,36 @@ const LENGTH_CONVERSION: LengthConversion = {
 
 // Exported Functions
 
-export function convertLength(length: number, unitIn: CssLengthUnit, unitOut: CssLengthUnit, metrics?: CssLengthMetrics): number {
-  const ratio = lengthConversionRatio(unitIn, unitOut, metrics);
-  return length * ratio;
+export function convertCssLength(cssLength: CssLength, newUnit: CssLengthUnit, metrics?: CssLengthMetrics): CssLength {
+  const [ oldLength, oldUnit ] = splitCssLength(cssLength);
+  const newLength = convertLength(oldLength, oldUnit, newUnit, metrics);
+  return joinCssLength(newLength, newUnit);
 }
 
-export function cssLengthInPixels(length: number, unit: CssLengthUnit): CssLength {
-  const lengthInPixels = Math.round(convertLength(length, unit, 'px'));
-  return <CssLength>`${lengthInPixels}px`;
-}
-
-export function cssSizeInPixels(width: LengthInPixels, height: LengthInPixels, unit: CssLengthUnit): CssSize {
-  return {
-    width: cssLengthInPixels(width, unit),
-    height: cssLengthInPixels(height, unit),
-  };
-}
-
-export function pixelsFromCssLength(cssLength: CssLength, metrics?: CssLengthMetrics): LengthInPixels {
-  return Math.round(unroundedPixelsFromCssLength(cssLength, metrics));
-}
-
-export function unroundedPixelsFromCssLength(cssLength: CssLength, metrics?: CssLengthMetrics): LengthInPixels {
+export function cssLengthInPixels(cssLength: CssLength, metrics?: CssLengthMetrics): LengthInPixels {
+  // NOTE: Depending on your application, you may need to round (or floor or ceil) the result.
   if (cssLength == <CssLength>"0") { return 0; }
   const [ length, unitIn ] = splitCssLength(cssLength);
   return convertLength(length, unitIn, 'px', metrics);
 }
 
+export function cssSizeFromPixels(width: LengthInPixels, height: LengthInPixels): CssSize {
+  return {
+    width: joinCssLength(width, 'px'),
+    height: joinCssLength(height, 'px'),
+  };
+}
+
+export function joinCssLength(length: number, unit: CssLengthUnit): CssLength {
+  return <CssLength>`${length}${unit}`;
+}
+
 // Helper Functions
+
+function convertLength(length: number, unitIn: CssLengthUnit, unitOut: CssLengthUnit, metrics?: CssLengthMetrics): number {
+  const ratio = lengthConversionRatio(unitIn, unitOut, metrics);
+  return length * ratio;
+}
 
 function emExFactor(unit: CssLengthUnit, metrics?: CssLengthMetrics): { factor: number, unit: CssLengthUnit } {
   let factor: number;
@@ -115,10 +117,11 @@ function emExFactor(unit: CssLengthUnit, metrics?: CssLengthMetrics): { factor: 
 function lengthConversionRatio(unitIn: CssLengthUnit, unitOut: CssLengthUnit, metrics?: CssLengthMetrics): number {
   let multiplier, divisor: number;
   ({ factor: multiplier, unit: unitIn } = emExFactor(unitIn, metrics));
-  ({ factor: divisor, unit: unitOut } = emExFactor(unitIn, metrics));
+  ({ factor: divisor, unit: unitOut } = emExFactor(unitOut, metrics));
   const conversionFactor = (unitIn!=unitOut ? LENGTH_CONVERSION[unitIn][unitOut]! : 1);
   assert(conversionFactor, `No CSS conversion factor for ${unitIn}->${unitOut}`);
-  return conversionFactor*multiplier/divisor;
+  const ratio = conversionFactor*multiplier/divisor;
+  return ratio;
 }
 
 function splitCssLength(cssLength: CssLength): [ number, CssLengthUnit ] {

@@ -71,7 +71,6 @@ export abstract class ClientCell<O extends CellObject> {
 
   public get id(): CellId { return this.obj.id; }
   public get type(): CellType { return this.obj.type; }
-  //public get widthInPixels(): LengthInPixels { return pixelsFromCssLength(this.obj.cssSize.width); }
 
   public /* overridable */ renderToSvg(_x: number, _y: number, innerMarkup?: SvgMarkup): SvgMarkup {
     assert(innerMarkup);

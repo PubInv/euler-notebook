@@ -37,7 +37,6 @@ import { DebugPopup } from "./debug-popup";
 import { ReferencePanel } from "./reference-panel";
 import { SearchPanel } from "./search-panel";
 import { Sidebar } from "./sidebar";
-import { Tools } from "./tools";
 import { appInstance } from "../../app";
 
 // Types
@@ -68,7 +67,6 @@ export class NotebookEditScreen extends Screen implements NotebookView {
 
         this.editView = new NotebookEditView(this, notebook);
         this.sidebar = new Sidebar(this);
-        // TODO: this.tools = new Tools(this);
         this.referencePanel = new ReferencePanel(/* this */);
         this.searchPanel = new SearchPanel(this);
         this.debugPopup = new DebugPopup(this);
@@ -88,7 +86,6 @@ export class NotebookEditScreen extends Screen implements NotebookView {
   public searchPanel!: SearchPanel;
   public referencePanel!: ReferencePanel;
   public sidebar!: Sidebar;
-  public tools!: Tools;
   public editView!: NotebookEditView;
 
   // Public Instance Methods
@@ -129,7 +126,6 @@ export class NotebookEditScreen extends Screen implements NotebookView {
   public onClosed(reason?: string): void {
     this.sidebar.destroy();
     this.editView.destroy();
-    this.tools.destroy();
     this.debugPopup.destroy();
     this.displayErrorMessage(<Html>`Server closed notebook <tt>${this.notebook.path}</tt>: ${reason}`);
   }

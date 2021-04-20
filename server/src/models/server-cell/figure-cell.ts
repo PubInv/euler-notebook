@@ -24,7 +24,7 @@ const MODULE = __filename.split(/[/\\]/).slice(-1)[0].slice(0,-3);
 const debug = debug1(`server:${MODULE}`);
 
 import { deepCopy, PlainText } from "../../shared/common";
-import { CssLength, pixelsFromCssLength } from "../../shared/css";
+import { cssLengthInPixels } from "../../shared/css";
 import { CellId, CellSource, CellType, SuggestionClass, SuggestionId, SuggestionObject } from "../../shared/cell";
 import { EMPTY_FIGURE_OBJECT, FigureCellObject, renderFigureCell } from "../../shared/figure";
 import { EMPTY_STROKE_DATA } from "../../shared/stylus";
@@ -36,10 +36,9 @@ import { ServerCell } from "./index";
 import { recognizeFigure } from "../../components/handwriting-recognizer";
 import { NotebookChangeRequest } from "../../shared/client-requests";
 import { NotebookSuggestionsUpdated, SuggestionUpdates } from "../../shared/server-responses";
+import { FIGURE_CELL_HEIGHT } from "../../shared/dimensions";
 
 // Constants
-
-const DEFAULT_HEIGHT = <CssLength>"3in";
 
 const TYPESET_FIGURE_SUGGESTION_CLASS = <SuggestionClass>'typesetFigure';
 
@@ -53,7 +52,7 @@ export class FigureCell extends ServerCell<FigureCellObject> {
     const rval: FigureCellObject = {
       id,
       type: CellType.Figure,
-      cssSize: this.initialCellSize(notebook, DEFAULT_HEIGHT),
+      cssSize: this.initialCellSize(notebook, FIGURE_CELL_HEIGHT),
       figure: deepCopy(EMPTY_FIGURE_OBJECT),
       inputText: <PlainText>"",
       source,
@@ -83,8 +82,8 @@ export class FigureCell extends ServerCell<FigureCellObject> {
 
   private async recognizeStrokes(): Promise<void> {
     debug(`Recognizing strokes`);
-    const width = pixelsFromCssLength(this.cssSize.width);
-    const height = pixelsFromCssLength(this.cssSize.height);
+    const width = cssLengthInPixels(this.cssSize.width);
+    const height = cssLengthInPixels(this.cssSize.height);
     const results = await recognizeFigure(width, height, this.obj.strokeData);
     const addSuggestions: SuggestionObject[] = results.alternatives.map((alternative, index)=>{
       const id = <SuggestionId>`recognizedFigure${index}`;

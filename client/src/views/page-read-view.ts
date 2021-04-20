@@ -23,12 +23,11 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 // const debug = debug1('client:cell-read-view');
 
 import { SvgMarkup } from "../shared/svg";
-import { CssClass, pixelsFromCssLength } from "../shared/css";
+import { CssClass, cssLengthInPixels, CssSize } from "../shared/css";
 
 import { ClientNotebook } from "../models/client-notebook";
 import { ClientPage } from "../models/client-page";
 import { SvgElement } from "../svg-element";
-import { viewBoxFromCssSize } from "../dom";
 
 // Exported Class
 
@@ -43,13 +42,13 @@ export class PageReadView extends SvgElement<'svg'> {
 
     // Construct the SVG markup for the page.
     // TODO: Just the cells of this page.
-    const x = pixelsFromCssLength(notebook.margins.left);
-    let y = pixelsFromCssLength(notebook.margins.top);
+    const x = cssLengthInPixels(notebook.margins.left);
+    let y = cssLengthInPixels(notebook.margins.top);
     let pageMarkup: SvgMarkup = <SvgMarkup>'';
     for (const cell of notebook.cells()) {
       const cellMarkup = cell.renderToSvg(x, y);
       pageMarkup += cellMarkup;
-      y += pixelsFromCssLength(cell.obj.cssSize.height);
+      y += cssLengthInPixels(cell.obj.cssSize.height);
     }
 
     super({
@@ -94,4 +93,12 @@ export class PageReadView extends SvgElement<'svg'> {
   //   notImplementedError("NotebookReadView onPageDoubleCLicked");
   // }
 
+}
+
+// Helper Functions
+
+function viewBoxFromCssSize(cssSize: CssSize): string {
+  const width = cssLengthInPixels(cssSize.width);
+  const height = cssLengthInPixels(cssSize.height);
+  return `0 0 ${Math.round(width)} ${Math.round(height)}`;
 }

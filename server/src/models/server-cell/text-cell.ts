@@ -24,7 +24,7 @@ const MODULE = __filename.split(/[/\\]/).slice(-1)[0].slice(0,-3);
 const debug = debug1(`server:${MODULE}`);
 
 import { deepCopy, PlainText, escapeHtml, Html } from "../../shared/common";
-import { CssLength, pixelsFromCssLength } from "../../shared/css";
+import { cssLengthInPixels } from "../../shared/css";
 import { CellId, CellSource, CellType, SuggestionClass, SuggestionId, SuggestionObject } from "../../shared/cell";
 import { TextCellObject, renderTextCell } from "../../shared/text";
 import { EMPTY_STROKE_DATA } from "../../shared/stylus";
@@ -38,12 +38,11 @@ import { ServerCell } from "./index";
 import { NotebookSuggestionsUpdated, SuggestionUpdates } from "../../shared/server-responses";
 
 import { NotebookChangeRequest } from "../../shared/client-requests";
+import { TEXT_CELL_HEIGHT } from "../../shared/dimensions";
 
 // Constants
 
-const DEFAULT_HEIGHT = <CssLength>"1in";
 const TYPESET_TEXT_SUGGESTION_CLASS = <SuggestionClass>'typesetText';
-
 
 // Exported Class
 
@@ -55,7 +54,7 @@ export class TextCell extends ServerCell<TextCellObject> {
     const rval: TextCellObject = {
       id,
       type: CellType.Text,
-      cssSize: this.initialCellSize(notebook, DEFAULT_HEIGHT),
+      cssSize: this.initialCellSize(notebook, TEXT_CELL_HEIGHT),
       inputText: <PlainText>"",
       source,
       strokeData: deepCopy(EMPTY_STROKE_DATA),
@@ -86,8 +85,8 @@ export class TextCell extends ServerCell<TextCellObject> {
 
   private async recognizeStrokes(): Promise<void> {
     debug(`Recognizing strokes`);
-    const width = pixelsFromCssLength(this.cssSize.width);
-    const height = pixelsFromCssLength(this.cssSize.height);
+    const width = cssLengthInPixels(this.cssSize.width);
+    const height = cssLengthInPixels(this.cssSize.height);
    const results = await recognizeText(width, height, this.obj.strokeData)
     const addSuggestions: SuggestionObject[] = results.alternatives.map((alternative, index)=>{
       const id = <SuggestionId>`recognizedText${index}`;

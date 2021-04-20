@@ -26,7 +26,7 @@ const debug = debug1('client:cell-edit-view');
 
 import { CellObject, CellId } from "../../shared/cell";
 import { assert, Html, ElementId } from "../../shared/common";
-import { CssClass, CssLength, CssSize, LengthInPixels, cssLengthInPixels } from "../../shared/css";
+import { CssClass, CssLength, CssSize, LengthInPixels, joinCssLength } from "../../shared/css";
 import { CellDeleted, NotebookUpdate, SuggestionUpdates } from "../../shared/server-responses";
 import { convertStrokeToPath, Stroke, StrokeId, strokePathId } from "../../shared/stylus";
 import { notebookUpdateSynopsis } from "../../shared/debug-synopsis";
@@ -38,7 +38,6 @@ import {
 } from "../../dom";
 import { showError } from "../../error-handler";
 
-import { Tools } from "../../screens/notebook-edit-screen/tools";
 import { CellView, ClientCell } from "../../models/client-cell";
 import { StrokePanel, StrokePanelCallbacks, StylusMode } from "../../components/stroke-panel";
 
@@ -87,11 +86,6 @@ export abstract class CellEditView<O extends CellObject> extends HtmlElement<'di
 
   // Public Instance Methods
 
-  public renderTools(tools: Tools): void {
-    tools.clear();
-    tools.render(this.id);
-  }
-
   public scrollIntoView(): void {
     this.$elt.scrollIntoView();
   }
@@ -104,7 +98,7 @@ export abstract class CellEditView<O extends CellObject> extends HtmlElement<'di
     this.$elt.classList.remove('selected');
   }
 
-  // Overridable ClientNotebookWatcher Methods
+  // CellView Methods
 
   public onSuggestionsUpdate(update: SuggestionUpdates, ownRequest: boolean): void {
     this.suggestionPanel.onSuggestionsUpdate(update, ownRequest);
@@ -116,6 +110,7 @@ export abstract class CellEditView<O extends CellObject> extends HtmlElement<'di
       case 'cellResized': {
         this.$content.style.height = update.cssSize.height;
         this.$content.style.width = update.cssSize.width;
+        this.refreshDisplay();
         break;
       }
       case 'strokeDeleted': {
@@ -186,14 +181,14 @@ export abstract class CellEditView<O extends CellObject> extends HtmlElement<'di
     const rightMarginChildren: HtmlElementOrSpecification[] = [
       {
         tag: 'button',
-        attrs: { tabindex: -1 },
         class: <CssClass>'iconButton',
+        attrs: { tabindex: -1 },
         html: svgIconReferenceMarkup('iconMonstrInfo6'),
         syncButtonHandler: (e: MouseEvent)=>this.onSuggestionsButtonClicked(e),
       }, {
         tag: 'button',
-        attrs: { tabindex: -1 },
         classes:[ <CssClass>'deleteButton', <CssClass>'entityButton' ],
+        attrs: { tabindex: -1 },
         html: CLOSE_X_ENTITY,
         asyncButtonHandler: e=>this.onDeleteButtonClicked(e),
       }
@@ -209,8 +204,8 @@ export abstract class CellEditView<O extends CellObject> extends HtmlElement<'di
 
     const $displaySvg = $newSvg<'svg'>({
       tag: 'svg',
-      attrs: { height: "100%", width: "100%" },
       class: <CssClass>'displaySvg',
+      attrs: { height: "100%", width: "100%" },
     });
 
     const $content = $new<'div'>({
@@ -421,7 +416,7 @@ export abstract class CellEditView<O extends CellObject> extends HtmlElement<'di
     delete this.resizingInitialHeight;
 
     const width = this.cell.obj.cssSize.width;
-    const height = cssLengthInPixels(newHeightInPixels, 'px');
+    const height = joinCssLength(newHeightInPixels, 'px');
     const cssSize: CssSize = { width, height };
     // LATER: Some sort of visual indication that the resize request is outstanding.
     this.cell.resizeRequest(cssSize)

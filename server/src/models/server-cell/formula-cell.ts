@@ -24,7 +24,7 @@ const MODULE = __filename.split(/[/\\]/).slice(-1)[0].slice(0,-3);
 const debug = debug1(`server:${MODULE}`);
 
 import { deepCopy, PlainText } from "../../shared/common";
-import { CssLength, pixelsFromCssLength } from "../../shared/css";
+import { cssLengthInPixels } from "../../shared/css";
 import { CellId, CellSource, CellType, SuggestionClass, SuggestionId, SuggestionObject } from "../../shared/cell";
 import { NotebookChangeRequest } from "../../shared/client-requests";
 import { EMPTY_FORMULA_OBJECT, FormulaCellObject, FormulaNumber, renderFormulaCell } from "../../shared/formula";
@@ -40,10 +40,9 @@ import { ServerNotebook } from "../server-notebook";
 import { ServerFormula } from "../server-formula";
 
 import { ServerCell } from "./index";
+import { FORMULA_CELL_HEIGHT } from "../../shared/dimensions";
 
 // Constants
-
-const DEFAULT_HEIGHT = <CssLength>"1in";
 
 // const PLOT_FORMULA_SUGGESTION_CLASS = <SuggestionClass>'plotFormula';
 const TYPESET_FORMULA_SUGGESTION_CLASS = <SuggestionClass>'typesetFormula';
@@ -58,7 +57,7 @@ export class FormulaCell extends ServerCell<FormulaCellObject> {
     const rval: FormulaCellObject = {
       id,
       type: CellType.Formula,
-      cssSize: this.initialCellSize(notebook, DEFAULT_HEIGHT),
+      cssSize: this.initialCellSize(notebook, FORMULA_CELL_HEIGHT),
       inputText: <PlainText>"",
       formula: deepCopy(EMPTY_FORMULA_OBJECT),
       source,
@@ -145,8 +144,8 @@ export class FormulaCell extends ServerCell<FormulaCellObject> {
 
   private async recognizeStrokes(): Promise<void> {
     debug(`Recognizing strokes`);
-    const width = pixelsFromCssLength(this.cssSize.width);
-    const height = pixelsFromCssLength(this.cssSize.height);
+    const width = cssLengthInPixels(this.cssSize.width);
+    const height = cssLengthInPixels(this.cssSize.height);
     const results = await recognizeFormula(width, height, this.obj.strokeData);
     const addSuggestions: SuggestionObject[] = results.alternatives.map((alternative, index)=>{
       const id = <SuggestionId>`recognizedFormula${index}`;

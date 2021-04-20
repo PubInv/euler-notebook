@@ -20,7 +20,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 // Requirements
 
 import { AbsoluteUrl, assert, ElementId, Html, RelativeUrl } from "./shared/common";
-import { CssClass, CssSelector, CssSize, pixelsFromCssLength } from "./shared/css";
+import { CssClass, CssSelector } from "./shared/css";
 import { SvgMarkup } from "./shared/svg";
 import { showError, monitorPromise } from "./error-handler";
 import { CellType } from "./shared/cell";
@@ -321,12 +321,6 @@ export function addSyncEventListener<E extends Event>(target: EventTarget, type:
 
 export function svgIconReferenceMarkup(id: SvgIconId): SvgMarkup {
   return <SvgMarkup>`<svg class="icon"><use href="#${id}"/></svg>`
-}
-
-export function viewBoxFromCssSize(cssSize: CssSize): string {
-  const width = pixelsFromCssLength(cssSize.width);
-  const height = pixelsFromCssLength(cssSize.height);
-  return `0 0 ${width} ${height}`;
 }
 
 // HELPER FUNCTIONS

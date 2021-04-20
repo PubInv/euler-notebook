@@ -49,7 +49,6 @@ export class FormulaEditView extends CellEditView<FormulaCellObject> {
 
   public constructor(notebookEditView: NotebookEditView, cell: FormulaCell) {
     debug(`Creating instance: style ${cell.obj.id}`);
-
     super(notebookEditView, cell, <CssClass>'formulaCell');
   }
 
@@ -69,10 +68,6 @@ export class FormulaEditView extends CellEditView<FormulaCellObject> {
   // Private Instance Properties
 
   // Private Instance Property Functions
-
-  // private get formulaCell(): FormulaCell {
-  //   return <FormulaCell>this.cell;
-  // }
 
   // Private Instance Methods
 

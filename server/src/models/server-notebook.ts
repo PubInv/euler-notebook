@@ -32,7 +32,8 @@ const debug = debug1(`server:${MODULE}`);
 
 import { CellObject, CellSource, CellId, CellType, CellRelativePosition } from "../shared/cell";
 import { assert, assertFalse, deepCopy, ExpectedError, Html, Milliseconds } from "../shared/common";
-import { CssLength, cssSizeInPixels, CssLengthUnit, cssLengthInPixels } from "../shared/css";
+import { CssLength, CssSize, convertCssLength } from "../shared/css";
+import { LEFT_MARGIN, TOP_MARGIN, RIGHT_MARGIN, BOTTOM_MARGIN, PAGE_HEIGHT, PAGE_WIDTH } from "../shared/dimensions";
 import { Folder, NotebookPath, NOTEBOOK_PATH_RE, NotebookName, FolderPath, NotebookEntry } from "../shared/folder";
 import { Notebook, NotebookObject, NotebookWatcher, PageMargins } from "../shared/notebook";
 import {
@@ -95,8 +96,16 @@ interface PersistentServerNotebookObject {
 
 // Constants
 
-const LETTER_PAGE_SIZE = cssSizeInPixels(8.5, 11, 'in');
-const DEFAULT_LETTER_MARGINS = marginsInPixels(1, 1, 1, 1, 'in');
+const LETTER_PAGE_SIZE: CssSize = {
+  width: convertCssLength(PAGE_WIDTH, 'px'),
+  height: convertCssLength(PAGE_HEIGHT, 'px'),
+};
+const DEFAULT_LETTER_MARGINS: PageMargins = {
+  top: convertCssLength(TOP_MARGIN, 'px'),
+  right: convertCssLength(RIGHT_MARGIN, 'px'),
+  bottom: convertCssLength(BOTTOM_MARGIN, 'px'),
+  left: convertCssLength(LEFT_MARGIN, 'px'),
+};
 
 // IMPORTANT: We have not yet implemented automatic upgrading of notebooks to new format versions.
 //            At this point, if you change this number, then users will get an error opening their
@@ -812,11 +821,3 @@ export function notebookPath(path: FolderPath, name: NotebookName): NotebookPath
 
 // Helper Functions
 
-export function marginsInPixels(top: number, right: number, bottom: number, left: number, unit: CssLengthUnit = 'px'): PageMargins {
-  return {
-    top: cssLengthInPixels(top, unit),
-    right: cssLengthInPixels(right, unit),
-    bottom: cssLengthInPixels(bottom, unit),
-    left: cssLengthInPixels(left, unit),
-  };
-}

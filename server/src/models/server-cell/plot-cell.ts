@@ -24,7 +24,6 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 // const debug = debug1(`server:${MODULE}`);
 
 import { deepCopy, PlainText } from "../../shared/common";
-import { CssLength } from "../../shared/css";
 import { CellId, CellType } from "../../shared/cell";
 import { PlotCellObject, renderPlotCell } from "../../shared/plot";
 import { EMPTY_STROKE_DATA } from "../../shared/stylus";
@@ -36,6 +35,7 @@ import { ServerCell } from "./index";
 import { plot } from "../../components/formula-plotter";
 import { FormulaSymbol } from "../../shared/formula";
 import { ServerFormula } from "../server-formula";
+import { PLOT_CELL_HEIGHT } from "../../shared/dimensions";
 // import { plotUnivariate } from "../adapters/wolframscript";
 // import { WolframExpression } from "../shared/formula";
 
@@ -47,8 +47,6 @@ interface PlotFormulaReturnValue {
 }
 
 // Constants
-
-const DEFAULT_HEIGHT = <CssLength>"3in";
 
 // Exported Class
 
@@ -63,7 +61,7 @@ export class PlotCell extends ServerCell<PlotCellObject> {
     const cellObject: PlotCellObject = {
       id: 0,
       type: CellType.Plot,
-      cssSize: this.initialCellSize(notebook, DEFAULT_HEIGHT),
+      cssSize: this.initialCellSize(notebook, PLOT_CELL_HEIGHT),
       inputText: <PlainText>"", // REVIEW: Plain text representation of plot parameters?
       source: 'USER',
       strokeData: deepCopy(EMPTY_STROKE_DATA),

@@ -21,7 +21,8 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 import { BoundingBox } from "./common";
 import { CellObject, CellType, renderBaseCell } from "./cell";
-import { convertLength, CssSize, LengthInPixels, pixelsFromCssLength, PIXELS_PER_INCH } from "./css";
+import { CssSize, LengthInPixels, cssLengthInPixels } from "./css";
+import { FORMULA_INDENT, FORMULA_NUMBER_INDENT } from "./dimensions";
 import { EMPTY_MML_TREE, MathMlTree } from "./mathml";
 import { SvgMarkup } from "./svg";
 
@@ -58,7 +59,8 @@ export const EMPTY_WOLFRAM_EXPRESSION = <WolframExpression>'';
 
 export const EMPTY_FORMULA_OBJECT: FormulaObject = { mathMlTree: EMPTY_MML_TREE };
 
-const FORMULA_INDENT = PIXELS_PER_INCH/2;
+const FORMULA_INDENT_PX = cssLengthInPixels(FORMULA_INDENT);
+const FORMULA_NUMBER_INDENT_PX = cssLengthInPixels(FORMULA_NUMBER_INDENT);
 
 // Exported Functions
 
@@ -80,23 +82,23 @@ function formulaMarkup(
   obj: FormulaObject,
   cssSize: CssSize
 ): SvgMarkup {
-  const heightInPx = pixelsFromCssLength(cssSize.height);
-  const widthInPx = pixelsFromCssLength(cssSize.width);
-  const { svgMarkup, boundingBox } = formulaTypesetter.mathMlTreeToSvg(obj.mathMlTree, widthInPx);
-  console.dir(boundingBox);
-  const x = FORMULA_INDENT;
-  const y = Math.round(heightInPx/2 - boundingBox.height/2);
+  const height = cssLengthInPixels(cssSize.height);
+  const width = cssLengthInPixels(cssSize.width);
+  const usableWidth = width - FORMULA_INDENT_PX - FORMULA_NUMBER_INDENT_PX;
+  const { svgMarkup, boundingBox } = formulaTypesetter.mathMlTreeToSvg(obj.mathMlTree, usableWidth);
+  const x = FORMULA_INDENT_PX;
+  const y = Math.round(height/2 - boundingBox.height/2);
   return <SvgMarkup>`<g transform="translate(${x} ${y})">${svgMarkup}</g>`;
 }
 
 function formulaNumberMarkup(formulaNumber: FormulaNumber, cssSize: CssSize): SvgMarkup {
-  const heightInPx = pixelsFromCssLength(cssSize.height);
-  const widthInPx = pixelsFromCssLength(cssSize.width);
-  const fontSizeInPt = 12;  // TODO:
+  // LATER: Right justify the formula numbers.
+  const height = cssLengthInPixels(cssSize.height);
+  const width = cssLengthInPixels(cssSize.width);
   const fontCapHeightInPx = 12; // TODO:
-  const fontEmInPix = convertLength(fontSizeInPt, 'pt', 'px');
-  const x = Math.round(widthInPx - fontEmInPix*4);
-  const y = Math.round(heightInPx/2 + fontCapHeightInPx/2);
-  return <SvgMarkup>`<text class="formulaNumber" x="${x}" y="${y}">(${formulaNumber})</text>`;
+  const x = width - FORMULA_NUMBER_INDENT_PX;
+  const y = height/2 + fontCapHeightInPx/2;
+  // "Times New Roman",
+  return <SvgMarkup>`<text fill="black" font="font 14pt Times, serif" stroke="none" x="${x}" y="${y}">(${formulaNumber})</text>`;
 }
 

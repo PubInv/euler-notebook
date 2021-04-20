@@ -299,15 +299,11 @@ export class NotebookEditView extends HtmlElement<'div'> {
     rangeExtending?: boolean, // Extending selection by a contiguous range.
     indivExtending?: boolean, // Extending selection by an individual cell, possibly non-contiguous.
   ): void {
-    // Erase tools panel. Newly selected cell will populate, if it is the only cell selected.
-    this.container.tools.clear();
-
     const solo = !rangeExtending && !indivExtending;
     if (solo) {
       this.unselectAll(true);
     }
     cellView.select();
-    cellView.renderTools(this.container.tools);
     this.lastCellSelected = cellView;
     this.container.sidebar.$trashButton.disabled = false;
   }

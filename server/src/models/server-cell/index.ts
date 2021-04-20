@@ -24,7 +24,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 // const debug = debug1(`server:${MODULE}`);
 
 import { escapeHtml, Html, Milliseconds } from "../../shared/common";
-import { CssLength, CssSize, cssSizeInPixels, LengthInPixels, pixelsFromCssLength } from "../../shared/css";
+import { CssLength, CssSize, cssLengthInPixels, cssSizeFromPixels, LengthInPixels } from "../../shared/css";
 import { CellId, CellObject, CellType, SuggestionClass, SuggestionId, SuggestionObject } from "../../shared/cell";
 import { SvgMarkup } from "../../shared/svg";
 
@@ -62,7 +62,7 @@ export abstract class ServerCell<O extends CellObject> {
   // Public Instance Property Functions
 
   public get heightInPixels(): LengthInPixels {
-    return pixelsFromCssLength(this.obj.cssSize.height);
+    return cssLengthInPixels(this.obj.cssSize.height);
   }
 
   public get id(): CellId { return this.obj.id; }
@@ -109,12 +109,12 @@ export abstract class ServerCell<O extends CellObject> {
   // Private Class Methods
 
   protected static initialCellSize(notebook: ServerNotebook, cssHeight: CssLength): CssSize {
-    const pageWidth = pixelsFromCssLength(notebook.pageSize.width);
-    const leftMargin = pixelsFromCssLength(notebook.margins.left);
-    const rightMargin = pixelsFromCssLength(notebook.margins.right);
+    const pageWidth = cssLengthInPixels(notebook.pageSize.width);
+    const leftMargin = cssLengthInPixels(notebook.margins.left);
+    const rightMargin = cssLengthInPixels(notebook.margins.right);
     const width = pageWidth - leftMargin - rightMargin;
-    const height = pixelsFromCssLength(cssHeight);
-    return cssSizeInPixels(width, height, 'px');
+    const height = cssLengthInPixels(cssHeight);
+    return cssSizeFromPixels(width, height);
   }
 
   protected updateSuggestions(
