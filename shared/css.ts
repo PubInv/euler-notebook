@@ -31,6 +31,11 @@ export type CssSelector = '{CssSelector}';
 export type LengthInPixels = number;
 export type PositionInPixels = number;
 
+export interface CssLengthMetrics {
+  em?: number, // Length of an em in pixels
+  ex?: number, // Length of an ex in pixels
+}
+
 export interface CssSize {
   height: CssLength;
   width: CssLength;
@@ -45,7 +50,7 @@ interface LengthConversion2 {
 
 // Constants
 
-const CSS_LENGTH_RE = /^(\d+(\.\d+)?)(in|px)$/;
+const CSS_LENGTH_RE = /^(\d+(\.\d+)?)(em|ex|in|pt|px)$/;  // NOTE: Does not handle case of CSS length of "0".
 
 export const PIXELS_PER_INCH = 96;
 const POINTS_PER_INCH = 72;
@@ -57,6 +62,7 @@ const LENGTH_CONVERSION: LengthConversion = {
     'px': PIXELS_PER_INCH,
   },
   'pt': {
+    'pt': 1,
     'px': PIXELS_PER_INCH/POINTS_PER_INCH,
   },
   'px': {
@@ -66,8 +72,8 @@ const LENGTH_CONVERSION: LengthConversion = {
 
 // Exported Functions
 
-export function convertLength(length: number, unitIn: CssLengthUnit, unitOut: CssLengthUnit): number {
-  const ratio = lengthConversionRatio(unitIn, unitOut);
+export function convertLength(length: number, unitIn: CssLengthUnit, unitOut: CssLengthUnit, metrics?: CssLengthMetrics): number {
+  const ratio = lengthConversionRatio(unitIn, unitOut, metrics);
   return length * ratio;
 }
 
@@ -83,21 +89,41 @@ export function cssSizeInPixels(width: LengthInPixels, height: LengthInPixels, u
   };
 }
 
-export function pixelsFromCssLength(cssLength: CssLength): LengthInPixels {
+export function pixelsFromCssLength(cssLength: CssLength, metrics?: CssLengthMetrics): LengthInPixels {
+  return Math.round(unroundedPixelsFromCssLength(cssLength, metrics));
+}
+
+export function unroundedPixelsFromCssLength(cssLength: CssLength, metrics?: CssLengthMetrics): LengthInPixels {
+  if (cssLength == <CssLength>"0") { return 0; }
   const [ length, unitIn ] = splitCssLength(cssLength);
-  return Math.round(convertLength(length, unitIn, 'px'));
+  return convertLength(length, unitIn, 'px', metrics);
 }
 
 // Helper Functions
 
-function lengthConversionRatio(unitIn: CssLengthUnit, unitOut: CssLengthUnit): number {
-  const rval = LENGTH_CONVERSION[unitIn][unitOut]!;
-  assert(rval);
-  return rval;
+function emExFactor(unit: CssLengthUnit, metrics?: CssLengthMetrics): { factor: number, unit: CssLengthUnit } {
+  let factor: number;
+  if (unit == <CssLengthUnit>'em' || unit == <CssLengthUnit>'ex') {
+    assert(metrics, `Must specify CSS metrics when converting an '${unit}' unit.`)
+    factor = (<any/* TYPESCRIPT: */>metrics)[unit]!;
+    assert(factor, `No CSS metrics for '${unit}' unit.`);
+    unit = 'px';
+  } else { factor = 1; }
+  return { unit, factor };
+}
+
+function lengthConversionRatio(unitIn: CssLengthUnit, unitOut: CssLengthUnit, metrics?: CssLengthMetrics): number {
+  let multiplier, divisor: number;
+  ({ factor: multiplier, unit: unitIn } = emExFactor(unitIn, metrics));
+  ({ factor: divisor, unit: unitOut } = emExFactor(unitIn, metrics));
+  const conversionFactor = (unitIn!=unitOut ? LENGTH_CONVERSION[unitIn][unitOut]! : 1);
+  assert(conversionFactor, `No CSS conversion factor for ${unitIn}->${unitOut}`);
+  return conversionFactor*multiplier/divisor;
 }
 
 function splitCssLength(cssLength: CssLength): [ number, CssLengthUnit ] {
+  assert(cssLength!=<CssLength>"0");
   const match = CSS_LENGTH_RE.exec(cssLength)!;
-  assert(match);
+  assert(match, `Can't split CSS length '${cssLength}'`);
   return [ parseFloat(match[1]), <CssLengthUnit>match[3] ];
 }

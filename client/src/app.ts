@@ -32,6 +32,7 @@ import { Pathname, ScreenManager } from "./screens/screen-manager";
 import { ClientSocket } from "./client-socket";
 import { ClientUser } from "./client-user";
 import { MessageDisplay } from "./message-display";
+import { MathJaxTypesetter } from "./adapters/mathjax-typesetter";
 
 // Types
 
@@ -96,6 +97,9 @@ class App {
         messageDisplay.addError(detail.err, detail.message);
       } catch (err) { console.dir(err); }
     });
+
+    // Initialize the math typesetter
+    MathJaxTypesetter.initialize();
 
     // Initialize the 'screen' system that provides navigation
     // inside the one-page app.

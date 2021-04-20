@@ -1,6 +1,6 @@
 {
   "compilerOptions": {
-    "lib": [ "es2018", "dom", "dom.iterable" ],
+    "lib": [ "es2020", "dom", "dom.iterable" ],
     "moduleResolution": "node",
     "noFallthroughCasesInSwitch": true,
     "noImplicitReturns": true,

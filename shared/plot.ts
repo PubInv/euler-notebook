@@ -20,7 +20,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 // Requirements
 
 import { CellObject, CellId, CellType, renderBaseCell } from "./cell";
-import { SvgMarkup } from "./common";
+import { SvgMarkup } from "./svg";
 import { FormulaObject, FormulaSymbol } from "./formula";
 
 // Types

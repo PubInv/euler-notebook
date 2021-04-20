@@ -19,7 +19,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 // Requirements
 
-import { SvgMarkup, EMPTY_SVG_MARKUP } from "./common";
+import { SvgMarkup, EMPTY_SVG_MARKUP } from "./svg";
 import { CellObject, CellType, renderBaseCell } from "./cell";
 // import { DiagramItemBlock } from "./myscript-types";
 

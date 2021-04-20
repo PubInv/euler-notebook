@@ -23,7 +23,8 @@ import * as debug1 from "debug";
 const MODULE = __filename.split(/[/\\]/).slice(-1)[0].slice(0,-3);
 const debug = debug1(`server:${MODULE}`);
 
-import { assert, SvgMarkup } from "../shared/common";
+import { assert } from "../shared/common";
+import { SvgMarkup } from "../shared/svg";
 
 import { ServerFormula } from "../models/server-formula";
 import { plotUnivariate } from "../adapters/wolframscript";
@@ -62,6 +63,7 @@ function thumbnailPlotFromFullPlot(fullPlotMarkup: SvgMarkup): SvgMarkup {
   // This is fragile, depending on specific ordering of attributes in the SVG element,
   // and the full markup is significantly larger than necessary for a thumbnail.
   // It is intended that a future plotting system will create a separate, mimimal thumbnail plot at the same time it creates the full plot.
+  // TODO: Use parseEnclosingSvgTag from shared/svg.ts
   const match = SVG_TAG_RE.exec(fullPlotMarkup)!;
   assert(match);
   assert(match.index == 0);

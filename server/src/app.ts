@@ -34,7 +34,7 @@ import * as nodeCleanup from "node-cleanup";
 import { satisfies as semverSatisfies } from "semver";
 import { middleware as stylusMiddleware } from "stylus";
 
-import { initialize as initializeMathJax } from "./adapters/mathjax";
+import { MathJaxTypesetter } from "./adapters/mathjax-typesetter";
 import { start as startWolframscript } from "./adapters/wolframscript";
 import { initialize as initializeMyScript } from "./adapters/myscript";
 import { initialize as initializeWolframAlpha } from "./adapters/wolframalpha";
@@ -74,7 +74,7 @@ async function main() {
 
   // TODO: stopWolframscript before exiting.
   if (config.wolframscript) { await startWolframscript(config.wolframscript); }
-  initializeMathJax();
+  MathJaxTypesetter.initialize();
   initializeMyScript(credentials.myscript);
   initializeWolframAlpha(credentials.wolframalpha);
 

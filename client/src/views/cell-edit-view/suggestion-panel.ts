@@ -17,13 +17,13 @@ You should have received a copy of the GNU Affero General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-import { assert, ElementId, Html } from "../../shared/common";
+import { assertFalse, ElementId, Html } from "../../shared/common";
 import { CellObject } from "../../shared/cell";
 import { NotebookChangeRequest } from "../../shared/client-requests";
 import { CssClass } from "../../shared/css";
 import { SuggestionUpdates } from "../../shared/server-responses";
 
-import { renderMathMlTreeToSvgElement } from "../../adapters/mathjax";
+import { MathJaxTypesetter } from "../../adapters/mathjax-typesetter";
 import { $, $all, $new, HtmlElementSpecification } from "../../dom";
 import { HtmlElement } from "../../html-element";
 import { ClientCell } from "../../models/client-cell";
@@ -106,12 +106,17 @@ export class SuggestionPanel<O extends CellObject> extends HtmlElement<'div'> {
           click: e=>this.onSuggestionClicked(e, suggestion.changeRequests),
         },
       };
-      if (suggestion.formulaMathMlTree) {
-        const $svg = renderMathMlTreeToSvgElement(suggestion.formulaMathMlTree);
+      const display = suggestion.display;
+      if (display.formulaMathMlTree) {
+        // REVIEW: Is .clientWidth the right attribute?
+        const $svg = MathJaxTypesetter.singleton.mathMlTreeToSvgElt(display.formulaMathMlTree, this.$elt.clientWidth);
         spec.children = [ $svg ];
+      } else if (display.html) {
+        spec.html = display.html!;
+      } else if (display.svg) {
+        spec.html = display.svg;
       } else {
-        assert(suggestion.html); // Must have either formulaMathMlTree or html.
-        spec.html = suggestion.html!;
+        assertFalse();
       }
       const $suggestion = $new<'div'>(spec);
       //const $svg = $outerSvg<'svg'>(alternative.svg);

@@ -23,12 +23,16 @@ import * as debug1 from "debug";
 const MODULE = __filename.split(/[/\\]/).slice(-1)[0].slice(0,-3);
 const debug = debug1(`server:${MODULE}`);
 
-import { deepCopy, PlainText, SvgMarkup } from "../../shared/common";
+import { deepCopy, PlainText } from "../../shared/common";
 import { CssLength, pixelsFromCssLength } from "../../shared/css";
 import { CellId, CellSource, CellType, SuggestionClass, SuggestionId, SuggestionObject } from "../../shared/cell";
+import { NotebookChangeRequest } from "../../shared/client-requests";
 import { EMPTY_FORMULA_OBJECT, FormulaCellObject, FormulaNumber, renderFormulaCell } from "../../shared/formula";
 import { NotebookSuggestionsUpdated, SuggestionUpdates } from "../../shared/server-responses";
 import { EMPTY_STROKE_DATA } from "../../shared/stylus";
+import { SvgMarkup } from "../../shared/svg";
+
+import { MathJaxTypesetter } from "../../adapters/mathjax-typesetter";
 
 import { recognizeFormula } from "../../components/handwriting-recognizer";
 
@@ -36,7 +40,6 @@ import { ServerNotebook } from "../server-notebook";
 import { ServerFormula } from "../server-formula";
 
 import { ServerCell } from "./index";
-import { NotebookChangeRequest } from "../../shared/client-requests";
 
 // Constants
 
@@ -83,7 +86,7 @@ export class FormulaCell extends ServerCell<FormulaCellObject> {
   public get formula(): ServerFormula { return this._formula; }
 
   public /* override */ displaySvg(): SvgMarkup {
-    return renderFormulaCell(this.obj, this.formulaNumber);
+    return renderFormulaCell(MathJaxTypesetter.singleton ,this.obj, this.formulaNumber);
   }
 
   // Public Instance Methods
@@ -157,7 +160,7 @@ export class FormulaCell extends ServerCell<FormulaCellObject> {
         id,
         class: TYPESET_FORMULA_SUGGESTION_CLASS,
         changeRequests: data,
-        formulaMathMlTree: alternative.formula.mathMlTree,
+        display: { formulaMathMlTree: alternative.formula.mathMlTree },
       };
       return suggestion;
     });

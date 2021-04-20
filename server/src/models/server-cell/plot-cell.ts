@@ -23,11 +23,12 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 // const MODULE = __filename.split(/[/\\]/).slice(-1)[0].slice(0,-3);
 // const debug = debug1(`server:${MODULE}`);
 
-import { deepCopy, PlainText, SvgMarkup } from "../../shared/common";
+import { deepCopy, PlainText } from "../../shared/common";
 import { CssLength } from "../../shared/css";
 import { CellId, CellType } from "../../shared/cell";
 import { PlotCellObject, renderPlotCell } from "../../shared/plot";
 import { EMPTY_STROKE_DATA } from "../../shared/stylus";
+import { SvgMarkup } from "../../shared/svg";
 
 import { ServerNotebook } from "../server-notebook";
 

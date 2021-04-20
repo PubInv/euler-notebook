@@ -22,7 +22,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 // import * as debug1 from "debug";
 // const debug = debug1('client:figure-cell');
 
-import { SvgMarkup } from "../../shared/common";
+import { SvgMarkup } from "../../shared/svg";
 import { renderTextCell, TextCellObject } from "../../shared/text";
 
 import { ClientNotebook } from "../client-notebook";

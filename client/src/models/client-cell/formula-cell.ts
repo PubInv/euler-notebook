@@ -22,13 +22,13 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 // import * as debug1 from "debug";
 // const debug = debug1('client:formula-cell');
 
-import { SvgMarkup } from "../../shared/common";
+import { SvgMarkup } from "../../shared/svg";
 import { FormulaCellObject, FormulaNumber, renderFormulaCell } from "../../shared/formula";
 
 import { ClientNotebook } from "../client-notebook";
 
 import { ClientCell } from "./index";
-import { renderMathMlTreeToSvgElement } from "../../adapters/mathjax";
+import { MathJaxTypesetter } from "../../adapters/mathjax-typesetter";
 
 // Exported Class
 
@@ -50,10 +50,7 @@ export class FormulaCell extends ClientCell<FormulaCellObject> {
   // Public Instance Property Functions
 
   public renderToSvg(x: number, y: number): SvgMarkup {
-    const $svg = renderMathMlTreeToSvgElement(this.obj.formula.mathMlTree);
-    const formulaMarkup = $svg.outerHTML;
-    const otherMarkup = renderFormulaCell(this.obj, this.formulaNumber);
-    const innerMarkup = <SvgMarkup>(otherMarkup + formulaMarkup);
+    const innerMarkup = renderFormulaCell(MathJaxTypesetter.singleton, this.obj, this.formulaNumber);
     return super.renderToSvg(x, y, innerMarkup);
   }
 
@@ -68,5 +65,6 @@ export class FormulaCell extends ClientCell<FormulaCellObject> {
 
   // --- PRIVATE ---
 
-
 }
+
+

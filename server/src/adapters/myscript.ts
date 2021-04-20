@@ -36,13 +36,14 @@ const HmacSHA512 = require('crypto-js/hmac-sha512');
 import fetch, { Response } from "node-fetch";
 import { logErrorMessage } from "../error-handler";
 
-import { assert, PlainText, SvgMarkup } from "../shared/common";
+import { assert, BoundingBox, PlainText } from "../shared/common";
+import { SvgMarkup } from "../shared/svg";
 import { LengthInPixels } from "../shared/css";
 import { MathMlMarkup } from "../shared/mathml";
 import { StrokeGroup, DiagramItemBlock } from "../shared/myscript-types";
 import { StrokeData } from "../shared/stylus";
 
-import { BoundingBox, MathNode } from "./myscript-math";
+import { MathNode } from "./myscript-math";
 
 
 // Types
@@ -332,8 +333,7 @@ function computeHmac(keys: ApiKeys, body: string): string {
 }
 
 async function postRequest<T extends string>(keys: ApiKeys, mimeType: MimeType, batchRequest: BatchRequest): Promise<T> {
-  console.log("MYSCRIPT REQUEST");
-  console.log(JSON.stringify({ ...batchRequest, strokeGroups: null }, null, 2));
+  // c-nsole.log(`MyScript Request:\n${JSON.stringify({ ...batchRequest, strokeGroups: null }, null, 2)}`);
   const body = JSON.stringify(batchRequest);
   const hmac = computeHmac(keys, body);
   const headers = {

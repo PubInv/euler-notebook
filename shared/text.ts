@@ -20,8 +20,9 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 // Requirements
 
 import { CellObject, CellType, renderBaseCell } from "./cell";
-import { escapeHtml, SvgMarkup } from "./common";
+import { escapeHtml } from "./common";
 import { pixelsFromCssLength } from "./css";
+import { SvgMarkup } from "./svg";
 
 // Types
 

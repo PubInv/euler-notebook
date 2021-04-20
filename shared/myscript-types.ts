@@ -17,7 +17,7 @@ You should have received a copy of the GNU Affero General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-import { PlainText } from "./common";
+import { BoundingBox, PlainText } from "./common";
 
 // Exported Types
 
@@ -57,13 +57,6 @@ export type DiagramItemBlock =
 
 type ItemId = number;
 type EdgeItem = ArcItemBlock | LineItemBlock;
-
-interface BoundingBox {
-  x: number,
-  y: number,
-  width: number,
-  height: number,
-}
 
 interface DiagramItemBlockBase {
   id: ItemId;

@@ -19,6 +19,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 // Requirements
 
+import { BoundingBox } from "../shared/common";
 // Types
 
 type MathNodeErrorString = 'Unsolved';
@@ -39,13 +40,6 @@ export type MathNode =
     SymbolNode |
     UnderoverscriptNode |
     UnderscriptNode;
-
-export interface BoundingBox {
-  x: number;
-  y: number;
-  width: number;
-  height: number;
-}
 
 export interface MathNodeBase {
   // type: string;

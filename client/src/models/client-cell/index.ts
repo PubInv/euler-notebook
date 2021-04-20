@@ -23,7 +23,8 @@ import * as debug1 from "debug";
 const debug = debug1('client:client-cell');
 
 import { CellId, CellObject, CellType } from "../../shared/cell";
-import { assert, escapeHtml, Html, SvgMarkup } from "../../shared/common";
+import { assert, escapeHtml, Html } from "../../shared/common";
+import { SvgMarkup } from "../../shared/svg";
 import { CssSize } from "../../shared/css";
 import { cellBriefSynopsis, cellSynopsis, notebookUpdateSynopsis } from "../../shared/debug-synopsis";
 import { NotebookUpdate, SuggestionUpdates } from "../../shared/server-responses";
@@ -70,6 +71,7 @@ export abstract class ClientCell<O extends CellObject> {
 
   public get id(): CellId { return this.obj.id; }
   public get type(): CellType { return this.obj.type; }
+  //public get widthInPixels(): LengthInPixels { return pixelsFromCssLength(this.obj.cssSize.width); }
 
   public /* overridable */ renderToSvg(_x: number, _y: number, innerMarkup?: SvgMarkup): SvgMarkup {
     assert(innerMarkup);

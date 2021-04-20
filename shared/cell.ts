@@ -20,10 +20,11 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 // Requirements
 
 import { NotebookChangeRequest } from "./client-requests";
-import {  Html, PlainText, SvgMarkup } from "./common";
+import {  Html, PlainText } from "./common";
 import { CssSize } from "./css";
 import { MathMlTree } from "./mathml";
 import { convertStrokeToPath, StrokeData } from "./stylus";
+import { SvgMarkup } from "./svg";
 
 // Types
 
@@ -57,18 +58,23 @@ export interface CellObject {
   id: CellId;
   type: CellType;
   cssSize: CssSize;
-  inputText: PlainText,
+  inputText: PlainText;
   source: CellSource;
-  strokeData: StrokeData,
-  suggestions: Suggestions,
+  strokeData: StrokeData;
+  suggestions: Suggestions;
+}
+
+interface SuggestionDisplay {
+  formulaMathMlTree?: MathMlTree;
+  html?: Html;
+  svg?: SvgMarkup;
 }
 
 export interface SuggestionObject {
-  id: SuggestionId,
-  class?: SuggestionClass,
-  formulaMathMlTree?: MathMlTree,
-  html?: Html,
-  changeRequests: NotebookChangeRequest[],
+  id: SuggestionId;
+  class?: SuggestionClass;
+  changeRequests: NotebookChangeRequest[];
+  display: SuggestionDisplay;
 }
 
 // Exported Functions

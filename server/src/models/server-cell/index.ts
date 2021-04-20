@@ -23,9 +23,10 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 // const MODULE = __filename.split(/[/\\]/).slice(-1)[0].slice(0,-3);
 // const debug = debug1(`server:${MODULE}`);
 
-import { escapeHtml, Html, Milliseconds, SvgMarkup } from "../../shared/common";
+import { escapeHtml, Html, Milliseconds } from "../../shared/common";
 import { CssLength, CssSize, cssSizeInPixels, LengthInPixels, pixelsFromCssLength } from "../../shared/css";
 import { CellId, CellObject, CellType, SuggestionClass, SuggestionId, SuggestionObject } from "../../shared/cell";
+import { SvgMarkup } from "../../shared/svg";
 
 import { ServerNotebook } from "../server-notebook";
 import { NotebookSuggestionsUpdated, NotebookUpdate, SuggestionUpdates } from "../../shared/server-responses";
@@ -60,7 +61,7 @@ export abstract class ServerCell<O extends CellObject> {
 
   // Public Instance Property Functions
 
-  public get heightInPx(): LengthInPixels {
+  public get heightInPixels(): LengthInPixels {
     return pixelsFromCssLength(this.obj.cssSize.height);
   }
 
@@ -80,9 +81,9 @@ export abstract class ServerCell<O extends CellObject> {
 </div>`;
   }
 
-  public get widthInPx(): LengthInPixels {
-    return pixelsFromCssLength(this.obj.cssSize.width);
-  }
+  // public get widthInPixels(): LengthInPixels {
+  //   return pixelsFromCssLength(this.obj.cssSize.width);
+  // }
 
   // Public Instance Methods
 

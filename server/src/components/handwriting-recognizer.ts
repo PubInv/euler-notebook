@@ -23,7 +23,7 @@ import * as debug1 from "debug";
 const MODULE = __filename.split(/[/\\]/).slice(-1)[0].slice(0,-3);
 const debug = debug1(`server:${MODULE}`);
 
-import { assert, assertFalse, PlainText, SvgMarkup, zeroPad } from "../shared/common";
+import { assert, assertFalse, PlainText, zeroPad } from "../shared/common";
 import { LengthInPixels } from "../shared/css";
 import { FigureObject } from "../shared/figure";
 import {
@@ -32,6 +32,7 @@ import {
   // serializeTreeToMathMlMarkup,
 } from "../shared/mathml";
 import { StrokeData } from "../shared/stylus";
+import { SvgMarkup } from "../shared/svg";
 
 import {
   UNICODE_MIDDLE_DOT, UNICODE_MULTIPLICATION_SIGN, UNICODE_DIVISION_SIGN,
@@ -45,6 +46,7 @@ import { ServerFormula } from "../models/server-formula";
 
 export interface FigureRecognitionAlternative {
   figureObject: FigureObject;
+  thumbnailSvgMarkup: SvgMarkup;
 }
 
 export interface FigureRecognitionResults {
@@ -71,8 +73,9 @@ export interface TextRecognitionResults {
 
 const SVG_START_TAG_RE = /^<svg[^>]*>\s*/;
 const SVG_END_TAG_RE = /\s*<\/svg>\s*$/;
-// Exported Functions
+const THUMBNAIL_HEIGHT = <LengthInPixels>32;
 
+// Exported Functions
 
 export async function recognizeFigure(
   width: LengthInPixels,
@@ -86,11 +89,10 @@ export async function recognizeFigure(
   //        Unfortunately you can't get the JIIX and SVG back in one call, so you have to call twice.
   //        GraphML is another possible high-level format.
   // const jiix = await postJiixRequest<JiixDiagramBlock>('Diagram', strokeData);
-  // console.log(JSON.stringify(jiix, null, 2));
+  // c-nsole.log(JSON.stringify(jiix, null, 2));
 
-  console.log("RECOGNIZING DIAGRAM AS SVG:");
   const svgMarkupRaw = await postSvgRequest(width, height, strokeData);
-  console.log(svgMarkupRaw);
+  // c-nsole.log(`Figure SVG: ${svgMarkupRaw}`);
 
   // HACK ALERT: This is fragile matching regular expressions.
   //             But not as heavyweight as parsing XML...
@@ -100,13 +102,17 @@ export async function recognizeFigure(
   const matchEnd = SVG_END_TAG_RE.exec(svgMarkupRaw)!;
   assert(matchEnd);
   const endIndex = -matchEnd[0].length;
-  const svgInnerMarkup = svgMarkupRaw.slice(startIndex, endIndex);
+  const svgInnerMarkup = <SvgMarkup>svgMarkupRaw.slice(startIndex, endIndex);
+  // Don't know why, by MyScript appears to scale the coordinate system of Diagram SVGs down by 4.
   const svgMarkup = <SvgMarkup>`<g transform="scale(4 4)">${svgInnerMarkup}</g>`;
+
+  const thumbnailSvgMarkup = createThumbnailVersion(width, height, svgMarkup);
   const alternative: FigureRecognitionAlternative = {
     figureObject: {
       // content: jiix.elements,
       presentation: svgMarkup,
-    }
+    },
+    thumbnailSvgMarkup,
   };
   return { alternatives: [ alternative ] };
 }
@@ -119,16 +125,15 @@ export async function recognizeFormula(
   debug(`Recognizing formula.`);
 
   const jiix = await postJiixRequest<JiixMathBlock>(width, height, 'Math', strokeData);
-  console.log(JSON.stringify(jiix, null, 2));
+  // c-nsole.log(`JSON reponse:\n${JSON.stringify(jiix, null, 2)}`);
 
   // const mml = await postMmlRequest(strokeData);
-  // console.dir(mml);
+  // c-nsole.log(`MathML response:\n${mml}`);
 
   // TODO: If user writes multiple expressions then we should separate them into distinct cells.
   const alternatives = jiix.expressions.map((jiixExpression, _i)=>{
-    //console.log(`Option ${i}`);
     const mathMlTree = convertJiixExpressionToMathMlExpression(jiixExpression);
-    //console.dir(serializeTreeToMathMlMarkup(mathMlTree));
+    // c-nsole.dir(serializeTreeToMathMlMarkup(mathMlTree));
     const formula = ServerFormula.createFromMathMlTree(mathMlTree);
     const alternative: FormulaRecognitionAlternative = { formula };
     return alternative;
@@ -315,6 +320,12 @@ function convertRelationExpression(expr: RelationNode): MathMlTree[] {
     <Mo>{ type: 'mo', symbol: entityForSymbol(expr.type) },
     convertMrowWrapped(rhs),
   ];
+}
+
+function createThumbnailVersion(width: LengthInPixels, height: LengthInPixels, svgMarkup: SvgMarkup): SvgMarkup {
+  const scaleFactor = THUMBNAIL_HEIGHT/height;
+  const thumbnailWidth = Math.round(width*scaleFactor);
+  return <SvgMarkup>`<svg viewbox="0 0 ${width} ${height}" width="${thumbnailWidth}" height="${THUMBNAIL_HEIGHT}">${svgMarkup}</svg>`;
 }
 
 function entityForSymbol(symbol: string): string {

@@ -23,11 +23,12 @@ import * as debug1 from "debug";
 const MODULE = __filename.split(/[/\\]/).slice(-1)[0].slice(0,-3);
 const debug = debug1(`server:${MODULE}`);
 
-import { deepCopy, Html, PlainText, SvgMarkup } from "../../shared/common";
+import { deepCopy, PlainText } from "../../shared/common";
 import { CssLength, pixelsFromCssLength } from "../../shared/css";
 import { CellId, CellSource, CellType, SuggestionClass, SuggestionId, SuggestionObject } from "../../shared/cell";
 import { EMPTY_FIGURE_OBJECT, FigureCellObject, renderFigureCell } from "../../shared/figure";
 import { EMPTY_STROKE_DATA } from "../../shared/stylus";
+import { SvgMarkup } from "../../shared/svg";
 
 import { ServerNotebook } from "../server-notebook";
 
@@ -87,17 +88,18 @@ export class FigureCell extends ServerCell<FigureCellObject> {
     const results = await recognizeFigure(width, height, this.obj.strokeData);
     const addSuggestions: SuggestionObject[] = results.alternatives.map((alternative, index)=>{
       const id = <SuggestionId>`recognizedFigure${index}`;
+      const { figureObject } = alternative;
       const data: NotebookChangeRequest[] = [{
         type: 'typesetFigure',
         cellId: this.id,
-        figure: alternative.figureObject,
+        figure: figureObject,
         strokeData: EMPTY_STROKE_DATA,
       }];
       const suggestion: SuggestionObject = {
         id,
         class: TYPESET_FIGURE_SUGGESTION_CLASS,
         changeRequests: data,
-        html: <Html>"<div>Typeset figure</div>",
+        display: { svg: alternative.thumbnailSvgMarkup },
       };
       return suggestion;
     });

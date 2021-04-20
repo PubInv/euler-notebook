@@ -27,12 +27,12 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 // const MODULE = __filename.split(/[/\\]/).slice(-1)[0].slice(0,-3);
 // const debug = debug1(`server:${MODULE}`);
 
-import { SvgMarkup } from "../shared/common";
-import { FormulaObject } from "../shared/formula";
+import { FormulaObject, TypesettingResults } from "../shared/formula";
 import { MathMlMarkup, MathMlTree, serializeTreeToMathMlMarkup } from "../shared/mathml";
 
 // import { convertMmltoWolfram } from "../adapters/wolframscript";
-import { convertMmlToSvg } from "../adapters/mathjax";
+import { MathJaxTypesetter } from "../adapters/mathjax-typesetter";
+import { LengthInPixels } from "../shared/css";
 // import { Jiix } from "../adapters/myscript";
 
 // Types
@@ -72,11 +72,9 @@ export class ServerFormula {
 
   public mathMl(): MathMlMarkup { return serializeTreeToMathMlMarkup(this.obj.mathMlTree); }
 
-  public svg(): SvgMarkup {
-    if (!this.cachedSvg) {
-      this.cachedSvg = convertMmlToSvg(this.mathMl());
-    }
-    return this.cachedSvg;
+  public svg(containerWidth: LengthInPixels): TypesettingResults {
+    // REVIEW: Any reason to cache this representations?
+    return MathJaxTypesetter.singleton.mathMlTreeToSvg(this.obj.mathMlTree, containerWidth);
   }
 
   // Public Instance Methods
@@ -99,9 +97,6 @@ export class ServerFormula {
   }
 
   // Private Instance Properties
-
-  private cachedSvg?: SvgMarkup;
-
   // Private Instance Property Functions
   // Private Instance Methods
   // Private Instance Event Handlers

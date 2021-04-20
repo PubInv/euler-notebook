@@ -29,10 +29,16 @@ export type Milliseconds = number;  // Time interval in milliseconds.
 export type PlainText = '{PlainText}';
 export type RelativeUrl = '{RelativeUrl}';
 export type SessionToken = '{SessionToken}';
-export type SvgMarkup = '{SvgMarkup}';
 export type Timestamp = number;     // Number of milliseconds since Jan 1, 1970 as returned by Date.now().
 
 type StackTrace = '{StackTrace}';
+
+export interface BoundingBox {
+  x: number,
+  y: number,
+  width: number,
+  height: number,
+}
 
 export interface JsonObject {
   // A vanilla JavaScript object that you can specify in JSON.
@@ -49,9 +55,6 @@ export interface PromiseResolver<T> {
 // Constants
 
 const ASSERTION_FAILED_MSG = "Assertion failed.";
-
-// REVIEW: Should this be "<svg ...></svg>"?
-export const EMPTY_SVG_MARKUP = <SvgMarkup>'';
 
 // Exported Functions
 
@@ -74,10 +77,6 @@ export function chunkArray<T>(arr: T[], chunkSize: number): T[][] {
 export function deepCopy<T>(data: T): T {
   return JSON.parse(JSON.stringify(data));
 }
-
-// export function emptySvg(cssSize: CssSize): SvgMarkup {
-//   return <SvgMarkup>`<svg height="${cssSize.height}" width="${cssSize.width}"></svg>`;
-// }
 
 export function errorMessageForUser(err: Error): Html {
   return <Html>(err instanceof ExpectedError ? escapeHtml(err.message) : "An unexpected error occurred.");

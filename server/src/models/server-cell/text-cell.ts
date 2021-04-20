@@ -23,11 +23,12 @@ import * as debug1 from "debug";
 const MODULE = __filename.split(/[/\\]/).slice(-1)[0].slice(0,-3);
 const debug = debug1(`server:${MODULE}`);
 
-import { deepCopy, PlainText, escapeHtml, Html, SvgMarkup } from "../../shared/common";
+import { deepCopy, PlainText, escapeHtml, Html } from "../../shared/common";
 import { CssLength, pixelsFromCssLength } from "../../shared/css";
 import { CellId, CellSource, CellType, SuggestionClass, SuggestionId, SuggestionObject } from "../../shared/cell";
 import { TextCellObject, renderTextCell } from "../../shared/text";
 import { EMPTY_STROKE_DATA } from "../../shared/stylus";
+import { SvgMarkup } from "../../shared/svg";
 
 import { recognizeText } from "../../components/handwriting-recognizer";
 
@@ -100,7 +101,7 @@ export class TextCell extends ServerCell<TextCellObject> {
         id,
         class: TYPESET_TEXT_SUGGESTION_CLASS,
         changeRequests: data,
-        html: <Html>escapeHtml(alternative.text),
+        display: { html: <Html>escapeHtml(alternative.text) },
       };
       return suggestion;
     });

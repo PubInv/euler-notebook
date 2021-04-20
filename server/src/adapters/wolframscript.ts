@@ -25,9 +25,10 @@ import * as debug1 from "debug";
 const MODULE = __filename.split(/[/\\]/).slice(-1)[0].slice(0,-3);
 const debug = debug1(`server:${MODULE}`);
 
-import { assert, SvgMarkup } from "../shared/common";
+import { assert } from "../shared/common";
 import { FormulaSymbol, TexExpression, WolframExpression } from "../shared/formula";
 import { MathMlMarkup } from "../shared/mathml";
+import { SvgMarkup } from "../shared/svg";
 
 import { WolframScriptConfig } from "../config";
 import { logWarning } from "../error-handler";
