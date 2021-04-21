@@ -74,10 +74,9 @@ export abstract class ClientCell<O extends CellObject> {
 
   public isLastCell(): boolean { return this.id == this.notebook.lastCellId() };
 
-  public /* overridable */ renderToSvg(_x: number, _y: number, innerMarkup?: SvgMarkup): SvgMarkup {
+  public /* overridable */ renderToSvg(x: number, y: number, innerMarkup?: SvgMarkup): SvgMarkup {
     assert(innerMarkup);
-    // TODO: offset by x, y by wrapping in g element with translate.
-    return innerMarkup!;
+    return <SvgMarkup>`<g transform="translate(${x} ${y})">${innerMarkup}</g>`;
   }
 
   public toDebugHtml(): Html {
