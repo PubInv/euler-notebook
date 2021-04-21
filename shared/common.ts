@@ -58,8 +58,8 @@ const ASSERTION_FAILED_MSG = "Assertion failed.";
 
 // Exported Functions
 
-export function arrayFilterInPlace<T>(array: T[], cb: (value: T, index?: number, obj?: T[])=>boolean): T[] {
-  // Like Array.filter, but works on the array in-place.
+export function arrayFilterOutInPlace<T>(array: T[], cb: (value: T, index?: number, obj?: T[])=>boolean): T[] {
+  // Like Array.filter, but removes items where the callback returns true, and works on the array in-place.
   // Returns possibly-empty array of items that were removed.
   let i: number;
   const rval = <T[]>[];

@@ -24,12 +24,12 @@ const MODULE = __filename.split(/[/\\]/).slice(-1)[0].slice(0,-3);
 const debug = debug1(`server:${MODULE}`);
 
 import { deepCopy, PlainText } from "../../shared/common";
-import { cssLengthInPixels } from "../../shared/css";
+import { LengthInPixels } from "../../shared/css";
 import { CellId, CellSource, CellType } from "../../shared/cell";
 import { NotebookChangeRequest } from "../../shared/client-requests";
 import { EMPTY_FORMULA_OBJECT, FormulaCellObject, FormulaNumber, renderFormulaCell } from "../../shared/formula";
 import { EMPTY_STROKE_DATA } from "../../shared/stylus";
-import {  SuggestionClass, SuggestionId, SuggestionObject } from "../../shared/suggestions";
+import { SuggestionId, SuggestionObject, TYPESETTING_SUGGESTION_CLASS } from "../../shared/suggestions";
 import { SvgMarkup } from "../../shared/svg";
 
 import { MathJaxTypesetter } from "../../adapters/mathjax-typesetter";
@@ -43,9 +43,6 @@ import { ServerCell } from "./index";
 import { FORMULA_CELL_HEIGHT } from "../../shared/dimensions";
 
 // Constants
-
-// const PLOT_FORMULA_SUGGESTION_CLASS = <SuggestionClass>'plotFormula';
-const TYPESET_FORMULA_SUGGESTION_CLASS = <SuggestionClass>'typesetFormula';
 
 // Exported Class
 
@@ -142,41 +139,32 @@ export class FormulaCell extends ServerCell<FormulaCellObject> {
   //   this.updateSuggestions([ suggestionObject ], [], []);
   // }
 
-  private async recognizeStrokes(): Promise<void> {
+  protected async recognizeStrokes(
+    width: LengthInPixels,
+    height: LengthInPixels,
+  ): Promise<SuggestionObject[]> {
     debug(`Recognizing strokes`);
-    const width = cssLengthInPixels(this.cssSize.width);
-    const height = cssLengthInPixels(this.cssSize.height);
     const results = await recognizeFormula(width, height, this.obj.strokeData);
-    const add: SuggestionObject[] = results.alternatives.map((alternative, index)=>{
-      const id = <SuggestionId>`recognizedFormula${index}`;
-      const data: NotebookChangeRequest[] = [{
+    const { alternatives } = results;
+    return alternatives.map((alternative, index)=>{
+      const suggestionId = <SuggestionId>`recognizedFormula${index}`;
+      // TODO: remove alternative typesetting suggestions.
+      const changeRequests: NotebookChangeRequest[] = [{
         type: 'typesetFormula',
         cellId: this.id,
         formula: alternative.formula.obj,
         strokeData: EMPTY_STROKE_DATA,
       }];
-      const suggestion: SuggestionObject = {
-        id,
-        class: TYPESET_FORMULA_SUGGESTION_CLASS,
-        changeRequests: data,
+      const suggestionObject: SuggestionObject = {
+        id: suggestionId,
+        class: TYPESETTING_SUGGESTION_CLASS,
+        changeRequests,
         display: { formulaMathMlTree: alternative.formula.mathMlTree },
       };
-      return suggestion;
+      return suggestionObject;
     });
-
-    const removeIds = <SuggestionId[]>[];
-    const removeClasses = [ TYPESET_FORMULA_SUGGESTION_CLASS ];
-
-    this.updateSuggestions(add, removeIds, removeClasses);
   }
 
   // Private Instance Event Handlers
-
-  protected async onStrokeInactivityTimeout(): Promise<void> {
-    debug(`Formula cell stroke inactivity timeout c${this.id}`);
-    // LATER: Display recognition error to user if one occurs.
-    //        Currently it will just log the error, but fails silently from the user's perspective.
-    await this.recognizeStrokes();
-  }
 
 }

@@ -24,11 +24,11 @@ const MODULE = __filename.split(/[/\\]/).slice(-1)[0].slice(0,-3);
 const debug = debug1(`server:${MODULE}`);
 
 import { deepCopy, PlainText, escapeHtml, Html } from "../../shared/common";
-import { cssLengthInPixels } from "../../shared/css";
+import { LengthInPixels } from "../../shared/css";
 import { CellId, CellSource, CellType } from "../../shared/cell";
 import { TextCellObject, renderTextCell } from "../../shared/text";
 import { EMPTY_STROKE_DATA } from "../../shared/stylus";
-import { SuggestionClass, SuggestionId, SuggestionObject } from "../../shared/suggestions";
+import { SuggestionId, SuggestionObject, TYPESETTING_SUGGESTION_CLASS } from "../../shared/suggestions";
 import { SvgMarkup } from "../../shared/svg";
 
 import { recognizeText } from "../../components/handwriting-recognizer";
@@ -36,14 +36,11 @@ import { recognizeText } from "../../components/handwriting-recognizer";
 import { ServerNotebook } from "../server-notebook";
 
 import { ServerCell } from "./index";
-import { NotebookSuggestionsUpdated, SuggestionUpdates } from "../../shared/server-responses";
 
 import { NotebookChangeRequest } from "../../shared/client-requests";
 import { TEXT_CELL_HEIGHT } from "../../shared/dimensions";
 
 // Constants
-
-const TYPESET_TEXT_SUGGESTION_CLASS = <SuggestionClass>'typesetText';
 
 // Exported Class
 
@@ -84,50 +81,31 @@ export class TextCell extends ServerCell<TextCellObject> {
 
   // Private Instance Methods
 
-  private async recognizeStrokes(): Promise<void> {
+  protected async recognizeStrokes(
+    width: LengthInPixels,
+    height: LengthInPixels,
+  ): Promise<SuggestionObject[]> {
     debug(`Recognizing strokes`);
-    const width = cssLengthInPixels(this.cssSize.width);
-    const height = cssLengthInPixels(this.cssSize.height);
-   const results = await recognizeText(width, height, this.obj.strokeData)
-    const addSuggestions: SuggestionObject[] = results.alternatives.map((alternative, index)=>{
-      const id = <SuggestionId>`recognizedText${index}`;
-      const data: NotebookChangeRequest[] = [{
+    const results = await recognizeText(width, height, this.obj.strokeData)
+    const { alternatives } = results;
+    return alternatives.map((alternative, index)=>{
+      const suggestionId = <SuggestionId>`recognizedText${index}`;
+      const changeRequests: NotebookChangeRequest[] = [{
         type: 'typesetText',
         cellId: this.id,
         text: alternative.text,
         strokeData: EMPTY_STROKE_DATA,
       }];
-      const suggestion: SuggestionObject = {
-        id,
-        class: TYPESET_TEXT_SUGGESTION_CLASS,
-        changeRequests: data,
+      const suggestionObject: SuggestionObject = {
+        id: suggestionId,
+        class: TYPESETTING_SUGGESTION_CLASS,
+        changeRequests: changeRequests,
         display: { html: <Html>escapeHtml(alternative.text) },
       };
-      return suggestion;
+      return suggestionObject;
     });
-    const updates: SuggestionUpdates[] = [{
-      cellId: this.id,
-      add: addSuggestions,
-      removeClasses: [ TYPESET_TEXT_SUGGESTION_CLASS ],
-      removeIds: [],
-    }];
-    const response: NotebookSuggestionsUpdated = {
-      type: 'notebook',
-      path: this.notebook.path,
-      operation: 'suggestionsUpdated',
-      suggestionUpdates: updates,
-    };
-
-    this.notebook.broadcastMessage(response);
   }
 
   // Private Instance Event Handlers
-
-  protected async onStrokeInactivityTimeout(): Promise<void> {
-    debug(`Text cell stroke inactivity timeout c${this.id}`);
-    // LATER: Display recognition error to user if one occurs.
-    //        Currently it will just log the error, but fails silently from the user's perspective.
-    await this.recognizeStrokes();
-  }
 
 }

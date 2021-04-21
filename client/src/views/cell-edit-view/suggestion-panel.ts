@@ -21,10 +21,10 @@ import { assertFalse, ElementId, Html } from "../../shared/common";
 import { CellObject } from "../../shared/cell";
 import { NotebookChangeRequest } from "../../shared/client-requests";
 import { CssClass } from "../../shared/css";
-import { SuggestionUpdates } from "../../shared/server-responses";
+import { SuggestionAdded, SuggestionRemoved } from "../../shared/server-responses";
 
 import { MathJaxTypesetter } from "../../adapters/mathjax-typesetter";
-import { $, $all, $new, HtmlElementSpecification } from "../../dom";
+import { $all, $new, HtmlElementSpecification } from "../../dom";
 import { HtmlElement } from "../../html-element";
 import { ClientCell } from "../../models/client-cell";
 import { SuggestionObject, Suggestions } from "../../shared/suggestions";
@@ -85,36 +85,29 @@ export class SuggestionPanel<O extends CellObject> extends HtmlElement<'div'> {
 
   // Public Instance Event Handlers
 
-  public onSuggestionsUpdate(suggestionUpdates: SuggestionUpdates, _ownRequest: boolean): void {
+  public onUpdate(update: SuggestionAdded|SuggestionRemoved, _ownRequest: boolean): void {
 
-    // Remove any individual suggestions that are identified for removal.
-    for (const suggestionId of suggestionUpdates.removeIds) {
-      // TODO: Fail gracefully with warning if id is not found.
-      $(this.$elt, `#${suggestionId}`).remove();
-    }
-
-    // Remove any classes of suggestions that are identified for removal.
-    for (const suggestionClass of suggestionUpdates.removeClasses) {
-      for (const $suggestionElt of $all(this.$elt, `.${suggestionClass}`)) {
-        $suggestionElt.remove();
+    switch (update.type) {
+      case 'suggestionAdded': {
+        this.addSuggestion(update.suggestionObject);
+        this.$noSuggestionsMsg.style.display = 'none';
+        this.showIfHidden();
+        break;
       }
-    }
-
-    // Add any new suggestions that are specified.
-    this.addSuggestions(suggestionUpdates.add);
-
-    // If the suggestions panel is now empty, then display a message to that effect in the panel.
-    const panelIsEmpty = this.$elt.childElementCount < 2;
-    this.$noSuggestionsMsg.style.display = (panelIsEmpty ? '' : 'none');
-
-    // If suggestions were added, and we are hidden, then show ourself
-    // to alert the user of the new suggestions.
-    // If the update removes all suggestions, then hide ourself
-    // as we no longer have anything to offer.
-    if (suggestionUpdates.add.length>0) {
-      this.showIfHidden();
-    } else if (panelIsEmpty) {
-      this.hideIfShown();
+      case 'suggestionRemoved': {
+        const { suggestionId } = update;
+        const $suggestions = $all(this.$elt, `#${suggestionId}`);
+        if ($suggestions.length>1) {
+          console.warn(`More than one suggestion on cell ${this.cell.id} with ID ${suggestionId}`)
+        }
+        for (const $suggestion of $suggestions) { $suggestion.remove(); }
+        const panelIsEmpty = (this.cell.obj.suggestions.length == 0);
+        if (panelIsEmpty) {
+          this.$noSuggestionsMsg.style.display = '';
+          this.hideIfShown();
+        }
+        break;
+      }
     }
   }
 
@@ -138,7 +131,7 @@ export class SuggestionPanel<O extends CellObject> extends HtmlElement<'div'> {
     const spec: HtmlElementSpecification<'div'> =  {
       tag: 'div',
       id: <ElementId>suggestionObject.id,
-      classes: [ <CssClass>suggestionObject.class, <CssClass>'suggestion' ],
+      class: <CssClass>'suggestion',
       asyncListeners: {
         click: e=>this.onSuggestionClicked(e, suggestionObject.changeRequests),
       },

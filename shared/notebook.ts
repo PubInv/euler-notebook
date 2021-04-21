@@ -20,7 +20,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 // Requirements
 
 import { CellId, CellIndex, CellObject, CellPosition, CellRelativePosition } from "./cell";
-import { assert, assertFalse } from "./common";
+import { arrayFilterOutInPlace, assert, assertFalse } from "./common";
 import { CssLength, CssSize } from "./css";
 import { FigureCellObject } from "./figure";
 import { NotebookPath } from "./folder";
@@ -189,6 +189,24 @@ export class Notebook {
         const { cellId, stroke } = update;
         const cellObject = this.getCellObject(cellId);
         cellObject.strokeData.strokes.push(stroke);
+        break;
+      }
+      case 'suggestionAdded': {
+        const { cellId, suggestionObject } = update;
+        const cellObject = this.getCellObject(cellId);
+        cellObject.suggestions.push(suggestionObject);
+        break;
+      }
+      case 'suggestionRemoved': {
+        const { cellId, suggestionId } = update;
+        const cellObject = this.getCellObject(cellId);
+        const removed = arrayFilterOutInPlace(cellObject.suggestions, s=>s.id==suggestionId);
+        if (removed.length == 0) {
+          // TODO: Logging that works in both browser and server.
+          console.warn(`WARNING: No suggestions with ID '${suggestionId}' to remove.`);
+        } else if (removed.length>1) {
+          console.warn(`WARNING: Multiple (${removed.length}) suggestions with same ID '${suggestionId}' removed.`);
+        }
         break;
       }
       case 'textTypeset': {

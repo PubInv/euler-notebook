@@ -37,10 +37,10 @@ import { LEFT_MARGIN, TOP_MARGIN, RIGHT_MARGIN, BOTTOM_MARGIN, PAGE_HEIGHT, PAGE
 import { Folder, NotebookPath, NOTEBOOK_PATH_RE, NotebookName, FolderPath, NotebookEntry } from "../shared/folder";
 import { Notebook, NotebookObject, NotebookWatcher, PageMargins } from "../shared/notebook";
 import {
-  NotebookChangeRequest, MoveCell, DeleteCell, ChangeNotebook, RequestId, NotebookRequest, OpenNotebook, CloseNotebook, InsertCell, DeleteStroke, InsertStroke, ResizeCell, TypesetFormula, TypesetText, TypesetFigure,
+  NotebookChangeRequest, MoveCell, DeleteCell, ChangeNotebook, RequestId, NotebookRequest, OpenNotebook, CloseNotebook, InsertCell, DeleteStroke, InsertStroke, ResizeCell, TypesetFormula, TypesetText, TypesetFigure, RemoveSuggestion, AddSuggestion,
 } from "../shared/client-requests";
 import {
-  NotebookUpdated, NotebookOpened, NotebookUpdate, CellInserted, CellDeleted, CellMoved, NotebookCollaboratorConnected, NotebookCollaboratorDisconnected, ServerResponse, StrokeInserted, StrokeDeleted, CellResized, FormulaTypeset, TextTypeset, FigureTypeset,
+  NotebookUpdated, NotebookOpened, NotebookUpdate, CellInserted, CellDeleted, CellMoved, NotebookCollaboratorConnected, NotebookCollaboratorDisconnected, ServerResponse, StrokeInserted, StrokeDeleted, CellResized, FormulaTypeset, TextTypeset, FigureTypeset, SuggestionAdded, SuggestionRemoved,
 } from "../shared/server-responses";
 import { notebookChangeRequestSynopsis, notebookUpdateSynopsis } from "../shared/debug-synopsis";
 import { UserPermission } from "../shared/permissions";
@@ -314,12 +314,6 @@ export class ServerNotebook extends Notebook {
     }
   }
 
-  public markDirty(): void {
-    debug(`Marking notebook ${this.path} as dirty.`)
-    // TODO: If server is terminated with Ctrl+C and save is pending, then save before exiting.
-    this.saveTimeout.startOrPostpone();
-  }
-
   public nextCellId(): CellId { return this._nextCellId++; }
 
   public requestChanges(
@@ -327,6 +321,7 @@ export class ServerNotebook extends Notebook {
     changeRequests: NotebookChangeRequest[],
     options: RequestChangesOptions,
   ): void {
+    assert(changeRequests.length>0);
     assert(!this.terminated);
     debug(`${source} change requests: ${changeRequests.length}`);
 
@@ -334,7 +329,6 @@ export class ServerNotebook extends Notebook {
       type: 'notebook',
       path: this.path,
       operation: 'updated',
-      suggestionUpdates: [],
       updates: [],
       undoChangeRequests: [],
       complete: true,
@@ -354,7 +348,7 @@ export class ServerNotebook extends Notebook {
       }
     }
 
-    this.markDirty();
+    this.saveTimeout.startOrPostpone();
   }
 
   public static validateObject(obj: PersistentServerNotebookObject): void {
@@ -465,6 +459,16 @@ export class ServerNotebook extends Notebook {
     const undoChangeRequests: NotebookChangeRequest[] = [];
 
     switch(request.type) {
+      case 'addSuggestion': {
+        const { cellId, suggestionObject } = request;
+        const update: SuggestionAdded = { type: 'suggestionAdded', cellId, suggestionObject };
+        updates.push(update);
+
+        const suggestionId = suggestionObject.id;
+        const undoChangeRequest: RemoveSuggestion = { type: 'removeSuggestion', cellId, suggestionId };
+        undoChangeRequests.unshift(undoChangeRequest);
+        break;
+      }
       case 'deleteCell': {
         const { cellId } = request;
         const update: CellDeleted = { type: 'cellDeleted', cellId };
@@ -552,6 +556,18 @@ export class ServerNotebook extends Notebook {
         updates.push(update);
 
         const undoChangeRequest: MoveCell = { type: 'moveCell', cellId, afterId: priorAfterId };
+        undoChangeRequests.unshift(undoChangeRequest);
+        break;
+      }
+      case 'removeSuggestion': {
+        const { cellId, suggestionId } = request;
+        const update: SuggestionRemoved = { type: 'suggestionRemoved', cellId, suggestionId };
+        updates.push(update);
+
+        const cellObject = this.getCellObject(cellId);
+        const suggestionObject = cellObject.suggestions.find(s=>s.id==suggestionId)!;
+        assert(suggestionObject);
+        const undoChangeRequest: AddSuggestion = { type: 'addSuggestion', cellId, suggestionObject };
         undoChangeRequests.unshift(undoChangeRequest);
         break;
       }

@@ -25,16 +25,17 @@ import * as debug1 from "debug";
 // const debug = debug1(`server:${MODULE}`);
 const debug = debug1(`server:server-cell`);
 
-import { arrayFilterInPlace, escapeHtml, Html, Milliseconds } from "../../shared/common";
+import { escapeHtml, Html, Milliseconds } from "../../shared/common";
 import { CssLength, CssSize, cssLengthInPixels, cssSizeFromPixels, LengthInPixels } from "../../shared/css";
 import { CellId, CellObject, CellType } from "../../shared/cell";
-import { SuggestionClass, SuggestionId, SuggestionObject } from "../../shared/suggestions";
 import { SvgMarkup } from "../../shared/svg";
 
 import { ServerNotebook } from "../server-notebook";
-import { NotebookSuggestionsUpdated, NotebookUpdate, SuggestionUpdates } from "../../shared/server-responses";
-import { cellIdentification, cellSynopsis } from "../../shared/debug-synopsis";
+import { NotebookUpdate } from "../../shared/server-responses";
+import { cellSynopsis } from "../../shared/debug-synopsis";
 import { InactivityTimeout } from "../../shared/inactivity-timeout";
+import { AddSuggestion, NotebookChangeRequest, RemoveSuggestion } from "../../shared/client-requests";
+import { SuggestionObject, TYPESETTING_SUGGESTION_CLASS } from "../../shared/suggestions";
 
 // Types
 
@@ -120,48 +121,6 @@ export abstract class ServerCell<O extends CellObject> {
     return cssSizeFromPixels(width, height);
   }
 
-  protected updateSuggestions(
-    add: SuggestionObject[],
-    removeIds: SuggestionId[],
-    removeClasses: SuggestionClass[],
-  ): void {
-    debug(`updateSuggestions for ${cellIdentification(this.obj)}: add ${add.length}, remove ${removeClasses.length} classes, remove ${removeIds.length}`);
-
-    // Update suggestions attached to cell.
-    const suggestions = this.obj.suggestions;
-    const removed1 = arrayFilterInPlace(suggestions, s=>removeIds.indexOf(s.id)>=0);
-    const removed2 = arrayFilterInPlace(suggestions, s=>s.hasOwnProperty('class') && removeClasses.indexOf(s.class!)>=0);
-    for (const suggestionObject of add) {
-      suggestions.push(suggestionObject);
-    }
-
-    // If the suggestions actually changed, then...
-    const changed = add.length>0 || removed1.length>0 || removed2.length>0;
-    if (changed) {
-      debug(`  Suggestions changed so broadcasting and marking notebook dirty.`);
-
-      // Broadcast a "suggestions updated" message to clients.
-      const suggestionUpdates: SuggestionUpdates = {
-        cellId: this.id,
-        add,
-        removeClasses,
-        removeIds,
-      };
-      const response: NotebookSuggestionsUpdated = {
-        type: 'notebook',
-        path: this.notebook.path,
-        operation: 'suggestionsUpdated',
-        suggestionUpdates: [ suggestionUpdates ],
-      };
-      this.notebook.broadcastMessage(response);
-
-      // Trigger a notebook save
-      this.notebook.markDirty();
-    } else {
-      debug(`  Suggestions didn't change.`);
-    }
-  }
-
   // Private Instance Properties
 
   protected notebook: ServerNotebook;
@@ -171,9 +130,54 @@ export abstract class ServerCell<O extends CellObject> {
 
   // Private Instance Methods
 
+  protected /* overridable */ abstract recognizeStrokes(
+    width: LengthInPixels,
+    height: LengthInPixels,
+  ): Promise<SuggestionObject[]>;
+
   // Private Instance Event Handlers
 
-  // Inherited classes will trigger recognizing their strokes appropriate for their cell type.
-  protected abstract onStrokeInactivityTimeout(): Promise<void>;
+  protected async onStrokeInactivityTimeout(): Promise<void> {
+    debug(`Stroke inactivity timeout.`);
+
+    // LATER: Display recognition error to user if one occurs.
+    //        Currently it will just log the error, but fails silently from the user's perspective.
+
+    const width = cssLengthInPixels(this.cssSize.width);
+    const height = cssLengthInPixels(this.cssSize.height);
+    const suggestionObjects = await this.recognizeStrokes(width, height)
+
+    // Remove existing typesetting suggestions.
+    const changeRequests: NotebookChangeRequest[] = [];
+    for (const suggestion of this.obj.suggestions.filter(s=>s.class==TYPESETTING_SUGGESTION_CLASS)) {
+      const changeRequest: RemoveSuggestion = {
+        type: 'removeSuggestion',
+        cellId: this.id,
+        suggestionId: suggestion.id,
+      };
+      changeRequests.push(changeRequest);
+    }
+
+    // Add new typesetting suggestions.
+    for (const suggestionObject of suggestionObjects) {
+      // Add a change request to remove our own suggestion.
+      suggestionObject.changeRequests.push({
+        type: 'removeSuggestion',
+        cellId: this.id,
+        suggestionId: suggestionObject.id,
+      });
+      const changeRequest: AddSuggestion = {
+        type: 'addSuggestion',
+        cellId: this.id,
+        suggestionObject,
+      };
+      changeRequests.push(changeRequest);
+    };
+
+    // Request the changes.
+    if (changeRequests.length>0) {
+      this.notebook.requestChanges("SYSTEM", changeRequests, {});
+    }
+  }
 }
 

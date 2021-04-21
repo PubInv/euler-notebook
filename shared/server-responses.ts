@@ -32,17 +32,10 @@ import { FormulaObject } from "./formula";
 import { NotebookObject } from "./notebook";
 import { UserPermissions } from "./permissions";
 import { StrokeId, Stroke, StrokeData } from "./stylus";
-import { SuggestionClass, SuggestionId, SuggestionObject } from "./suggestions";
+import { SuggestionId, SuggestionObject } from "./suggestions";
 import { CollaboratorObject, UserObject } from "./user";
 
 // Supporting Types
-
-export interface SuggestionUpdates {
-  cellId: CellId,
-  add: SuggestionObject[],
-  removeIds: SuggestionId[],
-  removeClasses: SuggestionClass[],
-}
 
 // Server Responses
 
@@ -90,7 +83,6 @@ export type NotebookResponse =
               NotebookCollaboratorConnected |
               NotebookCollaboratorDisconnected |
               NotebookOpened |
-              NotebookSuggestionsUpdated |
               NotebookUpdated;
 interface NotebookResponseBase extends ResponseBase {
   type: 'notebook',
@@ -114,15 +106,10 @@ export interface NotebookOpened extends NotebookResponseBase {
   permissions: UserPermissions;
   obj: NotebookObject;
 }
-export interface NotebookSuggestionsUpdated extends NotebookResponseBase {
-  operation: 'suggestionsUpdated';
-  suggestionUpdates: SuggestionUpdates[];
-}
 export interface NotebookUpdated extends NotebookResponseBase {
   operation: 'updated';
   updates: NotebookUpdate[];
   undoChangeRequests: NotebookChangeRequest[];
-  suggestionUpdates: SuggestionUpdates[];
 }
 
 export type UserResponse = UserLoggedIn | UserLoggedOut;
@@ -186,6 +173,8 @@ export type NotebookUpdate =
               FormulaTypeset |
               StrokeInserted |
               StrokeDeleted |
+              SuggestionAdded |
+              SuggestionRemoved |
               TextTypeset;
 export interface CellDeleted {
   type: 'cellDeleted';
@@ -227,6 +216,16 @@ export interface StrokeInserted {
   type: 'strokeInserted';
   cellId: CellId;
   stroke: Stroke;
+}
+export interface SuggestionAdded {
+  type: 'suggestionAdded';
+  cellId: CellId;
+  suggestionObject: SuggestionObject;
+}
+export interface SuggestionRemoved {
+  type: 'suggestionRemoved';
+  cellId: CellId;
+  suggestionId: SuggestionId;
 }
 export interface TextTypeset {
   type: 'textTypeset';

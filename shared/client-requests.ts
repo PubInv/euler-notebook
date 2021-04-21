@@ -30,6 +30,7 @@ import { Stroke, StrokeId, StrokeData } from "./stylus";
 import { UserName, UserPassword } from "./user";
 import { FormulaObject } from "./formula";
 import { FigureObject } from "./figure";
+import { SuggestionId, SuggestionObject } from "./suggestions";
 
 // Types
 
@@ -140,18 +141,25 @@ export interface NotebookRenameRequest {
 // Notebook Change Requests
 
 export type NotebookChangeRequest =
+  AddSuggestion |
   DeleteCell |
   DeleteStroke |
   InsertCell |
   InsertEmptyCell |
   InsertStroke |
   MoveCell |
+  RemoveSuggestion |
   ResizeCell |
   TypesetFigure |
   TypesetFormula |
   TypesetText;
 
-  export interface DeleteCell {
+export interface AddSuggestion {
+  type: 'addSuggestion';
+  cellId: CellId,
+  suggestionObject: SuggestionObject;
+}
+export interface DeleteCell {
   type: 'deleteCell';
   cellId: CellId;
 }
@@ -179,6 +187,11 @@ export interface MoveCell {
   type: 'moveCell';
   cellId: CellId;
   afterId: CellRelativePosition;
+}
+export interface RemoveSuggestion {
+  type: 'removeSuggestion';
+  cellId: CellId;
+  suggestionId: SuggestionId;
 }
 export interface ResizeCell {
   type: 'resizeCell';

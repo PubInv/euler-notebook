@@ -36,6 +36,8 @@ import { plot } from "../../components/formula-plotter";
 import { FormulaSymbol } from "../../shared/formula";
 import { ServerFormula } from "../server-formula";
 import { PLOT_CELL_HEIGHT } from "../../shared/dimensions";
+import { LengthInPixels } from "../../shared/css";
+import { SuggestionObject } from "../../shared/suggestions";
 // import { plotUnivariate } from "../adapters/wolframscript";
 // import { WolframExpression } from "../shared/formula";
 
@@ -96,10 +98,13 @@ export class PlotCell extends ServerCell<PlotCellObject> {
 
   // Private Instance Methods
 
-  // Private Instance Event Handlers
-
-  protected async onStrokeInactivityTimeout(): Promise<void> {
-    console.log(`Plot cell stroke inactivity timeout c${this.id}`);
+  protected async recognizeStrokes(
+    _width: LengthInPixels,
+    _height: LengthInPixels,
+  ): Promise<SuggestionObject[]> {
+    return [];
   }
+
+  // Private Instance Event Handlers
 
 }

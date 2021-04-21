@@ -27,7 +27,7 @@ import { assert, escapeHtml, Html } from "../../shared/common";
 import { SvgMarkup } from "../../shared/svg";
 import { CssSize } from "../../shared/css";
 import { cellBriefSynopsis, cellSynopsis, notebookUpdateSynopsis } from "../../shared/debug-synopsis";
-import { NotebookUpdate, SuggestionUpdates } from "../../shared/server-responses";
+import { NotebookUpdate } from "../../shared/server-responses";
 import { Stroke, StrokeId } from "../../shared/stylus";
 
 
@@ -37,7 +37,6 @@ import { NotebookChangeRequest } from "../../shared/client-requests";
 // Types
 
 export interface CellView {
-  onSuggestionsUpdate(update: SuggestionUpdates, ownRequest: boolean): void;
   onUpdate(update: NotebookUpdate, ownRequest: boolean): void;
 }
 
@@ -112,12 +111,6 @@ export abstract class ClientCell<O extends CellObject> {
   }
 
   // Public Event Handlers
-
-  public onSuggestionsUpdate(update: SuggestionUpdates, ownRequest: boolean): void {
-    for (const view of this.views) {
-      view.onSuggestionsUpdate(update, ownRequest);
-    }
-  }
 
   public onUpdate(update: NotebookUpdate, ownRequest: boolean): void {
     debug(`onUpdate C${this.id} ${notebookUpdateSynopsis(update)}`);

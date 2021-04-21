@@ -27,7 +27,7 @@ const debug = debug1('client:cell-edit-view');
 import { CellObject, CellId, CellRelativePosition, CellPosition } from "../../shared/cell";
 import { assert, Html, ElementId } from "../../shared/common";
 import { CssClass, CssLength, CssSize, LengthInPixels, joinCssLength } from "../../shared/css";
-import { CellDeleted, NotebookUpdate, SuggestionUpdates } from "../../shared/server-responses";
+import { CellDeleted, NotebookUpdate } from "../../shared/server-responses";
 import { convertStrokeToPath, Stroke, StrokeId, strokePathId } from "../../shared/stylus";
 import { notebookUpdateSynopsis } from "../../shared/debug-synopsis";
 
@@ -102,10 +102,6 @@ export abstract class CellEditView<O extends CellObject> extends HtmlElement<'di
 
   // CellView Methods
 
-  public onSuggestionsUpdate(update: SuggestionUpdates, ownRequest: boolean): void {
-    this.suggestionPanel.onSuggestionsUpdate(update, ownRequest);
-  }
-
   public onUpdate(update: NotebookUpdate, ownRequest: boolean): void {
     debug(`onUpdate ${notebookUpdateSynopsis(update)}`);
     switch (update.type) {
@@ -130,7 +126,11 @@ export abstract class CellEditView<O extends CellObject> extends HtmlElement<'di
         }
         break;
       }
-
+      case 'suggestionAdded':
+      case 'suggestionRemoved': {
+        this.suggestionPanel.onUpdate(update, ownRequest);
+        break;
+      }
       default: /* Nothing to do. */ break;
     }
 

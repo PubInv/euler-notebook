@@ -26,8 +26,8 @@ import { SvgMarkup } from "./svg";
 
 // Types
 
-export type SuggestionId = '{SuggestionId}';
 export type SuggestionClass = '{SuggestionClass}';
+export type SuggestionId = '{SuggestionId}';
 export type Suggestions = SuggestionObject[];
 
 interface SuggestionDisplay {
@@ -38,7 +38,11 @@ interface SuggestionDisplay {
 
 export interface SuggestionObject {
   id: SuggestionId;
-  class?: SuggestionClass;
+  class: SuggestionClass;
   changeRequests: NotebookChangeRequest[];
   display: SuggestionDisplay;
 }
+
+// Constants
+
+export const TYPESETTING_SUGGESTION_CLASS = <SuggestionClass>"typesetting";

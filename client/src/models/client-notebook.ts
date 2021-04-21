@@ -36,8 +36,7 @@ import {
 } from "../shared/client-requests";
 import {
   NotebookUpdated, NotebookOpened, NotebookResponse, NotebookClosed, NotebookUpdate,
-  NotebookCollaboratorConnected,
-  NotebookCollaboratorDisconnected, NotebookSuggestionsUpdated,
+  NotebookCollaboratorConnected, NotebookCollaboratorDisconnected
 } from "../shared/server-responses";
 import { Stroke, StrokeId } from "../shared/stylus";
 import { CollaboratorObject } from "../shared/user";
@@ -348,13 +347,11 @@ export class ClientNotebook extends Notebook {
         type: 'notebook',
         path: this.path,
         operation: 'updated',
-        suggestionUpdates: [],
         updates: [],
         undoChangeRequests: [],
       };
       for (const responseMessage of responseMessages) {
         rval.updates.push(...responseMessage.updates);
-        rval.suggestionUpdates.push(...responseMessage.suggestionUpdates);
       }
       // Undo change requests have to go in reverse order.
       for (let i=responseMessages.length; i>0; --i) {
@@ -403,7 +400,6 @@ export class ClientNotebook extends Notebook {
       case 'closed':                    this.onClosed(msg, ownRequest); break;
       case 'collaboratorConnected':     this.onCollaboratorConnected(msg); break;
       case 'collaboratorDisconnected':  this.onCollaboratorDisconnected(msg); break;
-      case 'suggestionsUpdated':        this.onSuggestionsUpdated(msg, ownRequest); break;
       case 'updated':                   this.onUpdated(msg, ownRequest); break;
 
       case 'opened':
@@ -417,30 +413,12 @@ export class ClientNotebook extends Notebook {
     this.terminate(msg.reason);
   }
 
-  private onSuggestionsUpdated(msg: NotebookSuggestionsUpdated, ownRequest: boolean): void {
-    // Message from the server indicating this notebook suggestions have changed.
-    // Dispatch each update in turn.
-    for (const update of msg.suggestionUpdates) {
-      const cell = this.getCell(update.cellId);
-      cell.onSuggestionsUpdate(update, ownRequest);
-    }
-  }
-
   private onUpdated(msg: NotebookUpdated, ownRequest: boolean): void {
 
     // Message from the server indicating this notebook has changed.
     // Dispatch each update in turn.
     for (const update of msg.updates) {
       this.onUpdate(update, ownRequest);
-    }
-
-    // If there are also suggestion panel updates,
-    // Dispatch each update in turn.
-    if (msg.suggestionUpdates) {
-      for (const update of msg.suggestionUpdates) {
-        const cell = this.getCell(update.cellId);
-        cell.onSuggestionsUpdate(update, ownRequest);
-      }
     }
   }
 
@@ -452,7 +430,6 @@ export class ClientNotebook extends Notebook {
 
     // Update our data structure
     switch (update.type) {
-
       case 'cellDeleted': {
         const { cellId } = update;
         const cell = this.getCell(cellId);
@@ -466,18 +443,15 @@ export class ClientNotebook extends Notebook {
         this.cellMap.set(cell.id, cell);
         break;
       }
-
-      case 'cellResized':
-      case 'figureTypeset':
-      case 'formulaTypeset':
-      case 'strokeDeleted':
-      case 'strokeInserted':
-      case 'textTypeset': {
-        const cell = this.getCell(update.cellId);
-        cell.onUpdate(update, ownRequest);
+      default: {
+        if (update.hasOwnProperty('cellId')) {
+          const cell = this.getCell((<any/* TYPESCRIPT: */>update).cellId);
+          cell.onUpdate(update, ownRequest);
+        }
         break;
       }
     }
+
 
     // Notify notebook views of the update.
     // REVIEW: for deletions should we update the view before updating the model?

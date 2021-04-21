@@ -27,7 +27,7 @@ import { assert, escapeHtml, PlainText } from './common';
 import {
   FolderRequest, ClientRequest, NotebookRequest, FolderChangeRequest, NotebookChangeRequest, UserRequest
 } from './client-requests';
-import { FolderResponse, FolderUpdate, ServerResponse, NotebookResponse, NotebookUpdate, UserResponse,  SuggestionUpdates } from "./server-responses";
+import { FolderResponse, FolderUpdate, ServerResponse, NotebookResponse, NotebookUpdate, UserResponse } from "./server-responses";
 import { NotebookObject } from "./notebook";
 import { Stroke } from "./myscript-types";
 
@@ -125,12 +125,14 @@ export function folderUpdateSynopsis(update: FolderUpdate): string {
 export function notebookChangeRequestSynopsis(request: NotebookChangeRequest): string {
   let rval: string = request.type;
   switch(request.type) {
+    case 'addSuggestion':       rval += ` C${request.cellId} TODO: suggestionSynopsis`; break;
     case 'deleteCell':          rval += ` C${request.cellId}`; break;
     case 'deleteStroke':        rval += ` C${request.cellId} S${request.strokeId}`; break;
     case 'insertCell':          rval += ` C${request.cellObject.type} after ${request.afterId}`; break;
     case 'insertEmptyCell':     rval += ` type ${request.cellType} after ${request.afterId}`; break;
     case 'insertStroke':        rval += ` C${request.cellId} ${strokeSynopsis(request.stroke)}`; break;
     case 'moveCell':            rval += ` C${request.cellId} A${request.afterId}`; break;
+    case 'removeSuggestion':    rval += ` C${request.cellId} S${request.suggestionId}`; break;
     case 'resizeCell':          rval += ` C${request.cellId} ${JSON.stringify(request.cssSize)}`; break;
     default: rval += UNKNOWN_TYPE;
   }
@@ -140,15 +142,17 @@ export function notebookChangeRequestSynopsis(request: NotebookChangeRequest): s
 export function notebookUpdateSynopsis(update: NotebookUpdate): string {
   let rval: string = update.type;
   switch(update.type) {
-    case 'cellDeleted':    rval += ` P${update.cellId}`; break;
-    case 'cellInserted':   rval += ` ${cellSynopsis(update.cellObject)} after ${update.afterId}`; break;
-    case 'cellMoved':      rval += ` C${update.cellId} after ${update.afterId}`; break;
-    case 'cellResized':    rval += ` C${update.cellId} ${JSON.stringify(update.cssSize)}`; break;
-    case 'figureTypeset':  rval += ` C${update.cellId}`; break;
-    case 'formulaTypeset': rval += ` C${update.cellId}`; break;
-    case 'strokeInserted': rval += ` C${update.cellId} ${strokeSynopsis(update.stroke)}`; break;
-    case 'strokeDeleted':  rval += ` C${update.cellId} S${update.strokeId}`; break;
-    case 'textTypeset':    rval += ` C${update.cellId}`; break;
+    case 'cellDeleted':        rval += ` P${update.cellId}`; break;
+    case 'cellInserted':       rval += ` ${cellSynopsis(update.cellObject)} after ${update.afterId}`; break;
+    case 'cellMoved':          rval += ` C${update.cellId} after ${update.afterId}`; break;
+    case 'cellResized':        rval += ` C${update.cellId} ${JSON.stringify(update.cssSize)}`; break;
+    case 'figureTypeset':      rval += ` C${update.cellId}`; break;
+    case 'formulaTypeset':     rval += ` C${update.cellId}`; break;
+    case 'strokeInserted':     rval += ` C${update.cellId} ${strokeSynopsis(update.stroke)}`; break;
+    case 'strokeDeleted':      rval += ` C${update.cellId} S${update.strokeId}`; break;
+    case 'suggestionAdded':    rval += ` C${update.cellId} TODO: suggestionSynopsis`; break;
+    case 'suggestionRemoved':  rval += ` C${update.cellId} S${update.suggestionId}`; break;
+    case 'textTypeset':        rval += ` C${update.cellId}`; break;
     default: rval += UNKNOWN_TYPE;
   }
   return rval;
@@ -246,7 +250,6 @@ function serverNotebookResponseSynopsis(msg: NotebookResponse): string {
     case 'collaboratorConnected': rval += ` obj: ${JSON.stringify(msg.obj)}`; break;
     case 'collaboratorDisconnected': rval += ` clientId: ${msg.clientId}`; break;
     case 'opened': rval += ` cols: ${msg.collaborators.map(c=>c.userName).join(",")}`; break;
-    case 'suggestionsUpdated': rval += ` ${suggestionUpdatesSynopsis(msg.suggestionUpdates)}`; break;
     case 'updated': {
       for (const change of msg.updates) { rval += ` ${notebookUpdateSynopsis(change)};`; }
       break;
@@ -275,20 +278,4 @@ function strokeSynopsis(stroke: Stroke): string {
     return `(${x.toFixed(2)},${y.toFixed(2)})`;
   });
   return `S${stroke.id}[${points.join(',')}${abbreviated?"...":""}]`
-}
-
-function suggestionUpdatesSynopsis(suggestionUpdates: SuggestionUpdates[]): string {
-  return suggestionUpdates.map(update=>{
-    const sections: string[] = [];
-    if (update.add.length>0) {
-      sections.push("add:" + update.add.map(e=>`#${e.id}.${e.class}`).join(','));
-    }
-    if (update.removeClasses.length>0) {
-      sections.push(`removeClasses: ${update.removeClasses.join(',')}`);
-    }
-    if (update.removeIds.length>0) {
-      sections.push(`removeIds:(${update.removeIds.join(',')}`);
-    }
-    return `[C${update.cellId} ${sections.join(";")}`;
-  }).join(',');
 }

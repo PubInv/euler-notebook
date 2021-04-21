@@ -24,11 +24,11 @@ const MODULE = __filename.split(/[/\\]/).slice(-1)[0].slice(0,-3);
 const debug = debug1(`server:${MODULE}`);
 
 import { deepCopy, PlainText } from "../../shared/common";
-import { cssLengthInPixels } from "../../shared/css";
+import { LengthInPixels } from "../../shared/css";
 import { CellId, CellSource, CellType } from "../../shared/cell";
 import { EMPTY_FIGURE_OBJECT, FigureCellObject, renderFigureCell } from "../../shared/figure";
 import { EMPTY_STROKE_DATA } from "../../shared/stylus";
-import { SuggestionClass, SuggestionId, SuggestionObject } from "../../shared/suggestions";
+import { SuggestionId, SuggestionObject, TYPESETTING_SUGGESTION_CLASS } from "../../shared/suggestions";
 import { SvgMarkup } from "../../shared/svg";
 
 import { ServerNotebook } from "../server-notebook";
@@ -36,12 +36,9 @@ import { ServerNotebook } from "../server-notebook";
 import { ServerCell } from "./index";
 import { recognizeFigure } from "../../components/handwriting-recognizer";
 import { NotebookChangeRequest } from "../../shared/client-requests";
-import { NotebookSuggestionsUpdated, SuggestionUpdates } from "../../shared/server-responses";
 import { FIGURE_CELL_HEIGHT } from "../../shared/dimensions";
 
 // Constants
-
-const TYPESET_FIGURE_SUGGESTION_CLASS = <SuggestionClass>'typesetFigure';
 
 // Exported Class
 
@@ -81,13 +78,15 @@ export class FigureCell extends ServerCell<FigureCellObject> {
 
   // Private Instance Methods
 
-  private async recognizeStrokes(): Promise<void> {
+  protected async recognizeStrokes(
+    width: LengthInPixels,
+    height: LengthInPixels,
+  ): Promise<SuggestionObject[]> {
     debug(`Recognizing strokes`);
-    const width = cssLengthInPixels(this.cssSize.width);
-    const height = cssLengthInPixels(this.cssSize.height);
     const results = await recognizeFigure(width, height, this.obj.strokeData);
-    const addSuggestions: SuggestionObject[] = results.alternatives.map((alternative, index)=>{
-      const id = <SuggestionId>`recognizedFigure${index}`;
+    const { alternatives } = results;
+    return alternatives.map((alternative, index)=>{
+      const suggestionId = <SuggestionId>`recognizedFigure${index}`;
       const { figureObject } = alternative;
       const data: NotebookChangeRequest[] = [{
         type: 'typesetFigure',
@@ -95,37 +94,16 @@ export class FigureCell extends ServerCell<FigureCellObject> {
         figure: figureObject,
         strokeData: EMPTY_STROKE_DATA,
       }];
-      const suggestion: SuggestionObject = {
-        id,
-        class: TYPESET_FIGURE_SUGGESTION_CLASS,
+      const suggestionObject: SuggestionObject = {
+        id: suggestionId,
+        class: TYPESETTING_SUGGESTION_CLASS,
         changeRequests: data,
         display: { svg: alternative.thumbnailSvgMarkup },
       };
-      return suggestion;
+      return suggestionObject;
     });
-    const updates: SuggestionUpdates[] = [{
-      cellId: this.id,
-      add: addSuggestions,
-      removeClasses: [ TYPESET_FIGURE_SUGGESTION_CLASS ],
-      removeIds: [],
-    }];
-    const response: NotebookSuggestionsUpdated = {
-      type: 'notebook',
-      path: this.notebook.path,
-      operation: 'suggestionsUpdated',
-      suggestionUpdates: updates,
-    };
-
-    this.notebook.broadcastMessage(response);
   }
 
   // Private Instance Event Handlers
-
-  protected async onStrokeInactivityTimeout(): Promise<void> {
-    console.log(`Figure cell stroke inactivity timeout c${this.id}`);
-    // LATER: Display recognition error to user if one occurs.
-    //        Currently it will just log the error, but fails silently from the user's perspective.
-    await this.recognizeStrokes();
-  }
 
 }
