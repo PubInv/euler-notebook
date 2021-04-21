@@ -92,6 +92,13 @@ export class Notebook {
     return this.obj.cells.length == 0;
   }
 
+  public lastCellId(): CellId {
+    // Throws if notebook doesn't have any cells.
+    const cells = this.obj.cells;
+    assert(cells.length>0);
+    return cells[cells.length-1].id;
+  }
+
   public get margins(): PageMargins { return this.obj.margins; };
   public get pageSize(): CssSize { return this.obj.pageSize; };
   public get pagination(): Pagination { return this.obj.pagination; };
@@ -210,7 +217,7 @@ export class Notebook {
       this.obj.cells.push(cellObject);
     } else {
       const cellIndex = this.cellIndex(afterId);
-      this.obj.cells.splice(cellIndex, 0, cellObject);
+      this.obj.cells.splice(cellIndex+1, 0, cellObject);
     }
     this.cellObjectMap.set(cellObject.id, cellObject);
   }

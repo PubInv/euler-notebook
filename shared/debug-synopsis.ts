@@ -44,8 +44,12 @@ const UNKNOWN_TYPE = " UNKNOWN!";
 
 // Exported Functions
 
+export function cellIdentification(cell: CellObject): string {
+  return `C${cell.id}:${cellTypeString(cell.type)}(${cell.source})`;
+}
+
 export function cellBriefSynopsis(cell: CellObject, indentationLevel: number = 0): string {
-  return `${indentation(indentationLevel)}C${cell.id} ${cellTypeString(cell.type)} ${cell.source} ${abbreviatedTextInHtml(cell.inputText)}`;
+  return `${indentation(indentationLevel)}${cellIdentification(cell)} ${abbreviatedTextInHtml(cell.inputText)}`;
 }
 
 export function cellSynopsis(cell: CellObject, indentationLevel: number = 0): string {

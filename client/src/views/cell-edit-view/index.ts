@@ -24,7 +24,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 import * as debug1 from "debug";
 const debug = debug1('client:cell-edit-view');
 
-import { CellObject, CellId } from "../../shared/cell";
+import { CellObject, CellId, CellRelativePosition, CellPosition } from "../../shared/cell";
 import { assert, Html, ElementId } from "../../shared/common";
 import { CssClass, CssLength, CssSize, LengthInPixels, joinCssLength } from "../../shared/css";
 import { CellDeleted, NotebookUpdate, SuggestionUpdates } from "../../shared/server-responses";
@@ -75,6 +75,8 @@ export abstract class CellEditView<O extends CellObject> extends HtmlElement<'di
   // Public Instance Property Functions
 
   public get id(): CellId { return this.cell.id; }
+
+  public isLastCell(): boolean { return this.cell.isLastCell(); }
 
   public isSelected(): boolean {
     return this.$elt.classList.contains('selected');
@@ -366,7 +368,8 @@ export abstract class CellEditView<O extends CellObject> extends HtmlElement<'di
   }
 
   private async onInsertCell(): Promise<void> {
-    await this.notebookEditView.insertCellRequest(this.id);
+    const afterId: CellRelativePosition = (this.isLastCell() ? CellPosition.Bottom : this.id);
+    await this.notebookEditView.insertCellRequest(afterId);
   }
 
   private onResizerCancel(): void {
