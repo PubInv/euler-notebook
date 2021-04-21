@@ -25,9 +25,10 @@ const debug = debug1(`server:${MODULE}`);
 
 import { deepCopy, PlainText } from "../../shared/common";
 import { cssLengthInPixels } from "../../shared/css";
-import { CellId, CellSource, CellType, SuggestionClass, SuggestionId, SuggestionObject } from "../../shared/cell";
+import { CellId, CellSource, CellType } from "../../shared/cell";
 import { EMPTY_FIGURE_OBJECT, FigureCellObject, renderFigureCell } from "../../shared/figure";
 import { EMPTY_STROKE_DATA } from "../../shared/stylus";
+import { SuggestionClass, SuggestionId, SuggestionObject } from "../../shared/suggestions";
 import { SvgMarkup } from "../../shared/svg";
 
 import { ServerNotebook } from "../server-notebook";

@@ -314,6 +314,12 @@ export class ServerNotebook extends Notebook {
     }
   }
 
+  public markDirty(): void {
+    debug(`Marking notebook ${this.path} as dirty.`)
+    // TODO: If server is terminated with Ctrl+C and save is pending, then save before exiting.
+    this.saveTimeout.startOrPostpone();
+  }
+
   public nextCellId(): CellId { return this._nextCellId++; }
 
   public requestChanges(
@@ -348,8 +354,7 @@ export class ServerNotebook extends Notebook {
       }
     }
 
-    // TODO: If server is terminated with Ctrl+C and save is pending, then save before exiting.
-    this.saveTimeout.startOrPostpone();
+    this.markDirty();
   }
 
   public static validateObject(obj: PersistentServerNotebookObject): void {
@@ -627,10 +632,10 @@ export class ServerNotebook extends Notebook {
   private async save(): Promise<void> {
     // LATER: A new save can be requested before the previous save completes,
     //        so wait until the previous save completes before attempting to save.
+
+    debug(`Saving ${this.path}`);
     assert(!this.saving);
     this.saving = true;
-
-    debug(`saving ${this.path}`);
 
     const psno: PersistentServerNotebookObject = {
       formatVersion: FORMAT_VERSION,

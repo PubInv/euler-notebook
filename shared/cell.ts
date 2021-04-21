@@ -19,11 +19,10 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 // Requirements
 
-import { NotebookChangeRequest } from "./client-requests";
-import {  Html, PlainText } from "./common";
+import {  PlainText } from "./common";
 import { CssSize } from "./css";
-import { MathMlTree } from "./mathml";
 import { convertStrokeToPath, StrokeData } from "./stylus";
+import { Suggestions } from "./suggestions";
 import { SvgMarkup } from "./svg";
 
 // Types
@@ -32,9 +31,6 @@ export type CellId = number;
 export type CellIndex = number; // Position of cell in the notebook. 0 is first cell.
 export type PageIndex = number;
 export type CellRelativePosition = CellId | CellPosition; // Position relative to another cell, or at the top or bottom of the notebook.
-export type SuggestionId = '{SuggestionId}';
-export type SuggestionClass = '{SuggestionClass}';
-export type Suggestions = SuggestionObject[];
 
 export const CELL_SOURCES = [
   'SYSTEM',
@@ -62,19 +58,6 @@ export interface CellObject {
   source: CellSource;
   strokeData: StrokeData;
   suggestions: Suggestions;
-}
-
-interface SuggestionDisplay {
-  formulaMathMlTree?: MathMlTree;
-  html?: Html;
-  svg?: SvgMarkup;
-}
-
-export interface SuggestionObject {
-  id: SuggestionId;
-  class?: SuggestionClass;
-  changeRequests: NotebookChangeRequest[];
-  display: SuggestionDisplay;
 }
 
 // Exported Functions

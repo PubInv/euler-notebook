@@ -22,7 +22,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 // Requirements
 
-import { CellId, CellObject, CellRelativePosition, SuggestionClass, SuggestionId, SuggestionObject } from "./cell";
+import { CellId, CellObject, CellRelativePosition } from "./cell";
 import { RequestId, NotebookChangeRequest } from "./client-requests";
 import { ClientId, PlainText, SessionToken } from "./common";
 import { CssSize } from "./css";
@@ -32,6 +32,7 @@ import { FormulaObject } from "./formula";
 import { NotebookObject } from "./notebook";
 import { UserPermissions } from "./permissions";
 import { StrokeId, Stroke, StrokeData } from "./stylus";
+import { SuggestionClass, SuggestionId, SuggestionObject } from "./suggestions";
 import { CollaboratorObject, UserObject } from "./user";
 
 // Supporting Types

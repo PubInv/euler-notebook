@@ -19,18 +19,21 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 // Requirements
 
-// import * as debug1 from "debug";
+import * as debug1 from "debug";
 // const MODULE = __filename.split(/[/\\]/).slice(-1)[0].slice(0,-3);
+// TODO: If file is index.ts then get name of module from enclosing directory.
 // const debug = debug1(`server:${MODULE}`);
+const debug = debug1(`server:server-cell`);
 
-import { escapeHtml, Html, Milliseconds } from "../../shared/common";
+import { arrayFilterInPlace, escapeHtml, Html, Milliseconds } from "../../shared/common";
 import { CssLength, CssSize, cssLengthInPixels, cssSizeFromPixels, LengthInPixels } from "../../shared/css";
-import { CellId, CellObject, CellType, SuggestionClass, SuggestionId, SuggestionObject } from "../../shared/cell";
+import { CellId, CellObject, CellType } from "../../shared/cell";
+import { SuggestionClass, SuggestionId, SuggestionObject } from "../../shared/suggestions";
 import { SvgMarkup } from "../../shared/svg";
 
 import { ServerNotebook } from "../server-notebook";
 import { NotebookSuggestionsUpdated, NotebookUpdate, SuggestionUpdates } from "../../shared/server-responses";
-import { cellSynopsis } from "../../shared/debug-synopsis";
+import { cellIdentification, cellSynopsis } from "../../shared/debug-synopsis";
 import { InactivityTimeout } from "../../shared/inactivity-timeout";
 
 // Types
@@ -122,24 +125,41 @@ export abstract class ServerCell<O extends CellObject> {
     removeIds: SuggestionId[],
     removeClasses: SuggestionClass[],
   ): void {
+    debug(`updateSuggestions for ${cellIdentification(this.obj)}: add ${add.length}, remove ${removeClasses.length} classes, remove ${removeIds.length}`);
 
-    // TODO: update persistent suggestions
+    // Update suggestions attached to cell.
+    const suggestions = this.obj.suggestions;
+    const removed1 = arrayFilterInPlace(suggestions, s=>removeIds.indexOf(s.id)>=0);
+    const removed2 = arrayFilterInPlace(suggestions, s=>s.hasOwnProperty('class') && removeClasses.indexOf(s.class!)>=0);
+    for (const suggestionObject of add) {
+      suggestions.push(suggestionObject);
+    }
 
-    const suggestionUpdates: SuggestionUpdates = {
-      cellId: this.id,
-      add,
-      removeClasses,
-      removeIds,
-    };
+    // If the suggestions actually changed, then...
+    const changed = add.length>0 || removed1.length>0 || removed2.length>0;
+    if (changed) {
+      debug(`  Suggestions changed so broadcasting and marking notebook dirty.`);
 
-    const response: NotebookSuggestionsUpdated = {
-      type: 'notebook',
-      path: this.notebook.path,
-      operation: 'suggestionsUpdated',
-      suggestionUpdates: [ suggestionUpdates ],
-    };
+      // Broadcast a "suggestions updated" message to clients.
+      const suggestionUpdates: SuggestionUpdates = {
+        cellId: this.id,
+        add,
+        removeClasses,
+        removeIds,
+      };
+      const response: NotebookSuggestionsUpdated = {
+        type: 'notebook',
+        path: this.notebook.path,
+        operation: 'suggestionsUpdated',
+        suggestionUpdates: [ suggestionUpdates ],
+      };
+      this.notebook.broadcastMessage(response);
 
-    this.notebook.broadcastMessage(response);
+      // Trigger a notebook save
+      this.notebook.markDirty();
+    } else {
+      debug(`  Suggestions didn't change.`);
+    }
   }
 
   // Private Instance Properties

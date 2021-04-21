@@ -58,6 +58,18 @@ const ASSERTION_FAILED_MSG = "Assertion failed.";
 
 // Exported Functions
 
+export function arrayFilterInPlace<T>(array: T[], cb: (value: T, index?: number, obj?: T[])=>boolean): T[] {
+  // Like Array.filter, but works on the array in-place.
+  // Returns possibly-empty array of items that were removed.
+  let i: number;
+  const rval = <T[]>[];
+  while (i = array.findIndex(cb), i>=0) {
+    const item = array.splice(i, 1)[0];
+    rval.push(item);
+  }
+  return rval;
+}
+
 export function assert(value: any, message?: string): void {
   if (!value) { throw new Error(message || ASSERTION_FAILED_MSG); }
 }

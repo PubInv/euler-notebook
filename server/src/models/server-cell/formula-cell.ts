@@ -25,11 +25,11 @@ const debug = debug1(`server:${MODULE}`);
 
 import { deepCopy, PlainText } from "../../shared/common";
 import { cssLengthInPixels } from "../../shared/css";
-import { CellId, CellSource, CellType, SuggestionClass, SuggestionId, SuggestionObject } from "../../shared/cell";
+import { CellId, CellSource, CellType } from "../../shared/cell";
 import { NotebookChangeRequest } from "../../shared/client-requests";
 import { EMPTY_FORMULA_OBJECT, FormulaCellObject, FormulaNumber, renderFormulaCell } from "../../shared/formula";
-import { NotebookSuggestionsUpdated, SuggestionUpdates } from "../../shared/server-responses";
 import { EMPTY_STROKE_DATA } from "../../shared/stylus";
+import {  SuggestionClass, SuggestionId, SuggestionObject } from "../../shared/suggestions";
 import { SvgMarkup } from "../../shared/svg";
 
 import { MathJaxTypesetter } from "../../adapters/mathjax-typesetter";
@@ -147,7 +147,7 @@ export class FormulaCell extends ServerCell<FormulaCellObject> {
     const width = cssLengthInPixels(this.cssSize.width);
     const height = cssLengthInPixels(this.cssSize.height);
     const results = await recognizeFormula(width, height, this.obj.strokeData);
-    const addSuggestions: SuggestionObject[] = results.alternatives.map((alternative, index)=>{
+    const add: SuggestionObject[] = results.alternatives.map((alternative, index)=>{
       const id = <SuggestionId>`recognizedFormula${index}`;
       const data: NotebookChangeRequest[] = [{
         type: 'typesetFormula',
@@ -163,20 +163,11 @@ export class FormulaCell extends ServerCell<FormulaCellObject> {
       };
       return suggestion;
     });
-    const updates: SuggestionUpdates[] = [{
-      cellId: this.id,
-      add: addSuggestions,
-      removeClasses: [ TYPESET_FORMULA_SUGGESTION_CLASS ],
-      removeIds: [],
-    }];
-    const response: NotebookSuggestionsUpdated = {
-      type: 'notebook',
-      path: this.notebook.path,
-      operation: 'suggestionsUpdated',
-      suggestionUpdates: updates,
-    };
 
-    this.notebook.broadcastMessage(response);
+    const removeIds = <SuggestionId[]>[];
+    const removeClasses = [ TYPESET_FORMULA_SUGGESTION_CLASS ];
+
+    this.updateSuggestions(add, removeIds, removeClasses);
   }
 
   // Private Instance Event Handlers

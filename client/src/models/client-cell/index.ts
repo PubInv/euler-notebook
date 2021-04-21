@@ -43,13 +43,6 @@ export interface CellView {
 
 // Constants
 
-// const CELL_SYMBOL_CLASS = new Map<CellType,CssClass>([
-//   [ CellType.Figure, <CssClass>'figureCell' ],
-//   [ CellType.Formula, <CssClass>'formulaCell' ],
-//   [ CellType.Plot, <CssClass>'plotCell' ],
-//   [ CellType.Text, <CssClass>'textCell' ],
-// ]);
-
 // Exported Class
 
 export abstract class ClientCell<O extends CellObject> {

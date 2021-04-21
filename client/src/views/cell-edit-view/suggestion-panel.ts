@@ -27,6 +27,7 @@ import { MathJaxTypesetter } from "../../adapters/mathjax-typesetter";
 import { $, $all, $new, HtmlElementSpecification } from "../../dom";
 import { HtmlElement } from "../../html-element";
 import { ClientCell } from "../../models/client-cell";
+import { SuggestionObject, Suggestions } from "../../shared/suggestions";
 
 // Requirements
 
@@ -52,6 +53,7 @@ export class SuggestionPanel<O extends CellObject> extends HtmlElement<'div'> {
     const $noSuggestionsMsg = $new<'div'>({
       tag: 'div',
       html: <Html>"<i>No suggestions.</i>",
+      hidden: cell.obj.suggestions.length>0,
     });
 
     super({
@@ -63,6 +65,8 @@ export class SuggestionPanel<O extends CellObject> extends HtmlElement<'div'> {
 
     this.$noSuggestionsMsg = $noSuggestionsMsg;
     this.cell = cell;
+
+    this.addSuggestions(cell.obj.suggestions);
   }
 
   // Public Instance Properties
@@ -97,31 +101,7 @@ export class SuggestionPanel<O extends CellObject> extends HtmlElement<'div'> {
     }
 
     // Add any new suggestions that are specified.
-    for (const suggestion of suggestionUpdates.add) {
-      const spec: HtmlElementSpecification<'div'> =  {
-        tag: 'div',
-        id: <ElementId>suggestion.id,
-        classes: [ <CssClass>suggestion.class, <CssClass>'suggestion' ],
-        asyncListeners: {
-          click: e=>this.onSuggestionClicked(e, suggestion.changeRequests),
-        },
-      };
-      const display = suggestion.display;
-      if (display.formulaMathMlTree) {
-        // REVIEW: Is .clientWidth the right attribute?
-        const $svg = MathJaxTypesetter.singleton.mathMlTreeToSvgElt(display.formulaMathMlTree, this.$elt.clientWidth);
-        spec.children = [ $svg ];
-      } else if (display.html) {
-        spec.html = display.html!;
-      } else if (display.svg) {
-        spec.html = display.svg;
-      } else {
-        assertFalse();
-      }
-      const $suggestion = $new<'div'>(spec);
-      //const $svg = $outerSvg<'svg'>(alternative.svg);
-      this.$elt.append($suggestion);
-    }
+    this.addSuggestions(suggestionUpdates.add);
 
     // If the suggestions panel is now empty, then display a message to that effect in the panel.
     const panelIsEmpty = this.$elt.childElementCount < 2;
@@ -131,8 +111,7 @@ export class SuggestionPanel<O extends CellObject> extends HtmlElement<'div'> {
     // to alert the user of the new suggestions.
     // If the update removes all suggestions, then hide ourself
     // as we no longer have anything to offer.
-    const suggestionsAdded = suggestionUpdates.add && suggestionUpdates.add.length>0;
-    if (suggestionsAdded) {
+    if (suggestionUpdates.add.length>0) {
       this.showIfHidden();
     } else if (panelIsEmpty) {
       this.hideIfShown();
@@ -153,8 +132,39 @@ export class SuggestionPanel<O extends CellObject> extends HtmlElement<'div'> {
 
   // Private Instance Property Functions
 
-
   // Private Instance Methods
+
+  private addSuggestion(suggestionObject: SuggestionObject): void {
+    const spec: HtmlElementSpecification<'div'> =  {
+      tag: 'div',
+      id: <ElementId>suggestionObject.id,
+      classes: [ <CssClass>suggestionObject.class, <CssClass>'suggestion' ],
+      asyncListeners: {
+        click: e=>this.onSuggestionClicked(e, suggestionObject.changeRequests),
+      },
+    };
+    const display = suggestionObject.display;
+    if (display.formulaMathMlTree) {
+      // REVIEW: Is .clientWidth the right attribute?
+      const $svg = MathJaxTypesetter.singleton.mathMlTreeToSvgElt(display.formulaMathMlTree, this.$elt.clientWidth);
+      spec.children = [ $svg ];
+    } else if (display.html) {
+      spec.html = display.html!;
+    } else if (display.svg) {
+      spec.html = display.svg;
+    } else {
+      assertFalse();
+    }
+    const $suggestion = $new<'div'>(spec);
+    //const $svg = $outerSvg<'svg'>(alternative.svg);
+    this.$elt.append($suggestion);
+  }
+
+  private addSuggestions(suggestions: Suggestions): void {
+    for (const suggestionObject of suggestions) {
+      this.addSuggestion(suggestionObject);
+    }
+  }
 
   // Private Instance Event Handlers
 
