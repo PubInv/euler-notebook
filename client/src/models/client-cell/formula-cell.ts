@@ -49,7 +49,7 @@ export class FormulaCell extends ClientCell<FormulaCellObject> {
 
   // Public Instance Property Functions
 
-  public renderToSvg(x: number, y: number): SvgMarkup {
+  public /* override */ renderToSvg(x: number, y: number): SvgMarkup {
     const innerMarkup = renderFormulaCell(MathJaxTypesetter.singleton, this.obj, this.formulaNumber);
     return super.renderToSvg(x, y, innerMarkup);
   }

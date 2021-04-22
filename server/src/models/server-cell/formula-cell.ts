@@ -81,8 +81,9 @@ export class FormulaCell extends ServerCell<FormulaCellObject> {
 
   public get formula(): ServerFormula { return this._formula; }
 
-  public /* override */ displaySvg(): SvgMarkup {
-    return renderFormulaCell(MathJaxTypesetter.singleton ,this.obj, this.formulaNumber);
+  public /* override */ renderToSvg(x: number, y: number): SvgMarkup {
+    const innerMarkup = renderFormulaCell(MathJaxTypesetter.singleton, this.obj, this.formulaNumber);
+    return super.renderToSvg(x, y, innerMarkup);
   }
 
   // Public Instance Methods

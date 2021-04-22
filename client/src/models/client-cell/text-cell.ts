@@ -41,7 +41,7 @@ export class TextCell extends ClientCell<TextCellObject> {
 
   // Public Instance Property Functions
 
-  public renderToSvg(x: number, y: number): SvgMarkup {
+  public /* override */ renderToSvg(x: number, y: number): SvgMarkup {
     const innerMarkup = renderTextCell(this.obj);
     return super.renderToSvg(x, y, innerMarkup);
   }

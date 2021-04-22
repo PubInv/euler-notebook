@@ -20,7 +20,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 // Requirements
 
 import { assert, BoundingBox } from "./common";
-import { CssLength } from "./css";
+import { CssLength, cssLengthInPixels, CssSize } from "./css";
 
 // Types
 
@@ -80,4 +80,10 @@ export function parseViewBoxAttribute(viewBoxAttr: ViewBoxAttribute): BoundingBo
     height: parseFloat(match[7]),
   };
   return rval;
+}
+
+export function viewBoxFromCssSize(cssSize: CssSize): ViewBoxAttribute {
+  const width = cssLengthInPixels(cssSize.width);
+  const height = cssLengthInPixels(cssSize.height);
+  return <ViewBoxAttribute>`0 0 ${Math.round(width)} ${Math.round(height)}`;
 }

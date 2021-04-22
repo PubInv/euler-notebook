@@ -105,7 +105,7 @@ async function onExportPage(req: Request, res: Response, next: NextFunction): Pr
             res.set('Content-Type', 'text/html');
             res.status(500);
             const locals = {
-              title: "Error Generating LaTeX",
+              title: "Error Generating PDF",
               messageHtml: `An error occurred generating LaTeX for <tt>${notebookPath}</tt>:`,
               messageDetails: err.toString(),
             }

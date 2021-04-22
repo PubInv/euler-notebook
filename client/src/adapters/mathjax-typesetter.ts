@@ -20,11 +20,12 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 import * as debug1 from "debug";
 const debug = debug1('client:mathjax');
 
-import { assert, BoundingBox } from "../shared/common";
-import { CssLength, CssLengthMetrics, LengthInPixels, cssLengthInPixels } from "../shared/css";
-import { parseViewBoxAttribute, SvgMarkup, ViewBoxAttribute } from "../shared/svg";
-import { MathMlMarkup, MathMlTree, serializeTreeToMathMlMarkup } from "../shared/mathml";
+import { assert } from "../shared/common";
+import { LengthInPixels } from "../shared/css";
 import { FormulaTypesetter, TypesettingResults } from "../shared/formula";
+import { EM_IN_PIXELS, EX_IN_PIXELS, unwrap } from "../shared/mathjax";
+import { MathMlMarkup, MathMlTree, serializeTreeToMathMlMarkup } from "../shared/mathml";
+import { SvgMarkup } from "../shared/svg";
 
 // Requirements
 
@@ -62,14 +63,6 @@ interface MathJaxStartup {
 
 // Constants
 
-const EM_IN_PIXELS = 16;
-const EX_IN_PIXELS = 8;
-
-const CSS_LENGTH_METRICS: CssLengthMetrics = {
-  em: EM_IN_PIXELS,
-  ex: EX_IN_PIXELS,
-}
-
 // Exported Class
 
 export class MathJaxTypesetter implements FormulaTypesetter {
@@ -95,28 +88,7 @@ export class MathJaxTypesetter implements FormulaTypesetter {
 
   public mathMlTreeToSvg(mathMlTree: MathMlTree, containerWidth: LengthInPixels): TypesettingResults {
     const $svg = this.mathMlTreeToSvgElt(mathMlTree, containerWidth);
-
-    const widthAttr = <CssLength>$svg.getAttribute('width')!;
-    assert(widthAttr);
-    const width = cssLengthInPixels(widthAttr, CSS_LENGTH_METRICS)
-    const heightAttr = <CssLength>$svg.getAttribute('height')!;
-    assert(heightAttr);
-    const height = cssLengthInPixels(heightAttr, CSS_LENGTH_METRICS);
-    const viewBoxAttr = <ViewBoxAttribute>$svg.getAttribute('viewBox');
-    const viewBox = parseViewBoxAttribute(viewBoxAttr);
-
-    const scale = width/viewBox.width;
-    // REVIEW: Not sure why we can't put both transforms onto one <g> element.
-    //         But to get this to work I needed to nest them.
-    const transform1 = `translate(${-viewBox.x} ${-viewBox.y})`;
-    const transform2 = `scale(${scale})`;
-    const svgMarkup = <SvgMarkup>`<g transform="${transform2}"><g transform="${transform1}">${$svg.innerHTML}</g></g>`;
-
-    // REVIEW: Can we get the bounding box more directly from $svg?
-    const boundingBox: BoundingBox = { x: 0, y: 0, width, height };
-
-    const rval: TypesettingResults = { svgMarkup, boundingBox };
-    return rval;
+    return unwrap(<SvgMarkup>$svg.outerHTML);
   }
 
   public mathMlTreeToSvgElt(mathMlTree: MathMlTree, containerWidth: LengthInPixels): SVGSVGElement {

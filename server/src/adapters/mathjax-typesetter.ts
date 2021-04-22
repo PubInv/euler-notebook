@@ -25,8 +25,6 @@ import debug1 from "debug";
 const MODULE = __filename.split(/[/\\]/).slice(-1)[0].slice(0,-3);
 const debug = debug1(`server:${MODULE}`);
 
-import { SvgMarkup } from "../shared/svg";
-import { serializeTreeToMathMlMarkup, MathMlTree } from "../shared/mathml";
 import { mathjax } from "mathjax-full/js/mathjax.js";
 import { MathDocument } from "mathjax-full/js/core/MathDocument.js";
 import { TeX } from "mathjax-full/js/input/tex.js";
@@ -34,9 +32,13 @@ import { SVG } from "mathjax-full/js/output/svg.js";
 import { AllPackages } from "mathjax-full/js/input/tex/AllPackages.js";
 import { LiteAdaptor, liteAdaptor } from "mathjax-full/js/adaptors/liteAdaptor.js";
 import { RegisterHTMLHandler } from "mathjax-full/js/handlers/html.js";
+
 import { LengthInPixels } from "../shared/css";
 import { FormulaTypesetter, TypesettingResults } from "../shared/formula";
-import { BoundingBox } from "../shared/common";
+import { unwrap } from "../shared/mathjax";
+import { serializeTreeToMathMlMarkup, MathMlTree } from "../shared/mathml";
+import { SvgMarkup } from "../shared/svg";
+
 
 // Types
 
@@ -75,31 +77,9 @@ export class MathJaxTypesetter implements FormulaTypesetter {
     debug(`Converting MathML to SVG: ${mathMlMarkup}`);
     const node = this.mathDocument.convert(mathMlMarkup, { display: false, em: 16, ex: 8, containerWidth });
     // Returns a 'mjx-container' element enclosing an 'svg' element.
-    // We only want the svg element.
+    // Extract just the svg element.
     const svgMarkup = <SvgMarkup>this.adaptor.innerHTML(node);
-    debug(`SVG Markup is: ${svgMarkup}`);
-
-    // const enclosingTagInfo = parseEnclosingSvgTag(formulaMarkup);
-    // console.dir(enclosingTagInfo);
-    // assert(enclosingTagInfo.viewBox);
-    // const viewBox = parseViewBox(enclosingTagInfo.viewBox!);
-    // console.dir(viewBox);
-    // assert(enclosingTagInfo.width);
-    // const width = pixelsFromCssLength(enclosingTagInfo.width!, metrics);
-    // assert(enclosingTagInfo.height);
-    // const height = pixelsFromCssLength(enclosingTagInfo.height!, metrics);
-    // console.dir({ width, height });
-
-
-    throw new Error("Not implemented");
-    const boundingBox: BoundingBox = {
-      x: 0,
-      y: 0,
-      width: 0, /* TODO! */
-      height: 0, /* TODO! */
-    }
-    const rval: TypesettingResults = { boundingBox, svgMarkup };
-    return rval;
+    return unwrap(svgMarkup);
   }
 
   // Public Instance Event Handlers

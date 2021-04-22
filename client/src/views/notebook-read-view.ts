@@ -36,9 +36,6 @@ import { ClientNotebook } from "../models/client-notebook";
 
 // Constants
 
-// TEMPORARY page data until our Notebooks are paginated:
-
-//
 // Global Variables
 
 // Class

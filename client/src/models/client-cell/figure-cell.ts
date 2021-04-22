@@ -41,7 +41,7 @@ export class FigureCell extends ClientCell<FigureCellObject> {
 
   // Public Instance Property Functions
 
-  public renderToSvg(x: number, y: number): SvgMarkup {
+  public /* override */ renderToSvg(x: number, y: number): SvgMarkup {
     const innerMarkup = renderFigureCell(this.obj);
     return super.renderToSvg(x, y, innerMarkup);
   }

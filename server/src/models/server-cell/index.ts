@@ -25,7 +25,7 @@ import * as debug1 from "debug";
 // const debug = debug1(`server:${MODULE}`);
 const debug = debug1(`server:server-cell`);
 
-import { escapeHtml, Html, Milliseconds } from "../../shared/common";
+import { assert, escapeHtml, Html, Milliseconds } from "../../shared/common";
 import { CssLength, CssSize, cssLengthInPixels, cssSizeFromPixels, LengthInPixels } from "../../shared/css";
 import { CellId, CellObject, CellType } from "../../shared/cell";
 import { SvgMarkup } from "../../shared/svg";
@@ -74,7 +74,11 @@ export abstract class ServerCell<O extends CellObject> {
 
   public get cssSize(): CssSize { return this.obj.cssSize; }
 
-  public abstract displaySvg(): SvgMarkup;
+  // DUPLICATED: In client-cell.
+  public /* overridable */ renderToSvg(x: number, y: number, innerMarkup?: SvgMarkup): SvgMarkup {
+    assert(typeof innerMarkup == 'string');
+    return <SvgMarkup>`<g transform="translate(${x} ${y})">${innerMarkup}</g>`;
+  }
 
   public toHtml(): Html {
     return <Html>`<div>

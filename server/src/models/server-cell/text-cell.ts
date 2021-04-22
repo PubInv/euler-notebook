@@ -69,8 +69,9 @@ export class TextCell extends ServerCell<TextCellObject> {
 
   // Public Instance Property Functions
 
-  public /* override */ displaySvg(): SvgMarkup {
-    return renderTextCell(this.obj);
+  public /* override */ renderToSvg(x: number, y: number): SvgMarkup {
+    const innerMarkup = renderTextCell(this.obj);
+    return super.renderToSvg(x, y, innerMarkup);
   }
 
   // Public Instance Methods

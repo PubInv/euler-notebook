@@ -41,7 +41,7 @@ export class PlotCell extends ClientCell<PlotCellObject> {
 
   // Public Instance Property Functions
 
-  public renderToSvg(x: number, y: number): SvgMarkup {
+  public /* override */ renderToSvg(x: number, y: number): SvgMarkup {
     const innerMarkup = renderPlotCell(this.obj);
     return super.renderToSvg(x, y, innerMarkup);
   }

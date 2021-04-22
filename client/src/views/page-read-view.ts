@@ -22,8 +22,8 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 // import * as debug1 from "debug";
 // const debug = debug1('client:cell-read-view');
 
-import { SvgMarkup } from "../shared/svg";
-import { CssClass, cssLengthInPixels, CssSize } from "../shared/css";
+import { SvgMarkup, viewBoxFromCssSize } from "../shared/svg";
+import { CssClass, cssLengthInPixels } from "../shared/css";
 
 import { ClientNotebook } from "../models/client-notebook";
 import { ClientPage } from "../models/client-page";
@@ -73,32 +73,6 @@ export class PageReadView extends SvgElement<'svg'> {
 
   // Private Event Handlers
 
-  // private onPageClicked(event: MouseEvent): void {
-  //   const $page = <SVGSVGElement>event.target;
-  //   console.log(`Page double clicked: ${$page.id}`);
-
-  //   // Unselect all other pages.
-  //   // REVIEW: Use selector to select only selected pages?
-  //   for (const $otherPage of $allSvg<'svg'>(this.$elt, '.page')) {
-  //     if ($otherPage == $page) { continue; }
-  //     $otherPage.classList.remove('selected');
-  //   }
-
-  //   // Select the page that was clicked on.
-  //   $page.classList.add('selected');
-  // }
-
-  // private onPageDoubleClicked(_event: MouseEvent): void {
-  //   // TODO: double-click on thumbnail should go to page, not cells.
-  //   notImplementedError("NotebookReadView onPageDoubleCLicked");
-  // }
-
 }
 
 // Helper Functions
-
-function viewBoxFromCssSize(cssSize: CssSize): string {
-  const width = cssLengthInPixels(cssSize.width);
-  const height = cssLengthInPixels(cssSize.height);
-  return `0 0 ${Math.round(width)} ${Math.round(height)}`;
-}
