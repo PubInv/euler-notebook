@@ -169,11 +169,17 @@ function cleanupHandler(exitCode: number|null, signal: string|null): boolean {
   // NOTE: Put all cleanup in asyncCleanupHandler unless it must be done for
   //       non-signal exits.
   if (signal) {
+    console.log(`ASYNC CLEANUP HANDLER CALLED: ${exitCode} [${signal}]`);
     debug(`Node cleanup handler called for signal: ${signal}`);
-    asyncCleanupHandler(signal).finally(()=>{ process.kill(process.pid, signal); })
+    asyncCleanupHandler(signal)
+    .finally(()=>{
+      console.log(`ASYNC CLEANUP HANDLER RETURNED. KILLING PROCESS.`);
+      process.kill(process.pid, signal);
+    });
     nodeCleanup.uninstall(); // don't call cleanup handler again
     return false;
   } else {
+    console.log(`SYNC CLEANUP HANDLER CALLED: [${exitCode}] ${signal}`);
     // Process always exits after the cleanup handlers for non-signals.
     // We cannot do any asynchronous cleanup.
     debug(`Node cleanup handler called with exit code: ${exitCode}`);
