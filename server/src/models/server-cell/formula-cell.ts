@@ -27,12 +27,9 @@ import { deepCopy, PlainText } from "../../shared/common";
 import { LengthInPixels } from "../../shared/css";
 import { CellId, CellSource, CellType } from "../../shared/cell";
 import { NotebookChangeRequest } from "../../shared/client-requests";
-import { EMPTY_FORMULA_OBJECT, FormulaCellObject, FormulaNumber, renderFormulaCell } from "../../shared/formula";
+import { EMPTY_FORMULA_OBJECT, FormulaCellObject, FormulaNumber } from "../../shared/formula";
 import { EMPTY_STROKE_DATA } from "../../shared/stylus";
 import { SuggestionId, SuggestionObject, TYPESETTING_SUGGESTION_CLASS } from "../../shared/suggestions";
-import { SvgMarkup } from "../../shared/svg";
-
-import { MathJaxTypesetter } from "../../adapters/mathjax-typesetter";
 
 import { recognizeFormula } from "../../components/handwriting-recognizer";
 
@@ -80,11 +77,6 @@ export class FormulaCell extends ServerCell<FormulaCellObject> {
   // Public Instance Property Functions
 
   public get formula(): ServerFormula { return this._formula; }
-
-  public /* override */ renderToSvg(x: number, y: number): SvgMarkup {
-    const innerMarkup = renderFormulaCell(MathJaxTypesetter.singleton, this.obj, this.formulaNumber);
-    return super.renderToSvg(x, y, innerMarkup);
-  }
 
   // Public Instance Methods
 
@@ -160,7 +152,7 @@ export class FormulaCell extends ServerCell<FormulaCellObject> {
         id: suggestionId,
         class: TYPESETTING_SUGGESTION_CLASS,
         changeRequests,
-        display: { formulaMathMlTree: alternative.formula.mathMlTree },
+        display: { formula: alternative.formula.obj },
       };
       return suggestionObject;
     });

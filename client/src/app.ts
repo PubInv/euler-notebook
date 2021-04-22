@@ -22,6 +22,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 // Requirements
 
 import { Html } from "./shared/common";
+import { initialize as initializeFormula } from "./shared/formula";
 
 // import { DebugConsole } from "./components/debug-console";
 import { Header } from "./components/header";
@@ -99,7 +100,7 @@ class App {
     });
 
     // Initialize the math typesetter
-    MathJaxTypesetter.initialize();
+    initializeFormula(MathJaxTypesetter.create());
 
     // Initialize the 'screen' system that provides navigation
     // inside the one-page app.

@@ -23,8 +23,7 @@ import * as debug1 from "debug";
 const debug = debug1('client:client-cell');
 
 import { CellId, CellObject, CellType } from "../../shared/cell";
-import { assert, escapeHtml, Html } from "../../shared/common";
-import { SvgMarkup } from "../../shared/svg";
+import { escapeHtml, Html } from "../../shared/common";
 import { CssSize } from "../../shared/css";
 import { cellBriefSynopsis, cellSynopsis, notebookUpdateSynopsis } from "../../shared/debug-synopsis";
 import { NotebookUpdate } from "../../shared/server-responses";
@@ -65,12 +64,6 @@ export abstract class ClientCell<O extends CellObject> {
   public get type(): CellType { return this.obj.type; }
 
   public isLastCell(): boolean { return this.id == this.notebook.lastCellId() };
-
-  // DUPLICATED: In server-cell.
-  public /* overridable */ renderToSvg(x: number, y: number, innerMarkup?: SvgMarkup): SvgMarkup {
-    assert(typeof innerMarkup == 'string');
-    return <SvgMarkup>`<g transform="translate(${x} ${y})">${innerMarkup}</g>`;
-  }
 
   public toDebugHtml(): Html {
     return <Html>`<div>

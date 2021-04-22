@@ -21,13 +21,14 @@ import { assertFalse, ElementId, Html } from "../../shared/common";
 import { CellObject } from "../../shared/cell";
 import { NotebookChangeRequest } from "../../shared/client-requests";
 import { CssClass } from "../../shared/css";
+import { renderFormula } from "../../shared/formula";
 import { SuggestionAdded, SuggestionRemoved } from "../../shared/server-responses";
+import { SuggestionObject, Suggestions } from "../../shared/suggestions";
+import { SvgMarkup } from "../../shared/svg";
 
-import { MathJaxTypesetter } from "../../adapters/mathjax-typesetter";
 import { $all, $new, HtmlElementSpecification } from "../../dom";
 import { HtmlElement } from "../../html-element";
 import { ClientCell } from "../../models/client-cell";
-import { SuggestionObject, Suggestions } from "../../shared/suggestions";
 
 // Requirements
 
@@ -137,10 +138,10 @@ export class SuggestionPanel<O extends CellObject> extends HtmlElement<'div'> {
       },
     };
     const display = suggestionObject.display;
-    if (display.formulaMathMlTree) {
+    if (display.formula) {
       // REVIEW: Is .clientWidth the right attribute?
-      const $svg = MathJaxTypesetter.singleton.mathMlTreeToSvgElt(display.formulaMathMlTree, this.$elt.clientWidth);
-      spec.children = [ $svg ];
+      const { svgMarkup } = renderFormula(display.formula, this.$elt.clientWidth);
+      spec.html = <SvgMarkup>`<svg>${svgMarkup}</svg>`;
     } else if (display.html) {
       spec.html = display.html!;
     } else if (display.svg) {

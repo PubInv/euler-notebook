@@ -45,6 +45,7 @@ import { NotebookEditView } from "../notebook-edit-view";
 
 import { CallbackFunctions as ResizerCallbackFunctions, ResizerBar } from "./resizer-bar";
 import { SuggestionPanel } from "./suggestion-panel";
+import { Notebook } from "../../shared/notebook";
 
 // Types
 
@@ -299,7 +300,7 @@ export abstract class CellEditView<O extends CellObject> extends HtmlElement<'di
   // Private Instance Methods
 
   protected refreshDisplay(): void {
-    const svgMarkup = this.cell.renderToSvg(0, 0);
+    const svgMarkup = Notebook.renderCellToSvg(0, 0, this.cell.obj, 99 /* TODO */);
     this.$displaySvg.innerHTML = svgMarkup;
   }
 

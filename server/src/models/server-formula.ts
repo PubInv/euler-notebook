@@ -27,11 +27,10 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 // const MODULE = __filename.split(/[/\\]/).slice(-1)[0].slice(0,-3);
 // const debug = debug1(`server:${MODULE}`);
 
-import { FormulaObject, TypesettingResults } from "../shared/formula";
+import { FormulaObject, renderFormula, TypesettingResults } from "../shared/formula";
 import { MathMlMarkup, MathMlTree, serializeTreeToMathMlMarkup } from "../shared/mathml";
 
 // import { convertMmltoWolfram } from "../adapters/wolframscript";
-import { MathJaxTypesetter } from "../adapters/mathjax-typesetter";
 import { LengthInPixels } from "../shared/css";
 // import { Jiix } from "../adapters/myscript";
 
@@ -74,7 +73,7 @@ export class ServerFormula {
 
   public svg(containerWidth: LengthInPixels): TypesettingResults {
     // REVIEW: Any reason to cache this representations?
-    return MathJaxTypesetter.singleton.mathMlTreeToSvg(this.obj.mathMlTree, containerWidth);
+    return renderFormula(this.obj, containerWidth);
   }
 
   // Public Instance Methods

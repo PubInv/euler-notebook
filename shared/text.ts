@@ -21,7 +21,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 import { CellObject, CellType, renderBaseCell } from "./cell";
 import { escapeHtml } from "./common";
-import { cssLengthInPixels } from "./css";
+import { cssLengthInPixels, LengthInPixels } from "./css";
 import { SvgMarkup } from "./svg";
 
 // Types
@@ -32,11 +32,11 @@ export interface TextCellObject extends CellObject {
 
 // Exported Functions
 
-export function renderTextCell(obj: TextCellObject): SvgMarkup {
+export function renderTextCell(x: LengthInPixels, y: LengthInPixels, obj: TextCellObject): SvgMarkup {
   const height = cssLengthInPixels(obj.cssSize.height);
   const fontCapHeight = 12; // TODO:
-  const y = Math.round(height/2 + fontCapHeight/2);
+  const yBaseline = Math.round(height/2 + fontCapHeight/2);
   // "Times New Roman",
-  const markup = <SvgMarkup>`<text fill="black" font="12pt Times, serif" stroke="none" y="${y}">${escapeHtml(obj.inputText)}</text>`;
-  return renderBaseCell(obj, markup);
+  const markup = <SvgMarkup>`<text fill="black" font="12pt Times, serif" stroke="none" y="${yBaseline}">${escapeHtml(obj.inputText)}</text>`;
+  return renderBaseCell(x, y, obj, markup);
 }

@@ -32,7 +32,7 @@ const debug = debug1(`server:${MODULE}`);
 
 import { CellObject, CellSource, CellId, CellType, CellRelativePosition } from "../shared/cell";
 import { assert, assertFalse, deepCopy, ExpectedError, Html, Milliseconds } from "../shared/common";
-import { CssLength, CssSize, convertCssLength } from "../shared/css";
+import { CssSize, convertCssLength } from "../shared/css";
 import { LEFT_MARGIN, TOP_MARGIN, RIGHT_MARGIN, BOTTOM_MARGIN, PAGE_HEIGHT, PAGE_WIDTH } from "../shared/dimensions";
 import { Folder, NotebookPath, NOTEBOOK_PATH_RE, NotebookName, FolderPath, NotebookEntry } from "../shared/folder";
 import { Notebook, NotebookObject, NotebookWatcher, PageMargins } from "../shared/notebook";
@@ -120,7 +120,6 @@ const EMPTY_NOTEBOOK_OBJ: PersistentServerNotebookObject = {
     cells: [],
     margins: DEFAULT_LETTER_MARGINS,
     pageSize: LETTER_PAGE_SIZE,
-    pagination: [],
   },
 }
 
@@ -271,14 +270,6 @@ export class ServerNotebook extends Notebook {
       assert(cell);
       yield cell;
     }
-  }
-
-  public get leftMargin(): CssLength {
-    return this.obj.margins.left;
-  }
-
-  public get topMargin(): CssLength {
-    return this.obj.margins.top;
   }
 
   public toHtml(): Html {

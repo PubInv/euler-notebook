@@ -20,16 +20,16 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 // Requirements
 
 import {  PlainText } from "./common";
-import { CssSize } from "./css";
+import { CssSize, LengthInPixels } from "./css";
 import { convertStrokeToPath, StrokeData } from "./stylus";
 import { Suggestions } from "./suggestions";
-import { SvgMarkup } from "./svg";
+import { SvgMarkup, translateSvgMarkup } from "./svg";
 
 // Types
 
 export type CellId = number;
 export type CellIndex = number; // Position of cell in the notebook. 0 is first cell.
-export type PageIndex = number;
+export type PageIndex = number; // Index of page in the notebook. 0 is the first page.
 export type CellRelativePosition = CellId | CellPosition; // Position relative to another cell, or at the top or bottom of the notebook.
 
 export const CELL_SOURCES = [
@@ -62,7 +62,7 @@ export interface CellObject {
 
 // Exported Functions
 
-export function renderBaseCell(obj: CellObject, inheritedMarkup: SvgMarkup): SvgMarkup {
+export function renderBaseCell(x: LengthInPixels, y: LengthInPixels, obj: CellObject, inheritedMarkup: SvgMarkup): SvgMarkup {
   const strokeMarkup = <SvgMarkup>obj.strokeData.strokes.map(stroke=>convertStrokeToPath(obj.id, stroke)).join('\n');
-  return <SvgMarkup>(inheritedMarkup + strokeMarkup);
+  return <SvgMarkup>translateSvgMarkup(x, y, <SvgMarkup>(inheritedMarkup + strokeMarkup));
 }

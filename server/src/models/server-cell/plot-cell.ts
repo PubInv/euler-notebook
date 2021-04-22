@@ -25,7 +25,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 import { deepCopy, PlainText } from "../../shared/common";
 import { CellId, CellType } from "../../shared/cell";
-import { PlotCellObject, renderPlotCell } from "../../shared/plot";
+import { PlotCellObject } from "../../shared/plot";
 import { EMPTY_STROKE_DATA } from "../../shared/stylus";
 import { SvgMarkup } from "../../shared/svg";
 
@@ -91,11 +91,6 @@ export class PlotCell extends ServerCell<PlotCellObject> {
   // Private Instance Properties
 
   // Public Instance Property Functions
-
-  public /* override */ renderToSvg(x: number, y: number): SvgMarkup {
-    const innerMarkup = renderPlotCell(this.obj);
-    return super.renderToSvg(x, y, innerMarkup);
-  }
 
   // Private Instance Methods
 

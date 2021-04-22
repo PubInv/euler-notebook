@@ -20,7 +20,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 // Requirements
 
 import { assert, BoundingBox } from "./common";
-import { CssLength, cssLengthInPixels, CssSize } from "./css";
+import { CssLength, cssLengthInPixels, CssSize, LengthInPixels } from "./css";
 
 // Types
 
@@ -80,6 +80,10 @@ export function parseViewBoxAttribute(viewBoxAttr: ViewBoxAttribute): BoundingBo
     height: parseFloat(match[7]),
   };
   return rval;
+}
+
+export function translateSvgMarkup(x: LengthInPixels, y: LengthInPixels, svgMarkup: SvgMarkup): SvgMarkup {
+  return (x || y ? <SvgMarkup>`<g transform="translate(${x} ${y})">${svgMarkup}</g>` : svgMarkup);
 }
 
 export function viewBoxFromCssSize(cssSize: CssSize): ViewBoxAttribute {

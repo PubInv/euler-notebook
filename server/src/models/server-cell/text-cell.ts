@@ -26,10 +26,9 @@ const debug = debug1(`server:${MODULE}`);
 import { deepCopy, PlainText, escapeHtml, Html } from "../../shared/common";
 import { LengthInPixels } from "../../shared/css";
 import { CellId, CellSource, CellType } from "../../shared/cell";
-import { TextCellObject, renderTextCell } from "../../shared/text";
+import { TextCellObject } from "../../shared/text";
 import { EMPTY_STROKE_DATA } from "../../shared/stylus";
 import { SuggestionId, SuggestionObject, TYPESETTING_SUGGESTION_CLASS } from "../../shared/suggestions";
-import { SvgMarkup } from "../../shared/svg";
 
 import { recognizeText } from "../../components/handwriting-recognizer";
 
@@ -68,11 +67,6 @@ export class TextCell extends ServerCell<TextCellObject> {
   }
 
   // Public Instance Property Functions
-
-  public /* override */ renderToSvg(x: number, y: number): SvgMarkup {
-    const innerMarkup = renderTextCell(this.obj);
-    return super.renderToSvg(x, y, innerMarkup);
-  }
 
   // Public Instance Methods
 

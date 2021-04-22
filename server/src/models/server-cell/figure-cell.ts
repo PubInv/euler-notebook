@@ -26,10 +26,9 @@ const debug = debug1(`server:${MODULE}`);
 import { deepCopy, PlainText } from "../../shared/common";
 import { LengthInPixels } from "../../shared/css";
 import { CellId, CellSource, CellType } from "../../shared/cell";
-import { EMPTY_FIGURE_OBJECT, FigureCellObject, renderFigureCell } from "../../shared/figure";
+import { EMPTY_FIGURE_OBJECT, FigureCellObject } from "../../shared/figure";
 import { EMPTY_STROKE_DATA } from "../../shared/stylus";
 import { SuggestionId, SuggestionObject, TYPESETTING_SUGGESTION_CLASS } from "../../shared/suggestions";
-import { SvgMarkup } from "../../shared/svg";
 
 import { ServerNotebook } from "../server-notebook";
 
@@ -67,11 +66,6 @@ export class FigureCell extends ServerCell<FigureCellObject> {
   }
 
   // Public Instance Property Functions
-
-  public /* override */ renderToSvg(x: number, y: number): SvgMarkup {
-    const innerMarkup = renderFigureCell(this.obj);
-    return super.renderToSvg(x, y, innerMarkup);
-  }
 
   // Public Instance Methods
 

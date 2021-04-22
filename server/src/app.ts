@@ -34,12 +34,14 @@ import * as nodeCleanup from "node-cleanup";
 import { satisfies as semverSatisfies } from "semver";
 import { middleware as stylusMiddleware } from "stylus";
 
+import { assert } from "./shared/common";
+import { initialize as initializeFormula } from "./shared/formula";
+
 import { MathJaxTypesetter } from "./adapters/mathjax-typesetter";
 import { start as startWolframscript } from "./adapters/wolframscript";
 import { initialize as initializeMyScript } from "./adapters/myscript";
 import { initialize as initializeWolframAlpha } from "./adapters/wolframalpha";
 
-import { assert } from "./shared/common";
 import { ServerSocket } from "./models/server-socket";
 import { loadConfig, loadCredentials } from "./config";
 
@@ -74,7 +76,7 @@ async function main() {
 
   // TODO: stopWolframscript before exiting.
   if (config.wolframscript) { await startWolframscript(config.wolframscript); }
-  MathJaxTypesetter.initialize();
+  initializeFormula(MathJaxTypesetter.create());
   initializeMyScript(credentials.myscript);
   initializeWolframAlpha(credentials.wolframalpha);
 

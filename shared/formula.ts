@@ -19,12 +19,12 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 // Requirements
 
-import { BoundingBox } from "./common";
+import { assert, BoundingBox } from "./common";
 import { CellObject, CellType, renderBaseCell } from "./cell";
 import { CssSize, LengthInPixels, cssLengthInPixels } from "./css";
 import { FORMULA_INDENT, FORMULA_NUMBER_INDENT } from "./dimensions";
 import { EMPTY_MML_TREE, MathMlTree } from "./mathml";
-import { SvgMarkup } from "./svg";
+import { SvgMarkup, translateSvgMarkup } from "./svg";
 
 // Types
 
@@ -62,33 +62,47 @@ export const EMPTY_FORMULA_OBJECT: FormulaObject = { mathMlTree: EMPTY_MML_TREE 
 const FORMULA_INDENT_PX = cssLengthInPixels(FORMULA_INDENT);
 const FORMULA_NUMBER_INDENT_PX = cssLengthInPixels(FORMULA_NUMBER_INDENT);
 
+// Global Variables
+
+let gFormulaTypesetter: FormulaTypesetter;
+
 // Exported Functions
 
+export function renderFormula(formulaObject: FormulaObject, containerWidth: LengthInPixels): TypesettingResults {
+  return gFormulaTypesetter.mathMlTreeToSvg(formulaObject.mathMlTree, containerWidth);
+}
+
 export function renderFormulaCell(
-  formulaTypesetter: FormulaTypesetter,
+  x: LengthInPixels,
+  y: LengthInPixels,
   obj: FormulaCellObject,
   formulaNumber: FormulaNumber,
 ): SvgMarkup {
-  return renderBaseCell(obj, <SvgMarkup>(
-    formulaMarkup(formulaTypesetter, obj.formula, obj.cssSize) +
+  assert(gFormulaTypesetter);
+  return renderBaseCell(x, y, obj, <SvgMarkup>(
+    formulaMarkup(obj.formula, obj.cssSize) +
     formulaNumberMarkup(formulaNumber, obj.cssSize)
   ));
+}
+
+export function initialize(formulaTypesetter: FormulaTypesetter) {
+  assert(!gFormulaTypesetter);
+  gFormulaTypesetter = formulaTypesetter;
 }
 
 // Helper Functions
 
 function formulaMarkup(
-  formulaTypesetter: FormulaTypesetter,
   obj: FormulaObject,
   cssSize: CssSize
 ): SvgMarkup {
   const height = cssLengthInPixels(cssSize.height);
   const width = cssLengthInPixels(cssSize.width);
   const usableWidth = width - FORMULA_INDENT_PX - FORMULA_NUMBER_INDENT_PX;
-  const { svgMarkup, boundingBox } = formulaTypesetter.mathMlTreeToSvg(obj.mathMlTree, usableWidth);
+  const { svgMarkup, boundingBox } = renderFormula(obj, usableWidth);
   const x = FORMULA_INDENT_PX;
   const y = Math.round(height/2 - boundingBox.height/2);
-  return <SvgMarkup>`<g transform="translate(${x} ${y})">${svgMarkup}</g>`;
+  return translateSvgMarkup(x, y, svgMarkup);
 }
 
 function formulaNumberMarkup(formulaNumber: FormulaNumber, cssSize: CssSize): SvgMarkup {

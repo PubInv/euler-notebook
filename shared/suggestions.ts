@@ -21,7 +21,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 import { NotebookChangeRequest } from "./client-requests";
 import { Html } from "./common";
-import { MathMlTree } from "./mathml";
+import { FormulaObject } from "./formula";
 import { SvgMarkup } from "./svg";
 
 // Types
@@ -31,7 +31,7 @@ export type SuggestionId = '{SuggestionId}';
 export type Suggestions = SuggestionObject[];
 
 interface SuggestionDisplay {
-  formulaMathMlTree?: MathMlTree;
+  formula?: FormulaObject;
   html?: Html;
   svg?: SvgMarkup;
 }

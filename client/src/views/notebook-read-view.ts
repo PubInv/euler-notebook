@@ -48,7 +48,7 @@ export class NotebookReadView extends HtmlElement<'div'> {
 
   public constructor(notebook: ClientNotebook, mode: Mode) {
     // IMPORTANT: Call resize() after we are visible.
-    const pageViews = notebook.pages.map(page=>new PageReadView(notebook, page));
+    const pageViews = notebook.pages().map(pageInfo=>new PageReadView(notebook, pageInfo));
     const $children = pageViews.map(pageView=>pageView.$elt);
 
     super({

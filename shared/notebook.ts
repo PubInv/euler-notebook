@@ -19,29 +19,37 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 // Requirements
 
-import { CellId, CellIndex, CellObject, CellPosition, CellRelativePosition } from "./cell";
+import { CellId, CellIndex, CellObject, CellPosition, CellRelativePosition, CellType } from "./cell";
 import { arrayFilterOutInPlace, assert, assertFalse } from "./common";
-import { CssLength, CssSize } from "./css";
-import { FigureCellObject } from "./figure";
+import { CssLength, cssLengthInPixels, CssSize, LengthInPixels } from "./css";
+import { FigureCellObject, renderFigureCell } from "./figure";
 import { NotebookPath } from "./folder";
-import { FormulaCellObject } from "./formula";
+import { FormulaCellObject, FormulaNumber, renderFormulaCell } from "./formula";
+import { PlotCellObject, renderPlotCell } from "./plot";
 import { NotebookUpdate } from "./server-responses";
+import { SvgMarkup } from "./svg";
+import { renderTextCell, TextCellObject } from "./text";
 
 // Types
 
-// Number of cells on each page.
-export type Pagination = number[];
+type PageNumber = number;
 
 export interface NotebookObject {
   cells: CellObject[];
   margins: PageMargins;
   pageSize: CssSize;
-  pagination: Pagination;
 }
 
 export interface NotebookWatcher {
   onChange(change: NotebookUpdate, ownRequest: boolean): void;
   onClosed(reason: string): void;
+}
+
+export interface PageInfo {
+  numCells: number;
+  pageNumber: PageNumber;
+  startingCellIndex: CellIndex;
+  startingFormulaNumber: FormulaNumber;
 }
 
 export interface PageMargins {
@@ -59,7 +67,20 @@ export class Notebook {
 
   // Public Class Properties
   // Public Class Property Functions
+
   // Public Class Methods
+
+  public static renderCellToSvg(x: LengthInPixels, y: LengthInPixels, cellObject: CellObject, formulaNumber: FormulaNumber): SvgMarkup {
+    let rval: SvgMarkup;
+    switch(cellObject.type) {
+      case CellType.Figure: rval = renderFigureCell(x, y, <FigureCellObject>cellObject); break;
+      case CellType.Formula: rval = renderFormulaCell(x, y, <FormulaCellObject>cellObject, formulaNumber); break;
+      case CellType.Plot: rval = renderPlotCell(x, y, <PlotCellObject>cellObject); break;
+      case CellType.Text: rval = renderTextCell(x, y, <TextCellObject>cellObject); break;
+    }
+    return rval;
+  }
+
   // Public Class Event Handlers
 
   // Public Instance Properties
@@ -67,6 +88,9 @@ export class Notebook {
   public readonly path: NotebookPath;
 
   // Public Instance Property Functions
+
+  public get margins(): PageMargins { return this.obj.margins; }
+  public get pageSize(): CssSize { return this.obj.pageSize; }
 
   public afterIdForCell(cellId: CellId): CellRelativePosition {
     const cellIndex = this.cellIndex(cellId);
@@ -99,12 +123,52 @@ export class Notebook {
     return cells[cells.length-1].id;
   }
 
-  public get margins(): PageMargins { return this.obj.margins; };
-  public get pageSize(): CssSize { return this.obj.pageSize; };
-  public get pagination(): Pagination { return this.obj.pagination; };
+  public pages(): PageInfo[] {
+    // TEMPORARY:
+    const pageInfo: PageInfo = {
+      numCells: this.obj.cells.length,
+      pageNumber: 1,
+      startingCellIndex: 0,
+      startingFormulaNumber: 1,
+    };
+    return [ pageInfo, pageInfo, pageInfo ];
+    // TODO:
+    // // REVIEW: Implement using a generator?
+    // const pageHeight = cssLengthInPixels(this.pageSize.height);
+    // const topMargin = cssLengthInPixels(this.margins.top);
+    // const bottomMargin = cssLengthInPixels(this.margins.bottom);
+    // const usableHeight = pageHeight - topMargin - bottomMargin;
+    // const rval: PageInfo[] = [];
 
+    // let y = 0;
+    // for (let cellIndex = 0; cellIndex < this.obj.cells.length; cellIndex++) {
+    //   const startingCellIndex = cellIndex;
+    //   const cellObject = this.obj.cells[cellIndex];
+    //   const cellHeight = cssLengthInPixels(cellObject.cssSize.height);
+    //   y+= cellHeight;
+    // }
+
+    // return rval;
+  }
 
   // Public Instance Methods
+
+  public renderPageToSvg(pageInfo: PageInfo): SvgMarkup {
+    let rval: SvgMarkup = <SvgMarkup>'';
+    let x: LengthInPixels = cssLengthInPixels(this.margins.left);
+    let y: LengthInPixels = 0;
+    let formulaNumber = pageInfo.startingFormulaNumber;
+    const endingCellIndex = pageInfo.startingCellIndex + pageInfo.numCells;
+    for (let cellIndex=pageInfo.startingCellIndex; cellIndex < endingCellIndex; cellIndex++) {
+      const cellObject = this.obj.cells[cellIndex];
+      const cellMarkup = Notebook.renderCellToSvg(x, y, cellObject, formulaNumber);
+      rval += cellMarkup;
+      y += cssLengthInPixels(cellObject.cssSize.height);
+      if (cellObject.type == CellType.Formula) { formulaNumber++; }
+    }
+    return rval;
+  }
+
   // Public Instance Event Handlers
 
   // --- PRIVATE ---
@@ -129,13 +193,13 @@ export class Notebook {
 
   // Private Instance Property Functions
 
-  // Private Instance Methods
-
   protected getCellObject<T extends CellObject>(cellId: CellId): T {
     const rval = this.cellObjectMap.get(cellId)!;
     assert(rval);
     return <T>rval;
   }
+
+  // Private Instance Methods
 
   protected /* overridable */ applyUpdate(update: NotebookUpdate): void {
     switch (update.type) {

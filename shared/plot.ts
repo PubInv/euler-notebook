@@ -22,6 +22,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 import { CellObject, CellId, CellType, renderBaseCell } from "./cell";
 import { SvgMarkup } from "./svg";
 import { FormulaObject, FormulaSymbol } from "./formula";
+import { LengthInPixels } from "./css";
 
 // Types
 
@@ -35,6 +36,6 @@ export interface PlotCellObject extends CellObject {
 
 // Exported Functions
 
-export function renderPlotCell(obj: PlotCellObject): SvgMarkup {
-  return renderBaseCell(obj, obj.plotMarkup);
+export function renderPlotCell(x: LengthInPixels, y: LengthInPixels, obj: PlotCellObject): SvgMarkup {
+  return renderBaseCell(x, y, obj, obj.plotMarkup);
 }

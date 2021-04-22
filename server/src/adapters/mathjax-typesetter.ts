@@ -55,15 +55,13 @@ export class MathJaxTypesetter implements FormulaTypesetter {
 
   // Public Class Properties
 
-  public static singleton: MathJaxTypesetter;
-
   // Public Class Property Functions
 
   // Public Class Methods
 
-  public static initialize(): void {
-    this.singleton = new this();
-  }
+  public static create(): MathJaxTypesetter {
+    return new this();
+  };
 
   // Public Class Event Handlers
   // Public Constructor
@@ -119,6 +117,4 @@ export class MathJaxTypesetter implements FormulaTypesetter {
   // Private Instance Property Functions
   // Private Instance Methods
   // Private Instance Event Handlers
-
-
 }

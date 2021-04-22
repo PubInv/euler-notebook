@@ -22,8 +22,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 // import * as debug1 from "debug";
 // const debug = debug1('client:figure-cell');
 
-import { SvgMarkup } from "../../shared/svg";
-import { FigureCellObject, renderFigureCell } from "../../shared/figure";
+import { FigureCellObject } from "../../shared/figure";
 
 import { ClientNotebook } from "../client-notebook";
 
@@ -40,11 +39,6 @@ export class FigureCell extends ClientCell<FigureCellObject> {
   }
 
   // Public Instance Property Functions
-
-  public /* override */ renderToSvg(x: number, y: number): SvgMarkup {
-    const innerMarkup = renderFigureCell(this.obj);
-    return super.renderToSvg(x, y, innerMarkup);
-  }
 
   // Public Instance Methods
 

@@ -18,6 +18,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
 // TODO: Check that user has permissions to read the notebook.
+// TODO: Shared defs/symbols. This should make the PDFs much smaller.
 
 // Requirements
 
@@ -86,12 +87,12 @@ async function generatePdf(res: Writable, notebook: ServerNotebook): Promise<voi
     res.on('error', function(err){ reject(err); });
     doc.pipe(res);
 
-    const topMargin = parseInt(notebook.topMargin);
-    const leftMargin = parseInt(notebook.leftMargin);
-    var curY = topMargin;
-    for (const cell of notebook.cells2()) {
-      SVGtoPDF(doc, cell.renderToSvg(0,0), leftMargin, curY, null);
-      curY += parseInt(cell.cssSize.height);
+    const pageInfos = notebook.pages();
+    for (let i=0; i<pageInfos.length; i++) {
+      const pageInfo = pageInfos[i];
+      if (i>0) { doc.addPage(); }
+      const svgMarkup = notebook.renderPageToSvg(pageInfo);
+      SVGtoPDF(doc, svgMarkup, 0, 0, null);
     }
 
     doc.flushPages();

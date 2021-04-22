@@ -24,7 +24,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 import * as debug1 from "debug";
 const debug = debug1('client:client-notebook');
 
-import { CellId, CellObject, CellPosition, CellRelativePosition, CellType, PageIndex } from "../shared/cell";
+import { CellId, CellObject, CellPosition, CellRelativePosition, CellType } from "../shared/cell";
 import { assert, assertFalse, ClientId, Html } from "../shared/common";
 import { CssSize } from "../shared/css";
 import { notebookUpdateSynopsis } from "../shared/debug-synopsis";
@@ -46,7 +46,6 @@ import { appInstance } from "../app";
 import { ClientCell } from "./client-cell";
 import { createCell } from "./client-cell/instantiator";
 import { logWarning } from "../error-handler";
-import { ClientPage } from "./client-page";
 
 // Types
 
@@ -111,7 +110,6 @@ export class ClientNotebook extends Notebook {
 
   // Public Instance Properties
 
-  public pages: ClientPage[];
   public readonly id: NotebookId;
 
   // Public Instance Property Functions
@@ -288,18 +286,6 @@ export class ClientNotebook extends Notebook {
     this.undoStack = [];
 
     this.collaboratorMap = new Map(msg.collaborators.map(c=>[c.clientId,c]));
-
-    this.pages = [];
-    // let cellIndex = 0;
-    for (let pageIndex: PageIndex = 0;
-         pageIndex < 6; // TODO this.pagination.length;
-         pageIndex++)
-    {
-      // const numCells = pagination[pageIndex];
-      const page = new ClientPage(this, pageIndex, 0 /* TODO: cellIndex */, this.obj.cells.length/* TODO: numCells */);
-      this.pages.push(page);
-      // cellIndex += pagination[pageIndex];
-    }
   }
 
   // Private Instance Properties

@@ -19,8 +19,9 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 // Requirements
 
-import { SvgMarkup, EMPTY_SVG_MARKUP } from "./svg";
+import { SvgMarkup, EMPTY_SVG_MARKUP, translateSvgMarkup } from "./svg";
 import { CellObject, CellType, renderBaseCell } from "./cell";
+import { LengthInPixels } from "./css";
 // import { DiagramItemBlock } from "./myscript-types";
 
 // Types
@@ -46,13 +47,13 @@ export const EMPTY_FIGURE_OBJECT = {
 
 // Exported Functions
 
-export function renderFigureCell(obj: FigureCellObject): SvgMarkup {
-  const markup = renderFigure(obj.figure);
-  return renderBaseCell(obj, markup);
+export function renderFigureCell(x: LengthInPixels, y: LengthInPixels, obj: FigureCellObject): SvgMarkup {
+  const markup = renderFigure(x, y, obj.figure);
+  return renderBaseCell(x, y, obj, markup);
 }
 
 // Helper Functions
 
-function renderFigure(figure: FigureObject): SvgMarkup {
-  return figure.presentation;
+function renderFigure(x: LengthInPixels, y: LengthInPixels, figure: FigureObject): SvgMarkup {
+  return translateSvgMarkup(x, y, figure.presentation);
 }
