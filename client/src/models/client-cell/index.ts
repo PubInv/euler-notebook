@@ -67,7 +67,7 @@ export abstract class ClientCell<O extends CellObject> {
   public isLastCell(): boolean { return this.id == this.notebook.lastCellId() };
 
   public /* overridable */ renderToSvg(x: number, y: number, innerMarkup?: SvgMarkup): SvgMarkup {
-    assert(innerMarkup);
+    assert(typeof innerMarkup == 'string');
     return <SvgMarkup>`<g transform="translate(${x} ${y})">${innerMarkup}</g>`;
   }
 
