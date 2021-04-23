@@ -300,7 +300,7 @@ export abstract class CellEditView<O extends CellObject> extends HtmlElement<'di
   // Private Instance Methods
 
   protected refreshDisplay(): void {
-    const svgMarkup = Notebook.renderCellToSvg(0, 0, this.cell.obj, 99 /* TODO */);
+    const svgMarkup = Notebook.renderCellToSvg(0, 0, this.cell.obj, this.cell.id /* TODO */);
     this.$displaySvg.innerHTML = svgMarkup;
   }
 

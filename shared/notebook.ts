@@ -90,6 +90,7 @@ export class Notebook {
   // Public Instance Property Functions
 
   public get margins(): PageMargins { return this.obj.margins; }
+  // public get numberOfCells(): number { return this.obj.cells.length; }
   public get pageSize(): CssSize { return this.obj.pageSize; }
 
   public afterIdForCell(cellId: CellId): CellRelativePosition {
@@ -124,31 +125,47 @@ export class Notebook {
   }
 
   public pages(): PageInfo[] {
-    // TEMPORARY:
-    const pageInfo: PageInfo = {
-      numCells: this.obj.cells.length,
-      pageNumber: 1,
-      startingCellIndex: 0,
-      startingFormulaNumber: 1,
-    };
-    return [ pageInfo, pageInfo, pageInfo ];
-    // TODO:
-    // // REVIEW: Implement using a generator?
-    // const pageHeight = cssLengthInPixels(this.pageSize.height);
-    // const topMargin = cssLengthInPixels(this.margins.top);
-    // const bottomMargin = cssLengthInPixels(this.margins.bottom);
-    // const usableHeight = pageHeight - topMargin - bottomMargin;
-    // const rval: PageInfo[] = [];
+    if (this.obj.cells.length == 0) { return []; }
 
-    // let y = 0;
-    // for (let cellIndex = 0; cellIndex < this.obj.cells.length; cellIndex++) {
-    //   const startingCellIndex = cellIndex;
-    //   const cellObject = this.obj.cells[cellIndex];
-    //   const cellHeight = cssLengthInPixels(cellObject.cssSize.height);
-    //   y+= cellHeight;
-    // }
+    // REVIEW: Implement using a generator?
+    const pageHeight = cssLengthInPixels(this.pageSize.height);
+    const topMargin = cssLengthInPixels(this.margins.top);
+    const bottomMargin = cssLengthInPixels(this.margins.bottom);
+    const usableHeight = pageHeight - topMargin - bottomMargin;
 
-    // return rval;
+    const rval: PageInfo[] = [];
+    let pageNumber: PageNumber = 1;
+    let formulaNumber: FormulaNumber = 1;
+    const numCells = this.obj.cells.length;
+    let pageInfo: PageInfo;
+    for (let cellIndex = 0; cellIndex < numCells; cellIndex += pageInfo.numCells) {
+
+      // Start a new page.
+      pageInfo = {
+        numCells: 1,
+        pageNumber: pageNumber++,
+        startingCellIndex: cellIndex,
+        startingFormulaNumber: formulaNumber,
+      };
+
+      const firstCellObject = this.obj.cells[cellIndex];
+      if (firstCellObject.type == CellType.Formula) { formulaNumber++ };
+      let dy = cssLengthInPixels(firstCellObject.cssSize.height);
+
+      // Add cells to the page until it exceeds the cell height.
+      while (dy<usableHeight && cellIndex + pageInfo.numCells < numCells) {
+        const additionalCellObject = this.obj.cells[cellIndex + pageInfo.numCells];
+        dy += cssLengthInPixels(additionalCellObject.cssSize.height);
+        if (dy <= usableHeight) {
+          // Cell fits, add it to the page.
+          pageInfo.numCells++;
+          if (additionalCellObject.type == CellType.Formula) { formulaNumber++ };
+        }
+      }
+
+      rval.push(pageInfo);
+    }
+    return rval;
   }
 
   // Public Instance Methods
@@ -156,7 +173,7 @@ export class Notebook {
   public renderPageToSvg(pageInfo: PageInfo): SvgMarkup {
     let rval: SvgMarkup = <SvgMarkup>'';
     let x: LengthInPixels = cssLengthInPixels(this.margins.left);
-    let y: LengthInPixels = 0;
+    let y: LengthInPixels = cssLengthInPixels(this.margins.top);
     let formulaNumber = pageInfo.startingFormulaNumber;
     const endingCellIndex = pageInfo.startingCellIndex + pageInfo.numCells;
     for (let cellIndex=pageInfo.startingCellIndex; cellIndex < endingCellIndex; cellIndex++) {
