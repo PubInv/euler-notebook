@@ -57,8 +57,14 @@ export class HtmlElement<K extends keyof HTMLElementTagNameMap> {
     this.destroyed = true;
   }
 
-  public /* overridable */ hide(): void {
+  public hide(): void {
+    if (!this.isShown) {
+      console.warn(`Hiding HTML element that is altready hidden. Ignoring.`);
+      return;
+    }
+    this.onBeforeHide();
     this.$elt.style.display = 'none';
+    this.onAfterHide();
   }
 
   public hideIfShown(): void { if (this.isShown) { this.hide(); } }
@@ -68,14 +74,19 @@ export class HtmlElement<K extends keyof HTMLElementTagNameMap> {
     this.$elt.remove();
   }
 
-  public /* overridable */ show(): void {
+  public show(): void {
+    if (this.isShown) {
+      console.warn(`Showing HTML element that is altready shown. Ignoring.`);
+      return;
+    }
+    this.onBeforeShow();
     // Per MDN: "A style declaration is reset by setting it to null or an empty string, ....
     //           Internet Explorer requires setting it to an empty string,..."
     // https://developer.mozilla.org/en-US/docs/Web/API/ElementCSSInlineStyle/style
-
     // Note: that this will not work if the element is hidden by a declaration in a stylesheet,
     //       rather than style attribute display:none on the element itself.
     this.$elt.style.display = '';
+    this.onAfterShow();
   }
 
   public showIfHidden(): void { if (this.isHidden) { this.show(); } }
@@ -102,4 +113,17 @@ export class HtmlElement<K extends keyof HTMLElementTagNameMap> {
   protected destroyed?: boolean;
 
   // Private Instance Methods
+
+  // Private Instance Event Handlers
+
+  // NOTE: These event handlers are only called on the element on
+  //       which 'show' or 'hide' is called. It is not called on
+  //       child or descendant elements which will be shown or hidden
+  //       by virtue of the ancestor being shown or hidden.
+  //       These events must be manually propagated to
+  //       children if necessary.
+  protected /* overridable */ onAfterHide(): void {}
+  protected /* overridable */ onAfterShow(): void {}
+  protected /* overridable */ onBeforeHide(): void {}
+  protected /* overridable */ onBeforeShow(): void {}
 }

@@ -19,8 +19,8 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 // Requirements
 
-// import * as debug1 from "debug";
-// const debug = debug1('client:notebook-read-view');
+import * as debug1 from "debug";
+const debug = debug1('client:notebook-read-view');
 
 import { assert, assertFalse } from "../../../shared/common";
 import { CssClass, cssSizeFromPixels, cssLengthInPixels } from "../../../shared/css";
@@ -31,7 +31,6 @@ import { Mode } from "../index";
 
 import { PageReadView } from "./page-read-view";
 import { ClientNotebook } from "../../../models/client-notebook";
-import { NotebookUpdate } from "../../../shared/server-responses";
 
 // Types
 
@@ -48,18 +47,14 @@ export class NotebookReadView extends HtmlElement<'div'> {
   // Public Constructor
 
   public constructor(notebook: ClientNotebook, mode: Mode) {
-    // IMPORTANT: Call resize() after we are visible.
-    const pageViews = notebook.pages().map(pageInfo=>new PageReadView(notebook, pageInfo));
-    const $children = pageViews.map(pageView=>pageView.$elt);
-
+    debug(`Constructing.`)
     super({
       tag: 'div',
       class: <CssClass>'content',
-      children: $children,
     });
 
     this.notebook = notebook;
-    this.pageViews = pageViews;
+    this.pageViews = [];
 
     switch(mode) {
       case Mode.Reading:
@@ -72,6 +67,8 @@ export class NotebookReadView extends HtmlElement<'div'> {
         break;
       default: assertFalse();
     }
+
+    // PageReadViews will be created in onAfterShow.
   }
 
   // Public Instance Properties
@@ -80,8 +77,42 @@ export class NotebookReadView extends HtmlElement<'div'> {
 
   // Public Instance Methods
 
-  public resize(): void {
+  public /* override */ onAfterHide(): void {
+    debug(`onAfterHide.`);
+    while (this.pageViews.length>0) {
+      const pageView = this.pageViews.pop()!;
+      pageView.destroy();
+    }
+  }
 
+  public /* override */ onAfterShow(): void {
+    debug(`onAfterShow.`);
+    assert(this.pageViews.length == 0);
+    for (const pageInfo of this.notebook.pages()) {
+      const pageView = new PageReadView(this.notebook, pageInfo);
+      this.$elt.append(pageView.$elt);
+      this.pageViews.push(pageView);
+    }
+    this.adjustPageSizes();
+  }
+
+  public onResize(): void {
+    debug(`onResize.`);
+    this.adjustPageSizes();
+  }
+
+  // -- PRIVATE --
+
+  // Private Instance Properties
+
+  private marginPercent: number;
+  private notebook: ClientNotebook;
+  private pagesPerRow: number;
+  private pageViews: PageReadView[];
+
+  // Private Instance Methods
+
+  private adjustPageSizes(): void {
     // Calculate the size of the page thumbnails
     // TODO: Different pages could have different sizes.
     const viewWidth = this.$elt.getBoundingClientRect().width;
@@ -99,21 +130,6 @@ export class NotebookReadView extends HtmlElement<'div'> {
     }
   }
 
-  // NotebookView Interface Methods
-
-  public onUpdate(_update: NotebookUpdate): void {
-    // TODO: Decide what needs to be re-rendered and re-render it.
-  }
-
-  // -- PRIVATE --
-
-  // Private Instance Properties
-
-  private marginPercent: number;
-  private notebook: ClientNotebook;
-  private pagesPerRow: number;
-  private pageViews: PageReadView[];
-
-  // Private Instance Methods
+  // Private Instance Event Handlers
 
 }

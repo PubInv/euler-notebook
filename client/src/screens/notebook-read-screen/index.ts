@@ -17,12 +17,15 @@ You should have received a copy of the GNU Affero General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
+// TODO: If the notebook changes then show a message suggesting the user refresh the page.
+// LATER: If the notebook changes, then incrementally update the view without losing the users place.
+
 // Requirements
 
 import * as debug1 from "debug";
 const debug = debug1('client:notebook-read-screen');
 
-import { assert, Html } from "../../shared/common";
+import { Html } from "../../shared/common";
 import { CssClass } from "../../shared/css";
 import { NotebookUpdate, NotebookCollaboratorConnected, NotebookCollaboratorDisconnected } from "../../shared/server-responses";
 import { NotebookPath } from "../../shared/folder";
@@ -75,9 +78,7 @@ export class NotebookReadScreen extends Screen  implements NotebookView {
         const sidebar = new Sidebar(this, mode);
         this.readView = new NotebookReadView(this.notebook, mode);
         this.$elt.append(sidebar.$elt, this.readView.$elt);
-
-        // Update the header and size our content for the area available.
-        this.refresh();
+        this.readView.onAfterShow();
       },
       (err)=>{
         this.displayError(err, <Html>`Error opening notebook <tt>${path}</tt>`);
@@ -92,15 +93,11 @@ export class NotebookReadScreen extends Screen  implements NotebookView {
 
   // Public Instance Methods
 
-  public show(): void {
-    debug(`Showing.`);
-    super.show();
-    if (this.notebook) { this.refresh(); }
-  }
-
   // Public Instance Event Handlers
 
-  public onResize(_window: Window, _event: UIEvent): void { this.resize(); }
+  public onResize(_window: Window, _event: UIEvent): void {
+    this.readView.onResize();
+  }
 
   // NotebookView Interface Methods
 
@@ -113,9 +110,7 @@ export class NotebookReadScreen extends Screen  implements NotebookView {
 
   public onUndoStateChange(_enabled: boolean): void { /* Nothing to do */ }
 
-  public onUpdate(update: NotebookUpdate): void {
-    this.readView.onUpdate(update);
-  }
+  public onUpdate(_update: NotebookUpdate): void { /* Nothing to do */ }
 
   public onCollaboratorConnected(msg: NotebookCollaboratorConnected): void {
     appInstance.header.onCollaboratorConnected(msg.obj);
@@ -131,18 +126,6 @@ export class NotebookReadScreen extends Screen  implements NotebookView {
 
   // Instance Methods
 
-  private refresh(): void {
-    appInstance.header.switchScreen(this.notebook.path, this.notebook.collaborators);
-
-    // We could have been resized since our window was last shown.
-    this.resize();
-  }
-
-  private resize(): void {
-    assert(this.readView);
-    this.readView.resize();
-  }
-
   // Private Instance Properties
 
   private readView!: NotebookReadView;
@@ -152,6 +135,19 @@ export class NotebookReadScreen extends Screen  implements NotebookView {
 
   // Private Instance Methods
 
-  // Private Event Handlers
+  // Private Instance Event Handlers
+
+  protected /* override */ onAfterHide(): void {
+    debug(`After hiding.`);
+    this.readView.onAfterHide();
+  }
+
+  protected /* override */ onAfterShow(): void {
+    debug(`onAfterShow.`);
+    if (this.notebook) {
+      appInstance.header.switchScreen(this.notebook.path, this.notebook.collaborators);
+      this.readView.onAfterShow();
+    }
+  }
 
 }
