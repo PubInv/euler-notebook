@@ -304,7 +304,7 @@ export abstract class CellEditView<O extends CellObject> extends HtmlElement<'di
     this.$displaySvg.innerHTML = svgMarkup;
   }
 
-  // Private Event Handlers
+  // Private Instance Event Handlers
 
   private async onDeleteButtonClicked(event: MouseEvent): Promise<void> {
     event.preventDefault(); // Don't take focus.

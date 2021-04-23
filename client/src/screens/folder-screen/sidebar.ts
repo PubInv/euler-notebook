@@ -77,7 +77,7 @@ export class Sidebar extends ButtonBar {
 
   private screen: FolderScreen;
 
-  // Private Event Handlers
+  // Private Instance Event Handlers
 
   private async onNewFolderClicked(e: MouseEvent): Promise<void> {
     e.preventDefault(); // Do not take focus.

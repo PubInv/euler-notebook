@@ -309,7 +309,7 @@ export class ClientFolder extends Folder {
     for (const watcher of info.watchers) { watcher.onClosed(reason); }
   }
 
-  // Private Event Handlers
+  // Private Instance Event Handlers
 
   private onClosed(msg: FolderClosed, _ownRequest: boolean): void {
     // Message from the server that the folder has been closed by the server.

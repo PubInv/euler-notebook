@@ -60,7 +60,7 @@ export class PageReadView extends SvgElement<'svg'> {
 
   // Private Instance Methods
 
-  // Private Event Handlers
+  // Private Instance Event Handlers
 
 }
 

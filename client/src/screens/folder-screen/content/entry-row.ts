@@ -265,7 +265,7 @@ export class EntryRow<K extends keyof EntryTypeMap> extends HtmlElement<'tr'> {
     this.$checkmarkButton.disabled = true;
   }
 
-  // Private Event Handlers
+  // Private Instance Event Handlers
 
   private async onCheckmarkButtonClicked(e: MouseEvent): Promise<void> {
     // console.log(`Edit name finish clicked`);

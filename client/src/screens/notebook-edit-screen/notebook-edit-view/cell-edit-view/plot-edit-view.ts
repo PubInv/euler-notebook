@@ -74,6 +74,6 @@ export class PlotEditView extends CellEditView<PlotCellObject> {
 
   // Private Instance Methods
 
-  // Private Event Handlers
+  // Private Instance Event Handlers
 
 }

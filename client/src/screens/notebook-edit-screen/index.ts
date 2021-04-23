@@ -90,13 +90,6 @@ export class NotebookEditScreen extends Screen implements NotebookView {
 
   // Public Instance Methods
 
-  public show(): void {
-    if (this.notebook) {
-      appInstance.header.switchScreen(this.notebook.path, this.notebook.collaborators);
-    }
-    super.show();
-  }
-
   public toggleReferencePanel(): void {
     if (this.referencePanel.isHidden) {
       if (!this.searchPanel.isHidden) { this.searchPanel.hide(); }
@@ -156,6 +149,14 @@ export class NotebookEditScreen extends Screen implements NotebookView {
 
   // Private Instance Methods
 
-  // Private Event Handlers
+  // Private Instance Event Handlers
+
+  protected onAfterShow(): void {
+    super.onAfterShow();
+    if (this.notebook) {
+      appInstance.header.switchScreen(this.notebook.path, this.notebook.collaborators);
+    }
+  }
+
 
 }

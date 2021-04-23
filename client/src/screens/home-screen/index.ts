@@ -60,17 +60,11 @@ export class HomeScreen extends Screen {
         submit: (e: Event)=>this.onLoginSubmit(e),
       }
     });
-    this.show();
   }
 
   // Public Instance Properties
 
   // Public Instance Methods
-
-  public show(): void {
-    appInstance.header.switchScreen(<FolderPath>'/');
-    super.show();
-  }
 
   // Public Instance Event Handlers
 
@@ -80,6 +74,11 @@ export class HomeScreen extends Screen {
   // --- PRIVATE ---
 
   // Private Instance Event Handlers
+
+  protected /* override */ onAfterShow(): void {
+    super.onAfterShow();
+    appInstance.header.switchScreen(<FolderPath>'/');
+  }
 
   private async onLoginSubmit(e: Event): Promise<void> {
     e.preventDefault();

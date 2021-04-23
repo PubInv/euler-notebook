@@ -75,15 +75,6 @@ export class SuggestionPanel<O extends CellObject> extends HtmlElement<'div'> {
 
   // Public Instance Methods
 
-  public /* override */ show(): void {
-    // We override show in order to position ourselves immediately above our parent element.
-    const $parent = this.$elt.parentElement!;
-    const domRect = $parent.getBoundingClientRect();
-    const parentHeight = domRect.height;
-    this.$elt.style.bottom = `${parentHeight}px`;
-    super.show();
-  }
-
   // Public Instance Event Handlers
 
   public onUpdate(update: SuggestionAdded|SuggestionRemoved, _ownRequest: boolean): void {
@@ -161,6 +152,16 @@ export class SuggestionPanel<O extends CellObject> extends HtmlElement<'div'> {
   }
 
   // Private Instance Event Handlers
+
+  protected /* override */ onBeforeShow(): void {
+    // Position ourselves immediately above our parent element.
+    super.onBeforeShow();
+    const $parent = this.$elt.parentElement!;
+    const domRect = $parent.getBoundingClientRect();
+    const parentHeight = domRect.height;
+    this.$elt.style.bottom = `${parentHeight}px`;
+  }
+
 
   private async onSuggestionClicked(_event: MouseEvent, changeRequests: NotebookChangeRequest[]): Promise<void> {
     // REVIEW: What do we do if error happens on the request?

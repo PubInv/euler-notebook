@@ -85,7 +85,7 @@ export class DebugConsole extends HtmlElement<'div'> {
     this.$elt.scrollTop = this.$elt.scrollHeight;
   }
 
-  // Private Event Handlers
+  // Private Instance Event Handlers
 
 }
 

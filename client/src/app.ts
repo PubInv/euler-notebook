@@ -77,7 +77,7 @@ class App {
 
   // Private Instance Methods
 
-  // Private Event Handlers
+  // Private Instance Event Handlers
 
   private async onDomContentLoaded(_event: Event): Promise<void> {
 

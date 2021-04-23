@@ -160,7 +160,7 @@ export class ReferencePanel extends HtmlElement<'div'> {
 
   // Private Instance Methods
 
-  // Private Event Handlers
+  // Private Instance Event Handlers
 
   private onBackButtonClicked(event: MouseEvent): void {
     event.preventDefault(); // Don't submit form.

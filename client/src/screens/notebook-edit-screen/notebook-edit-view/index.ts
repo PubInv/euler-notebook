@@ -396,7 +396,7 @@ export class NotebookEditView extends HtmlElement<'div'> {
     }
   }
 
-  // Private Event Handlers
+  // Private Instance Event Handlers
 
   private onBlur(_event: FocusEvent): void {
     // console.log("BLUR!!!");

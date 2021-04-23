@@ -88,7 +88,7 @@ export class UndoStack {
   private stack: NotebookUpdate[];
   private top: number;          // Index of the top of the stack. May not be the length of the array if there have been some undos.
 
-  // Private Event Handlers
+  // Private Instance Event Handlers
 
   private onRedo(_event?: MouseEvent): void {
     assert(this.top < this.stack.length);

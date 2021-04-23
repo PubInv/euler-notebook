@@ -122,7 +122,7 @@ export class StrokePanel extends HtmlElement<'div'> {
 
   // Private Instance Property Functions
 
-  // Private Event Handlers
+  // Private Instance Event Handlers
 
 }
 

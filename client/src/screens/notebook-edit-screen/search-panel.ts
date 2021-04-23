@@ -121,7 +121,7 @@ export class SearchPanel extends HtmlElement<'div'> {
     $(this.$elt, '.searchResults').innerHTML = html;
   }
 
-  // Private Event Handlers
+  // Private Instance Event Handlers
 
 }
 

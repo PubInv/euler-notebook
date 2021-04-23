@@ -106,11 +106,11 @@ export class FolderScreen extends Screen implements ClientFolderWatcher {
 
   // Public Instance Methods
 
-  public show(): void {
+  protected /* override */ onAfterShow(): void {
+    super.onAfterShow();
     if (this.folder) {
       appInstance.header.switchScreen(this.folder.path, this.folder.collaborators);
     }
-    super.show();
   }
 
   // --- PRIVATE ---
@@ -119,6 +119,6 @@ export class FolderScreen extends Screen implements ClientFolderWatcher {
 
   // Private Instance Methods
 
-  // Private Event Handlers
+  // Private Instance Event Handlers
 
 }

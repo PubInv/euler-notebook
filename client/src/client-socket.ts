@@ -120,7 +120,7 @@ export class ClientSocket {
 
   // Private Instance Methods
 
-  // Private Event Handlers
+  // Private Instance Event Handlers
 
   // See https://github.com/Luka967/websocket-close-codes.
   private onWsClose(event: CloseEvent): void {

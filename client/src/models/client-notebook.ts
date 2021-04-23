@@ -378,7 +378,7 @@ export class ClientNotebook extends Notebook {
     for (const view of this.views) { view.onClosed(reason); }
   }
 
-  // Private Event Handlers
+  // Private Instance Event Handlers
 
   private onServerResponse(msg: NotebookResponse, ownRequest: boolean): void {
     // A notebook message was received from the server.

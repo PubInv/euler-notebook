@@ -91,7 +91,7 @@ export class KeyboardPanel extends HtmlElement<'div'> {
     this.$textArea.value = text;
   }
 
-  // Private Event Handlers
+  // Private Instance Event Handlers
 
   private onTextAreaInput(event: InputEvent): void {
     debug(`TextArea input event: ${event.inputType} "${event.data}"`);

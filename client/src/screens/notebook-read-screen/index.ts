@@ -139,11 +139,13 @@ export class NotebookReadScreen extends Screen  implements NotebookView {
 
   protected /* override */ onAfterHide(): void {
     debug(`After hiding.`);
+    super.onAfterHide();
     this.readView.onAfterHide();
   }
 
   protected /* override */ onAfterShow(): void {
     debug(`onAfterShow.`);
+    super.onAfterShow();
     if (this.notebook) {
       appInstance.header.switchScreen(this.notebook.path, this.notebook.collaborators);
       this.readView.onAfterShow();

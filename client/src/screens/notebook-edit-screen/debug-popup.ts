@@ -20,7 +20,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 // Requirements
 
 import { CssClass } from "../../shared/css";
-import { $, CLOSE_X_ENTITY } from "../../dom";
+import { $new, CLOSE_X_ENTITY } from "../../dom";
 import { HtmlElement } from "../../html-element";
 import { NotebookEditScreen } from ".";
 
@@ -39,6 +39,11 @@ export class DebugPopup extends HtmlElement<'div'>{
   // Public Constructor
 
   public constructor(screen: NotebookEditScreen) {
+    const $content = $new({
+      tag: 'div',
+      class: <CssClass>'content',
+      listeners: { click: e=>this.onContentClick(e) , }
+    });
     super({
       tag: 'div',
       class: <CssClass>'debugPopup',
@@ -48,36 +53,39 @@ export class DebugPopup extends HtmlElement<'div'>{
           class: <CssClass>'close',
           html: CLOSE_X_ENTITY,
           syncButtonHandler: e=> this.onCloseClick(e),
-        }, {
-          tag: 'div',
-          class: <CssClass>'content',
-          listeners: { click: e=>this.onContentClick(e) , }
-        }
+        },
+        $content
       ],
       hidden: true,
     });
+    this.$content = $content;
     this.screen = screen;
   }
 
   // Instance Methods
 
-  public show(): void {
-    const $content = $(this.$elt, '.content');
-    $content.innerHTML = this.screen.notebook.toDebugHtml();
-    super.show();
-  }
-
   // -- PRIVATE --
 
   // Private Instance Properties
 
+  private $content: HTMLDivElement;
   private screen: NotebookEditScreen;
 
   // Private Instance Property Functions
 
   // Private Instance Methods
 
-  // Private Event Handlers
+  // Private Instance Event Handlers
+
+  protected /* override */ onAfterHide(): void {
+    super.onAfterHide();
+    this.$content.innerHTML = '';
+  }
+
+  protected /* override */ onBeforeShow(): void {
+    super.onBeforeShow();
+    this.$content.innerHTML = this.screen.notebook.toDebugHtml();
+  }
 
   private onCloseClick(_event: MouseEvent): void {
     this.hide();

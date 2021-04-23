@@ -226,7 +226,7 @@ export class Header extends ButtonBar {
     this.$collaboratorsSpan.innerHTML = "";
   }
 
-  // Private Event Handlers
+  // Private Instance Event Handlers
 
   private onFullscreenButtonClicked(_event: MouseEvent): void {
     // REVIEW: Maybe use this: https://github.com/sindresorhus/screenfull.js?
