@@ -116,16 +116,6 @@ export class Sidebar extends ButtonBar {
       disabled: true,
     });
 
-    const $trashButton = $new({
-      tag: 'button',
-      class: <CssClass>'iconButton',
-      html: svgIconReferenceMarkup('iconMonstrTrashcan2'),
-      asyncButtonHandler: async (_e: MouseEvent)=>{
-        await this.screen.editView.deleteSelectedCells();
-      },
-      title: "Trash",
-    });
-
     const $undoButton = $new({
       tag: 'button',
       class: <CssClass>'iconButton',
@@ -203,12 +193,9 @@ export class Sidebar extends ButtonBar {
           tag: 'button',
           class: <CssClass>'iconButton',
           html: svgIconReferenceMarkup('iconMonstrClothing18'),
-          asyncButtonHandler: async (_e: MouseEvent)=>{
-            await this.screen.editView.developmentButtonClicked();
-          },
+          syncButtonHandler: async (_e: MouseEvent)=>this.screen.debugPopup.toggleVisibility(),
           title: "Development use only",
         },
-        $trashButton,
       ],
     });
 
@@ -216,7 +203,6 @@ export class Sidebar extends ButtonBar {
 
     this.$bugButton = $debugButton;
     this.$redoButton = $redoButton;
-    this.$trashButton = $trashButton;
     this.$undoButton = $undoButton;
     this.$formulaModeButton = $formulaModeButton;
     this.$figureModeButton = $figureModeButton;
@@ -229,7 +215,6 @@ export class Sidebar extends ButtonBar {
 
   public $bugButton: HTMLButtonElement;
   public $redoButton: HTMLButtonElement;
-  public $trashButton: HTMLButtonElement;
   public $undoButton: HTMLButtonElement;
 
   // Public Instance Methods
