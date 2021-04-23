@@ -22,14 +22,14 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 import * as debug1 from "debug";
 const debug = debug1('client:text-edit-view');
 
-import { TextCellObject } from "../../shared/text";
-import { CssClass } from "../../shared/css";
-import { NotebookUpdate } from "../../shared/server-responses";
-import { notebookUpdateSynopsis, cellSynopsis } from "../../shared/debug-synopsis";
+import { TextCellObject } from "../../../../shared/text";
+import { CssClass } from "../../../../shared/css";
+import { NotebookUpdate } from "../../../../shared/server-responses";
+import { notebookUpdateSynopsis, cellSynopsis } from "../../../../shared/debug-synopsis";
 
-import { TextCell } from "../../models/client-cell/text-cell";
+import { TextCell } from "../../../../models/client-cell/text-cell";
 
-import { NotebookEditView } from "../notebook-edit-view";
+import { NotebookEditView } from "..";
 
 import { CellEditView } from "./index";
 
@@ -50,7 +50,7 @@ export class TextEditView extends CellEditView<TextCellObject> {
     super(notebookEditView, cell, <CssClass>'textCell');
   }
 
-  // ClientNotebookWatcher Methods
+  // NotebookView Methods
 
   public onUpdate(update: NotebookUpdate, ownRequest: boolean): void {
     debug(`onUpdate C${this.id} ${notebookUpdateSynopsis(update)}`);

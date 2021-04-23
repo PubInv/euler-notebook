@@ -17,18 +17,18 @@ You should have received a copy of the GNU Affero General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-import { assertFalse, ElementId, Html } from "../../shared/common";
-import { CellObject } from "../../shared/cell";
-import { NotebookChangeRequest } from "../../shared/client-requests";
-import { CssClass } from "../../shared/css";
-import { renderFormula } from "../../shared/formula";
-import { SuggestionAdded, SuggestionRemoved } from "../../shared/server-responses";
-import { SuggestionObject, Suggestions } from "../../shared/suggestions";
-import { SvgMarkup } from "../../shared/svg";
+import { assertFalse, ElementId, Html } from "../../../../shared/common";
+import { CellObject } from "../../../../shared/cell";
+import { NotebookChangeRequest } from "../../../../shared/client-requests";
+import { CssClass } from "../../../../shared/css";
+import { renderFormula } from "../../../../shared/formula";
+import { SuggestionAdded, SuggestionRemoved } from "../../../../shared/server-responses";
+import { SuggestionObject, Suggestions } from "../../../../shared/suggestions";
+import { SvgMarkup } from "../../../../shared/svg";
 
-import { $all, $new, HtmlElementSpecification } from "../../dom";
-import { HtmlElement } from "../../html-element";
-import { ClientCell } from "../../models/client-cell";
+import { $all, $new, HtmlElementSpecification } from "../../../../dom";
+import { HtmlElement } from "../../../../html-element";
+import { ClientCell } from "../../../../models/client-cell";
 
 // Requirements
 

@@ -25,22 +25,22 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 import * as debug1 from "debug";
 const debug = debug1('client:notebook-edit-view');
 
-import { CellId, CellObject, CellPosition, CellRelativePosition, CellType } from "../shared/cell";
-import { assert, Html, notImplementedError, notImplementedWarning } from "../shared/common";
-import { CssClass } from "../shared/css";
-import { DebugParams } from "../shared/api-calls";
-import { notebookUpdateSynopsis } from "../shared/debug-synopsis";
-import { CellDeleted, CellInserted, CellMoved, NotebookUpdate } from "../shared/server-responses";
+import { CellId, CellObject, CellPosition, CellRelativePosition, CellType } from "../../../shared/cell";
+import { assert, Html, notImplementedError, notImplementedWarning } from "../../../shared/common";
+import { CssClass } from "../../../shared/css";
+import { DebugParams } from "../../../shared/api-calls";
+import { notebookUpdateSynopsis } from "../../../shared/debug-synopsis";
+import { CellDeleted, CellInserted, CellMoved, NotebookUpdate } from "../../../shared/server-responses";
 
-import { StylusMode } from "../components/stroke-panel";
+import { StylusMode } from "../../../components/stroke-panel";
 
-import { NotebookEditScreen } from "../screens/notebook-edit-screen";
+import { NotebookEditScreen } from "..";
 
-import { HtmlElement } from "../html-element";
-import { showError } from "../error-handler";
-import { apiDebug } from "../api";
-import { ClientNotebook } from "../models/client-notebook";
-import { $, RIGHT_TRIANGLE_ENTITY } from "../dom";
+import { HtmlElement } from "../../../html-element";
+import { showError } from "../../../error-handler";
+import { apiDebug } from "../../../api";
+import { ClientNotebook } from "../../../models/client-notebook";
+import { $, RIGHT_TRIANGLE_ENTITY } from "../../../dom";
 
 import { CellEditView } from "./cell-edit-view";
 import { createCellView } from "./cell-edit-view/instantiator";

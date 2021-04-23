@@ -27,7 +27,7 @@ import { CssClass } from "../../shared/css";
 import { NotebookUpdate, NotebookCollaboratorConnected, NotebookCollaboratorDisconnected } from "../../shared/server-responses";
 import { NotebookPath } from "../../shared/folder";
 
-import { NotebookReadView } from "../../views/notebook-read-view";
+import { NotebookReadView } from "./notebook-read-view";
 
 import { ClientNotebook, NotebookView } from "../../models/client-notebook";
 
@@ -113,8 +113,8 @@ export class NotebookReadScreen extends Screen  implements NotebookView {
 
   public onUndoStateChange(_enabled: boolean): void { /* Nothing to do */ }
 
-  public onUpdate(_update: NotebookUpdate): void {
-    // this.readView.onUpdate(update);
+  public onUpdate(update: NotebookUpdate): void {
+    this.readView.onUpdate(update);
   }
 
   public onCollaboratorConnected(msg: NotebookCollaboratorConnected): void {

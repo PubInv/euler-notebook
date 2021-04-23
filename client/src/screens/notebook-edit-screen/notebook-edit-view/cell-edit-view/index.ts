@@ -24,28 +24,28 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 import * as debug1 from "debug";
 const debug = debug1('client:cell-edit-view');
 
-import { CellObject, CellId, CellRelativePosition, CellPosition } from "../../shared/cell";
-import { assert, Html, ElementId } from "../../shared/common";
-import { CssClass, CssLength, CssSize, LengthInPixels, joinCssLength } from "../../shared/css";
-import { CellDeleted, NotebookUpdate } from "../../shared/server-responses";
-import { convertStrokeToPath, Stroke, StrokeId, strokePathId } from "../../shared/stylus";
-import { notebookUpdateSynopsis } from "../../shared/debug-synopsis";
+import { CellObject, CellId, CellRelativePosition, CellPosition } from "../../../../shared/cell";
+import { assert, Html, ElementId } from "../../../../shared/common";
+import { CssClass, CssLength, CssSize, LengthInPixels, joinCssLength } from "../../../../shared/css";
+import { CellDeleted, NotebookUpdate } from "../../../../shared/server-responses";
+import { convertStrokeToPath, Stroke, StrokeId, strokePathId } from "../../../../shared/stylus";
+import { notebookUpdateSynopsis } from "../../../../shared/debug-synopsis";
 
 // import { DebugConsole } from "../../components/debug-console";
-import { HtmlElement } from "../../html-element";
+import { HtmlElement } from "../../../../html-element";
 import {
   $new, $newSvg, CLOSE_X_ENTITY, CELL_ICONS, svgIconReferenceMarkup, HtmlElementOrSpecification, $,
-} from "../../dom";
-import { showError } from "../../error-handler";
+} from "../../../../dom";
+import { showError } from "../../../../error-handler";
 
-import { CellView, ClientCell } from "../../models/client-cell";
-import { StrokePanel, StrokePanelCallbacks, StylusMode } from "../../components/stroke-panel";
+import { CellView, ClientCell } from "../../../../models/client-cell";
+import { StrokePanel, StrokePanelCallbacks, StylusMode } from "../../../../components/stroke-panel";
 
-import { NotebookEditView } from "../notebook-edit-view";
+import { NotebookEditView } from "..";
 
 import { CallbackFunctions as ResizerCallbackFunctions, ResizerBar } from "./resizer-bar";
 import { SuggestionPanel } from "./suggestion-panel";
-import { Notebook } from "../../shared/notebook";
+import { Notebook } from "../../../../shared/notebook";
 
 // Types
 

@@ -22,15 +22,16 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 // import * as debug1 from "debug";
 // const debug = debug1('client:notebook-read-view');
 
-import { assert, assertFalse, notImplementedWarning, } from "../shared/common";
-import { CssClass, cssSizeFromPixels, cssLengthInPixels } from "../shared/css";
+import { assert, assertFalse } from "../../../shared/common";
+import { CssClass, cssSizeFromPixels, cssLengthInPixels } from "../../../shared/css";
 
-import { HtmlElement } from "../html-element";
+import { HtmlElement } from "../../../html-element";
 
-import { Mode } from "../screens/notebook-read-screen/index";
+import { Mode } from "../index";
 
 import { PageReadView } from "./page-read-view";
-import { ClientNotebook } from "../models/client-notebook";
+import { ClientNotebook } from "../../../models/client-notebook";
+import { NotebookUpdate } from "../../../shared/server-responses";
 
 // Types
 
@@ -100,9 +101,8 @@ export class NotebookReadView extends HtmlElement<'div'> {
 
   // NotebookView Interface Methods
 
-  public onClosed(_reason: string): void {
-    // TODO: update our display to indicate the notebook is closed.
-    notImplementedWarning("NotebookReadView onClosed");
+  public onUpdate(_update: NotebookUpdate): void {
+    // TODO: Decide what needs to be re-rendered and re-render it.
   }
 
   // -- PRIVATE --

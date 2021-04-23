@@ -19,21 +19,21 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 // Requirements
 
-import { CellObject, CellType } from "../../shared/cell";
-import { assertFalse } from "../../shared/common";
+import { CellObject, CellType } from "../../../../shared/cell";
+import { assertFalse } from "../../../../shared/common";
 
-import { ClientCell } from "../../models/client-cell";
-import { FigureCell } from "../../models/client-cell/figure-cell";
-import { FormulaCell } from "../../models/client-cell/formula-cell";
-import { TextCell } from "../../models/client-cell/text-cell";
-import { PlotCell } from "../../models/client-cell/plot-cell";
+import { ClientCell } from "../../../../models/client-cell";
+import { FigureCell } from "../../../../models/client-cell/figure-cell";
+import { FormulaCell } from "../../../../models/client-cell/formula-cell";
+import { TextCell } from "../../../../models/client-cell/text-cell";
+import { PlotCell } from "../../../../models/client-cell/plot-cell";
 
 import { FormulaEditView } from "./formula-edit-view";
 import { FigureEditView } from "./figure-edit-view";
 import { PlotEditView } from "./plot-edit-view";
 import { TextEditView } from "./text-edit-view";
 
-import { NotebookEditView } from "../notebook-edit-view";
+import { NotebookEditView } from "..";
 
 import { CellEditView } from "./index";
 

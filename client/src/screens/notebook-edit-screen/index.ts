@@ -27,7 +27,7 @@ import { CssClass } from "../../shared/css";
 import { NotebookPath } from "../../shared/folder";
 import { NotebookUpdate, NotebookCollaboratorConnected, NotebookCollaboratorDisconnected } from "../../shared/server-responses";
 
-import { NotebookEditView } from "../../views/notebook-edit-view";
+import { NotebookEditView } from "./notebook-edit-view";
 
 import { ClientNotebook, NotebookView } from "../../models/client-notebook";
 
@@ -121,7 +121,7 @@ export class NotebookEditScreen extends Screen implements NotebookView {
 
   public onResize(_window: Window, _event: UIEvent): void { /* Nothing to do. */ }
 
-  // ClientNotebookWatcher Methods
+  // NotebookView Methods
 
   public onClosed(reason?: string): void {
     this.sidebar.destroy();

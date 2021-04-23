@@ -22,14 +22,14 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 import * as debug1 from "debug";
 const debug = debug1('client:figure-edit-view');
 
-import { CssClass } from "../../shared/css";
-import { NotebookUpdate } from "../../shared/server-responses";
-import { notebookUpdateSynopsis } from "../../shared/debug-synopsis";
-import { FigureCellObject } from "../../shared/figure";
+import { CssClass } from "../../../../shared/css";
+import { NotebookUpdate } from "../../../../shared/server-responses";
+import { notebookUpdateSynopsis } from "../../../../shared/debug-synopsis";
+import { FigureCellObject } from "../../../../shared/figure";
 
-import { FigureCell } from "../../models/client-cell/figure-cell";
+import { FigureCell } from "../../../../models/client-cell/figure-cell";
 
-import { NotebookEditView } from "../notebook-edit-view";
+import { NotebookEditView } from "..";
 
 import { CellEditView } from "./index";
 
@@ -49,7 +49,7 @@ export class FigureEditView extends CellEditView<FigureCellObject> {
 
   // Public Instance Methods
 
-  // ClientNotebookWatcher Methods
+  // NotebookView Methods
 
   public onUpdate(update: NotebookUpdate, ownRequest: boolean): void {
     debug(`onUpdate: C${this.id} ${notebookUpdateSynopsis(update)}`);
