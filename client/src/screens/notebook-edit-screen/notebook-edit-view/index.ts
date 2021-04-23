@@ -60,7 +60,7 @@ export class NotebookEditView extends HtmlElement<'div'> {
         classes: [ <CssClass>'insertCellAtTopButton', <CssClass>'iconButton' ],
         html: RIGHT_TRIANGLE_ENTITY,
         asyncButtonHandler: e=>this.onInsertCellAtTopButtonClicked(e),
-      }]
+      }],
     });
 
     this.cellViewMap = new Map();
@@ -89,6 +89,7 @@ export class NotebookEditView extends HtmlElement<'div'> {
   }
 
   public set stylusMode(value: StylusMode) {
+    // REVIEW: Warn if setting mode to same as existing?
     this._stylusMode = value;
     for (const cellView of this.cellViewMap.values()) {
       cellView.stylusMode = value;

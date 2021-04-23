@@ -222,27 +222,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
       >.main
         display flex
-        justify-content space-between
-
-        >.leftMargin
-          align-items center
-          display flex
-
-          >.dragIcon
-            color lightgray
-            cursor grab
-            height 16px
-            padding 6px 12px 6px 6px
-            width 16px
-
-          >.cellIcon
-            padding 6px
-
-            >.icon
-              fill lightgray
-              stroke lightgray
-              height 16px
-              width 16px
+        // justify-content space-between
 
         >.content
           border 1px solid #E0E0E0
@@ -256,17 +236,33 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
             stroke black
             top 0
 
+        >.leftMargin
+          width 30px
+
         >.rightMargin
           align-items center
           display flex
           justify-content flex-end
 
+          >.cellIcon
+
+            >.icon
+              fill lightgray
+              stroke lightgray
+              height 16px
+              width 16px
+
           >.deleteButton
             color lightgray
-            padding 6px 6px 6px 12px
+
+          >.dragIcon
+            color lightgray
+            cursor grab
 
           >.iconButton
-             >.icon
+            padding 6px
+
+            >.icon
                width 12px
                height 12px
 

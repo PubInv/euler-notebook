@@ -34,7 +34,7 @@ import { notebookUpdateSynopsis } from "../../../../shared/debug-synopsis";
 // import { DebugConsole } from "../../components/debug-console";
 import { HtmlElement } from "../../../../html-element";
 import {
-  $new, $newSvg, CLOSE_X_ENTITY, CELL_ICONS, svgIconReferenceMarkup, HtmlElementOrSpecification, $,
+  $new, $newSvg, CELL_ICONS, svgIconReferenceMarkup, HtmlElementOrSpecification, $,
 } from "../../../../dom";
 import { showError } from "../../../../error-handler";
 
@@ -162,37 +162,33 @@ export abstract class CellEditView<O extends CellObject> extends HtmlElement<'di
     const $leftMargin = $new<'div'>({
       tag: 'div',
       class: <CssClass>'leftMargin',
-      children: [
-        {
-          tag: 'div',
-          attrs: { draggable: true },
-          class: <CssClass>'dragIcon',
-          html: <Html>"&equiv;",
-          listeners: {
-            dragend: e=>this.onDragEnd(e),
-            dragstart: e=>this.onDragStart(e),
-          },
-        },
-        {
-          tag: 'div',
-          class: <CssClass>'cellIcon',
-          html: svgIconReferenceMarkup(iconId),
-        },
-      ],
     });
 
     const rightMarginChildren: HtmlElementOrSpecification[] = [
       {
+        tag: 'div',
+        classes: [ <CssClass>'cellIcon', <CssClass>'iconButton' ],
+        html: svgIconReferenceMarkup(iconId),
+      }, {
         tag: 'button',
         class: <CssClass>'iconButton',
         attrs: { tabindex: -1 },
         html: svgIconReferenceMarkup('iconMonstrInfo6'),
         syncButtonHandler: (e: MouseEvent)=>this.onSuggestionsButtonClicked(e),
       }, {
+        tag: 'div',
+        attrs: { draggable: true },
+        classes: [ <CssClass>'dragIcon', <CssClass>'iconButton' ],
+        html: svgIconReferenceMarkup('iconMonstrCursor19'),
+        listeners: {
+          dragend: e=>this.onDragEnd(e),
+          dragstart: e=>this.onDragStart(e),
+        },
+      }, {
         tag: 'button',
-        classes:[ <CssClass>'deleteButton', <CssClass>'entityButton' ],
+        classes:[ <CssClass>'deleteButton', <CssClass>'iconButton' ],
         attrs: { tabindex: -1 },
-        html: CLOSE_X_ENTITY,
+        html: svgIconReferenceMarkup('iconMonstrTrashcan2'),
         asyncButtonHandler: e=>this.onDeleteButtonClicked(e),
       }
     ];
