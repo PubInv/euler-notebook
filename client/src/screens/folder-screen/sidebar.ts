@@ -79,14 +79,12 @@ export class Sidebar extends ButtonBar {
 
   // Private Instance Event Handlers
 
-  private async onNewFolderClicked(e: MouseEvent): Promise<void> {
-    e.preventDefault(); // Do not take focus.
+  private async onNewFolderClicked(_event: MouseEvent): Promise<void> {
     const entry = await this.screen.folder.newFolder();
     this.screen.view.editFolderName(entry.name);
   }
 
-  private async onNewNotebookClicked(e: MouseEvent): Promise<void> {
-    e.preventDefault(); // Do not take focus.
+  private async onNewNotebookClicked(_event: MouseEvent): Promise<void> {
     const entry = await this.screen.folder.newNotebook();
     this.screen.view.editNotebookName(entry.name);
   }

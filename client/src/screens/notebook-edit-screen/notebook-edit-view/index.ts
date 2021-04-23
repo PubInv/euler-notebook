@@ -182,8 +182,7 @@ export class NotebookEditView extends HtmlElement<'div'> {
     this.insertCellView(cellView, afterId);
   }
 
-  private async onInsertCellAtTopButtonClicked(event: MouseEvent): Promise<void> {
-    event.preventDefault(); // Don't take focus.
+  private async onInsertCellAtTopButtonClicked(_event: MouseEvent): Promise<void> {
     await this.insertCellRequest(CellPosition.Top);
   }
 

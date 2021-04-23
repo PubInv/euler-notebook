@@ -265,11 +265,10 @@ export class EntryRow<K extends keyof EntryTypeMap> extends HtmlElement<'tr'> {
     this.$checkmarkButton.disabled = true;
   }
 
-  // Private Instance Event Handlers
+  // Private Event Handlers
 
-  private async onCheckmarkButtonClicked(e: MouseEvent): Promise<void> {
+  private async onCheckmarkButtonClicked(_event: MouseEvent): Promise<void> {
     // console.log(`Edit name finish clicked`);
-    e.preventDefault(); // Do not take focus.
     this.renameEntryAndExitEditMode();
   }
 
@@ -314,14 +313,12 @@ export class EntryRow<K extends keyof EntryTypeMap> extends HtmlElement<'tr'> {
     }
   }
 
-  private onPencilButtonClicked(e: MouseEvent): void {
+  private onPencilButtonClicked(_event: MouseEvent): void {
     console.log(`Edit name clicked`);
-    e.preventDefault(); // Do not take focus.
     this.editName();
   }
 
   private async onRemoveButtonClicked(e: MouseEvent): Promise<void> {
-    e.preventDefault(); // Do not take focus.
     // TODO: Disable button?
     const $button = <HTMLButtonElement>e.target;
     $button.disabled = true;
