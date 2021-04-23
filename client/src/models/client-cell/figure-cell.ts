@@ -42,13 +42,8 @@ export class FigureCell extends ClientCell<FigureCellObject> {
 
   // Public Instance Methods
 
-  // public /* override */onUpdate(update: NotebookUpdate, ownRequest: boolean): void {
-  //   debug(`onUpdate ${notebookUpdateSynopsis(update)}`);
-  //   super.onUpdate(update, ownRequest);
-  // };
+  // Public Instance Event Handlers
 
   // --- PRIVATE ---
-
-  // Private Instance Property Functions
 
 }

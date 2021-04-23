@@ -25,7 +25,7 @@ import * as debug1 from "debug";
 const debug = debug1('client:resizer-bar');
 
 import { CssClass, LengthInPixels, PositionInPixels } from "../../../../shared/css";
-import { RIGHT_TRIANGLE_ENTITY } from "../../../../dom";
+import { svgIconReferenceMarkup } from "../../../../dom";
 import { HtmlElement } from "../../../../html-element";
 
 // Types
@@ -80,7 +80,7 @@ export class ResizerBar extends HtmlElement<'div'>  {
         tag: 'button',
         attrs: { tabindex: -1 },
         classes: [ <CssClass>'insertCellBelowButton', <CssClass>'iconButton' ],
-        html: RIGHT_TRIANGLE_ENTITY,
+        html: svgIconReferenceMarkup('iconMonstrArrow49'),
         asyncButtonHandler: e=>this.onInsertButtonClicked(e),
       }],
     });

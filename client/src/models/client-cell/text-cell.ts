@@ -44,11 +44,6 @@ export class TextCell extends ClientCell<TextCellObject> {
 
   // Public Instance Event Handlers
 
-  // public /* override */onUpdate(update: NotebookUpdate, ownRequest: boolean): void {
-  //   debug(`onUpdate ${notebookUpdateSynopsis(update)}`);
-  //   super.onUpdate(update, ownRequest);
-  // }
-
   // --- PRIVATE ---
 
 }

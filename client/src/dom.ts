@@ -123,12 +123,12 @@ interface Styles {
 
 // Keep this list in sync with server/views/iconmonstr.pug.
 export type SvgIconId =
-  'iconMonstrArrow71' | 'iconMonstrArrow72' |'iconMonstrBook14' | 'iconMonstrBook17' | 'iconMonstrBug12' |
-  'iconMonstrCalculator2' | 'iconMonstrClothing18' | 'iconMonstrCursor19' | 'iconMonstrEdit9Modified' | 'iconMonstrEraser2' | 'iconMonstrFile5' | 'iconMonstrFile12' |
-  'iconMonstrFile15' | 'iconMonstrFolder2' | 'iconMonstrFolder5' | 'iconMonstrFullScreen7' | 'iconMonstrHome6' | 'iconMonstrInfo6' |
-  'iconMonstrMagnifier6' | 'iconMonstrPencil9' | 'iconMonstrPrinter6' |
-  'iconMonstrRedo4' | 'iconMonstrRefresh2' | 'iconMonstrRuler30' | 'iconMonstrText1' | 'iconMonstrTrashcan2' |
-  'iconMonstrUndo4' | 'iconMonstrUser1' | 'iconMonstrChart20' ;
+  'iconMonstrArrow49' | 'iconMonstrArrow71' | 'iconMonstrArrow72' |'iconMonstrBook14' | 'iconMonstrBook17' |
+  'iconMonstrBug12' | 'iconMonstrCalculator2' | 'iconMonstrClothing18' | 'iconMonstrCursor19' | 'iconMonstrEdit9Modified' |
+  'iconMonstrEraser2' | 'iconMonstrFile5' | 'iconMonstrFile12' | 'iconMonstrFile15' | 'iconMonstrFolder2' |
+  'iconMonstrFolder5' | 'iconMonstrFullScreen7' | 'iconMonstrHome6' | 'iconMonstrInfo6' | 'iconMonstrMagnifier6' |
+  'iconMonstrPencil9' | 'iconMonstrPrinter6' | 'iconMonstrRedo4' | 'iconMonstrRefresh2' | 'iconMonstrRuler30' |
+  'iconMonstrText1' | 'iconMonstrTrashcan2' | 'iconMonstrUndo4' | 'iconMonstrUser1' | 'iconMonstrChart20' ;
 
 // Constants
 

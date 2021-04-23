@@ -51,11 +51,6 @@ export class FormulaCell extends ClientCell<FormulaCellObject> {
 
   // Public Instance Event Handlers
 
-  // public /* override */ onUpdate(update: NotebookUpdate, ownRequest: boolean): void {
-  //   debug(`onUpdate ${notebookUpdateSynopsis(update)}`);
-  //   super.onUpdate(update, ownRequest);
-  // }
-
   // --- PRIVATE ---
 
 }

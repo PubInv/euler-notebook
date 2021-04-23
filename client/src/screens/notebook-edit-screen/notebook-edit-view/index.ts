@@ -37,7 +37,7 @@ import { NotebookEditScreen } from "..";
 
 import { HtmlElement } from "../../../html-element";
 import { ClientNotebook } from "../../../models/client-notebook";
-import { $, RIGHT_TRIANGLE_ENTITY } from "../../../dom";
+import { $, svgIconReferenceMarkup } from "../../../dom";
 
 import { CellEditView } from "./cell-edit-view";
 import { createCellView } from "./cell-edit-view/instantiator";
@@ -58,7 +58,7 @@ export class NotebookEditView extends HtmlElement<'div'> {
         tag: 'button',
         attrs: { tabindex: -1 },
         classes: [ <CssClass>'insertCellAtTopButton', <CssClass>'iconButton' ],
-        html: RIGHT_TRIANGLE_ENTITY,
+        html: svgIconReferenceMarkup('iconMonstrArrow49'),
         asyncButtonHandler: e=>this.onInsertCellAtTopButtonClicked(e),
       }],
     });
