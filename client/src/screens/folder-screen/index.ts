@@ -27,11 +27,11 @@ import { FolderPath } from "../../shared/folder";
 import { FolderCollaboratorConnected, FolderCollaboratorDisconnected, FolderUpdate } from "../../shared/server-responses";
 
 import { Screen } from "..";
-import { ClientFolder, ClientFolderWatcher, OpenFolderOptions } from "../../models/client-folder";
+import { ClientFolder, FolderWatcher } from "../../models/client-folder";
 
 import { appInstance } from "../../app";
 
-import { Content } from "./content";
+import { FolderView } from "./folder-view";
 import { Sidebar } from "./sidebar";
 
 // Types
@@ -42,7 +42,7 @@ import { Sidebar } from "./sidebar";
 
 // Exported Class
 
-export class FolderScreen extends Screen implements ClientFolderWatcher {
+export class FolderScreen extends Screen implements FolderWatcher {
 
   // Public Class Methods
 
@@ -56,15 +56,14 @@ export class FolderScreen extends Screen implements ClientFolderWatcher {
       data: { path },
     });
 
-    const options: OpenFolderOptions = { watcher: this };
-    ClientFolder.open(path, options)
+    ClientFolder.open(path, this)
     .then(
       (folder: ClientFolder)=>{
         this.folder = folder;
         appInstance.header.switchScreen(this.folder.path, this.folder.collaborators);
 
         this.sidebar = new Sidebar(this);
-        this.view = new Content(this);
+        this.view = new FolderView(this);
 
         this.$elt.append(this.sidebar.$elt, this.view.$elt);
       },
@@ -82,12 +81,12 @@ export class FolderScreen extends Screen implements ClientFolderWatcher {
 
   public folder!: ClientFolder;     // Instantiated asynchronously in the constructor.
   public sidebar!: Sidebar;   // Instantiated asynchronously in the constructor.
-  public view!: Content;         // Instantiated asynchronously in the constructor.
+  public view!: FolderView;         // Instantiated asynchronously in the constructor.
 
-  // ClientFolderWatcher Methods
+  // FolderWatcher Methods
 
-  public onChange(change: FolderUpdate): void {
-    this.view.onChange(change);
+  public onUpdate(change: FolderUpdate): void {
+    this.view.onUpdate(change);
   }
 
   public onClosed(reason?: string): void {

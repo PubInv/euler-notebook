@@ -35,7 +35,7 @@ import { assert, assertFalse, deepCopy, ExpectedError, Html, Milliseconds } from
 import { CssSize, convertCssLength } from "../shared/css";
 import { LEFT_MARGIN, TOP_MARGIN, RIGHT_MARGIN, BOTTOM_MARGIN, PAGE_HEIGHT, PAGE_WIDTH } from "../shared/dimensions";
 import { Folder, NotebookPath, NOTEBOOK_PATH_RE, NotebookName, FolderPath, NotebookEntry } from "../shared/folder";
-import { Notebook, NotebookObject, NotebookWatcher, PageMargins } from "../shared/notebook";
+import { Notebook, NotebookObject, PageMargins } from "../shared/notebook";
 import {
   NotebookChangeRequest, MoveCell, DeleteCell, ChangeNotebook, RequestId, NotebookRequest, OpenNotebook, CloseNotebook, InsertCell, DeleteStroke, InsertStroke, ResizeCell, TypesetFormula, TypesetText, TypesetFigure, RemoveSuggestion, AddSuggestion,
 } from "../shared/client-requests";
@@ -61,11 +61,9 @@ import { StrokeId } from "../shared/stylus";
 
 // Types
 
-interface InstanceInfo {
-  instance?: ServerNotebook;
-  openPromise: Promise<ServerNotebook>;
-  openTally: number;
-  watchers: Set<ServerNotebookWatcher>;
+interface OpenInfo {
+  promise: Promise<ServerNotebook>;
+  tally: number;
 }
 
 export interface FindCellOptions {
@@ -73,19 +71,9 @@ export interface FindCellOptions {
   notSource?: CellSource;
 }
 
-export interface OpenNotebookOptions {
-  watcher?: ServerNotebookWatcher;
-}
-
 interface RequestChangesOptions {
   originatingSocket?: ServerSocket,
   requestId?: RequestId,
-}
-
-export interface ServerNotebookWatcher extends NotebookWatcher {
-  onChange(change: NotebookUpdate, ownRequest: boolean): void
-  onChanged(msg: NotebookUpdated): void;
-  onClosed(reason: string): void;
 }
 
 interface PersistentServerNotebookObject {
@@ -139,10 +127,6 @@ export class ServerNotebook extends Notebook {
 
   // Public Class Property Functions
 
-  // public static isOpen(path: NotebookPath): boolean {
-  //   return this.instanceMap.has(path);
-  // }
-
   public static isValidNotebookPath(path: NotebookPath): boolean {
     return NOTEBOOK_PATH_RE.test(path);
   }
@@ -159,16 +143,16 @@ export class ServerNotebook extends Notebook {
 
   // Public Class Property Functions
 
-  public static get allInstances(): ServerNotebook[]/* LATER: IterableIterator<ServerNotebook> */ {
-    return <ServerNotebook[]>Array.from(this.instanceMap.values()).filter(r=>r.instance).map(r=>r.instance);
+  public static get allInstances(): IterableIterator<ServerNotebook> {
+    return this.instanceMap.values()
   }
 
   // Public Class Methods
 
   public static async close(path: NotebookPath, reason: string): Promise<void> {
-    const info = this.instanceMap.get(path);
+    const info = this.openMap.get(path);
     if (!info) { return; }
-    const instance = await info.openPromise;
+    const instance = await info.promise;
     instance.terminate(reason);
   }
 
@@ -205,29 +189,28 @@ export class ServerNotebook extends Notebook {
     return { path: newPath, name: this.nameFromPath(newPath) }
   }
 
-  public static open(path: NotebookPath, options?: OpenNotebookOptions): Promise<ServerNotebook> {
-    if (!options) { options = {}; }
-    let info = this.instanceMap.get(path);
-    if (info) {
-      info.openTally++;
+  public static open(path: NotebookPath): Promise<ServerNotebook> {
+    let openInfo = this.openMap.get(path);
+    if (openInfo) {
+      openInfo.tally++;
     } else {
-      info = {
-        openPromise: this.openFirst(path),
-        openTally: 1,
-        watchers: new Set(),
+      const promise = this.openFirst(path);
+      openInfo = {
+        promise,
+        tally: 1,
       };
-      this.instanceMap.set(path, info);
+      this.openMap.set(path, openInfo);
+      promise.catch(_err=>{ this.openMap.delete(path); });
     };
-    if (options.watcher) { info.watchers.add(options.watcher); }
-    return info.openPromise;
+    return openInfo.promise;
   }
 
   // Public Class Event Handlers
 
   public static async onClientRequest(socket: ServerSocket, msg: NotebookRequest): Promise<void> {
     // Called by ServerSocket when a client sends a notebook request.
-    const info = this.instanceMap.get(msg.path);
-    const instance = await(info ? info.openPromise : this.open(msg.path, {}));
+    const info = this.openMap.get(msg.path);
+    const instance = await(info ? info.promise : this.open(msg.path));
     instance.onClientRequest(socket, msg);
   }
 
@@ -291,15 +274,12 @@ export class ServerNotebook extends Notebook {
     }
   }
 
-  public close(watcher?: ServerNotebookWatcher): void {
+  public close(): void {
     assert(!this.terminated);
-    const info = ServerNotebook.getInfo(this.path)!;
-    if (watcher) {
-      const had = info.watchers.delete(watcher);
-      assert(had);
-    }
-    info.openTally--;
-    if (info.openTally == 0) {
+    const openInfo = ServerNotebook.openMap.get(this.path)!;
+    assert(openInfo);
+    openInfo.tally--;
+    if (openInfo.tally == 0) {
       // LATER: Set timer to destroy in the future.
       this.terminate("Closed by all clients");
     }
@@ -358,15 +338,10 @@ export class ServerNotebook extends Notebook {
 
   // Private Class Properties
 
-  protected static instanceMap: Map<NotebookPath, InstanceInfo> = new Map();
+  private static openMap = new Map<NotebookPath, OpenInfo>();
+  private static instanceMap = new Map<NotebookPath, ServerNotebook>();
 
   // Private Class Property Functions
-
-  private static getInfo(path: NotebookPath): InstanceInfo {
-    const rval = this.instanceMap.get(path)!;
-    assert(rval);
-    return rval;
-  }
 
   // Private Class Methods
 
@@ -375,10 +350,8 @@ export class ServerNotebook extends Notebook {
     const obj = await readJsonFile<PersistentServerNotebookObject>(path, NOTEBOOK_FILENAME);
     ServerNotebook.validateObject(obj);
     const permissions = await Permissions.load(path);
-
-    const info = this.getInfo(path);
-    assert(info);
-    const instance = info.instance = new this(path, obj, permissions);
+    const instance = new this(path, obj, permissions);
+    this.instanceMap.set(path, instance);
     return instance;
   }
 
@@ -436,14 +409,9 @@ export class ServerNotebook extends Notebook {
   //   return <TextCell>cell;
   // }
 
-  // private get watchers(): IterableIterator<ServerNotebookWatcher> {
-  //   const info = ServerNotebook.getInfo(this.path);
-  //   return info.watchers.values();
-  // }
-
   // Private Instance Methods
 
-  private convertChangeRequestsToUpdates(request: NotebookChangeRequest): [ NotebookUpdate[], NotebookChangeRequest[] ] {
+  private convertChangeRequestToUpdates(request: NotebookChangeRequest): [ NotebookUpdate[], NotebookChangeRequest[] ] {
     // Helper function for requestChange method.
     // Does not make any changes to the notebook.
     const updates: NotebookUpdate[] = [];
@@ -626,7 +594,7 @@ export class ServerNotebook extends Notebook {
 
   private requestChange(request: NotebookChangeRequest): [ NotebookUpdate[], NotebookChangeRequest[] ] {
     debug(`Change request: ${notebookChangeRequestSynopsis(request)}`);
-    const rval = this.convertChangeRequestsToUpdates(request);
+    const rval = this.convertChangeRequestToUpdates(request);
 
     // Apply the updates to the notebook.
     for (const update of rval[0]) {
@@ -688,12 +656,11 @@ export class ServerNotebook extends Notebook {
     }
   }
 
-  private terminate(reason: string): void {
+  private terminate(_reason: string): void {
     assert(!this.terminated);
     this.terminated = true;
-    const info = ServerNotebook.getInfo(this.path);
+    ServerNotebook.openMap.delete(this.path);
     ServerNotebook.instanceMap.delete(this.path);
-    for (const watcher of info.watchers) { watcher.onClosed(reason); }
   }
 
   // Private Event Handlers
@@ -785,12 +752,12 @@ export class ServerNotebook extends Notebook {
     this.sendCollaboratorDisconnectedMessage(socket);
   }
 
-  private onUpdate(update: NotebookUpdate): void {
+  protected onUpdate(update: NotebookUpdate): void {
     // Process an individual notebook change from the server.
     debug(`onUpdate ${notebookUpdateSynopsis(update)}`);
 
     // Apply the update to our base data structure.
-    this.applyUpdate(update);
+    super.onUpdate(update);
 
     // Apply the update to any data structure extensions to the base data structure.
     switch (update.type) {
@@ -809,14 +776,11 @@ export class ServerNotebook extends Notebook {
         this.cellMap.set(cell.id, cell);
         break;
       }
-
-      case 'cellResized':
-      case 'formulaTypeset':
-      case 'strokeDeleted':
-      case 'strokeInserted':
-      case 'textTypeset': {
-        const cell = this.getCell(update.cellId);
-        cell.onUpdate(update);
+      default: {
+        if (update.hasOwnProperty('cellId')) {
+          const cell = this.getCell((<any/* TYPESCRIPT: */>update).cellId);
+          cell.onUpdate(update);
+        }
         break;
       }
     }

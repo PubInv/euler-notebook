@@ -22,55 +22,61 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 // Requirements
 
 import { assert, ElementId } from "../../../shared/common";
-import { NotebookName, FolderName } from "../../../shared/folder";
+import { NotebookName, FolderName, FolderEntry, NotebookEntry } from "../../../shared/folder";
 
 import { ClientFolder } from "../../../models/client-folder";
 import { HtmlElement } from "../../../html-element";
 
-import { EntryRow, EntryType, EntryTypeMap } from "./entry-row";
+import { EntryRow, EntryType } from "./entry-row";
 
 // Types
 
 
 // Exported Class
 
-export class EntryList<K extends keyof EntryTypeMap> extends HtmlElement<'table'> {
+export class EntryList extends HtmlElement<'table'> {
 
   // Public Constructor
 
-  public constructor($parentElt: HTMLDivElement, folder: ClientFolder, type: EntryType, entries: EntryTypeMap[K][]) {
-    super({ tag: 'table', id: <ElementId>'folderList', appendTo: $parentElt });
+  public constructor(folder: ClientFolder, type: EntryType) {
+    super({ tag: 'table', id: <ElementId>'folderList' });
     this.type = type;
     this.entries = new Map();
+
+    const entries = type==EntryType.Folder ? folder.folderEntries : folder.notebookEntries;
     for (const entry of entries) { this.addEntry(folder, entry); }
   }
 
   // Public Instance Methods
 
-  public addEntry(folder: ClientFolder, entry: EntryTypeMap[K]): void {
-    const row = new EntryRow<K>(this.$elt, folder, this.type, entry);
+  public addEntry(folder: ClientFolder, entry: FolderEntry|NotebookEntry): void {
+    const row = new EntryRow(folder, this.type, entry);
+    this.$elt.append(row.$elt);
     this.entries.set(entry.name, row);
     // TODO: If empty folder message is shown then remove it.
   }
 
-  public editName(name: FolderName|NotebookName): void {
+  public enterEditMode(name: FolderName|NotebookName): void {
     const row = this.entries.get(name)!;
-    row.editName();
+    row.enterEditMode();
   }
 
-  public removeEntry(entry: EntryTypeMap[K]): void {
+  public removeEntry(name: FolderName|NotebookName): void {
     // LATER: Some sort of animation.
     // LATER: Identify name of user that made the change.
-    const row = this.entries.get(entry.name)!;
+    const row = this.entries.get(name)!;
     assert(row);
     row.destroy();
+    this.entries.delete(name);
   }
 
-  public renameEntry(oldName: string, entry: EntryTypeMap[K]): void {
+  public renameEntry(oldName: string, entry: FolderEntry|NotebookEntry): void {
     const row = this.entries.get(oldName)!;
     assert(row);
     // LATER: Move into sorted order, preferrably animated.
     row.rename(entry);
+    this.entries.delete(oldName);
+    this.entries.set(entry.name, row);
   }
 
   // --- PRIVATE ---
@@ -80,5 +86,5 @@ export class EntryList<K extends keyof EntryTypeMap> extends HtmlElement<'table'
   // Private Instance Properties
 
   private type: EntryType;
-  private entries: Map<string, EntryRow<K>>;
+  private entries: Map<string, EntryRow>;
 }

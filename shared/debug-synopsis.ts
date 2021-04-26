@@ -94,28 +94,14 @@ export function folderChangeRequestSynopsis(request: FolderChangeRequest): strin
   return rval;
 }
 
-export function folderChangeSynopsis(change: FolderUpdate): string {
-  let rval: string = change.type;
-  switch(change.type) {
-    case 'folderCreated':   rval += ` ${change.entry.name}`; break;
-    case 'folderDeleted':   rval += ` ${change.entry.name}`; break;
-    case 'folderRenamed':   rval += ` ${change.oldName}=>${change.entry.name}`; break;
-    case 'notebookCreated': rval += ` ${change.entry.name}`; break;
-    case 'notebookDeleted': rval += ` ${change.entry.name}`; break;
-    case 'notebookRenamed': rval += ` ${change.oldName}=>${change.entry.name}`; break;
-    default: rval += UNKNOWN_TYPE;
-  }
-  return rval;
-}
-
 export function folderUpdateSynopsis(update: FolderUpdate): string {
   let rval: string = update.type;
   switch(update.type) {
     case 'folderCreated':   rval += ` ${update.entry.name}`; break;
-    case 'folderDeleted':   rval += ` ${update.entry.name}`; break;
+    case 'folderDeleted':   rval += ` ${update.name}`; break;
     case 'folderRenamed':   rval += ` ${update.oldName}=>${update.entry.name}`; break;
     case 'notebookCreated': rval += ` ${update.entry.name}`; break;
-    case 'notebookDeleted': rval += ` ${update.entry.name}`; break;
+    case 'notebookDeleted': rval += ` ${update.name}`; break;
     case 'notebookRenamed': rval += ` ${update.oldName}=>${update.entry.name}`; break;
     default: rval += UNKNOWN_TYPE;
   }
@@ -235,7 +221,7 @@ function serverFolderResponseSynopsis(msg: FolderResponse): string {
     case 'collaboratorDisconnected': rval += ` clientId: ${msg.clientId}`; break;
     case 'opened': rval += ` cols: ${msg.collaborators.map(c=>c.userName).join(",")}`; break;
     case 'updated': {
-      for (const change of msg.updates) { rval += ` ${folderChangeSynopsis(change)};`; }
+      for (const change of msg.updates) { rval += ` ${folderUpdateSynopsis(change)};`; }
       break;
     }
     default: rval += UNKNOWN_TYPE;

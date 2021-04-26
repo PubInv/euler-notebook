@@ -141,7 +141,7 @@ export interface FolderCreated {
 }
 export interface FolderDeleted {
   type: 'folderDeleted';
-  entry: FolderEntry;
+  name: FolderName;
 }
 export interface FolderRenamed {
   type: 'folderRenamed';
@@ -154,7 +154,7 @@ export interface NotebookCreated {
 }
 export interface NotebookDeleted {
   type: 'notebookDeleted';
-  entry: NotebookEntry;
+  name: NotebookName;
 }
 export interface NotebookRenamed {
   type: 'notebookRenamed';

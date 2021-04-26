@@ -49,7 +49,7 @@ export class FigureEditView extends CellEditView<FigureCellObject> {
 
   // Public Instance Methods
 
-  // NotebookView Methods
+  // NotebookWatcher Methods
 
   public onUpdate(update: NotebookUpdate, ownRequest: boolean): void {
     debug(`onUpdate: C${this.id} ${notebookUpdateSynopsis(update)}`);

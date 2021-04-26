@@ -172,14 +172,16 @@ export class Folder {
 
   // Private Instance Methods
 
-  protected /* overridable */ applyUpdate(update: FolderUpdate, _ownRequest: boolean): void {
+  // Private Instance Event Handlers
+
+  protected /* overridable */ onUpdate(update: FolderUpdate, _ownRequest?: boolean): void {
     switch(update.type) {
       case 'folderCreated': {
         this.obj.folders.push(update.entry);
         break;
       }
       case 'folderDeleted': {
-        const i = this.folderIndex(update.entry.name);
+        const i = this.folderIndex(update.name);
         assert(i>=0);
         this.obj.folders.splice(i,1);
         break;
@@ -195,7 +197,7 @@ export class Folder {
         break;
       }
       case 'notebookDeleted': {
-        const i = this.notebookIndex(update.entry.name);
+        const i = this.notebookIndex(update.name);
         assert(i>=0);
         this.obj.notebooks.splice(i,1);
         break;
@@ -209,8 +211,6 @@ export class Folder {
       default: assertFalse();
     }
   }
-
-  // Private Instance Event Handlers
 
 }
 

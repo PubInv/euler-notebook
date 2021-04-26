@@ -80,12 +80,12 @@ export class Sidebar extends ButtonBar {
   // Private Instance Event Handlers
 
   private async onNewFolderClicked(_event: MouseEvent): Promise<void> {
-    const entry = await this.screen.folder.newFolder();
+    const entry = await this.screen.folder.newFolderRequest();
     this.screen.view.editFolderName(entry.name);
   }
 
   private async onNewNotebookClicked(_event: MouseEvent): Promise<void> {
-    const entry = await this.screen.folder.newNotebook();
+    const entry = await this.screen.folder.newNotebookRequest();
     this.screen.view.editNotebookName(entry.name);
   }
 

@@ -32,7 +32,7 @@ import { NotebookPath } from "../../shared/folder";
 
 import { NotebookReadView } from "./notebook-read-view";
 
-import { ClientNotebook, NotebookView } from "../../models/client-notebook";
+import { ClientNotebook, NotebookWatcher } from "../../models/client-notebook";
 
 import { Screen } from "..";
 
@@ -52,7 +52,7 @@ export enum Mode {
 
 // Exported Class
 
-export class NotebookReadScreen extends Screen  implements NotebookView {
+export class NotebookReadScreen extends Screen  implements NotebookWatcher {
 
   // Public Class Methods
 

@@ -51,19 +51,18 @@ import { logWarning } from "../error-handler";
 
 type NotebookId = number;
 
-export interface NotebookView {
+export interface NotebookWatcher {
   onClosed(reason: string): void;
   onRedoStateChange(enabled: boolean): void;
   onUndoStateChange(enabled: boolean): void;
-  onUpdate(update: NotebookUpdate, ownRequest: boolean): void;
+  onUpdate(update: NotebookUpdate, ownRequest?: boolean): void;
   onCollaboratorConnected(msg: NotebookCollaboratorConnected): void;
   onCollaboratorDisconnected(msg: NotebookCollaboratorDisconnected): void;
 }
 
 interface OpenInfo {
   promise: Promise<ClientNotebook>;
-  tally: number;
-  views: Set<NotebookView>;
+  watchers: Set<NotebookWatcher>;
 }
 
 interface UndoEntry {
@@ -81,18 +80,18 @@ export class ClientNotebook extends Notebook {
 
   // Public Class Methods
 
-  public static async open(path: NotebookPath, watcher: NotebookView): Promise<ClientNotebook> {
-    // REVIEW: If open promise rejects, then we should purge it from
-    //         the openMap so the open can be attempted again.
-    //         Otherwise, all subsequent attempts at opening will fail
-    //         on the same rejected promise.
+  public static async open(path: NotebookPath, watcher: NotebookWatcher): Promise<ClientNotebook> {
     let openInfo = this.openMap.get(path);
     if (openInfo) {
-      openInfo.tally++;
-      openInfo.views.add(watcher);
+      openInfo.watchers.add(watcher);
     } else {
-      openInfo = { promise: this.openNew(path), tally: 1, views: new Set([ watcher ]) };
+      const promise = this.openFirst(path);
+      openInfo = {
+        promise,
+        watchers: new Set([ watcher ]),
+      };
       this.openMap.set(path, openInfo);
+      promise.catch(_err=>{ this.openMap.delete(path); });
     }
     return openInfo.promise;
   }
@@ -103,8 +102,7 @@ export class ClientNotebook extends Notebook {
     // Opened response is handled when open request promise is resolved.
     // All other responses are forwarded to the instance.
     if (msg.operation == 'opened') { return; }
-    const instance = this.instanceMap.get(msg.path)!;
-    assert(instance);
+    const instance = this.getInstance(msg.path)!;
     instance.onServerResponse(msg, ownRequest);
   }
 
@@ -146,15 +144,13 @@ export class ClientNotebook extends Notebook {
 
   // Public Instance Methods
 
-  public close(watcher: NotebookView): void {
+  public close(watcher: NotebookWatcher): void {
     assert(!this.terminated);
-    const openInfo = ClientNotebook.openMap.get(this.path)!;
-    assert(openInfo);
-    const had = openInfo.views.delete(watcher);
+    const had = this.watchers.delete(watcher);
     assert(had);
-    if (openInfo.views.size == 0) {
+    if (this.watchers.size == 0) {
       // LATER: Set timer to destroy in the future.
-      this.terminate("Closed by client");
+      this.terminate("Closed by all clients");
     }
   }
 
@@ -208,14 +204,14 @@ export class ClientNotebook extends Notebook {
     const entry = this.undoStack[this.topOfUndoStack++];
     await this.sendChangeRequests(entry.changeRequests);
 
-    // If the are no more undos to redo, then notify the views to disable redo.
+    // If the are no more undos to redo, then notify the watchers to disable redo.
     if (this.topOfUndoStack == this.undoStack.length) {
-      for (const view of this.views) { view.onRedoStateChange(false); }
+      for (const watcher of this.watchers) { watcher.onRedoStateChange(false); }
     }
 
-    // If we redid the first availabe undo, then notify the views to enable undo.
+    // If we redid the first availabe undo, then notify the watchers to enable undo.
     if (this.topOfUndoStack == 1) {
-      for (const view of this.views) { view.onUndoStateChange(true); }
+      for (const watcher of this.watchers) { watcher.onUndoStateChange(true); }
     }
   }
 
@@ -234,14 +230,14 @@ export class ClientNotebook extends Notebook {
     const entry = this.undoStack[--this.topOfUndoStack];
     await this.sendChangeRequests(entry.undoChangeRequests);
 
-    // If there are no more operations that can be undone, then notify the views to disable undo.
+    // If there are no more operations that can be undone, then notify the watchers to disable undo.
     if (this.topOfUndoStack == 0) {
-      for (const view of this.views) { view.onUndoStateChange(false); }
+      for (const watcher of this.watchers) { watcher.onUndoStateChange(false); }
     }
 
-    // If this is the first undo of a possible sequence of undos, then notify the views to enable redo.
+    // If this is the first undo of a possible sequence of undos, then notify the watchers to enable redo.
     if (this.topOfUndoStack == this.undoStack.length-1) {
-      for (const view of this.views) { view.onRedoStateChange(true); }
+      for (const watcher of this.watchers) { watcher.onRedoStateChange(true); }
     }
 
   }
@@ -251,18 +247,18 @@ export class ClientNotebook extends Notebook {
   // Private Class Properties
 
   private static nextId: NotebookId = 1;
-  protected static openMap: Map<NotebookPath, OpenInfo> = new Map();
-  protected static instanceMap: Map<NotebookPath, ClientNotebook> = new Map();
+  private static openMap = new Map<NotebookPath, OpenInfo>();
+  private static instanceMap = new Map<NotebookPath, ClientNotebook>();
 
   // Private Class Methods
 
-  protected static getInstance(path: NotebookPath): ClientNotebook {
+  private static getInstance(path: NotebookPath): ClientNotebook {
     const instance = this.instanceMap.get(path)!;
     assert(instance);
     return instance;
   }
 
-  private static async openNew(path: NotebookPath): Promise<ClientNotebook> {
+  private static async openFirst(path: NotebookPath): Promise<ClientNotebook> {
     const message: OpenNotebook = { type: 'notebook', operation: 'open', path };
     const responseMessages = await appInstance.socket.sendRequest<NotebookOpened>(message);
     assert(responseMessages.length == 1);
@@ -276,7 +272,7 @@ export class ClientNotebook extends Notebook {
 
   // Private Constructor
 
-  private constructor(path: NotebookPath, msg: NotebookOpened) { //notebookObject: NotebookObject) {
+  private constructor(path: NotebookPath, msg: NotebookOpened) {
     super(path, msg.obj);
 
     this.id = ClientNotebook.nextId++;
@@ -285,7 +281,10 @@ export class ClientNotebook extends Notebook {
     this.topOfUndoStack = 0;
     this.undoStack = [];
 
-    this.collaboratorMap = new Map(msg.collaborators.map(c=>[c.clientId,c]));
+    this.collaboratorMap = new Map();
+    for (const collaborator of msg.collaborators) {
+      this.collaboratorMap.set(collaborator.clientId, collaborator);
+    }
   }
 
   // Private Instance Properties
@@ -298,10 +297,10 @@ export class ClientNotebook extends Notebook {
 
   // Private Instance Property Functions
 
-  private get views(): Set<NotebookView> {
+  private get watchers(): Set<NotebookWatcher> {
     const openInfo = ClientNotebook.openMap.get(this.path)!;
     assert(openInfo);
-    return openInfo.views;
+    return openInfo.watchers;
   }
 
   // Private Instance Methods
@@ -362,23 +361,51 @@ export class ClientNotebook extends Notebook {
     this.undoStack.push(entry);
     const stackLength = this.topOfUndoStack = this.undoStack.length;
 
-    // If the undo stack was empty before this operation, then notify the views to enable undo.
+    // If the undo stack was empty before this operation, then notify the watchers to enable undo.
     if (stackLength == 1) {
-      for (const view of this.views) { view.onUndoStateChange(true); }
+      for (const watcher of this.watchers) { watcher.onUndoStateChange(true); }
     }
 
     return undoChangeRequests;
   }
 
-  protected terminate(reason: string): void {
+  private terminate(reason: string): void {
     assert(!this.terminated);
     this.terminated = true;
     ClientNotebook.instanceMap.delete(this.path);
     ClientNotebook.openMap.delete(this.path);
-    for (const view of this.views) { view.onClosed(reason); }
+    for (const watcher of this.watchers) { watcher.onClosed(reason); }
   }
 
   // Private Instance Event Handlers
+
+  private onClosed(msg: NotebookClosed, _ownRequest: boolean): void {
+    // Message from the server that the notebook has been closed by the server.
+    // For example, if the notebook was deleted or moved.
+    this.terminate(msg.reason);
+  }
+
+  private onCollaboratorConnected(msg: NotebookCollaboratorConnected): void {
+    // Message from the server indicating a user has connected to the notebook.
+    const clientId = msg.obj.clientId;
+    if (this.collaboratorMap.has(clientId)) {
+      logWarning(`Ignoring duplicate collaborator connected message for notebook: ${clientId} ${this.path}`);
+      return;
+    }
+    this.collaboratorMap.set(clientId, msg.obj);
+    for (const watcher of this.watchers) { watcher.onCollaboratorConnected(msg); }
+  }
+
+  private onCollaboratorDisconnected(msg: NotebookCollaboratorDisconnected): void {
+    // Message from the server indicating a user has connected to the notebook.
+    const clientId = msg.clientId;
+    if (!this.collaboratorMap.has(clientId)) {
+      logWarning(`Ignoring duplicate collaborator disconnected message for notebook: ${clientId} ${this.path}`);
+      return;
+    }
+    this.collaboratorMap.delete(clientId);
+    for (const watcher of this.watchers) { watcher.onCollaboratorDisconnected(msg); }
+  }
 
   private onServerResponse(msg: NotebookResponse, ownRequest: boolean): void {
     // A notebook message was received from the server.
@@ -387,34 +414,19 @@ export class ClientNotebook extends Notebook {
       case 'collaboratorConnected':     this.onCollaboratorConnected(msg); break;
       case 'collaboratorDisconnected':  this.onCollaboratorDisconnected(msg); break;
       case 'updated':                   this.onUpdated(msg, ownRequest); break;
-
       case 'opened':
       default: assertFalse();
     }
   }
 
-  private onClosed(msg: NotebookClosed, _ownRequest: boolean): void {
-    // Message from the server that the notebook has been closed by the server.
-    // For example, if the notebook was deleted or moved.
-    this.terminate(msg.reason);
-  }
-
-  private onUpdated(msg: NotebookUpdated, ownRequest: boolean): void {
-
-    // Message from the server indicating this notebook has changed.
-    // Dispatch each update in turn.
-    for (const update of msg.updates) {
-      this.onUpdate(update, ownRequest);
-    }
-  }
-
-  private onUpdate(update: NotebookUpdate, ownRequest: boolean): void {
-    // Process an individual notebook change from the server.
+  protected /* override */ onUpdate(update: NotebookUpdate, ownRequest?: boolean): void {
+    // Process an individual update from the server.
     debug(`onUpdate ${notebookUpdateSynopsis(update)}`);
 
-    this.applyUpdate(update);
+    // Update the notebook data structure
+    super.onUpdate(update);
 
-    // Update our data structure
+    // Update our extensions to the notebook data structure.
     switch (update.type) {
       case 'cellDeleted': {
         const { cellId } = update;
@@ -438,34 +450,18 @@ export class ClientNotebook extends Notebook {
       }
     }
 
-
-    // Notify notebook views of the update.
-    // REVIEW: for deletions should we update the view before updating the model?
-    for (const views of this.views) {
-      views.onUpdate(update, ownRequest);
+    // Notify notebook watchers of the update.
+    for (const watcher of this.watchers) {
+      watcher.onUpdate(update, ownRequest);
     }
   }
 
-  private onCollaboratorConnected(msg: NotebookCollaboratorConnected): void {
-    // Message from the server indicating a user has connected to the notebook.
-    const clientId = msg.obj.clientId;
-    if (this.collaboratorMap.has(clientId)) {
-      logWarning(`Ignoring duplicate collaborator connected message for notebook: ${clientId} ${this.path}`);
-      return;
+  private onUpdated(msg: NotebookUpdated, ownRequest: boolean): void {
+    // Message from the server indicating this notebook has changed.
+    // Dispatch each update in turn.
+    for (const update of msg.updates) {
+      this.onUpdate(update, ownRequest);
     }
-    this.collaboratorMap.set(clientId, msg.obj);
-    for (const views of this.views) { views.onCollaboratorConnected(msg); }
-  }
-
-  private onCollaboratorDisconnected(msg: NotebookCollaboratorDisconnected): void {
-    // Message from the server indicating a user has connected to the notebook.
-    const clientId = msg.clientId;
-    if (!this.collaboratorMap.has(clientId)) {
-      logWarning(`Ignoring duplicate collaborator disconnected message for notebook: ${clientId} ${this.path}`);
-      return;
-    }
-    this.collaboratorMap.delete(clientId);
-    for (const views of this.views) { views.onCollaboratorDisconnected(msg); }
   }
 
 }

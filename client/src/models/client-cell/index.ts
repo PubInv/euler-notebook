@@ -36,7 +36,7 @@ import { NotebookChangeRequest } from "../../shared/client-requests";
 // Types
 
 export interface CellView {
-  onUpdate(update: NotebookUpdate, ownRequest: boolean): void;
+  onUpdate(update: NotebookUpdate, ownRequest?: boolean): void;
 }
 
 // Constants
@@ -106,7 +106,7 @@ export abstract class ClientCell<O extends CellObject> {
 
   // Public Event Handlers
 
-  public onUpdate(update: NotebookUpdate, ownRequest: boolean): void {
+  public onUpdate(update: NotebookUpdate, ownRequest?: boolean): void {
     debug(`onUpdate C${this.id} ${notebookUpdateSynopsis(update)}`);
     for (const view of this.views) {
       view.onUpdate(update, ownRequest);

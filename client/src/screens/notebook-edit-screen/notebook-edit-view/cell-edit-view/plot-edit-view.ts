@@ -49,7 +49,7 @@ export class PlotEditView extends CellEditView<PlotCellObject> {
     super(notebookEditView, cell, <CssClass>'plotCell');
   }
 
-  // NotebookView Methods
+  // NotebookWatcher Methods
 
   public onUpdate(update: NotebookUpdate, ownRequest: boolean): void {
     debug(`onUpdate C${this.id} ${notebookUpdateSynopsis(update)}`);

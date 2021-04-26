@@ -50,7 +50,7 @@ export class TextEditView extends CellEditView<TextCellObject> {
     super(notebookEditView, cell, <CssClass>'textCell');
   }
 
-  // NotebookView Methods
+  // NotebookWatcher Methods
 
   public onUpdate(update: NotebookUpdate, ownRequest: boolean): void {
     debug(`onUpdate C${this.id} ${notebookUpdateSynopsis(update)}`);

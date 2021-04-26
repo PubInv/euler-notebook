@@ -34,8 +34,6 @@ block content
         th
           input(type='checkbox', name='allSockets')
         th Socket
-        th Folders
-        th Notebooks
       if clientSockets.length == 0
         tr
           td(colspan=3)
@@ -45,17 +43,6 @@ block content
           td
             input(type='checkbox', name=`clientSockets[${clientSocket.id}]`)
           td= clientSocket.id
-          td
-            ul
-              each watcher, path in clientSocket.allFolderWatchers
-                li
-                  a(href=`/#${path}`, target='_blank')= path
-
-          td
-            ul
-              each watcher, path in clientSocket.allNotebookWatchers
-                li
-                  a(href=`/#${path}`, target='_blank')= path
       tr
         td(colspan=3)
           button(type='submit', name='action', value='closeClient') Close

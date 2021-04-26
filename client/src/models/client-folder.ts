@@ -42,23 +42,16 @@ import { logWarning } from "../error-handler";
 
 // Types
 
-interface InstanceInfo {
-  instance?: ClientFolder;
-  openPromise: Promise<ClientFolder>;
-  openTally: number;
-  watchers: Set<ClientFolderWatcher>;
-}
-
-export interface ClientFolderWatcher {
-  onChange(change: FolderUpdate, ownRequest: boolean): void
-  // onChanged(msg: FolderUpdated): void;
+export interface FolderWatcher {
+  onUpdate(update: FolderUpdate, ownRequest?: boolean): void
   onClosed(reason: string): void;
   onCollaboratorConnected(msg: FolderCollaboratorConnected): void;
   onCollaboratorDisconnected(msg: FolderCollaboratorDisconnected): void;
 }
 
-export interface OpenFolderOptions {
-  watcher?: ClientFolderWatcher;
+interface OpenInfo {
+  promise: Promise<ClientFolder>;
+  watchers: Set<FolderWatcher>;
 }
 
 // Constants
@@ -77,31 +70,20 @@ export class ClientFolder extends Folder {
 
   // Public Class Methods
 
-  public static async open(path: FolderPath, options: OpenFolderOptions): Promise<ClientFolder> {
-    let info = this.instanceMap.get(path);
-    if (info) {
-      info.openTally++;
+  public static async open(path: FolderPath, watcher: FolderWatcher): Promise<ClientFolder> {
+    let openInfo = this.openMap.get(path);
+    if (openInfo) {
+      openInfo.watchers.add(watcher);
     } else {
-      info = {
-        openPromise: this.openFirst(path, options),
-        openTally: 1,
-        watchers: new Set(),
+      const promise = this.openFirst(path);
+      openInfo = {
+        promise,
+        watchers: new Set([ watcher ]),
       };
-      this.instanceMap.set(path, info);
+      this.openMap.set(path, openInfo);
+      promise.catch(_err=>{ this.openMap.delete(path); });
     };
-    if (options.watcher) { info.watchers.add(options.watcher); }
-    return info.openPromise;
-  }
-
-  private static async openFirst(path: FolderPath, _options: OpenFolderOptions): Promise<ClientFolder> {
-    const message: OpenFolder = { type: 'folder', operation: 'open', path };
-    const responseMessages = await appInstance.socket.sendRequest<FolderOpened>(message);
-    assert(responseMessages.length == 1);
-    // REVIEW: validate folderObject?
-    const info = this.getInfo(path);
-    assert(info);
-    const instance = info.instance = new this(path, responseMessages[0]);
-    return instance;
+    return openInfo.promise;
   }
 
   // Public Class Event Handlers
@@ -124,50 +106,45 @@ export class ClientFolder extends Folder {
 
   // Public Instance Methods
 
-  public close(watcher?: ClientFolderWatcher): void {
+  public close(watcher: FolderWatcher): void {
     assert(!this.terminated);
-    const info = ClientFolder.instanceMap.get(this.path)!;
-    assert(info);
-    if (watcher) {
-      const had = info.watchers.delete(watcher);
-      assert(had);
-    }
-    info.openTally--;
-    if (info.openTally == 0) {
+    const had = this.watchers.delete(watcher);
+    assert(had);
+    if (this.watchers.size == 0) {
       // LATER: Set timer to destroy in the future.
       this.terminate("Closed by all clients");
     }
   }
 
-  public async newFolder(): Promise<FolderEntry> {
+  public async newFolderRequest(): Promise<FolderEntry> {
     const name = this.getUntitledFolderName();
     const changeRequest: FolderCreateRequest = { type: 'createFolder', name };
     const change = await this.sendChangeRequest<FolderCreated>(changeRequest);
     return change.entry;
   }
 
-  public async newNotebook(): Promise<NotebookEntry> {
+  public async newNotebookRequest(): Promise<NotebookEntry> {
     const name = this.getUntitledNotebookName();
     const changeRequest: NotebookCreateRequest = { type: 'createNotebook', name };
     const change = await this.sendChangeRequest<NotebookCreated>(changeRequest);
     return change.entry;
   }
 
-  public async removeFolder(name: FolderName): Promise<void> {
+  public async removeFolderRequest(name: FolderName): Promise<void> {
     assert(this.hasFolderNamed(name, true));
     const changeRequest: FolderDeleteRequest = { type: 'deleteFolder', name };
     const change = await this.sendChangeRequest<FolderDeleted>(changeRequest);
     assert(change.type == 'folderDeleted');
   }
 
-  public async removeNotebook(name: NotebookName): Promise<void> {
+  public async removeNotebookRequest(name: NotebookName): Promise<void> {
     assert(this.hasNotebookNamed(name, true));
     const changeRequest: NotebookDeleteRequest = { type: 'deleteNotebook', name };
     const change = await this.sendChangeRequest<NotebookDeleted>(changeRequest);
     assert(change.type == 'notebookDeleted');
   }
 
-  public async renameFolder(name: FolderName, newName: FolderName): Promise<FolderRenamed> {
+  public async renameFolderRequest(name: FolderName, newName: FolderName): Promise<FolderRenamed> {
     assert(this.hasFolderNamed(name, true));
     const changeRequest: FolderRenameRequest = { type: 'renameFolder', name, newName };
     const change = await this.sendChangeRequest<FolderRenamed>(changeRequest);
@@ -175,7 +152,7 @@ export class ClientFolder extends Folder {
     return change;
   }
 
-  public async renameNotebook(name: NotebookName, newName: NotebookName): Promise<NotebookRenamed> {
+  public async renameNotebookRequest(name: NotebookName, newName: NotebookName): Promise<NotebookRenamed> {
     assert(this.hasNotebookNamed(name, true));
     const changeRequest: NotebookRenameRequest = { type: 'renameNotebook', name, newName };
     const change = await this.sendChangeRequest<NotebookRenamed>(changeRequest);
@@ -187,33 +164,36 @@ export class ClientFolder extends Folder {
 
   // Private Class Properties
 
-  private static instanceMap = new Map<FolderPath, InstanceInfo>();
+  private static openMap = new Map<FolderPath, OpenInfo>();
+  private static instanceMap = new Map<FolderPath, ClientFolder>();
 
   // Private Class Property Functions
 
-  private static getInfo(path: FolderPath): InstanceInfo {
-    const rval = this.instanceMap.get(path)!;
-    assert(rval);
-    return rval;
-  }
-
   private static getInstance(path: FolderPath): ClientFolder {
-    const info = this.getInfo(path);
-    assert(info.instance);
-    return info.instance!;
+    const instance = this.instanceMap.get(path)!;
+    assert(instance);
+    return instance;
   }
 
   // Private Class Methods
+
+  private static async openFirst(path: FolderPath): Promise<ClientFolder> {
+    const message: OpenFolder = { type: 'folder', operation: 'open', path };
+    const responseMessages = await appInstance.socket.sendRequest<FolderOpened>(message);
+    assert(responseMessages.length == 1);
+    const responseMessage = responseMessages[0];
+    const instance = new this(path, responseMessage);
+    this.instanceMap.set(path, instance);
+    return instance;
+  }
 
   // Private Class Event Handlers
 
   // Private Constructor
 
-  private constructor(
-    path: FolderPath,
-    msg: FolderOpened,
-  ) {
+  private constructor(path: FolderPath, msg: FolderOpened) {
     super(path, msg.obj);
+
     this.collaboratorMap = new Map();
     for (const collaborator of msg.collaborators) {
       this.collaboratorMap.set(collaborator.clientId, collaborator);
@@ -227,29 +207,13 @@ export class ClientFolder extends Folder {
 
   // Private Instance Property Functions
 
-  private get watchers(): IterableIterator<ClientFolderWatcher> {
-    const info = ClientFolder.getInfo(this.path);
-    return info.watchers.values();
+  private get watchers(): Set<FolderWatcher> {
+    const openInfo = ClientFolder.openMap.get(this.path)!;
+    assert(openInfo);
+    return openInfo.watchers;
   }
 
   // Private Instance Methods
-
-  protected /* override */ applyUpdate(change: FolderUpdate, ownRequest: boolean): void {
-    // Send deletion change notifications.
-    // Deletion change notifications are sent before the change happens so the watcher can
-    // examine the style or relationship being deleted before it disappears from the notebook.
-    const notifyBefore = (change.type == 'folderDeleted' || change.type == 'notebookDeleted');
-    if (notifyBefore) {
-      for (const watcher of this.watchers) { watcher.onChange(change, ownRequest); }
-    }
-
-    super.applyUpdate(change, ownRequest);
-
-    // Send non-deletion change notification.
-    if (!notifyBefore) {
-      for (const watcher of this.watchers) { watcher.onChange(change, ownRequest); }
-    }
-  }
 
   private getUntitledFolderName(): FolderName {
     // Returns "untitled_folder" if that name is not already used.
@@ -304,9 +268,9 @@ export class ClientFolder extends Folder {
   private terminate(reason: string): void {
     assert(!this.terminated);
     this.terminated = true;
-    const info = ClientFolder.getInfo(this.path);
     ClientFolder.instanceMap.delete(this.path);
-    for (const watcher of info.watchers) { watcher.onClosed(reason); }
+    ClientFolder.openMap.delete(this.path);
+    for (const watcher of this.watchers) { watcher.onClosed(reason); }
   }
 
   // Private Instance Event Handlers
@@ -351,22 +315,29 @@ export class ClientFolder extends Folder {
     }
   }
 
-  private onUpdated(msg: FolderUpdated, ownRequest: boolean): void {
-    // Message from the server indicating the folder has changed.
+  protected /* override */ onUpdate(update: FolderUpdate, ownRequest?: boolean): void {
+    // Process an individual update from the server.
+    debug(`onUpdate ${folderUpdateSynopsis(update)}`);
 
-    // Apply changes to the notebook data structure, and notify the view of the change.
-    // If the change is not a delete, then update the data structure first, then notify the view.
-    // Otherwise, notify the view of the change, then update the data structure.
-    for (const update of msg.updates) {
-      this.onUpdate(update, ownRequest);
+    // Update the folder data structure
+    super.onUpdate(update);
+
+    // // Update our extensions to the folder data structure.
+    // switch (update.type) {
+    // }
+
+    // Notify folder watchers of the update.
+    for (const watcher of this.watchers) {
+      watcher.onUpdate(update, ownRequest);
     }
-
-    // REVIEW: Notify watchers?
   }
 
-  private onUpdate(update: FolderUpdate, ownRequest: boolean): void {
-    debug(`onUpdate ${folderUpdateSynopsis(update)}`);
-    this.applyUpdate(update, ownRequest);
+  private onUpdated(msg: FolderUpdated, ownRequest: boolean): void {
+    // Message from the server indicating the folder has changed.
+     // Dispatch each update in turn.
+     for (const update of msg.updates) {
+      this.onUpdate(update, ownRequest);
+    }
   }
 
 }

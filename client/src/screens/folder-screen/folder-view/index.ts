@@ -36,7 +36,7 @@ import { EntryType } from "./entry-row";
 
 // Exported Class
 
-export class Content extends HtmlElement<'div'> {
+export class FolderView extends HtmlElement<'div'> {
 
   // Public Class Methods
 
@@ -45,28 +45,29 @@ export class Content extends HtmlElement<'div'> {
   public constructor(screen: FolderScreen) {
     super({ tag: 'div', class: <CssClass>'content' });
     this.screen = screen;
-    this.foldersList = new EntryList(this.$elt, screen.folder, EntryType.Folder, screen.folder.folderEntries);
-    this.notebooksList = new EntryList(this.$elt, screen.folder, EntryType.Notebook, screen.folder.notebookEntries);
+    this.foldersList = new EntryList(screen.folder, EntryType.Folder);
+    this.notebooksList = new EntryList(screen.folder, EntryType.Notebook);
+    this.$elt.append(this.foldersList.$elt, this.notebooksList.$elt);
   }
 
   // Public Instance Properties
 
   // Public Instance Methods
 
-  public editFolderName(name: FolderName): void { this.foldersList.editName(name); }
+  public editFolderName(name: FolderName): void { this.foldersList.enterEditMode(name); }
 
-  public editNotebookName(name: NotebookName): void { this.notebooksList.editName(name); }
+  public editNotebookName(name: NotebookName): void { this.notebooksList.enterEditMode(name); }
 
-  // ClientFolder Watcher Methods
+  // FolderWatcher Methods
 
-  public onChange(change: FolderUpdate): void {
-    switch(change.type) {
-      case 'folderCreated':   this.foldersList.addEntry(this.screen.folder, change.entry);     break;
-      case 'folderDeleted':   this.foldersList.removeEntry(change.entry);                      break;
-      case 'folderRenamed':   this.foldersList.renameEntry(change.oldName, change.entry);      break;
-      case 'notebookCreated': this.notebooksList.addEntry(this.screen.folder, change.entry);   break;
-      case 'notebookDeleted': this.notebooksList.removeEntry(change.entry);                    break;
-      case 'notebookRenamed': this.notebooksList.renameEntry(change.oldName, change.entry);    break;
+  public onUpdate(update: FolderUpdate): void {
+    switch(update.type) {
+      case 'folderCreated':   this.foldersList.addEntry(this.screen.folder, update.entry);     break;
+      case 'folderDeleted':   this.foldersList.removeEntry(update.name);                      break;
+      case 'folderRenamed':   this.foldersList.renameEntry(update.oldName, update.entry);      break;
+      case 'notebookCreated': this.notebooksList.addEntry(this.screen.folder, update.entry);   break;
+      case 'notebookDeleted': this.notebooksList.removeEntry(update.name);                    break;
+      case 'notebookRenamed': this.notebooksList.renameEntry(update.oldName, update.entry);    break;
       default: assertFalse(); break;
     }
   }
@@ -76,8 +77,8 @@ export class Content extends HtmlElement<'div'> {
   // Private Instance Properties
 
   private screen: FolderScreen;
-  private foldersList: EntryList<'folder'>;
-  private notebooksList: EntryList<'notebook'>;
+  private foldersList: EntryList;
+  private notebooksList: EntryList;
 
   // Private Instance Methods
 

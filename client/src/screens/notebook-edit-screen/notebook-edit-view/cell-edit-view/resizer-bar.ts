@@ -102,8 +102,7 @@ export class ResizerBar extends HtmlElement<'div'>  {
 
   // Private Instance Event Handlers
 
-  private async onInsertButtonClicked(event: MouseEvent): Promise<void> {
-    event.preventDefault();
+  private async onInsertButtonClicked(_event: MouseEvent): Promise<void> {
     await this.callbackFunctions.insert();
   }
 

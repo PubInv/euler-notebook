@@ -38,6 +38,7 @@ import { ServerFormula } from "../server-formula";
 
 import { ServerCell } from "./index";
 import { FORMULA_CELL_HEIGHT } from "../../shared/dimensions";
+import { NotebookUpdate } from "../../shared/server-responses";
 
 // Constants
 
@@ -81,6 +82,15 @@ export class FormulaCell extends ServerCell<FormulaCellObject> {
   // Public Instance Methods
 
   // Public Instance Event Handlers
+
+  public /* override */ onUpdate(update: NotebookUpdate): void {
+    switch(update.type) {
+      case 'formulaTypeset': {
+
+        break;
+      }
+    }
+  }
 
   // --- PRIVATE ---
 

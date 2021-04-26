@@ -29,20 +29,17 @@ import { HtmlElement } from "../../../html-element";
 
 // Types
 
-export interface EntryTypeMap {
-  'folder': FolderEntry;
-  'notebook': NotebookEntry;
-}
+type Entry = FolderEntry|NotebookEntry;
 
 export enum EntryType { Folder, Notebook };
 
 // Exported Class
 
-export class EntryRow<K extends keyof EntryTypeMap> extends HtmlElement<'tr'> {
+export class EntryRow extends HtmlElement<'tr'> {
 
   // Public Constructor
 
-  public constructor($parentElt: HTMLTableElement, folder: ClientFolder, type: EntryType, entry: EntryTypeMap[K]) {
+  public constructor(folder: ClientFolder, type: EntryType, entry: Entry) {
 
     // REVIEW: Escape path?
     const $nameLink = $new({ tag: 'a', attrs: { href: '/#'+entry.path }, html: escapeHtml(entry.name) });
@@ -90,7 +87,6 @@ export class EntryRow<K extends keyof EntryTypeMap> extends HtmlElement<'tr'> {
     super({
       tag: 'tr',
       class: <CssClass>'folderListing',
-      appendTo: $parentElt,
       children: [
         // File or folder icon
         { tag: 'td', html: svgIconReferenceMarkup(type==EntryType.Folder?'iconMonstrFolder2':'iconMonstrBook14') },
@@ -135,7 +131,7 @@ export class EntryRow<K extends keyof EntryTypeMap> extends HtmlElement<'tr'> {
 
   // Public Instance Methods
 
-  public editName(): void {
+  public enterEditMode(): void {
     this.$nameLink.style.display = 'none';
     this.$pencilButton.style.display = 'none';
 
@@ -146,7 +142,7 @@ export class EntryRow<K extends keyof EntryTypeMap> extends HtmlElement<'tr'> {
     this.$nameInput.select();
   }
 
-  public rename(entry: EntryTypeMap[K]): void {
+  public rename(entry: Entry): void {
     // LATER: Some sort of animation.
     // LATER: Identify name of user that made the change.
     this.entry = entry;
@@ -167,7 +163,7 @@ export class EntryRow<K extends keyof EntryTypeMap> extends HtmlElement<'tr'> {
   private $pencilButton: HTMLButtonElement;
   private $xButton: HTMLButtonElement;
 
-  private entry: EntryTypeMap[K];
+  private entry: Entry;
   private folder: ClientFolder;
   private renaming: boolean;
   private type: EntryType;
@@ -209,9 +205,9 @@ export class EntryRow<K extends keyof EntryTypeMap> extends HtmlElement<'tr'> {
     this.$xButton.innerHTML = DOTTED_CIRCLE_ENTITY;
     try {
       if (this.type == EntryType.Folder) {
-        await this.folder.removeFolder(<FolderName>this.entry.name);
+        await this.folder.removeFolderRequest(<FolderName>this.entry.name);
       } else {
-        await this.folder.removeNotebook(<NotebookName>this.entry.name);
+        await this.folder.removeNotebookRequest(<NotebookName>this.entry.name);
       }
     } catch(err) {
       removeError = err;
@@ -238,9 +234,9 @@ export class EntryRow<K extends keyof EntryTypeMap> extends HtmlElement<'tr'> {
       this.$checkmarkButton.innerHTML = DOTTED_CIRCLE_ENTITY;
       try {
         if (this.type == EntryType.Folder) {
-          /* const newEntry = */ await this.folder.renameFolder(<FolderName>this.entry.name, <FolderName>newName);
+          /* const newEntry = */ await this.folder.renameFolderRequest(<FolderName>this.entry.name, <FolderName>newName);
         } else {
-          /* const newEntry = */ await this.folder.renameNotebook(<NotebookName>this.entry.name, <NotebookName>newName);
+          /* const newEntry = */ await this.folder.renameNotebookRequest(<NotebookName>this.entry.name, <NotebookName>newName);
         }
       } catch(err) {
         console.error(`Error renaming folder: ${err.message}`);
@@ -315,7 +311,7 @@ export class EntryRow<K extends keyof EntryTypeMap> extends HtmlElement<'tr'> {
 
   private onPencilButtonClicked(_event: MouseEvent): void {
     console.log(`Edit name clicked`);
-    this.editName();
+    this.enterEditMode();
   }
 
   private async onRemoveButtonClicked(e: MouseEvent): Promise<void> {

@@ -45,21 +45,9 @@ import { CollaboratorObject } from "../shared/user";
 
 // Types
 
-interface InstanceInfo {
-  instance?: ServerFolder;
-  openPromise: Promise<ServerFolder>;
-  openTally: number;
-  watchers: Set<ServerFolderWatcher>;
-}
-
-export interface OpenFolderOptions {
-  watcher?: ServerFolderWatcher;
-}
-
-export interface ServerFolderWatcher {
-  onChange(change: FolderUpdate, ownRequest: boolean): void
-  onChanged(msg: FolderUpdated): void;
-  onClosed(reason: string): void;
+interface OpenInfo {
+  promise: Promise<ServerFolder>;
+  tally: number;
 }
 
 // Exported Class
@@ -72,8 +60,8 @@ export class ServerFolder extends Folder {
 
   // Public Class Property Functions
 
-  public static get allInstances(): ServerFolder[] /* LATER: IterableIterator<ServerFolder> */{
-    return <ServerFolder[]>Array.from(this.instanceMap.values()).filter(r=>r.instance).map(r=>r.instance);
+  public static get allInstances(): IterableIterator<ServerFolder> {
+    return this.instanceMap.values()
   }
 
   // public static isOpen(path: FolderPath): boolean {
@@ -83,9 +71,9 @@ export class ServerFolder extends Folder {
   // Public Class Methods
 
   public static async close(path: FolderPath, reason: string): Promise<void> {
-    const info = this.instanceMap.get(path);
+    const info = this.openMap.get(path);
     if (!info) { return; }
-    const instance = await info.openPromise;
+    const instance = await info.promise;
     instance.terminate(reason);
   }
 
@@ -111,29 +99,28 @@ export class ServerFolder extends Folder {
     return { path: newPath, name: Folder.folderNameFromFolderPath(newPath) }
   }
 
-  public static async open(path: FolderPath, options?: OpenFolderOptions): Promise<ServerFolder> {
-    if (!options) { options = {}; }
-    let info = this.instanceMap.get(path);
-    if (info) {
-      info.openTally++;
+  public static async open(path: FolderPath): Promise<ServerFolder> {
+    let openInfo = this.openMap.get(path);
+    if (openInfo) {
+      openInfo.tally++;
     } else {
-      info = {
-        openPromise: this.openFirst(path),
-        openTally: 1,
-        watchers: new Set(),
+      const promise = this.openFirst(path);
+      openInfo = {
+        promise,
+        tally: 1,
       };
-      this.instanceMap.set(path, info);
+      this.openMap.set(path, openInfo);
+      promise.catch(_err=>{ this.openMap.delete(path); });
     };
-    if (options.watcher) { info.watchers.add(options.watcher); }
-    return info.openPromise;
+    return openInfo.promise;
   }
 
   // Public Class Event Handlers
 
   public static async onClientRequest(socket: ServerSocket, msg: FolderRequest): Promise<void> {
     // Called by ServerSocket when a client sends a folder request.
-    const info = this.instanceMap.get(msg.path);
-    const instance = await(info ? info.openPromise : this.open(msg.path, {}));
+    const info = this.openMap.get(msg.path);
+    const instance = await(info ? info.promise : this.open(msg.path));
     instance.onClientRequest(socket, msg);
   }
 
@@ -170,31 +157,12 @@ export class ServerFolder extends Folder {
 
   // Public Instance Methods
 
-  // public /* override */ applyUpdate(change: FolderUpdate, ownRequest: boolean): void {
-  //   // Send deletion change notifications.
-  //   // Deletion change notifications are sent before the change happens so the watcher can
-  //   // examine the style or relationship being deleted before it disappears from the notebook.
-  //   const notifyBefore = (change.type == 'folderDeleted' || change.type == 'notebookDeleted');
-  //   if (notifyBefore) {
-  //     for (const watcher of this.watchers) { watcher.onChange(change, ownRequest); }
-  //   }
-  //   super.applyUpdate(change, ownRequest);
-
-  //   // Send non-deletion change notification.
-  //   if (!notifyBefore) {
-  //     for (const watcher of this.watchers) { watcher.onChange(change, ownRequest); }
-  //   }
-  // }
-
-  public close(watcher?: ServerFolderWatcher): void {
+  public close(): void {
     assert(!this.terminated);
-    const info = ServerFolder.getInfo(this.path)!;
-    if (watcher) {
-      const had = info.watchers.delete(watcher);
-      assert(had);
-    }
-    info.openTally--;
-    if (info.openTally == 0) {
+    const openInfo = ServerFolder.openMap.get(this.path)!;
+    assert(openInfo);
+    openInfo.tally--;
+    if (openInfo.tally == 0) {
       // LATER: Set timer to destroy in the future.
       this.terminate("Closed by all clients");
     }
@@ -206,21 +174,10 @@ export class ServerFolder extends Folder {
 
   // Private Class Properties
 
-  private static instanceMap = new Map<FolderPath, InstanceInfo>();
+  private static openMap = new Map<FolderPath, OpenInfo>();
+  private static instanceMap = new Map<FolderPath, ServerFolder>();
 
   // Private Class Property Functions
-
-  private static getInfo(path: FolderPath): InstanceInfo {
-    const rval = this.instanceMap.get(path)!;
-    assert(rval);
-    return rval;
-  }
-
-  // private static getInstance(path: FolderPath): ServerFolder {
-  //   const info = this.getInfo(path)!;
-  //   assert(info.instance);
-  //   return info.instance!;
-  // }
 
   // Private Class Methods
 
@@ -260,11 +217,9 @@ export class ServerFolder extends Folder {
 
     const obj: FolderObject = { folders, notebooks };
     const permissions = await Permissions.load(path);
-
     // REVIEW: validate folderObject?
-    const info = this.getInfo(path);
-    assert(info);
-    const instance = info.instance = new this(path, obj, permissions);
+    const instance = new this(path, obj, permissions);
+    this.instanceMap.set(path, instance);
     return instance;
   }
 
@@ -289,11 +244,6 @@ export class ServerFolder extends Folder {
   private terminated?: boolean;
 
   // Private Instance Property Functions
-
-  // private get watchers(): IterableIterator<ServerFolderWatcher> {
-  //   const info = ServerFolder.getInfo(this.path);
-  //   return info.watchers.values();
-  // }
 
   // Private Instance Methods
 
@@ -351,12 +301,11 @@ export class ServerFolder extends Folder {
     }
   }
 
-  private terminate(reason: string): void {
+  private terminate(_reason: string): void {
     assert(!this.terminated);
     this.terminated = true;
-    const info = ServerFolder.getInfo(this.path);
+    ServerFolder.openMap.delete(this.path);
     ServerFolder.instanceMap.delete(this.path);
-    for (const watcher of info.watchers) { watcher.onClosed(reason); }
   }
 
   // Private Instance Event Handlers
@@ -364,31 +313,14 @@ export class ServerFolder extends Folder {
   private onClientRequest(socket: ServerSocket, msg: FolderRequest): void {
     assert(!this.terminated);
     switch(msg.operation) {
-      case 'change': this.onChangeRequest(socket, msg); break;
-      case 'close':  this.onCloseRequest(socket, msg); break;
-      case 'open':   this.onOpenRequest(socket, msg); break;
+      case 'change': this.onClientChangeRequest(socket, msg); break;
+      case 'close':  this.onClientCloseRequest(socket, msg); break;
+      case 'open':   this.onClientOpenRequest(socket, msg); break;
       default:       assert(false); break;
     }
   }
 
-  private onSocketClosed(socket: ServerSocket): void {
-    // NOTE: When *any* socket closes, this message is sent to *all* folders,
-    //       so we need to check if we are actually interested in this socket.
-    this.removeSocket(socket);
-    this.sendCollaboratorDisconnectedMessage(socket);
-  }
-
-  private onSocketUserLogin(socket: ServerSocket): void {
-    this.sendCollaboratorConnectedMessage(socket);
-  }
-
-  private onSocketUserLogout(socket: ServerSocket): void {
-    this.sendCollaboratorDisconnectedMessage(socket);
-  }
-
-  // Client Message Event Handlers
-
-  private async onChangeRequest(socket: ServerSocket, request: ChangeFolder): Promise<void> {
+  private async onClientChangeRequest(socket: ServerSocket, request: ChangeFolder): Promise<void> {
     // TODO: Undo?
 
     // Verify the user has permission to modify the folder.
@@ -428,14 +360,14 @@ export class ServerFolder extends Folder {
           const name = changeRequest.name;
           const path = childFolderPath(this.path, name);
           await ServerFolder.delete(path);
-          change = { type: 'folderDeleted', entry: { name, path }};
+          change = { type: 'folderDeleted', name };
           break;
         }
         case 'deleteNotebook': {
           const name = changeRequest.name;
           const path = notebookPath(this.path, name);
           await ServerNotebook.delete(path);
-          change = { type: 'notebookDeleted', entry: { name, path }};
+          change = { type: 'notebookDeleted', name };
           break;
         }
         case 'renameFolder': {
@@ -457,21 +389,21 @@ export class ServerFolder extends Folder {
       }
 
       // REVIEW: Apply delete changes after notification?
-      this.applyUpdate(change, false);
+      this.onUpdate(change, false);
       changes.push(change);
     }
     const update: FolderUpdated = { type: 'folder', operation: 'updated', path: this.path, updates: changes, complete: true };
     this.sendUpdateToAllSockets(update, socket, request.requestId);
   }
 
-  private onCloseRequest(socket: ServerSocket, _msg: CloseFolder): void {
+  private onClientCloseRequest(socket: ServerSocket, _msg: CloseFolder): void {
     // NOTE: No response is expected for a close request.
     assert(this.sockets.has(socket));
     this.removeSocket(socket);
     this.sendCollaboratorDisconnectedMessage(socket);
   }
 
-  private onOpenRequest(socket: ServerSocket, msg: OpenFolder): void {
+  private onClientOpenRequest(socket: ServerSocket, msg: OpenFolder): void {
 
     // Check if the user has permission to open this folder.
     const user = socket.user;
@@ -512,6 +444,20 @@ export class ServerFolder extends Folder {
 
   }
 
+  private onSocketClosed(socket: ServerSocket): void {
+    // NOTE: When *any* socket closes, this message is sent to *all* folders,
+    //       so we need to check if we are actually interested in this socket.
+    this.removeSocket(socket);
+    this.sendCollaboratorDisconnectedMessage(socket);
+  }
+
+  private onSocketUserLogin(socket: ServerSocket): void {
+    this.sendCollaboratorConnectedMessage(socket);
+  }
+
+  private onSocketUserLogout(socket: ServerSocket): void {
+    this.sendCollaboratorDisconnectedMessage(socket);
+  }
 }
 
 // Exported Functions

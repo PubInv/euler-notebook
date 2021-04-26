@@ -29,7 +29,7 @@ import { NotebookUpdate, NotebookCollaboratorConnected, NotebookCollaboratorDisc
 
 import { NotebookEditView } from "./notebook-edit-view";
 
-import { ClientNotebook, NotebookView } from "../../models/client-notebook";
+import { ClientNotebook, NotebookWatcher } from "../../models/client-notebook";
 
 import { Screen } from "..";
 
@@ -47,7 +47,7 @@ import { appInstance } from "../../app";
 
 // Exported Class
 
-export class NotebookEditScreen extends Screen implements NotebookView {
+export class NotebookEditScreen extends Screen implements NotebookWatcher {
 
   // Public Constructor
 
@@ -114,7 +114,7 @@ export class NotebookEditScreen extends Screen implements NotebookView {
 
   public onResize(_window: Window, _event: UIEvent): void { /* Nothing to do. */ }
 
-  // NotebookView Methods
+  // NotebookWatcher Methods
 
   public onClosed(reason?: string): void {
     this.sidebar.destroy();

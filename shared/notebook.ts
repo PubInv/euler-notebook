@@ -40,11 +40,6 @@ export interface NotebookObject {
   pageSize: CssSize;
 }
 
-export interface NotebookWatcher {
-  onChange(change: NotebookUpdate, ownRequest: boolean): void;
-  onClosed(reason: string): void;
-}
-
 export interface PageInfo {
   numCells: number;
   pageNumber: PageNumber;
@@ -218,7 +213,29 @@ export class Notebook {
 
   // Private Instance Methods
 
-  protected /* overridable */ applyUpdate(update: NotebookUpdate): void {
+  private deleteCellObject(cellId: CellId): CellObject {
+    const cellIndex = this.cellIndex(cellId);
+    const cellObject = this.obj.cells[cellIndex];
+    this.obj.cells.splice(cellIndex, 1);
+    this.cellObjectMap.delete(cellId);
+    return cellObject;
+}
+
+  private insertCellObject(cellObject: CellObject, afterId: CellRelativePosition): void {
+    if (afterId == CellPosition.Top) {
+      this.obj.cells.unshift(cellObject);
+    } else if (afterId == CellPosition.Bottom) {
+      this.obj.cells.push(cellObject);
+    } else {
+      const cellIndex = this.cellIndex(afterId);
+      this.obj.cells.splice(cellIndex+1, 0, cellObject);
+    }
+    this.cellObjectMap.set(cellObject.id, cellObject);
+  }
+
+  // Private Instance Event Handlers
+
+  protected /* overridable */ onUpdate(update: NotebookUpdate): void {
     switch (update.type) {
       case 'cellDeleted': {
         const { cellId } = update;
@@ -300,28 +317,6 @@ export class Notebook {
       default: assertFalse();
     }
   }
-
-  private deleteCellObject(cellId: CellId): CellObject {
-    const cellIndex = this.cellIndex(cellId);
-    const cellObject = this.obj.cells[cellIndex];
-    this.obj.cells.splice(cellIndex, 1);
-    this.cellObjectMap.delete(cellId);
-    return cellObject;
-}
-
-  private insertCellObject(cellObject: CellObject, afterId: CellRelativePosition): void {
-    if (afterId == CellPosition.Top) {
-      this.obj.cells.unshift(cellObject);
-    } else if (afterId == CellPosition.Bottom) {
-      this.obj.cells.push(cellObject);
-    } else {
-      const cellIndex = this.cellIndex(afterId);
-      this.obj.cells.splice(cellIndex+1, 0, cellObject);
-    }
-    this.cellObjectMap.set(cellObject.id, cellObject);
-  }
-
-  // Private Instance Event Handlers
 
 }
 
