@@ -34,7 +34,7 @@ import { ServerNotebook } from "../server-notebook";
 
 import { ServerCell } from "./index";
 import { recognizeFigure } from "../../components/handwriting-recognizer";
-import { NotebookChangeRequest } from "../../shared/client-requests";
+import { NotebookChangeRequest, RemoveSuggestion } from "../../shared/client-requests";
 import { FIGURE_CELL_HEIGHT } from "../../shared/dimensions";
 
 // Constants
@@ -78,17 +78,35 @@ export class FigureCell extends ServerCell<FigureCellObject> {
     height: LengthInPixels,
   ): Promise<SuggestionObject[]> {
     debug(`Recognizing strokes`);
+
+    // Send the strokes to the recognizer and get a list of alternatives back.
     const results = await recognizeFigure(width, height, this.obj.strokeData);
+
+    // For use below, generate a list of change requests to remove all of the alternatives.
+    // When any alternative is used, all of the alternatives are removed from the suggestion panel.
     const { alternatives } = results;
-    return alternatives.map((alternative, index)=>{
-      const suggestionId = <SuggestionId>`recognizedFigure${index}`;
+    const removeChangeRequests: RemoveSuggestion[] = alternatives.map((_alternative, index)=>({
+      type: 'removeSuggestion',
+      cellId: this.id,
+      suggestionId: typesetFigureSuggestionId(index),
+    }));
+
+    // For each alternative, generate a suggestion object that has
+    // a change request to typeset the text to that alternative,
+    // and also change requests to remove all of the typesetting
+    // suggestions.
+    const rval = alternatives.map((alternative, index)=>{
+      const suggestionId = typesetFigureSuggestionId(index);
       const { figureObject } = alternative;
-      const data: NotebookChangeRequest[] = [{
-        type: 'typesetFigure',
-        cellId: this.id,
-        figure: figureObject,
-        strokeData: EMPTY_STROKE_DATA,
-      }];
+      const data: NotebookChangeRequest[] = [
+        {
+          type: 'typesetFigure',
+          cellId: this.id,
+          figure: figureObject,
+          strokeData: EMPTY_STROKE_DATA,
+        },
+        ...removeChangeRequests,
+      ];
       const suggestionObject: SuggestionObject = {
         id: suggestionId,
         class: TYPESETTING_SUGGESTION_CLASS,
@@ -97,8 +115,15 @@ export class FigureCell extends ServerCell<FigureCellObject> {
       };
       return suggestionObject;
     });
+    return rval;
   }
 
   // Private Instance Event Handlers
 
+}
+
+// Helper Functions
+
+function typesetFigureSuggestionId(index: number): SuggestionId {
+  return <SuggestionId>`typesetFigure${index}`
 }

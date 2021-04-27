@@ -99,7 +99,7 @@ export class TextCell extends ServerCell<TextCellObject> {
     // a change request to typeset the text to that alternative,
     // and also change requests to remove all of the typesetting
     // suggestions.
-    return alternatives.map((alternative, index)=>{
+    const rval = alternatives.map((alternative, index)=>{
       const suggestionId = typesetTextSuggestionId(index);
       const changeRequests: NotebookChangeRequest[] = [
         {
@@ -108,7 +108,7 @@ export class TextCell extends ServerCell<TextCellObject> {
           text: alternative.text,
           strokeData: EMPTY_STROKE_DATA,
         },
-        ...removeChangeRequests
+        ...removeChangeRequests,
       ];
       const suggestionObject: SuggestionObject = {
         id: suggestionId,
@@ -118,6 +118,7 @@ export class TextCell extends ServerCell<TextCellObject> {
       };
       return suggestionObject;
     });
+    return rval;
   }
 
   // Private Instance Event Handlers

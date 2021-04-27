@@ -155,7 +155,7 @@ export class FormulaCell extends ServerCell<FormulaCellObject> {
           formula: alternative.formula.obj,
           strokeData: EMPTY_STROKE_DATA,
         },
-        ...removeChangeRequests
+        ...removeChangeRequests,
       ];
       const suggestionObject: SuggestionObject = {
         id: suggestionId,
