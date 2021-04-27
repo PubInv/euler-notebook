@@ -31,10 +31,10 @@ import { CellId, CellObject, CellType } from "../../shared/cell";
 
 import { ServerNotebook } from "../server-notebook";
 import { NotebookUpdate } from "../../shared/server-responses";
-import { cellSynopsis } from "../../shared/debug-synopsis";
+import { cellSynopsis, notebookUpdateSynopsis } from "../../shared/debug-synopsis";
 import { InactivityTimeout } from "../../shared/inactivity-timeout";
 import { AddSuggestion, NotebookChangeRequest, RemoveSuggestion } from "../../shared/client-requests";
-import { SuggestionObject, TYPESETTING_SUGGESTION_CLASS } from "../../shared/suggestions";
+import { SuggestionClass, SuggestionObject, TYPESETTING_SUGGESTION_CLASS } from "../../shared/suggestions";
 
 // Types
 
@@ -91,6 +91,7 @@ export abstract class ServerCell<O extends CellObject> {
   // Public Instance Event Handlers
 
   public /* overridable */ onUpdate(update: NotebookUpdate): void {
+    debug(`onUpdate ${notebookUpdateSynopsis(update)}`);
     switch(update.type) {
       // case 'acceptSuggestion': this.onAcceptSuggestionRequest(source, changeRequest, response); break;
 
@@ -134,35 +135,42 @@ export abstract class ServerCell<O extends CellObject> {
 
   // Private Instance Event Handlers
 
-  protected async onStrokeInactivityTimeout(): Promise<void> {
-    debug(`Stroke inactivity timeout.`);
+  protected requestSuggestions(suggestionObjects: SuggestionObject[], removeClass?: SuggestionClass): void {
+    // Compile a list of change requests that update the suggestions for this cell,
+    // then request the notebook make those changes.
 
-    // LATER: Display recognition error to user if one occurs.
-    //        Currently it will just log the error, but fails silently from the user's perspective.
-
-    const width = cssLengthInPixels(this.cssSize.width);
-    const height = cssLengthInPixels(this.cssSize.height);
-    const suggestionObjects = await this.recognizeStrokes(width, height)
-
-    // Remove existing typesetting suggestions.
+    // If a class of suggestions is specified for removal, then add change requests
+    // to removed them.
     const changeRequests: NotebookChangeRequest[] = [];
-    for (const suggestion of this.obj.suggestions.filter(s=>s.class==TYPESETTING_SUGGESTION_CLASS)) {
-      const changeRequest: RemoveSuggestion = {
-        type: 'removeSuggestion',
-        cellId: this.id,
-        suggestionId: suggestion.id,
-      };
-      changeRequests.push(changeRequest);
+    if (removeClass) {
+      // Remove existing typesetting suggestions.
+      for (const suggestion of this.obj.suggestions.filter(s=>s.class==removeClass)) {
+        const changeRequest: RemoveSuggestion = {
+          type: 'removeSuggestion',
+          cellId: this.id,
+          suggestionId: suggestion.id,
+        };
+        changeRequests.push(changeRequest);
+      }
     }
 
-    // Add new typesetting suggestions.
+    // For each suggestion...
     for (const suggestionObject of suggestionObjects) {
-      // Add a change request to remove our own suggestion.
-      suggestionObject.changeRequests.push({
-        type: 'removeSuggestion',
-        cellId: this.id,
-        suggestionId: suggestionObject.id,
-      });
+
+      // Add change requests to remove any suggestions with the same ID
+      // that were not removed by the class removal above.
+      for (const suggestionObject2 of this.obj.suggestions.filter(s=>s.id==suggestionObject.id)) {
+        if (!removeClass || suggestionObject2.class != removeClass) {
+          const changeRequest: RemoveSuggestion = {
+            type: 'removeSuggestion',
+            cellId: this.id,
+            suggestionId: suggestionObject2.id,
+          };
+          changeRequests.push(changeRequest);
+        }
+      }
+
+      // Add a change request for the new suggestion.
       const changeRequest: AddSuggestion = {
         type: 'addSuggestion',
         cellId: this.id,
@@ -175,6 +183,16 @@ export abstract class ServerCell<O extends CellObject> {
     if (changeRequests.length>0) {
       this.notebook.requestChanges("SYSTEM", changeRequests, {});
     }
+  }
+
+  private async onStrokeInactivityTimeout(): Promise<void> {
+    debug(`Stroke inactivity timeout.`);
+    // LATER: Display recognition error to user if one occurs.
+    //        Currently it will just log the error, but fails silently from the user's perspective.
+    const width = cssLengthInPixels(this.cssSize.width);
+    const height = cssLengthInPixels(this.cssSize.height);
+    const suggestionObjects = await this.recognizeStrokes(width, height)
+    this.requestSuggestions(suggestionObjects, TYPESETTING_SUGGESTION_CLASS);
   }
 }
 

@@ -33,6 +33,7 @@ import { FormulaSymbol, WolframExpression } from "../shared/formula";
 // Types
 
 interface PlotReturnValue {
+  formulaSymbol: FormulaSymbol,
   plotMarkup: SvgMarkup,
   thumbnailMarkup: SvgMarkup,
 }
@@ -45,14 +46,14 @@ const THUMBNAIL_SCALE_DIVISOR = 8;
 
 // Exported Functions
 
-export async function plot(_formula: ServerFormula, symbol: FormulaSymbol): Promise<PlotReturnValue> {
-  throw new Error("Not implemented");
-  const wolframExpression = <WolframExpression>'TODO: get wolfram expression from formula';
-  debug(`Plotting: symbol ${symbol}, formula ${wolframExpression}`);
-  const plotMarkup = await plotUnivariate(wolframExpression, symbol);
+export async function plot(_formula: ServerFormula): Promise<PlotReturnValue> {
+  const formulaSymbol = <FormulaSymbol>'x'
+  const wolframExpression = <WolframExpression>'x^2'; // TODO:
+  debug(`Plotting: symbol ${formulaSymbol}, formula ${wolframExpression}`);
+  const plotMarkup = await plotUnivariate(wolframExpression, formulaSymbol);
   // debug(`Plot markup: ${fullPlotMarkup}`);
   const thumbnailMarkup = thumbnailPlotFromFullPlot(plotMarkup);
-  return { plotMarkup, thumbnailMarkup };
+  return { formulaSymbol, plotMarkup, thumbnailMarkup };
 }
 
 // Helper Functions

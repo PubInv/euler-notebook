@@ -27,9 +27,10 @@ import { deepCopy, PlainText } from "../../shared/common";
 import { LengthInPixels } from "../../shared/css";
 import { CellId, CellSource, CellType } from "../../shared/cell";
 import { NotebookChangeRequest } from "../../shared/client-requests";
+import { FormulaTypeset } from "../../shared/server-responses";
 import { EMPTY_FORMULA_OBJECT, FormulaCellObject, FormulaNumber } from "../../shared/formula";
 import { EMPTY_STROKE_DATA } from "../../shared/stylus";
-import { SuggestionId, SuggestionObject, TYPESETTING_SUGGESTION_CLASS } from "../../shared/suggestions";
+import { SuggestionClass, SuggestionId, SuggestionObject, TYPESETTING_SUGGESTION_CLASS } from "../../shared/suggestions";
 
 import { recognizeFormula } from "../../components/handwriting-recognizer";
 
@@ -39,8 +40,12 @@ import { ServerFormula } from "../server-formula";
 import { ServerCell } from "./index";
 import { FORMULA_CELL_HEIGHT } from "../../shared/dimensions";
 import { NotebookUpdate } from "../../shared/server-responses";
+import { monitorPromise } from "../../error-handler";
+import { PlotCell } from "./plot-cell";
 
 // Constants
+
+const PLOT_FORMULA_SUGGESTION_CLASS = <SuggestionClass>"plotFormula";
 
 // Exported Class
 
@@ -84,11 +89,9 @@ export class FormulaCell extends ServerCell<FormulaCellObject> {
   // Public Instance Event Handlers
 
   public /* override */ onUpdate(update: NotebookUpdate): void {
+    super.onUpdate(update);
     switch(update.type) {
-      case 'formulaTypeset': {
-
-        break;
-      }
+      case 'formulaTypeset': this.onFormulaTypeset(update); break;
     }
   }
 
@@ -100,47 +103,26 @@ export class FormulaCell extends ServerCell<FormulaCellObject> {
 
   // Private Instance Property Functions
 
-
   // Private Instance Methods
 
-  // private changeFormula(
-  //   obj: FormulaObject,
-  //   /* out */ suggestionUpdates: SuggestionUpdates,
-  // ): void {
+  private async suggestPlot(): Promise<void> {
+    debug(`Suggest plot: ${this.id}`);
+    // REVIEW: If formula cell gets changed or deleted before we finish plotting? */
+    const { cellObject, thumbnailPlotMarkup } = await PlotCell.plotFormula(this.notebook, this.id, this.formula);
+    const suggestionId = <SuggestionId>'plot0';
+    const changeRequests: NotebookChangeRequest[] = [
+      { type: 'insertCell', cellObject, afterId: this.id },
+      { type: 'removeSuggestion', cellId: this.id, suggestionId },
+    ];
+    const suggestionObject: SuggestionObject = {
+      id: suggestionId,
+      class: PLOT_FORMULA_SUGGESTION_CLASS,
+      changeRequests,
+      display: { svg: thumbnailPlotMarkup },
+    };
 
-  //   // Remove any prior formula plotting suggestions
-  //   assert(suggestionUpdates.add);
-  //   assert(suggestionUpdates.removeClasses);
-  //   suggestionUpdates.removeClasses!.push(PLOT_FORMULA_SUGGESTION_CLASS);
-
-  //   const newFormula = ServerFormula.createFromObject(obj);
-  //   this._formula = newFormula;
-  //   this.obj.formula = newFormula.obj;
-  //   this.redrawDisplaySvg();
-
-  //   monitorPromise(this.plotFormulaForSuggestion(), `Error plotting formula ${this.id} for suggestion panel.`);
-  // }
-
-  // private async plotFormulaForSuggestion(): Promise<void> {
-  //   // REVIEW: If ServerFormulas are immutable, then maybe the
-  //   //         cache the plot with the formula?
-  //   if (false /* TODO: Formula is not plottable */) { return; }
-
-  //   const formulaSymbol: FormulaSymbol = <FormulaSymbol>'x'; // TODO:
-  //   // REVIEW: If formula cell gets changed or deleted before we finish plotting? */
-  //   const { cellObject, thumbnailPlotMarkup } = await PlotCell.plotFormula(this.notebook, this.id, this.formula, formulaSymbol);
-  //   const data: NotebookChangeRequest[] = [
-  //     { type: 'insertCell', cellObject, afterId: this.id },
-  //   ];
-  //   const suggestionObject: SuggestionObject = {
-  //     id: <SuggestionId>'plot',
-  //     class: PLOT_FORMULA_SUGGESTION_CLASS,
-  //     html: <Html>thumbnailPlotMarkup,
-  //     data,
-  //   };
-
-  //   this.updateSuggestions([ suggestionObject ], [], []);
-  // }
+    this.requestSuggestions([ suggestionObject ], PLOT_FORMULA_SUGGESTION_CLASS);
+  }
 
   protected async recognizeStrokes(
     width: LengthInPixels,
@@ -169,5 +151,18 @@ export class FormulaCell extends ServerCell<FormulaCellObject> {
   }
 
   // Private Instance Event Handlers
+
+  private onFormulaTypeset(update: FormulaTypeset): void {
+    const { formula: formulaObject } = update;
+
+    // Remove any prior formula plotting suggestions
+
+    const formula = this._formula = ServerFormula.createFromObject(formulaObject);
+
+    if (formula.isPlottable) {
+      monitorPromise(this.suggestPlot(), `Error plotting formula ${this.id} for suggestion panel.`);
+    }
+
+  }
 
 }

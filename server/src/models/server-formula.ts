@@ -65,6 +65,10 @@ export class ServerFormula {
 
   // Public Instance Property Functions
 
+  public get isPlottable(): boolean {
+    return true; // TODO:
+  }
+
   // public get wolfram(): WolframExpression { return this.obj.wolfram; }
 
   public get mathMlTree(): MathMlTree { return this.obj.mathMlTree;}

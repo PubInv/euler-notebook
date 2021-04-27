@@ -33,7 +33,6 @@ import { ServerNotebook } from "../server-notebook";
 
 import { ServerCell } from "./index";
 import { plot } from "../../components/formula-plotter";
-import { FormulaSymbol } from "../../shared/formula";
 import { ServerFormula } from "../server-formula";
 import { PLOT_CELL_HEIGHT } from "../../shared/dimensions";
 import { LengthInPixels } from "../../shared/css";
@@ -56,9 +55,9 @@ export class PlotCell extends ServerCell<PlotCellObject> {
 
   // Public Class Methods
 
-  public static async plotFormula(notebook: ServerNotebook, formulaCellId: CellId, formula: ServerFormula, formulaSymbol: FormulaSymbol): Promise<PlotFormulaReturnValue> {
+  public static async plotFormula(notebook: ServerNotebook, formulaCellId: CellId, formula: ServerFormula): Promise<PlotFormulaReturnValue> {
 
-    const { plotMarkup, thumbnailMarkup } = await plot(formula, formulaSymbol);
+    const { formulaSymbol, plotMarkup, thumbnailMarkup } = await plot(formula);
 
     const cellObject: PlotCellObject = {
       id: 0,
