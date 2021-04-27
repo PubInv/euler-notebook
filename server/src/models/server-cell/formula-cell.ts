@@ -26,7 +26,7 @@ const debug = debug1(`server:${MODULE}`);
 import { deepCopy, PlainText } from "../../shared/common";
 import { LengthInPixels } from "../../shared/css";
 import { CellId, CellSource, CellType } from "../../shared/cell";
-import { NotebookChangeRequest } from "../../shared/client-requests";
+import { NotebookChangeRequest, RemoveSuggestion } from "../../shared/client-requests";
 import { FormulaTypeset } from "../../shared/server-responses";
 import { EMPTY_FORMULA_OBJECT, FormulaCellObject, FormulaNumber } from "../../shared/formula";
 import { EMPTY_STROKE_DATA } from "../../shared/stylus";
@@ -129,17 +129,34 @@ export class FormulaCell extends ServerCell<FormulaCellObject> {
     height: LengthInPixels,
   ): Promise<SuggestionObject[]> {
     debug(`Recognizing strokes`);
+
+    // Send the strokes to the recognizer and get a list of alternative formulas back.
     const results = await recognizeFormula(width, height, this.obj.strokeData);
+
+    // For use below, generate a list of change requests to remove all of the alternatives.
+    // When any alternative is used, all of the alternatives are removed from the suggestion panel.
     const { alternatives } = results;
-    return alternatives.map((alternative, index)=>{
-      const suggestionId = <SuggestionId>`recognizedFormula${index}`;
-      // TODO: remove alternative typesetting suggestions.
-      const changeRequests: NotebookChangeRequest[] = [{
-        type: 'typesetFormula',
-        cellId: this.id,
-        formula: alternative.formula.obj,
-        strokeData: EMPTY_STROKE_DATA,
-      }];
+    const removeChangeRequests: RemoveSuggestion[] = alternatives.map((_alternative, index)=>({
+      type: 'removeSuggestion',
+      cellId: this.id,
+      suggestionId: typesetFormulaSuggestionId(index),
+    }));
+
+    // For each alternative, generate a suggestion object that has
+    // a change request to typeset the formula to that alternative,
+    // and also change requests to remove all of the typesetting
+    // suggestions.
+    const rval = alternatives.map((alternative, index)=>{
+      const suggestionId = typesetFormulaSuggestionId(index);
+      const changeRequests: NotebookChangeRequest[] = [
+        {
+          type: 'typesetFormula',
+          cellId: this.id,
+          formula: alternative.formula.obj,
+          strokeData: EMPTY_STROKE_DATA,
+        },
+        ...removeChangeRequests
+      ];
       const suggestionObject: SuggestionObject = {
         id: suggestionId,
         class: TYPESETTING_SUGGESTION_CLASS,
@@ -148,6 +165,8 @@ export class FormulaCell extends ServerCell<FormulaCellObject> {
       };
       return suggestionObject;
     });
+
+    return rval;
   }
 
   // Private Instance Event Handlers
@@ -165,4 +184,10 @@ export class FormulaCell extends ServerCell<FormulaCellObject> {
 
   }
 
+}
+
+// Helper Functions
+
+function typesetFormulaSuggestionId(index: number): SuggestionId {
+  return <SuggestionId>`typesetFormula${index}`
 }
