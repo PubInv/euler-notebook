@@ -131,8 +131,8 @@ export class SuggestionPanel<O extends CellObject> extends HtmlElement<'div'> {
     const display = suggestionObject.display;
     if (display.formula) {
       // REVIEW: Is .clientWidth the right attribute?
-      const { svgMarkup } = renderFormula(display.formula, this.$elt.clientWidth);
-      spec.html = <SvgMarkup>`<svg>${svgMarkup}</svg>`;
+      const { boundingBox, svgMarkup } = renderFormula(display.formula, this.$elt.clientWidth);
+      spec.html = <SvgMarkup>`<svg width="${Math.ceil(boundingBox.width)}" height="${Math.ceil(boundingBox.height)}">${svgMarkup}</svg>`;
     } else if (display.html) {
       spec.html = display.html!;
     } else if (display.svg) {
