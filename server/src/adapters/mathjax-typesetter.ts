@@ -36,7 +36,7 @@ import { RegisterHTMLHandler } from "mathjax-full/js/handlers/html.js";
 import { LengthInPixels } from "../shared/css";
 import { FormulaTypesetter, TypesettingResults } from "../shared/formula";
 import { unwrap } from "../shared/mathjax";
-import { serializeTreeToMathMlMarkup, MathMlTree } from "../shared/mathml";
+import { serializeTreeToMathMlMarkup, PresentationMathMlTree } from "../shared/presentation-mathml";
 import { SvgMarkup } from "../shared/svg";
 
 
@@ -70,7 +70,7 @@ export class MathJaxTypesetter implements FormulaTypesetter {
 
   // Public Instance Methods
 
-  public mathMlTreeToSvg(mathMlTree: MathMlTree, containerWidth: LengthInPixels): TypesettingResults {
+  public presentationMathMlTreeToSvg(mathMlTree: PresentationMathMlTree, containerWidth: LengthInPixels): TypesettingResults {
     const mathMlMarkup = serializeTreeToMathMlMarkup(mathMlTree)
     debug(`Converting MathML to SVG: ${mathMlMarkup}`);
     const node = this.mathDocument.convert(mathMlMarkup, { display: false, em: 16, ex: 8, containerWidth });

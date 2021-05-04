@@ -26,16 +26,13 @@ const MODULE = __filename.split(/[/\\]/).slice(-1)[0].slice(0,-3);
 const debug = debug1(`server:${MODULE}`);
 
 import { assert } from "../shared/common";
-import { FormulaSymbol, TexExpression, WolframExpression } from "../shared/formula";
-import { MathMlMarkup } from "../shared/mathml";
-import { SvgMarkup } from "../shared/svg";
+import { WolframExpression } from "../shared/formula";
 
 import { WolframScriptConfig } from "../config";
-import { logWarning } from "../error-handler";
 
 // Types
 
-export interface NVPair { name: string; value: string }
+// export interface NVPair { name: string; value: string }
 
 // Constants
 
@@ -59,7 +56,9 @@ const SYNTAX_ERROR_RE = /^\s*(Syntax::.*)/;
 
 const OUR_PRIVATE_CTX_NAME = "runPrv`";
 
-const XML_HEADER = '<?xml version="1.0" encoding="UTF-8"?>\n';
+// Note: The execute function doesn't handle multline scripts (yet).
+//       Also, our execute codes expects a return value so we return a dummy value.
+const RUN_PRIVATE_SCRIPT = <WolframExpression>'SetAttributes[runPrivate, HoldAllComplete]; runPrivate[code_] := With[{body = MakeBoxes@code},  Block[{$ContextPath = {"System`"}, $Context = "runPrv`"}, Global`xxx = ToExpression@body;  Clear["runPrv`*"]; Global`xxx]]; 4+5';
 
 // Globals
 
@@ -73,29 +72,17 @@ let gServerStoppingPromise: Promise<void>|undefined = undefined;
 
 // Exported functions
 
-export async function convertMmltoWolfram(mml: MathMlMarkup) : Promise<WolframExpression> {
-  const escaped = <WolframExpression>mml.replace(/\\/g,"\\\\");
-  const expression = <WolframExpression>`InputForm[ToExpression["${escaped}", MathMLForm]]`;
-  return execute(expression);
-}
-
-// export async function convertTeXtoWolfram(tex: TexExpression) : Promise<WolframExpression> {
-//   const wrapped = <WolframExpression>`InputForm[ToExpression["${tex}", TeXForm]]`;
-//   const escaped = <WolframExpression>wrapped.replace(/\\/g,"\\\\");
-//   return execute(escaped);
-// }
-
 export async function execute(command: WolframExpression): Promise<WolframExpression> {
+  assert(gServerStartingPromise);
+  assert(!gServerStoppingPromise);
+
   // Wait for the server to start.
-  if (!gServerStartingPromise) { throw new Error("Can't execute -- WolframScript not started."); }
-  if (gServerStoppingPromise) { throw new Error("Can't execute -- WolframScript is stopping."); }
   await gServerStartingPromise;
 
   // Create a promise for the next 'execute' invocation to wait on.
   const executingPromise = gExecutingPromise;
   gExecutingPromise = new Promise<WolframExpression>((resolve, reject)=>{
     // Wait on the previous 'execute' invocation.
-    // LATER: Use .finally instead when everyone is at node 10 or later.
     executingPromise.finally(
       // Execute the command.
       ()=>{ executeNow(command, resolve, reject); },
@@ -105,61 +92,27 @@ export async function execute(command: WolframExpression): Promise<WolframExpres
 }
 
 export async function start(config?: WolframScriptConfig): Promise<void> {
-  debug(`starting`);
-  await startProcess(config);
+  debug(`Starting WolframScript`);
+  assert(!gServerStartingPromise);
+  gServerStartingPromise = startProcess(config);
+  await gServerStartingPromise;
   await defineRunPrivate();
 }
 
 export async function stop(): Promise<void> {
-  debug(`stopping`);
-  if (!gServerStartingPromise) { throw new Error("WolframScript not started."); }
-  if (gServerStoppingPromise) { throw new Error("WolframScript is already stopping."); }
-  gServerStoppingPromise = new Promise((resolve, reject)=>{
-    const child = gChildProcess;
-    child.once('error', (err: Error)=>{ reject(err); });
-    // REVIEW: should we wait for 'close', too?
-    child.once('exit', (_code: number, _signal: string)=>{
-      resolve();
-      gServerStartingPromise = undefined;
-      gServerStoppingPromise = undefined;
-    });
-    child.kill(/* 'SIGTERM' */);
-  });
-  return gServerStoppingPromise;
+  debug(`Stopping WolframScript`);
+  assert(gServerStartingPromise);
+  assert(!gServerStoppingPromise);
+  gServerStoppingPromise = stopProcess();
+  await gServerStoppingPromise;
 }
 
-// HELPER FUNCTIONS
+// Helper Functions
 
-// TODO: at least the text of this should be retrieved from the wolframscript module!!
-async function defineRunPrivate() : Promise<void> {
-  // Create a promise for the next 'execute' invocation to wait on.
-  // our execute function apparently can't yet handle multline scripts...
-  // Also, our execute codes expects something to be returned, so I addded
-  // a dummy return value
+async function defineRunPrivate(): Promise<void> {
   debug(`defining runPrivate`);
-  var defRunPrivateScript = <WolframExpression>'SetAttributes[runPrivate, HoldAllComplete]; runPrivate[code_] := With[{body = MakeBoxes@code},  Block[{$ContextPath = {"System`"}, $Context = "runPrv`"}, Global`xxx = ToExpression@body;  Clear["runPrv`*"]; Global`xxx]]; 4+5';
-  await execute(defRunPrivateScript);
+  await execute(RUN_PRIVATE_SCRIPT);
 }
-
-export function constructSubstitution(expr: WolframExpression, usedVariables: NVPair[]): WolframExpression {
-  // now we construct the expr to include known
-  // substitutions of symbols....
-  const rules = usedVariables.map(s => {
-    const q = <NVPair>s;
-    return (` ${q.name} -> ${q.value}`);
-  });
-  debug("SUBSTITUIONS RULES",rules);
-  var sub_expr: WolframExpression;
-  if (rules.length > 0) {
-    const rulestring = rules.join(",");
-    debug("RULESTRING",rulestring);
-    sub_expr = <WolframExpression>("(" + expr + " /. " + "{ " + rulestring + " }" + ")");
-  } else {
-    sub_expr = expr;
-  }
-  return sub_expr;
-}
-
 
 function executeNow(command: WolframExpression, resolve: (data: WolframExpression)=>void, reject: (reason: any)=>void): void {
   let results = <WolframExpression>'';
@@ -181,7 +134,7 @@ function executeNow(command: WolframExpression, resolve: (data: WolframExpressio
 
         // ... then fulfill with whatever came between the prompts.
         results = <WolframExpression>results.substring(outputPromptMatch![0].length, inputPromptMatch.index);
-        results = draftChangeContextName(results);
+        results = removeContextPrefix(results);
         debug(`Execution results: "${results}".`);
         resolve(results);
       } else {
@@ -208,20 +161,17 @@ function executeNow(command: WolframExpression, resolve: (data: WolframExpressio
   gChildProcess.stdin!.write(command + '\n');
 }
 
+function removeContextPrefix(expr: WolframExpression,_ctx = OUR_PRIVATE_CTX_NAME): WolframExpression {
+  // figure out how to make this a variable
+  return <WolframExpression>expr.replace(/runPrv`/g,'');
+}
+
 function showInvisible(s: string): string {
   return s.replace(/\n/g, '\\n').replace(/\r/g, '\\r').replace(/\t/g, '\\t');
 }
 
-async function startProcess(config?: WolframScriptConfig): Promise<void> {
-
-  if (gServerStartingPromise) {
-    // REVIEW: Should this throw an error or be ignored?
-    // throw new Error("WolframScript already started.");
-    logWarning(MODULE, "Attempting to start WolframScript process when it is already started. Ignoring.");
-    return;
-  }
-
-  gServerStartingPromise = new Promise((resolve, reject)=>{
+function startProcess(config?: WolframScriptConfig): Promise<void> {
+  return new Promise((resolve, reject)=>{
     const platform = process.platform;
     const path = (config && config.path) || DEFAULT_WOLFRAMSCRIPT_PATH.get(platform);
     if (!path) { throw new Error(`Default path not set for wolframscript executable on platform '${platform}'.`); }
@@ -258,76 +208,76 @@ async function startProcess(config?: WolframScriptConfig): Promise<void> {
     child.stdout.on('data', stdoutListener);
     child.stderr.on('data', stderrListener);
   });
-  return gServerStartingPromise;
 }
 
-export function draftChangeContextName(expr: WolframExpression,_ctx = OUR_PRIVATE_CTX_NAME): WolframExpression {
-  // figure out how to make this a variable
-  return <WolframExpression>expr.replace(/runPrv`/g,'');
+function stopProcess(): Promise<void> {
+  return new Promise((resolve, reject)=>{
+    const child = gChildProcess;
+    child.once('error', (err: Error)=>{ reject(err); });
+    // REVIEW: should we wait for 'close', too?
+    child.once('exit', (_code: number, _signal: string)=>{
+      resolve();
+      gServerStartingPromise = undefined;
+      gServerStoppingPromise = undefined;
+    });
+    child.kill(/* 'SIGTERM' */);
+  });
 }
 
-export async function checkEquiv(a:string, b:string) : Promise<boolean> {
-  const wrapped = <WolframExpression>`InputForm[runPrivate[FullSimplify[(${a}) == (${b})]]]`;
-  const result = await execute(wrapped);
-  return (<unknown>result == 'True');
-}
-
-
-// Note: As often happens, this does not handle the input
-// being an assignment properly...it is best to texify
-// both sides of an assignment and handle that way.
-export async function convertWolframToTeX(text: WolframExpression): Promise<TexExpression> {
-    if (<unknown>text == '') { return <TexExpression>''; }
-    const getTex = <WolframExpression>`TeXForm[HoldForm[${text}]]`;
-    try {
-      const tex = <TexExpression>(await execute(getTex));
-      return tex;
-    }  catch (e) {
-      return <TexExpression>'';
-    }
-}
-
-export async function convertEvaluatedWolframToTeX(text: WolframExpression): Promise<TexExpression> {
-    if (<unknown>text == '') { return <TexExpression>''; }
-    const getTex = <WolframExpression>`TeXForm[HoldForm[Evaluate[${text}]]]`;
-    try {
-      const tex = <TexExpression>(await execute(getTex));
-      return tex;
-    }  catch (e) {
-      console.log("error",e);
-      return <TexExpression>'';
-    }
-}
-
-// NOT USED???
-// export async function convertPlainTextFormulaToTeX(text: PlainTextFormula): Promise<TexExpression> {
-//     if (<unknown>text == '') { return <TexExpression>''; }
-//     const getTex = <WolframExpression>`TeXForm[HoldForm[${text}]]`;
-//     try {
-//       const tex = <TexExpression>(await execute(getTex));
-//       return tex;
-//     }  catch (e) {
-//       return <TexExpression>'';
-//     }
+// async function checkEquiv(a:string, b:string) : Promise<boolean> {
+//   const wrapped = <WolframExpression>`InputForm[runPrivate[FullSimplify[(${a}) == (${b})]]]`;
+//   const result = await execute(wrapped);
+//   return (<unknown>result == 'True');
 // }
 
-export async function plotUnivariate(expression: WolframExpression, symbol: FormulaSymbol): Promise<SvgMarkup> {
-  // BIVARIATE SCRIPT: <WolframExpression>`ExportString[Plot3D[${expr},{${variables[0]},0,6 Pi},{${variables[1]},0,6 Pi}],"SVG"]`;
-  const script = <WolframExpression>`ExportString[ExportString[Plot[${expression},{${symbol},0,6 Pi},PlotTheme->"Monochrome"],"SVG"], "Base64"]`;
-  const dirtyEncoded = await execute(script);
-  const encoded = <Base64>dirtyEncoded.replace(/[^a-zA-Z0-9+=\/]/g, '');
-  const decoded = base64Decode(encoded);
-  assert(decoded.startsWith(XML_HEADER));
-  let svgMarkup = <SvgMarkup>(decoded.slice(XML_HEADER.length));
-  assert(svgMarkup.startsWith('<svg '));
-  assert(svgMarkup.endsWith('</svg>\n'));
-  return svgMarkup;
-}
+// function constructSubstitution(expr: WolframExpression, usedVariables: NVPair[]): WolframExpression {
+//   // now we construct the expr to include known
+//   // substitutions of symbols....
+//   const rules = usedVariables.map(s => {
+//     const q = <NVPair>s;
+//     return (` ${q.name} -> ${q.value}`);
+//   });
+//   debug("SUBSTITUIONS RULES",rules);
+//   var sub_expr: WolframExpression;
+//   if (rules.length > 0) {
+//     const rulestring = rules.join(",");
+//     debug("RULESTRING",rulestring);
+//     sub_expr = <WolframExpression>("(" + expr + " /. " + "{ " + rulestring + " }" + ")");
+//   } else {
+//     sub_expr = expr;
+//   }
+//   return sub_expr;
+// }
 
-// Helper Functions
+// async function convertEvaluatedWolframToTeX(text: WolframExpression): Promise<TexExpression> {
+//   if (<unknown>text == '') { return <TexExpression>''; }
+//   const getTex = <WolframExpression>`TeXForm[HoldForm[Evaluate[${text}]]]`;
+//   try {
+//     const tex = <TexExpression>(await execute(getTex));
+//     return tex;
+//   }  catch (e) {
+//     console.log("error",e);
+//     return <TexExpression>'';
+//   }
+// }
 
-type Base64 = '{Base64}';
-function base64Decode(encoded: Base64): string {
-  const buff = Buffer.from(encoded, 'base64');
-  return buff.toString('utf-8');
-}
+// async function convertTeXtoWolfram(tex: TexExpression) : Promise<WolframExpression> {
+//   const wrapped = <WolframExpression>`InputForm[ToExpression["${tex}", TeXForm]]`;
+//   const escaped = <WolframExpression>wrapped.replace(/\\/g,"\\\\");
+//   return execute(escaped);
+// }
+
+// async function convertWolframToTeX(text: WolframExpression): Promise<TexExpression> {
+//   // Note: As often happens, this does not handle the input
+//   // being an assignment properly...it is best to texify
+//   // both sides of an assignment and handle that way.
+//   if (<unknown>text == '') { return <TexExpression>''; }
+//   const getTex = <WolframExpression>`TeXForm[HoldForm[${text}]]`;
+//   try {
+//     const tex = <TexExpression>(await execute(getTex));
+//     return tex;
+//   }  catch (e) {
+//     return <TexExpression>'';
+//   }
+// }
+

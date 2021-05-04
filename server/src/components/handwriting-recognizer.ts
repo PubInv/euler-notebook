@@ -27,10 +27,10 @@ import { assert, assertFalse, PlainText, zeroPad } from "../shared/common";
 import { LengthInPixels } from "../shared/css";
 import { FigureObject } from "../shared/figure";
 import {
-  Math, MathMlTree, Mn, Mi, Mrow, Msub, Msup, Msubsup, Mo, Mfrac,
-  Msqrt, Munder, Munderover, Mover
+  Math, PresentationMathMlTree, Mn, Mi, Mrow, Msub, Msup, Msubsup, Mo, Mfrac,
+  Msqrt, Munder, Munderover, Mover, PresentationMathMlNode
   // serializeTreeToMathMlMarkup,
-} from "../shared/mathml";
+} from "../shared/presentation-mathml";
 import { StrokeData } from "../shared/stylus";
 import { SvgMarkup } from "../shared/svg";
 
@@ -131,13 +131,14 @@ export async function recognizeFormula(
   // c-nsole.log(`MathML response:\n${mml}`);
 
   // TODO: If user writes multiple expressions then we should separate them into distinct cells.
-  const alternatives = jiix.expressions.map((jiixExpression, _i)=>{
-    const mathMlTree = convertJiixExpressionToMathMlExpression(jiixExpression);
+  const alternatives: FormulaRecognitionAlternative[] = [];
+  for (const expression of jiix.expressions) {
+    const mathMlTree = convertJiixExpressionToPresentationMathMlTree(expression);
     // c-nsole.dir(serializeTreeToMathMlMarkup(mathMlTree));
-    const formula = ServerFormula.createFromMathMlTree(mathMlTree);
+    const formula = await ServerFormula.createFromPresentationMathMlTree(mathMlTree);
     const alternative: FormulaRecognitionAlternative = { formula };
-    return alternative;
-  });
+    alternatives.push(alternative);
+  };
 
   return { alternatives };
 }
@@ -154,12 +155,12 @@ export async function recognizeText(
 
 // Helper Functions
 
-function convertJiixExpressionToMathMlExpression(expr: MathNode): Math {
+function convertJiixExpressionToPresentationMathMlTree(expr: MathNode): PresentationMathMlTree {
   return <Math>{ type: 'math', children: convert(expr) };
 }
 
-function convert(expr: MathNode): MathMlTree[] {
-  let rval: MathMlTree[] = [];
+function convert(expr: MathNode): PresentationMathMlNode[] {
+  let rval: PresentationMathMlNode[] = [];
   switch(expr.type) {
 
     // Tokens
@@ -290,7 +291,7 @@ function convert(expr: MathNode): MathMlTree[] {
   return rval;
 }
 
-function convertMrowWrapped(expr: MathNode): MathMlTree {
+function convertMrowWrapped(expr: MathNode): PresentationMathMlNode {
   const children = convert(expr);
   assert(children.length>=0);
   if (children.length == 1) {
@@ -300,9 +301,9 @@ function convertMrowWrapped(expr: MathNode): MathMlTree {
   }
 }
 
-function convertOperatorExpression(expr: OperatorNode): MathMlTree[] {
+function convertOperatorExpression(expr: OperatorNode): PresentationMathMlNode[] {
   const operands = expr.operands;
-  const rval: MathMlTree[] = [];
+  const rval: PresentationMathMlNode[] = [];
   for (let i=0; i<operands.length-1; i++) {
     // REVIEW: May not need to wrap in mrow depending on relative operator precedence levels.
     rval.push(convertMrowWrapped(operands[i]));
@@ -312,7 +313,7 @@ function convertOperatorExpression(expr: OperatorNode): MathMlTree[] {
   return rval;
 }
 
-function convertRelationExpression(expr: RelationNode): MathMlTree[] {
+function convertRelationExpression(expr: RelationNode): PresentationMathMlNode[] {
   const [ lhs, rhs ] = expr.operands;
   // REVIEW: May not need to wrap in mrow depending on relative operator precedence levels.
   return [

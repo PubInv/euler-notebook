@@ -23,19 +23,19 @@ import { assertFalse } from "./common";
 
 // Types
 
-export type MathMlMarkup = '{MathMlMarkup}';
-
-export type MathMlTree = Math | Mfrac | Mi | Mn | Mo | Mover | Mrow | Msqrt | Msub | Msubsup | Msup | Munder | Munderover;
+export type PresentationMathMlMarkup = '{PresentationMathMlMarkup}';
+export type PresentationMathMlNode = Math | Mfrac | Mi | Mn | Mo | Mover | Mrow | Msqrt | Msub | Msubsup | Msup | Munder | Munderover;
+export type PresentationMathMlTree = Math;
 
 export interface Math {
   type: 'math';
-  children: MathMlTree[];
+  children: PresentationMathMlNode[];
 }
 
 export interface Mfrac {
   type: 'mfrac',
-  numerator: MathMlTree;
-  denominator: MathMlTree;
+  numerator: PresentationMathMlNode;
+  denominator: PresentationMathMlNode;
 }
 
 export interface Mi {
@@ -55,50 +55,50 @@ export interface Mo {
 
 export interface Mrow {
   type: 'mrow';
-  children: MathMlTree[];
+  children: PresentationMathMlNode[];
 }
 
 export interface Msqrt {
   type: 'msqrt';
-  operand: MathMlTree;
+  operand: PresentationMathMlNode;
 }
 
 export interface Msub {
   type: 'msub';
-  base: MathMlTree;
-  subscript: MathMlTree;
+  base: PresentationMathMlNode;
+  subscript: PresentationMathMlNode;
 }
 
 export interface Msubsup {
   type: 'msubsup';
-  base: MathMlTree;
-  subscript: MathMlTree;
-  superscript: MathMlTree;
+  base: PresentationMathMlNode;
+  subscript: PresentationMathMlNode;
+  superscript: PresentationMathMlNode;
 }
 
 export interface Msup {
   type: 'msup';
-  base: MathMlTree;
-  superscript: MathMlTree;
+  base: PresentationMathMlNode;
+  superscript: PresentationMathMlNode;
 }
 
 export interface Munder {
   type: 'munder';
-  base: MathMlTree;
-  underscript: MathMlTree;
+  base: PresentationMathMlNode;
+  underscript: PresentationMathMlNode;
 }
 
 export interface Munderover {
   type: 'munderover';
-  base: MathMlTree;
-  underscript: MathMlTree;
-  overscript: MathMlTree;
+  base: PresentationMathMlNode;
+  underscript: PresentationMathMlNode;
+  overscript: PresentationMathMlNode;
 }
 
 export interface Mover {
   type: 'mover';
-  base: MathMlTree;
-  overscript: MathMlTree;
+  base: PresentationMathMlNode;
+  overscript: PresentationMathMlNode;
 }
 
 
@@ -108,13 +108,13 @@ export const EMPTY_MML_TREE: Math = { type: 'math', children: [] };
 
 // Exported Functions
 
-export function serializeTreeToMathMlMarkup(mathMlTree: MathMlTree): MathMlMarkup {
-  return exp2xml(mathMlTree);
+export function serializeTreeToMathMlMarkup(presentationMathMlTree: PresentationMathMlTree): PresentationMathMlMarkup {
+  return exp2xml(presentationMathMlTree);
 }
 
 // Helper Functions
 
-function exp2xml(node: MathMlTree): MathMlMarkup {
+function exp2xml(node: PresentationMathMlNode): PresentationMathMlMarkup {
   let rval: string;
   switch (node.type) {
     case 'math':       rval = `<math xmlns='http://www.w3.org/1998/Math/MathML'>${exps2xml(node.children, true)}</math>`; break;
@@ -132,12 +132,12 @@ function exp2xml(node: MathMlTree): MathMlMarkup {
     case 'mover':      rval = `<mover>${exp2xml(node.base)}${exp2xml(node.overscript)}</msup>`; break;
     default: assertFalse(`Unknown MathML node type: ${(<any>node).type}`);
   }
-  return <MathMlMarkup>rval;
+  return <PresentationMathMlMarkup>rval;
 }
 
-function exps2xml(nodes: MathMlTree[], impliedMrow?: boolean): MathMlMarkup {
+function exps2xml(nodes: PresentationMathMlNode[], impliedMrow?: boolean): PresentationMathMlMarkup {
   if (impliedMrow && nodes.length == 1 && nodes[0].type == 'mrow') {
     nodes = nodes[0].children;
   }
-  return <MathMlMarkup>nodes.map(expression=>exp2xml(expression)).join('');
+  return <PresentationMathMlMarkup>nodes.map(expression=>exp2xml(expression)).join('');
 }

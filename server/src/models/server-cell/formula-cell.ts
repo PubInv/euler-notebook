@@ -23,24 +23,24 @@ import * as debug1 from "debug";
 const MODULE = __filename.split(/[/\\]/).slice(-1)[0].slice(0,-3);
 const debug = debug1(`server:${MODULE}`);
 
-import { deepCopy, PlainText } from "../../shared/common";
+import { assert, deepCopy, PlainText } from "../../shared/common";
 import { LengthInPixels } from "../../shared/css";
 import { CellId, CellSource, CellType } from "../../shared/cell";
 import { NotebookChangeRequest, RemoveSuggestion } from "../../shared/client-requests";
-import { FormulaTypeset } from "../../shared/server-responses";
+import { FORMULA_CELL_HEIGHT } from "../../shared/dimensions";
+import { FormulaTypeset, NotebookUpdate } from "../../shared/server-responses";
 import { EMPTY_FORMULA_OBJECT, FormulaCellObject, FormulaNumber } from "../../shared/formula";
 import { EMPTY_STROKE_DATA } from "../../shared/stylus";
 import { SuggestionClass, SuggestionId, SuggestionObject, TYPESETTING_SUGGESTION_CLASS } from "../../shared/suggestions";
 
 import { recognizeFormula } from "../../components/handwriting-recognizer";
 
+import { monitorPromise } from "../../error-handler";
+
 import { ServerNotebook } from "../server-notebook";
 import { ServerFormula } from "../server-formula";
 
 import { ServerCell } from "./index";
-import { FORMULA_CELL_HEIGHT } from "../../shared/dimensions";
-import { NotebookUpdate } from "../../shared/server-responses";
-import { monitorPromise } from "../../error-handler";
 import { PlotCell } from "./plot-cell";
 
 // Constants
@@ -105,10 +105,17 @@ export class FormulaCell extends ServerCell<FormulaCellObject> {
 
   // Private Instance Methods
 
-  private async suggestPlot(): Promise<void> {
+  private async maybeSuggestPlot(): Promise<void> {
+
+    const plotInfo = this._formula.plotInfo();
+    if (!plotInfo) { return; }
+
+    const plotExpression = this._formula.plotExpression()!;
+    assert(plotExpression);
+
     debug(`Suggest plot: ${this.id}`);
     // REVIEW: If formula cell gets changed or deleted before we finish plotting? */
-    const { cellObject, thumbnailPlotMarkup } = await PlotCell.plotFormula(this.notebook, this.id, this.formula);
+    const { cellObject, thumbnailPlotMarkup } = await PlotCell.plotFormula(this.notebook, this.id, plotExpression, plotInfo);
     const suggestionId = <SuggestionId>'plot0';
     const changeRequests: NotebookChangeRequest[] = [
       { type: 'insertCell', cellObject, afterId: this.id },
@@ -173,15 +180,8 @@ export class FormulaCell extends ServerCell<FormulaCellObject> {
 
   private onFormulaTypeset(update: FormulaTypeset): void {
     const { formula: formulaObject } = update;
-
-    // Remove any prior formula plotting suggestions
-
-    const formula = this._formula = ServerFormula.createFromObject(formulaObject);
-
-    if (formula.isPlottable) {
-      monitorPromise(this.suggestPlot(), `Error plotting formula ${this.id} for suggestion panel.`);
-    }
-
+    this._formula = ServerFormula.createFromObject(formulaObject);
+    monitorPromise(this.maybeSuggestPlot(), `Error plotting formula ${this.id} for suggestion panel.`);
   }
 
 }

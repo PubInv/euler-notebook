@@ -22,11 +22,18 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 // Types
 
+export type Base64 = '{Base64}';
+
 // Constants
 
 // const NOT_EXISTS_MESSAGE = "Unexpected error. Object doesn't exist.";
 
 // Exported Functions
+
+export function base64Decode(encoded: Base64): string {
+  const buff = Buffer.from(encoded, 'base64');
+  return buff.toString('utf-8');
+}
 
 // export function ensureExists<T>(val: T|undefined, message?: string): T {
 //   if (!val) { throw new Error(message || NOT_EXISTS_MESSAGE); }

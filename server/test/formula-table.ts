@@ -17,24 +17,36 @@ You should have received a copy of the GNU Affero General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
+// This file exports a table of formulas.
+// Each entry contains a single formula in a variety of formats.
+// Used for testing our conversion between formats.
+
 // Requirements
 
 import { JiixMathBlock } from "../src/adapters/myscript";
+import { ContentMathMlTree } from "../src/shared/content-mathml";
 import { TexExpression, WolframExpression } from "../src/shared/formula";
+import { PresentationMathMlTree } from "../src/shared/presentation-mathml";
 
 // Types
 
-interface JiixFormulaEntry {
+interface FormulaEntry {
+  plain: string; // Plain text representation for documentation purposes only.
+  contentMathMlTree: ContentMathMlTree,
   jiix: JiixMathBlock,
+  presentationMathMlTree: PresentationMathMlTree,
+  // TODO: semanticFormula
   tex: TexExpression,
   wolfram: WolframExpression,
 }
 
-
 // Exported Data
 
-export const JIIX_FORMULA_TABLE: JiixFormulaEntry[] = [
-  {
+export const FORMULA_TABLE: FormulaEntry[] = [
+  { plain: "1+1",
+    contentMathMlTree: {
+      type: 'math', /* TODO: child */
+    },
     jiix: {
       "type": "Math",
       "expressions": [
@@ -42,27 +54,21 @@ export const JIIX_FORMULA_TABLE: JiixFormulaEntry[] = [
           "type": "+",
           "id": "math/45",
           "operands": [
-            {
-              "type": "number",
-              "id": "math/43",
-              "label": "1",
-              "value": 1
-            },
-            {
-              "type": "number",
-              "id": "math/44",
-              "label": "1",
-              "value": 1
-            }
+            { "type": "number", "id": "math/43", "label": "1", "value": 1 },
+            { "type": "number", "id": "math/44", "label": "1", "value": 1 },
           ]
         }
       ],
       "id": "MainBlock",
       "version": "2"
     },
+    presentationMathMlTree: { type: 'math',  children: [], },
     tex: <TexExpression>"1+1",
     wolfram: <WolframExpression>"1+1",
-  }, {
+  }, { plain: "x^2",
+    contentMathMlTree: {
+      type: 'math',  /* TODO: child */
+    },
     jiix: {
       "type": "Math",
       "expressions": [
@@ -87,6 +93,7 @@ export const JIIX_FORMULA_TABLE: JiixFormulaEntry[] = [
       "id": "MainBlock",
       "version": "2"
     },
+    presentationMathMlTree: { type: 'math',  children: [], },
     tex: <TexExpression>"x^2",
     wolfram: <WolframExpression>"x^2",
   },

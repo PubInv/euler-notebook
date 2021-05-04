@@ -39,7 +39,7 @@ import { logErrorMessage } from "../error-handler";
 import { assert, BoundingBox, PlainText } from "../shared/common";
 import { SvgMarkup } from "../shared/svg";
 import { LengthInPixels } from "../shared/css";
-import { MathMlMarkup } from "../shared/mathml";
+import { PresentationMathMlMarkup } from "../shared/presentation-mathml";
 import { StrokeGroup, DiagramItemBlock } from "../shared/myscript-types";
 import { StrokeData } from "../shared/stylus";
 
@@ -201,12 +201,12 @@ export async function postMmlRequest(
   width: LengthInPixels,
   height: LengthInPixels,
   strokeData: StrokeData,
-): Promise<MathMlMarkup> {
+): Promise<PresentationMathMlMarkup> {
   debug(`Calling MyScript batch API for MathML.`);
   const strokeGroups: StrokeGroup[] = [{ strokes: strokeData.strokes }];
   const batchRequest = batchRequestFromStrokes(width, height, strokeGroups, 'Math', MATHML_MIME_TYPE);
   const mmlRaw = await postRequest(gApiKeys, MATHML_MIME_TYPE, batchRequest);
-  const mml = <MathMlMarkup>mmlRaw.trim();
+  const mml = <PresentationMathMlMarkup>mmlRaw.trim();
   assert(mml.startsWith(MATHML_PREFIX));
   return mml;
 }

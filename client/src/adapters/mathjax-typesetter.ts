@@ -24,7 +24,7 @@ import { assert } from "../shared/common";
 import { LengthInPixels } from "../shared/css";
 import { FormulaTypesetter, TypesettingResults } from "../shared/formula";
 import { EM_IN_PIXELS, EX_IN_PIXELS, unwrap } from "../shared/mathjax";
-import { MathMlMarkup, MathMlTree, serializeTreeToMathMlMarkup } from "../shared/mathml";
+import { PresentationMathMlMarkup, PresentationMathMlTree, serializeTreeToMathMlMarkup } from "../shared/presentation-mathml";
 import { SvgMarkup } from "../shared/svg";
 
 // Requirements
@@ -36,7 +36,7 @@ declare var MathJax: MathJax;
 interface MathJax {
   texReset(): void;
   getMetricsFor(output: Node): MathJaxOptions;
-  mathml2svg(mml: MathMlMarkup, options: MathJaxOptions): HTMLElement;
+  mathml2svg(mml: PresentationMathMlMarkup, options: MathJaxOptions): HTMLElement;
   startup: MathJaxStartup;
   // tex2svgPromise(texExpression: TexExpression, options: MathJaxOptions): Promise<HTMLElement>;
 }
@@ -84,13 +84,13 @@ export class MathJaxTypesetter implements FormulaTypesetter {
 
   // Public Instance Methods
 
-  public mathMlTreeToSvg(mathMlTree: MathMlTree, containerWidth: LengthInPixels): TypesettingResults {
-    const $svg = this.mathMlTreeToSvgElt(mathMlTree, containerWidth);
+  public presentationMathMlTreeToSvg(presentationMathMlTree: PresentationMathMlTree, containerWidth: LengthInPixels): TypesettingResults {
+    const $svg = this.presentationMathMlTreeToSvgElt(presentationMathMlTree, containerWidth);
     return unwrap(<SvgMarkup>$svg.outerHTML);
   }
 
-  public mathMlTreeToSvgElt(mathMlTree: MathMlTree, containerWidth: LengthInPixels): SVGSVGElement {
-    const mathMlMarkup: MathMlMarkup = serializeTreeToMathMlMarkup(mathMlTree);
+  public presentationMathMlTreeToSvgElt(presentationMathMlTree: PresentationMathMlTree, containerWidth: LengthInPixels): SVGSVGElement {
+    const mathMlMarkup: PresentationMathMlMarkup = serializeTreeToMathMlMarkup(presentationMathMlTree);
     debug(`Rendering MathMl to SVG: ${mathMlMarkup}`);
     // This forces a reload: var options = MathJax.getMetricsFor(container);
     // let options2 = MathJax.getMetricsFor(container);

@@ -32,13 +32,12 @@ TODO: Additional Test cases
 
 // Requirements
 
-import { execute, checkEquiv, convertTeXtoWolfram } from "../src/adapters/wolframscript";
-
-// import { expect } from "chai";
 import { assert } from "chai";
 import 'mocha';
 
 import { WolframExpression } from "../src/shared/formula";
+
+import { execute } from "../src/adapters/wolframscript";
 
 import { requireWolframScript } from "./require-wolframscript";
 
@@ -81,27 +80,27 @@ const TEST_CASES: [WolframExpression,WolframExpression][] = [
   <WolframExpression>'x']
 ];
 
-// This is an attempt to make a simple boolean test
-// of whether two expressions are the same or not.
-const EQUIVALENCE_TEST_CASES = [
-  ['x',
-   'x',
-   'true'],
-  ['x',
-   'y',
-   'false'],
-  ['x^2 + x^2',
-   '2x^2',
-   'true'],
-];
+// // This is an attempt to make a simple boolean test
+// // of whether two expressions are the same or not.
+// const EQUIVALENCE_TEST_CASES = [
+//   ['x',
+//    'x',
+//    'true'],
+//   ['x',
+//    'y',
+//    'false'],
+//   ['x^2 + x^2',
+//    '2x^2',
+//    'true'],
+// ];
 
-const TEX_TEST_CASES = [
-  ['x',
-   'x'],
-  ['\\frac{(x+y)^2}{\\sqrt{x y}}',
-   '(x + y)^2/Sqrt[xy]'
-  ],
-];
+// const TEX_TEST_CASES = [
+//   ['x',
+//    'x'],
+//   ['\\frac{(x+y)^2}{\\sqrt{x y}}',
+//    '(x + y)^2/Sqrt[xy]'
+//   ],
+// ];
 
 // Unit Tests
 
@@ -159,39 +158,40 @@ describe("wolframscript other", function(){
 
 });
 
-describe("wolframscriptequivalence", function(){
-  this.timeout(10*1000);
+// describe("wolframscriptequivalence", function(){
+//   this.timeout(10*1000);
 
-  for (const [a,b, expected] of EQUIVALENCE_TEST_CASES) {
-      const label = (a.length<=20 ?
-        `checks equivalence ${a} ${b}` :
-        `checks equivalend ${a.slice(0,20)} ${b.slice(0,20)}...`
-      )
-      it(label, async function(){
-        const results = await checkEquiv(a,b);
-        assert.equal(results, expected == 'true');
-      });
-    }
-
-});
+//   for (const [a,b, expected] of EQUIVALENCE_TEST_CASES) {
+//       const label = (a.length<=20 ?
+//         `checks equivalence ${a} ${b}` :
+//         `checks equivalend ${a.slice(0,20)} ${b.slice(0,20)}...`
+//       )
+//       it(label, async function(){
+//         const results = await checkEquiv(a,b);
+//         assert.equal(results, expected == 'true');
+//       });
+//     }
+// });
 
 describe("wolframTeXConversion", function(){
   this.timeout(10*1000);
 
-  it("simple TeX works (x)", async function(){
-    const expr = TEX_TEST_CASES[0][0];
-    const r = TEX_TEST_CASES[0][1];
-    const result = await convertTeXtoWolfram(expr);
-    // console.log("result",result);
-    assert.equal(result, r);
+  it.skip("simple TeX works (x)", async function(){
+    throw new Error("ConvertTeXtoWolfram no longer used.");
+    // const expr = TEX_TEST_CASES[0][0];
+    // const r = TEX_TEST_CASES[0][1];
+    // const result = await convertTeXtoWolfram(expr);
+    // // console.log("result",result);
+    // assert.equal(result, r);
   });
 
-  it("more complex TeX works (x)", async function(){
-    const expr = TEX_TEST_CASES[1][0];
-    const r = TEX_TEST_CASES[1][1];
-    const result = await convertTeXtoWolfram(expr);
-    // console.log("result",result);
-    assert.equal(result, r);
+  it.skip("more complex TeX works (x)", async function(){
+    throw new Error("ConvertTeXtoWolfram no longer used.");
+    // const expr = TEX_TEST_CASES[1][0];
+    // const r = TEX_TEST_CASES[1][1];
+    // const result = await convertTeXtoWolfram(expr);
+    // // console.log("result",result);
+    // assert.equal(result, r);
   });
 
 });

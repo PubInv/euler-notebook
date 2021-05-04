@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
 set -e
 pushd server > /dev/null
-mocha -r ts-node/register "test/oeis.spec.ts"
+npx mocha -r ts-node/register "test/parse-mathml.spec.ts"
 popd > /dev/null

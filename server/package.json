@@ -32,7 +32,8 @@
     "svg2img": "^0.6.1",
     "uuid": "^3.3.3",
     "wolfram-alpha-node": "0.0.3",
-    "ws": "^6.2.1"
+    "ws": "^6.2.1",
+    "xml2js": "^0.4.23"
   },
   "devDependencies": {
     "@types/chai": "^4.2.0",
@@ -55,6 +56,7 @@
     "@types/stylus": "^0.48.31",
     "@types/uuid": "^3.4.5",
     "@types/ws": "^6.0.2",
+    "@types/xml2js": "^0.4.8",
     "babel-preset-es2015": "^6.24.1",
     "chai": "^4.2.0",
     "mocha": "^6.2.0",

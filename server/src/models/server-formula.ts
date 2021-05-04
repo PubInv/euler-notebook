@@ -27,12 +27,14 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 // const MODULE = __filename.split(/[/\\]/).slice(-1)[0].slice(0,-3);
 // const debug = debug1(`server:${MODULE}`);
 
-import { FormulaObject, renderFormula, TypesettingResults } from "../shared/formula";
-import { MathMlMarkup, MathMlTree, serializeTreeToMathMlMarkup } from "../shared/mathml";
-
-// import { convertMmltoWolfram } from "../adapters/wolframscript";
 import { LengthInPixels } from "../shared/css";
-// import { Jiix } from "../adapters/myscript";
+import { FormulaObject, renderFormula, TypesettingResults } from "../shared/formula";
+import { PlotInfo } from "../shared/plot";
+import { PresentationMathMlMarkup, PresentationMathMlTree, serializeTreeToMathMlMarkup } from "../shared/presentation-mathml";
+
+import { convertPresentationMathMlToContentMathMl } from "../components/mathml-processor";
+
+import { ExpressionNode, SemanticFormula } from "./semantic-formula";
 
 // Types
 
@@ -52,9 +54,9 @@ export class ServerFormula {
     return new this(obj);
   }
 
-  public static createFromMathMlTree(mathMlTree: MathMlTree): ServerFormula {
-    // const wolfram = await convertMmltoWolfram(mml);
-    return new this({ mathMlTree });
+  public static async createFromPresentationMathMlTree(presentationMathMlTree: PresentationMathMlTree): Promise<ServerFormula> {
+    const contentMathMlTree = await convertPresentationMathMlToContentMathMl(presentationMathMlTree);
+    return new this({ contentMathMlTree, presentationMathMlTree });
   }
 
   // Public Class Event Handlers
@@ -65,15 +67,19 @@ export class ServerFormula {
 
   // Public Instance Property Functions
 
-  public get isPlottable(): boolean {
-    return true; // TODO:
+  public plotExpression(): ExpressionNode|undefined {
+    return this.semanticFormula && this.semanticFormula.plotExpression();
+  }
+
+  public plotInfo(): PlotInfo|undefined {
+    return this.semanticFormula && this.semanticFormula.plotInfo();
   }
 
   // public get wolfram(): WolframExpression { return this.obj.wolfram; }
 
-  public get mathMlTree(): MathMlTree { return this.obj.mathMlTree;}
+  public get mathMlTree(): PresentationMathMlTree { return this.obj.presentationMathMlTree;}
 
-  public mathMl(): MathMlMarkup { return serializeTreeToMathMlMarkup(this.obj.mathMlTree); }
+  public mathMl(): PresentationMathMlMarkup { return serializeTreeToMathMlMarkup(this.obj.presentationMathMlTree); }
 
   public svg(containerWidth: LengthInPixels): TypesettingResults {
     // REVIEW: Any reason to cache this representations?
@@ -97,9 +103,16 @@ export class ServerFormula {
     // IMPORTANT: We hold on to the object.
     //            Caller must not modify object after passing to constructor.
     this.obj = obj;
+
+    if (this.obj.contentMathMlTree) {
+      this.semanticFormula = SemanticFormula.createFromContentMathMlTree(this.obj.contentMathMlTree);
+    }
   }
 
   // Private Instance Properties
+
+  private semanticFormula?: SemanticFormula;
+
   // Private Instance Property Functions
   // Private Instance Methods
   // Private Instance Event Handlers

@@ -21,9 +21,10 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 import { assert, BoundingBox } from "./common";
 import { CellObject, CellType, renderBaseCell } from "./cell";
+import { ContentMathMlTree } from "./content-mathml";
 import { CssSize, LengthInPixels, cssLengthInPixels } from "./css";
 import { FORMULA_INDENT, FORMULA_NUMBER_INDENT } from "./dimensions";
-import { EMPTY_MML_TREE, MathMlTree } from "./mathml";
+import { EMPTY_MML_TREE, PresentationMathMlTree } from "./presentation-mathml";
 import { SvgMarkup, translateSvgMarkup } from "./svg";
 
 // Types
@@ -39,12 +40,13 @@ export interface FormulaCellObject extends CellObject {
 }
 
 export interface FormulaObject {
-  mathMlTree: MathMlTree;
+  contentMathMlTree?: ContentMathMlTree;
+  presentationMathMlTree: PresentationMathMlTree;
   // wolfram: WolframExpression;
 }
 
 export interface FormulaTypesetter{
-  mathMlTreeToSvg(mathMlTree: MathMlTree, containerWidth: LengthInPixels): TypesettingResults;
+  presentationMathMlTreeToSvg(presentationMathMlTree: PresentationMathMlTree, containerWidth: LengthInPixels): TypesettingResults;
 }
 
 export interface TypesettingResults {
@@ -57,7 +59,7 @@ export interface TypesettingResults {
 export const EMPTY_TEX_EXPRESSION = <TexExpression>'';
 export const EMPTY_WOLFRAM_EXPRESSION = <WolframExpression>'';
 
-export const EMPTY_FORMULA_OBJECT: FormulaObject = { mathMlTree: EMPTY_MML_TREE };
+export const EMPTY_FORMULA_OBJECT: FormulaObject = { presentationMathMlTree: EMPTY_MML_TREE };
 
 const FORMULA_INDENT_PX = cssLengthInPixels(FORMULA_INDENT);
 const FORMULA_NUMBER_INDENT_PX = cssLengthInPixels(FORMULA_NUMBER_INDENT);
@@ -69,7 +71,7 @@ let gFormulaTypesetter: FormulaTypesetter;
 // Exported Functions
 
 export function renderFormula(formulaObject: FormulaObject, containerWidth: LengthInPixels): TypesettingResults {
-  return gFormulaTypesetter.mathMlTreeToSvg(formulaObject.mathMlTree, containerWidth);
+  return gFormulaTypesetter.presentationMathMlTreeToSvg(formulaObject.presentationMathMlTree, containerWidth);
 }
 
 export function renderFormulaCell(

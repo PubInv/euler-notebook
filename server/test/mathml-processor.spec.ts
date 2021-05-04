@@ -1,6 +1,6 @@
 /*
 Euler Notebook
-Copyright (C) 2019-21 Public Invention
+Copyright (C) 2021 Public Invention
 https://pubinv.github.io/PubInv/
 
 This program is free software: you can redistribute it and/or modify
@@ -17,35 +17,27 @@ You should have received a copy of the GNU Affero General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-// TODO: Switch to only use 'notebook' functionality, not 'server-notebook' functionality.
 // Requirements
 
-// import * as debug1 from "debug";
-// const MODULE = __filename.split(/[/\\]/).slice(-1)[0].slice(0,-3);
-// const debug = debug1(`tests:${MODULE}`);
+import { assert } from "chai";
 
-// Requirements
+import { convertPresentationMathMlToContentMathMl } from "../src/components/mathml-processor";
 
-// import { assert } from "chai";
-import 'mocha';
-// import { ServerFormula } from "../src/models/server-formula";
+import { FORMULA_TABLE } from "./formula-table";
 
 import { requireWolframScript } from "./require-wolframscript";
-
 requireWolframScript();
 
-// Test Data
+// Constants
 
 // Unit Tests
 
-describe("ServerFormula", function(){
-
-  it.skip("Creates a formula from an object", function(){
-    throw new Error("Not implemented.");
-  });
-
-  it.skip("Creates a formula from a presentation MathML tree", function(){
-    throw new Error("Not implemented.");
-  });
-
-})
+describe("convertPresentationMathMlToContentMathMl", function(){
+  this.timeout(10*1000);
+  for (const entry of FORMULA_TABLE) {
+    it(`converts ${entry.plain} correctly.`, async function(){
+      const contentMathMlTree = await convertPresentationMathMlToContentMathMl(entry.presentationMathMlTree);
+      assert.deepEqual(contentMathMlTree, entry.contentMathMlTree);
+    });
+  }
+});

@@ -99,7 +99,7 @@ const DEFAULT_LETTER_MARGINS: PageMargins = {
 //            At this point, if you change this number, then users will get an error opening their
 //            existing notebooks. This is fine as long as it is only David and Rob, but as soon as
 //            other people starting using the program then we need to implement the upgrading.
-const FORMAT_VERSION = "0.0.26";
+const FORMAT_VERSION = "0.0.27";
 
 const EMPTY_NOTEBOOK_OBJ: PersistentServerNotebookObject = {
   formatVersion: FORMAT_VERSION,

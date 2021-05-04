@@ -27,7 +27,7 @@ import { assert } from "chai";
 
 import { PlainText } from "../src/shared/common";
 
-import { search, search_full,findEquationInAlphaResult } from "../src/adapters/wolframalpha";
+import { search, search_full, /* findEquationInAlphaResult */} from "../src/adapters/wolframalpha";
 
 import { requireWolframAlpha } from "./require-wolframalpha";
 import { requireWolframScript } from "./require-wolframscript";
@@ -135,23 +135,26 @@ describe("wolfram alpha", function() {
     assert.isAtLeast(gas.length, 1, 'We should get at least one renderable result');
   });
 
-  it("Quadratic equation", async function(){
-    const sr = await search_full(<PlainText>"quadratic equation");
-    assert.isAtLeast(sr.length,1, 'We should get at least one renderable result');
-    assert.isOk(sr[0].formula,'We want a formula out of this');
+  it.skip("Quadratic equation", async function(){
+    throw new Error("Not implemented.");
+    // const sr = await search_full(<PlainText>"quadratic equation");
+    // assert.isAtLeast(sr.length,1, 'We should get at least one renderable result');
+    // assert.isOk(sr[0].formula,'We want a formula out of this');
   });
 
-  it("Relativistic Energy", async function(){
-    const sr = await search_full(<PlainText>"convert mass to energy");
-    assert.isAtLeast(sr.length, 1, 'We should get at least one renderable result');
-    assert.isOk(sr[0].formula,'We want a formula out of this');
+  it.skip("Relativistic Energy", async function(){
+    throw new Error("Not implemented.");
+    // const sr = await search_full(<PlainText>"convert mass to energy");
+    // assert.isAtLeast(sr.length, 1, 'We should get at least one renderable result');
+    // assert.isOk(sr[0].formula,'We want a formula out of this');
   });
 
   for(const f of QueriesThatMayReturnFormula) {
-    it(`Formula query '${f}'`, async function(){
-      const sr = await search_full(<PlainText>f);
-      assert.isAtLeast(sr.length, 1, 'We should get at least one renderable result: '.concat(<string>f));
-      assert.isOk(sr[0].formula,'We want a formula out of this'.concat(<string>f));
+    it.skip(`Formula query '${f}'`, async function(){
+      throw new Error("Not implemented.");
+      // const sr = await search_full(<PlainText>f);
+      // assert.isAtLeast(sr.length, 1, 'We should get at least one renderable result: '.concat(<string>f));
+      // assert.isOk(sr[0].formula,'We want a formula out of this'.concat(<string>f));
     });
   }
 
@@ -178,11 +181,12 @@ describe("wolfram alpha", function() {
   });
 
   for(const f of ResultsAsGottenFromAlpha) {
-    it(`Equation string '${f}'`, async function() {
-      const extracted = await findEquationInAlphaResult(f.result);
-      // console.log(f);
-      // console.log(extracted);
-      assert.equal(extracted,f.desired);
+    it.skip(`Equation string '${f}'`, async function() {
+      throw new Error("Not implemented.");
+      // const extracted = await findEquationInAlphaResult(f.result);
+      // // console.log(f);
+      // // console.log(extracted);
+      // assert.equal(extracted,f.desired);
     });
   }
 

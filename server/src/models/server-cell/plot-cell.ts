@@ -25,7 +25,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 import { deepCopy, PlainText } from "../../shared/common";
 import { CellId, CellType } from "../../shared/cell";
-import { PlotCellObject } from "../../shared/plot";
+import { PlotCellObject, PlotInfo } from "../../shared/plot";
 import { EMPTY_STROKE_DATA } from "../../shared/stylus";
 import { SvgMarkup } from "../../shared/svg";
 
@@ -33,12 +33,10 @@ import { ServerNotebook } from "../server-notebook";
 
 import { ServerCell } from "./index";
 import { plot } from "../../components/formula-plotter";
-import { ServerFormula } from "../server-formula";
 import { PLOT_CELL_HEIGHT } from "../../shared/dimensions";
 import { LengthInPixels } from "../../shared/css";
 import { SuggestionObject } from "../../shared/suggestions";
-// import { plotUnivariate } from "../adapters/wolframscript";
-// import { WolframExpression } from "../shared/formula";
+import { ExpressionNode } from "../semantic-formula";
 
 // Types
 
@@ -55,9 +53,14 @@ export class PlotCell extends ServerCell<PlotCellObject> {
 
   // Public Class Methods
 
-  public static async plotFormula(notebook: ServerNotebook, formulaCellId: CellId, formula: ServerFormula): Promise<PlotFormulaReturnValue> {
+  public static async plotFormula(
+    notebook: ServerNotebook,
+    formulaCellId: CellId,
+    plotExpression: ExpressionNode,
+    plotInfo: PlotInfo,
+  ): Promise<PlotFormulaReturnValue> {
 
-    const { formulaSymbol, plotMarkup, thumbnailMarkup } = await plot(formula);
+    const { plotMarkup, thumbnailMarkup } = await plot(plotExpression, plotInfo);
 
     const cellObject: PlotCellObject = {
       id: 0,
@@ -68,9 +71,7 @@ export class PlotCell extends ServerCell<PlotCellObject> {
       strokeData: deepCopy(EMPTY_STROKE_DATA),
       suggestions: [],
 
-      formula: formula.obj,
       formulaCellId,
-      formulaSymbol,
       plotMarkup,
     };
 

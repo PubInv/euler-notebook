@@ -21,17 +21,35 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 import { CellObject, CellId, CellType, renderBaseCell } from "./cell";
 import { SvgMarkup } from "./svg";
-import { FormulaObject, FormulaSymbol } from "./formula";
+import { FormulaSymbol } from "./formula";
 import { LengthInPixels } from "./css";
 
 // Types
 
+export type PlotInfo = ConstantPlotInfo | UnivariatePlotInfo | BivariatePlotInfo;
+
 export interface PlotCellObject extends CellObject {
   type: CellType.Plot,
-  formula: FormulaObject,
   formulaCellId: CellId,
-  formulaSymbol: FormulaSymbol,
   plotMarkup: SvgMarkup,
+}
+
+interface ConstantPlotInfo {
+  type: 'constant';
+  yAxisIdentifier?: FormulaSymbol;
+}
+
+interface UnivariatePlotInfo {
+  type: 'univariate';
+  xAxisIdentifier: FormulaSymbol;
+  yAxisIdentifier?: FormulaSymbol;
+}
+
+interface BivariatePlotInfo {
+  type: 'bivariate';
+  xAxisIdentifier: FormulaSymbol;
+  zAxisIdentifier: FormulaSymbol;
+  yAxisIdentifier?: FormulaSymbol;
 }
 
 // Exported Functions

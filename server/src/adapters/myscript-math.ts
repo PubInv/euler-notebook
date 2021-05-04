@@ -45,7 +45,7 @@ export interface MathNodeBase {
   // type: string;
   id: string;
   'bounding-box'?: BoundingBox;
-  error: MathNodeErrorString;
+  error?: MathNodeErrorString;
   items?: MathNodeItem[]; // If export.jiix.strokes or export.jiix.glyphs are true.
 
   // Inherited interfaces may have:
