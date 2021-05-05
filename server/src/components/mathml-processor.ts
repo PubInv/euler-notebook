@@ -19,12 +19,22 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 // Requirements
 
-import { parseString } from 'xml2js';
+import { parseStringPromise } from 'xml2js';
 
 import { execute as executeWolframScript } from "../adapters/wolframscript";
-import { ContentMathMlMarkup, ContentMathMlTree, ContentMathMlNode } from "../shared/content-mathml";
+import { assert, assertFalse, JsonObject } from '../shared/common';
+import { Apply, ContentMathMlMarkup, ContentMathMlTree, ContentMathMlNode, Ci } from "../shared/content-mathml";
 import { WolframExpression } from "../shared/formula";
-import { PresentationMathMlMarkup, PresentationMathMlTree, serializeTreeToMathMlMarkup } from "../shared/presentation-mathml";
+import { PresentationMathMlTree, serializeTreeToMathMlMarkup } from "../shared/presentation-mathml";
+
+// Types
+
+interface XmlElement {
+  '#name': string;    // element name
+  '$'?: JsonObject;    // attributes
+  '$$'?: XmlElement[]; // children
+  '_'?: string;        // text content
+}
 
 // Exported functions
 
@@ -38,114 +48,76 @@ export async function convertPresentationMathMlToContentMathMl(presentationMathM
 
   // Ask WolframScript to convert (Presentation) MathML to a Wolfram Expression,
   // then ask it to convert the expression into Content MathML.
-  // TODO: Convert in one execute call.
-  const wolframExpression = await convertMathMlToWolfram(presentationMathMlMarkup);
-  const contentMathMlMarkup = await convertWolframToContentMathMl(wolframExpression);
+  const script = <WolframExpression>`ExportString[ToExpression["${presentationMathMlMarkup}", MathMLForm, Hold], "MathML", "Content"->True, "Presentation"->False]`;
+  const contentMathMlMarkup = <ContentMathMlMarkup>await executeWolframScript(script);
 
   // Parse the Content MathML to get a content tree object.
-  const contentMathMlTree = parseContentMathMlMarkup(contentMathMlMarkup);
-  return contentMathMlTree;
+  // c-nsole.log("CONTENT MATHML: " + contentMathMlMarkup);
+  const contentMathMlTree = await parseContentMathMlMarkup(contentMathMlMarkup);
+  const rval = unwrapHold(contentMathMlTree);
+  // c-nsole.log("CONTENT MATHML TREE:");
+  // c-nsole.dir(contentMathMlTree, { depth: null });
+  return rval;
 }
 
-export function parseContentMathMlMarkup(markup: ContentMathMlMarkup): ContentMathMlTree {
-  // This is an ugly side-effect ridden way of doing this.
-  var cmMlJSON : any;
-  parseString(markup, function (_err : any, result : any ) {
-    cmMlJSON = result;
-  });
-  return {
-    type: 'math',
-    child: parseTreeX(cmMlJSON.math)
-  }
+function unwrapHold(tree: ContentMathMlTree): ContentMathMlTree {
+  // We place a Hold[] around the expression so WolframScript doesn't automatically simplify it.
+  // Otherwise, if we passed in the presentation expression "1+2" we would get back the content expression "3".
+  // We need to unwrap the Hold[] from the expression.
+  const applyNode = <Apply>tree.child;
+  assert(applyNode && applyNode.type == 'apply');
+  const operator = <Ci>applyNode.operator;
+  assert(operator.type == 'ci' && operator.identifier == 'Hold');
+  const operands = applyNode.operands;
+  assert(operands.length==1);
+  const operand = operands[0];
+  tree.child = operand;
+  return tree;
+}
+
+export async function parseContentMathMlMarkup(markup: ContentMathMlMarkup): Promise<ContentMathMlTree> {
+  const xmlObject = await parseStringPromise(markup, { explicitChildren: true, explicitRoot: false, preserveChildrenOrder: true });
+  // c-nsole.log("XML2JS OBJECT:");
+  // c-nsole.dir(xmlObject, { depth: null });
+  const rval = <ContentMathMlTree>parseTreeX(xmlObject);
+  assert(rval.type == 'math');
+  return rval;
 }
 
 // Helper Functions
 
-async function convertMathMlToWolfram(presentationMml: PresentationMathMlMarkup) : Promise<WolframExpression> {
-  const escaped = <WolframExpression>presentationMml.replace(/\\/g,"\\\\");
-  const expression = <WolframExpression>`InputForm[ToExpression["${escaped}", MathMLForm]]`;
-  return executeWolframScript(expression);
-}
-
-async function convertWolframToContentMathMl(wolframExpression: WolframExpression): Promise<ContentMathMlMarkup> {
-  const script = <WolframExpression>`ExportString[Unevaluated[${wolframExpression}], "MathML", "Content" -> True, "Presentation" -> False]`;
-  const contentMathMlMarkup = <ContentMathMlMarkup>(await executeWolframScript(script));
-  return contentMathMlMarkup;
-}
-
-// Note: ContentMathMlMarkup comes in as a string in XML.
-// There we convert it to JSON here before attempting to
-// parse it into a tree.
-// We are basically tranducing one JSON tree into another JSON tree.
-// The input tree, however, is a representation of XML, and the output tree is
-// SPECIFICALLY ContentMathMlMarkup. So, roughly speaking we can use a "typed visitor"
-// pattern. At each node of the tree we recursiverly parse the arguments to the whatever
-// the operator is, and then do a case split on the operator.
-// I will use the suffix X to represent generic XML and the suffic C to represent
-// ContentMathMlMarkup when the type system does not make this clear.
-
-
-// Note: We could create a "marker type" for cmMLSON. This would be
-// marginally type-stronger.
-
-function deduceCMLNode(cmMlJSON: any) : string {
-  const keys = Object.keys(cmMlJSON);
-  return (keys[0] == '$') ?
-    keys[1] : keys[0];
-}
-
-function deduceCMLValue(cmMlJSON: any) : number {
-  const v_str = cmMlJSON[0]['_'];
-  const v_num = parseFloat(v_str);
-  return v_num;
-}
-
-function deduceCMLIdentifier(cmMlJSON: any) : string {
-  const v_str = cmMlJSON[0];
-  return v_str;
-}
-
-function parseTreeX(cmMlJSON: any) :  ContentMathMlNode {
-  const cmlType = deduceCMLNode(cmMlJSON);
-  switch (cmlType) {
-    case 'eq':
-      return  <ContentMathMlNode>{type: 'eq'};
-      break;
-    case 'plus':
-      return  <ContentMathMlNode>{type: 'plus'};
+function parseTreeX(elt: XmlElement): ContentMathMlNode {
+  let rval: ContentMathMlNode;
+  switch (elt['#name']) {
+    case 'apply':
+      assert(elt['$$'] && elt['$$'].length>=2);
+      const operator = parseTreeX(elt['$$']![0]);
+      const operands = elt['$$']!.slice(1).map(parseTreeX);
+      rval = {type: 'apply', operator, operands };
       break;
     case 'ci':
-      var id = deduceCMLIdentifier(cmMlJSON.ci);
-      return  <ContentMathMlNode>{type: 'ci',
-                                    identifier: id};
+      assert(elt['_']);
+      rval = { type: 'ci', identifier: elt['_']!};
       break;
     case 'cn':
-      var val = deduceCMLValue(cmMlJSON.cn);
-      return  <ContentMathMlNode>{type: 'cn',
-                                    value: val};
+      // TODO: number type. 'integer', etc.
+      assert(elt['_']);
+      rval = { type: 'cn', value: parseFloat(elt['_']!)};
       break;
-    case 'apply':
-      var obj = cmMlJSON.apply[0];
-      const keys = Object.keys(obj);
+    case 'math':
+      assert(elt['$$'] && elt['$$'].length==1);
+      rval = { type: 'math', child: parseTreeX(elt['$$']![0]) };
+      break;
 
-      var op = <ContentMathMlNode>{type: keys[0]};
-      // I treat all keys after the first as operands...
-      let ops : ContentMathMlNode[] = [];
-      for(var i = 1; i < keys.length; i++) {
-        let v = {};
-        // @ts-ignore
-        v[keys[i]] = obj[keys[i]];
-        const nd : ContentMathMlNode = parseTreeX(v);
-        ops[i-1] = nd;
-      }
-      return  <ContentMathMlNode>{type: 'apply',
-                                    operator: op,
-                                    operands: ops};
+    case 'eq':
+    case 'plus':
+    case 'power':
+    case 'times':
+      rval = { type: elt['#name'] };
       break;
+
     default:
-      console.log("COULD NOT PARSE");
-      console.dir(cmMlJSON,{depth: null});
-      throw "cmlType not implemented:"+cmlType;
-      break;
+      assertFalse(`${elt['#name']} content MathML tag not implemented.`);
   }
+  return rval;
 }

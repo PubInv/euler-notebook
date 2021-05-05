@@ -40,8 +40,6 @@ import {
 } from "../adapters/myscript-math";
 import {  JiixMathBlock, postJiixRequest, postSvgRequest, postTextRequest } from "../adapters/myscript";
 
-import { ServerFormula } from "../models/server-formula";
-
 // Types
 
 export interface FigureRecognitionAlternative {
@@ -54,7 +52,7 @@ export interface FigureRecognitionResults {
 }
 
 export interface FormulaRecognitionAlternative {
-  formula: ServerFormula;
+  presentationMathMlTree: PresentationMathMlTree;
 }
 
 export interface FormulaRecognitionResults {
@@ -133,10 +131,9 @@ export async function recognizeFormula(
   // TODO: If user writes multiple expressions then we should separate them into distinct cells.
   const alternatives: FormulaRecognitionAlternative[] = [];
   for (const expression of jiix.expressions) {
-    const mathMlTree = convertJiixExpressionToPresentationMathMlTree(expression);
+    const presentationMathMlTree = convertJiixExpressionToPresentationMathMlTree(expression);
     // c-nsole.dir(serializeTreeToMathMlMarkup(mathMlTree));
-    const formula = await ServerFormula.createFromPresentationMathMlTree(mathMlTree);
-    const alternative: FormulaRecognitionAlternative = { formula };
+    const alternative: FormulaRecognitionAlternative = { presentationMathMlTree };
     alternatives.push(alternative);
   };
 
@@ -155,6 +152,7 @@ export async function recognizeText(
 
 // Helper Functions
 
+export // for unit testing
 function convertJiixExpressionToPresentationMathMlTree(expr: MathNode): PresentationMathMlTree {
   return <Math>{ type: 'math', children: convert(expr) };
 }

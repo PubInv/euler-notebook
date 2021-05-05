@@ -23,9 +23,9 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 // Requirements
 
-import { JiixMathBlock } from "../src/adapters/myscript";
+import { MathNode as JiixExpression } from "../src/adapters/myscript-math";
 import { ContentMathMlTree } from "../src/shared/content-mathml";
-import { TexExpression, WolframExpression } from "../src/shared/formula";
+import { WolframExpression } from "../src/shared/formula";
 import { PresentationMathMlTree } from "../src/shared/presentation-mathml";
 
 // Types
@@ -33,68 +33,85 @@ import { PresentationMathMlTree } from "../src/shared/presentation-mathml";
 interface FormulaEntry {
   plain: string; // Plain text representation for documentation purposes only.
   contentMathMlTree: ContentMathMlTree,
-  jiix: JiixMathBlock,
+  jiix: JiixExpression,
   presentationMathMlTree: PresentationMathMlTree,
-  // TODO: semanticFormula
-  tex: TexExpression,
+  // tex: TexExpression,
   wolfram: WolframExpression,
 }
 
 // Exported Data
 
 export const FORMULA_TABLE: FormulaEntry[] = [
-  { plain: "1+1",
+  { plain: "1+2",
     contentMathMlTree: {
-      type: 'math', /* TODO: child */
+      type: 'math',
+      child: {
+        type: 'apply',
+        operator: { type: 'plus' },
+        operands: [
+          { type: 'cn', value: 1 },
+          { type: 'cn', value: 2 },
+        ]
+      }
     },
     jiix: {
-      "type": "Math",
-      "expressions": [
-        {
-          "type": "+",
-          "id": "math/45",
-          "operands": [
-            { "type": "number", "id": "math/43", "label": "1", "value": 1 },
-            { "type": "number", "id": "math/44", "label": "1", "value": 1 },
-          ]
-        }
-      ],
-      "id": "MainBlock",
-      "version": "2"
+      "type": "+",
+      "id": "math/45",
+      "operands": [
+        { "type": "number", "id": "math/43", "label": "1", "value": 1 },
+        { "type": "number", "id": "math/44", "label": "2", "value": 2 },
+      ]
     },
-    presentationMathMlTree: { type: 'math',  children: [], },
-    tex: <TexExpression>"1+1",
-    wolfram: <WolframExpression>"1+1",
+    presentationMathMlTree: {
+      type: 'math',
+      children: [
+       { "type": "mn", "value": 1 },
+       { "type": "mo", "symbol": "+" },
+       { "type": "mn", "value": 2 },
+      ],
+    },
+    // tex: <TexExpression>"1+2",
+    wolfram: <WolframExpression>"1+2",
   }, { plain: "x^2",
     contentMathMlTree: {
-      type: 'math',  /* TODO: child */
+      type: 'math',
+      child: {
+        "type": "apply",
+        "operator": { "type": "power" },
+        "operands": [
+          { "type": "ci", "identifier": "x" },
+          { "type": "cn", "value": 2 },
+        ],
+      }
     },
     jiix: {
-      "type": "Math",
-      "expressions": [
+      "type": "superscript",
+      "id": "math/27",
+      "operands": [
         {
-          "type": "superscript",
-          "id": "math/27",
-          "operands": [
-            {
-              "type": "symbol",
-              "id": "math/24",
-              "label": "x"
-            },
-            {
-              "type": "number",
-              "id": "math/26",
-              "label": "2",
-              "value": 2
-            }
-          ]
+          "type": "symbol",
+          "id": "math/24",
+          "label": "x"
+        },
+        {
+          "type": "number",
+          "id": "math/26",
+          "label": "2",
+          "value": 2
+        }
+      ]
+    },
+    presentationMathMlTree: {
+      type: 'math',
+      children: [
+        {
+          "type": "msup",
+          "base": { "type": "mi", "identifier": "x" },
+          "superscript": { "type": "mn", "value": 2 },
         }
       ],
-      "id": "MainBlock",
-      "version": "2"
     },
-    presentationMathMlTree: { type: 'math',  children: [], },
-    tex: <TexExpression>"x^2",
+    // tex: <TexExpression>"x^2",
     wolfram: <WolframExpression>"x^2",
   },
 ];

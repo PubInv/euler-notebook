@@ -153,13 +153,17 @@ export class FormulaCell extends ServerCell<FormulaCellObject> {
     // a change request to typeset the formula to that alternative,
     // and also change requests to remove all of the typesetting
     // suggestions.
-    const rval = alternatives.map((alternative, index)=>{
-      const suggestionId = typesetFormulaSuggestionId(index);
+    const rval: SuggestionObject[] = [];
+    for (let i=0; i<alternatives.length; i++) {
+      const alternative = alternatives[i];
+      const suggestionId = typesetFormulaSuggestionId(i);
+      const formula = await ServerFormula.createFromPresentationMathMlTree(alternative.presentationMathMlTree);
+
       const changeRequests: NotebookChangeRequest[] = [
         {
           type: 'typesetFormula',
           cellId: this.id,
-          formula: alternative.formula.obj,
+          formula: formula.obj,
           strokeData: EMPTY_STROKE_DATA,
         },
         ...removeChangeRequests,
@@ -168,10 +172,10 @@ export class FormulaCell extends ServerCell<FormulaCellObject> {
         id: suggestionId,
         class: TYPESETTING_SUGGESTION_CLASS,
         changeRequests,
-        display: { formula: alternative.formula.obj },
+        display: { formula: formula.obj },
       };
-      return suggestionObject;
-    });
+      rval.push(suggestionObject);
+    };
 
     return rval;
   }

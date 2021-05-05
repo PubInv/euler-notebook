@@ -96,7 +96,8 @@ export async function start(config?: WolframScriptConfig): Promise<void> {
   assert(!gServerStartingPromise);
   gServerStartingPromise = startProcess(config);
   await gServerStartingPromise;
-  await defineRunPrivate();
+  // debug(`Executing runPrivate script.`);
+  await execute(RUN_PRIVATE_SCRIPT);
 }
 
 export async function stop(): Promise<void> {
@@ -109,16 +110,11 @@ export async function stop(): Promise<void> {
 
 // Helper Functions
 
-async function defineRunPrivate(): Promise<void> {
-  debug(`defining runPrivate`);
-  await execute(RUN_PRIVATE_SCRIPT);
-}
-
 function executeNow(command: WolframExpression, resolve: (data: WolframExpression)=>void, reject: (reason: any)=>void): void {
   let results = <WolframExpression>'';
   const stdoutListener = (data: Buffer)=>{
     let dataString: string = data.toString();
-    debug(`Data rec'd: ${showInvisible(dataString)}`);
+    // debug(`Data rec'd: ${showInvisible(dataString)}`);
     results += dataString;
     // debug(`Accum data: ${showInvisible(results)}`);
 
@@ -135,7 +131,7 @@ function executeNow(command: WolframExpression, resolve: (data: WolframExpressio
         // ... then fulfill with whatever came between the prompts.
         results = <WolframExpression>results.substring(outputPromptMatch![0].length, inputPromptMatch.index);
         results = removeContextPrefix(results);
-        debug(`Execution results: "${results}".`);
+        debug(`Results: "${results}".`);
         resolve(results);
       } else {
         let message: string = "WolframScript Error: ";
@@ -157,7 +153,7 @@ function executeNow(command: WolframExpression, resolve: (data: WolframExpressio
   }
 
   gChildProcess.stdout!.on('data', stdoutListener)
-  debug(`Executing Wolfram expression: ${command}`);
+  debug(`Executing: ${command}`);
   gChildProcess.stdin!.write(command + '\n');
 }
 
@@ -195,7 +191,7 @@ function startProcess(config?: WolframScriptConfig): Promise<void> {
     const stdoutListener = (data: Buffer) => {
       // console.dir(data);
       let dataString = data.toString();
-      debug(`WolframScript initial data: ${showInvisible(dataString)}`);
+      // debug(`WolframScript initial data: ${showInvisible(dataString)}`);
       if (INPUT_PROMPT_RE.test(dataString)) {
         child.stdout.removeListener('data', stdoutListener);
         resolve();
