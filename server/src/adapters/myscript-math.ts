@@ -79,12 +79,12 @@ interface FenceNode extends MathNodeBase {
   operands: [ MathNode ],
 }
 
-interface FractionNode extends MathNodeBase {
+export interface FractionNode extends MathNodeBase {
   type: 'fraction';
   operands: [ /* numerator */MathNode, /* denominator */MathNode ],
 }
 
-interface GroupNode extends MathNodeBase {
+export interface GroupNode extends MathNodeBase {
   type: 'group';
   operands: MathNode[],
 }
@@ -126,7 +126,7 @@ interface SubsuperscriptNode extends MathNodeBase {
   operands: [/* base */MathNode, /* subscript */MathNode, /* superscript */MathNode ],
 }
 
-interface SuperscriptNode extends MathNodeBase {
+export interface SuperscriptNode extends MathNodeBase {
   type: 'superscript';
   operands: [/* base */MathNode, /* superscript */MathNode ],
 }

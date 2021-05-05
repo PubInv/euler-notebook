@@ -197,7 +197,7 @@ export async function postJiixRequest<T extends JiixBlockBase>(
 //   return rval;
 // }
 
-export async function postMmlRequest(
+export async function postMathMlRequest(
   width: LengthInPixels,
   height: LengthInPixels,
   strokeData: StrokeData,

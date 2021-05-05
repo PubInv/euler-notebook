@@ -23,9 +23,9 @@ import { parseStringPromise } from 'xml2js';
 
 import { execute as executeWolframScript } from "../adapters/wolframscript";
 import { assert, assertFalse, JsonObject } from '../shared/common';
-import { Apply, ContentMathMlMarkup, ContentMathMlTree, ContentMathMlNode, Ci, NumberType, Cn } from "../shared/content-mathml";
+import { Apply, ContentMathMlMarkup, ContentMathMlTree, ContentMathMlNode, Ci, Cn } from "../shared/content-mathml";
 import { WolframExpression } from "../shared/formula";
-import { PresentationMathMlTree, serializeTreeToMathMlMarkup } from "../shared/presentation-mathml";
+import { PresentationMathMlMarkup, PresentationMathMlTree, serializeTreeToMathMlMarkup } from "../shared/presentation-mathml";
 
 // Types
 
@@ -38,52 +38,43 @@ interface XmlElement {
 
 // Exported functions
 
-export async function convertPresentationMathMlToContentMathMl(presentationMathMlTree: PresentationMathMlTree): Promise<ContentMathMlTree> {
-
-  // c-nsole.log("PRESENTATION MATHML:")
-  // c-nsole.log(JSON.stringify(presentationMathMlTree, null, 2));
-
-  // If we get an empty presentation math tree, then return an empty content math tree.
-  // (Mathematica will convert an empty <math> element to <math><ci>Null</ci></math>.)
-  let rval: ContentMathMlTree;
-
-  if (presentationMathMlTree.children.length > 0) {
-
-    // Convert the tree object to a MathML string to pass to WolframScript.
-    const presentationMathMlMarkup = serializeTreeToMathMlMarkup(presentationMathMlTree);
-
-    // Ask WolframScript to convert (Presentation) MathML to a Wolfram Expression,
-    // then ask it to convert the expression into Content MathML.
-    const script = <WolframExpression>`ExportString[ToExpression["${presentationMathMlMarkup}", MathMLForm, Hold], "MathML", "Content"->True, "Presentation"->False]`;
-    const contentMathMlMarkup = <ContentMathMlMarkup>await executeWolframScript(script);
-
-    // Parse the Content MathML to get a content tree object.
-    // c-nsole.log("CONTENT MATHML MARKUP WITH HOLD: " + contentMathMlMarkup);
-    const contentMathMlTree = await parseContentMathMlMarkup(contentMathMlMarkup);
-    rval = unwrapHold(contentMathMlTree);
-
-  } else {
-    // Presentation MathML is empty <math> element. Return empty <math> node.
-    rval = { tag: 'math' };
-  }
-  // c-nsole.log("CONTENT MATHML TREE:");
-  // c-nsole.log(JSON.stringify(rval, null, 2));
+export async function convertPresentationMathMlMarkupToContentMathMlMarkup(
+  presentationMathMlMarkup: PresentationMathMlMarkup
+): Promise<ContentMathMlMarkup> {
+  // Ask WolframScript to convert (Presentation) MathML to a Wolfram Expression,
+  // then ask it to convert the expression into Content MathML.
+  const script = <WolframExpression>`ExportString[ToExpression["${presentationMathMlMarkup}", MathMLForm, Hold], "MathML", "Content"->True, "Presentation"->False]`;
+  const rval = <ContentMathMlMarkup>await executeWolframScript(script);
   return rval;
 }
 
-function unwrapHold(tree: ContentMathMlTree): ContentMathMlTree {
-  // We place a Hold[] around the expression so WolframScript doesn't automatically simplify it.
-  // Otherwise, if we passed in the presentation expression "1+2" we would get back the content expression "3".
-  // We need to unwrap the Hold[] from the expression.
-  const applyNode = <Apply>tree.child;
-  assert(applyNode && applyNode.tag == 'apply');
-  const operator = <Ci>applyNode.operator;
-  assert(operator.tag == 'ci' && operator.identifier == 'Hold');
-  const operands = applyNode.operands;
-  assert(operands.length==1);
-  const operand = operands[0];
-  tree.child = operand;
-  return tree;
+export async function convertPresentationMathMlTreeToContentMathMlTree(
+  presentationMathMlTree: PresentationMathMlTree
+): Promise<ContentMathMlTree> {
+
+  // If the tree is nonempty...
+  let rval: ContentMathMlTree;
+  if (presentationMathMlTree.children.length > 0) {
+
+    // Convert the tree to presentation markup.
+    const presentationMathMlMarkup = serializeTreeToMathMlMarkup(presentationMathMlTree);
+
+    // Use WolframScript to convert presentation markup to content markup.
+    const contentMathMlMarkup = await convertPresentationMathMlMarkupToContentMathMlMarkup(presentationMathMlMarkup);
+
+    // Parse the content markup into a tree.
+    const contentMathMlTree = await parseContentMathMlMarkup(contentMathMlMarkup);
+
+    // The content formula includes a Hold[...] wrapper to prevent WolframScript from evaluating the expression.
+    // Otherwise, if we pass in <PMML>"1+1" we will get back <CMML>"2" instead of <CMML>"1+1"
+    // Remove the Hold[] wrapper from the tree before returning it.
+    rval = unwrapHold(contentMathMlTree);
+  } else {
+    // Presentation MathML is empty <math> element. Return empty <math> node.
+    // (Mathematica will convert an empty <math> element to <math><ci>Null</ci></math>.)
+    rval = { tag: 'math' };
+  }
+  return rval;
 }
 
 export async function parseContentMathMlMarkup(markup: ContentMathMlMarkup): Promise<ContentMathMlTree> {
@@ -111,11 +102,11 @@ function parseTreeX(elt: XmlElement): ContentMathMlNode {
       rval = { tag: 'ci', identifier: elt['_']!};
       break;
     case 'cn': {
-      // TODO: number type. 'integer', etc.
+      // LATER: Deal with various number types and the possible <sep/> tag.
       assert(elt['_']);
-      const type: NumberType|undefined = elt['$'] && <NumberType>elt['$'].type;
       const node: Cn = { tag: 'cn', value: parseFloat(elt['_']!) };
-      if (type) { node.type = type; }
+      // LATER: const type: NumberType|undefined = elt['$'] && <NumberType>elt['$'].type;
+      //        if (type) { node.type = type; }
       rval = node;
       break;
     }
@@ -136,3 +127,19 @@ function parseTreeX(elt: XmlElement): ContentMathMlNode {
   }
   return rval;
 }
+
+function unwrapHold(tree: ContentMathMlTree): ContentMathMlTree {
+  // We place a Hold[] around the expression so WolframScript doesn't automatically simplify it.
+  // Otherwise, if we passed in the presentation expression "1+2" we would get back the content expression "3".
+  // We need to unwrap the Hold[] from the expression.
+  const applyNode = <Apply>tree.child;
+  assert(applyNode && applyNode.tag == 'apply');
+  const operator = <Ci>applyNode.operator;
+  assert(operator.tag == 'ci' && operator.identifier == 'Hold');
+  const operands = applyNode.operands;
+  assert(operands.length==1);
+  const operand = operands[0];
+  tree.child = operand;
+  return tree;
+}
+

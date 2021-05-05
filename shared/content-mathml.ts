@@ -22,10 +22,10 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 // Types
 
 export type ContentMathMlMarkup = '{ContentMathMlMarkup}';
-export type ContentMathMlNode = Apply | Ci | Cn | Csym | Eq | Math | Plus | Power | Times;
+export type ContentMathMlNode = Apply | Ci | Cn | Csym | Eq | Math | Minus | Plus | Power | Quotient | Times;
 export type ContentMathMlTree = Math;
 
-export type NumberType = "integer" | "real" | "double" | "hexdouble" | "e-notation" | "rational" | "complex-cartesian" | "complex-polar" | "constant";
+// LATER: export type NumberType = "integer" | "real" | "double" | "hexdouble" | "e-notation" | "rational" | "complex-cartesian" | "complex-polar" | "constant";
 
 export interface Apply {
   tag: 'apply';
@@ -41,7 +41,7 @@ export interface Ci {
 export interface Cn {
   tag: 'cn';
   value: number;
-  type?: NumberType;  // Per spec, defaults is "real"
+  // LATER: type?: NumberType;  // Per spec, defaults is "real"
 }
 
 export interface Csym {
@@ -59,15 +59,8 @@ export interface Math {
   child?: ContentMathMlNode;
 }
 
-export interface Plus {
-  tag: 'plus';
-}
-
-export interface Power {
-  tag: 'power';
-  // Applied to a 'base' and an 'exponent'.
-}
-
-export interface Times {
-  tag: 'times';
-}
+export interface Minus { tag: 'minus'; }
+export interface Plus { tag: 'plus'; }
+export interface Power { tag: 'power'; /* Applied to a 'base' and an 'exponent'. */}
+export interface Quotient { tag: 'quotient'; }
+export interface Times { tag: 'times'; }

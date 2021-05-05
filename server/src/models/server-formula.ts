@@ -32,9 +32,8 @@ import { FormulaObject, renderFormula, TypesettingResults } from "../shared/form
 import { PlotInfo } from "../shared/plot";
 import { PresentationMathMlMarkup, PresentationMathMlTree, serializeTreeToMathMlMarkup } from "../shared/presentation-mathml";
 
-import { convertPresentationMathMlToContentMathMl } from "../components/mathml-processor";
-
 import { ExpressionNode, SemanticFormula } from "./semantic-formula";
+import { ContentMathMlTree } from "../shared/content-mathml";
 
 // Types
 
@@ -54,8 +53,10 @@ export class ServerFormula {
     return new this(obj);
   }
 
-  public static async createFromPresentationMathMlTree(presentationMathMlTree: PresentationMathMlTree): Promise<ServerFormula> {
-    const contentMathMlTree = await convertPresentationMathMlToContentMathMl(presentationMathMlTree);
+  public static async createFromMathMl(
+    presentationMathMlTree: PresentationMathMlTree,
+    contentMathMlTree: ContentMathMlTree,
+  ): Promise<ServerFormula> {
     return new this({ contentMathMlTree, presentationMathMlTree });
   }
 

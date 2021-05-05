@@ -21,12 +21,9 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 import { assert } from "chai";
 
-import { convertJiixExpressionToPresentationMathMlTree } from "../src/components/handwriting-recognizer";
+import { convertJiixExpressionToPresentationMathMlTree } from "../src/converters/jiix-to-pmml";
 
 import { FORMULA_TABLE } from "./formula-table";
-
-import { requireWolframScript } from "./require-wolframscript";
-requireWolframScript();
 
 // Constants
 
@@ -35,9 +32,9 @@ requireWolframScript();
 describe("convertJiixExpressionToPresentationMathMlTree", function(){
   this.timeout(10*1000);
   for (const entry of FORMULA_TABLE) {
-    it(`converts ${entry.plain} correctly.`, async function(){
-      const contentMathMlTree = await convertJiixExpressionToPresentationMathMlTree(entry.jiixExpression);
-      assert.deepEqual(contentMathMlTree, entry.presentationMathMlTree);
+    it(`converts ${entry.plain} correctly.`, function(){
+      const presentationMathMlTree = convertJiixExpressionToPresentationMathMlTree(entry.jiixExpression);
+      assert.deepEqual(presentationMathMlTree, entry.presentationMathMlTree);
     });
   }
 });

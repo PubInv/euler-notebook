@@ -45,6 +45,10 @@ interface FormulaEntry {
 
 // Exported Data
 
+// TODO: Unary minus
+// TODO: Equations
+// TODO: Relations
+
 export const FORMULA_TABLE: FormulaEntry[] = [
   { plain: "1",
     jiixExpression: { type: "number", id: "math/19", label: "1", value: 1 },
@@ -54,7 +58,7 @@ export const FORMULA_TABLE: FormulaEntry[] = [
     },
     contentMathMlTree: {
       tag: "math",
-      child: { tag: "cn", value: 1, type: "integer" }
+      child: { tag: "cn", value: 1 }
     },
     wolfram: <WolframExpression>"1",
   }, { plain: "3.14",
@@ -65,7 +69,7 @@ export const FORMULA_TABLE: FormulaEntry[] = [
     },
     contentMathMlTree: {
       tag: "math",
-      child: { tag: "cn", value: 3.14, type: "real" }
+      child: { tag: "cn", value: 3.14 }
     },
     wolfram: <WolframExpression>"3.14",
   }, { plain: "1+2",
@@ -85,17 +89,17 @@ export const FORMULA_TABLE: FormulaEntry[] = [
       ],
     },
     contentMathMlTree: {
-      tag: 'math',
-      child: {
-        tag: 'apply',
-        operator: { tag: 'plus' },
-        operands: [
-          { tag: 'cn', value: 1, type: "integer"  },
-          { tag: 'cn', value: 2, type: "integer" },
+      "tag": "math",
+      "child": {
+        "tag": "apply",
+        "operator": { "tag": "plus" },
+        "operands": [
+          { "tag": "cn", "value": 1 },
+          { "tag": "cn", "value": 2 }
         ]
       }
     },
-    wolfram: <WolframExpression>"1+2",
+    wolfram: <WolframExpression>"Plus[1,2]",
   }, { plain: "12-4",
     jiixExpression: {
       type: "-", id: "math/62",
@@ -112,19 +116,18 @@ export const FORMULA_TABLE: FormulaEntry[] = [
         { tag: "mn", value: 4 }
       ]
     },
-    // REVIEW: Hmmm. Wolfram turns 12 - 4 into 12 + (-4).
     contentMathMlTree: {
       tag: "math",
       child: {
         tag: "apply",
-        operator: { tag: "plus" },
+        operator: { tag: "minus" },
         operands: [
-          { tag: "cn", value: 12, type: "integer" },
-          { tag: "cn", value: -4, type: "integer" }
+          { tag: "cn", value: 12 },
+          { tag: "cn", value: 4 }
         ]
       }
     },
-    wolfram: <WolframExpression>"12+-4",
+    wolfram: <WolframExpression>"Subtract[12,4]",
   }, { plain: "6 x 8",
     jiixExpression: {
       type: "×", id: "math/38",
@@ -147,12 +150,12 @@ export const FORMULA_TABLE: FormulaEntry[] = [
         tag: "apply",
         operator: { tag: "times" },
         operands: [
-          { tag: "cn", value: 6, type: "integer" },
-          { tag: "cn", value: 8, type: "integer" }
+          { tag: "cn", value: 6 },
+          { tag: "cn", value: 8 }
         ]
       }
     },
-    wolfram: <WolframExpression>"6*8",
+    wolfram: <WolframExpression>"Times[6,8]",
   }, { plain: "6·8 (center dot multiplication)",
     jiixExpression: {
       type: "·",
@@ -189,31 +192,18 @@ export const FORMULA_TABLE: FormulaEntry[] = [
         }
       ]
     },
-    // TODO: This is obviously wrong!
-    //       Mathematica doesn't appear to interpret the center dot with multiplication!
     contentMathMlTree: {
-      tag: "math",
-      child: {
-        tag: "apply",
-        operator: {
-          tag: "ci",
-          "identifier": "CenterDot"
-        },
-        operands: [
-          {
-            tag: "cn",
-            value: 6,
-            type: "integer"
-          },
-          {
-            tag: "cn",
-            value: 8,
-            type: "integer"
-          }
+      "tag": "math",
+      "child": {
+        "tag": "apply",
+        "operator": { "tag": "times" },
+        "operands": [
+          { "tag": "cn", "value": 6 },
+          { "tag": "cn", "value": 8 }
         ]
       }
     },
-    wolfram: <WolframExpression>"TODO",
+    wolfram: <WolframExpression>"Times[6,8]",
   }, { plain: "22÷7",
     jiixExpression: {
       type: "÷", id: "math/67",
@@ -230,18 +220,17 @@ export const FORMULA_TABLE: FormulaEntry[] = [
         { tag: "mn", value: 7 }
       ]
     },
-    // TODO: This is obviously wrong!
-    //       Mathematica gives us: <cn type='rational'>22<sep />7</cn>
-    //       But we are not processing the embedded <sep> element.
     contentMathMlTree: {
-      tag: "math",
-      child: {
-        tag: "cn",
-        value: 227,
-        type: "rational"
+      "tag": "math",
+      "child": {
+        "tag": "apply", "operator": { "tag": "quotient" },
+        "operands": [
+          { "tag": "cn", "value": 22 },
+          { "tag": "cn", "value": 7 }
+        ]
       }
     },
-    wolfram: <WolframExpression>"TODO",
+    wolfram: <WolframExpression>"Divide[22,7]",
   }, { plain: "22/7",
     jiixExpression: {
       type: "/", id: "math/64",
@@ -258,18 +247,17 @@ export const FORMULA_TABLE: FormulaEntry[] = [
         { tag: "mn", value: 7 }
       ]
     },
-    // TODO: This is obviously wrong!
-    //       Mathematica gives us: <cn type='rational'>22<sep />7</cn>
-    //       But we are not processing the embedded <sep> element.
     contentMathMlTree: {
-      tag: "math",
-      child: {
-        tag: "cn",
-        value: 227,
-        type: "rational"
+      "tag": "math",
+      "child": {
+        "tag": "apply", "operator": { "tag": "quotient" },
+        "operands": [
+          { "tag": "cn", "value": 22 },
+          { "tag": "cn", "value": 7 }
+        ]
       }
     },
-    wolfram: <WolframExpression>"TODO",
+    wolfram: <WolframExpression>"Divide[22,7]",
   }, { plain: "(fraction) 22 (over) 7",
     jiixExpression: {
       type: "fraction", id: "math/59",
@@ -288,40 +276,43 @@ export const FORMULA_TABLE: FormulaEntry[] = [
         }
       ]
     },
-     // TODO: This is obviously wrong!
-    //       Mathematica gives us: <cn type='rational'>22<sep />7</cn>
-    //       But we are not processing the embedded <sep> element.
     contentMathMlTree: {
-      tag: "math",
-      child: { tag: "cn", value: 227, type: "rational" }
+      "tag": "math",
+      "child": {
+        "tag": "apply", "operator": { "tag": "quotient" },
+        "operands": [
+          { "tag": "cn", "value": 22 },
+          { "tag": "cn", "value": 7 }
+        ]
+      }
     },
-    wolfram: <WolframExpression>"TODO",
+    wolfram: <WolframExpression>"Divide[22,7]",
   }, { plain: "(x+a)(x-a)",
     jiixExpression: {
-      "type": "group", "id": "math/134",
-      "operands": [
+      type: "group", id: "math/134",
+      operands: [
         {
-          "type": "fence", "id": "math/131",
+          type: "fence", id: "math/131",
           "open symbol": "(", "close symbol": ")",
-          "operands": [
+          operands: [
             {
-              "type": "+", "id": "math/130",
-              "operands": [
-                { "type": "symbol", "id": "math/121", "label": "x" },
-                { "type": "symbol", "id": "math/123", "label": "a" }
+              type: "+", id: "math/130",
+              operands: [
+                { type: "symbol", id: "math/121", label: "x" },
+                { type: "symbol", id: "math/123", label: "a" }
               ]
             }
           ]
         },
         {
-          "type": "fence", "id": "math/133",
+          type: "fence", id: "math/133",
           "open symbol": "(", "close symbol": ")",
-          "operands": [
+          operands: [
             {
-              "type": "-", "id": "math/132",
-              "operands": [
-                { "type": "symbol", "id": "math/126", "label": "x" },
-                { "type": "symbol", "id": "math/128", "label": "a" }
+              type: "-", id: "math/132",
+              operands: [
+                { type: "symbol", id: "math/126", label: "x" },
+                { type: "symbol", id: "math/128", label: "a" }
               ]
             }
           ]
@@ -329,21 +320,20 @@ export const FORMULA_TABLE: FormulaEntry[] = [
       ]
     },
     presentationMathMlTree: {
-      "tag": "math",
-      "children": [
-        { "tag": "mo", "symbol": "(" },
-        { "tag": "mi", "identifier": "x" },
-        { "tag": "mo", "symbol": "+" },
-        { "tag": "mi", "identifier": "a" },
-        { "tag": "mo", "symbol": ")" },
-        { "tag": "mo", "symbol": "(" },
-        { "tag": "mi", "identifier": "x" },
-        { "tag": "mo", "symbol": "-" },
-        { "tag": "mi", "identifier": "a" },
-        { "tag": "mo", "symbol": ")" }
+      tag: "math",
+      children: [
+        { tag: "mo", symbol: "(" },
+        { tag: "mi", "identifier": "x" },
+        { tag: "mo", symbol: "+" },
+        { tag: "mi", "identifier": "a" },
+        { tag: "mo", symbol: ")" },
+        { tag: "mo", symbol: "(" },
+        { tag: "mi", "identifier": "x" },
+        { tag: "mo", symbol: "-" },
+        { tag: "mi", "identifier": "a" },
+        { tag: "mo", symbol: ")" }
       ]
     },
-    // TODO: This converts (x-a) to (x+-a)
     contentMathMlTree: {
       "tag": "math",
       "child": {
@@ -354,29 +344,22 @@ export const FORMULA_TABLE: FormulaEntry[] = [
             "tag": "apply",
             "operator": { "tag": "plus" },
             "operands": [
-              { "tag": "ci", "identifier": "a" },
-              { "tag": "ci", "identifier": "x" }
+              { "tag": "ci", "identifier": "x" },
+              { "tag": "ci", "identifier": "a" }
             ]
           },
           {
             "tag": "apply",
-            "operator": { "tag": "plus" },
+            "operator": { "tag": "minus" },
             "operands": [
               { "tag": "ci", "identifier": "x" },
-              {
-                "tag": "apply",
-                "operator": { "tag": "times" },
-                "operands": [
-                  { "tag": "cn", "value": -1, "type": "integer" },
-                  { "tag": "ci", "identifier": "a" }
-                ]
-              }
+              { "tag": "ci", "identifier": "a" }
             ]
           }
         ]
       }
     },
-    wolfram: <WolframExpression>"TODO",
+    wolfram: <WolframExpression>"Times[Plus[x,a],Subtract[x,a]]",
   // }, { plain: "",
   //   jiixExpression: ,
   //   presentationMathMlTree: ,
@@ -408,100 +391,100 @@ export const FORMULA_TABLE: FormulaEntry[] = [
         operator: { tag: "power" },
         operands: [
           { tag: "ci", "identifier": "x" },
-          { tag: "cn", value: 2, type: "integer" },
+          { tag: "cn", value: 2 },
         ],
       }
     },
-    wolfram: <WolframExpression>"x^2",
+    wolfram: <WolframExpression>"Power[x,2]",
   }, { plain: "ax^2 + bx + c",
     jiixExpression: {
-      "type": "+",
-      "id": "math/102",
-      "operands": [
+      type: "+",
+      id: "math/102",
+      operands: [
         {
-          "type": "group", "id": "math/100",
-          "operands": [
-            { "type": "symbol", "id": "math/90", "label": "a" },
+          type: "group", id: "math/100",
+          operands: [
+            { type: "symbol", id: "math/90", label: "a" },
             {
-              "type": "superscript",
-              "id": "math/99",
-              "operands": [
-                { "type": "symbol", "id": "math/91", "label": "x" },
-                { "type": "number", "id": "math/98", "label": "2", "value": 2 }
+              type: "superscript",
+              id: "math/99",
+              operands: [
+                { type: "symbol", id: "math/91", label: "x" },
+                { type: "number", id: "math/98", label: "2", value: 2 }
               ]
             }
           ]
         },
         {
-          "type": "group", "id": "math/101",
-          "operands": [
-            { "type": "symbol", "id": "math/94", "label": "b" },
-            { "type": "symbol", "id": "math/95", "label": "x" }
+          type: "group", id: "math/101",
+          operands: [
+            { type: "symbol", id: "math/94", label: "b" },
+            { type: "symbol", id: "math/95", label: "x" }
           ]
         },
-        { "type": "symbol", "id": "math/97", "label": "c" }
+        { type: "symbol", id: "math/97", label: "c" }
       ]
     },
     presentationMathMlTree: {
-      "tag": "math",
-      "children": [
+      tag: "math",
+      children: [
         {
-          "tag": "mrow",
-          "children": [
-            { "tag": "mi", "identifier": "a" },
+          tag: "mrow",
+          children: [
+            { tag: "mi", "identifier": "a" },
             {
-              "tag": "msup",
-              "base": { "tag": "mi", "identifier": "x" },
-              "superscript": { "tag": "mn", "value": 2 }
+              tag: "msup",
+              "base": { tag: "mi", "identifier": "x" },
+              "superscript": { tag: "mn", value: 2 }
             }
           ]
         },
-        { "tag": "mo", "symbol": "+" },
+        { tag: "mo", symbol: "+" },
         {
-          "tag": "mrow",
-          "children": [
-            { "tag": "mi", "identifier": "b" },
-            { "tag": "mi", "identifier": "x" }
+          tag: "mrow",
+          children: [
+            { tag: "mi", "identifier": "b" },
+            { tag: "mi", "identifier": "x" }
           ]
         },
-        { "tag": "mo", "symbol": "+" },
-        { "tag": "mi", "identifier": "c" }
+        { tag: "mo", symbol: "+" },
+        { tag: "mi", "identifier": "c" }
       ]
     },
     contentMathMlTree: {
-      "tag": "math",
-      "child": {
-        "tag": "apply",
-        "operator": { "tag": "plus" },
-        "operands": [
+      tag: "math",
+      child: {
+        tag: "apply",
+        operator: { tag: "plus" },
+        operands: [
           {
-            "tag": "apply",
-            "operator": { "tag": "times" },
-            "operands": [
-              { "tag": "ci", "identifier": "a" },
+            tag: "apply",
+            operator: { tag: "times" },
+            operands: [
+              { tag: "ci", "identifier": "a" },
               {
-                "tag": "apply",
-                "operator": { "tag": "power" },
-                "operands": [
-                  { "tag": "ci", "identifier": "x" },
-                  { "tag": "cn", "value": 2, "type": "integer" }
+                tag: "apply",
+                operator: { tag: "power" },
+                operands: [
+                  { tag: "ci", "identifier": "x" },
+                  { tag: "cn", value: 2 }
                 ]
               }
             ]
           },
           {
-            "tag": "apply",
-            "operator": { "tag": "times" },
-            "operands": [
-              { "tag": "ci", "identifier": "b" },
-              { "tag": "ci", "identifier": "x" }
+            tag: "apply",
+            operator: { tag: "times" },
+            operands: [
+              { tag: "ci", "identifier": "b" },
+              { tag: "ci", "identifier": "x" }
             ]
           },
-          { "tag": "ci", "identifier": "c" }
+          { tag: "ci", "identifier": "c" }
         ]
       }
     },
-    wolfram: <WolframExpression>"TODO",
+    wolfram: <WolframExpression>"Plus[Times[a,Power[x,2]],Times[b,x],c]",
   // }, { plain: "",
   //   jiixExpression: ,
   //   presentationMathMlTree: ,

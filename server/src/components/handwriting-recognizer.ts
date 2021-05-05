@@ -23,22 +23,19 @@ import * as debug1 from "debug";
 const MODULE = __filename.split(/[/\\]/).slice(-1)[0].slice(0,-3);
 const debug = debug1(`server:${MODULE}`);
 
-import { assert, assertFalse, PlainText, zeroPad } from "../shared/common";
+import { assert, PlainText } from "../shared/common";
+import { ContentMathMlTree } from "../shared/content-mathml";
 import { LengthInPixels } from "../shared/css";
 import { FigureObject } from "../shared/figure";
-import {
-  Math, PresentationMathMlTree, Mn, Mi, Mrow, Msub, Msup, Msubsup, Mo, Mfrac,
-  Msqrt, Munder, Munderover, Mover, PresentationMathMlNode
-  // serializeTreeToMathMlMarkup,
-} from "../shared/presentation-mathml";
+import { PresentationMathMlTree } from "../shared/presentation-mathml";
 import { StrokeData } from "../shared/stylus";
 import { SvgMarkup } from "../shared/svg";
 
-import {
-  UNICODE_MIDDLE_DOT, UNICODE_MULTIPLICATION_SIGN, UNICODE_DIVISION_SIGN,
-  MathNode, OperatorNode, RelationNode,
-} from "../adapters/myscript-math";
-import {  JiixMathBlock, postJiixRequest, postSvgRequest, postTextRequest } from "../adapters/myscript";
+import { MathNode } from "../adapters/myscript-math";
+import {  JiixMathBlock, postJiixRequest, postMathMlRequest, postSvgRequest, postTextRequest } from "../adapters/myscript";
+import { convertJiixExpressionToPresentationMathMlTree } from "../converters/jiix-to-pmml";
+import { convertJiixExpressionToContentMathMlTree } from "../converters/jiix-to-cmml";
+import { convertPresentationMathMlMarkupToContentMathMlMarkup } from "../converters/pmml-to-cmml";
 
 // Types
 
@@ -52,6 +49,7 @@ export interface FigureRecognitionResults {
 }
 
 export interface FormulaRecognitionAlternative {
+  contentMathMlTree: ContentMathMlTree;
   presentationMathMlTree: PresentationMathMlTree;
 }
 
@@ -123,17 +121,23 @@ export async function recognizeFormula(
   debug(`Recognizing formula.`);
 
   const jiix = await postJiixRequest<JiixMathBlock>(width, height, 'Math', strokeData);
-  // c-nsole.log(`JSON reponse:\n${JSON.stringify(jiix, null, 2)}`);
 
-  // const mml = await postMmlRequest(strokeData);
-  // c-nsole.log(`MathML response:\n${mml}`);
+  // BUGBUG: This stanza is for development purposes and should be commented out in production.
+  const presentationMathMlMarkup = await postMathMlRequest(width, height, strokeData);
+  console.log(`RECOGNIZED MATHML:\n${presentationMathMlMarkup}`);
+  const contentMathMlMarkup = await convertPresentationMathMlMarkupToContentMathMlMarkup(presentationMathMlMarkup);
+  console.log(`WOLFRAM MATHML CONVERSION:\n${contentMathMlMarkup}`);
 
   // TODO: If user writes multiple expressions then we should separate them into distinct cells.
   const alternatives: FormulaRecognitionAlternative[] = [];
-  for (const expression of jiix.expressions) {
-    const presentationMathMlTree = convertJiixExpressionToPresentationMathMlTree(expression);
-    // c-nsole.dir(serializeTreeToMathMlMarkup(mathMlTree));
-    const alternative: FormulaRecognitionAlternative = { presentationMathMlTree };
+  for (const jiixExpression of jiix.expressions) {
+    filterJiixExpression(jiixExpression)
+    console.log(`JIIX EXPRESSION:\n${JSON.stringify(jiixExpression, null, 2)}`);
+    const presentationMathMlTree = convertJiixExpressionToPresentationMathMlTree(jiixExpression);
+    console.log(`PRESENTATION MATHML TREE FROM JIIX:\n${JSON.stringify(presentationMathMlTree, null, 2)}`)
+    const contentMathMlTree = convertJiixExpressionToContentMathMlTree(jiixExpression);
+    console.log(`CONTENT MATHML TREE FROM JIIX:\n${JSON.stringify(contentMathMlTree, null, 2)}`);
+      const alternative: FormulaRecognitionAlternative = { presentationMathMlTree, contentMathMlTree };
     alternatives.push(alternative);
   };
 
@@ -152,8 +156,16 @@ export async function recognizeText(
 
 // Helper Functions
 
+function createThumbnailVersion(width: LengthInPixels, height: LengthInPixels, svgMarkup: SvgMarkup): SvgMarkup {
+  const scaleFactor = THUMBNAIL_HEIGHT/height;
+  const thumbnailWidth = Math.round(width*scaleFactor);
+  return <SvgMarkup>`<svg viewbox="0 0 ${width} ${height}" width="${thumbnailWidth}" height="${THUMBNAIL_HEIGHT}">${svgMarkup}</svg>`;
+}
+
 function filterJiixExpression(jiixExpression: MathNode): void {
-  // Remove bounding box and item information that are not used in parsing.
+  // Remove bounding box and item information in-place that are not used in parsing.
+  // Used when we console.dir the object to omit the irrelevant parts when
+  // generating test cases.
   delete jiixExpression['bounding-box'];
   delete jiixExpression.items;
   const operands = (<any/* TYPESCRIPT: */>jiixExpression).operands;
@@ -162,190 +174,4 @@ function filterJiixExpression(jiixExpression: MathNode): void {
       filterJiixExpression(operand);
     }
   }
-}
-
-export // for unit testing
-function convertJiixExpressionToPresentationMathMlTree(jiixExpression: MathNode): PresentationMathMlTree {
-  // c-nsole.log("JIIX EXPRESSION:");
-  filterJiixExpression(jiixExpression)
-  // c-nsole.log(JSON.stringify(jiixExpression, null, 2));
-  const rval: Math = { tag: 'math', children: convertSubexpression(jiixExpression) };
-  return rval;
-}
-
-function convertSubexpression(expr: MathNode): PresentationMathMlNode[] {
-  let rval: PresentationMathMlNode[] = [];
-  switch(expr.type) {
-
-    // Tokens
-    case 'number': {
-      if (expr.generated && expr.label == '?') {
-        rval.push(<Mrow>{ tag: 'mrow', children: [] });
-      } else {
-        rval.push(<Mn>{ tag: 'mn', value: expr.value });
-      }
-      break;
-    }
-    case 'symbol': rval.push(<Mi>{ tag: 'mi', identifier: expr.label }); break;
-
-    // Operators
-    case '+':
-    case '-':
-    case '/':
-    case UNICODE_MIDDLE_DOT:
-    case UNICODE_MULTIPLICATION_SIGN:
-    case UNICODE_DIVISION_SIGN:
-      rval.push(...convertOperatorExpression(expr));
-      break;
-    case 'square root':
-      rval.push(<Msqrt>{ tag: 'msqrt', operand: convertMrowWrapped(expr.operands[0]) });
-      break;
-    case '!':
-      rval.push(...convertSubexpression(expr.operands[0]));
-      rval.push(<Mo>{ tag: 'mo', symbol: '!' });
-      break;
-
-    // Relations
-    case '=':
-    case '<':
-    case '>':
-    case '\u2243':
-    case '\u2248':
-    case '\u2260':
-    case '\u2261':
-    case '\u2262':
-    case '\u2264':
-    case '\u2265':
-    case '\u226A':
-    case '\u226B':
-    case '\u21D0':
-    case '\u21D2':
-    case '\u21D4':
-    case '\u2225':
-      rval.push(...convertRelationExpression(expr));
-      break;
-
-    // Grouping
-
-    case 'fence': {
-      rval.push(<Mo>{ tag: 'mo', symbol: expr['open symbol'] });
-      rval.push(...convertSubexpression(expr.operands[0]));
-      rval.push(<Mo>{ tag: 'mo', symbol: expr['close symbol'] });
-      break;
-    }
-    case 'fraction': {
-      rval.push(<Mfrac>{
-        tag: 'mfrac',
-        numerator: convertMrowWrapped(expr.operands[0]),
-        denominator: convertMrowWrapped(expr.operands[1]),
-      })
-      break;
-    }
-    case 'group': {
-      for (const operand of expr.operands) {
-        rval.push(...convertSubexpression(operand));
-      }
-      break;
-    }
-
-    // Subscripts and superscripts
-    case 'subscript': {
-      rval.push(<Msub>{
-        tag: 'msub',
-        base: convertMrowWrapped(expr.operands![0]),
-        subscript: convertMrowWrapped(expr.operands![1]),
-      });
-      break;
-    }
-    case 'superscript': {
-      rval.push(<Msup>{
-        tag: 'msup',
-        base: convertMrowWrapped(expr.operands![0]),
-        superscript: convertMrowWrapped(expr.operands![1]),
-      });
-      break;
-    }
-    case 'subsuperscript': {
-      rval.push(<Msubsup>{
-        tag: 'msubsup',
-        base: convertMrowWrapped(expr.operands![0]),
-        subscript: convertMrowWrapped(expr.operands![1]),
-        superscript: convertMrowWrapped(expr.operands![2]),
-      });
-      break;
-    }
-    case 'underscript': {
-      rval.push(<Munder>{
-        tag: 'munder',
-        base: convertMrowWrapped(expr.operands![0]),
-        underscript: convertMrowWrapped(expr.operands![1]),
-      });
-      break;
-    }
-    case 'overscript': {
-      rval.push(<Mover>{
-        tag: 'mover',
-        base: convertMrowWrapped(expr.operands![0]),
-        overscript: convertMrowWrapped(expr.operands![1]),
-      });
-      break;
-    }
-    case 'underoverscript': {
-      rval.push(<Munderover>{
-        tag: 'munderover',
-        base: convertMrowWrapped(expr.operands![0]),
-        underscript: convertMrowWrapped(expr.operands![1]),
-        overscript: convertMrowWrapped(expr.operands![2]),
-      });
-      break;
-    }
-
-    default: assertFalse(`Unknown JIIX math node type: ${(<any>expr).type}`);
-  }
-  return rval;
-}
-
-function convertMrowWrapped(expr: MathNode): PresentationMathMlNode {
-  const children = convertSubexpression(expr);
-  assert(children.length>=0);
-  if (children.length == 1) {
-    return children[0];
-  } else {
-    return <Mrow>{ tag: 'mrow', children };
-  }
-}
-
-function convertOperatorExpression(expr: OperatorNode): PresentationMathMlNode[] {
-  const operands = expr.operands;
-  const rval: PresentationMathMlNode[] = [];
-  for (let i=0; i<operands.length-1; i++) {
-    // REVIEW: May not need to wrap in mrow depending on relative operator precedence levels.
-    rval.push(convertMrowWrapped(operands[i]));
-    rval.push(<Mo>{ tag: 'mo', symbol: entityForSymbol(expr.type) });
-  }
-  rval.push(convertMrowWrapped(operands[operands.length-1]));
-  return rval;
-}
-
-function convertRelationExpression(expr: RelationNode): PresentationMathMlNode[] {
-  const [ lhs, rhs ] = expr.operands;
-  // REVIEW: May not need to wrap in mrow depending on relative operator precedence levels.
-  return [
-    convertMrowWrapped(lhs),
-    <Mo>{ tag: 'mo', symbol: entityForSymbol(expr.type) },
-    convertMrowWrapped(rhs),
-  ];
-}
-
-function createThumbnailVersion(width: LengthInPixels, height: LengthInPixels, svgMarkup: SvgMarkup): SvgMarkup {
-  const scaleFactor = THUMBNAIL_HEIGHT/height;
-  const thumbnailWidth = Math.round(width*scaleFactor);
-  return <SvgMarkup>`<svg viewbox="0 0 ${width} ${height}" width="${thumbnailWidth}" height="${THUMBNAIL_HEIGHT}">${svgMarkup}</svg>`;
-}
-
-function entityForSymbol(symbol: string): string {
-  assert(symbol.length == 1);
-  const charCode = symbol.charCodeAt(0);
-  if (charCode >= 0x20 && charCode < 0x80) { return symbol; }
-  else { return `&#x${zeroPad(charCode.toString(16), 4)};`}
 }

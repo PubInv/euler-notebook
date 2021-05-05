@@ -157,7 +157,7 @@ export class FormulaCell extends ServerCell<FormulaCellObject> {
     for (let i=0; i<alternatives.length; i++) {
       const alternative = alternatives[i];
       const suggestionId = typesetFormulaSuggestionId(i);
-      const formula = await ServerFormula.createFromPresentationMathMlTree(alternative.presentationMathMlTree);
+      const formula = await ServerFormula.createFromMathMl(alternative.presentationMathMlTree, alternative.contentMathMlTree);
 
       const changeRequests: NotebookChangeRequest[] = [
         {

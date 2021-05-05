@@ -21,22 +21,19 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 import { assert } from "chai";
 
-import { convertPresentationMathMlToContentMathMl } from "../src/components/mathml-processor";
+import { convertJiixExpressionToContentMathMlTree } from "../src/converters/jiix-to-cmml";
 
 import { FORMULA_TABLE } from "./formula-table";
-
-import { requireWolframScript } from "./require-wolframscript";
-requireWolframScript();
 
 // Constants
 
 // Unit Tests
 
-describe("convertPresentationMathMlToContentMathMl", function(){
+describe("convertJiixExpressionToContentMathMlTree", function(){
   this.timeout(10*1000);
   for (const entry of FORMULA_TABLE) {
-    it(`converts ${entry.plain} correctly.`, async function(){
-      const contentMathMlTree = await convertPresentationMathMlToContentMathMl(entry.presentationMathMlTree);
+    it(`converts ${entry.plain} correctly.`, function(){
+      const contentMathMlTree = convertJiixExpressionToContentMathMlTree(entry.jiixExpression);
       assert.deepEqual(contentMathMlTree, entry.contentMathMlTree);
     });
   }
