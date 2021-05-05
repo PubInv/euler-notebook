@@ -36,7 +36,7 @@ describe("convertJiixExpressionToPresentationMathMlTree", function(){
   this.timeout(10*1000);
   for (const entry of FORMULA_TABLE) {
     it(`converts ${entry.plain} correctly.`, async function(){
-      const contentMathMlTree = await convertJiixExpressionToPresentationMathMlTree(entry.jiix);
+      const contentMathMlTree = await convertJiixExpressionToPresentationMathMlTree(entry.jiixExpression);
       assert.deepEqual(contentMathMlTree, entry.presentationMathMlTree);
     });
   }

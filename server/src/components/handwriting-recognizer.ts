@@ -152,25 +152,41 @@ export async function recognizeText(
 
 // Helper Functions
 
-export // for unit testing
-function convertJiixExpressionToPresentationMathMlTree(expr: MathNode): PresentationMathMlTree {
-  return <Math>{ type: 'math', children: convert(expr) };
+function filterJiixExpression(jiixExpression: MathNode): void {
+  // Remove bounding box and item information that are not used in parsing.
+  delete jiixExpression['bounding-box'];
+  delete jiixExpression.items;
+  const operands = (<any/* TYPESCRIPT: */>jiixExpression).operands;
+  if (operands) {
+    for (const operand of operands) {
+      filterJiixExpression(operand);
+    }
+  }
 }
 
-function convert(expr: MathNode): PresentationMathMlNode[] {
+export // for unit testing
+function convertJiixExpressionToPresentationMathMlTree(jiixExpression: MathNode): PresentationMathMlTree {
+  // c-nsole.log("JIIX EXPRESSION:");
+  filterJiixExpression(jiixExpression)
+  // c-nsole.log(JSON.stringify(jiixExpression, null, 2));
+  const rval: Math = { tag: 'math', children: convertSubexpression(jiixExpression) };
+  return rval;
+}
+
+function convertSubexpression(expr: MathNode): PresentationMathMlNode[] {
   let rval: PresentationMathMlNode[] = [];
   switch(expr.type) {
 
     // Tokens
     case 'number': {
       if (expr.generated && expr.label == '?') {
-        rval.push(<Mrow>{ type: 'mrow', children: [] });
+        rval.push(<Mrow>{ tag: 'mrow', children: [] });
       } else {
-        rval.push(<Mn>{ type: 'mn', value: expr.value });
+        rval.push(<Mn>{ tag: 'mn', value: expr.value });
       }
       break;
     }
-    case 'symbol': rval.push(<Mi>{ type: 'mi', identifier: expr.label }); break;
+    case 'symbol': rval.push(<Mi>{ tag: 'mi', identifier: expr.label }); break;
 
     // Operators
     case '+':
@@ -182,11 +198,11 @@ function convert(expr: MathNode): PresentationMathMlNode[] {
       rval.push(...convertOperatorExpression(expr));
       break;
     case 'square root':
-      rval.push(<Msqrt>{ type: 'msqrt', operand: convertMrowWrapped(expr.operands[0]) });
+      rval.push(<Msqrt>{ tag: 'msqrt', operand: convertMrowWrapped(expr.operands[0]) });
       break;
     case '!':
-      rval.push(...convert(expr.operands[0]));
-      rval.push(<Mo>{ type: 'mo', symbol: '!' });
+      rval.push(...convertSubexpression(expr.operands[0]));
+      rval.push(<Mo>{ tag: 'mo', symbol: '!' });
       break;
 
     // Relations
@@ -212,14 +228,14 @@ function convert(expr: MathNode): PresentationMathMlNode[] {
     // Grouping
 
     case 'fence': {
-      rval.push(<Mo>{ type: 'mo', symbol: expr['open symbol'] });
-      rval.push(...convert(expr.operands[0]));
-      rval.push(<Mo>{ type: 'mo', symbol: expr['close symbol'] });
+      rval.push(<Mo>{ tag: 'mo', symbol: expr['open symbol'] });
+      rval.push(...convertSubexpression(expr.operands[0]));
+      rval.push(<Mo>{ tag: 'mo', symbol: expr['close symbol'] });
       break;
     }
     case 'fraction': {
       rval.push(<Mfrac>{
-        type: 'mfrac',
+        tag: 'mfrac',
         numerator: convertMrowWrapped(expr.operands[0]),
         denominator: convertMrowWrapped(expr.operands[1]),
       })
@@ -227,7 +243,7 @@ function convert(expr: MathNode): PresentationMathMlNode[] {
     }
     case 'group': {
       for (const operand of expr.operands) {
-        rval.push(...convert(operand));
+        rval.push(...convertSubexpression(operand));
       }
       break;
     }
@@ -235,7 +251,7 @@ function convert(expr: MathNode): PresentationMathMlNode[] {
     // Subscripts and superscripts
     case 'subscript': {
       rval.push(<Msub>{
-        type: 'msub',
+        tag: 'msub',
         base: convertMrowWrapped(expr.operands![0]),
         subscript: convertMrowWrapped(expr.operands![1]),
       });
@@ -243,7 +259,7 @@ function convert(expr: MathNode): PresentationMathMlNode[] {
     }
     case 'superscript': {
       rval.push(<Msup>{
-        type: 'msup',
+        tag: 'msup',
         base: convertMrowWrapped(expr.operands![0]),
         superscript: convertMrowWrapped(expr.operands![1]),
       });
@@ -251,7 +267,7 @@ function convert(expr: MathNode): PresentationMathMlNode[] {
     }
     case 'subsuperscript': {
       rval.push(<Msubsup>{
-        type: 'msubsup',
+        tag: 'msubsup',
         base: convertMrowWrapped(expr.operands![0]),
         subscript: convertMrowWrapped(expr.operands![1]),
         superscript: convertMrowWrapped(expr.operands![2]),
@@ -260,7 +276,7 @@ function convert(expr: MathNode): PresentationMathMlNode[] {
     }
     case 'underscript': {
       rval.push(<Munder>{
-        type: 'munder',
+        tag: 'munder',
         base: convertMrowWrapped(expr.operands![0]),
         underscript: convertMrowWrapped(expr.operands![1]),
       });
@@ -268,7 +284,7 @@ function convert(expr: MathNode): PresentationMathMlNode[] {
     }
     case 'overscript': {
       rval.push(<Mover>{
-        type: 'mover',
+        tag: 'mover',
         base: convertMrowWrapped(expr.operands![0]),
         overscript: convertMrowWrapped(expr.operands![1]),
       });
@@ -276,7 +292,7 @@ function convert(expr: MathNode): PresentationMathMlNode[] {
     }
     case 'underoverscript': {
       rval.push(<Munderover>{
-        type: 'munderover',
+        tag: 'munderover',
         base: convertMrowWrapped(expr.operands![0]),
         underscript: convertMrowWrapped(expr.operands![1]),
         overscript: convertMrowWrapped(expr.operands![2]),
@@ -290,12 +306,12 @@ function convert(expr: MathNode): PresentationMathMlNode[] {
 }
 
 function convertMrowWrapped(expr: MathNode): PresentationMathMlNode {
-  const children = convert(expr);
+  const children = convertSubexpression(expr);
   assert(children.length>=0);
   if (children.length == 1) {
     return children[0];
   } else {
-    return <Mrow>{ type: 'mrow', children };
+    return <Mrow>{ tag: 'mrow', children };
   }
 }
 
@@ -305,7 +321,7 @@ function convertOperatorExpression(expr: OperatorNode): PresentationMathMlNode[]
   for (let i=0; i<operands.length-1; i++) {
     // REVIEW: May not need to wrap in mrow depending on relative operator precedence levels.
     rval.push(convertMrowWrapped(operands[i]));
-    rval.push(<Mo>{ type: 'mo', symbol: entityForSymbol(expr.type) });
+    rval.push(<Mo>{ tag: 'mo', symbol: entityForSymbol(expr.type) });
   }
   rval.push(convertMrowWrapped(operands[operands.length-1]));
   return rval;
@@ -316,7 +332,7 @@ function convertRelationExpression(expr: RelationNode): PresentationMathMlNode[]
   // REVIEW: May not need to wrap in mrow depending on relative operator precedence levels.
   return [
     convertMrowWrapped(lhs),
-    <Mo>{ type: 'mo', symbol: entityForSymbol(expr.type) },
+    <Mo>{ tag: 'mo', symbol: entityForSymbol(expr.type) },
     convertMrowWrapped(rhs),
   ];
 }

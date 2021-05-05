@@ -20,7 +20,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 // Requirements
 
 import { assert, assertFalse } from "../shared/common";
-import { ContentMathMlNode, ContentMathMlTree } from "../shared/content-mathml";
+import { ContentMathMlNode, ContentMathMlTree, NumberType } from "../shared/content-mathml";
 import { FormulaSymbol, WolframExpression } from "../shared/formula";
 import { PlotInfo } from "../shared/plot";
 
@@ -77,12 +77,12 @@ export abstract class SemanticFormula {
 
   private static createFromContentMathMlNode(node: ContentMathMlNode): SemanticFormula {
     let rval: SemanticFormula;
-    switch(node.type) {
+    switch(node.tag) {
 
       case 'apply': {
         const { operator, operands } = node;
         assert(operands.length == 2);
-        switch (operator.type) {
+        switch (operator.tag) {
           case 'eq': {
             const lhs = this.createFromContentMathMlNode(operands[0]);
             assert(lhs instanceof ExpressionNode);
@@ -109,7 +109,7 @@ export abstract class SemanticFormula {
           }
 
           default:
-           throw new Error(`Creating from applied '${operator.type}' nodes not yet implemented.`)
+           throw new Error(`Creating from applied '${operator.tag}' nodes not yet implemented.`)
         }
         break;
       }
@@ -120,14 +120,14 @@ export abstract class SemanticFormula {
       }
 
       case 'cn': {
-        rval = new NumberNode(node.value);
+        rval = new NumberNode(node.value, node.type);
         break;
       }
 
       case 'math': assertFalse();
 
       default:
-        throw new Error(`Creating from '${node.type}' nodes not yet implemented.`)
+        throw new Error(`Creating from '${node.tag}' nodes not yet implemented.`);
 
     }
     return rval;
@@ -279,14 +279,16 @@ class MissingNode extends ExpressionNode {
 }
 
 class NumberNode extends ExpressionNode {
+  public type?: NumberType;
   public value: number;
   public /* override */ plotInfo(): PlotInfo|undefined {
     return { type: 'constant' };
   }
   public /* override */ wolframExpression(): WolframExpression { return <WolframExpression>this.value.toString(); }
-  public constructor(value: number) {
+  public constructor(value: number, type?: NumberType) {
     super();
     this.value = value;
+    this.type = type;
   }
 }
 

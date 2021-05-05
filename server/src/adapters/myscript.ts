@@ -115,9 +115,9 @@ export interface JiixMathBlock extends JiixBlockBase {
 }
 
 interface JiixConfiguration {
-  'bounding-box': boolean;
-  strokes: boolean;
-  text: { chars: boolean; words: boolean; }
+  'bounding-box'?: boolean;
+  strokes?: boolean;
+  text?: { chars: boolean; words: boolean; }
 }
 
 interface MarginConfiguration {
@@ -129,16 +129,16 @@ interface MarginConfiguration {
 
 interface MathConfiguration {
   margin?: MarginConfiguration;
-  mimeTypes: /* TYPESCRIPT: MimeType */ string[];
+  mimeTypes?: MimeType[];
   solver?: SolverConfiguration;
 }
 
 interface SolverConfiguration {
   enable: boolean;
-  'fractional-part-digits': number;
-  'decimal-separator': ".";
-  'rounding-mode': 'half up';
-  'angle-unit': 'deg';
+  'fractional-part-digits'?: number;
+  'decimal-separator'?: ".";
+  'rounding-mode'?: 'half up';
+  'angle-unit'?: 'deg';
 }
 
 // Constants
@@ -257,15 +257,9 @@ function batchRequestFromStrokes(
   const rval: BatchRequest = {
     configuration: {
       export: {
-        // 'image-resolution': 300,
-        // image: {
-        //   viewport: {
-        //     x: 0, y: 0, width, height
-        //   }
-        // },
         jiix: {
           'bounding-box': true,
-          strokes: false,
+          // strokes: true, // REVIEW: Setting strokes to true doesn't give us strokes! Not sure why.
           text: {
             chars: false,
             words: true
@@ -275,19 +269,7 @@ function batchRequestFromStrokes(
       lang: 'en_US',
       math: {
         mimeTypes: [ mimeType ],
-        // solver: {
-        //   enable: true,
-        //   'fractional-part-digits': 3,
-        //   'decimal-separator': '.',
-        //   'rounding-mode': 'half up',
-        //   'angle-unit': 'deg',
-        // },
-        // margin: {
-        //   bottom: 10,
-        //   left: 15,
-        //   right: 15,
-        //   top: 10
-        // }
+        solver: { enable: false },
       },
     },
     contentType,

@@ -42,7 +42,9 @@ export interface BoundingBox {
 
 export interface JsonObject {
   // A vanilla JavaScript object that you can specify in JSON.
-  // TODO:
+  // NOTE: This doesn't necessarily capture all possible JSON objects
+  // but is sufficient for our purposes.
+  [ key: string ]: null | string | number | JsonObject;
 }
 
 // REVIEW: This is also defined in server/common.ts.

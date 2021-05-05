@@ -23,7 +23,7 @@ import { parseStringPromise } from 'xml2js';
 
 import { execute as executeWolframScript } from "../adapters/wolframscript";
 import { assert, assertFalse, JsonObject } from '../shared/common';
-import { Apply, ContentMathMlMarkup, ContentMathMlTree, ContentMathMlNode, Ci } from "../shared/content-mathml";
+import { Apply, ContentMathMlMarkup, ContentMathMlTree, ContentMathMlNode, Ci, NumberType, Cn } from "../shared/content-mathml";
 import { WolframExpression } from "../shared/formula";
 import { PresentationMathMlTree, serializeTreeToMathMlMarkup } from "../shared/presentation-mathml";
 
@@ -39,24 +39,35 @@ interface XmlElement {
 // Exported functions
 
 export async function convertPresentationMathMlToContentMathMl(presentationMathMlTree: PresentationMathMlTree): Promise<ContentMathMlTree> {
+
+  // c-nsole.log("PRESENTATION MATHML:")
+  // c-nsole.log(JSON.stringify(presentationMathMlTree, null, 2));
+
   // If we get an empty presentation math tree, then return an empty content math tree.
   // (Mathematica will convert an empty <math> element to <math><ci>Null</ci></math>.)
-  if (presentationMathMlTree.children.length==0) { return { type: 'math' }; }
+  let rval: ContentMathMlTree;
 
-  // Convert the tree object to a MathML string to pass to WolframScript.
-  const presentationMathMlMarkup = serializeTreeToMathMlMarkup(presentationMathMlTree);
+  if (presentationMathMlTree.children.length > 0) {
 
-  // Ask WolframScript to convert (Presentation) MathML to a Wolfram Expression,
-  // then ask it to convert the expression into Content MathML.
-  const script = <WolframExpression>`ExportString[ToExpression["${presentationMathMlMarkup}", MathMLForm, Hold], "MathML", "Content"->True, "Presentation"->False]`;
-  const contentMathMlMarkup = <ContentMathMlMarkup>await executeWolframScript(script);
+    // Convert the tree object to a MathML string to pass to WolframScript.
+    const presentationMathMlMarkup = serializeTreeToMathMlMarkup(presentationMathMlTree);
 
-  // Parse the Content MathML to get a content tree object.
-  // c-nsole.log("CONTENT MATHML: " + contentMathMlMarkup);
-  const contentMathMlTree = await parseContentMathMlMarkup(contentMathMlMarkup);
-  const rval = unwrapHold(contentMathMlTree);
+    // Ask WolframScript to convert (Presentation) MathML to a Wolfram Expression,
+    // then ask it to convert the expression into Content MathML.
+    const script = <WolframExpression>`ExportString[ToExpression["${presentationMathMlMarkup}", MathMLForm, Hold], "MathML", "Content"->True, "Presentation"->False]`;
+    const contentMathMlMarkup = <ContentMathMlMarkup>await executeWolframScript(script);
+
+    // Parse the Content MathML to get a content tree object.
+    // c-nsole.log("CONTENT MATHML MARKUP WITH HOLD: " + contentMathMlMarkup);
+    const contentMathMlTree = await parseContentMathMlMarkup(contentMathMlMarkup);
+    rval = unwrapHold(contentMathMlTree);
+
+  } else {
+    // Presentation MathML is empty <math> element. Return empty <math> node.
+    rval = { tag: 'math' };
+  }
   // c-nsole.log("CONTENT MATHML TREE:");
-  // c-nsole.dir(contentMathMlTree, { depth: null });
+  // c-nsole.log(JSON.stringify(rval, null, 2));
   return rval;
 }
 
@@ -65,9 +76,9 @@ function unwrapHold(tree: ContentMathMlTree): ContentMathMlTree {
   // Otherwise, if we passed in the presentation expression "1+2" we would get back the content expression "3".
   // We need to unwrap the Hold[] from the expression.
   const applyNode = <Apply>tree.child;
-  assert(applyNode && applyNode.type == 'apply');
+  assert(applyNode && applyNode.tag == 'apply');
   const operator = <Ci>applyNode.operator;
-  assert(operator.type == 'ci' && operator.identifier == 'Hold');
+  assert(operator.tag == 'ci' && operator.identifier == 'Hold');
   const operands = applyNode.operands;
   assert(operands.length==1);
   const operand = operands[0];
@@ -80,7 +91,7 @@ export async function parseContentMathMlMarkup(markup: ContentMathMlMarkup): Pro
   // c-nsole.log("XML2JS OBJECT:");
   // c-nsole.dir(xmlObject, { depth: null });
   const rval = <ContentMathMlTree>parseTreeX(xmlObject);
-  assert(rval.type == 'math');
+  assert(rval.tag == 'math');
   return rval;
 }
 
@@ -93,27 +104,31 @@ function parseTreeX(elt: XmlElement): ContentMathMlNode {
       assert(elt['$$'] && elt['$$'].length>=2);
       const operator = parseTreeX(elt['$$']![0]);
       const operands = elt['$$']!.slice(1).map(parseTreeX);
-      rval = {type: 'apply', operator, operands };
+      rval = {tag: 'apply', operator, operands };
       break;
     case 'ci':
       assert(elt['_']);
-      rval = { type: 'ci', identifier: elt['_']!};
+      rval = { tag: 'ci', identifier: elt['_']!};
       break;
-    case 'cn':
+    case 'cn': {
       // TODO: number type. 'integer', etc.
       assert(elt['_']);
-      rval = { type: 'cn', value: parseFloat(elt['_']!)};
+      const type: NumberType|undefined = elt['$'] && <NumberType>elt['$'].type;
+      const node: Cn = { tag: 'cn', value: parseFloat(elt['_']!) };
+      if (type) { node.type = type; }
+      rval = node;
       break;
+    }
     case 'math':
       assert(elt['$$'] && elt['$$'].length==1);
-      rval = { type: 'math', child: parseTreeX(elt['$$']![0]) };
+      rval = { tag: 'math', child: parseTreeX(elt['$$']![0]) };
       break;
 
     case 'eq':
     case 'plus':
     case 'power':
     case 'times':
-      rval = { type: elt['#name'] };
+      rval = { tag: elt['#name'] };
       break;
 
     default:

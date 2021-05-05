@@ -25,46 +25,49 @@ export type ContentMathMlMarkup = '{ContentMathMlMarkup}';
 export type ContentMathMlNode = Apply | Ci | Cn | Csym | Eq | Math | Plus | Power | Times;
 export type ContentMathMlTree = Math;
 
+export type NumberType = "integer" | "real" | "double" | "hexdouble" | "e-notation" | "rational" | "complex-cartesian" | "complex-polar" | "constant";
+
 export interface Apply {
-  type: 'apply';
+  tag: 'apply';
   operator: ContentMathMlNode;
   operands: ContentMathMlNode[];
 }
 
 export interface Ci {
-  type: 'ci';
+  tag: 'ci';
   identifier: string;
 }
 
 export interface Cn {
-  type: 'cn';
+  tag: 'cn';
   value: number;
+  type?: NumberType;  // Per spec, defaults is "real"
 }
 
 export interface Csym {
-  type: 'csym';
+  tag: 'csym';
   symbol: string;
 }
 
 export interface Eq {
-  type: 'eq';
+  tag: 'eq';
   // Applied to a LHS and RHS.
 }
 
 export interface Math {
-  type: 'math';
+  tag: 'math';
   child?: ContentMathMlNode;
 }
 
 export interface Plus {
-  type: 'plus';
+  tag: 'plus';
 }
 
 export interface Power {
-  type: 'power';
+  tag: 'power';
   // Applied to a 'base' and an 'exponent'.
 }
 
 export interface Times {
-  type: 'times';
+  tag: 'times';
 }
