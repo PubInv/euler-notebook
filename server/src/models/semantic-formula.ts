@@ -20,7 +20,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 // Requirements
 
 import { assert, assertFalse } from "../shared/common";
-import { ContentMathMlNode, ContentMathMlTree } from "../shared/content-mathml";
+import { Apply, ContentMathMlNode, ContentMathMlTree } from "../shared/content-mathml";
 import { FormulaSymbol, WolframExpression } from "../shared/formula";
 import { PlotInfo } from "../shared/plot";
 
@@ -76,97 +76,100 @@ export abstract class SemanticFormula {
 
   // Private Class Methods
 
-  private static createFromContentMathMlNode(node: ContentMathMlNode): SemanticFormula {
+  private static createFromApplyNode(node: Apply): SemanticFormula {
     let rval: SemanticFormula;
-    switch(node.tag) {
+    const { operator, operands } = node;
+    switch (operator.tag) {
 
-      case 'apply': {
-        const { operator, operands } = node;
+      // One operand
+      case 'factorial':
+      case 'root': {
+        assert(operands.length == 1);
+        const op1 = this.createFromContentMathMlNode(operands[0]);
+        let cls /* TYPESCRIPT: */;
+        switch(operator.tag) {
+          case 'factorial': cls = FactorialNode; break;
+          case 'root': cls = RootNode; break;
+        }
+        rval = new cls(op1);
+        break;
+      }
+
+      // Two operands
+      case 'eq':
+      case 'geq':
+      case 'gt':
+      case 'leq':
+      case 'lt':
+      case 'neq':
+      case 'power':
+      case 'quotient': {
+        assert(operands.length == 2);
+        const op1 = this.createFromContentMathMlNode(operands[0]);
+        assert(op1 instanceof ExpressionNode);
+        const op2 = this.createFromContentMathMlNode(operands[1]);
+        assert(op2 instanceof ExpressionNode);
+        let cls /* TYPESCRIPT: */;
         switch (operator.tag) {
-          case 'eq':
-          case 'geq':
-          case 'gt':
-          case 'leq':
-          case 'lt':
-          case 'neq': {
-            assert(operands.length == 2);
-            const lhs = this.createFromContentMathMlNode(operands[0]);
-            assert(lhs instanceof ExpressionNode);
-            const rhs = this.createFromContentMathMlNode(operands[1]);
-            assert(rhs instanceof ExpressionNode);
-            let cls /* TYPESCRIPT: */;
-            switch (operator.tag) {
-              case 'eq': cls = EqualsNode; break;
-              case 'geq': cls = GreaterThanOrEqualToNode; break;
-              case 'gt': cls = GreaterThanNode; break;
-              case 'leq': cls = LessThanOrEqualToNode; break;
-              case 'lt': cls = LessThanNode; break;
-              case 'neq': cls = NotEqualsNode; break;
-            }
-            rval = new cls(lhs, rhs);
-            break;
-          }
-          case 'minus':  {
-            if (operands.length == 1) {
-              const operand = this.createFromContentMathMlNode(operands[0]);
-              rval = new UnaryMinusNode(operand);
-            } else if (operands.length == 2) {
-              const minuend = this.createFromContentMathMlNode(operands[0]);
-              const subtrahend = this.createFromContentMathMlNode(operands[1]);
-              rval = new MinusNode(minuend, subtrahend);
-            } else {
-              assertFalse();
-            }
-            break;
-          }
-          case 'plus':  {
-            assert(operands.length >= 2);
-            const semOperands = operands.map(operand=>this.createFromContentMathMlNode(operand));
-            rval = new PlusNode(semOperands);
-            break;
-          }
-          case 'power': {
-            assert(operands.length == 2);
-            const base = this.createFromContentMathMlNode(operands[0]);
-            const exponent = this.createFromContentMathMlNode(operands[1]);
-            rval = new PowerNode(base, exponent);
-            break;
-          }
-          case 'quotient': {
-            assert(operands.length == 2);
-            const dividend = this.createFromContentMathMlNode(operands[0]);
-            const divisor = this.createFromContentMathMlNode(operands[1]);
-            rval = new QuotientNode(dividend, divisor);
-            break;
-          }
-          case 'times':  {
-            assert(operands.length >= 2);
-            const semOperands = operands.map(operand=>this.createFromContentMathMlNode(operand));
-            rval = new TimesNode(semOperands);
-            break;
-          }
+          case 'eq': cls = EqualsNode; break;
+          case 'geq': cls = GreaterThanOrEqualToNode; break;
+          case 'gt': cls = GreaterThanNode; break;
+          case 'leq': cls = LessThanOrEqualToNode; break;
+          case 'lt': cls = LessThanNode; break;
+          case 'neq': cls = NotEqualsNode; break;
+          case 'power': cls = PowerNode; break;
+          case 'quotient': cls = QuotientNode; break;
+        }
+        rval = new cls(op1, op2);
+        break;
+      }
 
-          default:
-           throw new Error(`Creating from applied '${operator.tag}' nodes not yet implemented.`)
+      // Two or more operands
+      case 'plus':
+      case 'times': {
+        assert(operands.length >= 2);
+        const semOperands = operands.map(operand=>this.createFromContentMathMlNode(operand));
+        let cls /* TYPESCRIPT: */;
+        switch (operator.tag) {
+          case 'plus': cls = PlusNode; break;
+          case 'times': cls = TimesNode; break;
+        }
+        rval = new cls(semOperands);
+        break;
+      }
+
+      // Other cases
+
+      case 'minus':  {
+        // Can be unary minus or binary minus.
+        if (operands.length == 1) {
+          const operand = this.createFromContentMathMlNode(operands[0]);
+          rval = new UnaryMinusNode(operand);
+        } else if (operands.length == 2) {
+          const minuend = this.createFromContentMathMlNode(operands[0]);
+          const subtrahend = this.createFromContentMathMlNode(operands[1]);
+          rval = new MinusNode(minuend, subtrahend);
+        } else {
+          assertFalse();
         }
         break;
       }
 
-      case 'ci': {
-        rval = new IdentifierNode(<FormulaSymbol>node.identifier);
-        break;
-      }
+      default:
+       throw new Error(`Creating from applied '${operator.tag}' nodes not yet implemented.`)
+    }
+    return rval;
+  }
 
-      case 'cn': {
-        rval = new NumberNode(node.value);
-        break;
-      }
-
+  private static createFromContentMathMlNode(node: ContentMathMlNode): SemanticFormula {
+    let rval: SemanticFormula;
+    switch(node.tag) {
+      case 'apply': rval = this.createFromApplyNode(node); break;
+      case 'ci': rval = new IdentifierNode(<FormulaSymbol>node.identifier); break;
+      case 'cn': rval = new NumberNode(node.value); break;
       case 'math': assertFalse();
-
       default:
         throw new Error(`Creating from '${node.tag}' nodes not yet implemented.`);
-
     }
     return rval;
   }
@@ -385,6 +388,33 @@ class PowerNode extends InteriorExpressionNode {
     super();
     this.base = base;
     this.exponent = exponent;
+  }
+}
+
+class FactorialNode extends InteriorExpressionNode {
+  public operand: ExpressionNode;
+  public /* override */ children(): ExpressionNode[] { return [ this.operand ] };
+  public /* override */ wolframExpression(): WolframExpression {
+    return <WolframExpression>`Factorial[${this.operand.wolframExpression()}]`;
+  }
+  public constructor(operand: SemanticFormula) {
+    super();
+    this.operand = operand;
+  }
+}
+
+class RootNode extends InteriorExpressionNode {
+  public operand: ExpressionNode;
+  // LATER: public degree?: ExpressionNode;
+  public /* override */ children(): ExpressionNode[] { return [ this.operand, /* LATER: this.degree */ ] };
+  public /* override */ wolframExpression(): WolframExpression {
+    // REVIEW: Maybe need parens?
+    // LATER: CubeRoot or Surd
+    return <WolframExpression>`Sqrt[${this.operand.wolframExpression()}]`;
+  }
+  public constructor(operand: SemanticFormula) {
+    super();
+    this.operand = operand;
   }
 }
 

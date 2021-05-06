@@ -40,7 +40,7 @@ export type MathNodeType =
   '\u2260' /* UNICODE_NOT_EQUAL_TO_SIGN */ |
   '\u2261' |
   '\u2262' |
-  '\u2264' |
+  '\u2264' /* UNICODE_LESS_THAN_OR_EQUAL_TO_SIGN*/ |
   '\u2265' /* UNICODE_GREATER_THAN_OR_EQUAL_TO_SIGN */ |
   '\u226A' |
   '\u226B' |

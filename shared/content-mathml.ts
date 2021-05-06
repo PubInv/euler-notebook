@@ -23,6 +23,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 export type ApplyOperators =
   'eq' |
+  'factorial' |
   'geq' |
   'gt' |
   'leq' |
@@ -36,7 +37,7 @@ export type ApplyOperators =
   'times' ;
 
 export type ContentMathMlMarkup = '{ContentMathMlMarkup}';
-export type ContentMathMlNode = Apply | Ci | Cn | Csym | Eq | Geq | Gt | Leq | Lt | Math | Minus | Neq | Plus | Power | Root | Quotient | Times;
+export type ContentMathMlNode = Apply | Ci | Cn | Csym | Eq | Factorial | Geq | Gt | Leq | Lt | Math | Minus | Neq | Plus | Power | Root | Quotient | Times;
 export type ContentMathMlTree = Math;
 
 // LATER: export type NumberType = "integer" | "real" | "double" | "hexdouble" | "e-notation" | "rational" | "complex-cartesian" | "complex-polar" | "constant";
@@ -71,6 +72,7 @@ export interface Math {
 
 export interface Eq { tag: 'eq'; }
 export interface Neq { tag: 'neq'; }
+export interface Factorial { tag: 'factorial'; }
 export interface Geq { tag: 'geq'; }
 export interface Gt { tag: 'gt'; }
 export interface Leq { tag: 'leq'; }

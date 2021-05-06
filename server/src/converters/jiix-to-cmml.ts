@@ -38,6 +38,7 @@ export function convertJiixExpressionToContentMathMlTree(jiixExpression: MathNod
 // Helper Functions
 
 const APPLY_MAP = new Map<MathNodeType, ApplyOperators>([
+  [ '!', 'factorial' ],
   [ '-', 'minus' ],
   [ '/', 'quotient' ],
   [ '+', 'plus' ],
