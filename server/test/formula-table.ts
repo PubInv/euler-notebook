@@ -700,6 +700,85 @@ export const FORMULA_TABLE: FormulaEntry[] = [
         }
       },
       wolfram: <WolframExpression>"LessEqual[x,1]",
+    }, { plain: "(matrix) 0 1; 1 0",
+      jiixExpression: {
+        "type": "matrix",
+        "id": "math/91",
+        "rows": [
+          {
+            "cells": [
+              { "type": "number", "id": "math/85", "label": "0", "value": 0 },
+              { "type": "number", "id": "math/86", "label": "1", "value": 1 }
+            ]
+          },
+          {
+            "cells": [
+              { "type": "number", "id": "math/88", "label": "1", "value": 1 },
+              { "type": "number", "id": "math/89", "label": "0", "value": 0 }
+            ]
+          }
+        ]
+      },
+      presentationMathMlTree: {
+        "tag": "math",
+        "children": [
+          {
+            "tag": "mrow",
+            "children": [
+              {
+                "tag": "mo",
+                "symbol": "["
+              },
+              {
+                "tag": "mtable",
+                "rows": [
+                  {
+                    "tag": "mtr",
+                    "cells": [
+                      { "tag": "mtd", "children": [ { "tag": "mn", "value": 0 } ] },
+                      { "tag": "mtd", "children": [ { "tag": "mn", "value": 1 } ] }
+                    ]
+                  },
+                  {
+                    "tag": "mtr",
+                    "cells": [
+                      { "tag": "mtd", "children": [ { "tag": "mn", "value": 1 } ] },
+                      { "tag": "mtd", "children": [ { "tag": "mn", "value": 0 } ] }
+                    ]
+                  }
+                ]
+              },
+              {
+                "tag": "mo",
+                "symbol": "]"
+              }
+            ]
+          }
+        ]
+      },
+      contentMathMlTree: {
+        "tag": "math",
+        "child": {
+          "tag": "matrix",
+          "rows": [
+            {
+              "tag": "matrixrow",
+              "cells": [
+                { "tag": "cn", "value": 0 },
+                { "tag": "cn", "value": 1 }
+              ]
+            },
+            {
+              "tag": "matrixrow",
+              "cells": [
+                { "tag": "cn", "value": 1 },
+                { "tag": "cn", "value": 0 }
+              ]
+            }
+          ]
+        }
+      },
+      wolfram: <WolframExpression>"TODO",
     // }, { plain: "",
     //   jiixExpression: ,
     //   presentationMathMlTree: ,

@@ -122,11 +122,14 @@ export async function recognizeFormula(
 
   const jiix = await postJiixRequest<JiixMathBlock>(width, height, 'Math', strokeData);
 
-  // BUGBUG: This stanza is for development purposes and should be commented out in production.
-  const presentationMathMlMarkup = await postMathMlRequest(width, height, strokeData);
-  console.log(`RECOGNIZED MATHML:\n${presentationMathMlMarkup}`);
-  const contentMathMlMarkup = await convertPresentationMathMlMarkupToContentMathMlMarkup(presentationMathMlMarkup);
-  console.log(`WOLFRAM MATHML CONVERSION:\n${contentMathMlMarkup}`);
+  // For development purposes only. Comment out in production.
+  if (false) {
+    showPresentationMathMlToContentMathMlConversion(width, height, strokeData)
+    .catch(err=>{
+      console.error("ERROR: Failed to convert Presentation MathML to Content MathML.");
+      console.dir(err);
+    })
+  }
 
   // TODO: If user writes multiple expressions then we should separate them into distinct cells.
   const alternatives: FormulaRecognitionAlternative[] = [];
@@ -168,10 +171,31 @@ function filterJiixExpression(jiixExpression: MathNode): void {
   // generating test cases.
   delete jiixExpression['bounding-box'];
   delete jiixExpression.items;
-  const operands = (<any/* TYPESCRIPT: */>jiixExpression).operands;
+  const operands = jiixExpression.operands;
   if (operands) {
     for (const operand of operands) {
       filterJiixExpression(operand);
     }
   }
+  const rows = jiixExpression.rows;
+  if (rows) {
+    for (const row of rows) {
+      const cells = row.cells;
+      for (const cell of cells) {
+        filterJiixExpression(cell);
+      }
+    }
+  }
+}
+
+async function showPresentationMathMlToContentMathMlConversion(
+  // For development purposes only. Comment out in production.
+  width: LengthInPixels,
+  height: LengthInPixels,
+  strokeData: StrokeData,
+): Promise<void> {
+  const presentationMathMlMarkup = await postMathMlRequest(width, height, strokeData);
+  console.log(`RECOGNIZED MATHML:\n${presentationMathMlMarkup}`);
+  const contentMathMlMarkup = await convertPresentationMathMlMarkupToContentMathMlMarkup(presentationMathMlMarkup);
+  console.log(`WOLFRAM MATHML CONVERSION:\n${contentMathMlMarkup}`);
 }

@@ -22,7 +22,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 import { assert, assertFalse, zeroPad } from "../shared/common";
 import {
   PresentationMathMlTree, Mn, Mi, Mrow, Msub, Msup, Msubsup, Mo, Mfrac,
-  Msqrt, Munder, Munderover, Mover, PresentationMathMlNode
+  Msqrt, Munder, Munderover, Mover, PresentationMathMlNode, Mtable, Mtr, Mtd
 } from "../shared/presentation-mathml";
 
 import {
@@ -73,6 +73,7 @@ function convertSubexpression(expr: MathNode): PresentationMathMlNode[] {
       break;
 
     // Relations
+
     case '=':
     case '<':
     case '>':
@@ -116,6 +117,7 @@ function convertSubexpression(expr: MathNode): PresentationMathMlNode[] {
     }
 
     // Subscripts and superscripts
+
     case 'subscript': {
       rval.push(<Msub>{
         tag: 'msub',
@@ -167,6 +169,27 @@ function convertSubexpression(expr: MathNode): PresentationMathMlNode[] {
       break;
     }
 
+    // Matrices
+
+    case 'matrix': {
+      const rows: Mtr[] = expr.rows!.map(r=>{
+        const cells: Mtd[] = r.cells.map(c=>{
+          const children = convertSubexpression(c);
+          return <Mtd>{ tag: 'mtd', children };
+        });
+        return <Mtr>{ tag: 'mtr', cells };
+      });
+
+      rval.push(<Mrow>{
+        tag: 'mrow',
+        children: [
+          <Mo>{ tag: 'mo', symbol: '[' },
+          <Mtable>{ tag: 'mtable', rows },
+          <Mo>{ tag: 'mo', symbol: ']' },
+        ]
+      })
+      break;
+    }
     default: assertFalse(`Unknown JIIX math node type: ${(<any>expr).type}`);
   }
   return rval;

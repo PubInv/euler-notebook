@@ -20,7 +20,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 // Requirements
 
 import { assert, assertFalse } from "../shared/common";
-import { ApplyOperators, Ci, Cn, ContentMathMlNode, ContentMathMlTree } from "../shared/content-mathml";
+import { ApplyOperators, Ci, Cn, ContentMathMlNode, ContentMathMlTree, Matrix, MatrixRow } from "../shared/content-mathml";
 
 import {
   MathNode, MathNodeType,
@@ -60,23 +60,36 @@ const APPLY_MAP = new Map<MathNodeType, ApplyOperators>([
 function convertSubexpression(expr: MathNode): ContentMathMlNode {
   let rval: ContentMathMlNode;
   switch(expr.type) {
+
     case 'fence': {
       const operands = expr.operands!;
       assert(operands && operands.length==1);
       rval = convertSubexpression(operands[0]);
       break;
     }
+
+    case 'matrix': {
+      const rows = expr.rows!.map(r=>{
+        const cells = r.cells.map(convertSubexpression);
+        return <MatrixRow>{ tag: 'matrixrow', cells };
+      })
+      rval = <Matrix>{ tag: 'matrix', rows };
+      break;
+    }
+
     case 'number': {
       assert(!expr.generated);
       rval = <Cn>{ tag: 'cn', value: expr.value };
       break;
     }
+
     case 'symbol': {
       const identifier = expr.label;
       assert(identifier != '\u2264', "Less-than-or-equal-to not implemented.");
       rval = <Ci>{ tag: 'ci', identifier };
       break;
     }
+
     default: {
       const tag = APPLY_MAP.get(expr.type);
       if (tag) {

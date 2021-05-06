@@ -164,10 +164,15 @@ export abstract class SemanticFormula {
   private static createFromContentMathMlNode(node: ContentMathMlNode): SemanticFormula {
     let rval: SemanticFormula;
     switch(node.tag) {
-      case 'apply': rval = this.createFromApplyNode(node); break;
-      case 'ci': rval = new IdentifierNode(<FormulaSymbol>node.identifier); break;
-      case 'cn': rval = new NumberNode(node.value); break;
-      case 'math': assertFalse();
+      case 'apply':  rval = this.createFromApplyNode(node); break;
+      case 'ci':     rval = new IdentifierNode(<FormulaSymbol>node.identifier); break;
+      case 'cn':     rval = new NumberNode(node.value); break;
+      case 'math':   assertFalse();
+      case 'matrix': {
+        const rows = node.rows.map(r=>r.cells.map(this.createFromContentMathMlNode));
+        rval = new MatrixNode(rows);
+        break;
+      }
       default:
         throw new Error(`Creating from '${node.tag}' nodes not yet implemented.`);
     }
@@ -332,6 +337,18 @@ class IdentifierNode extends ExpressionNode {
   public constructor(identifier: FormulaSymbol) {
     super();
     this.identifier = identifier;
+  }
+}
+
+class MatrixNode extends ExpressionNode {
+  public rows: ExpressionNode[][];
+  public /* override */ plotInfo(): PlotInfo|undefined { return undefined; }
+  public /* override */ wolframExpression(): WolframExpression {
+    throw new Error("Not implemented.");
+  }
+  public constructor(rows: ExpressionNode[][]) {
+    super();
+    this.rows = rows;
   }
 }
 

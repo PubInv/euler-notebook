@@ -28,22 +28,6 @@ export type MathNodeType =
   '-' |
   '!' |
   '/' |
-  '\u00B7' /* UNICODE_MIDDLE_DOT */ |
-  '\u00D7' /* UNICODE_MULTIPLICATION_SIGN */ |
-  '\u00F7' /* UNICODE_DIVISION_SIGN */ |
-  '\u21D0' |
-  '\u21D2' |
-  '\u21D4' |
-  '\u2225' |
-  '\u2243' |
-  '\u2248' |
-  '\u2260' /* UNICODE_NOT_EQUAL_TO_SIGN */ |
-  '\u2261' |
-  '\u2262' |
-  '\u2264' /* UNICODE_LESS_THAN_OR_EQUAL_TO_SIGN*/ |
-  '\u2265' /* UNICODE_GREATER_THAN_OR_EQUAL_TO_SIGN */ |
-  '\u226A' |
-  '\u226B' |
   '+' |
   '<' |
   '=' |
@@ -52,14 +36,43 @@ export type MathNodeType =
   'fraction' |
   'group' |
   'number' |
-  'overscript' |
   'square root' |
-  'subscript' |
-  'subsuperscript' |
   'superscript' |
   'symbol' |
+  '\u00B7' /* UNICODE_MIDDLE_DOT */ |
+  '\u00D7' /* UNICODE_MULTIPLICATION_SIGN */ |
+  '\u00F7' /* UNICODE_DIVISION_SIGN */ |
+  '\u2260' /* UNICODE_NOT_EQUAL_TO_SIGN */ |
+  '\u2264' /* UNICODE_LESS_THAN_OR_EQUAL_TO_SIGN*/ |
+  '\u2265' /* UNICODE_GREATER_THAN_OR_EQUAL_TO_SIGN */ |
+
+  // NOT YET IMPLEMENTED:
+  'matrix' |
+  'overscript' |
+  'partialfractiondenominator' |
+  'partialfractionnumerator' |
+  'percentage' |
+  'power' |
+  'presubscript' |
+  'presubsuperscript' |
+  'presuperscript' |
+  'rows' |
+  'slantedfraction' |
+  'subscript' |
+  'subsuperscript' |
+  'system' |
   'underoverscript' |
-  'underscript' ;
+  'underscript' |
+  '\u21D0' /* leftwards double arrow */ |
+  '\u21D2' /* rightwards double arrow */ |
+  '\u21D4' /* left right double arrow */ |
+  '\u2225' /* parallel to */ |
+  '\u2243' /* asymptotically equal to */ |
+  '\u2248' /* almost equal to */ |
+  '\u2261' /* identical to */ |
+  '\u2262' /* not identical to */ |
+  '\u226A' /* much less than */ |
+  '\u226B' /* much greater than */;
 
 export interface MathNode {
   id: string;
@@ -74,6 +87,7 @@ export interface MathNode {
   label?: string;
   'open symbol'?: string; // For type 'fence'
   operands?: MathNode[];
+  rows?: MatrixRow[];
   value?: number;
 }
 
@@ -85,6 +99,10 @@ interface MathNodeItem {
   type: 'stroke';
   X: number[];
   Y: number[];
+}
+
+interface MatrixRow {
+  cells: MathNode[];
 }
 
 // Constants

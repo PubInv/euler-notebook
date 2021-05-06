@@ -37,7 +37,7 @@ export type ApplyOperators =
   'times' ;
 
 export type ContentMathMlMarkup = '{ContentMathMlMarkup}';
-export type ContentMathMlNode = Apply | Ci | Cn | Csym | Eq | Factorial | Geq | Gt | Leq | Lt | Math | Minus | Neq | Plus | Power | Root | Quotient | Times;
+export type ContentMathMlNode = Apply | Ci | Cn | Csym | Eq | Factorial | Geq | Gt | Leq | Lt | Math | Matrix | MatrixRow | Minus | Neq | Plus | Power | Root | Quotient | Times;
 export type ContentMathMlTree = Math;
 
 // LATER: export type NumberType = "integer" | "real" | "double" | "hexdouble" | "e-notation" | "rational" | "complex-cartesian" | "complex-polar" | "constant";
@@ -68,6 +68,16 @@ export interface Csym {
 export interface Math {
   tag: 'math';
   child?: ContentMathMlNode;
+}
+
+export interface Matrix {
+  tag: 'matrix';
+  rows: MatrixRow[];
+}
+
+export interface MatrixRow {
+  tag: 'matrixrow';
+  cells: ContentMathMlNode[];
 }
 
 export interface Eq { tag: 'eq'; }

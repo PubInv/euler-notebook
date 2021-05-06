@@ -24,7 +24,7 @@ import { assertFalse } from "./common";
 // Types
 
 export type PresentationMathMlMarkup = '{PresentationMathMlMarkup}';
-export type PresentationMathMlNode = Math | Mfrac | Mi | Mn | Mo | Mover | Mrow | Msqrt | Msub | Msubsup | Msup | Munder | Munderover;
+export type PresentationMathMlNode = Math | Mfrac | Mi | Mn | Mo | Mover | Mrow | Msqrt | Msub | Msubsup | Msup | Mtable | Mtd | Mtr | Munder | Munderover;
 export type PresentationMathMlTree = Math;
 
 export interface Math {
@@ -82,6 +82,21 @@ export interface Msup {
   superscript: PresentationMathMlNode;
 }
 
+export interface Mtable {
+  tag: 'mtable';
+  rows: Mtr[];
+}
+
+export interface Mtd {
+  tag: 'mtd';
+  children: PresentationMathMlNode[];
+}
+
+export interface Mtr {
+  tag: 'mtr';
+  cells: Mtd[];
+}
+
 export interface Munder {
   tag: 'munder';
   base: PresentationMathMlNode;
@@ -127,6 +142,9 @@ function exp2xml(node: PresentationMathMlNode): PresentationMathMlMarkup {
     case 'msub':       rval = `<msub>${exp2xml(node.base)}${exp2xml(node.subscript)}</msub>`; break;
     case 'msubsup':    rval = `<msubsup>${exp2xml(node.base)}${exp2xml(node.subscript)}${exp2xml(node.superscript)}</msubsup>`; break;
     case 'msup':       rval = `<msup>${exp2xml(node.base)}${exp2xml(node.superscript)}</msup>`; break;
+    case 'mtable':     rval = `<mtable>${exps2xml(node.rows)}</mtable>`; break;
+    case 'mtd':        rval = `<mtd>${exps2xml(node.children)}</mtd>`; break;
+    case 'mtr':        rval = `<mtr>${exps2xml(node.cells)}</mtr>`; break;
     case 'munder':     rval = `<munder>${exp2xml(node.base)}${exp2xml(node.underscript)}</munder>`; break;
     case 'munderover': rval = `<munderover>${exp2xml(node.base)}${exp2xml(node.underscript)}${exp2xml(node.overscript)}</munderover>`; break;
     case 'mover':      rval = `<mover>${exp2xml(node.base)}${exp2xml(node.overscript)}</msup>`; break;
