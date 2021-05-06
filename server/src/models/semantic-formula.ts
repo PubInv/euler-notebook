@@ -169,7 +169,7 @@ export abstract class SemanticFormula {
       case 'cn':     rval = new NumberNode(node.value); break;
       case 'math':   assertFalse();
       case 'matrix': {
-        const rows = node.rows.map(r=>r.cells.map(this.createFromContentMathMlNode));
+        const rows = node.rows.map(r=>r.cells.map(c=>this.createFromContentMathMlNode(c)));
         rval = new MatrixNode(rows);
         break;
       }
