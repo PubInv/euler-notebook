@@ -21,8 +21,22 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 // Types
 
+export type ApplyOperators =
+  'eq' |
+  'geq' |
+  'gt' |
+  'leq' |
+  'lt' |
+  'minus' |
+  'neq' |
+  'plus' |
+  'power' |
+  'quotient' |
+  'root' |
+  'times' ;
+
 export type ContentMathMlMarkup = '{ContentMathMlMarkup}';
-export type ContentMathMlNode = Apply | Ci | Cn | Csym | Eq | Math | Minus | Plus | Power | Quotient | Times;
+export type ContentMathMlNode = Apply | Ci | Cn | Csym | Eq | Geq | Gt | Leq | Lt | Math | Minus | Neq | Plus | Power | Root | Quotient | Times;
 export type ContentMathMlTree = Math;
 
 // LATER: export type NumberType = "integer" | "real" | "double" | "hexdouble" | "e-notation" | "rational" | "complex-cartesian" | "complex-polar" | "constant";
@@ -49,18 +63,21 @@ export interface Csym {
   symbol: string;
 }
 
-export interface Eq {
-  tag: 'eq';
-  // Applied to a LHS and RHS.
-}
 
 export interface Math {
   tag: 'math';
   child?: ContentMathMlNode;
 }
 
+export interface Eq { tag: 'eq'; }
+export interface Neq { tag: 'neq'; }
+export interface Geq { tag: 'geq'; }
+export interface Gt { tag: 'gt'; }
+export interface Leq { tag: 'leq'; }
+export interface Lt { tag: 'lt'; }
 export interface Minus { tag: 'minus'; }
 export interface Plus { tag: 'plus'; }
 export interface Power { tag: 'power'; /* Applied to a 'base' and an 'exponent'. */}
 export interface Quotient { tag: 'quotient'; }
+export interface Root { tag: 'root'; /* TODO: optional degree. */ }
 export interface Times { tag: 'times'; }

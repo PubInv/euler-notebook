@@ -485,10 +485,181 @@ export const FORMULA_TABLE: FormulaEntry[] = [
       }
     },
     wolfram: <WolframExpression>"Plus[Times[a,Power[x,2]],Times[b,x],c]",
+  }, { plain: "x = 1",
+    jiixExpression: {
+      "type": "=", "id": "math/36",
+      "operands": [
+        { "type": "symbol", "id": "math/35", "label": "x" },
+        { "type": "number", "id": "math/38", "label": "1", "value": 1 }
+      ]
+    },
+    presentationMathMlTree: {
+      "tag": "math",
+      "children": [
+        { "tag": "mi", "identifier": "x" },
+        { "tag": "mo", "symbol": "=" },
+        { "tag": "mn", "value": 1 }
+      ]
+    },
+    contentMathMlTree: {
+      "tag": "math",
+      "child": {
+        "tag": "apply",
+        "operator": { "tag": "eq" },
+        "operands": [
+          { "tag": "ci", "identifier": "x" },
+          { "tag": "cn", "value": 1 }
+        ]
+      }
+    },
+    wolfram: <WolframExpression>"Equal[x,1]",
+  }, { plain: "x ≠ 1",
+      jiixExpression: {
+        "type": "≠", "id": "math/38",
+        "operands": [
+          { "type": "symbol", "id": "math/34", "label": "x" },
+          { "type": "number", "id": "math/37", "label": "1", "value": 1 }
+        ]
+      },
+      presentationMathMlTree: {
+        "tag": "math",
+        "children": [
+          { "tag": "mi", "identifier": "x" },
+          { "tag": "mo", "symbol": "&#x2260;" },
+          { "tag": "mn", "value": 1 }
+        ]
+      },
+      contentMathMlTree: {
+        "tag": "math",
+        "child": {
+          "tag": "apply",
+          "operator": { "tag": "neq" },
+          "operands": [
+            { "tag": "ci", "identifier": "x" },
+            { "tag": "cn", "value": 1 }
+          ]
+        }
+      },
+      wolfram: <WolframExpression>"Unequal[x,1]",
+  }, { plain: "x > 1",
+    jiixExpression: {
+      "type": ">", "id": "math/46",
+      "operands": [
+        { "type": "symbol", "id": "math/42", "label": "x" },
+        { "type": "number", "id": "math/45", "label": "1", "value": 1 }
+      ]
+    },
+    presentationMathMlTree: {
+      "tag": "math",
+      "children": [
+        { "tag": "mi", "identifier": "x" },
+        { "tag": "mo", "symbol": ">" },
+        { "tag": "mn", "value": 1 }
+      ]
+    },
+    contentMathMlTree: {
+      "tag": "math",
+      "child": {
+        "tag": "apply",
+        "operator": { "tag": "gt" },
+        "operands": [
+          { "tag": "ci", "identifier": "x" },
+          { "tag": "cn", "value": 1 }
+        ]
+      }
+    },
+    wolfram: <WolframExpression>"Greater[x,1]",
+  }, { plain: "x ≥ 1",
+      jiixExpression: {
+        "type": "≥", "id": "math/40",
+        "operands": [
+          { "type": "symbol", "id": "math/36", "label": "x" },
+          { "type": "number", "id": "math/39", "label": "1", "value": 1 }
+        ]
+      },
+      presentationMathMlTree: {
+        "tag": "math",
+        "children": [
+          { "tag": "mi", "identifier": "x" },
+          { "tag": "mo", "symbol": "&#x2265;" },
+          { "tag": "mn", "value": 1 }
+        ]
+      },
+      contentMathMlTree: {
+        "tag": "math",
+        "child": {
+          "tag": "apply",
+          "operator": { "tag": "geq" },
+          "operands": [
+            { "tag": "ci", "identifier": "x" },
+            { "tag": "cn", "value": 1 }
+          ]
+        }
+      },
+      wolfram: <WolframExpression>"GreaterEqual[x,1]",
+  }, { plain: "x < 1",
+    jiixExpression: {
+      "type": "<", "id": "math/46",
+      "operands": [
+        { "type": "symbol", "id": "math/42", "label": "x" },
+        { "type": "number", "id": "math/45", "label": "1", "value": 1 }
+      ]
+    },
+    presentationMathMlTree: {
+      "tag": "math",
+      "children": [
+        { "tag": "mi", "identifier": "x" },
+        { "tag": "mo", "symbol": "<" },
+        { "tag": "mn", "value": 1 }
+      ]
+    },
+    contentMathMlTree: {
+      "tag": "math",
+      "child": {
+        "tag": "apply",
+        "operator": { "tag": "lt" },
+        "operands": [
+          { "tag": "ci", "identifier": "x" },
+          { "tag": "cn", "value": 1 }
+        ]
+      }
+    },
+    wolfram: <WolframExpression>"Less[x,1]",
+  }, { plain: "x ≤ 1",
+      // TODO: Unlike the other relational operators (=, !=, >, >=, <),
+      //       less-than-or-equal-to comes back as a symbol in a group, not a type!!!
+      jiixExpression: {
+        "type": "group", "id": "math/39",
+        "operands": [
+          { "type": "symbol", "id": "math/35", "label": "x" },
+          { "type": "symbol", "id": "math/36", "label": "≤" },
+          { "type": "number", "id": "math/38", "label": "1", "value": 1 }
+        ]
+      },
+      presentationMathMlTree: {
+        "tag": "math",
+        "children": [
+          { "tag": "mi", "identifier": "x" },
+          { "tag": "mo", "symbol": "&#x2264;" },
+          { "tag": "mn", "value": 1 }
+        ]
+      },
+      contentMathMlTree: {
+        "tag": "math",
+        "child": {
+          "tag": "apply",
+          "operator": { "tag": "leq" },
+          "operands": [
+            { "tag": "ci", "identifier": "x" },
+            { "tag": "cn", "value": 1 }
+          ]
+        }
+      },
+      wolfram: <WolframExpression>"LessEqual[x,1]",
   // }, { plain: "",
-  //   jiixExpression: ,
-  //   presentationMathMlTree: ,
-  //   contentMathMlTree: ,
-  //   wolfram: <WolframExpression>"",
-},
+    //   jiixExpression: ,
+    //   presentationMathMlTree: ,
+    //   contentMathMlTree: ,
+    //   wolfram: <WolframExpression>"",
+  },
 ];

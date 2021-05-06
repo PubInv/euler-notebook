@@ -20,11 +20,13 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 // Requirements
 
 import { assert, assertFalse } from "../shared/common";
-import { Apply, Ci, Cn, ContentMathMlNode, ContentMathMlTree } from "../shared/content-mathml";
+import { ApplyOperators, Ci, Cn, ContentMathMlNode, ContentMathMlTree } from "../shared/content-mathml";
 
 import {
-  FractionNode, GroupNode, MathNode, OperatorNode, SuperscriptNode,
-  UNICODE_DIVISION_SIGN, UNICODE_MIDDLE_DOT, UNICODE_MULTIPLICATION_SIGN
+  MathNode, MathNodeType,
+  UNICODE_DIVISION_SIGN, UNICODE_GREATER_THAN_OR_EQUAL_TO_SIGN,
+  UNICODE_MIDDLE_DOT, UNICODE_MULTIPLICATION_SIGN,
+  UNICODE_NOT_EQUAL_TO_SIGN, UNICODE_LESS_THAN_OR_EQUAL_TO_SIGN,
 } from "../adapters/myscript-math";
 
 // Exported Functions
@@ -35,29 +37,57 @@ export function convertJiixExpressionToContentMathMlTree(jiixExpression: MathNod
 
 // Helper Functions
 
+const APPLY_MAP = new Map<MathNodeType, ApplyOperators>([
+  [ '-', 'minus' ],
+  [ '/', 'quotient' ],
+  [ '+', 'plus' ],
+  [ '<', 'lt' ],
+  [ '=', 'eq'],
+  [ '>', 'gt' ],
+  [ 'fraction', 'quotient' ],
+  [ 'group', 'times' ],
+  [ 'square root', 'root' ],
+  [ 'superscript', 'power' ],
+  [ UNICODE_DIVISION_SIGN, 'quotient' ],
+  [ UNICODE_GREATER_THAN_OR_EQUAL_TO_SIGN, 'geq' ],
+  [ UNICODE_LESS_THAN_OR_EQUAL_TO_SIGN, 'leq' ],
+  [ UNICODE_MIDDLE_DOT, 'times' ],
+  [ UNICODE_MULTIPLICATION_SIGN, 'times' ],
+  [ UNICODE_NOT_EQUAL_TO_SIGN, 'neq' ],
+]);
+
 function convertSubexpression(expr: MathNode): ContentMathMlNode {
   let rval: ContentMathMlNode;
   switch(expr.type) {
-
-    // Tokens
+    case 'fence': {
+      const operands = expr.operands!;
+      assert(operands && operands.length==1);
+      rval = convertSubexpression(operands[0]);
+      break;
+    }
     case 'number': {
       assert(!expr.generated);
       rval = <Cn>{ tag: 'cn', value: expr.value };
       break;
     }
-    case 'symbol':
-      rval = <Ci>{ tag: 'ci', identifier: expr.label };
+    case 'symbol': {
+      const identifier = expr.label;
+      assert(identifier != '\u2264', "Less-than-or-equal-to not implemented.");
+      rval = <Ci>{ tag: 'ci', identifier };
       break;
+    }
+    default: {
+      const tag = APPLY_MAP.get(expr.type);
+      if (tag) {
+        const operator = { tag };
+        assert(expr.operands)
+        const operands = expr.operands!.map(operand=>convertSubexpression(operand));
+        rval = { tag: 'apply', operator, operands };
+      } else {
+        assertFalse(`Unknown JIIX math node type: ${(<any>expr).type}`);      }
+      break;
+    }
 
-    // Operators
-    case '+':
-    case '-':
-    case '/':
-    case UNICODE_MIDDLE_DOT:
-    case UNICODE_MULTIPLICATION_SIGN:
-    case UNICODE_DIVISION_SIGN:
-      rval = convertOperatorExpression(expr);
-      break;
     // case 'square root':
     //   rval = <Msqrt>{ tag: 'msqrt', operand: convertSubexpression(expr.operands[0]) };
     //   break;
@@ -66,42 +96,21 @@ function convertSubexpression(expr: MathNode): ContentMathMlNode {
     //   rval = (<Mo>{ tag: 'mo', symbol: '!' });
     //   break;
 
-    // // Relations
-    // case '=':
-    // case '<':
-    // case '>':
+    // Relations
     // case '\u2243':
     // case '\u2248':
     // case '\u2260':
     // case '\u2261':
     // case '\u2262':
     // case '\u2264':
-    // case '\u2265':
     // case '\u226A':
     // case '\u226B':
     // case '\u21D0':
     // case '\u21D2':
     // case '\u21D4':
     // case '\u2225':
-    //   rval = convertRelationExpression(expr);
-    //   break;
 
     // // Grouping
-
-    case 'fence': {
-      assert(expr.operands.length==1);
-      rval = convertSubexpression(expr.operands[0]);
-      break;
-    }
-    case 'fraction': {
-      rval = convertOperatorExpression(expr);
-      break;
-    }
-    case 'group': {
-      // REVIEW: Safe to assume it is multiplication?
-      rval = convertOperatorExpression(expr);
-      break;
-    }
 
     // // Subscripts and superscripts
     // case 'subscript': {
@@ -112,10 +121,6 @@ function convertSubexpression(expr: MathNode): ContentMathMlNode {
     //   });
     //   break;
     // }
-    case 'superscript': {
-      rval = convertOperatorExpression(expr);
-      break;
-    }
     // case 'subsuperscript': {
     //   rval = (<Msubsup>{
     //     tag: 'msubsup',
@@ -151,57 +156,6 @@ function convertSubexpression(expr: MathNode): ContentMathMlNode {
     //   break;
     // }
 
-    default: assertFalse(`Unknown JIIX math node type: ${(<any>expr).type}`);
   }
   return rval;
 }
-
-function convertOperatorExpression(expr: GroupNode|FractionNode|OperatorNode|SuperscriptNode): Apply {
-  let operator: ContentMathMlNode;
-  switch(expr.type) {
-    case '+': operator = { tag: 'plus'}; break;
-    case '-': {
-      assert(expr.operands.length==2);
-      operator = { tag: 'minus'};
-      break;
-    }
-    case UNICODE_MIDDLE_DOT:
-    case UNICODE_MULTIPLICATION_SIGN:
-    case 'group':
-      operator = { tag: 'times'};
-      break;
-
-    case '/':
-    case UNICODE_DIVISION_SIGN:
-    case 'fraction':
-      assert(expr.operands.length==2);
-      operator = { tag: 'quotient' };
-      break;
-
-    case 'superscript':
-      assert(expr.operands.length==2);
-      operator = { tag: 'power' };
-      break;
-
-  }
-  const operands = expr.operands.map(operand=>convertSubexpression(operand));
-  const rval: Apply = { tag: 'apply', operator, operands };
-  return rval;
-}
-
-// function convertRelationExpression(expr: RelationNode): ContentMathMlNode[] {
-//   const [ lhs, rhs ] = expr.operands;
-//   // REVIEW: May not need to wrap in mrow depending on relative operator precedence levels.
-//   return [
-//     convertSubexpression(lhs),
-//     <Mo>{ tag: 'mo', symbol: entityForSymbol(expr.type) },
-//     convertSubexpression(rhs),
-//   ];
-// }
-
-// function entityForSymbol(symbol: string): string {
-//   assert(symbol.length == 1);
-//   const charCode = symbol.charCodeAt(0);
-//   if (charCode >= 0x20 && charCode < 0x80) { return symbol; }
-//   else { return `&#x${zeroPad(charCode.toString(16), 4)};`}
-// }

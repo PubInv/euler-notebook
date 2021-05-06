@@ -27,7 +27,7 @@ import {
 
 import {
   UNICODE_MIDDLE_DOT, UNICODE_MULTIPLICATION_SIGN, UNICODE_DIVISION_SIGN,
-  MathNode, OperatorNode, RelationNode,
+  MathNode,
 } from "../adapters/myscript-math";
 
 // Exported Functions
@@ -65,10 +65,10 @@ function convertSubexpression(expr: MathNode): PresentationMathMlNode[] {
       rval.push(...convertOperatorExpression(expr));
       break;
     case 'square root':
-      rval.push(<Msqrt>{ tag: 'msqrt', operand: convertMrowWrapped(expr.operands[0]) });
+      rval.push(<Msqrt>{ tag: 'msqrt', operand: convertMrowWrapped(expr.operands![0]) });
       break;
     case '!':
-      rval.push(...convertSubexpression(expr.operands[0]));
+      rval.push(...convertSubexpression(expr.operands![0]));
       rval.push(<Mo>{ tag: 'mo', symbol: '!' });
       break;
 
@@ -96,20 +96,20 @@ function convertSubexpression(expr: MathNode): PresentationMathMlNode[] {
 
     case 'fence': {
       rval.push(<Mo>{ tag: 'mo', symbol: expr['open symbol'] });
-      rval.push(...convertSubexpression(expr.operands[0]));
+      rval.push(...convertSubexpression(expr.operands![0]));
       rval.push(<Mo>{ tag: 'mo', symbol: expr['close symbol'] });
       break;
     }
     case 'fraction': {
       rval.push(<Mfrac>{
         tag: 'mfrac',
-        numerator: convertMrowWrapped(expr.operands[0]),
-        denominator: convertMrowWrapped(expr.operands[1]),
+        numerator: convertMrowWrapped(expr.operands![0]),
+        denominator: convertMrowWrapped(expr.operands![1]),
       })
       break;
     }
     case 'group': {
-      for (const operand of expr.operands) {
+      for (const operand of expr.operands!) {
         rval.push(...convertSubexpression(operand));
       }
       break;
@@ -182,8 +182,8 @@ function convertMrowWrapped(expr: MathNode): PresentationMathMlNode {
   }
 }
 
-function convertOperatorExpression(expr: OperatorNode): PresentationMathMlNode[] {
-  const operands = expr.operands;
+function convertOperatorExpression(expr: MathNode): PresentationMathMlNode[] {
+  const operands = expr.operands!;
   const rval: PresentationMathMlNode[] = [];
   for (let i=0; i<operands.length-1; i++) {
     // REVIEW: May not need to wrap in mrow depending on relative operator precedence levels.
@@ -194,8 +194,8 @@ function convertOperatorExpression(expr: OperatorNode): PresentationMathMlNode[]
   return rval;
 }
 
-function convertRelationExpression(expr: RelationNode): PresentationMathMlNode[] {
-  const [ lhs, rhs ] = expr.operands;
+function convertRelationExpression(expr: MathNode): PresentationMathMlNode[] {
+  const [ lhs, rhs ] = expr.operands!;
   // REVIEW: May not need to wrap in mrow depending on relative operator precedence levels.
   return [
     convertMrowWrapped(lhs),

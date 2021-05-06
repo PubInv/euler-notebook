@@ -20,39 +20,61 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 // Requirements
 
 import { BoundingBox } from "../shared/common";
+
 // Types
 
 type MathNodeErrorString = 'Unsolved';
+export type MathNodeType =
+  '-' |
+  '!' |
+  '/' |
+  '\u00B7' /* UNICODE_MIDDLE_DOT */ |
+  '\u00D7' /* UNICODE_MULTIPLICATION_SIGN */ |
+  '\u00F7' /* UNICODE_DIVISION_SIGN */ |
+  '\u21D0' |
+  '\u21D2' |
+  '\u21D4' |
+  '\u2225' |
+  '\u2243' |
+  '\u2248' |
+  '\u2260' /* UNICODE_NOT_EQUAL_TO_SIGN */ |
+  '\u2261' |
+  '\u2262' |
+  '\u2264' |
+  '\u2265' /* UNICODE_GREATER_THAN_OR_EQUAL_TO_SIGN */ |
+  '\u226A' |
+  '\u226B' |
+  '+' |
+  '<' |
+  '=' |
+  '>' |
+  'fence' |
+  'fraction' |
+  'group' |
+  'number' |
+  'overscript' |
+  'square root' |
+  'subscript' |
+  'subsuperscript' |
+  'superscript' |
+  'symbol' |
+  'underoverscript' |
+  'underscript' ;
 
-export type MathNode =
-    FactoralNode |
-    FenceNode |
-    FractionNode |
-    GroupNode |
-    NumberNode |
-    OperatorNode |
-    OverscriptNode |
-    RelationNode |
-    SquareRootNode |
-    SubscriptNode |
-    SubsuperscriptNode |
-    SuperscriptNode |
-    SymbolNode |
-    UnderoverscriptNode |
-    UnderscriptNode;
-
-export interface MathNodeBase {
-  // type: string;
+export interface MathNode {
   id: string;
-  'bounding-box'?: BoundingBox;
-  error?: MathNodeErrorString;
-  items?: MathNodeItem[]; // If export.jiix.strokes or export.jiix.glyphs are true.
+  type: MathNodeType;
 
-  // Inherited interfaces may have:
+  'bounding-box'?: BoundingBox;
+  'close symbol'?: string; // For type 'fence'
   // exactValue???
-  // label?: string;
-  // operands?: MathNodeBlock[];
-  // value?: number;
+  error?: MathNodeErrorString;
+  generated?: boolean
+  items?: MathNodeItem[]; // If export.jiix.strokes or export.jiix.glyphs are true.
+  label?: string;
+  'open symbol'?: string; // For type 'fence'
+  operands?: MathNode[];
+  value?: number;
 }
 
 interface MathNodeItem {
@@ -65,90 +87,11 @@ interface MathNodeItem {
   Y: number[];
 }
 
-// Specific Math Nodes
-
-interface FactoralNode extends MathNodeBase {
-  type: '!';
-  operands: [ MathNode ],
-}
-
-interface FenceNode extends MathNodeBase {
-  type: 'fence';
-  'open symbol': string;
-  'close symbol': string;
-  operands: [ MathNode ],
-}
-
-export interface FractionNode extends MathNodeBase {
-  type: 'fraction';
-  operands: [ /* numerator */MathNode, /* denominator */MathNode ],
-}
-
-export interface GroupNode extends MathNodeBase {
-  type: 'group';
-  operands: MathNode[],
-}
-
-interface NumberNode extends MathNodeBase {
-  type: 'number';
-  generated?: boolean,
-  label: string,
-  value: number,
-}
-
-export interface OperatorNode extends MathNodeBase {
-  type: '+'|'-'|'\u00D7'|'\u00B7'|'/'|'\u00F7';
-  operands: MathNode[],
-}
-
-interface OverscriptNode extends MathNodeBase {
-  type: 'overscript';
-  operands: [/* script */MathNode, /* overscript */MathNode ],
-}
-
-export interface RelationNode extends MathNodeBase {
-  type: '='|'<'|'>'|'\u2243'|'\u2248'|'\u2260'|'\u2261'|'\u2262'|'\u2264'|'\u2265'|'\u226A'|'\u226B'|'\u21D0'|'\u21D2'|'\u21D4'|'\u2225';
-  operands: [ MathNode, MathNode ]
-}
-
-interface SquareRootNode extends MathNodeBase {
-  type: 'square root';
-  operands: [ MathNode ],
-}
-
-interface SubscriptNode extends MathNodeBase {
-  type: 'subscript';
-  operands: [/* base */MathNode, /* subscript */MathNode ],
-}
-
-interface SubsuperscriptNode extends MathNodeBase {
-  type: 'subsuperscript';
-  operands: [/* base */MathNode, /* subscript */MathNode, /* superscript */MathNode ],
-}
-
-export interface SuperscriptNode extends MathNodeBase {
-  type: 'superscript';
-  operands: [/* base */MathNode, /* superscript */MathNode ],
-}
-
-interface SymbolNode extends MathNodeBase {
-  type: 'symbol';
-  label: string,
-}
-
-interface UnderoverscriptNode extends MathNodeBase {
-  type: 'underoverscript';
-  operands: [/* script */MathNode, /* underscript */MathNode, /* overscript */MathNode ],
-}
-
-interface UnderscriptNode extends MathNodeBase {
-  type: 'underscript';
-  operands: [/* script */MathNode, /* underscript */MathNode ],
-}
-
 // Constants
 
 export const UNICODE_MIDDLE_DOT = '\u00B7';
 export const UNICODE_MULTIPLICATION_SIGN = '\u00D7';
 export const UNICODE_DIVISION_SIGN = '\u00F7';
-
+export const UNICODE_NOT_EQUAL_TO_SIGN = '\u2260';
+export const UNICODE_LESS_THAN_OR_EQUAL_TO_SIGN = '\u2264';
+export const UNICODE_GREATER_THAN_OR_EQUAL_TO_SIGN = '\u2265';

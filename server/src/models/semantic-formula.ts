@@ -51,6 +51,7 @@ export abstract class SemanticFormula {
   public /* overridable */ get isEquation(): boolean { return false; }
   public /* overridable */ get isExpression(): boolean { return true; }
   public /* overridable */ get isIdentifier(): boolean { return false; }
+  public /* overridable */ get isRelation(): boolean { return false; }
 
   public /* overridable */ identifiers(): FormulaSymbol[] {
     return [];
@@ -82,13 +83,27 @@ export abstract class SemanticFormula {
       case 'apply': {
         const { operator, operands } = node;
         switch (operator.tag) {
-          case 'eq': {
+          case 'eq':
+          case 'geq':
+          case 'gt':
+          case 'leq':
+          case 'lt':
+          case 'neq': {
             assert(operands.length == 2);
             const lhs = this.createFromContentMathMlNode(operands[0]);
             assert(lhs instanceof ExpressionNode);
             const rhs = this.createFromContentMathMlNode(operands[1]);
             assert(rhs instanceof ExpressionNode);
-            rval = new EquationNode(lhs, rhs);
+            let cls /* TYPESCRIPT: */;
+            switch (operator.tag) {
+              case 'eq': cls = EqualsNode; break;
+              case 'geq': cls = GreaterThanOrEqualToNode; break;
+              case 'gt': cls = GreaterThanNode; break;
+              case 'leq': cls = LessThanOrEqualToNode; break;
+              case 'lt': cls = LessThanNode; break;
+              case 'neq': cls = NotEqualsNode; break;
+            }
+            rval = new cls(lhs, rhs);
             break;
           }
           case 'minus':  {
@@ -249,10 +264,11 @@ abstract class OperatorNode extends InteriorExpressionNode {
   }
 }
 
-class EquationNode extends SemanticFormula {
+abstract class RelationNode extends SemanticFormula {
   public lhs: ExpressionNode;
   public rhs: ExpressionNode;
-  public /* override */ get isEquation(): boolean { return true; }
+  public abstract get wolframSymbol(): string;
+  public /* override */ get isRelation(): boolean { return true; }
   public /* override */ get isExpression(): boolean { return false; }
   public /* override */ plotExpression(): ExpressionNode { return this.rhs; }
   public /* override */ plotInfo(): PlotInfo|undefined {
@@ -268,7 +284,7 @@ class EquationNode extends SemanticFormula {
   }
 
   public /* override */ wolframExpression(): WolframExpression {
-    return <WolframExpression>`${this.lhs.wolframExpression()} == ${this.rhs.wolframExpression()}`;
+    return <WolframExpression>`${this.wolframSymbol}[${this.lhs.wolframExpression()},${this.rhs.wolframExpression()}]`;
   }
 
   public constructor(lhs: ExpressionNode, rhs: ExpressionNode) {
@@ -276,6 +292,31 @@ class EquationNode extends SemanticFormula {
     this.lhs = lhs;
     this.rhs = rhs;
   }
+}
+
+class EqualsNode extends RelationNode {
+  public /* override */ get isEquation(): boolean { return true; }
+  public /* override */ get wolframSymbol(): string { return 'Equal'; };
+}
+
+class NotEqualsNode extends RelationNode {
+  public /* override */ get wolframSymbol(): string { return 'Unequal'; };
+}
+
+class GreaterThanNode extends RelationNode {
+  public /* override */ get wolframSymbol(): string { return 'Greater'; };
+}
+
+class GreaterThanOrEqualToNode extends RelationNode {
+  public /* override */ get wolframSymbol(): string { return 'GreaterEqual'; };
+}
+
+class LessThanNode extends RelationNode {
+  public /* override */ get wolframSymbol(): string { return 'Less'; };
+}
+
+class LessThanOrEqualToNode extends RelationNode {
+  public /* override */ get wolframSymbol(): string { return 'LessEqual'; };
 }
 
 class IdentifierNode extends ExpressionNode {
