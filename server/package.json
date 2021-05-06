@@ -32,8 +32,7 @@
     "svg2img": "^0.6.1",
     "uuid": "^3.3.3",
     "wolfram-alpha-node": "0.0.3",
-    "ws": "^6.2.1",
-    "xml2js": "^0.4.23"
+    "ws": "^6.2.1"
   },
   "devDependencies": {
     "@types/chai": "^4.2.0",
