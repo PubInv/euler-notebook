@@ -35,10 +35,13 @@ requireWolframScript();
 describe("SemanticFormula", function(){
   this.timeout(10*1000);
   for (const entry of FORMULA_TABLE) {
-    it(`handles ${entry.plain} correctly.`, function(){
-      // c-nsole.dir(entry.contentMathMlTree);
+    const title = `converts ${entry.plain} correctly.`;
+    if (entry.skip) {
+      it.skip(title);
+      continue;
+    }
+    it(title, function(){
       const formula = SemanticFormula.createFromContentMathMlTree(entry.contentMathMlTree);
-      // c-nsole.dir(formula);
       const wolframExpression = formula.wolframExpression();
       assert.deepEqual(wolframExpression, entry.wolfram);
     });

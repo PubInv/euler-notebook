@@ -32,6 +32,11 @@ import { FORMULA_TABLE } from "./formula-table";
 describe("convertJiixExpressionToContentMathMlTree", function(){
   this.timeout(10*1000);
   for (const entry of FORMULA_TABLE) {
+    const title = `converts ${entry.plain} correctly.`;
+    if (entry.skip) {
+      it.skip(title);
+      continue;
+    }
     it(`converts ${entry.plain} correctly.`, function(){
       const contentMathMlTree = convertJiixExpressionToContentMathMlTree(entry.jiixExpression);
       assert.deepEqual(contentMathMlTree, entry.contentMathMlTree);

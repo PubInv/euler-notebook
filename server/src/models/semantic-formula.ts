@@ -20,7 +20,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 // Requirements
 
 import { assert, assertFalse } from "../shared/common";
-import { Apply, ContentMathMlNode, ContentMathMlTree } from "../shared/content-mathml";
+import { ApplyOperators, Ci, ContentMathMlNode, ContentMathMlTree, Matrix } from "../shared/content-mathml";
 import { FormulaSymbol, WolframExpression } from "../shared/formula";
 import { PlotInfo } from "../shared/plot";
 
@@ -28,7 +28,11 @@ import { PlotInfo } from "../shared/plot";
 
 // Constants
 
+// Constants
+
 // Global Variables
+
+let OPERATOR_TABLE = new Map<ApplyOperators, /* TYPESCRIPT: */any>();
 
 // Exported Class
 
@@ -77,110 +81,30 @@ export abstract class SemanticFormula {
 
   // Private Class Methods
 
-  private static createFromApplyNode(node: Apply): SemanticFormula {
+  protected static createFromContentMathMlNode(node: ContentMathMlNode): SemanticFormula {
     let rval: SemanticFormula;
-    const { operator, operands } = node;
-    switch (operator.tag) {
-
-      // One operand
-      case 'factorial':
-      case 'root': {
-        assert(operands.length == 1);
-        const op1 = this.createFromContentMathMlNode(operands[0]);
-        let cls /* TYPESCRIPT: */;
-        switch(operator.tag) {
-          case 'factorial': cls = FactorialNode; break;
-          case 'root': cls = RootNode; break;
+    switch(node.tag) {
+      case 'ci':     rval = new IdentifierNode(node); break;
+      case 'cn':     rval = new NumberNode(node.value); break;
+      case 'matrix': rval = new MatrixNode(node); break;
+      case 'apply': {
+        const { operator, operands } = node;
+        const cls = OPERATOR_TABLE.get(<ApplyOperators>operator.tag);
+        if (!cls) {
+          throw new Error(`Creating from applied '${operator.tag}' nodes not yet implemented.`)
         }
-        rval = new cls(op1);
-        break;
-      }
-
-      // Two operands
-      case 'eq':
-      case 'geq':
-      case 'gt':
-      case 'leq':
-      case 'lt':
-      case 'neq':
-      case 'power':
-      case 'quotient': {
-        assert(operands.length == 2);
-        const op1 = this.createFromContentMathMlNode(operands[0]);
-        assert(op1 instanceof ExpressionNode);
-        const op2 = this.createFromContentMathMlNode(operands[1]);
-        assert(op2 instanceof ExpressionNode);
-        let cls /* TYPESCRIPT: */;
-        switch (operator.tag) {
-          case 'eq': cls = EqualsNode; break;
-          case 'geq': cls = GreaterThanOrEqualToNode; break;
-          case 'gt': cls = GreaterThanNode; break;
-          case 'leq': cls = LessThanOrEqualToNode; break;
-          case 'lt': cls = LessThanNode; break;
-          case 'neq': cls = NotEqualsNode; break;
-          case 'power': cls = PowerNode; break;
-          case 'quotient': cls = QuotientNode; break;
-        }
-        rval = new cls(op1, op2);
-        break;
-      }
-
-      // Two or more operands
-      case 'plus':
-      case 'times': {
-        assert(operands.length >= 2);
         const semOperands = operands.map(operand=>this.createFromContentMathMlNode(operand));
-        let cls /* TYPESCRIPT: */;
-        switch (operator.tag) {
-          case 'plus': cls = PlusNode; break;
-          case 'times': cls = TimesNode; break;
-        }
         rval = new cls(semOperands);
         break;
       }
-
-      // Other cases
-
-      case 'minus':  {
-        // Can be unary minus or binary minus.
-        if (operands.length == 1) {
-          const operand = this.createFromContentMathMlNode(operands[0]);
-          rval = new UnaryMinusNode(operand);
-        } else if (operands.length == 2) {
-          const minuend = this.createFromContentMathMlNode(operands[0]);
-          const subtrahend = this.createFromContentMathMlNode(operands[1]);
-          rval = new MinusNode(minuend, subtrahend);
-        } else {
-          assertFalse();
-        }
-        break;
-      }
-
-      default:
-       throw new Error(`Creating from applied '${operator.tag}' nodes not yet implemented.`)
-    }
-    return rval;
-  }
-
-  private static createFromContentMathMlNode(node: ContentMathMlNode): SemanticFormula {
-    let rval: SemanticFormula;
-    switch(node.tag) {
-      case 'apply':  rval = this.createFromApplyNode(node); break;
       case 'cerror': {
         assert(node.code == 'MissingSubexpression');
         rval = new MissingExpressionNode();
         break;
       }
-      case 'ci':     rval = new IdentifierNode(<FormulaSymbol>node.identifier); break;
-      case 'cn':     rval = new NumberNode(node.value); break;
+
       case 'math':   assertFalse();
-      case 'matrix': {
-        const rows = node.rows.map(r=>r.cells.map(c=>this.createFromContentMathMlNode(c)));
-        rval = new MatrixNode(rows);
-        break;
-      }
-      default:
-        throw new Error(`Creating from '${node.tag}' nodes not yet implemented.`);
+      default: throw new Error(`Creating from '${node.tag}' nodes not yet implemented.`);
     }
     return rval;
   }
@@ -275,8 +199,9 @@ abstract class OperatorNode extends InteriorExpressionNode {
     // REVIEW: Maybe need parens?
     return <WolframExpression>`${this.wolframSymbol}[${this.operands.map(o=>o.wolframExpression()).join(',')}]`;
   }
-  public constructor(operands: ExpressionNode[]) {
+  public constructor(operands: SemanticFormula[]) {
     super();
+    assert(operands.every(o=>o instanceof ExpressionNode));
     this.operands = operands;
   }
 }
@@ -307,10 +232,12 @@ abstract class RelationNode extends SemanticFormula {
     return <WolframExpression>`${this.wolframSymbol}[${this.lhs.wolframExpression()},${this.rhs.wolframExpression()}]`;
   }
 
-  public constructor(lhs: ExpressionNode, rhs: ExpressionNode) {
+  public constructor(operands: SemanticFormula[]) {
+    assert(operands.length == 2);
+    assert(operands.every(o=>o instanceof ExpressionNode));
     super();
-    this.lhs = lhs;
-    this.rhs = rhs;
+    this.lhs = operands[0];
+    this.rhs = operands[1];
   }
 }
 
@@ -346,9 +273,9 @@ class IdentifierNode extends ExpressionNode {
     return { type: 'univariate', xAxisIdentifier: this.identifier };
   }
   public /* override */ wolframExpression(): WolframExpression { return <WolframExpression>this.identifier; }
-  public constructor(identifier: FormulaSymbol) {
+  public constructor(node: Ci) {
     super();
-    this.identifier = identifier;
+    this.identifier = <FormulaSymbol>node.identifier;
   }
 }
 
@@ -356,27 +283,21 @@ class MatrixNode extends ExpressionNode {
   public rows: ExpressionNode[][];
   public /* override */ plotInfo(): PlotInfo|false { return false; }
   public /* override */ wolframExpression(): WolframExpression {
-    throw new Error("Not implemented.");
+    return <WolframExpression>`List[${this.rows.map(r=><WolframExpression>`List[${r.map(c=>c.wolframExpression()).join(',')}]`).join(',')}]`;
   }
-  public constructor(rows: ExpressionNode[][]) {
+  public constructor(node: Matrix) {
     super();
+    const rows = node.rows.map(r=>r.cells.map(c=>SemanticFormula.createFromContentMathMlNode(c)));
     this.rows = rows;
   }
 }
 
-class MinusNode extends InteriorExpressionNode {
-  public minuend: ExpressionNode;
-  public subtrahend: ExpressionNode;
-  public /* override */ children(): ExpressionNode[] { return [ this.minuend, this.subtrahend ] };
-  public /* override */ wolframExpression(): WolframExpression {
-    // REVIEW: Maybe need parens?
-    return <WolframExpression>`Subtract[${this.minuend.wolframExpression()},${this.subtrahend.wolframExpression()}]`;
-  }
-  public constructor(minuend: SemanticFormula, subtrahend: SemanticFormula) {
-    super();
-    this.minuend = minuend;
-    this.subtrahend = subtrahend;
-  }
+class MinusNode extends OperatorNode {
+  public get wolframSymbol(): string {
+    if (this.operands.length == 1) { return 'Minus'; }
+    else if (this.operands.length == 2) { return 'Subtract'; }
+    else { assertFalse(); }
+  };
 }
 
 class MissingExpressionNode extends ExpressionNode {
@@ -406,19 +327,8 @@ class PlusNode extends OperatorNode {
   public get wolframSymbol(): string { return 'Plus' };
 }
 
-class PowerNode extends InteriorExpressionNode {
-  public base: ExpressionNode;
-  public exponent: ExpressionNode;
-  public /* override */ children(): ExpressionNode[] { return [ this.base, this.exponent ] };
-  public /* override */ wolframExpression(): WolframExpression {
-    // REVIEW: Maybe need parens?
-    return <WolframExpression>`Power[${this.base.wolframExpression()},${this.exponent.wolframExpression()}]`;
-  }
-  public constructor(base: SemanticFormula, exponent: SemanticFormula) {
-    super();
-    this.base = base;
-    this.exponent = exponent;
-  }
+class PowerNode extends OperatorNode {
+  public get wolframSymbol(): string { return 'Power' };
 }
 
 class FactorialNode extends InteriorExpressionNode {
@@ -427,9 +337,11 @@ class FactorialNode extends InteriorExpressionNode {
   public /* override */ wolframExpression(): WolframExpression {
     return <WolframExpression>`Factorial[${this.operand.wolframExpression()}]`;
   }
-  public constructor(operand: SemanticFormula) {
+  public constructor(operands: SemanticFormula[]) {
+    assert(operands.length==1);
+    assert(operands[0] instanceof ExpressionNode);
     super();
-    this.operand = operand;
+    this.operand = operands[0];
   }
 }
 
@@ -442,42 +354,35 @@ class RootNode extends InteriorExpressionNode {
     // LATER: CubeRoot or Surd
     return <WolframExpression>`Sqrt[${this.operand.wolframExpression()}]`;
   }
-  public constructor(operand: SemanticFormula) {
+  public constructor(operands: SemanticFormula[]) {
+    assert(operands.length==1);
+    assert(operands[0] instanceof ExpressionNode);
     super();
-    this.operand = operand;
+    this.operand = operands[0];
   }
 }
 
-class QuotientNode extends InteriorExpressionNode {
-  public dividend: ExpressionNode;
-  public divisor: ExpressionNode;
-  public /* override */ children(): ExpressionNode[] { return [ this.dividend, this.divisor ] };
-  public /* override */ wolframExpression(): WolframExpression {
-    // REVIEW: Maybe need parens?
-    return <WolframExpression>`Divide[${this.dividend.wolframExpression()},${this.divisor.wolframExpression()}]`;
-  }
-  public constructor(dividend: SemanticFormula, divisor: SemanticFormula) {
-    super();
-    this.dividend = dividend;
-    this.divisor = divisor;
-  }
+class QuotientNode extends OperatorNode {
+  public get wolframSymbol(): string { return 'Divide' };
 }
 
 class TimesNode extends OperatorNode {
   public get wolframSymbol(): string { return 'Times' };
 }
 
-class UnaryMinusNode extends InteriorExpressionNode {
-  public operand: ExpressionNode;
-  public /* override */ children(): ExpressionNode[] { return [ this.operand ] };
-  public /* override */ wolframExpression(): WolframExpression {
-    // REVIEW: Maybe need parens?
-    return <WolframExpression>`Minus[${this.operand.wolframExpression()}]`;
-  }
-  public constructor(operand: SemanticFormula) {
-    super();
-    this.operand = operand;
-  }
-}
+OPERATOR_TABLE.set('eq', EqualsNode);
+OPERATOR_TABLE.set('eq', EqualsNode);
+OPERATOR_TABLE.set('factorial', FactorialNode);
+OPERATOR_TABLE.set('geq', GreaterThanOrEqualToNode);
+OPERATOR_TABLE.set('gt', GreaterThanNode);
+OPERATOR_TABLE.set('leq', LessThanOrEqualToNode);
+OPERATOR_TABLE.set('lt', LessThanNode);
+OPERATOR_TABLE.set('minus', MinusNode);
+OPERATOR_TABLE.set('neq', NotEqualsNode);
+OPERATOR_TABLE.set('plus', PlusNode);
+OPERATOR_TABLE.set('power', PowerNode);
+OPERATOR_TABLE.set('quotient', QuotientNode);
+OPERATOR_TABLE.set('root', RootNode);
+OPERATOR_TABLE.set('times', TimesNode);
 
 

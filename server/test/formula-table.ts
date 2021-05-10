@@ -40,6 +40,7 @@ interface FormulaEntry {
   presentationMathMlTree: PresentationMathMlTree,
   contentMathMlTree: ContentMathMlTree,
   wolfram: WolframExpression,
+  skip?: boolean;
 }
 
 // Exported Data
@@ -106,7 +107,7 @@ export const FORMULA_TABLE: FormulaEntry[] = [
       }
     },
     wolfram: <WolframExpression>"Plus[1,2]",
-  }, { plain: "",
+  }, { plain: "1+_",
     jiixExpression: {
       "type":"+", "id":"math/32",
       "operands":[
@@ -133,7 +134,7 @@ export const FORMULA_TABLE: FormulaEntry[] = [
         ]
       }
     },
-    wolfram: <WolframExpression>"TODO",
+    wolfram: <WolframExpression>"Plus[1,Missing[]]",
   }, { plain: "12-4",
     jiixExpression: {
       type: "-", id: "math/62",
@@ -703,6 +704,7 @@ export const FORMULA_TABLE: FormulaEntry[] = [
   }, { plain: "x ≤ 1",
       // TODO: Unlike the other relational operators (=, !=, >, >=, <),
       //       less-than-or-equal-to comes back as a symbol in a group, not a type!!!
+      skip: true,
       jiixExpression: {
         type: "group", id: "math/39",
         operands: [
@@ -813,7 +815,7 @@ export const FORMULA_TABLE: FormulaEntry[] = [
           ]
         }
       },
-      wolfram: <WolframExpression>"TODO",
+      wolfram: <WolframExpression>"List[List[0,1],List[1,0]]",
     // }, { plain: "",
     //   jiixExpression: ,
     //   presentationMathMlTree: ,
