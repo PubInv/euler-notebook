@@ -36,10 +36,9 @@ import { PresentationMathMlTree } from "../src/shared/presentation-mathml";
 
 interface FormulaEntry {
   plain: string; // Plain text representation for documentation purposes only.
-  contentMathMlTree: ContentMathMlTree,
   jiixExpression: JiixExpression,
   presentationMathMlTree: PresentationMathMlTree,
-  // tex: TexExpression,
+  contentMathMlTree: ContentMathMlTree,
   wolfram: WolframExpression,
 }
 
@@ -50,6 +49,9 @@ interface FormulaEntry {
 // TODO: Relations
 
 export const FORMULA_TABLE: FormulaEntry[] = [
+
+  //  Numbers and Symbols
+
   { plain: "1",
     jiixExpression: { type: "number", id: "math/19", label: "1", value: 1 },
     presentationMathMlTree: {
@@ -72,7 +74,11 @@ export const FORMULA_TABLE: FormulaEntry[] = [
       child: { tag: "cn", value: 3.14 }
     },
     wolfram: <WolframExpression>"3.14",
-  }, { plain: "1+2",
+  },
+
+  // Simple Arithmetic
+
+  { plain: "1+2",
     jiixExpression: {
       type: "+", id: "math/45",
       operands: [
@@ -100,6 +106,34 @@ export const FORMULA_TABLE: FormulaEntry[] = [
       }
     },
     wolfram: <WolframExpression>"Plus[1,2]",
+  }, { plain: "",
+    jiixExpression: {
+      "type":"+", "id":"math/32",
+      "operands":[
+        { "type": "number", "id": "math/31", "label": "1", "value": 1 },
+        { "type": "number", "label": "?", "generated": true, "error": "Unsolved" }
+      ]
+    },
+    presentationMathMlTree: {
+      "tag":"math",
+      "children":[
+        {"tag":"mn","value":1},
+        {"tag":"mo","symbol":"+"},
+        {"tag":"mrow","children":[]}
+      ]
+    },
+    contentMathMlTree: {
+      "tag":"math",
+      "child":{
+        "tag":"apply",
+        "operator":{"tag":"plus"},
+        "operands":[
+          {"tag":"cn","value":1},
+          {"tag":"cerror","code":"MissingSubexpression"}
+        ]
+      }
+    },
+    wolfram: <WolframExpression>"TODO",
   }, { plain: "12-4",
     jiixExpression: {
       type: "-", id: "math/62",
@@ -161,35 +195,16 @@ export const FORMULA_TABLE: FormulaEntry[] = [
       type: "·",
       id: "math/50",
       operands: [
-        {
-          type: "number",
-          id: "math/48",
-          label: "6",
-          value: 6
-        },
-        {
-          type: "number",
-          id: "math/49",
-          label: "8",
-          value: 8
-        }
+        { type: "number", id: "math/48", label: "6", value: 6 },
+        { type: "number", id: "math/49", label: "8", value: 8 }
       ]
     },
     presentationMathMlTree: {
       tag: "math",
       children: [
-        {
-          tag: "mn",
-          value: 6
-        },
-        {
-          tag: "mo",
-          symbol: "&#x00b7;"
-        },
-        {
-          tag: "mn",
-          value: 8
-        }
+        { tag: "mn", value: 6 },
+        { tag: "mo", symbol: "&#x00b7;" },
+        { tag: "mn", value: 8 }
       ]
     },
     contentMathMlTree: {
@@ -287,7 +302,11 @@ export const FORMULA_TABLE: FormulaEntry[] = [
       }
     },
     wolfram: <WolframExpression>"Divide[22,7]",
-  }, { plain: "(x+a)(x-a)",
+  },
+
+  // Polynomials
+
+  { plain: "(x+a)(x-a)",
     jiixExpression: {
       type: "group", id: "math/134",
       operands: [
@@ -485,7 +504,11 @@ export const FORMULA_TABLE: FormulaEntry[] = [
       }
     },
     wolfram: <WolframExpression>"Plus[Times[a,Power[x,2]],Times[b,x],c]",
-  }, { plain: "√x",
+  },
+
+  // Roots, Factorials, etc.
+
+  { plain: "√x",
     jiixExpression: {
       type: "square root", id: "math/28",
       label: "√",
@@ -529,7 +552,11 @@ export const FORMULA_TABLE: FormulaEntry[] = [
       }
     },
     wolfram: <WolframExpression>"Factorial[x]",
-  }, { plain: "x = 1",
+  },
+
+  // Equations
+
+  { plain: "x = 1",
     jiixExpression: {
       type: "=", id: "math/36",
       operands: [
@@ -557,7 +584,11 @@ export const FORMULA_TABLE: FormulaEntry[] = [
       }
     },
     wolfram: <WolframExpression>"Equal[x,1]",
-  }, { plain: "x ≠ 1",
+  },
+
+  // Inequalities
+
+  { plain: "x ≠ 1",
       jiixExpression: {
         type: "≠", id: "math/38",
         operands: [
@@ -700,7 +731,11 @@ export const FORMULA_TABLE: FormulaEntry[] = [
         }
       },
       wolfram: <WolframExpression>"LessEqual[x,1]",
-    }, { plain: "(matrix) 0 1; 1 0",
+  },
+
+  // Matrices
+
+  { plain: "(matrix) 0 1; 1 0",
       jiixExpression: {
         "type": "matrix",
         "id": "math/91",

@@ -75,17 +75,17 @@ export type MathNodeType =
   '\u226B' /* much greater than */;
 
 export interface MathNode {
-  id: string;
+  id?: string;                  // id not present on error nodes.
   type: MathNodeType;
 
   'bounding-box'?: BoundingBox;
-  'close symbol'?: string; // For type 'fence'
+  'close symbol'?: string;      // For type 'fence'
   // exactValue???
   error?: MathNodeErrorString;
   generated?: boolean
-  items?: MathNodeItem[]; // If export.jiix.strokes or export.jiix.glyphs are true.
+  items?: MathNodeItem[];       // If export.jiix.strokes or export.jiix.glyphs are true.
   label?: string;
-  'open symbol'?: string; // For type 'fence'
+  'open symbol'?: string;       // For type 'fence'
   operands?: MathNode[];
   rows?: MatrixRow[];
   value?: number;

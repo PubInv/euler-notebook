@@ -20,7 +20,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 // Requirements
 
 import { assert, assertFalse } from "../shared/common";
-import { ApplyOperators, Ci, Cn, ContentMathMlNode, ContentMathMlTree, Matrix, MatrixRow } from "../shared/content-mathml";
+import { ApplyOperators, Cerror, Ci, Cn, ContentMathMlNode, ContentMathMlTree, Matrix, MatrixRow } from "../shared/content-mathml";
 
 import {
   MathNode, MathNodeType,
@@ -78,8 +78,17 @@ function convertSubexpression(expr: MathNode): ContentMathMlNode {
     }
 
     case 'number': {
-      assert(!expr.generated);
-      rval = <Cn>{ tag: 'cn', value: expr.value };
+
+      if (!expr.error && expr.label != '?' && !expr.generated) {
+        rval = <Cn>{ tag: 'cn', value: expr.value };
+      } else {
+        // Missing operand will generate:
+        // { type: 'number', label: '?', generated: true, error: 'Unsolved' }
+        assert(expr.label == '?');
+        assert(expr.error == 'Unsolved');
+        assert(expr.generated);
+        rval = <Cerror>{ tag: 'cerror', code: 'MissingSubexpression'};
+      }
       break;
     }
 

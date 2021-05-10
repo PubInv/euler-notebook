@@ -44,10 +44,15 @@ function convertSubexpression(expr: MathNode): PresentationMathMlNode[] {
 
     // Tokens
     case 'number': {
-      if (expr.generated && expr.label == '?') {
-        rval.push(<Mrow>{ tag: 'mrow', children: [] });
-      } else {
+      if (!expr.error && expr.label != '?' && !expr.generated) {
         rval.push(<Mn>{ tag: 'mn', value: expr.value });
+      } else {
+        // Missing operand will generate:
+        // { type: 'number', label: '?', generated: true, error: 'Unsolved' }
+        // REVIEW: Presumably we are generating this because this is what MyScript generates in this case.
+        //         Do we want to have an <merror> element instead or is there another way that missing
+        //         operands are identified in pMathML?
+        rval.push(<Mrow>{ tag: 'mrow', children: [] });
       }
       break;
     }

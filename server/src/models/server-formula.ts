@@ -34,6 +34,7 @@ import { PresentationMathMlMarkup, PresentationMathMlTree, serializeTreeToMathMl
 
 import { ExpressionNode, SemanticFormula } from "./semantic-formula";
 import { ContentMathMlTree } from "../shared/content-mathml";
+import { assert } from "../shared/common";
 
 // Types
 
@@ -68,12 +69,15 @@ export class ServerFormula {
 
   // Public Instance Property Functions
 
-  public plotExpression(): ExpressionNode|undefined {
-    return this.semanticFormula && this.semanticFormula.plotExpression();
+  public plotExpression(): ExpressionNode {
+    assert(this.plotInfo());
+    return this.semanticFormula!.plotExpression();
   }
 
-  public plotInfo(): PlotInfo|undefined {
-    return this.semanticFormula && this.semanticFormula.plotInfo();
+  public plotInfo(): PlotInfo|false {
+    return !!this.semanticFormula &&
+           this.semanticFormula.isComplete &&
+           this.semanticFormula.plotInfo();
   }
 
   // public get wolfram(): WolframExpression { return this.obj.wolfram; }

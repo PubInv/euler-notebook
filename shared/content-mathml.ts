@@ -37,8 +37,9 @@ export type ApplyOperators =
   'times' ;
 
 export type ContentMathMlMarkup = '{ContentMathMlMarkup}';
-export type ContentMathMlNode = Apply | Ci | Cn | Csym | Eq | Factorial | Geq | Gt | Leq | Lt | Math | Matrix | MatrixRow | Minus | Neq | Plus | Power | Root | Quotient | Times;
+export type ContentMathMlNode = Apply | Cerror | Ci | Cn | Csym | Eq | Factorial | Geq | Gt | Leq | Lt | Math | Matrix | MatrixRow | Minus | Neq | Plus | Power | Root | Quotient | Times;
 export type ContentMathMlTree = Math;
+type ErrorCode = 'MissingSubexpression';
 
 // LATER: export type NumberType = "integer" | "real" | "double" | "hexdouble" | "e-notation" | "rational" | "complex-cartesian" | "complex-polar" | "constant";
 
@@ -46,6 +47,11 @@ export interface Apply {
   tag: 'apply';
   operator: ContentMathMlNode;
   operands: ContentMathMlNode[];
+}
+
+export interface Cerror {
+  tag: 'cerror';
+  code: ErrorCode;
 }
 
 export interface Ci {

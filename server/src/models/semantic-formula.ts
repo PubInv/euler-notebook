@@ -40,7 +40,7 @@ export abstract class SemanticFormula {
   // Public Class Methods
 
   public static createFromContentMathMlTree(tree: ContentMathMlTree): SemanticFormula {
-    return tree.child ? this.createFromContentMathMlNode(tree.child) : new MissingNode();
+    return tree.child ? this.createFromContentMathMlNode(tree.child) : new MissingExpressionNode();
   }
 
   // Public Class Event Handlers
@@ -48,6 +48,7 @@ export abstract class SemanticFormula {
 
   // Public Instance Property Functions
 
+  public /* overridable */ get isComplete(): boolean { return true; }
   public /* overridable */ get isEquation(): boolean { return false; }
   public /* overridable */ get isExpression(): boolean { return true; }
   public /* overridable */ get isIdentifier(): boolean { return false; }
@@ -63,7 +64,7 @@ export abstract class SemanticFormula {
   }
 
   public abstract plotExpression(): ExpressionNode;
-  public abstract plotInfo(): PlotInfo|undefined;
+  public abstract plotInfo(): PlotInfo|false;
   public abstract wolframExpression(): WolframExpression;
 
   // Public Instance Methods
@@ -165,6 +166,11 @@ export abstract class SemanticFormula {
     let rval: SemanticFormula;
     switch(node.tag) {
       case 'apply':  rval = this.createFromApplyNode(node); break;
+      case 'cerror': {
+        assert(node.code == 'MissingSubexpression');
+        rval = new MissingExpressionNode();
+        break;
+      }
       case 'ci':     rval = new IdentifierNode(<FormulaSymbol>node.identifier); break;
       case 'cn':     rval = new NumberNode(node.value); break;
       case 'math':   assertFalse();
@@ -198,17 +204,20 @@ export abstract class ExpressionNode extends SemanticFormula {
 
 abstract class InteriorExpressionNode extends ExpressionNode {
   public abstract children(): ExpressionNode[]; /* LATER: ExpressionNode Iterator instead? */
-  public /* override */ plotInfo(): PlotInfo|undefined {
+  public /* override */ get isComplete(): boolean {
+    return this.children().every(c=>c.isComplete);
+  }
+  public /* override */ plotInfo(): PlotInfo|false {
     const children = this.children();
-    if (children.length == 0) { return undefined; }
+    if (children.length == 0) { return false; }
     else {
       const child0 = children[0];
       const plotInfo = child0.plotInfo();
       if (children.length == 1) { return plotInfo; }
       else {
-        return children.slice(1).reduce((plotInfo1: PlotInfo|undefined, child2: ExpressionNode): PlotInfo|undefined=>{
+        return children.slice(1).reduce((plotInfo1: PlotInfo|false, child2: ExpressionNode): PlotInfo|false=>{
           const plotInfo2 = child2.plotInfo();
-          if (!plotInfo1 || !plotInfo2) { return undefined; }
+          if (!plotInfo1 || !plotInfo2) { return false; }
           switch(plotInfo1.type) {
             case 'constant': return plotInfo2;
             case 'univariate': {
@@ -222,7 +231,7 @@ abstract class InteriorExpressionNode extends ExpressionNode {
                   if (plotInfo1.xAxisIdentifier == plotInfo2.xAxisIdentifier || plotInfo1.xAxisIdentifier == plotInfo2.zAxisIdentifier) {
                     return plotInfo2;
                   } else {
-                    return undefined; // Expression is trivariate. Cannot plot.
+                    return false; // Expression is trivariate. Cannot plot.
                   }
                   break;
                 }
@@ -236,7 +245,7 @@ abstract class InteriorExpressionNode extends ExpressionNode {
                   if (plotInfo2.xAxisIdentifier == plotInfo1.xAxisIdentifier || plotInfo2.xAxisIdentifier == plotInfo1.zAxisIdentifier) {
                     return plotInfo1;
                   } else {
-                    return undefined; // Expression is trivariate. Cannot plot.
+                    return false; // Expression is trivariate. Cannot plot.
                   }
                 }
                 case 'bivariate': {
@@ -244,7 +253,7 @@ abstract class InteriorExpressionNode extends ExpressionNode {
                       (plotInfo1.xAxisIdentifier == plotInfo2.zAxisIdentifier && plotInfo1.zAxisIdentifier == plotInfo2.xAxisIdentifier)) {
                     return plotInfo1;
                   } else {
-                    return undefined; // Expression is trivariate+. Cannot plot.
+                    return false; // Expression is trivariate+. Cannot plot.
                   }
                   break;
                 }
@@ -276,11 +285,14 @@ abstract class RelationNode extends SemanticFormula {
   public lhs: ExpressionNode;
   public rhs: ExpressionNode;
   public abstract get wolframSymbol(): string;
+  public /* override */ get isComplete(): boolean {
+    return this.lhs.isComplete && this.rhs.isComplete;
+  }
   public /* override */ get isRelation(): boolean { return true; }
   public /* override */ get isExpression(): boolean { return false; }
   public /* override */ plotExpression(): ExpressionNode { return this.rhs; }
-  public /* override */ plotInfo(): PlotInfo|undefined {
-    let rval: PlotInfo|undefined = undefined;
+  public /* override */ plotInfo(): PlotInfo|false {
+    let rval: PlotInfo|false = false;
     if (this.lhs instanceof IdentifierNode) {
       const rhsPlotInfo = this.rhs.plotInfo();
       if (rhsPlotInfo) {
@@ -330,7 +342,7 @@ class LessThanOrEqualToNode extends RelationNode {
 class IdentifierNode extends ExpressionNode {
   public identifier: FormulaSymbol;
   public /* override */ get isIdentifier(): boolean { return true; }
-  public /* override */ plotInfo(): PlotInfo|undefined {
+  public /* override */ plotInfo(): PlotInfo|false {
     return { type: 'univariate', xAxisIdentifier: this.identifier };
   }
   public /* override */ wolframExpression(): WolframExpression { return <WolframExpression>this.identifier; }
@@ -342,7 +354,7 @@ class IdentifierNode extends ExpressionNode {
 
 class MatrixNode extends ExpressionNode {
   public rows: ExpressionNode[][];
-  public /* override */ plotInfo(): PlotInfo|undefined { return undefined; }
+  public /* override */ plotInfo(): PlotInfo|false { return false; }
   public /* override */ wolframExpression(): WolframExpression {
     throw new Error("Not implemented.");
   }
@@ -367,19 +379,20 @@ class MinusNode extends InteriorExpressionNode {
   }
 }
 
-class MissingNode extends ExpressionNode {
+class MissingExpressionNode extends ExpressionNode {
   // This class is used at the top level for the "empty" formula.
   // It can also be used to indicate an incomplete formula, e.g. a missing operand.
-  public /* override */ plotInfo(): PlotInfo|undefined { return undefined };
+  public /* override */ get isComplete(): boolean { return false; }
+  public /* override */ plotInfo(): PlotInfo|false { return false };
   public /* override */ wolframExpression(): WolframExpression {
-    // REVIEW: Should it be the empty string or something else?
-    return <WolframExpression>'TODO:';
+    // REVIEW: Is this the appropriate Wolfram expression to return?
+    return <WolframExpression>"Missing[]";
   }
 }
 
 class NumberNode extends ExpressionNode {
   public value: number;
-  public /* override */ plotInfo(): PlotInfo|undefined {
+  public /* override */ plotInfo(): PlotInfo|false {
     return { type: 'constant' };
   }
   public /* override */ wolframExpression(): WolframExpression { return <WolframExpression>this.value.toString(); }

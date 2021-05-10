@@ -27,7 +27,7 @@ export function logError(/* TODO: component, */ err: Error, message?: string /* 
   if (err instanceof ExpectedError) { return; }
   console.error(message || err.message);
   console.dir(err);
-  if (info) { console.dir(info); }
+  if (info) { console.dir(info, { depth: null }); }
 }
 
 export function logErrorMessage(message: string): void {
