@@ -80,38 +80,47 @@ export async function recognizeFigure(
   strokeData: StrokeData,
 ): Promise<FigureRecognitionResults> {
 
-  debug(`Recognizing figure.`);
+  const alternatives: FigureRecognitionAlternative[] = [];
+  if (strokeData.strokes.length == 0) {
+    debug("Recognizing empty figure.");
+    return { alternatives };
+  }
 
-  // LATER: Get the JIIX version for a "content"-level view of the diagram.
+  debug(`Recognizing figure.`);
+  const svgMarkupRaw = await postSvgRequest(width, height, strokeData);
+  // c-nsole.log(`Figure SVG: ${svgMarkupRaw}`);
+  // LATER: Get the JIIX version instead for a "content"-level view of the diagram.
   //        Unfortunately you can't get the JIIX and SVG back in one call, so you have to call twice.
   //        GraphML is another possible high-level format.
   // const jiix = await postJiixRequest<JiixDiagramBlock>('Diagram', strokeData);
-  // c-nsole.log(JSON.stringify(jiix, null, 2));
+  // debug(`JIIX response: ${JSON.stringify(jiix)}`);
 
-  const svgMarkupRaw = await postSvgRequest(width, height, strokeData);
-  // c-nsole.log(`Figure SVG: ${svgMarkupRaw}`);
+  try {
+    // HACK ALERT: This is fragile matching regular expressions.
+    //             But not as heavyweight as parsing XML...
+    const matchStart = SVG_START_TAG_RE.exec(svgMarkupRaw)!;
+    assert(matchStart);
+    const startIndex = matchStart[0].length;
+    const matchEnd = SVG_END_TAG_RE.exec(svgMarkupRaw)!;
+    assert(matchEnd);
+    const endIndex = -matchEnd[0].length;
+    const svgInnerMarkup = <SvgMarkup>svgMarkupRaw.slice(startIndex, endIndex);
+    // Don't know why, by MyScript appears to scale the coordinate system of Diagram SVGs down by 4.
+    const svgMarkup = <SvgMarkup>`<g transform="scale(4 4)">${svgInnerMarkup}</g>`;
 
-  // HACK ALERT: This is fragile matching regular expressions.
-  //             But not as heavyweight as parsing XML...
-  const matchStart = SVG_START_TAG_RE.exec(svgMarkupRaw)!;
-  assert(matchStart);
-  const startIndex = matchStart[0].length;
-  const matchEnd = SVG_END_TAG_RE.exec(svgMarkupRaw)!;
-  assert(matchEnd);
-  const endIndex = -matchEnd[0].length;
-  const svgInnerMarkup = <SvgMarkup>svgMarkupRaw.slice(startIndex, endIndex);
-  // Don't know why, by MyScript appears to scale the coordinate system of Diagram SVGs down by 4.
-  const svgMarkup = <SvgMarkup>`<g transform="scale(4 4)">${svgInnerMarkup}</g>`;
-
-  const thumbnailSvgMarkup = createThumbnailVersion(width, height, svgMarkup);
-  const alternative: FigureRecognitionAlternative = {
-    figureObject: {
-      // content: jiix.elements,
-      presentation: svgMarkup,
-    },
-    thumbnailSvgMarkup,
-  };
-  return { alternatives: [ alternative ] };
+    const thumbnailSvgMarkup = createThumbnailVersion(width, height, svgMarkup);
+    const alternative: FigureRecognitionAlternative = {
+      figureObject: {
+        // content: jiix.elements,
+        presentation: svgMarkup,
+      },
+      thumbnailSvgMarkup,
+    };
+    alternatives.push(alternative);
+  } catch(err) {
+    logError(err, "Error processing recognized figure.", { svgMarkupRaw });
+  }
+  return { alternatives };
 }
 
 export async function recognizeFormula(
@@ -120,18 +129,18 @@ export async function recognizeFormula(
   strokeData: StrokeData,
 ): Promise<FormulaRecognitionResults> {
 
+  const alternatives: FormulaRecognitionAlternative[] = [];
   if (strokeData.strokes.length == 0) {
     debug("Recognizing empty formula.");
-    return { alternatives: [] };
+    return { alternatives };
   }
 
   debug(`Recognizing formula.`);
   const jiix = await postJiixRequest<JiixMathBlock>(width, height, 'Math', strokeData);
   debug(`JIIX response: ${JSON.stringify(jiix)}`);
 
-  // TODO: If user writes multiple expressions then we should separate them into distinct cells.
-  const alternatives: FormulaRecognitionAlternative[] = [];
   try {
+    // TODO: If user writes multiple expressions then we should separate them into distinct cells.
     for (const jiixExpression of jiix.expressions) {
       filterJiixExpression(jiixExpression)
       debug(`JIIX expression: ${JSON.stringify(jiixExpression)}`);
@@ -143,7 +152,7 @@ export async function recognizeFormula(
       alternatives.push(alternative);
     };
   } catch (err) {
-    logError(err, "Error converting JIIX to pMathML and cMathML.", { jiix });
+    logError(err, "Error processing recognized formula.", { jiix });
   }
 
   // For development purposes only.
@@ -164,9 +173,24 @@ export async function recognizeText(
   height: LengthInPixels,
   strokeData: StrokeData,
 ): Promise<TextRecognitionResults> {
+
+  const alternatives: TextRecognitionAlternative[] = [];
+  if (strokeData.strokes.length == 0) {
+    debug("Recognizing empty text.");
+    return { alternatives };
+  }
+
   debug(`Recognizing text.`);
   const text = await postTextRequest(width, height, strokeData);
-  return { alternatives: [ { text } ] };
+  // LATER: Get JIIX instead so we can offer word alternatives, etc.
+
+  try {
+    const alternative: TextRecognitionAlternative = { text };
+    alternatives.push(alternative);
+  } catch(err) {
+    logError(err, "Error processing recognized text.", { text });
+  }
+  return { alternatives };
 }
 
 // Helper Functions
