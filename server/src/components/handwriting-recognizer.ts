@@ -32,10 +32,11 @@ import { StrokeData } from "../shared/stylus";
 import { SvgMarkup } from "../shared/svg";
 
 import { MathNode } from "../adapters/myscript-math";
-import {  JiixMathBlock, postJiixRequest, postMathMlRequest, postSvgRequest, postTextRequest } from "../adapters/myscript";
+import { JiixMathBlock, postJiixRequest, postMathMlRequest, postSvgRequest, postTextRequest } from "../adapters/myscript";
 import { convertJiixExpressionToPresentationMathMlTree } from "../converters/jiix-to-pmml";
 import { convertJiixExpressionToContentMathMlTree } from "../converters/jiix-to-cmml";
 import { convertPresentationMathMlMarkupToContentMathMlMarkup } from "../converters/pmml-to-cmml";
+import { logError } from "../error-handler";
 
 // Types
 
@@ -118,31 +119,42 @@ export async function recognizeFormula(
   height: LengthInPixels,
   strokeData: StrokeData,
 ): Promise<FormulaRecognitionResults> {
-  debug(`Recognizing formula.`);
 
-  const jiix = await postJiixRequest<JiixMathBlock>(width, height, 'Math', strokeData);
-
-  // For development purposes only. Comment out in production.
-  if (false) {
-    showPresentationMathMlToContentMathMlConversion(width, height, strokeData)
-    .catch(err=>{
-      console.error("ERROR: Failed to convert Presentation MathML to Content MathML.");
-      console.dir(err);
-    })
+  if (strokeData.strokes.length == 0) {
+    debug("Recognizing empty formula.");
+    return { alternatives: [] };
   }
+
+  debug(`Recognizing formula.`);
+  const jiix = await postJiixRequest<JiixMathBlock>(width, height, 'Math', strokeData);
+  debug(`JIIX response: ${JSON.stringify(jiix)}`);
 
   // TODO: If user writes multiple expressions then we should separate them into distinct cells.
   const alternatives: FormulaRecognitionAlternative[] = [];
-  for (const jiixExpression of jiix.expressions) {
-    filterJiixExpression(jiixExpression)
-    console.log(`JIIX EXPRESSION:\n${JSON.stringify(jiixExpression, null, 2)}`);
-    const presentationMathMlTree = convertJiixExpressionToPresentationMathMlTree(jiixExpression);
-    console.log(`PRESENTATION MATHML TREE FROM JIIX:\n${JSON.stringify(presentationMathMlTree, null, 2)}`)
-    const contentMathMlTree = convertJiixExpressionToContentMathMlTree(jiixExpression);
-    console.log(`CONTENT MATHML TREE FROM JIIX:\n${JSON.stringify(contentMathMlTree, null, 2)}`);
+  try {
+    for (const jiixExpression of jiix.expressions) {
+      filterJiixExpression(jiixExpression)
+      debug(`JIIX expression: ${JSON.stringify(jiixExpression)}`);
+      const presentationMathMlTree = convertJiixExpressionToPresentationMathMlTree(jiixExpression);
+      debug(`pMathML tree: ${JSON.stringify(presentationMathMlTree)}`)
+      const contentMathMlTree = convertJiixExpressionToContentMathMlTree(jiixExpression);
+      debug(`cMathML tree: ${JSON.stringify(contentMathMlTree)}`);
       const alternative: FormulaRecognitionAlternative = { presentationMathMlTree, contentMathMlTree };
-    alternatives.push(alternative);
-  };
+      alternatives.push(alternative);
+    };
+  } catch (err) {
+    logError(err, "Error converting JIIX to pMathML and cMathML.", { jiix });
+  }
+
+  // For development purposes only.
+  // Used to compare our conversions to ones by MyScript (JIIX->pMathML)
+  // and Wolfram (pMathML->cMathML).
+  // Because this doubles the number of calls to MyScript,
+  // it should not be enabled unless actively debugging our conversion code.
+  if (false) {
+    showPresentationMathMlToContentMathMlConversion(width, height, strokeData)
+    .catch(err=>{ logError(err, "Failed to convert Presentation MathML to Content MathML."); })
+  }
 
   return { alternatives };
 }
@@ -166,22 +178,19 @@ function createThumbnailVersion(width: LengthInPixels, height: LengthInPixels, s
 }
 
 function filterJiixExpression(jiixExpression: MathNode): void {
-  // Remove bounding box and item information in-place that are not used in parsing.
-  // Used when we console.dir the object to omit the irrelevant parts when
-  // generating test cases.
+  // Remove volumnious bounding box and item information that are not used in parsing.
+  // Useful, for example, when displaying for diagnostic purposes.
+  // Removal happens in-place.
   delete jiixExpression['bounding-box'];
   delete jiixExpression.items;
-  const operands = jiixExpression.operands;
-  if (operands) {
-    for (const operand of operands) {
+  if (jiixExpression.operands) {
+    for (const operand of jiixExpression.operands) {
       filterJiixExpression(operand);
     }
   }
-  const rows = jiixExpression.rows;
-  if (rows) {
-    for (const row of rows) {
-      const cells = row.cells;
-      for (const cell of cells) {
+  if (jiixExpression.rows) {
+    for (const row of jiixExpression.rows) {
+      for (const cell of row.cells) {
         filterJiixExpression(cell);
       }
     }
@@ -195,7 +204,7 @@ async function showPresentationMathMlToContentMathMlConversion(
   strokeData: StrokeData,
 ): Promise<void> {
   const presentationMathMlMarkup = await postMathMlRequest(width, height, strokeData);
-  console.log(`RECOGNIZED MATHML:\n${presentationMathMlMarkup}`);
+  debug(`pMathML from MyScript:\n${presentationMathMlMarkup}`);
   const contentMathMlMarkup = await convertPresentationMathMlMarkupToContentMathMlMarkup(presentationMathMlMarkup);
-  console.log(`WOLFRAM MATHML CONVERSION:\n${contentMathMlMarkup}`);
+  debug(`cMathML from Wolfram:\n${contentMathMlMarkup}`);
 }

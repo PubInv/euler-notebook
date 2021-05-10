@@ -17,18 +17,17 @@ You should have received a copy of the GNU Affero General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-// TODO: Convert all console.error calls to reportError calls.
-
 // Requirements
 
 import { ExpectedError } from "./shared/common";
 
 // Exported Functions
 
-export function logError(/* TODO: component, */ err: Error, message?: string /* TYPESCRIPT: Html type? */): void {
+export function logError(/* TODO: component, */ err: Error, message?: string /* TYPESCRIPT: Html type? */, info?: /* TYPESCRIPT: type? */object): void {
   if (err instanceof ExpectedError) { return; }
   console.error(message || err.message);
   console.dir(err);
+  if (info) { console.dir(info); }
 }
 
 export function logErrorMessage(message: string): void {
@@ -39,6 +38,6 @@ export function logWarning(module: string, message: string): void {
   console.warn(`WARNING: ${module}: ${message}`);
 }
 
-export function monitorPromise(promise: Promise<void>, message?: string): void {
-  promise.catch(err=>logError(err, message));
+export function monitorPromise(promise: Promise<void>, message?: string, info?: object): void {
+  promise.catch(err=>logError(err, message, info));
 }
