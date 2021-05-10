@@ -137,7 +137,6 @@ export async function recognizeFormula(
 
   debug(`Recognizing formula.`);
   const jiix = await postJiixRequest<JiixMathBlock>(width, height, 'Math', strokeData);
-  debug(`JIIX response: ${JSON.stringify(jiix)}`);
 
   try {
     // TODO: If user writes multiple expressions then we should separate them into distinct cells.

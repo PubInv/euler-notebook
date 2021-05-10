@@ -25,6 +25,8 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 // Regex Search:  "(child|children|id|label|operands|operator|symbol|tag|type|value)"\s*:
 // Replace:       $1:
 
+// TODO: Incomplete versions of many formulas.
+
 // Requirements
 
 import { MathNode as JiixExpression } from "../src/adapters/myscript-math";
@@ -75,7 +77,16 @@ export const FORMULA_TABLE: FormulaEntry[] = [
       child: { tag: "cn", value: 3.14 }
     },
     wolfram: <WolframExpression>"3.14",
-  },
+  }, { plain: "2._",
+    skip: true,
+    // TODO: If there is no digits after the decimal point, then you get a group with the number before the decimal point,
+    //       along with the symbol '.'
+    //       It should yield the number ignoring the decimal point, or yield an incomplete number construct.
+    jiixExpression: {"type":"group","id":"math/33","operands":[{"type":"number","id":"math/32","label":"2","value":2},{"type":"symbol","id":"math/31","label":"."}]},
+    presentationMathMlTree: {"tag":"math","children":[{"tag":"mn","value":2},{"tag":"mi","identifier":"."}]},
+    contentMathMlTree: { tag: "math" /* TODO: */ },
+    wolfram: <WolframExpression>"",
+},
 
   // Simple Arithmetic
 
@@ -530,7 +541,12 @@ export const FORMULA_TABLE: FormulaEntry[] = [
       }
     },
     wolfram: <WolframExpression>"Sqrt[x]",
-  }, { plain: "x!",
+  }, { plain: "√_",
+    jiixExpression: {"type":"square root","id":"math/21","label":"√","operands":[{"type":"number","label":"?","generated":true,"error":"Unsolved"}]},
+    presentationMathMlTree: {"tag":"math","children":[{"tag":"msqrt","operand":{"tag":"mrow","children":[]}}]},
+    contentMathMlTree: {"tag":"math","child":{"tag":"apply","operator":{"tag":"root"},"operands":[{"tag":"cerror","code":"MissingSubexpression"}]}},
+    wolfram: <WolframExpression>"Sqrt[Missing[]]",
+}, { plain: "x!",
     jiixExpression: {
       type: "!", id: "math/29",
       operands: [
@@ -553,7 +569,12 @@ export const FORMULA_TABLE: FormulaEntry[] = [
       }
     },
     wolfram: <WolframExpression>"Factorial[x]",
-  },
+  }, { plain: "_!",
+    jiixExpression: {"type":"!","id":"math/19","operands":[{"type":"number","label":"?","generated":true,"error":"Unsolved"}]},
+    presentationMathMlTree: {"tag":"math","children":[{"tag":"mrow","children":[]},{"tag":"mo","symbol":"!"}]},
+    contentMathMlTree: {"tag":"math","child":{"tag":"apply","operator":{"tag":"factorial"},"operands":[{"tag":"cerror","code":"MissingSubexpression"}]}},
+    wolfram: <WolframExpression>"Factorial[Missing[]]",
+},
 
   // Equations
 
@@ -585,6 +606,11 @@ export const FORMULA_TABLE: FormulaEntry[] = [
       }
     },
     wolfram: <WolframExpression>"Equal[x,1]",
+  }, { plain: "_ = _",
+    jiixExpression: {"type":"=","id":"math/17","operands":[{"type":"number","label":"?","generated":true,"error":"Unsolved"},{"type":"number","label":"?","generated":true,"error":"Unsolved"}]},
+    presentationMathMlTree: {"tag":"math","children":[{"tag":"mrow","children":[]},{"tag":"mo","symbol":"="},{"tag":"mrow","children":[]}]},
+    contentMathMlTree: {"tag":"math","child":{"tag":"apply","operator":{"tag":"eq"},"operands":[{"tag":"cerror","code":"MissingSubexpression"},{"tag":"cerror","code":"MissingSubexpression"}]}},
+    wolfram: <WolframExpression>"Equal[Missing[],Missing[]]",
   },
 
   // Inequalities
@@ -737,7 +763,17 @@ export const FORMULA_TABLE: FormulaEntry[] = [
 
   // Matrices
 
-  { plain: "(matrix) 0 1; 1 0",
+  { plain: "(row vector) [ 0 1 2 ]",
+    jiixExpression: {"type":"matrix","id":"math/73","rows":[{"cells":[{"type":"number","id":"math/69","label":"0","value":0},{"type":"number","id":"math/70","label":"1","value":1},{"type":"number","id":"math/71","label":"2","value":2}]}]},
+    presentationMathMlTree: {"tag":"math","children":[{"tag":"mrow","children":[{"tag":"mo","symbol":"["},{"tag":"mtable","rows":[{"tag":"mtr","cells":[{"tag":"mtd","children":[{"tag":"mn","value":0}]},{"tag":"mtd","children":[{"tag":"mn","value":1}]},{"tag":"mtd","children":[{"tag":"mn","value":2}]}]}]},{"tag":"mo","symbol":"]"}]}]},
+    contentMathMlTree: {"tag":"math","child":{"tag":"matrix","rows":[{"tag":"matrixrow","cells":[{"tag":"cn","value":0},{"tag":"cn","value":1},{"tag":"cn","value":2}]}]}},
+    wolfram: <WolframExpression>"List[List[0,1,2]]",
+  }, { plain: "(column vector) [ 0 1 2 ]",
+    jiixExpression: {"type":"matrix","id":"math/78","rows":[{"cells":[{"type":"number","id":"math/72","label":"0","value":0}]},{"cells":[{"type":"number","id":"math/74","label":"1","value":1}]},{"cells":[{"type":"number","id":"math/76","label":"2","value":2}]}]},
+    presentationMathMlTree: {"tag":"math","children":[{"tag":"mrow","children":[{"tag":"mo","symbol":"["},{"tag":"mtable","rows":[{"tag":"mtr","cells":[{"tag":"mtd","children":[{"tag":"mn","value":0}]}]},{"tag":"mtr","cells":[{"tag":"mtd","children":[{"tag":"mn","value":1}]}]},{"tag":"mtr","cells":[{"tag":"mtd","children":[{"tag":"mn","value":2}]}]}]},{"tag":"mo","symbol":"]"}]}]},
+    contentMathMlTree: {"tag":"math","child":{"tag":"matrix","rows":[{"tag":"matrixrow","cells":[{"tag":"cn","value":0}]},{"tag":"matrixrow","cells":[{"tag":"cn","value":1}]},{"tag":"matrixrow","cells":[{"tag":"cn","value":2}]}]}},
+    wolfram: <WolframExpression>"List[List[0],List[1],List[2]]",
+}, { plain: "(matrix) [ 0 1; 1 0 ]",
       jiixExpression: {
         "type": "matrix",
         "id": "math/91",
@@ -816,10 +852,15 @@ export const FORMULA_TABLE: FormulaEntry[] = [
         }
       },
       wolfram: <WolframExpression>"List[List[0,1],List[1,0]]",
-    // }, { plain: "",
-    //   jiixExpression: ,
-    //   presentationMathMlTree: ,
-    //   contentMathMlTree: ,
-    //   wolfram: <WolframExpression>"",
+  }, { plain: "(matrix) [ 0 1; _ 0 ]",
+    jiixExpression: {"type":"matrix","id":"math/80","rows":[{"cells":[{"type":"number","id":"math/75","label":"0","value":0},{"type":"number","id":"math/76","label":"1","value":1}]},{"cells":[{"type":"number","label":"?","generated":true,"error":"Unsolved"},{"type":"number","id":"math/78","label":"0","value":0}]}]},
+    presentationMathMlTree: {"tag":"math","children":[{"tag":"mrow","children":[{"tag":"mo","symbol":"["},{"tag":"mtable","rows":[{"tag":"mtr","cells":[{"tag":"mtd","children":[{"tag":"mn","value":0}]},{"tag":"mtd","children":[{"tag":"mn","value":1}]}]},{"tag":"mtr","cells":[{"tag":"mtd","children":[{"tag":"mrow","children":[]}]},{"tag":"mtd","children":[{"tag":"mn","value":0}]}]}]},{"tag":"mo","symbol":"]"}]}]},
+    contentMathMlTree: {"tag":"math","child":{"tag":"matrix","rows":[{"tag":"matrixrow","cells":[{"tag":"cn","value":0},{"tag":"cn","value":1}]},{"tag":"matrixrow","cells":[{"tag":"cerror","code":"MissingSubexpression"},{"tag":"cn","value":0}]}]}},
+    wolfram: <WolframExpression>"List[List[0,1],List[Missing[],0]]",
+  // }, { plain: "",
+  //   jiixExpression: ,
+  //   presentationMathMlTree: ,
+  //   contentMathMlTree: ,
+  //   wolfram: <WolframExpression>"",
   },
 ];
