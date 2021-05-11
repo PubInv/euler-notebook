@@ -20,7 +20,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 // Requirements
 
 import { assert, assertFalse } from "../shared/common";
-import { ApplyOperators, Cerror, Ci, Cn, ContentMathMlNode, ContentMathMlTree, Matrix, MatrixRow } from "../shared/content-mathml";
+import { Apply, ApplyOperators, Cerror, Ci, Cn, ContentMathMlNode, ContentMathMlTree, FunctionLabel, Matrix, MatrixRow } from "../shared/content-mathml";
 
 import {
   MathNode, MathNodeType,
@@ -29,13 +29,7 @@ import {
   UNICODE_NOT_EQUAL_TO_SIGN, UNICODE_LESS_THAN_OR_EQUAL_TO_SIGN,
 } from "../adapters/myscript-math";
 
-// Exported Functions
-
-export function convertJiixExpressionToContentMathMlTree(jiixExpression: MathNode): ContentMathMlTree {
-  return { tag: 'math', child: convertSubexpression(jiixExpression) };
-}
-
-// Helper Functions
+// Constants
 
 const APPLY_MAP = new Map<MathNodeType, ApplyOperators>([
   [ '!', 'factorial' ],
@@ -57,6 +51,22 @@ const APPLY_MAP = new Map<MathNodeType, ApplyOperators>([
   [ UNICODE_NOT_EQUAL_TO_SIGN, 'neq' ],
 ]);
 
+const FUNCTION_MAP = new Map<FunctionLabel,ApplyOperators>([
+  [ 'sin', 'sin' ],
+  [ 'cos', 'cos' ],
+  [ 'tan', 'tan' ],
+  [ 'ln', 'ln'],
+  [ 'log', 'log'],
+]);
+
+// Exported Functions
+
+export function convertJiixExpressionToContentMathMlTree(jiixExpression: MathNode): ContentMathMlTree {
+  return { tag: 'math', child: convertSubexpression(jiixExpression) };
+}
+
+// Helper Functions
+
 function convertSubexpression(expr: MathNode): ContentMathMlNode {
   let rval: ContentMathMlNode;
   switch(expr.type) {
@@ -65,6 +75,17 @@ function convertSubexpression(expr: MathNode): ContentMathMlNode {
       const operands = expr.operands!;
       assert(operands && operands.length==1);
       rval = convertSubexpression(operands[0]);
+      break;
+    }
+
+    case 'function': {
+      assert(expr.label);
+      assert(expr.operands && expr.operands.length==1);
+      const tag = FUNCTION_MAP.get(<FunctionLabel>expr.label!);
+      assert(tag);
+      const operator = { tag };
+      const operand = convertSubexpression(expr.operands![0])
+      rval = <Apply>{ tag: 'apply', operator, operands: [ operand ]};
       break;
     }
 
@@ -78,7 +99,6 @@ function convertSubexpression(expr: MathNode): ContentMathMlNode {
     }
 
     case 'number': {
-
       if (!expr.error && expr.label != '?' && !expr.generated) {
         rval = <Cn>{ tag: 'cn', value: expr.value };
       } else {
@@ -105,7 +125,7 @@ function convertSubexpression(expr: MathNode): ContentMathMlNode {
         const operator = { tag };
         assert(expr.operands)
         const operands = expr.operands!.map(operand=>convertSubexpression(operand));
-        rval = { tag: 'apply', operator, operands };
+        rval = <Apply>{ tag: 'apply', operator, operands };
       } else {
         assertFalse(`Unknown JIIX math node type: ${(<any>expr).type}`);      }
       break;

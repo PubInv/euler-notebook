@@ -191,6 +191,21 @@ abstract class InteriorExpressionNode extends ExpressionNode {
   }
 }
 
+abstract class FunctionNode extends InteriorExpressionNode {
+  public operands: ExpressionNode[];
+  public abstract get wolframSymbol(): string;
+  public /* override */ children(): ExpressionNode[] { return this.operands };
+  public /* override */ wolframExpression(): WolframExpression {
+    // REVIEW: Maybe need parens?
+    return <WolframExpression>`${this.wolframSymbol}[${this.operands.map(o=>o.wolframExpression()).join(',')}]`;
+  }
+  public constructor(operands: SemanticFormula[]) {
+    super();
+    assert(operands.every(o=>o instanceof ExpressionNode));
+    this.operands = operands;
+  }
+}
+
 abstract class OperatorNode extends InteriorExpressionNode {
   public operands: ExpressionNode[];
   public abstract get wolframSymbol(): string;
@@ -370,12 +385,36 @@ class TimesNode extends OperatorNode {
   public get wolframSymbol(): string { return 'Times' };
 }
 
+class SinNode extends FunctionNode {
+  public get wolframSymbol(): string { return 'Sin' };
+}
+
+class CosNode extends FunctionNode {
+  public get wolframSymbol(): string { return 'Cos' };
+}
+
+class TanNode extends FunctionNode {
+  public get wolframSymbol(): string { return 'Tan' };
+}
+
+class LnNode extends FunctionNode {
+  public get wolframSymbol(): string { return 'Log' };
+}
+
+class LogNode extends FunctionNode {
+  // TODO: Alternative base.
+  public get wolframSymbol(): string { return 'Log10' };
+}
+
+OPERATOR_TABLE.set('cos', CosNode);
 OPERATOR_TABLE.set('eq', EqualsNode);
 OPERATOR_TABLE.set('eq', EqualsNode);
 OPERATOR_TABLE.set('factorial', FactorialNode);
 OPERATOR_TABLE.set('geq', GreaterThanOrEqualToNode);
 OPERATOR_TABLE.set('gt', GreaterThanNode);
 OPERATOR_TABLE.set('leq', LessThanOrEqualToNode);
+OPERATOR_TABLE.set('ln', LnNode);
+OPERATOR_TABLE.set('log', LogNode);
 OPERATOR_TABLE.set('lt', LessThanNode);
 OPERATOR_TABLE.set('minus', MinusNode);
 OPERATOR_TABLE.set('neq', NotEqualsNode);
@@ -383,6 +422,6 @@ OPERATOR_TABLE.set('plus', PlusNode);
 OPERATOR_TABLE.set('power', PowerNode);
 OPERATOR_TABLE.set('quotient', QuotientNode);
 OPERATOR_TABLE.set('root', RootNode);
+OPERATOR_TABLE.set('sin', SinNode);
+OPERATOR_TABLE.set('tan', TanNode);
 OPERATOR_TABLE.set('times', TimesNode);
-
-

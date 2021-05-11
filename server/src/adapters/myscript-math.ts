@@ -34,6 +34,7 @@ export type MathNodeType =
   '>' |
   'fence' |
   'fraction' |
+  'function' |
   'group' |
   'number' |
   'square root' |

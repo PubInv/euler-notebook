@@ -154,15 +154,7 @@ export async function recognizeFormula(
     logError(err, "Error processing recognized formula.", { jiix });
   }
 
-  // For development purposes only.
-  // Used to compare our conversions to ones by MyScript (JIIX->pMathML)
-  // and Wolfram (pMathML->cMathML).
-  // Because this doubles the number of calls to MyScript,
-  // it should not be enabled unless actively debugging our conversion code.
-  if (false) {
-    showPresentationMathMlToContentMathMlConversion(width, height, strokeData)
-    .catch(err=>{ logError(err, "Failed to convert Presentation MathML to Content MathML."); })
-  }
+  showPresentationMathMlToContentMathMlConversion(width, height, strokeData);
 
   return { alternatives };
 }
@@ -220,8 +212,23 @@ function filterJiixExpression(jiixExpression: MathNode): void {
   }
 }
 
-async function showPresentationMathMlToContentMathMlConversion(
-  // For development purposes only. Comment out in production.
+function showPresentationMathMlToContentMathMlConversion(
+  width: LengthInPixels,
+  height: LengthInPixels,
+  strokeData: StrokeData,
+): void {
+  // For development purposes only.
+  // Used to compare our conversions to ones by MyScript (JIIX->pMathML)
+  // and Wolfram (pMathML->cMathML).
+  // Because this doubles the number of calls to MyScript,
+  // it should not be enabled unless actively debugging our conversion code.
+  if (false) {
+    showPresentationMathMlToContentMathMlConversion2(width, height, strokeData)
+    .catch(err=>{ logError(err, "Failed to convert Presentation MathML to Content MathML."); })
+  }
+}
+
+async function showPresentationMathMlToContentMathMlConversion2(
   width: LengthInPixels,
   height: LengthInPixels,
   strokeData: StrokeData,

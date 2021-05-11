@@ -42,7 +42,8 @@ function convertSubexpression(expr: MathNode): PresentationMathMlNode[] {
   let rval: PresentationMathMlNode[] = [];
   switch(expr.type) {
 
-    // Tokens
+    // Numbers and Symbols
+
     case 'number': {
       if (!expr.error && expr.label != '?' && !expr.generated) {
         rval.push(<Mn>{ tag: 'mn', value: expr.value });
@@ -56,11 +57,13 @@ function convertSubexpression(expr: MathNode): PresentationMathMlNode[] {
       }
       break;
     }
+
     case 'symbol':
       rval.push(<Mi>{ tag: 'mi', identifier: expr.label });
       break;
 
     // Operators
+
     case '+':
     case '-':
     case '/':
@@ -75,6 +78,12 @@ function convertSubexpression(expr: MathNode): PresentationMathMlNode[] {
     case '!':
       rval.push(...convertSubexpression(expr.operands![0]));
       rval.push(<Mo>{ tag: 'mo', symbol: '!' });
+      break;
+
+    // Functions
+
+    case 'function':
+      rval.push(...convertFunctionExpression(expr));
       break;
 
     // Relations
@@ -198,6 +207,11 @@ function convertSubexpression(expr: MathNode): PresentationMathMlNode[] {
     default: assertFalse(`Unknown JIIX math node type: ${(<any>expr).type}`);
   }
   return rval;
+}
+
+function convertFunctionExpression(expr: MathNode): PresentationMathMlNode[] {
+  assert(expr.operands && expr.operands.length == 1);
+  return [ <Mi>{ tag: 'mi', identifier: expr.label }, ...convertSubexpression(expr.operands![0])];
 }
 
 function convertMrowWrapped(expr: MathNode): PresentationMathMlNode {
