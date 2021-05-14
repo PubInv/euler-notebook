@@ -21,11 +21,11 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 import { FileName, readConfigFile } from "./adapters/file-system";
 
+import { ApiKeys as MathPixApiKeys } from "./adapters/mathpix";
 import { ApiKeys as MyScriptApiKeys } from "./adapters/myscript";
 import { ApiKeys as WolframAlphaApiKeys } from "./adapters/wolframalpha";
 
 import { logWarning } from "./error-handler";
-
 
 const MODULE = __filename.split(/[/\\]/).slice(-1)[0].slice(0,-3);
 
@@ -37,6 +37,7 @@ export interface Config {
 }
 
 export interface Credentials {
+  mathpix: MathPixApiKeys;
   myscript: MyScriptApiKeys;
   wolframalpha: WolframAlphaApiKeys;
 }

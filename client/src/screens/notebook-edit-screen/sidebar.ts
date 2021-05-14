@@ -136,14 +136,20 @@ export class Sidebar extends ButtonBar {
           html: svgIconReferenceMarkup('iconMonstrMagnifier6'),
           syncButtonHandler: (_e: MouseEvent): void =>{ this.screen.toggleSearchPanel(); },
           title: "Search",
-        },
-        {
+        }, {
           // reference
           tag: 'button',
           class: <CssClass>'iconButton',
           html: svgIconReferenceMarkup('iconMonstrBook17'),
           syncButtonHandler: (_e: MouseEvent): void =>{ this.screen.toggleReferencePanel(); },
           title: "Reference",
+        }, {
+          // photo
+          tag: 'button',
+          class: <CssClass>'iconButton',
+          html: svgIconReferenceMarkup('iconMonstrPhotoCamera5'),
+          syncButtonHandler: (_e: MouseEvent)=>{ this.screen.togglePhotoPanel(); },
+          title: "Image capture",
         },
         SEPARATOR,
         {
@@ -188,7 +194,8 @@ export class Sidebar extends ButtonBar {
           title: "Print notebook",
         },
         $debugButton,
-        SEPARATOR, {
+        SEPARATOR,
+        {
           // "underwear" for dev use only
           tag: 'button',
           class: <CssClass>'iconButton',

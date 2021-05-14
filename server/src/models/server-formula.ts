@@ -29,12 +29,12 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 import { LengthInPixels } from "../shared/css";
 import { FormulaObject, renderFormula, TypesettingResults } from "../shared/formula";
-import { PlotInfo } from "../shared/plot";
 import { PresentationMathMlMarkup, PresentationMathMlTree, serializeTreeToMathMlMarkup } from "../shared/presentation-mathml";
-
 import { ExpressionNode, SemanticFormula } from "./semantic-formula";
 import { ContentMathMlTree } from "../shared/content-mathml";
 import { assert } from "../shared/common";
+
+import { PlotInfo } from "../components/formula-plotter"
 
 // Types
 

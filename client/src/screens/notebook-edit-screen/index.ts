@@ -35,6 +35,7 @@ import { Screen } from "..";
 
 import { DebugPopup } from "./debug-popup";
 import { ReferencePanel } from "./reference-panel";
+import { PhotoPanel } from "./photo-panel";
 import { SearchPanel } from "./search-panel";
 import { Sidebar } from "./sidebar";
 import { appInstance } from "../../app";
@@ -67,11 +68,14 @@ export class NotebookEditScreen extends Screen implements NotebookWatcher {
 
         this.editView = new NotebookEditView(this, notebook);
         this.sidebar = new Sidebar(this);
-        this.referencePanel = new ReferencePanel(/* this */);
+
+        // REVIEW: Create these panels on demand?
+        this.photoPanel = new PhotoPanel(this);
+        this.referencePanel = new ReferencePanel();
         this.searchPanel = new SearchPanel(this);
         this.debugPopup = new DebugPopup(this);
 
-        this.$elt.append(this.sidebar.$elt, this.editView.$elt, this.searchPanel.$elt, this.referencePanel.$elt, this.debugPopup.$elt);
+        this.$elt.append(this.sidebar.$elt, this.editView.$elt, this.photoPanel.$elt, this.referencePanel.$elt, this.searchPanel.$elt, this.debugPopup.$elt);
       },
       (err)=>{
         this.displayError(err, <Html>`Error opening notebook <tt>${path}</tt>`);
@@ -83,6 +87,7 @@ export class NotebookEditScreen extends Screen implements NotebookWatcher {
 
   public debugPopup!: DebugPopup;
   public notebook!: ClientNotebook;
+  public photoPanel!: PhotoPanel;
   public searchPanel!: SearchPanel;
   public referencePanel!: ReferencePanel;
   public sidebar!: Sidebar;
@@ -90,25 +95,9 @@ export class NotebookEditScreen extends Screen implements NotebookWatcher {
 
   // Public Instance Methods
 
-  public toggleReferencePanel(): void {
-    if (this.referencePanel.isHidden) {
-      if (!this.searchPanel.isHidden) { this.searchPanel.hide(); }
-      this.referencePanel.show();
-      this.referencePanel.setFocus();
-    } else {
-      this.referencePanel.hide();
-    }
-  }
-
-  public toggleSearchPanel(): void {
-    if (this.searchPanel.isHidden) {
-      if (!this.referencePanel.isHidden) { this.referencePanel.hide(); }
-      this.searchPanel.show();
-      this.searchPanel.setFocus();
-    } else {
-      this.searchPanel.hide();
-    }
-  }
+  public togglePhotoPanel(): void { this.togglePanel('photoPanel'); }
+  public toggleReferencePanel(): void { this.togglePanel('referencePanel'); }
+  public toggleSearchPanel(): void { this.togglePanel('searchPanel'); }
 
   // Public Instance Event Handlers
 
@@ -148,6 +137,20 @@ export class NotebookEditScreen extends Screen implements NotebookWatcher {
   // Private Instance Properties
 
   // Private Instance Methods
+
+  private togglePanel(panelName: 'photoPanel' | 'referencePanel' | 'searchPanel'): void {
+    const panel = this[panelName];
+    if (panel.isHidden) {
+      // Hide other panels that may be shown.
+      for (const otherPanel of [ this.photoPanel, this.referencePanel, this.searchPanel ]) {
+        if (otherPanel != panel && !otherPanel.isHidden) { otherPanel.hide(); }
+      }
+      panel.show();
+      panel.setFocus();
+    } else {
+      panel.hide();
+    }
+  }
 
   // Private Instance Event Handlers
 

@@ -36,18 +36,21 @@ import { TextEditView } from "./text-edit-view";
 import { NotebookEditView } from "..";
 
 import { CellEditView } from "./index";
+import { ImageCell } from "../../../../models/client-cell/image-cell";
+import { ImageEditView } from "./image-edit-view";
 
 // Constants
 
 // Exports
 
 export function createCellView<O extends CellObject>(notebookEditView: NotebookEditView, cell: ClientCell<O>): CellEditView<O> {
-  let rval: FigureEditView|FormulaEditView|TextEditView|PlotEditView;
+  let rval: FigureEditView|FormulaEditView|ImageEditView|PlotEditView|TextEditView;
   switch(cell.type) {
     case CellType.Figure:   rval = new FigureEditView(notebookEditView, <FigureCell><unknown>cell); break;
     case CellType.Formula:  rval = new FormulaEditView(notebookEditView, <FormulaCell><unknown>cell); break;
-    case CellType.Text:     rval = new TextEditView(notebookEditView, <TextCell><unknown>cell); break;
+    case CellType.Image:    rval = new ImageEditView(notebookEditView, <ImageCell><unknown>cell); break;
     case CellType.Plot:     rval = new PlotEditView(notebookEditView, <PlotCell><unknown>cell); break;
+    case CellType.Text:     rval = new TextEditView(notebookEditView, <TextCell><unknown>cell); break;
     default: assertFalse();
   }
   return <CellEditView<O>><unknown>rval;

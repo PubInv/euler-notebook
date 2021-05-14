@@ -186,9 +186,9 @@ export abstract class ServerCell<O extends CellObject> {
   }
 
   private async onStrokeInactivityTimeout(): Promise<void> {
-    debug(`Stroke inactivity timeout.`);
     // LATER: Display recognition error to user if one occurs.
-    //        Currently it will just log the error, but fails silently from the user's perspective.
+    //        Currently it will log the error, but fails silently from the user's perspective.
+    debug(`Stroke inactivity timeout.`);
     const width = cssLengthInPixels(this.cssSize.width);
     const height = cssLengthInPixels(this.cssSize.height);
     const suggestionObjects = await this.recognizeStrokes(width, height)

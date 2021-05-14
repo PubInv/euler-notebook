@@ -22,12 +22,14 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 // Requirements
 
 import { CellObject, CellType } from "./cell";
-import { assert, escapeHtml, PlainText } from './common';
+import { escapeHtml, PlainText } from './common';
 //import { Notebook } from './notebook';
 import {
   FolderRequest, ClientRequest, NotebookRequest, FolderChangeRequest, NotebookChangeRequest, UserRequest
 } from './client-requests';
-import { FolderResponse, FolderUpdate, ServerResponse, NotebookResponse, NotebookUpdate, UserResponse } from "./server-responses";
+import {
+  FolderResponse, FolderUpdate, ServerResponse, NotebookResponse, NotebookUpdate, UserResponse
+} from "./server-responses";
 import { NotebookObject } from "./notebook";
 import { Stroke } from "./myscript-types";
 
@@ -36,6 +38,7 @@ import { Stroke } from "./myscript-types";
 const CELL_TYPES: Map<CellType, string> = new Map([
   [ CellType.Figure, "Figure" ],
   [ CellType.Formula, "Formula" ],
+  [ CellType.Image, "Image" ],
   [ CellType.Plot, "Plot" ],
   [ CellType.Text, "Text" ],
 ]);
@@ -176,8 +179,11 @@ function abbreviatedTextInHtml(text: PlainText): string {
 }
 
 function cellTypeString(type: CellType): string {
-  const rval = CELL_TYPES.get(type)!;
-  assert(rval);
+  let rval = CELL_TYPES.get(type)!;
+  if (!rval) {
+    console.warn(`WARNING (cellTypeString): Unknown cell type: ${type}`)
+    rval = "Unknown";
+  }
   return rval;
 }
 

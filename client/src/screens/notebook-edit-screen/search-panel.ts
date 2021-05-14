@@ -64,7 +64,7 @@ export class SearchPanel extends HtmlElement<'div'> {
 
     super({
       tag: 'div',
-      class: <CssClass>'searchPanel',
+      classes: [ <CssClass>'panel', <CssClass>'searchPanel' ],
       children: [
         {
           tag: 'form',

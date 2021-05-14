@@ -24,7 +24,6 @@ const MODULE = __filename.split(/[/\\]/).slice(-1)[0].slice(0,-3);
 const debug = debug1(`server:${MODULE}`);
 
 import { assert } from "../shared/common";
-import { PlotInfo } from "../shared/plot";
 import { SvgMarkup } from "../shared/svg";
 
 import { Base64, base64Decode } from "../common";
@@ -35,6 +34,23 @@ import { ExpressionNode } from "../models/semantic-formula";
 import { FormulaSymbol, WolframExpression } from "../shared/formula";
 
 // Types
+
+export type PlotInfo = ConstantPlotInfo | UnivariatePlotInfo | BivariatePlotInfo;
+interface ConstantPlotInfo {
+  type: 'constant';
+  yAxisIdentifier?: FormulaSymbol;
+}
+interface UnivariatePlotInfo {
+  type: 'univariate';
+  xAxisIdentifier: FormulaSymbol;
+  yAxisIdentifier?: FormulaSymbol;
+}
+interface BivariatePlotInfo {
+  type: 'bivariate';
+  xAxisIdentifier: FormulaSymbol;
+  zAxisIdentifier: FormulaSymbol;
+  yAxisIdentifier?: FormulaSymbol;
+}
 
 interface PlotReturnValue {
   plotMarkup: SvgMarkup,

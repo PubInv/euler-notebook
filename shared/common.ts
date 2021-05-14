@@ -22,7 +22,8 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 // Types
 
 export type AbsoluteUrl = '{AbsoluteUrl}';
-export type ClientId = '{ClientId}'
+export type ClientId = '{ClientId}';
+export type DataUrl = '{DataUrl}';
 export type ElementId = '{ElementId}';
 export type Html = '{Html}';
 export type Milliseconds = number;  // Time interval in milliseconds.

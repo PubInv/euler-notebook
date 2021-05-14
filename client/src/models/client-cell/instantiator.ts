@@ -21,7 +21,8 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 import { CellObject, CellType } from "../../shared/cell";
 import { FigureCellObject } from "../../shared/figure";
-import { PlotCellObject } from "../../shared/plot";
+import { ImageCellObject } from "../../shared/image-cell";
+import { PlotCellObject } from "../../shared/plot-cell";
 import { TextCellObject } from "../../shared/text";
 import { assertFalse } from "../../shared/common";
 import { FormulaCellObject } from "../../shared/formula";
@@ -30,6 +31,7 @@ import { ClientNotebook } from "../client-notebook";
 
 import { FormulaCell } from "./formula-cell";
 import { FigureCell } from "./figure-cell";
+import { ImageCell } from "./image-cell";
 import { PlotCell } from "./plot-cell";
 import { TextCell } from "./text-cell";
 
@@ -40,12 +42,13 @@ import { ClientCell } from "./index";
 // Exports
 
 export function createCell<O extends CellObject>(notebook: ClientNotebook, obj: O): ClientCell<O> {
-  let rval: FigureCell|FormulaCell|TextCell|PlotCell;
+  let rval: FigureCell|FormulaCell|ImageCell|PlotCell|TextCell;
   switch(obj.type) {
     case CellType.Figure:   rval = new FigureCell(notebook, <FigureCellObject><unknown>obj); break;
     case CellType.Formula:  rval = new FormulaCell(notebook, <FormulaCellObject><unknown>obj); break;
-    case CellType.Text:     rval = new TextCell(notebook, <TextCellObject><unknown>obj); break;
+    case CellType.Image:    rval = new ImageCell(notebook, <ImageCellObject><unknown>obj); break;
     case CellType.Plot:     rval = new PlotCell(notebook, <PlotCellObject><unknown>obj); break;
+    case CellType.Text:     rval = new TextCell(notebook, <TextCellObject><unknown>obj); break;
     default: assertFalse();
   }
   return <ClientCell<O>><unknown>rval;

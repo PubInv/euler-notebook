@@ -25,7 +25,8 @@ import { CssLength, cssLengthInPixels, CssSize, LengthInPixels } from "./css";
 import { FigureCellObject, renderFigureCell } from "./figure";
 import { NotebookPath } from "./folder";
 import { FormulaCellObject, FormulaNumber, renderFormulaCell } from "./formula";
-import { PlotCellObject, renderPlotCell } from "./plot";
+import { ImageCellObject, renderImageCell } from "./image-cell";
+import { PlotCellObject, renderPlotCell } from "./plot-cell";
 import { NotebookUpdate } from "./server-responses";
 import { SvgMarkup } from "./svg";
 import { renderTextCell, TextCellObject } from "./text";
@@ -68,10 +69,11 @@ export class Notebook {
   public static renderCellToSvg(x: LengthInPixels, y: LengthInPixels, cellObject: CellObject, formulaNumber: FormulaNumber): SvgMarkup {
     let rval: SvgMarkup;
     switch(cellObject.type) {
-      case CellType.Figure: rval = renderFigureCell(x, y, <FigureCellObject>cellObject); break;
+      case CellType.Figure:  rval = renderFigureCell(x, y, <FigureCellObject>cellObject); break;
       case CellType.Formula: rval = renderFormulaCell(x, y, <FormulaCellObject>cellObject, formulaNumber); break;
-      case CellType.Plot: rval = renderPlotCell(x, y, <PlotCellObject>cellObject); break;
-      case CellType.Text: rval = renderTextCell(x, y, <TextCellObject>cellObject); break;
+      case CellType.Image:   rval = renderImageCell(x, y, <ImageCellObject>cellObject); break;
+      case CellType.Plot:    rval = renderPlotCell(x, y, <PlotCellObject>cellObject); break;
+      case CellType.Text:    rval = renderTextCell(x, y, <TextCellObject>cellObject); break;
     }
     return rval;
   }

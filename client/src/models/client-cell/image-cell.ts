@@ -22,7 +22,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 // import * as debug1 from "debug";
 // const debug = debug1('client:plot-cell');
 
-import { PlotCellObject } from "../../shared/plot-cell";
+import { ImageCellObject } from "../../shared/image-cell";
 
 import { ClientNotebook } from "../client-notebook";
 
@@ -30,11 +30,11 @@ import { ClientCell } from "./index";
 
 // Exported Class
 
-export class PlotCell extends ClientCell<PlotCellObject> {
+export class ImageCell extends ClientCell<ImageCellObject> {
 
   // Public Constructor
 
-  public constructor(notebook: ClientNotebook, obj: PlotCellObject) {
+  public constructor(notebook: ClientNotebook, obj: ImageCellObject) {
     super(notebook, obj);
   }
 

@@ -39,6 +39,7 @@ import { initialize as initializeFormula } from "./shared/formula";
 
 import { MathJaxTypesetter } from "./adapters/mathjax-typesetter";
 import { start as startWolframscript } from "./adapters/wolframscript";
+import { initialize as initializeMathPix } from "./adapters/mathpix";
 import { initialize as initializeMyScript } from "./adapters/myscript";
 import { initialize as initializeWolframAlpha } from "./adapters/wolframalpha";
 
@@ -77,6 +78,7 @@ async function main() {
   // TODO: stopWolframscript before exiting.
   if (config.wolframscript) { await startWolframscript(config.wolframscript); }
   initializeFormula(MathJaxTypesetter.create());
+  initializeMathPix(credentials.mathpix);
   initializeMyScript(credentials.myscript);
   initializeWolframAlpha(credentials.wolframalpha);
 

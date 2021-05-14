@@ -20,31 +20,51 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 // Requirements
 
 // import * as debug1 from "debug";
-// const debug = debug1('client:plot-cell');
+// const MODULE = __filename.split(/[/\\]/).slice(-1)[0].slice(0,-3);
+// const debug = debug1(`server:${MODULE}`);
 
-import { PlotCellObject } from "../../shared/plot-cell";
+import { ImageCellObject } from "../../shared/image-cell";
 
-import { ClientNotebook } from "../client-notebook";
+import { ServerNotebook } from "../server-notebook";
 
-import { ClientCell } from "./index";
+import { ServerCell } from "./index";
+import { LengthInPixels } from "../../shared/css";
+import { SuggestionObject } from "../../shared/suggestions";
+
+// Types
+
+
+// Constants
 
 // Exported Class
 
-export class PlotCell extends ClientCell<PlotCellObject> {
+export class ImageCell extends ServerCell<ImageCellObject> {
+
+  // Public Class Methods
 
   // Public Constructor
 
-  public constructor(notebook: ClientNotebook, obj: PlotCellObject) {
+  public constructor(notebook: ServerNotebook, obj: ImageCellObject) {
     super(notebook, obj);
   }
 
-  // Public Instance Property Functions
-
   // Public Instance Methods
-
-  // Public Instance Event Handlers
 
   // --- PRIVATE ---
 
-}
+  // Private Instance Properties
 
+  // Public Instance Property Functions
+
+  // Private Instance Methods
+
+  protected async recognizeStrokes(
+    _width: LengthInPixels,
+    _height: LengthInPixels,
+  ): Promise<SuggestionObject[]> {
+    return [];
+  }
+
+  // Private Instance Event Handlers
+
+}

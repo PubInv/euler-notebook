@@ -21,7 +21,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 import { CellId, CellObject, CellSource, CellType } from "../../shared/cell";
 import { FigureCellObject } from "../../shared/figure";
-import { PlotCellObject } from "../../shared/plot";
+import { PlotCellObject } from "../../shared/plot-cell";
 import { TextCellObject } from "../../shared/text";
 import { assertFalse } from "../../shared/common";
 import { FormulaCellObject } from "../../shared/formula";
@@ -34,6 +34,8 @@ import { PlotCell } from "./plot-cell";
 import { TextCell } from "./text-cell";
 
 import { ServerCell } from "./index";
+import { ImageCell } from "./image-cell";
+import { ImageCellObject } from "../../shared/image-cell";
 
 // Constants
 
@@ -49,21 +51,21 @@ export function newCellObject(
   switch(cellType) {
     case CellType.Figure:   rval = FigureCell.newCellObject(notebook, cellId, source); break;
     case CellType.Formula:  rval = FormulaCell.newCellObject(notebook, cellId, source); break;
-    case CellType.Text:     rval = TextCell.newCellObject(notebook, cellId, source); break;
+    case CellType.Image:    assertFalse(); break;
     case CellType.Plot:     assertFalse();
-    default: assertFalse();
+    case CellType.Text:     rval = TextCell.newCellObject(notebook, cellId, source); break;
   }
   return rval;
 }
 
 export function existingCell<O extends CellObject>(notebook: ServerNotebook, obj: O): ServerCell<O> {
-  let rval: FigureCell|FormulaCell|TextCell|PlotCell;
+  let rval: FigureCell|FormulaCell|ImageCell|PlotCell|TextCell;
   switch(obj.type) {
     case CellType.Figure:   rval = new FigureCell(notebook, <FigureCellObject><unknown>obj); break;
     case CellType.Formula:  rval = new FormulaCell(notebook, <FormulaCellObject><unknown>obj); break;
-    case CellType.Text:     rval = new TextCell(notebook, <TextCellObject><unknown>obj); break;
+    case CellType.Image:    rval = new ImageCell(notebook, <ImageCellObject><unknown>obj); break;
     case CellType.Plot:     rval = new PlotCell(notebook, <PlotCellObject><unknown>obj); break;
-    default: assertFalse();
+    case CellType.Text:     rval = new TextCell(notebook, <TextCellObject><unknown>obj); break;
   }
   return <ServerCell<O>><unknown>rval;
 }

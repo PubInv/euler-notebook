@@ -99,7 +99,7 @@ export class NotebookEditView extends HtmlElement<'div'> {
   // Public Instance Methods
 
   public async insertCellRequest(afterId: CellRelativePosition): Promise<void> {
-    await this.notebook.insertCellRequest(this.insertMode, afterId);
+    await this.notebook.insertEmptyCellRequest(this.insertMode, afterId);
   }
 
   public async moveCellRequest(movedCellId: CellId, droppedCellId: CellId): Promise<void> {

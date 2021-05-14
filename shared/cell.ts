@@ -48,6 +48,7 @@ export enum CellType {
   Text = 2,
   Figure = 3,
   Plot = 4,
+  Image = 5,
 }
 
 export interface CellObject {

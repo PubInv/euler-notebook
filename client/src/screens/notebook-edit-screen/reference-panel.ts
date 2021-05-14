@@ -88,7 +88,7 @@ export class ReferencePanel extends HtmlElement<'div'> {
 
     super({
       tag: 'div',
-      class: <CssClass>'referencePanel',
+      classes: [ <CssClass>'panel', <CssClass>'referencePanel' ],
       children: [
         {
           tag: 'form',

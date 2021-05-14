@@ -1,6 +1,6 @@
 /*
 Euler Notebook
-Copyright (C) 2019-21 Public Invention
+Copyright (C) 2021 Public Invention
 https://pubinv.github.io/PubInv/
 
 This program is free software: you can redistribute it and/or modify
@@ -19,32 +19,25 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 // Requirements
 
-// import * as debug1 from "debug";
-// const debug = debug1('client:plot-cell');
+// Types
 
-import { PlotCellObject } from "../../shared/plot-cell";
-
-import { ClientNotebook } from "../client-notebook";
-
-import { ClientCell } from "./index";
-
-// Exported Class
-
-export class PlotCell extends ClientCell<PlotCellObject> {
-
-  // Public Constructor
-
-  public constructor(notebook: ClientNotebook, obj: PlotCellObject) {
-    super(notebook, obj);
-  }
-
-  // Public Instance Property Functions
-
-  // Public Instance Methods
-
-  // Public Instance Event Handlers
-
-  // --- PRIVATE ---
-
+export interface ApiKeys {
+  // This structure lives in ~/.euler-notebook/credentials.json under "mathpix" key.
+  appId: string;
+  appKey: string;
 }
 
+// Global Variables
+
+let gApiKeys: ApiKeys;
+
+// Exported Functions
+
+export function initialize(apiKeys: ApiKeys): void {
+  gApiKeys = apiKeys;
+}
+
+export function doRequest(): void {
+  // TODO:
+  console.dir(gApiKeys);
+}

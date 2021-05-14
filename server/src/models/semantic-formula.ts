@@ -22,7 +22,8 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 import { assert, assertFalse } from "../shared/common";
 import { ApplyOperators, Ci, ContentMathMlNode, ContentMathMlTree, Matrix } from "../shared/content-mathml";
 import { FormulaSymbol, WolframExpression } from "../shared/formula";
-import { PlotInfo } from "../shared/plot";
+
+import { PlotInfo } from "../components/formula-plotter";
 
 // Types
 

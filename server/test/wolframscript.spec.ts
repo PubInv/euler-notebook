@@ -107,18 +107,13 @@ const TEST_CASES: [WolframExpression,WolframExpression][] = [
 describe("wolframscript", function(){
   this.timeout(10*1000);
 
-  // it("test case", async function(){
-  //   //throw new Error("CRASH");
-  //   try {
-  //     const [ expr, expected ] = TEST_CASES[3];
-  //     const results = await execute(expr);
-  //     assert.equal(results, expected);
-  //   } catch(err) {
-  //     console.error(`EXCEPTION: ${err.message}`);
-  //     // throw err;
-  //     throw new Error("CRASH2");
-  //   }
-  // });
+  it("serializes execution", async function(){
+    const p1 = execute(<WolframExpression>'Pause[2]; "Hello,"');
+    const p2 = execute(<WolframExpression>'Pause[2]; "World!"');
+    const [ r1, r2 ] = await Promise.all([p1, p2]);
+    assert.equal(r1, 'Hello,');
+    assert.equal(r2, 'World!');
+  });
 
   for (const [expr, expected] of TEST_CASES) {
 
@@ -132,66 +127,5 @@ describe("wolframscript", function(){
     });
 
   }
-
-  it("serializes execution", async function(){
-    const p1 = await execute(<WolframExpression>'Pause[2]; "Hello,"');
-    const p2 = await execute(<WolframExpression>'Pause[2]; "World!"');
-    const [ r1, r2 ] = await Promise.all([p1, p2]);
-    assert.equal(r1, 'Hello,');
-    assert.equal(r2, 'World!');
-  });
-
-});
-
-
-describe("wolframscript other", function(){
-  this.timeout(10*1000);
-
-    it("serializes execution", async function(){
-      // REVIEW: What exactly is this testing?
-      const p1 = await execute(<WolframExpression>'Pause[2]; "Hello,"');
-      const p2 = await execute(<WolframExpression>'Pause[2]; "World!"');
-      const [ r1, r2 ] = await Promise.all([p1, p2]);
-      assert.equal(r1, 'Hello,');
-      assert.equal(r2, 'World!');
-    });
-
-});
-
-// describe("wolframscriptequivalence", function(){
-//   this.timeout(10*1000);
-
-//   for (const [a,b, expected] of EQUIVALENCE_TEST_CASES) {
-//       const label = (a.length<=20 ?
-//         `checks equivalence ${a} ${b}` :
-//         `checks equivalend ${a.slice(0,20)} ${b.slice(0,20)}...`
-//       )
-//       it(label, async function(){
-//         const results = await checkEquiv(a,b);
-//         assert.equal(results, expected == 'true');
-//       });
-//     }
-// });
-
-describe("wolframTeXConversion", function(){
-  this.timeout(10*1000);
-
-  it.skip("simple TeX works (x)", async function(){
-    throw new Error("ConvertTeXtoWolfram no longer used.");
-    // const expr = TEX_TEST_CASES[0][0];
-    // const r = TEX_TEST_CASES[0][1];
-    // const result = await convertTeXtoWolfram(expr);
-    // // console.log("result",result);
-    // assert.equal(result, r);
-  });
-
-  it.skip("more complex TeX works (x)", async function(){
-    throw new Error("ConvertTeXtoWolfram no longer used.");
-    // const expr = TEX_TEST_CASES[1][0];
-    // const r = TEX_TEST_CASES[1][1];
-    // const result = await convertTeXtoWolfram(expr);
-    // // console.log("result",result);
-    // assert.equal(result, r);
-  });
 
 });

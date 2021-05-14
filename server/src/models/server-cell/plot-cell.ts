@@ -25,14 +25,14 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 import { deepCopy, PlainText } from "../../shared/common";
 import { CellId, CellType } from "../../shared/cell";
-import { PlotCellObject, PlotInfo } from "../../shared/plot";
+import { PlotCellObject } from "../../shared/plot-cell";
 import { EMPTY_STROKE_DATA } from "../../shared/stylus";
 import { SvgMarkup } from "../../shared/svg";
 
 import { ServerNotebook } from "../server-notebook";
 
 import { ServerCell } from "./index";
-import { plot } from "../../components/formula-plotter";
+import { plot, PlotInfo } from "../../components/formula-plotter";
 import { PLOT_CELL_HEIGHT } from "../../shared/dimensions";
 import { LengthInPixels } from "../../shared/css";
 import { SuggestionObject } from "../../shared/suggestions";
