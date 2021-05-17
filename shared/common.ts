@@ -59,6 +59,9 @@ export interface PromiseResolver<T> {
 
 const ASSERTION_FAILED_MSG = "Assertion failed.";
 
+export const JPEG_MIME_TYPE = 'image/jpeg';
+export const JSON_MIME_TYPE = 'application/json';
+
 // Exported Functions
 
 export function arrayFilterOutInPlace<T>(array: T[], cb: (value: T, index?: number, obj?: T[])=>boolean): T[] {

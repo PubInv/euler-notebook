@@ -49,7 +49,7 @@ import { FormulaCellObject } from "../shared/formula";
 import { InactivityTimeout } from "../shared/inactivity-timeout";
 import { TextCellObject } from "../shared/text";
 
-import { existingCell, newCellObject } from "./server-cell/instantiator";
+import { existingCell, insertCell, newCellObject } from "./server-cell/instantiator";
 import { ServerCell } from "./server-cell";
 import { FormulaCell } from "./server-cell/formula-cell";
 
@@ -772,7 +772,7 @@ export class ServerNotebook extends Notebook {
       case 'cellInserted': {
         const { cellObject } = update;
         // TODO: Source???
-        const cell = existingCell(this, cellObject);
+        const cell = insertCell(this, cellObject);
         this.cellMap.set(cell.id, cell);
         break;
       }

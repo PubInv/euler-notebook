@@ -35,6 +35,7 @@ import { cellSynopsis, notebookUpdateSynopsis } from "../../shared/debug-synopsi
 import { InactivityTimeout } from "../../shared/inactivity-timeout";
 import { AddSuggestion, NotebookChangeRequest, RemoveSuggestion } from "../../shared/client-requests";
 import { SuggestionClass, SuggestionObject, TYPESETTING_SUGGESTION_CLASS } from "../../shared/suggestions";
+import { logError } from "../../error-handler";
 
 // Types
 
@@ -128,12 +129,13 @@ export abstract class ServerCell<O extends CellObject> {
 
   // Private Instance Methods
 
+  protected /* overridable */ abstract generateInitialSuggestions(): Promise<SuggestionObject[]>;
+
   protected /* overridable */ abstract recognizeStrokes(
+    // REVIEW: Why are we passing in width and height? Doesn't the cell know its own size?
     width: LengthInPixels,
     height: LengthInPixels,
   ): Promise<SuggestionObject[]>;
-
-  // Private Instance Event Handlers
 
   protected requestSuggestions(suggestionObjects: SuggestionObject[], removeClass?: SuggestionClass): void {
     // Compile a list of change requests that update the suggestions for this cell,
@@ -184,6 +186,19 @@ export abstract class ServerCell<O extends CellObject> {
       this.notebook.requestChanges("SYSTEM", changeRequests, {});
     }
   }
+
+  // Private Instance Event Handlers
+
+  public /* overridable */ onInserted(): void {
+    // Public because it is called by instantiator.
+    // Should not be called by anybody else.
+    this.generateInitialSuggestions()
+    .then(suggestionObjects=>{
+      this.requestSuggestions(suggestionObjects, TYPESETTING_SUGGESTION_CLASS);
+    }).catch(err=>{
+      logError(err, "Error generating initial suggestions.");
+    });
+  };
 
   private async onStrokeInactivityTimeout(): Promise<void> {
     // LATER: Display recognition error to user if one occurs.

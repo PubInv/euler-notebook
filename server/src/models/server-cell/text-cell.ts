@@ -76,6 +76,10 @@ export class TextCell extends ServerCell<TextCellObject> {
 
   // Private Instance Methods
 
+  protected async generateInitialSuggestions(): Promise<SuggestionObject[]> {
+    return [];
+  }
+
   protected async recognizeStrokes(
     width: LengthInPixels,
     height: LengthInPixels,

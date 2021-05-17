@@ -30,21 +30,10 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 // Requirements
 
-// import { parseStringPromise } from 'xml2js';
-
 import { execute as executeWolframScript } from "../adapters/wolframscript";
 import { ContentMathMlMarkup } from "../shared/content-mathml";
 import { WolframExpression } from "../shared/formula";
 import { PresentationMathMlMarkup } from "../shared/presentation-mathml";
-
-// Types
-
-// interface XmlElement {
-//   '#name': string;    // element name
-//   '$'?: JsonObject;    // attributes
-//   '$$'?: XmlElement[]; // children
-//   '_'?: string;        // text content
-// }
 
 // Exported functions
 
@@ -73,7 +62,7 @@ export async function convertPresentationMathMlMarkupToContentMathMlMarkup(
 //     const contentMathMlMarkup = await convertPresentationMathMlMarkupToContentMathMlMarkup(presentationMathMlMarkup);
 
 //     // Parse the content markup into a tree.
-//     const contentMathMlTree = await parseContentMathMlMarkup(contentMathMlMarkup);
+//     const contentMathMlTree = parseContentMathMlMarkup(contentMathMlMarkup);
 
 //     // The content formula includes a Hold[...] wrapper to prevent WolframScript from evaluating the expression.
 //     // Otherwise, if we pass in <PMML>"1+1" we will get back <CMML>"2" instead of <CMML>"1+1"
@@ -87,56 +76,7 @@ export async function convertPresentationMathMlMarkupToContentMathMlMarkup(
 //   return rval;
 // }
 
-// export async function parseContentMathMlMarkup(markup: ContentMathMlMarkup): Promise<ContentMathMlTree> {
-//   const xmlObject = await parseStringPromise(markup, { explicitChildren: true, explicitRoot: false, preserveChildrenOrder: true });
-//   // c-nsole.log("XML2JS OBJECT:");
-//   // c-nsole.dir(xmlObject, { depth: null });
-//   const rval = <ContentMathMlTree>parseTreeX(xmlObject);
-//   assert(rval.tag == 'math');
-//   return rval;
-// }
-
 // // Helper Functions
-
-// function parseTreeX(elt: XmlElement): ContentMathMlNode {
-//   let rval: ContentMathMlNode;
-//   switch (elt['#name']) {
-//     case 'apply':
-//       assert(elt['$$'] && elt['$$'].length>=2);
-//       const operator = parseTreeX(elt['$$']![0]);
-//       const operands = elt['$$']!.slice(1).map(parseTreeX);
-//       rval = {tag: 'apply', operator, operands };
-//       break;
-//     case 'ci':
-//       assert(elt['_']);
-//       rval = { tag: 'ci', identifier: elt['_']!};
-//       break;
-//     case 'cn': {
-//       // LATER: Deal with various number types and the possible <sep/> tag.
-//       assert(elt['_']);
-//       const node: Cn = { tag: 'cn', value: parseFloat(elt['_']!) };
-//       // LATER: const type: NumberType|undefined = elt['$'] && <NumberType>elt['$'].type;
-//       //        if (type) { node.type = type; }
-//       rval = node;
-//       break;
-//     }
-//     case 'math':
-//       assert(elt['$$'] && elt['$$'].length==1);
-//       rval = { tag: 'math', child: parseTreeX(elt['$$']![0]) };
-//       break;
-
-//     case 'eq':
-//     case 'plus':
-//     case 'power':
-//     case 'times':
-//       rval = { tag: elt['#name'] };
-//       break;
-
-//     default:
-//       assertFalse(`${elt['#name']} content MathML tag not implemented.`);
-//   }
-//   return rval;
-// }
 
 // function unwrapHold(tree: ContentMathMlTree): ContentMathMlTree {
 //   // We place a Hold[] around the expression so WolframScript doesn't automatically simplify it.

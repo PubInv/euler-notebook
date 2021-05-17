@@ -94,6 +94,10 @@ export class PlotCell extends ServerCell<PlotCellObject> {
 
   // Private Instance Methods
 
+  protected async generateInitialSuggestions(): Promise<SuggestionObject[]> {
+    return [];
+  }
+
   protected async recognizeStrokes(
     _width: LengthInPixels,
     _height: LengthInPixels,

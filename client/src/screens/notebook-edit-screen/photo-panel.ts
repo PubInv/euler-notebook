@@ -24,11 +24,12 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 import * as debug1 from "debug";
 const debug = debug1('client:photo-panel');
 
+import { assert, DataUrl, JPEG_MIME_TYPE } from "../../shared/common";
 import { CssClass } from "../../shared/css";
-import { $new, svgIconReferenceMarkup } from "../../dom";
 
+import { $new, svgIconReferenceMarkup } from "../../dom";
 import { HtmlElement } from "../../html-element";
-import { assert, DataUrl } from "../../shared/common";
+
 import { NotebookEditScreen } from ".";
 
 // Types
@@ -234,7 +235,8 @@ export class PhotoPanel extends HtmlElement<'div'> {
     const context = this.$cameraCanvas.getContext("2d")!;
     assert(context);
     context.drawImage(this.$cameraVideo, 0, 0);
-    this.dataUrl = <DataUrl>this.$cameraCanvas.toDataURL("image/webp")!;
+    // Other formats: "image/webp", "image/png"
+    this.dataUrl = <DataUrl>this.$cameraCanvas.toDataURL(JPEG_MIME_TYPE)!;
     assert(this.dataUrl);
     this.$cameraImage.src = this.dataUrl;
     this.switchToReviewMode();

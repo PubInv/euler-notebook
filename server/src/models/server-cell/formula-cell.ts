@@ -25,8 +25,8 @@ const debug = debug1(`server:${MODULE}`);
 
 import { assert, deepCopy, PlainText } from "../../shared/common";
 import { LengthInPixels } from "../../shared/css";
-import { CellId, CellSource, CellType } from "../../shared/cell";
-import { NotebookChangeRequest, RemoveSuggestion } from "../../shared/client-requests";
+import { CellId, CellRelativePosition, CellSource, CellType } from "../../shared/cell";
+import { InsertCell, NotebookChangeRequest, RemoveSuggestion } from "../../shared/client-requests";
 import { FORMULA_CELL_HEIGHT } from "../../shared/dimensions";
 import { FormulaTypeset, NotebookUpdate } from "../../shared/server-responses";
 import { EMPTY_FORMULA_OBJECT, FormulaCellObject, FormulaNumber } from "../../shared/formula";
@@ -53,12 +53,35 @@ export class FormulaCell extends ServerCell<FormulaCellObject> {
 
   // Public Class Methods
 
+  public static insertFormulaRequest(
+    notebook: ServerNotebook,
+    formula: ServerFormula,
+    afterId: CellRelativePosition,
+  ): InsertCell {
+    const cellObject: FormulaCellObject = {
+      type: CellType.Formula,
+      id: -1,
+      cssSize: this.initialCellSize(notebook, FORMULA_CELL_HEIGHT),
+      inputText: <PlainText>'',
+      formula: formula.obj,
+      source: 'USER',
+      strokeData: deepCopy(EMPTY_STROKE_DATA),
+      suggestions: [],
+    };
+    const rval: InsertCell = {
+      type: 'insertCell',
+      cellObject,
+      afterId,
+    };
+    return rval;
+}
+
   public static newCellObject(notebook: ServerNotebook, id: CellId, source: CellSource): FormulaCellObject {
     const rval: FormulaCellObject = {
       id,
       type: CellType.Formula,
       cssSize: this.initialCellSize(notebook, FORMULA_CELL_HEIGHT),
-      inputText: <PlainText>"",
+      inputText: <PlainText>'',
       formula: deepCopy(EMPTY_FORMULA_OBJECT),
       source,
       strokeData: deepCopy(EMPTY_STROKE_DATA),
@@ -129,6 +152,10 @@ export class FormulaCell extends ServerCell<FormulaCellObject> {
     };
 
     this.requestSuggestions([ suggestionObject ], PLOT_FORMULA_SUGGESTION_CLASS);
+  }
+
+  protected async generateInitialSuggestions(): Promise<SuggestionObject[]> {
+    return [];
   }
 
   protected async recognizeStrokes(

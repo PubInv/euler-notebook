@@ -69,3 +69,9 @@ export function existingCell<O extends CellObject>(notebook: ServerNotebook, obj
   }
   return <ServerCell<O>><unknown>rval;
 }
+
+export function insertCell<O extends CellObject>(notebook: ServerNotebook, obj: O): ServerCell<O> {
+  const rval = existingCell(notebook, obj);
+  rval.onInserted();
+  return rval;
+}

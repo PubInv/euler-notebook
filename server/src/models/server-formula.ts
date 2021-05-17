@@ -56,9 +56,9 @@ export class ServerFormula {
 
   public static async createFromMathMl(
     presentationMathMlTree: PresentationMathMlTree,
-    contentMathMlTree: ContentMathMlTree,
+    contentMathMlTree?: ContentMathMlTree,
   ): Promise<ServerFormula> {
-    return new this({ contentMathMlTree, presentationMathMlTree });
+    return new this({ presentationMathMlTree, contentMathMlTree });
   }
 
   // Public Class Event Handlers
@@ -70,6 +70,7 @@ export class ServerFormula {
   // Public Instance Property Functions
 
   public plotExpression(): ExpressionNode {
+    // Only call if plotInfo returns an object.
     assert(this.plotInfo());
     return this.semanticFormula!.plotExpression();
   }

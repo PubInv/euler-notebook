@@ -19,22 +19,29 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 // Requirements
 
-// import * as debug1 from "debug";
-// const MODULE = __filename.split(/[/\\]/).slice(-1)[0].slice(0,-3);
-// const debug = debug1(`server:${MODULE}`);
+import * as debug1 from "debug";
+const MODULE = __filename.split(/[/\\]/).slice(-1)[0].slice(0,-3);
+const debug = debug1(`server:${MODULE}`);
 
+import { LengthInPixels } from "../../shared/css";
 import { ImageCellObject } from "../../shared/image-cell";
+import { SuggestionClass, SuggestionId, SuggestionObject } from "../../shared/suggestions";
+
+import { recognizeImage } from "../../components/image-recognizer";
 
 import { ServerNotebook } from "../server-notebook";
 
 import { ServerCell } from "./index";
-import { LengthInPixels } from "../../shared/css";
-import { SuggestionObject } from "../../shared/suggestions";
+import { NotebookChangeRequest, RemoveSuggestion } from "../../shared/client-requests";
+import { ServerFormula } from "../server-formula";
+import { FormulaCell } from "./formula-cell";
 
 // Types
 
 
 // Constants
+
+const TYPESET_IMAGE_SUGGESTION_CLASS = <SuggestionClass>"typesetImage";
 
 // Exported Class
 
@@ -58,6 +65,43 @@ export class ImageCell extends ServerCell<ImageCellObject> {
 
   // Private Instance Methods
 
+  protected async generateInitialSuggestions(): Promise<SuggestionObject[]> {
+    debug(`Recognizing strokes`);
+
+    // Send the image to the recognizer and get a list of alternatives back.
+    const results = await recognizeImage(this.obj.dataUrl);
+    const { alternatives } = results;
+
+    // For each alternative, generate a suggestion object that has
+    // a change request to typeset the text to that alternative,
+    // and also change requests to remove all of the typesetting
+    // suggestions.
+    const rval: SuggestionObject[] = [];
+    for (let i=0; i<alternatives.length; i++) {
+      const alternative = alternatives[i];
+      const suggestionId = typesetImageSuggestionId(i);
+      const formula = await ServerFormula.createFromMathMl(alternative.presentationMathMlTree, alternative.contentMathMlTree);
+      const insertCell = FormulaCell.insertFormulaRequest(this.notebook, formula, this.id);
+      const removeSuggestion: RemoveSuggestion = {
+        type: 'removeSuggestion',
+        cellId: this.id,
+        suggestionId: typesetImageSuggestionId(i),
+      };
+      const changeRequests: NotebookChangeRequest[] = [
+        insertCell,
+        removeSuggestion
+      ];
+      const suggestionObject: SuggestionObject = {
+        id: suggestionId,
+        class: TYPESET_IMAGE_SUGGESTION_CLASS,
+        changeRequests,
+        display: { formula: formula.obj },
+      };
+      rval.push(suggestionObject);
+    };
+    return rval;
+  }
+
   protected async recognizeStrokes(
     _width: LengthInPixels,
     _height: LengthInPixels,
@@ -65,6 +109,10 @@ export class ImageCell extends ServerCell<ImageCellObject> {
     return [];
   }
 
-  // Private Instance Event Handlers
+}
 
+// Helper Functions
+
+function typesetImageSuggestionId(index: number): SuggestionId {
+  return <SuggestionId>`typesetImage${index}`
 }

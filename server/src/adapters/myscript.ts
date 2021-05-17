@@ -36,7 +36,7 @@ const HmacSHA512 = require('crypto-js/hmac-sha512');
 import fetch, { Response } from "node-fetch";
 import { logErrorMessage } from "../error-handler";
 
-import { assert, BoundingBox, PlainText } from "../shared/common";
+import { assert, BoundingBox, JSON_MIME_TYPE, PlainText } from "../shared/common";
 import { SvgMarkup } from "../shared/svg";
 import { LengthInPixels } from "../shared/css";
 import { PresentationMathMlMarkup } from "../shared/presentation-mathml";
@@ -320,8 +320,8 @@ async function postRequest<T extends string>(keys: ApiKeys, mimeType: MimeType, 
   const hmac = computeHmac(keys, body);
   const headers = {
     // NOTE: application/json is the return type for errors.
-    Accept: `${mimeType},application/json`,
-    'Content-Type': "application/json",
+    Accept: `${mimeType},${JSON_MIME_TYPE}`,
+    'Content-Type': JSON_MIME_TYPE,
     applicationKey: keys.applicationKey,
     hmac,
   }

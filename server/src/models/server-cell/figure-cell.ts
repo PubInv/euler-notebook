@@ -73,6 +73,10 @@ export class FigureCell extends ServerCell<FigureCellObject> {
 
   // Private Instance Methods
 
+  protected async generateInitialSuggestions(): Promise<SuggestionObject[]> {
+    return [];
+  }
+
   protected async recognizeStrokes(
     width: LengthInPixels,
     height: LengthInPixels,
@@ -98,7 +102,7 @@ export class FigureCell extends ServerCell<FigureCellObject> {
     const rval = alternatives.map((alternative, index)=>{
       const suggestionId = typesetFigureSuggestionId(index);
       const { figureObject } = alternative;
-      const data: NotebookChangeRequest[] = [
+      const changeRequests: NotebookChangeRequest[] = [
         {
           type: 'typesetFigure',
           cellId: this.id,
@@ -110,7 +114,7 @@ export class FigureCell extends ServerCell<FigureCellObject> {
       const suggestionObject: SuggestionObject = {
         id: suggestionId,
         class: TYPESETTING_SUGGESTION_CLASS,
-        changeRequests: data,
+        changeRequests,
         display: { svg: alternative.thumbnailSvgMarkup },
       };
       return suggestionObject;
