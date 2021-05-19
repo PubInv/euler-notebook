@@ -71,7 +71,7 @@ Step 5: Install dependencies, build, run unit tests, and run the euler-notebook 
 scripts/go
 ```
 
-Step 6: Open a browser to [localhost:3000](http://localhost:3000) and enjoy!
+Step 6: Open a browser to [localhost](http://localhost) and enjoy!
 
 ## Useful Tips
 

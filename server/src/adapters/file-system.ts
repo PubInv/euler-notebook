@@ -34,7 +34,7 @@ import { FolderPath, NotebookPath } from "../shared/folder";
 const fsStat = promisify(stat);
 const fsMkdir = promisify(mkdir);
 const fsReaddir = promisify(readdir);
-const fsReadFile = promisify(readFile);
+export const fsReadFile = promisify(readFile);
 const fsRename = promisify(rename);
 const fsRmdir = promisify(rmdir);
 const fsRmraf = promisify(rimraf);
@@ -43,7 +43,7 @@ const fsUnlink = promisify(unlink);
 
 // Types
 
-type AbsolutePath = '{AbsolutePath}';  // Absolute path to a directory or file from the root of the filesystem.
+export type AbsolutePath = '{AbsolutePath}';  // Absolute path to a directory or file from the root of the filesystem.
 export type FileName = '{FileName}';
 export type UserFilePath = '{UserFilePath}';
 type Path = UserFilePath|FolderPath|NotebookPath;
@@ -54,6 +54,18 @@ const CONFIG_DIR = '.euler-notebook';
 const NOTEBOOKS_DIRECTORY = 'euler-notebook-usr';
 
 // Exported Functions
+
+export async function maybeReadFile(path: AbsolutePath): Promise<string|undefined> {
+  // Returns the contents of the file, or undefined if it does not exist.
+  let buffer: Buffer;
+  try {
+     buffer = await fsReadFile(path);
+  } catch(err) {
+    if (err.code == 'ENOENT') { return undefined; }
+    else { throw err; }
+  }
+  return buffer.toString();
+}
 
 // Configuration File Functions
 

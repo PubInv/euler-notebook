@@ -19,7 +19,8 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 // Requirements
 
-import { createServer } from "http";
+import { createServer as createHttpServer, Server } from "http";
+import { createServer as createHttpsServer, ServerOptions } from "https";
 import { join } from "path";
 
 import * as debug1 from "debug";
@@ -37,6 +38,7 @@ import { middleware as stylusMiddleware } from "stylus";
 import { assert } from "./shared/common";
 import { initialize as initializeFormula } from "./shared/formula";
 
+import { AbsolutePath, maybeReadFile } from "./adapters/file-system";
 import { MathJaxTypesetter } from "./adapters/mathjax-typesetter";
 import { start as startWolframscript } from "./adapters/wolframscript";
 import { initialize as initializeMathPix } from "./adapters/mathpix";
@@ -53,7 +55,15 @@ import { router as xrayRouter } from "./routes/xray";
 import { router as pdfRouter } from "./routes/pdf";
 import { UserSession } from "./models/user-session";
 
+// Types
+
+type Port = string /* named pipe */ | number; // TYPESCRIPT: Is there a standard type for this?
+
 // Constants
+
+const HTTPS_FILES_DIR = "/etc/letsencrypt/live/eulernotebook.com";
+const HTTPS_KEY_FILE_PATH = <AbsolutePath>join(HTTPS_FILES_DIR, "privkey.pem");
+const HTTPS_CERT_FILE_PATH = <AbsolutePath>join(HTTPS_FILES_DIR, "fullchain.pem");
 
 const NODE_REQUIREMENT = ">=12.16.3";
 
@@ -122,10 +132,24 @@ async function main() {
     res.render('error');
   });
 
-  const port = normalizePort(process.env.PORT || '3000');
+  // Determine the server port.
+  const httpsServerOptions = await getHttpsServerOptions();
+  let port: Port;
+  if (process.env.hasOwnProperty('PORT')) {
+    port = normalizePort(process.env.PORT!);
+  } else {
+    port = (httpsServerOptions ? 443 : 80);
+  }
   app.set('port', port);
 
-  const server = createServer(app);
+  // Create an HTTPS or HTTP server as appropriate.
+  let server: Server;
+  if (httpsServerOptions) {
+    server = createHttpsServer(httpsServerOptions, app);
+    // TODO: Create http server that redirects to https.
+  } else {
+    server = createHttpServer(app);
+  }
   server.listen(port);
 
   server.on('error', (error: Error)=>{
@@ -195,9 +219,20 @@ function checkNodeVersion(): void {
   assert(semverSatisfies(process.versions.node, NODE_REQUIREMENT), `Node version must satisfy requirement '${NODE_REQUIREMENT}'`);
 }
 
-function normalizePort(val: string): string|number|boolean {
+function normalizePort(val: string): Port {
   var port = parseInt(val, 10);
   if (isNaN(port)) { /* named pipe */ return val; }
-  if (port >= 0) { /* port number */ return port; }
-  return false;
+  assert(port>=0);
+  return port;
+}
+
+async function getHttpsServerOptions(): Promise<ServerOptions|undefined> {
+  const key = await maybeReadFile(HTTPS_KEY_FILE_PATH);
+  if (key) {
+    const cert = await maybeReadFile(HTTPS_CERT_FILE_PATH);
+    if (cert) {
+      return { key, cert };
+    }
+  }
+  return undefined;
 }
