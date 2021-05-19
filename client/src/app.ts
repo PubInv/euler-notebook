@@ -108,7 +108,8 @@ class App {
 
     // Make our websocket connection with the server.
     // TODO: Show a "connecting..." spinner.
-    this.socket = await ClientSocket.connect(`ws://${window.location.host}/`);
+    const protocol = (window.location.protocol == 'https:' ? 'wss:' : 'ws:');
+    this.socket = await ClientSocket.connect(`${protocol}//${window.location.host}/`);
 
     // If a user is logged in, as evidenced by a token in localStorage,
     // then send the token to the server.

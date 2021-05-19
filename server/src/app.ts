@@ -61,7 +61,8 @@ type Port = string /* named pipe */ | number; // TYPESCRIPT: Is there a standard
 
 // Constants
 
-const HTTPS_FILES_DIR = "/etc/letsencrypt/live/eulernotebook.com";
+const DOMAIN_NAME = "eulernotebook.com";
+const HTTPS_FILES_DIR = `/etc/letsencrypt/live/${DOMAIN_NAME}`;
 const HTTPS_KEY_FILE_PATH = <AbsolutePath>join(HTTPS_FILES_DIR, "privkey.pem");
 const HTTPS_CERT_FILE_PATH = <AbsolutePath>join(HTTPS_FILES_DIR, "fullchain.pem");
 
@@ -227,6 +228,7 @@ function normalizePort(val: string): Port {
 }
 
 async function getHttpsServerOptions(): Promise<ServerOptions|undefined> {
+  // REVIEW: When permission denied on key file the app doesn't exit. Should exit.
   const key = await maybeReadFile(HTTPS_KEY_FILE_PATH);
   if (key) {
     const cert = await maybeReadFile(HTTPS_CERT_FILE_PATH);
