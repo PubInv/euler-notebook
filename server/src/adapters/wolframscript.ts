@@ -17,6 +17,8 @@ You should have received a copy of the GNU Affero General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
+// TODO: Figure out how to run WolframScript with the --cloud option so users do not need to install the engine.
+
 // Requirements
 
 import { spawn, ChildProcess } from "child_process";

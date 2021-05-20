@@ -39,39 +39,62 @@ You need to turn off the iPad's Scribble feature when using Euler Notebook (Sett
 
 ## Running Locally
 
-Step 1: Create a [MyScript developer account](https://developer.myscript.com/getting-started/web)
-to obtain application keys for their handwriting recognition services.
-After you create an account, MyScript will send you an email message with an <tt>applicationKey</tt>and an <tt>hmacKey</tt>.
+Step 1: Install [node](https://nodejs.org/en/).
 
-Step 2: Install the [Free Wolfram Engine for Developers](https://www.wolfram.com/engine/).
-Also install WolframScript.
-You will need to set up a Wolfram Account to get a license.
-Run the Wolfram Engine app once in order to activate it.
-
-Step 3: Install [node](https://nodejs.org/en/).
-
-Step 4: Create a configuration directory:
+Step 2: Create a configuration directory and a directory to store user notebooks:
 
 ```bash
-cp -r ~/euler-notebook/server/config-dir/ ~/.euler-notebook
+mkdir ~/.euler-notebook
+mkdir ~/euler-notebook-usr
 ```
 
-Edit `~/.euler-notebook/credentials.json` to insert your MyScript applicationKey and hmacKey.
-
-Step 4: Create a directory to store user notebooks.
-In your `HOME` directory, create a subdirectory <tt>euler-notebook-usr</tt>:
-
-```bash
-mkdir -p ~/euler-notebook-usr
-```
-
-Step 5: Install dependencies, build, run unit tests, and run the euler-notebook server:
+Step 3: Install dependencies, build, run unit tests, and run the euler-notebook server:
 
 ```bash
 scripts/go
 ```
 
-Step 6: Open a browser to [localhost](http://localhost) and enjoy!
+Step 4: Open a browser to [localhost](http://localhost) and enjoy!
+
+See the `Development` section below for more information about running locally.
+
+## Connect to MyScript
+
+Euler Notebook can do a lot more when connected to some third-party services.
+[MyScript](https://www.myscript.com/technology) has a Cloud API that can typeset handwritten, stylus-input formulas and text.
+
+To connect Euler Notebook to MyScript, first create a [MyScript developer account](https://developer.myscript.com/getting-started/web).
+After you create an account, MyScript will send you an email message with an <tt>applicationKey</tt>and an <tt>hmacKey</tt>.
+Copy `server/config-dir/myscript.json` to `~/.euler-notebook/` and edit the file to insert the keys you received from MyScript.
+Restart the Euler Notebook server for the configuration changes to take effect.
+
+## Connect to Mathpix OCR
+
+[Mathpix OCR](https://mathpix.com/ocr) is a Cloud API that can recognize typeset and handwritten formulas and text in images.
+
+To connect Euler Notebook to Mathpix, create a [Mathpix account](https://accounts.mathpix.com/login).
+TODO: describe how to get the keys from Mathpix.
+Copy `server/config-dir/mathpix.json` to `~/.euler-notebook/` and edit the file to insert the keys you received from Mathpix.
+Restart the Euler Notebook server for the configuration changes to take effect.
+
+## Connect to WolframScript
+
+[WolframScript](https://www.wolfram.com/wolframscript/) is a free functional scripting language with extensive mathematical capabilities.
+
+To connect Euler Notebook to WolframScript, install the free [Wolfram Engine for Developers](https://www.wolfram.com/engine/).
+Then install [WolframScript](https://www.wolfram.com/wolframscript/).
+You will need to set up a Wolfram Account to get a license.
+Run the Wolfram Engine app once in order to activate it.
+Copy `server/config-dir/wolframscript.json` to `~/.euler-notebook/` and edit the file to insert the keys you received from Wolfram.
+Restart the Euler Notebook server for the configuration changes to take effect.
+
+## Connect to Wolfram Alpha
+
+[Wolfram|Alpha](https://www.wolframalpha.com) is a mathematical search engine.
+
+To connect Euler Notebook to Wolfram|Alpha, ... TODO.
+Copy `server/config-dir/wolfram-alpha.json` to `~/.euler-notebook/` and edit the file to insert the keys you received from Wolfram.
+Restart the Euler Notebook server for the configuration changes to take effect.
 
 ## Useful Tips
 
