@@ -22,7 +22,6 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 // const debug = debug1(`tests:${MODULE}`);
 
 import { initialize as initializeWolframAlpha } from "../src/adapters/wolframalpha";
-import { loadCredentials } from "../src/config";
 
 // Exported functions
 
@@ -32,7 +31,6 @@ export function requireWolframAlpha() { }
 
 before("Initializing WolframAlpha", async function() {
   this.timeout(10*1000);
-  const credentials = await loadCredentials();
-  if (!credentials.wolframalpha) { throw new Error(`Unit tests require WolframAlpha credentials.`); }
-  initializeWolframAlpha(credentials.wolframalpha);
+  const succeeded = await initializeWolframAlpha();
+  if (!succeeded) { throw new Error(`Unit tests require WolframAlpha credentials.`); }
 });

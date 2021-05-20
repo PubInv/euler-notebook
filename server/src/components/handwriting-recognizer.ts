@@ -32,7 +32,7 @@ import { StrokeData } from "../shared/stylus";
 import { SvgMarkup } from "../shared/svg";
 
 import { MathNode } from "../adapters/myscript-math";
-import { JiixMathBlock, postJiixRequest, postMathMlRequest, postSvgRequest, postTextRequest } from "../adapters/myscript";
+import { isEnabled, JiixMathBlock, postJiixRequest, postMathMlRequest, postSvgRequest, postTextRequest } from "../adapters/myscript";
 import { convertJiixExpressionToPresentationMathMlTree } from "../converters/jiix-to-pmml";
 import { convertJiixExpressionToContentMathMlTree } from "../converters/jiix-to-cmml";
 import { convertPresentationMathMlMarkupToContentMathMlMarkup } from "../converters/pmml-to-cmml";
@@ -68,6 +68,10 @@ export interface TextRecognitionResults {
 
 // Constants
 
+const EMPTY_FIGURE_RECOGNITION_RESULTS: FigureRecognitionResults = { alternatives: [] };
+const EMPTY_FORMULA_RECOGNITION_RESULTS: FormulaRecognitionResults = { alternatives: [] };
+const EMPTY_TEXT_RECOGNITION_RESULTS: TextRecognitionResults = { alternatives: [] };
+
 const SVG_START_TAG_RE = /^<svg[^>]*>\s*/;
 const SVG_END_TAG_RE = /\s*<\/svg>\s*$/;
 const THUMBNAIL_HEIGHT = <LengthInPixels>32;
@@ -79,11 +83,12 @@ export async function recognizeFigure(
   height: LengthInPixels,
   strokeData: StrokeData,
 ): Promise<FigureRecognitionResults> {
+  if (!isEnabled()) { return EMPTY_FIGURE_RECOGNITION_RESULTS; }
 
   const alternatives: FigureRecognitionAlternative[] = [];
   if (strokeData.strokes.length == 0) {
     debug("Recognizing empty figure.");
-    return { alternatives };
+    return EMPTY_FIGURE_RECOGNITION_RESULTS;
   }
 
   debug(`Recognizing figure.`);
@@ -128,19 +133,20 @@ export async function recognizeFormula(
   height: LengthInPixels,
   strokeData: StrokeData,
 ): Promise<FormulaRecognitionResults> {
+  if (!isEnabled()) { return EMPTY_FORMULA_RECOGNITION_RESULTS; }
 
-  const alternatives: FormulaRecognitionAlternative[] = [];
   if (strokeData.strokes.length == 0) {
     debug("Recognizing empty formula.");
-    return { alternatives };
+    return EMPTY_FORMULA_RECOGNITION_RESULTS;
   }
 
   debug(`Recognizing formula.`);
   const jiix = await postJiixRequest<JiixMathBlock>(width, height, 'Math', strokeData);
 
-  try {
-    // TODO: If user writes multiple expressions then we should separate them into distinct cells.
-    for (const jiixExpression of jiix.expressions) {
+  const alternatives: FormulaRecognitionAlternative[] = [];
+  // TODO: If user writes multiple expressions then we should separate them into distinct cells.
+  for (const jiixExpression of jiix.expressions) {
+    try {
       filterJiixExpression(jiixExpression)
       debug(`JIIX expression: ${JSON.stringify(jiixExpression)}`);
       const presentationMathMlTree = convertJiixExpressionToPresentationMathMlTree(jiixExpression);
@@ -149,9 +155,9 @@ export async function recognizeFormula(
       debug(`cMathML tree: ${JSON.stringify(contentMathMlTree)}`);
       const alternative: FormulaRecognitionAlternative = { presentationMathMlTree, contentMathMlTree };
       alternatives.push(alternative);
-    };
-  } catch (err) {
-    logError(err, "Error processing recognized formula.", { jiix });
+    } catch (err) {
+      logError(err, "Error processing recognized formula.", { jiixExpression });
+    }
   }
 
   showPresentationMathMlToContentMathMlConversion(width, height, strokeData);
@@ -164,17 +170,18 @@ export async function recognizeText(
   height: LengthInPixels,
   strokeData: StrokeData,
 ): Promise<TextRecognitionResults> {
+  if (!isEnabled()) { return EMPTY_TEXT_RECOGNITION_RESULTS; }
 
-  const alternatives: TextRecognitionAlternative[] = [];
   if (strokeData.strokes.length == 0) {
     debug("Recognizing empty text.");
-    return { alternatives };
+    return EMPTY_TEXT_RECOGNITION_RESULTS;
   }
 
   debug(`Recognizing text.`);
   const text = await postTextRequest(width, height, strokeData);
   // LATER: Get JIIX instead so we can offer word alternatives, etc.
 
+  const alternatives: TextRecognitionAlternative[] = [];
   try {
     const alternative: TextRecognitionAlternative = { text };
     alternatives.push(alternative);

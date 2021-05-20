@@ -40,13 +40,12 @@ import { initialize as initializeFormula } from "./shared/formula";
 
 import { AbsolutePath, maybeReadFile } from "./adapters/file-system";
 import { MathJaxTypesetter } from "./adapters/mathjax-typesetter";
-import { start as startWolframscript } from "./adapters/wolframscript";
+import { initialize as initializeWolframscript, start as startWolframscript } from "./adapters/wolframscript";
 import { initialize as initializeMathPix } from "./adapters/mathpix";
 import { initialize as initializeMyScript } from "./adapters/myscript";
 import { initialize as initializeWolframAlpha } from "./adapters/wolframalpha";
 
 import { ServerSocket } from "./models/server-socket";
-import { loadConfig, loadCredentials } from "./config";
 
 import { router as apiRouter } from "./routes/api";
 import { router as exportRouter } from "./routes/export";
@@ -81,17 +80,16 @@ async function main() {
   nodeCleanup(cleanupHandler);
   process.once('SIGUSR2', function(){ cleanupHandler(null, 'SIGUSR2'); });
 
-  const config = await loadConfig();
-  const credentials = await loadCredentials();
-
   await UserSession.loadIfAvailable();
 
   // TODO: stopWolframscript before exiting.
-  if (config.wolframscript) { await startWolframscript(config.wolframscript); }
+  if (await initializeWolframscript()) {
+    await startWolframscript();
+  }
   initializeFormula(MathJaxTypesetter.create());
-  initializeMathPix(credentials.mathpix);
-  initializeMyScript(credentials.myscript);
-  initializeWolframAlpha(credentials.wolframalpha);
+  await initializeMathPix();
+  await initializeMyScript();
+  await initializeWolframAlpha();
 
   const app: express.Express = express();
 

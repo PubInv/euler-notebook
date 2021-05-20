@@ -70,6 +70,7 @@ export async function maybeReadFile(path: AbsolutePath): Promise<string|undefine
 // Configuration File Functions
 
 export async function readConfigFile<T>(fileName: FileName) : Promise<T> {
+  // Read a JSON configuration file from the ~/.euler-notebook/ directory.
   const path = <AbsolutePath>join(process.env.HOME!, CONFIG_DIR, fileName);
   return await readJsonFileFromAbsolutePath<T>(path);
 }

@@ -50,7 +50,7 @@ Run the Wolfram Engine app once in order to activate it.
 
 Step 3: Install [node](https://nodejs.org/en/).
 
-Step 4: Create a credentials and configuration directory:
+Step 4: Create a configuration directory:
 
 ```bash
 cp -r ~/euler-notebook/server/config-dir/ ~/.euler-notebook

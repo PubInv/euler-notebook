@@ -23,7 +23,7 @@ import * as debug1 from "debug";
 const MODULE = __filename.split(/[/\\]/).slice(-1)[0].slice(0,-3);
 const debug = debug1(`server:${MODULE}`);
 
-import { postTextRequest, TextRequest } from "../adapters/mathpix";
+import { isEnabled, postTextRequest, TextRequest } from "../adapters/mathpix";
 import { parsePresentationMathMlMarkup } from "../converters/parse-pmml";
 import { assert, assertFalse, DataUrl } from "../shared/common";
 import { ContentMathMlTree } from "../shared/content-mathml";
@@ -51,8 +51,9 @@ const EMPTY_RECOGNITION_RESULTS: ImageRecognitionResults = {
 export async function recognizeImage(
   dataUrl: DataUrl,
 ): Promise<ImageRecognitionResults> {
-  debug("recognizeImage");
+  if (!isEnabled()) { return EMPTY_RECOGNITION_RESULTS; }
 
+  debug("recognizeImage");
   const request: TextRequest = {
     src: dataUrl,
     formats: [ 'text', 'data', 'latex_styled' ],

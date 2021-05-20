@@ -17,6 +17,9 @@ You should have received a copy of the GNU Affero General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
+// TODO: If we get invalid credentials error post initialization then
+//       output a warning and disable.
+
 // Requirements
 
 import * as debug1 from "debug";
@@ -30,6 +33,8 @@ import { SearchResult } from "../shared/api-calls";
 // import { WolframExpression } from "../shared/formula";
 
 import {  } from "./wolframscript";
+import { FileName, readConfigFile } from "./file-system";
+import { logWarning } from "../error-handler";
 
 // Types
 
@@ -39,8 +44,8 @@ interface Api {
   // not used: getSpoken: (query: Query)=>Promise<?>
 }
 
-export interface ApiKeys {
-  // This structure lives in ~/.euler-notebook/credentials.json under "wolframalpha" key.
+export interface Config {
+  // This structure lives in ~/.euler-notebook/wolfram-alpha.json under "wolframalpha" key.
   appid: string;
 }
 
@@ -66,20 +71,35 @@ interface Subpod {
 
 // Constants
 
+const CONFIG_FILENAME = <FileName>'wolfram-alpha.json';
+const EMPTY_SEARCH_RESULTS: SearchResult[] = [];
+
 // Global Variables
 
+let gConfig: Config|undefined;
 let gApi: Api;
 
 // Exported Functions
 
-export function initialize(apiKeys: ApiKeys): void {
-  gApi = WolframAlphaAPI(apiKeys.appid)
+export async function initialize(): Promise<boolean> {
+  assert(!gConfig);
+  try {
+    gConfig = await readConfigFile(CONFIG_FILENAME);
+  } catch(err) {
+    // LATER: A more helpful error message would indicate the exact location when the file is expected.
+    logWarning(MODULE, `Cannot read ${CONFIG_FILENAME} config file: ${err.code}. Search results will not contain results from Wolfram Alpha.`);
+    return false;
+  }
+  gApi = WolframAlphaAPI(gConfig!.appid);
+  return !!gConfig;
 }
+
+export function isEnabled(): boolean { return !!gConfig; }
 
 // This is mostly a starting point for our WolframAPI work...
 // we expect the "full" results to be more useful
 export async function search(query: PlainText): Promise<SearchResult[]> {
-  assert(gApi);
+  assert(isEnabled());
   const answer = await gApi.getShort(query);
   const sr: SearchResult = { text: answer };
   debug(sr);
@@ -144,9 +164,9 @@ export async function search(query: PlainText): Promise<SearchResult[]> {
 //   return str;
 // }
 
-
 export async function search_full(query: PlainText): Promise<SearchResult[]> {
-  assert(gApi);
+  if (!isEnabled()) { return EMPTY_SEARCH_RESULTS; }
+
   const fullQuery: FullQuery = { input: query, output:'json' };
   const fullResults = await gApi.getFull(fullQuery);
 

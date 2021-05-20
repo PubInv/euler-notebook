@@ -21,8 +21,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 // const MODULE = __filename.split(/[/\\]/).slice(-1)[0].slice(0,-3);
 // const debug = debug1(`tests:${MODULE}`);
 
-import { start as startWolframscript, stop as stopWolframscript } from "../src/adapters/wolframscript";
-import { loadConfig } from "../src/config";
+import { initialize as initializeWolframscript, start as startWolframscript, stop as stopWolframscript } from "../src/adapters/wolframscript";
 
 // Exported functions
 
@@ -32,10 +31,9 @@ export function requireWolframScript() { }
 
 before("Starting WolframScript.", async function() {
   this.timeout(10*1000);
-  const config = await loadConfig();
-  if (!config.wolframscript) { throw new Error(`Unit tests require WolframScript.`); }
-  // const credentials = await loadCredentials();
-  await startWolframscript(config.wolframscript);
+  const succeeded = await initializeWolframscript();
+  if (!succeeded) { throw new Error(`Unit tests require WolframScript.`); }
+  await startWolframscript();
 });
 
 after("Stopping WolframScript.", async function(){

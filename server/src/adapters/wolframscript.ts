@@ -22,19 +22,25 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 import { spawn, ChildProcess } from "child_process";
 
 import * as debug1 from "debug";
+import { logWarning } from "../error-handler";
 const MODULE = __filename.split(/[/\\]/).slice(-1)[0].slice(0,-3);
 const debug = debug1(`server:${MODULE}`);
 
 import { assert } from "../shared/common";
 import { WolframExpression } from "../shared/formula";
-
-import { WolframScriptConfig } from "../config";
+import { FileName, readConfigFile } from "./file-system";
 
 // Types
+
+export interface Config {
+  path?: string; // Path to executable.
+}
 
 // export interface NVPair { name: string; value: string }
 
 // Constants
+
+const CONFIG_FILENAME = <FileName>'wolframscript.json';
 
 // REVIEW: Current verson of Wolfram Language will continue to change (currently 12.2.0)
 //         We are going to need a regex instead of a hardcoded version number.
@@ -62,6 +68,7 @@ const RUN_PRIVATE_SCRIPT = <WolframExpression>'SetAttributes[runPrivate, HoldAll
 
 // Globals
 
+let gConfig: Config;
 let gChildProcess: ChildProcess;
 
 // This promise is used to serialize sending commands to WolframScript.
@@ -72,7 +79,21 @@ let gServerStoppingPromise: Promise<void>|undefined = undefined;
 
 // Exported functions
 
+export async function initialize(): Promise<boolean> {
+  assert(!gConfig);
+  try {
+    gConfig = await readConfigFile(CONFIG_FILENAME);
+  } catch(err) {
+    // LATER: A more helpful error message would indicate the exact location when the file is expected.
+    logWarning(MODULE, `Cannot read ${CONFIG_FILENAME} config file: ${err.code}. Suggestions from Wolfram Engine disabled.`);
+  }
+  return !!gConfig;
+}
+
+export function isEnabled(): boolean { return !!gConfig; }
+
 export async function execute(command: WolframExpression): Promise<WolframExpression> {
+  assert(isEnabled());
   assert(gServerStartingPromise);
   assert(!gServerStoppingPromise);
 
@@ -91,16 +112,18 @@ export async function execute(command: WolframExpression): Promise<WolframExpres
   return gExecutingPromise;
 }
 
-export async function start(config?: WolframScriptConfig): Promise<void> {
+export async function start(): Promise<void> {
+  assert(isEnabled());
   debug(`Starting WolframScript`);
   assert(!gServerStartingPromise);
-  gServerStartingPromise = startProcess(config);
+  gServerStartingPromise = startProcess(gConfig);
   await gServerStartingPromise;
   // debug(`Executing runPrivate script.`);
   await execute(RUN_PRIVATE_SCRIPT);
 }
 
 export async function stop(): Promise<void> {
+  assert(isEnabled());
   debug(`Stopping WolframScript`);
   assert(gServerStartingPromise);
   assert(!gServerStoppingPromise);
@@ -166,7 +189,7 @@ function showInvisible(s: string): string {
   return s.replace(/\n/g, '\\n').replace(/\r/g, '\\r').replace(/\t/g, '\\t');
 }
 
-function startProcess(config?: WolframScriptConfig): Promise<void> {
+function startProcess(config?: Config): Promise<void> {
   return new Promise((resolve, reject)=>{
     const platform = process.platform;
     const path = (config && config.path) || DEFAULT_WOLFRAMSCRIPT_PATH.get(platform);

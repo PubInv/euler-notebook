@@ -20,14 +20,13 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 // Requirements
 
 import * as debug1 from "debug";
-import * as nodeLatex from "node-latex";
+// import * as nodeLatex from "node-latex";
 // import * as multer from "multer";
 
 import { NextFunction, Request, Response, Router } from "express";
 
 import { NotebookPath, NOTEBOOK_PATH_RE } from "../shared/folder";
 
-import { globalConfig } from "../config";
 import { ServerNotebook } from "../models/server-notebook";
 
 // import { NotebookName, NotebookChangeRequest } from "./shared/euler-notebook-api";
@@ -44,7 +43,7 @@ type ExportFormat = 'latex'|'pdf';
 // Constants
 
 const LATEX_MIME_TYPE = 'application/x-latex';
-const PDF_MIME_TYPE = 'application/pdf';
+// const PDF_MIME_TYPE = 'application/pdf';
 
 const FILE_EXTENSIONS = new Map<ExportFormat, string>([
   ['latex', 'tex'],
@@ -92,28 +91,28 @@ async function onExportPage(req: Request, res: Response, next: NextFunction): Pr
           res.set('Content-Disposition', `attachment; filename="${downloadFilename}"`);
           res.send(latex);
           break;
-        case 'pdf': {
-          // PDF requested
-          // TODO: If pdflatex is not found this will crash the server.
-          // TODO: Update readme for LaTeX installation.
-          const options = globalConfig.nodeLatex;
-          const pdf = (</* TYPESCRIPT: */any>nodeLatex)(latex, options);
-          res.set('Content-Type', PDF_MIME_TYPE);
-          pdf.pipe(res);
-          pdf.on('error', (err: Error)=>{
-            console.error(`ERROR: Error generating LaTeX for export: ${err}`);
-            res.set('Content-Type', 'text/html');
-            res.status(500);
-            const locals = {
-              title: "Error Generating PDF",
-              messageHtml: `An error occurred generating LaTeX for <tt>${notebookPath}</tt>:`,
-              messageDetails: err.toString(),
-            }
-            res.render('expected-error', locals);
-          });
-          // pdf.on('finish', ()=> console.log('PDF generated!'));
-          break;
-        }
+        // case 'pdf': {
+        //   // PDF requested
+        //   // TODO: If pdflatex is not found this will crash the server.
+        //   // TODO: Update readme for LaTeX installation.
+        //   const options = globalConfig.nodeLatex;
+        //   const pdf = (</* TYPESCRIPT: */any>nodeLatex)(latex, options);
+        //   res.set('Content-Type', PDF_MIME_TYPE);
+        //   pdf.pipe(res);
+        //   pdf.on('error', (err: Error)=>{
+        //     console.error(`ERROR: Error generating LaTeX for export: ${err}`);
+        //     res.set('Content-Type', 'text/html');
+        //     res.status(500);
+        //     const locals = {
+        //       title: "Error Generating PDF",
+        //       messageHtml: `An error occurred generating LaTeX for <tt>${notebookPath}</tt>:`,
+        //       messageDetails: err.toString(),
+        //     }
+        //     res.render('expected-error', locals);
+        //   });
+        //   // pdf.on('finish', ()=> console.log('PDF generated!'));
+        //   break;
+        // }
         default:
           throw new Error(`Unexpected export format '${exportFormat}'.`)
       }

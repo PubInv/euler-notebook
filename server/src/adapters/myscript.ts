@@ -17,12 +17,15 @@ You should have received a copy of the GNU Affero General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
+// TODO: If we get invalid credentials error post initialization then
+//       output a warning and disable.
+
 // TODO: Prevent multiple calls to MyScript at the same time. "serialze" flag on rule?
 
 // NOTE: This is not a complete set of types for the library.
 //       Just the stuff that we have used.
 // NOTE: Optionality is not always correct.
-// REVIEW: Should the be a .d.ts declaration file instead?
+// REVIEW: Should there be a .d.ts declaration file instead?
 
 // Requirements
 
@@ -34,7 +37,7 @@ const debug = debug1(`server:${MODULE}`);
 const Hex = require('crypto-js/enc-hex');
 const HmacSHA512 = require('crypto-js/hmac-sha512');
 import fetch, { Response } from "node-fetch";
-import { logErrorMessage } from "../error-handler";
+import { logErrorMessage, logWarning } from "../error-handler";
 
 import { assert, BoundingBox, JSON_MIME_TYPE, PlainText } from "../shared/common";
 import { SvgMarkup } from "../shared/svg";
@@ -44,6 +47,7 @@ import { StrokeGroup, DiagramItemBlock } from "../shared/myscript-types";
 import { StrokeData } from "../shared/stylus";
 
 import { MathNode } from "./myscript-math";
+import { FileName, readConfigFile } from "./file-system";
 
 
 // Types
@@ -56,12 +60,6 @@ import { MathNode } from "./myscript-math";
 type ContentType = 'Text'|'Math'|'Diagram'|'Raw Content'|'Text Document';
 type MimeType = 'application/mathml+xml' | 'application/vnd.myscript.jiix' | 'application/x-latex' | 'image/svg+xml' | 'text/plain';
 
-export interface ApiKeys {
-  // This structure lives in ~/.euler-notebook/credentials.json under "myscript" key.
-  applicationKey: string;
-  hmacKey: string;
-}
-
 interface BatchRequest {
   configuration?: Configuration;
   contentType: ContentType;
@@ -72,6 +70,12 @@ interface BatchRequest {
   width?: number;
   xDPI?: number;
   yDPI?: number;
+}
+
+export interface Config {
+  // This structure lives in ~/.euler-notebook/myscript.json.
+  applicationKey: string;
+  hmacKey: string;
 }
 
 interface Configuration {
@@ -143,6 +147,7 @@ interface SolverConfiguration {
 
 // Constants
 
+const CONFIG_FILENAME = <FileName>'myscript.json';
 const MYSCRIPT_BATCH_API_URL = 'https://webdemoapi.myscript.com/api/v4.0/iink/batch';
 
 const JIIX_MIME_TYPE = 'application/vnd.myscript.jiix';
@@ -157,13 +162,22 @@ const SVG_PREFIX = "<svg";
 
 // Global Variables
 
-let gApiKeys: ApiKeys;
+let gConfig: Config|undefined;
 
 // Exported Functions
 
-export function initialize(apiKeys: ApiKeys): void {
-  gApiKeys = apiKeys;
+export async function initialize(): Promise<boolean> {
+  assert(!gConfig);
+  try {
+    gConfig = await readConfigFile(CONFIG_FILENAME);
+  } catch(err) {
+    // LATER: A more helpful error message would indicate the exact location when the file is expected.
+    logWarning(MODULE, `Cannot read ${CONFIG_FILENAME} config file: ${err.code}. Typesetting of formulas and text from handwriting disabled.`);
+  }
+  return !!gConfig;
 }
+
+export function isEnabled(): boolean { return !!gConfig; }
 
 export async function postJiixRequest<T extends JiixBlockBase>(
   width: LengthInPixels,
@@ -172,17 +186,19 @@ export async function postJiixRequest<T extends JiixBlockBase>(
   strokeData: StrokeData,
 ): Promise<T> {
   debug(`Calling MyScript batch API for JIIX ${contentType}.`);
+  assert(isEnabled());
   // REVIEW: What to return if there aren't any strokes at all (e.g. user erased last stroke)?
   const strokeGroups: StrokeGroup[] = [{ strokes: strokeData.strokes }];
   const batchRequest = batchRequestFromStrokes(width, height, strokeGroups, contentType, JIIX_MIME_TYPE);
-  const bodyText = await postRequest(gApiKeys, JIIX_MIME_TYPE, batchRequest);
+  const bodyText = await postRequest(gConfig!, JIIX_MIME_TYPE, batchRequest);
   const jiix = <T>JSON.parse(bodyText);
   assert(jiix.version == '2');
   return jiix;
 }
 
 // export async function postLatexRequest(strokeData: StrokeData): Promise<TexExpression> {
-
+//   debug(`Calling MyScript batch API for LaTeX.`);
+//   assert(gConfig);
 //   // If there aren't any strokes yet, return an empty TeX expression.
 //   if (strokeData.strokes.length == 0) {
 //     return EMPTY_TEX_EXPRESSION;
@@ -203,9 +219,10 @@ export async function postMathMlRequest(
   strokeData: StrokeData,
 ): Promise<PresentationMathMlMarkup> {
   debug(`Calling MyScript batch API for MathML.`);
+  assert(isEnabled());
   const strokeGroups: StrokeGroup[] = [{ strokes: strokeData.strokes }];
   const batchRequest = batchRequestFromStrokes(width, height, strokeGroups, 'Math', MATHML_MIME_TYPE);
-  const mmlRaw = await postRequest(gApiKeys, MATHML_MIME_TYPE, batchRequest);
+  const mmlRaw = await postRequest(gConfig!, MATHML_MIME_TYPE, batchRequest);
   const mml = <PresentationMathMlMarkup>mmlRaw.trim();
   assert(mml.startsWith(MATHML_PREFIX));
   return mml;
@@ -217,9 +234,10 @@ export async function postSvgRequest(
   strokeData: StrokeData,
 ): Promise<SvgMarkup> {
   debug(`Calling MyScript batch API for SVG.`);
+  assert(isEnabled());
   const strokeGroups: StrokeGroup[] = [{ strokes: strokeData.strokes }];
   const batchRequest = batchRequestFromStrokes(width, height, strokeGroups, 'Diagram', SVG_MIME_TYPE);
-  const svgRaw = await postRequest(gApiKeys, SVG_MIME_TYPE, batchRequest);
+  const svgRaw = await postRequest(gConfig!, SVG_MIME_TYPE, batchRequest);
   const svg = <SvgMarkup>svgRaw.trim();
   assert(svg.startsWith(SVG_PREFIX));
   return svg;
@@ -230,17 +248,18 @@ export async function postTextRequest(
   height: LengthInPixels,
   strokeData: StrokeData,
 ): Promise<PlainText> {
+  debug(`Calling MyScript batch API for Text.`);
+  assert(isEnabled());
 
   // If there aren't any strokes yet, return an empty TeX expression.
   if (strokeData.strokes.length == 0) {
     return <PlainText>'';
   }
 
-  debug(`Calling MyScript batch API for Text.`);
   const strokeGroups: StrokeGroup[] = [{ strokes: strokeData.strokes }];
   const batchRequest = batchRequestFromStrokes(width, height, strokeGroups, 'Text', PLAINTEXT_MIME_TYPE);
 
-  const rval = await postRequest(gApiKeys, PLAINTEXT_MIME_TYPE, batchRequest);
+  const rval = await postRequest(gConfig!, PLAINTEXT_MIME_TYPE, batchRequest);
   debug(`MyScript batch API recognized plain text: ${rval}`);
   return <PlainText>rval;
 }
@@ -308,13 +327,13 @@ function batchRequestFromStrokes(
 //     .replace(new RegExp("(align.{1})", "g"), "aligned");
 // }
 
-function computeHmac(keys: ApiKeys, body: string): string {
+function computeHmac(keys: Config, body: string): string {
   const hmac = HmacSHA512(body, keys.applicationKey + keys.hmacKey);
   const hex = hmac.toString(Hex);
   return hex;
 }
 
-async function postRequest<T extends string>(keys: ApiKeys, mimeType: MimeType, batchRequest: BatchRequest): Promise<T> {
+async function postRequest<T extends string>(keys: Config, mimeType: MimeType, batchRequest: BatchRequest): Promise<T> {
   // c-nsole.log(`MyScript Request:\n${JSON.stringify({ ...batchRequest, strokeGroups: null }, null, 2)}`);
   const body = JSON.stringify(batchRequest);
   const hmac = computeHmac(keys, body);

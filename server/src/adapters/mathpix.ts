@@ -17,17 +17,22 @@ You should have received a copy of the GNU Affero General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
+// TODO: If we get invalid credentials error post initialization then
+//       output a warning and disable.
+
 // Requirements
 
 import * as debug1 from "debug";
 const MODULE = __filename.split(/[/\\]/).slice(-1)[0].slice(0,-3);
 const debug = debug1(`server:${MODULE}`);
 
-import { AbsoluteUrl, DataUrl, Html, JSON_MIME_TYPE, PlainText } from "../shared/common";
+import { AbsoluteUrl, assert, DataUrl, Html, JSON_MIME_TYPE, PlainText } from "../shared/common";
 
 import fetch /* ,{ Response }*/ from "node-fetch";
 import { TexExpression } from "../shared/formula";
 import { PresentationMathMlMarkup } from "../shared/presentation-mathml";
+import { FileName, readConfigFile } from "./file-system";
+import { logWarning } from "../error-handler";
 
 // Types
 
@@ -36,8 +41,8 @@ type Format = 'text'|'data'|'html'|'latex_styled';
 type MathpixMarkdown = '{MathpixMarkdown}';
 type RequestId = '{RequestId}';
 
-export interface ApiKeys {
-  // This structure lives in ~/.euler-notebook/credentials.json under "mathpix" key.
+export interface Config {
+  // This structure lives in ~/.euler-notebook/mathpix.json.
   app_id: string;
   app_key: string;
 }
@@ -110,25 +115,36 @@ export interface TextResponse {
 
 // Constants
 
-const MATHPIX_API_TEXT_URL = 'https://api.mathpix.com/v3/text';
+const CONFIG_FILENAME = <FileName>'mathpix.json';
+const MATHPIX_API_TEXT_URL = <AbsoluteUrl>'https://api.mathpix.com/v3/text';
 
 // Global Variables
 
-let gApiKeys: ApiKeys;
+let gConfig: Config|undefined;
 
 // Exported Functions
 
-export function initialize(apiKeys: ApiKeys): void {
-  gApiKeys = apiKeys;
+export async function initialize(): Promise<boolean> {
+  assert(!gConfig);
+  try {
+    gConfig = await readConfigFile(CONFIG_FILENAME);
+  } catch(err) {
+    // LATER: A more helpful error message would indicate the exact location when the file is expected.
+    logWarning(MODULE, `Cannot read ${CONFIG_FILENAME} config file: ${err.code}. Typesetting of formula and text from images disabled.`);
+  }
+  return !!gConfig;
 }
+
+export function isEnabled(): boolean { return !!gConfig; }
 
 export async function postTextRequest(request: TextRequest): Promise<TextResponse> {
   debug(`Posting request to ${MATHPIX_API_TEXT_URL}.`)
+  assert(isEnabled());
   const body = JSON.stringify(request);
   const headers = {
     'Content-Type': JSON_MIME_TYPE,
-    app_id: gApiKeys.app_id,
-    app_key: gApiKeys.app_key,
+    app_id: gConfig!.app_id,
+    app_key: gConfig!.app_key,
   }
   const response = await fetch(MATHPIX_API_TEXT_URL, { method: 'POST', headers, body });
   const json = await response.text();
