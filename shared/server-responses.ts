@@ -24,8 +24,9 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 import { CellId, CellObject, CellRelativePosition } from "./cell";
 import { RequestId, NotebookChangeRequest } from "./client-requests";
-import { ClientId, PlainText, SessionToken } from "./common";
+import { ClientId, JsonObject, PlainText, SessionToken } from "./common";
 import { CssSize } from "./css";
+import { Code as ErrorCode } from "./expected-error";
 import { FigureObject } from "./figure";
 import { FolderObject, FolderPath, NotebookPath, FolderEntry, FolderName, NotebookEntry, NotebookName } from "./folder";
 import { FormulaObject } from "./formula";
@@ -47,7 +48,8 @@ export interface ResponseBase {
 
 export interface ErrorResponse extends ResponseBase {
   type: 'error',
-  message: string,
+  code: ErrorCode,
+  info?: JsonObject,
 }
 
 export type FolderResponse = FolderClosed | FolderCollaboratorConnected | FolderCollaboratorDisconnected | FolderOpened | FolderUpdated;

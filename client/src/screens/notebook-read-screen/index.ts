@@ -66,25 +66,9 @@ export class NotebookReadScreen extends Screen  implements NotebookWatcher {
       styles: { display: 'none' },
       data: { path },
     });
-
-    ClientNotebook.open(path, this)
-    .then(
-      (notebook: ClientNotebook)=>{
-        debug(`Notebook opened.`);
-        this.notebook = notebook;
-        // REVIEW: Switch the path over immediately at the beginning of the constructor,
-        //         then updated the collaborators after the notebook has opened.
-        appInstance.header.switchScreen(this.notebook.path, this.notebook.collaborators);
-        const sidebar = new Sidebar(this, mode);
-        this.readView = new NotebookReadView(this.notebook, mode);
-        this.$elt.append(sidebar.$elt, this.readView.$elt);
-        this.readView.onAfterShow();
-      },
-      (err)=>{
-        this.displayError(err, <Html>`Error opening notebook <tt>${path}</tt>`);
-      }
-    );
-
+    this.path = path;
+    this.mode = mode;
+    // Notebook is opened in onAfterShow.
   }
 
   // Public Instance Properties
@@ -122,9 +106,12 @@ export class NotebookReadScreen extends Screen  implements NotebookWatcher {
 
   // --- PRIVATE ---
 
-  // Instance Properties
+  // Private Instance Properties
 
-  // Instance Methods
+  private mode: Mode;
+  private path: NotebookPath;
+
+  // Private Instance Methods
 
   // Private Instance Properties
 
@@ -146,10 +133,34 @@ export class NotebookReadScreen extends Screen  implements NotebookWatcher {
   protected /* override */ onAfterShow(): void {
     debug(`onAfterShow.`);
     super.onAfterShow();
+
+    appInstance.header.setPath(this.path);
+
     if (this.notebook) {
-      appInstance.header.switchScreen(this.notebook.path, this.notebook.collaborators);
+      appInstance.header.setCollaborators(this.notebook.collaborators);
       this.readView.onAfterShow();
+      return;
     }
+
+    // TODO: Race condition: leave and possibly return before open completes.
+    this.clearErrorMessages();
+    ClientNotebook.open(this.path, this)
+    .then(
+      (notebook: ClientNotebook)=>{
+        debug(`Notebook opened.`);
+        this.notebook = notebook;
+        // REVIEW: Switch the path over immediately at the beginning of the constructor,
+        //         then updated the collaborators after the notebook has opened.
+        appInstance.header.setCollaborators(this.notebook.collaborators);
+        const sidebar = new Sidebar(this, this.mode);
+        this.readView = new NotebookReadView(this.notebook, this.mode);
+        this.$elt.append(sidebar.$elt, this.readView.$elt);
+        this.readView.onAfterShow();
+      },
+      (err)=>{
+        this.displayError(err, <Html>`Error opening notebook <tt>${this.path}</tt>`);
+      }
+    );
   }
 
 }

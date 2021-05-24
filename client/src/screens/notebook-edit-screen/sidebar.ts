@@ -158,13 +158,6 @@ export class Sidebar extends ButtonBar {
           html: svgIconReferenceMarkup('iconMonstrBook17'),
           syncButtonHandler: (_e: MouseEvent): void =>{ this.screen.toggleReferencePanel(); },
           title: "Reference",
-        }, {
-          // photo
-          tag: 'button',
-          class: <CssClass>'iconButton',
-          html: svgIconReferenceMarkup('iconMonstrPhotoCamera5'),
-          syncButtonHandler: (_e: MouseEvent)=>{ this.screen.togglePhotoPanel(); },
-          title: "Image capture",
         },
         SEPARATOR,
         {

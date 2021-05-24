@@ -19,8 +19,10 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 // Requirements
 
-import { errorMessageForUser, Html } from "../shared/common";
-import { HtmlElementSpecification } from "../dom";
+import { Html } from "../shared/common";
+
+import { $all, HtmlElementSpecification } from "../dom";
+import { errorMessageForUser } from "../error-messages";
 import { HtmlElement } from "../html-element";
 import { logErrorIfUnexpected } from "../error-handler";
 
@@ -48,12 +50,24 @@ export abstract class Screen extends HtmlElement<'div'>{
 
   // Private Instance Methods
 
-  protected displayError(err: Error, html: Html) {
-    logErrorIfUnexpected(err);
-    this.displayErrorMessage(<Html>`${html}: ${errorMessageForUser(err)}`);
+  protected clearErrorMessages(): void {
+    const errorMessages = $all(this.$elt, '.errorMessage');
+    for (const $errorMessage of errorMessages) {
+      $errorMessage.remove();
+    }
+
   }
 
-  protected displayErrorMessage(html: Html) {
+  protected displayError(err: Error, prefixHtml?: Html): void {
+    logErrorIfUnexpected(err);
+    let html = errorMessageForUser(err);
+    if (prefixHtml) {
+      html = <Html>`${prefixHtml}:<br/>${html}`;
+    }
+    this.displayErrorMessage(html);
+  }
+
+  protected displayErrorMessage(html: Html): void {
     // Replaces the contents of the screen with an error message.
 
     // LATER: Better way to display to display a closed message.

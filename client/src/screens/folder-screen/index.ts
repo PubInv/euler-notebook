@@ -55,22 +55,8 @@ export class FolderScreen extends Screen implements FolderWatcher {
       styles: { display: 'none' },
       data: { path },
     });
-
-    ClientFolder.open(path, this)
-    .then(
-      (folder: ClientFolder)=>{
-        this.folder = folder;
-        appInstance.header.switchScreen(this.folder.path, this.folder.collaborators);
-
-        this.sidebar = new Sidebar(this);
-        this.view = new FolderView(this);
-
-        this.$elt.append(this.sidebar.$elt, this.view.$elt);
-      },
-      (err)=>{
-        this.displayError(err, <Html>`Error opening folder <tt>${path}</tt>`);
-      }
-    );
+    this.path = path;
+    // Folder is opened in onAfterShow.
   }
 
   // Public Instance Event Handlers
@@ -105,19 +91,45 @@ export class FolderScreen extends Screen implements FolderWatcher {
 
   // Public Instance Methods
 
-  protected /* override */ onAfterShow(): void {
-    super.onAfterShow();
-    if (this.folder) {
-      appInstance.header.switchScreen(this.folder.path, this.folder.collaborators);
-    }
-  }
-
   // --- PRIVATE ---
 
   // Private Instance Properties
 
+  private path: FolderPath;
+
   // Private Instance Methods
 
   // Private Instance Event Handlers
+
+  protected /* override */ onAfterShow(): void {
+    super.onAfterShow();
+
+    appInstance.header.setPath(this.path);
+
+    if (this.folder) {
+      appInstance.header.setCollaborators(this.folder.collaborators);
+      return;
+    }
+
+    // TODO: Race condition: leave and possibly return before open completes.
+    this.clearErrorMessages();
+    ClientFolder.open(this.path, this)
+    .then(
+      (folder: ClientFolder)=>{
+        this.folder = folder;
+        appInstance.header.setCollaborators(this.folder.collaborators);
+
+        this.sidebar = new Sidebar(this);
+        this.view = new FolderView(this);
+
+        this.$elt.append(this.sidebar.$elt, this.view.$elt);
+      },
+      (err)=>{
+        this.displayError(err, <Html>`Error opening folder <tt>${this.path}</tt>`);
+      }
+    );
+
+  }
+
 
 }

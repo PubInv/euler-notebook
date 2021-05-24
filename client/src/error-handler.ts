@@ -24,7 +24,8 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 // Requirements
 
-import { ExpectedError, Html, PlainText } from "./shared/common";
+import { Html, PlainText } from "./shared/common";
+import { ExpectedError } from "./shared/expected-error";
 
 // Types
 

@@ -158,7 +158,7 @@ export function serverMessageSynopsis(msg: ServerResponse): string {
   let rval = `${msg.requestId?`${msg.requestId} `:''}${msg.type} `;
 
   switch (msg.type) {
-    case 'error':    rval += `msg: "${msg.message}"`; break;
+    case 'error':    rval += `code: "${msg.code}"`; break;
     case 'folder':   rval += serverFolderResponseSynopsis(msg); break;
     case 'notebook': rval += serverNotebookResponseSynopsis(msg); break;
     case 'user':     rval += serverUserResponseSynopsis(msg); break;

@@ -19,8 +19,8 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 // Requirements
 
-import { ExpectedError } from "../../shared/common";
 import { CssSelector } from "../../shared/css";
+import { ExpectedError } from "../../shared/expected-error";
 import { UserName, UserPassword } from "../../shared/user";
 
 import { ClientUser } from "../../client-user";
@@ -77,7 +77,7 @@ export class HomeScreen extends Screen {
 
   protected /* override */ onAfterShow(): void {
     super.onAfterShow();
-    appInstance.header.switchScreen(<FolderPath>'/');
+    appInstance.header.setPath(<FolderPath>'/');
   }
 
   private async onLoginSubmit(e: Event): Promise<void> {

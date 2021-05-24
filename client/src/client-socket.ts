@@ -25,7 +25,8 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 import * as debug1 from "debug";
 const debug = debug1('client:client-socket');
 
-import { assert, Html, PromiseResolver, Timestamp, newPromiseResolver, assertFalse, ExpectedError } from "./shared/common";
+import { assert, Html, PromiseResolver, Timestamp, newPromiseResolver, assertFalse } from "./shared/common";
+import { ExpectedError } from "./shared/expected-error";
 import { clientMessageSynopsis, serverMessageSynopsis } from "./shared/debug-synopsis";
 import { ClientRequest, RequestId } from "./shared/client-requests";
 import { ResponseBase, ServerResponse, } from "./shared/server-responses";
@@ -35,6 +36,7 @@ import { ClientFolder } from "./models/client-folder";
 import { ClientNotebook } from "./models/client-notebook";
 import { showError } from "./error-handler";
 import { ClientUser } from "./client-user";
+import { errorTemplateForCode } from "./error-messages";
 
 // Types
 
@@ -167,7 +169,8 @@ export class ClientSocket {
           } else {
             // An error from the server that we were not expecting.
             // Display it to the user.
-            MessageDisplay.addErrorMessage(<Html>`Server error: ${msg.message}`);
+            const message = errorTemplateForCode(msg.code)
+            MessageDisplay.addErrorMessage(message);
           }
           break;
         }
@@ -201,7 +204,7 @@ export class ClientSocket {
         } else {
           // Message is an error.
           // Reject the request promise.
-          requestInfo.resolver.reject(new ExpectedError(msg.message));
+          requestInfo.resolver.reject(new ExpectedError(msg.code, msg.info));
           this.requestMap.delete(requestId!);
         }
       }

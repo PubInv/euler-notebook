@@ -29,7 +29,7 @@ import { Request } from "express";
 import * as WebSocket from "ws";
 
 // TODO: Handle websocket lifecycle: closing, unexpected disconnects, errors, etc.
-import { assert, ClientId, PromiseResolver, errorMessageForUser } from "../shared/common";
+import { assert, ClientId, PromiseResolver } from "../shared/common";
 import { ClientRequest, } from "../shared/client-requests";
 import { ServerResponse, ErrorResponse, } from "../shared/server-responses";
 
@@ -38,6 +38,7 @@ import { ServerFolder } from "./server-folder";
 import { ServerNotebook } from "./server-notebook";
 import { clientMessageSynopsis, serverMessageSynopsis } from "../shared/debug-synopsis";
 import { ServerUser } from "./server-user";
+import { ExpectedError } from "../shared/expected-error";
 
 
 // Types
@@ -229,9 +230,12 @@ export class ServerSocket {
         const response: ErrorResponse = {
           requestId: msg.requestId,
           type: 'error',
-          message: errorMessageForUser(err),
+          code: (err instanceof ExpectedError ? err.code : 'unexpectedError'),
           complete: true,
         };
+        if (err instanceof ExpectedError) {
+          response.info = err.info;
+        }
         this.sendMessage(response);
       }
     });

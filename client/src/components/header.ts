@@ -25,7 +25,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 // import * as debug1 from "debug";
 // const debug = debug1('client:header');
 
-import { ElementId, Html, escapeHtml, RelativeUrl, ClientId, notImplementedError } from "../shared/common";
+import { ElementId, Html, escapeHtml, RelativeUrl, ClientId } from "../shared/common";
 import { CssClass } from "../shared/css";
 import { Path } from "../shared/folder";
 import { CollaboratorObject, UserName } from "../shared/user";
@@ -148,8 +148,14 @@ export class Header extends ButtonBar {
 
   // Public Instance Methods
 
-  public switchScreen(path: Path, collaborators?: IterableIterator<CollaboratorObject>): void {
+  public setCollaborators(collaborators: IterableIterator<CollaboratorObject>): void {
+    this.removeAllCollaboratorButtons();
+    for (const collaborator of collaborators) {
+      this.addCollaboratorButton(collaborator);
+    }
+  }
 
+  public setPath(path: Path): void {
     // Update the path to the notebook/folder.
     let titleHtml: Html = <Html>(path===<Path>'/' ? 'Euler Notebook' : '<a href="#/">Home</a>');
     const segments = path.split('/').slice(1);
@@ -161,15 +167,7 @@ export class Header extends ButtonBar {
       titleHtml += ' / ' + segmentHtml;
     }
     $(this.$elt, "#title").innerHTML = titleHtml;
-
-    // Update the collaborator buttons
     this.removeAllCollaboratorButtons();
-    if (collaborators) {
-      for (const collaborator of collaborators) {
-        this.addCollaboratorButton(collaborator);
-      }
-    }
-
   }
 
   // Public Instance Event Handlers
@@ -191,7 +189,7 @@ export class Header extends ButtonBar {
     // REVIEW: Should have notification message if user logged out remotely.
     this.$userButton.innerHTML = LOGGED_OUT_ICON;
     this.$userButton.disabled = true;
-    window.location.href = '/#/';
+    // window.location.href = '/#/';
   }
 
   // -- PRIVATE --
@@ -213,7 +211,7 @@ export class Header extends ButtonBar {
         id: idForCollaboratorButton(obj.clientId),
         src: urlForSmallProfilePic(obj.userName),
       }],
-      syncButtonHandler: _e=>notImplementedError("Collaborator buttons"),
+      // syncButtonHandler: _e=>notImplementedError("Collaborator buttons"),
     });
     this.$collaboratorsSpan.append($userButton);
   }

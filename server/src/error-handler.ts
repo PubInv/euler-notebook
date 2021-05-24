@@ -19,7 +19,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 // Requirements
 
-import { ExpectedError } from "./shared/common";
+import { ExpectedError } from "./shared/expected-error";
 
 // Exported Functions
 

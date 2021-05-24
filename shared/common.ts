@@ -96,10 +96,6 @@ export function deepCopy<T>(data: T): T {
   return JSON.parse(JSON.stringify(data));
 }
 
-export function errorMessageForUser(err: Error): Html {
-  return <Html>(err instanceof ExpectedError ? escapeHtml(err.message) : "An unexpected error occurred.");
-}
-
 export function escapeHtml(str: string): Html {
   // REVIEW: This function also exists in dom.ts, but that only works in the browser.
   // From http://jehiah.cz/a/guide-to-escape-sequences. Note that has a bug in that it only replaces the first occurrence.
@@ -148,18 +144,6 @@ export function stackTrace(): StackTrace {
 export function zeroPad(s: string, length: number): string {
   const numZeroes = length - s.length;
   return numZeroes>0 ? '0'.repeat(numZeroes)+s : s;
-}
-
-// Exported Classes
-
-export class ExpectedError extends Error {
-  // An "expected error" is one that we anticipated could occur, and has a
-  // useful error message for the user.
-  // Also, if you catch an expected error you can assume that it has already
-  // been reported to the error logging system or does not need to be logged.
-  constructor(message: string) {
-    super(message);
-  }
 }
 
 // Helper Functions

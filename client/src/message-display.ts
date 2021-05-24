@@ -23,10 +23,11 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 // Requirements
 
-import { Html, errorMessageForUser, ElementId, assert } from "./shared/common";
+import { Html, ElementId, assert } from "./shared/common";
 import { CssClass } from "./shared/css";
 
 import { CLOSE_X_ENTITY } from "./dom";
+import { errorMessageForUser } from "./error-messages";
 import { HtmlElement } from "./html-element";
 
 // Types

@@ -27,7 +27,8 @@ import * as debug1 from "debug";
 const MODULE = __filename.split(/[/\\]/).slice(-1)[0].slice(0,-3);
 const debug = debug1(`server:${MODULE}`);
 
-import { assert, ExpectedError } from "../shared/common";
+import { assert } from "../shared/common";
+import { ExpectedError } from "../shared/expected-error";
 import {
   Folder, FolderEntry, FolderName, FolderObject, FolderPath, NotebookEntry,
   NotebookName, NotebookPath,
@@ -36,12 +37,13 @@ import { ChangeFolder, CloseFolder, FolderRequest, OpenFolder, RequestId } from 
 import { FolderUpdated, FolderOpened, FolderResponse, FolderUpdate, FolderCollaboratorDisconnected, FolderCollaboratorConnected } from "../shared/server-responses";
 import { UserPermission } from "../shared/permissions";
 
-import { createDirectory, deleteDirectory, readDirectory, renameDirectory } from "../adapters/file-system";
+import { createDirectory, deleteDirectory, FileName, readDirectory, renameDirectory } from "../adapters/file-system";
 import { ServerNotebook, notebookPath } from "./server-notebook";
 import { logWarning } from "../error-handler";
 import { ServerSocket } from "./server-socket";
 import { Permissions } from "./permissions";
 import { CollaboratorObject } from "../shared/user";
+import { Stats } from "fs";
 
 // Types
 
@@ -183,7 +185,13 @@ export class ServerFolder extends Folder {
 
   private static async openFirst(path: FolderPath): Promise<ServerFolder> {
 
-    const dirMap = await readDirectory(path);
+    let dirMap: Map<FileName, Stats>;
+    try {
+      dirMap = await readDirectory(path);
+    } catch(err) {
+      if (err.code == 'ENOENT') { throw new ExpectedError('folderDoesntExist'); }
+      else { throw err; }
+    }
 
     const notebooks: NotebookEntry[] = [];
     const folders: FolderEntry[] = [];
@@ -327,10 +335,7 @@ export class ServerFolder extends Folder {
     const user = socket.user;
     const permissions = this.permissions.getUserPermissions(user);
     if (!(permissions & UserPermission.Modify)) {
-      const message = user ?
-                      `You do not have permission to modify this folder.` :
-                      `You must log in to modify this folder.`;
-      throw new ExpectedError(message)
+      throw new ExpectedError(user ? 'cannotModifyFolder' : 'logInToModifyFolder')
     }
 
     const changes: FolderUpdate[] = [];
@@ -409,10 +414,7 @@ export class ServerFolder extends Folder {
     const user = socket.user;
     const permissions = this.permissions.getUserPermissions(user);
     if (!(permissions & UserPermission.Read)) {
-      const message = user ?
-                      `This folder is not public and is not shared with you.` :
-                      `You must log in to access this folder.`;
-      throw new ExpectedError(message)
+      throw new ExpectedError(user ? 'cannotReadFolder' : 'logInToReadFolder')
     }
 
     this.sockets.add(socket);

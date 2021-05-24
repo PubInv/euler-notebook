@@ -59,28 +59,8 @@ export class NotebookEditScreen extends Screen implements NotebookWatcher {
       styles: { display: 'none' },
       data: { path },
     });
-
-    ClientNotebook.open(path, this)
-    .then(
-      (notebook: ClientNotebook)=>{
-        this.notebook = notebook;
-        appInstance.header.switchScreen(this.notebook.path, this.notebook.collaborators);
-
-        this.editView = new NotebookEditView(this, notebook);
-        this.sidebar = new Sidebar(this);
-
-        // REVIEW: Create these panels on demand?
-        this.photoPanel = new PhotoPanel(this);
-        this.referencePanel = new ReferencePanel();
-        this.searchPanel = new SearchPanel(this);
-        this.debugPopup = new DebugPopup(this);
-
-        this.$elt.append(this.sidebar.$elt, this.editView.$elt, this.photoPanel.$elt, this.referencePanel.$elt, this.searchPanel.$elt, this.debugPopup.$elt);
-      },
-      (err)=>{
-        this.displayError(err, <Html>`Error opening notebook <tt>${path}</tt>`);
-      }
-    );
+    this.path = path;
+    // Notebook is opened in onAfterShow.
   }
 
   // Public Instance Properties
@@ -136,6 +116,8 @@ export class NotebookEditScreen extends Screen implements NotebookWatcher {
 
   // Private Instance Properties
 
+  private path: NotebookPath;
+
   // Private Instance Methods
 
   private togglePanel(panelName: 'photoPanel' | 'referencePanel' | 'searchPanel'): void {
@@ -156,9 +138,37 @@ export class NotebookEditScreen extends Screen implements NotebookWatcher {
 
   protected onAfterShow(): void {
     super.onAfterShow();
+
+    appInstance.header.setPath(this.path);
+
     if (this.notebook) {
-      appInstance.header.switchScreen(this.notebook.path, this.notebook.collaborators);
+      appInstance.header.setCollaborators(this.notebook.collaborators);
+      return;
     }
+
+    // TODO: Race condition: leave and possibly return before open completes.
+    this.clearErrorMessages();
+    ClientNotebook.open(this.path, this)
+    .then(
+      (notebook: ClientNotebook)=>{
+        this.notebook = notebook;
+        appInstance.header.setCollaborators(this.notebook.collaborators);
+
+        this.editView = new NotebookEditView(this, notebook);
+        this.sidebar = new Sidebar(this);
+
+        // REVIEW: Create these panels on demand?
+        this.photoPanel = new PhotoPanel(this);
+        this.referencePanel = new ReferencePanel();
+        this.searchPanel = new SearchPanel(this);
+        this.debugPopup = new DebugPopup(this);
+
+        this.$elt.append(this.sidebar.$elt, this.editView.$elt, this.photoPanel.$elt, this.referencePanel.$elt, this.searchPanel.$elt, this.debugPopup.$elt);
+      },
+      (err)=>{
+        this.displayError(err, <Html>`Error opening notebook <tt>${this.path}</tt>`);
+      }
+    );
   }
 
 

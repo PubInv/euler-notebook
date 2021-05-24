@@ -21,7 +21,8 @@ import * as debug1 from "debug";
 const MODULE = __filename.split(/[/\\]/).slice(-1)[0].slice(0,-3);
 const debug = debug1(`server:${MODULE}`);
 
-import { assert, assertFalse, ExpectedError, SessionToken } from "../shared/common";
+import { assert, assertFalse, SessionToken } from "../shared/common";
+import { ExpectedError } from "../shared/expected-error";
 import { LoginUserWithPassword, LoginUserWithToken, LogoutUser, RequestId, UserRequest } from "../shared/client-requests";
 import { clientUserMessageSynopsis } from "../shared/debug-synopsis";
 import { UserId, UserObject, UserName, UserPassword, USERNAME_RE, USERNAME_MAX_LENGTH, USER_PASSWORD_MIN_LENGTH } from "../shared/user";
@@ -77,7 +78,7 @@ export class ServerUser {
           const instance = await this.getFromUserName(session.userName);
           instance.onTokenLogin(socket, msg, session);
         } else {
-          throw new ExpectedError(`Session token not found.`);
+          throw new ExpectedError('sessionTokenNotFound');
         }
         break;
       }
@@ -120,16 +121,16 @@ export class ServerUser {
   private static async load(userName: UserName): Promise<ServerUser> {
     assert(!this.instanceMap.has(userName));
 
-    if (userName.length == 0) { throw new ExpectedError("Please specify username."); }
+    if (userName.length == 0) { throw new ExpectedError('specifyUsername'); }
 
-    if (!USERNAME_RE.test(userName) || userName.length>USERNAME_MAX_LENGTH) { throw new ExpectedError("Invalid username."); }
+    if (!USERNAME_RE.test(userName) || userName.length>USERNAME_MAX_LENGTH) { throw new ExpectedError('invalidUsername'); }
 
     const path = <FolderPath>`/${userName}/`;
     let obj: ServerUserObject;
     try {
       obj = await readJsonFile<ServerUserObject>(path, USER_INFO_FILENAME);
     } catch (err) {
-      if (err.code === 'ENOENT') { throw new ExpectedError(`User does not exist.`); }
+      if (err.code === 'ENOENT') { throw new ExpectedError('userDoesNotExist'); }
       else { throw err; }
     }
     obj.clientObj.userName = userName;
@@ -176,9 +177,9 @@ export class ServerUser {
 
   private onPasswordLogin(socket: ServerSocket, msg: LoginUserWithPassword): void {
     // Throws an expected error with useful message if login fails.
-    if (msg.password.length == 0) { throw new ExpectedError("Please specify password."); }
-    if (msg.password.length < USER_PASSWORD_MIN_LENGTH) { throw new ExpectedError(`Password must be at least ${USER_PASSWORD_MIN_LENGTH} characters.`); }
-    if (msg.password != this.obj.password) { throw new ExpectedError("Password incorrect"); }
+    if (msg.password.length == 0) { throw new ExpectedError('specifyPassword'); }
+    if (msg.password.length < USER_PASSWORD_MIN_LENGTH) { throw new ExpectedError('passwordTooShort', { minLength: USER_PASSWORD_MIN_LENGTH} ); }
+    if (msg.password != this.obj.password) { throw new ExpectedError('passwordIncorrect'); }
 
     const sessionToken = UserSession.login(this.userName);
     this.finishLogin(socket, msg.requestId!, sessionToken)

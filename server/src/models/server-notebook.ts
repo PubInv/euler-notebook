@@ -31,7 +31,8 @@ const debug = debug1(`server:${MODULE}`);
 // import { readdirSync, unlink, writeFileSync } from "fs"; // LATER: Eliminate synchronous file operations.
 
 import { CellObject, CellSource, CellId, CellType, CellRelativePosition } from "../shared/cell";
-import { assert, assertFalse, deepCopy, ExpectedError, Html, Milliseconds } from "../shared/common";
+import { assert, assertFalse, deepCopy, Html, Milliseconds } from "../shared/common";
+import { ExpectedError } from "../shared/expected-error";
 import { CssSize, convertCssLength } from "../shared/css";
 import { LEFT_MARGIN, TOP_MARGIN, RIGHT_MARGIN, BOTTOM_MARGIN, PAGE_HEIGHT, PAGE_WIDTH } from "../shared/dimensions";
 import { Folder, NotebookPath, NOTEBOOK_PATH_RE, NotebookName, FolderPath, NotebookEntry } from "../shared/folder";
@@ -162,7 +163,7 @@ export class ServerNotebook extends Notebook {
       await createDirectory(path);
     } catch(err) {
       if (err.code == 'EEXIST') {
-        err = new ExpectedError(`Notebook '${path}' already exists.`);
+        err = new ExpectedError('notebookAlreadyExists', { path });
       }
       throw err;
     }
@@ -328,7 +329,7 @@ export class ServerNotebook extends Notebook {
 
     if (typeof obj != 'object' || !obj.nextCellId) { throw new Error("Invalid notebook object JSON."); }
     if (obj.formatVersion != FORMAT_VERSION) {
-      throw new ExpectedError(`Invalid notebook version ${obj.formatVersion}. Expect version ${FORMAT_VERSION}`);
+      throw new ExpectedError('invalidNotebookVersion', { actualVersion: obj.formatVersion, expectedVersion: FORMAT_VERSION });
     }
   }
 
@@ -347,7 +348,13 @@ export class ServerNotebook extends Notebook {
 
   private static async openFirst(path: NotebookPath): Promise<ServerNotebook> {
     assert(ServerNotebook.isValidNotebookPath(path));
-    const obj = await readJsonFile<PersistentServerNotebookObject>(path, NOTEBOOK_FILENAME);
+    let obj: PersistentServerNotebookObject;
+    try {
+      obj = await readJsonFile<PersistentServerNotebookObject>(path, NOTEBOOK_FILENAME);
+    } catch(err) {
+      if (err.code == 'ENOENT') { throw new ExpectedError('notebookDoesntExist'); }
+      else { throw err; }
+    }
     ServerNotebook.validateObject(obj);
     const permissions = await Permissions.load(path);
     const instance = new this(path, obj, permissions);
@@ -681,10 +688,7 @@ export class ServerNotebook extends Notebook {
     const user = socket.user;
     const permissions = this.permissions.getUserPermissions(user);
     if (!(permissions & UserPermission.Modify)) {
-      const message = user ?
-                      `You do not have permission to modify this notebook.` :
-                      `You must logged in to modify this notebook.`;
-      throw new ExpectedError(message)
+      throw new ExpectedError(user ? 'cannotModifyNotebook' : 'logInToModifyNotebook')
     }
 
     const options: RequestChangesOptions = { originatingSocket: socket, requestId: msg.requestId };
@@ -704,10 +708,7 @@ export class ServerNotebook extends Notebook {
     const user = socket.user;
     const permissions = this.permissions.getUserPermissions(user);
     if (!(permissions & UserPermission.Read)) {
-      const message = user ?
-                      `This notebook is not public and is not shared with you.` :
-                      `You must log in to access this notebook.`;
-      throw new ExpectedError(message)
+      throw new ExpectedError(user ? 'cannotReadNotebook' : 'logInToReadNotebook')
     }
 
     this.sockets.add(socket);
