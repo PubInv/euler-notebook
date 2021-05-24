@@ -26,10 +26,10 @@ const debug = debug1('client:client-notebook');
 
 import { CellId, CellObject, CellPosition, CellRelativePosition, CellType } from "../shared/cell";
 import { assert, assertFalse, ClientId, DataUrl, Html, PlainText } from "../shared/common";
-import { CssLength, CssSize } from "../shared/css";
+import { CssSize, cssSizeFromPixels, LengthInPixels } from "../shared/css";
 import { notebookUpdateSynopsis } from "../shared/debug-synopsis";
 import { Folder, NotebookName, NotebookPath } from "../shared/folder";
-import { ImageCellObject } from "../shared/image-cell";
+import { ImageCellObject, ImageInfo } from "../shared/image-cell";
 import { Notebook } from "../shared/notebook";
 import {
   NotebookChangeRequest, ChangeNotebook, OpenNotebook, DeleteCell, ResizeCell,
@@ -175,14 +175,16 @@ export class ClientNotebook extends Notebook {
     await this.sendUndoableChangeRequest(changeRequest);
   }
 
-  public insertPhotoCell(dataUrl: DataUrl): void {
+  public insertPhotoCell(url: DataUrl, width: LengthInPixels, height: LengthInPixels): void {
     const afterId = CellPosition.Top;
+    const cellWidth = this.defaultCellWidth();
+    const info: ImageInfo = { url, width, height, x: 0, y: 0, magnification: 1.0, };
     const cellObject: ImageCellObject = {
       type: CellType.Image,
       id: -1,
-      cssSize: { width: <CssLength>"640px", height: <CssLength>"480px"},
+      cssSize: cssSizeFromPixels(cellWidth, height),
       inputText: <PlainText>'',
-      dataUrl,
+      info,
       source: 'USER',
       strokeData: EMPTY_STROKE_DATA, // REVIEW: deep copy this?
       suggestions: [],

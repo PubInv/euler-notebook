@@ -25,7 +25,7 @@ import * as debug1 from "debug";
 const debug = debug1('client:photo-panel');
 
 import { assert, DataUrl, JPEG_MIME_TYPE } from "../../shared/common";
-import { CssClass } from "../../shared/css";
+import { CssClass, LengthInPixels } from "../../shared/css";
 
 import { $new, svgIconReferenceMarkup } from "../../dom";
 import { HtmlElement } from "../../html-element";
@@ -37,6 +37,12 @@ import { NotebookEditScreen } from ".";
 enum Mode {
   Record,
   Review,
+}
+
+interface PhotoInfo {
+  url: DataUrl;
+  width: LengthInPixels;
+  height: LengthInPixels;
 }
 
 // Constants
@@ -145,7 +151,7 @@ export class PhotoPanel extends HtmlElement<'div'> {
   private mode: Mode;
   private screen: NotebookEditScreen;
 
-  private dataUrl?: DataUrl;
+  private photoInfo?: PhotoInfo;
 
   // Private Instance Property Functions
 
@@ -223,22 +229,28 @@ export class PhotoPanel extends HtmlElement<'div'> {
   }
 
   private onAcceptButtonClicked(_event: MouseEvent): void {
-    assert(this.dataUrl);
-    this.screen.notebook.insertPhotoCell(this.dataUrl!);
+    const pi = this.photoInfo;
+    assert(pi);
+    this.screen.notebook.insertPhotoCell(pi!.url, pi!.width, pi!.height);
     this.hide();
     this.switchToRecordMode(false);
   }
 
   private onCameraButtonClicked(_event: MouseEvent): void {
-    this.$cameraCanvas.width = this.$cameraVideo.videoWidth;
-    this.$cameraCanvas.height = this.$cameraVideo.videoHeight;
+    const width = this.$cameraCanvas.width = this.$cameraVideo.videoWidth;
+    const height = this.$cameraCanvas.height = this.$cameraVideo.videoHeight;
     const context = this.$cameraCanvas.getContext("2d")!;
     assert(context);
     context.drawImage(this.$cameraVideo, 0, 0);
     // Other formats: "image/webp", "image/png"
-    this.dataUrl = <DataUrl>this.$cameraCanvas.toDataURL(JPEG_MIME_TYPE)!;
-    assert(this.dataUrl);
-    this.$cameraImage.src = this.dataUrl;
+    const photoInfo: PhotoInfo = {
+      url: <DataUrl>this.$cameraCanvas.toDataURL(JPEG_MIME_TYPE)!,
+      width,
+      height,
+    }
+    assert(photoInfo.url);
+    this.photoInfo = photoInfo;
+    this.$cameraImage.src = photoInfo.url;
     this.switchToReviewMode();
   }
 

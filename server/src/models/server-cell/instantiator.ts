@@ -51,7 +51,7 @@ export function newCellObject(
   switch(cellType) {
     case CellType.Figure:   rval = FigureCell.newCellObject(notebook, cellId, source); break;
     case CellType.Formula:  rval = FormulaCell.newCellObject(notebook, cellId, source); break;
-    case CellType.Image:    assertFalse(); break;
+    case CellType.Image:    rval = ImageCell.newCellObject(notebook, cellId, source); break;
     case CellType.Plot:     assertFalse();
     case CellType.Text:     rval = TextCell.newCellObject(notebook, cellId, source); break;
   }

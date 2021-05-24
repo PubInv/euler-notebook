@@ -112,10 +112,7 @@ export abstract class ServerCell<O extends CellObject> {
   // Private Class Methods
 
   protected static initialCellSize(notebook: ServerNotebook, cssHeight: CssLength): CssSize {
-    const pageWidth = cssLengthInPixels(notebook.pageSize.width);
-    const leftMargin = cssLengthInPixels(notebook.margins.left);
-    const rightMargin = cssLengthInPixels(notebook.margins.right);
-    const width = pageWidth - leftMargin - rightMargin;
+    const width = notebook.defaultCellWidth();
     const height = cssLengthInPixels(cssHeight);
     return cssSizeFromPixels(width, height);
   }

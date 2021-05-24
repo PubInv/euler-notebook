@@ -110,6 +110,13 @@ export class Notebook {
     return this.obj.cells;
   }
 
+  public defaultCellWidth(): LengthInPixels {
+    const pageWidth = cssLengthInPixels(this.pageSize.width);
+    const leftMargin = cssLengthInPixels(this.margins.left);
+    const rightMargin = cssLengthInPixels(this.margins.right);
+    return pageWidth - leftMargin - rightMargin;
+  }
+
   public isEmpty(): boolean {
     return this.obj.cells.length == 0;
   }

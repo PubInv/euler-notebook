@@ -25,8 +25,9 @@ const debug = debug1(`server:${MODULE}`);
 
 import { isEnabled, postTextRequest, TextRequest } from "../adapters/mathpix";
 import { parsePresentationMathMlMarkup } from "../converters/parse-pmml";
-import { assert, assertFalse, DataUrl } from "../shared/common";
+import { assert, assertFalse } from "../shared/common";
 import { ContentMathMlTree } from "../shared/content-mathml";
+import { ImageUrl } from "../shared/image-cell";
 import { PresentationMathMlTree } from "../shared/presentation-mathml";
 
 // Types
@@ -49,13 +50,13 @@ const EMPTY_RECOGNITION_RESULTS: ImageRecognitionResults = {
 // Exported Functions
 
 export async function recognizeImage(
-  dataUrl: DataUrl,
+  srcUrl: ImageUrl,
 ): Promise<ImageRecognitionResults> {
   if (!isEnabled()) { return EMPTY_RECOGNITION_RESULTS; }
 
   debug("recognizeImage");
   const request: TextRequest = {
-    src: dataUrl,
+    src: srcUrl,
     formats: [ 'text', 'data', 'latex_styled' ],
     data_options: {
       // include_latex: true,

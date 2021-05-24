@@ -40,6 +40,8 @@ export const FORMULA_CELL_HEIGHT = <CssLength>'1in';
 export const FORMULA_INDENT = <CssLength>'0.5in';
 export const FORMULA_NUMBER_INDENT = <CssLength>'0.5in'; // From right margin.
 
+export const IMAGE_CELL_HEIGHT = <CssLength>'1.5in';
+
 export const PLOT_CELL_HEIGHT = <CssLength>'3in';
 
 export const TEXT_CELL_HEIGHT = <CssLength>'1in';

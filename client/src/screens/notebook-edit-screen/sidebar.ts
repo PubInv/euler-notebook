@@ -51,6 +51,8 @@ export class Sidebar extends ButtonBar {
     const insertMode = screen.editView.insertMode;
     const stylusMode = screen.editView.stylusMode;
 
+    // Insert Cell Buttons
+
     const $formulaModeButton = $new({
       tag: 'button',
       class: <CssClass>'iconButton',
@@ -78,6 +80,17 @@ export class Sidebar extends ButtonBar {
       disabled: (insertMode === CellType.Figure),
     });
 
+    const $imageModeButton = $new({
+      tag: 'button',
+      class: <CssClass>'iconButton',
+      html: svgIconReferenceMarkup(CELL_ICONS.get(CellType.Image)!),
+      syncButtonHandler: (_e: MouseEvent): void =>{ this.onInsertModeChange(CellType.Image); },
+      title: "Insert image cell",
+      disabled: (insertMode === CellType.Image),
+    });
+
+    // Tool Mode Buttons
+
     const $drawModeButton = $new({
       tag: 'button',
       class: <CssClass>'iconButton',
@@ -95,6 +108,8 @@ export class Sidebar extends ButtonBar {
       title: "Erasing mode",
       disabled: (stylusMode === StylusMode.Erase),
     });
+
+    // Other Buttons
 
     const $debugButton = $new({
       tag: 'button',
@@ -182,6 +197,7 @@ export class Sidebar extends ButtonBar {
         $formulaModeButton,
         $textModeButton,
         $figureModeButton,
+        $imageModeButton,
         SEPARATOR,
         $undoButton,
         $redoButton,
@@ -213,6 +229,7 @@ export class Sidebar extends ButtonBar {
     this.$undoButton = $undoButton;
     this.$formulaModeButton = $formulaModeButton;
     this.$figureModeButton = $figureModeButton;
+    this.$imageModeButton = $imageModeButton;
     this.$textModeButton = $textModeButton;
     this.$drawModeButton = $drawModeButton;
     this.$eraseModeButton = $eraseModeButton;
@@ -236,6 +253,7 @@ export class Sidebar extends ButtonBar {
   private $eraseModeButton: HTMLButtonElement;
   public $figureModeButton: HTMLButtonElement;
   public $formulaModeButton: HTMLButtonElement;
+  public $imageModeButton: HTMLButtonElement;
   public $textModeButton: HTMLButtonElement;
 
   // Private Instance Methods
@@ -252,6 +270,7 @@ export class Sidebar extends ButtonBar {
     this.screen.editView.insertMode = mode;
     this.$figureModeButton.disabled = (mode === CellType.Figure);
     this.$formulaModeButton.disabled = (mode === CellType.Formula);
+    this.$imageModeButton.disabled = (mode === CellType.Image);
     this.$textModeButton.disabled = (mode === CellType.Text);
   }
 

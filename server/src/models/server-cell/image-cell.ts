@@ -35,6 +35,10 @@ import { ServerCell } from "./index";
 import { NotebookChangeRequest, RemoveSuggestion } from "../../shared/client-requests";
 import { ServerFormula } from "../server-formula";
 import { FormulaCell } from "./formula-cell";
+import { CellId, CellSource, CellType } from "../../shared/cell";
+import { IMAGE_CELL_HEIGHT } from "../../shared/dimensions";
+import { deepCopy, PlainText } from "../../shared/common";
+import { EMPTY_STROKE_DATA } from "../../shared/stylus";
 
 // Types
 
@@ -48,6 +52,19 @@ const TYPESET_IMAGE_SUGGESTION_CLASS = <SuggestionClass>"typesetImage";
 export class ImageCell extends ServerCell<ImageCellObject> {
 
   // Public Class Methods
+
+  public static newCellObject(notebook: ServerNotebook, id: CellId, source: CellSource): ImageCellObject {
+    const rval: ImageCellObject = {
+      id,
+      type: CellType.Image,
+      cssSize: this.initialCellSize(notebook, IMAGE_CELL_HEIGHT),
+      inputText: <PlainText>"",
+      source,
+      strokeData: deepCopy(EMPTY_STROKE_DATA),
+      suggestions: [],
+    };
+    return rval;
+  }
 
   // Public Constructor
 
@@ -66,10 +83,12 @@ export class ImageCell extends ServerCell<ImageCellObject> {
   // Private Instance Methods
 
   protected async generateInitialSuggestions(): Promise<SuggestionObject[]> {
+    if (!this.obj.info) { return []; }
+
     debug(`Recognizing strokes`);
 
     // Send the image to the recognizer and get a list of alternatives back.
-    const results = await recognizeImage(this.obj.dataUrl);
+    const results = await recognizeImage(this.obj.info.url);
     const { alternatives } = results;
 
     // For each alternative, generate a suggestion object that has
