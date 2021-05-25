@@ -49,6 +49,7 @@ export class EntryRow extends HtmlElement<'tr'> {
       attrs: {
         type: 'text',
         value: escapeHtml(entry.name),
+        autocapitalize: 'off',
       },
       style: 'display:none',
       listeners: {

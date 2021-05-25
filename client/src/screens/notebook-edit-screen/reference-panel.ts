@@ -56,7 +56,7 @@ export class ReferencePanel extends HtmlElement<'div'> {
     const $urlInput = $new({
       tag: 'input',
       attrs: {
-        type: 'text',
+        type: 'url',
         placeholder: "URL...",
         value: homeUrl,
       },

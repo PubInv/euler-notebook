@@ -45,7 +45,7 @@ const ERROR_MESSAGES = new Map<ErrorCode, Html>([
   ['invalidUsername',        <Html>"Invalid username."],
   ['logInToModifyFolder',    <Html>`This public folder is read-only. ${LOGIN_MSG}`],
   ['logInToModifyNotebook',  <Html>`This public notebook is read-only. ${LOGIN_MSG}`],
-  ['logInToReadFolder',      <Html>`This notebook is not public. ${LOGIN_MSG}`],
+  ['logInToReadFolder',      <Html>`This folder is not public. ${LOGIN_MSG}`],
   ['logInToReadNotebook',    <Html>`This notebook is not public. ${LOGIN_MSG}`],
   ['notebookAlreadyExists',  <Html>"Notebook '#{path}' already exists."],
   ['notebookDoesntExist',    <Html>"Notebook doesn't exist."],
