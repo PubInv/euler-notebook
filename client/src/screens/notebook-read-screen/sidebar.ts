@@ -71,7 +71,7 @@ export class Sidebar extends ButtonBar {
           class: <CssClass>'iconButton',
           html: svgIconReferenceMarkup('iconMonstrFile12'),
           syncButtonHandler: (_e: MouseEvent)=>{ window.location.href = `/#${screen.notebook.path}`; },
-          title: "Reading view",
+          title: "Thumbnail view",
           disabled: mode == Mode.Thumbnails,
         },{
           // reading view

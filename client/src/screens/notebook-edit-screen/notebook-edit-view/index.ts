@@ -37,7 +37,7 @@ import { NotebookEditScreen } from "..";
 
 import { HtmlElement } from "../../../html-element";
 import { ClientNotebook } from "../../../models/client-notebook";
-import { $, svgIconReferenceMarkup } from "../../../dom";
+import { $, $new, svgIconReferenceMarkup } from "../../../dom";
 
 import { CellEditView } from "./cell-edit-view";
 import { createCellView } from "./cell-edit-view/instantiator";
@@ -51,16 +51,29 @@ export class NotebookEditView extends HtmlElement<'div'> {
   // Public Constructor
 
   public constructor(_container: NotebookEditScreen, notebook: ClientNotebook) {
+
+    // A button at the to insert a cell before the first cell.
+    // (All cells have a button to insert a cell below.)
+    const $topBoundary = $new({
+      tag: 'button',
+      attrs: { tabindex: -1 },
+      classes: [ <CssClass>'insertCellAtTopButton', <CssClass>'iconButton' ],
+      html: svgIconReferenceMarkup('iconMonstrArrow49'),
+      asyncButtonHandler: e=>this.onInsertCellAtTopButtonClicked(e),
+    });
+
+    // Extra space at the bottom allows the user to scroll the bottom cell
+    // up to a higher position on their tablet where it is easier to write
+    // than at the very bottom of the tablet display.
+    const $bottomBoundary = $new({
+      tag: 'div',
+      class: <CssClass>'overscrollArea',
+    });
+
     super({
       tag: 'div',
       class: <CssClass>'content',
-      children: [{
-        tag: 'button',
-        attrs: { tabindex: -1 },
-        classes: [ <CssClass>'insertCellAtTopButton', <CssClass>'iconButton' ],
-        html: svgIconReferenceMarkup('iconMonstrArrow49'),
-        asyncButtonHandler: e=>this.onInsertCellAtTopButtonClicked(e),
-      }],
+      children: [ $topBoundary, $bottomBoundary ]
     });
 
     this.cellViewMap = new Map();
@@ -68,6 +81,9 @@ export class NotebookEditView extends HtmlElement<'div'> {
     this.insertMode = CellType.Formula;
     this._stylusMode = StylusMode.Draw;
     this.notebook = notebook;
+
+    this.$topBoundary = $topBoundary;
+    this.$bottomBoundary = $bottomBoundary;
 
     let afterId: CellRelativePosition = CellPosition.Top;
     for (const cellObject of notebook.cellObjects()) {
@@ -128,6 +144,8 @@ export class NotebookEditView extends HtmlElement<'div'> {
 
   // Private Instance Properties
 
+  private $topBoundary: HTMLButtonElement;
+  private $bottomBoundary: HTMLDivElement;
   private cellViewMap: Map<CellId, CellEditView<CellObject>>;
   // private container: NotebookEditScreen;
   private notebook: ClientNotebook;
@@ -152,9 +170,9 @@ export class NotebookEditView extends HtmlElement<'div'> {
   private insertCellView(cellView: CellEditView<CellObject>, afterId: CellRelativePosition): void {
     this.cellViewMap.set(cellView.id, cellView);
     if (afterId == CellPosition.Top) {
-      $(this.$elt, '.insertCellAtTopButton').after(cellView.$elt);
+      this.$topBoundary.after(cellView.$elt);
     } else if (afterId == CellPosition.Bottom) {
-      this.$elt.append(cellView.$elt);
+      this.$bottomBoundary.before(cellView.$elt);
     } else {
       const precedingCellView = this.getCellView(afterId);
       precedingCellView.$elt.after(cellView.$elt);

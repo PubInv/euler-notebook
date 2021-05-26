@@ -303,6 +303,9 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
     .cell.selected
       outline #E0E0FF solid 1px
 
+    >.overscrollArea
+      height 960px
+
   >.panel
     background #F0F0F0
     border 1px solid #808080
@@ -389,11 +392,11 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
       stroke black
 
 .screen
-  height: calc(100% - var(--header-height))
-  left: 0
-  position: fixed
+  height calc(100% - var(--header-height))
+  left 0
+  position fixed
   top var(--header-height)
-  width: 100%
+  width 100%
 
   >.content
     height calc(100% - var(--header-height))
