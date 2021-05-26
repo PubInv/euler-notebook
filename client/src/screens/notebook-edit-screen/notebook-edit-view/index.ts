@@ -37,7 +37,7 @@ import { NotebookEditScreen } from "..";
 
 import { HtmlElement } from "../../../html-element";
 import { ClientNotebook } from "../../../models/client-notebook";
-import { $, $new, svgIconReferenceMarkup } from "../../../dom";
+import { $new, svgIconReferenceMarkup } from "../../../dom";
 
 import { CellEditView } from "./cell-edit-view";
 import { createCellView } from "./cell-edit-view/instantiator";

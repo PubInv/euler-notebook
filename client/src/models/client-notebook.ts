@@ -28,7 +28,7 @@ import { CellId, CellObject, CellPosition, CellRelativePosition, CellType } from
 import { assert, assertFalse, ClientId, DataUrl, Html, PlainText } from "../shared/common";
 import { CssSize, cssSizeFromPixels, LengthInPixels } from "../shared/css";
 import { notebookUpdateSynopsis } from "../shared/debug-synopsis";
-import { Folder, NotebookName, NotebookPath } from "../shared/folder";
+import { NotebookPath } from "../shared/folder";
 import { ImageCellObject, ImageInfo } from "../shared/image-cell";
 import { Notebook } from "../shared/notebook";
 import {
@@ -131,10 +131,10 @@ export class ClientNotebook extends Notebook {
     return cell;
   }
 
-  public get notebookName(): NotebookName {
-    // REVIEW: Rename to just "name"?
-    return Folder.notebookNameFromNotebookPath(this.path);
-  }
+  // public get notebookName(): NotebookName {
+  //   // REVIEW: Rename to just "name"?
+  //   return Folder.notebookNameFromNotebookPath(this.path);
+  // }
 
   public toDebugHtml(): Html {
     return <Html>this.obj.cells.map(cellObject=>{

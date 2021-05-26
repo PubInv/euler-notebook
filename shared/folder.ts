@@ -38,6 +38,9 @@ export type NotebookName = '{notebook-name}';  // Just the name of the notebook,
 // Note that we always use forward slash, even on filesystems with other separators (e.g. Windows)
 export type NotebookPath = '{notebook-path}';
 
+const NOTEBOOK_VIEWS = [ 'read', 'edit' ] as const;
+export type NotebookView = typeof NOTEBOOK_VIEWS[number];
+
 export type Path = FolderPath | NotebookPath;
 
 export interface Entry<N,P> {
@@ -58,13 +61,28 @@ export type NotebookEntry = Entry<NotebookName, NotebookPath>;
 
 // Constants
 
-// SECURITY: DO NOT ALLOW PERIODS IN FOLDER NAMES OR NOTEBOOK PATHS!!!
-// SECURITY REVIEW: Any danger in allowing backslashes or forward slashes?
-//         Maybe should customize the RE to the correct separator depending on the system.
-export const FOLDER_NAME_RE = /^(\w+)$/;
-export const FOLDER_PATH_RE = /^\/((\w+)\/)*$/;
-export const NOTEBOOK_NAME_RE = /^(\w+)$/;
-export const NOTEBOOK_PATH_RE = /^\/((\w+\/)*)(\w+)\.enb$/;
+export const NOTEBOOK_DIR_SUFFIX = '.enb';
+export const NOTEBOOK_DIR_SUFFIX_LENGTH = NOTEBOOK_DIR_SUFFIX.length;
+
+// IMPORTANT: Do not allow a path segment that is just a period or just two periods.
+const ALLOWABLE_FIRST_CHAR = "-_A-Za-z0-9";
+const ALLOWABLE_REST_CHAR = `${ALLOWABLE_FIRST_CHAR}.`;
+const FIRST_PIECE = `[${ALLOWABLE_FIRST_CHAR}][${ALLOWABLE_REST_CHAR}]*`;
+const ADDITIONAL_PIECE = `[${ALLOWABLE_REST_CHAR}]+`;
+const SEGMENT = `${FIRST_PIECE}( ${ADDITIONAL_PIECE})*`;
+const NAME_RE = new RegExp(`^${SEGMENT}$`);
+
+const FOLDER_PATH = `/(${SEGMENT}/)*`;
+const NOTEBOOK_PATH = `${FOLDER_PATH}${SEGMENT}${NOTEBOOK_DIR_SUFFIX}`;
+
+// These regular expressions are necessary, but not sufficient, to determine correctness.
+// See additional checks in isValid(Folder|Notebook)Name.
+const FOLDER_PATH_RE = new RegExp(`^${FOLDER_PATH}$`);
+export const NOTEBOOK_PATH_RE = new RegExp(`^${NOTEBOOK_PATH}$`);
+
+const ROOT_FOLDER_NAME = <FolderName>"Root";
+
+const VIEW_RE = /^view=(\w+)$/;
 
 // Exported Class
 
@@ -74,23 +92,46 @@ export class Folder {
   // Public Class Property Functions
 
   public static folderNameFromFolderPath(path: FolderPath): FolderName {
-    const match = FOLDER_PATH_RE.exec(path);
-    if (!match) { throw new Error(`Invalid folder path: ${path}`); }
-    return <FolderName>match[2] || 'Root'; // REVIEW: Could use user name for the Root folder?
+    const segments = path.split('/').slice(1,-1);
+    if (segments.length == 0) { return ROOT_FOLDER_NAME }
+    else { return <FolderName>segments[segments.length-1]; }
   }
 
-  public static isValidFolderName(name: FolderName): boolean {
-    return FOLDER_NAME_RE.test(name);
+  public static isValidFolderName(name: string): boolean {
+    return NAME_RE.test(name) && !name.endsWith(NOTEBOOK_DIR_SUFFIX);
   }
 
-  public static isValidNotebookName(name: NotebookName): boolean {
-    return NOTEBOOK_NAME_RE.test(name);
+  public static isValidFolderPath(path: string): boolean {
+    return FOLDER_PATH_RE.test(path) && path.split('/').slice(1,-1).every(n=>this.isValidFolderName(n));
   }
 
-  public static notebookNameFromNotebookPath(path: NotebookPath): NotebookName {
-    const i = path.lastIndexOf('/');
-    return <NotebookName>path.slice(i);
+  public static isValidNotebookName(name: string): boolean {
+    return this.isValidFolderName(name);
   }
+
+  public static isValidNotebookPath(path: string): boolean {
+    if (!NOTEBOOK_PATH_RE.test(path)) { return false; }
+    const segments = path.split('/').slice(1);
+    if (!segments.slice(0,-1).every(n=>this.isValidFolderName(n))) { return false; }
+    const name = segments[segments.length-1].slice(0, -NOTEBOOK_DIR_SUFFIX.length);
+    if (!this.isValidNotebookName(name)) { return false };
+    return true;
+  }
+
+  public static isValidNotebookPathWithView(pathWithView: string): { path: NotebookPath, view: NotebookView }|false {
+    const parts = pathWithView.split('?');
+    if (parts.length!=2) { return false };
+    const path = <NotebookPath>parts[0];
+    if (!this.isValidNotebookPath(path)) { return false; }
+    const match = VIEW_RE.exec(parts[1]);
+    if (!match) { return false; }
+    const view = <NotebookView>match[1];
+    if (NOTEBOOK_VIEWS.indexOf(view)<0) { return false; }
+    return { path, view };
+  }
+
+  // public static notebookNameFromNotebookPath(path: NotebookPath): NotebookName {
+  // }
 
   // Public Class Methods
 

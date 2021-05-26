@@ -23,7 +23,7 @@ import * as debug1 from "debug";
 const debug = debug1('client:screen-manager');
 
 import { Html, assertFalse, assert } from "../shared/common";
-import { FOLDER_PATH_RE, NOTEBOOK_PATH_RE, FolderPath, NotebookPath } from "../shared/folder";
+import { FolderPath, NotebookPath, Folder } from "../shared/folder";
 
 import { addSyncEventListener } from "../dom";
 
@@ -38,8 +38,6 @@ import { Mode, NotebookReadScreen } from "./notebook-read-screen";
 export type Pathname = '{Pathname}';
 
 // Constants
-
-const NOTEBOOK_PATH_WITH_VIEW_RE = new RegExp("^(" + NOTEBOOK_PATH_RE.toString().slice(2,-2) + ")\\?view=(read|edit)$");
 
 // Exported Class
 
@@ -81,13 +79,13 @@ export abstract class ScreenManager {
   // Private Class Methods
 
   private static createScreenForPathname(pathname: Pathname): Screen {
+    console.dir(pathname);
     if (pathname == <Pathname>'/') {
       return new HomeScreen();
     } else {
-      const match = NOTEBOOK_PATH_WITH_VIEW_RE.exec(pathname);
-      if (match) {
-        const path = <NotebookPath>match[1];
-        const view = match[5];
+      const info = Folder.isValidNotebookPathWithView(pathname);
+      if (info) {
+        const { path, view } = info;
         switch(view) {
           case 'edit':
             return new NotebookEditScreen(path);
@@ -95,9 +93,9 @@ export abstract class ScreenManager {
             return new NotebookReadScreen(path, Mode.Reading);
           default: assertFalse();
         }
-      } else if (NOTEBOOK_PATH_RE.test(pathname)) {
+      } else if (Folder.isValidNotebookPath(pathname)) {
         return new NotebookReadScreen(<NotebookPath>pathname, Mode.Thumbnails);
-      } else if (FOLDER_PATH_RE.test(pathname)) {
+      } else if (Folder.isValidFolderPath(pathname)) {
         return new FolderScreen(<FolderPath>pathname);
       } else  {
         throw new Error("Invalid path.");

@@ -72,7 +72,7 @@ class App {
 
   private get currentPath(): Pathname {
     const hash = window.location.hash;
-    return <Pathname>(hash.length <= 1 ? '/' : hash.slice(1));
+    return <Pathname>(hash.length <= 1 ? '/' : decodeURI(hash.slice(1)));
   }
 
   // Private Instance Methods

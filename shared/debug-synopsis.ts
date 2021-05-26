@@ -86,12 +86,12 @@ export function clientUserMessageSynopsis(msg: UserRequest): string {
 export function folderChangeRequestSynopsis(request: FolderChangeRequest): string {
   let rval: string = request.type;
   switch(request.type) {
-    case 'createFolder':   rval += ` TODO`; break;
-    case 'createNotebook': rval += ` TODO`; break;
-    case 'deleteFolder':   rval += ` TODO`; break;
-    case 'deleteNotebook': rval += ` TODO`; break;
-    case 'renameFolder':   rval += ` TODO`; break;
-    case 'renameNotebook': rval += ` TODO`; break;
+    case 'createFolder':   rval += ` ${request.name}`; break;
+    case 'createNotebook': rval += ` ${request.name}`; break;
+    case 'deleteFolder':   rval += ` ${request.name}`; break;
+    case 'deleteNotebook': rval += ` ${request.name}`; break;
+    case 'renameFolder':   rval += ` ${request.name}=>${request.newName}`; break;
+    case 'renameNotebook': rval += ` ${request.name}=>${request.newName}`; break;
     default: rval += UNKNOWN_TYPE;
   }
   return rval;

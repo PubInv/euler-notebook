@@ -31,7 +31,7 @@ import { assert } from "../shared/common";
 import { ExpectedError } from "../shared/expected-error";
 import {
   Folder, FolderEntry, FolderName, FolderObject, FolderPath, NotebookEntry,
-  NotebookName, NotebookPath,
+  NotebookName, NotebookPath, NOTEBOOK_DIR_SUFFIX,
 } from "../shared/folder";
 import { ChangeFolder, CloseFolder, FolderRequest, OpenFolder, RequestId } from "../shared/client-requests";
 import { FolderUpdated, FolderOpened, FolderResponse, FolderUpdate, FolderCollaboratorDisconnected, FolderCollaboratorConnected } from "../shared/server-responses";
@@ -195,7 +195,7 @@ export class ServerFolder extends Folder {
 
     const notebooks: NotebookEntry[] = [];
     const folders: FolderEntry[] = [];
-    const suffix = ServerNotebook.NOTEBOOK_DIR_SUFFIX;
+    const suffix = NOTEBOOK_DIR_SUFFIX;
     const suffixLen = suffix.length;
     for (const [filename, stats] of dirMap.entries()) {
 

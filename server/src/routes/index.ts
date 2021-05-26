@@ -48,10 +48,6 @@ router.post('/dashboard', onDashboard);
 router.get('/', onIndexPage);
 router.post('/', onIndexPage);
 
-// router.get(FOLDER_PATH_RE, onFolderPage);
-// // TODO: Move importing to import-export router.
-// router.post(FOLDER_PATH_RE, upload.single('importFile'), onFolderPage);
-
 // Route Handler Functions
 
 async function onDashboard(req: Request, res: Response) {

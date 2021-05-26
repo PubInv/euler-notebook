@@ -42,7 +42,7 @@ export class EntryRow extends HtmlElement<'tr'> {
   public constructor(folder: ClientFolder, type: EntryType, entry: Entry) {
 
     // REVIEW: Escape path?
-    const $nameLink = $new({ tag: 'a', attrs: { href: '/#'+entry.path }, html: escapeHtml(entry.name) });
+    const $nameLink = $new({ tag: 'a', attrs: { href: `/#${encodeURI(entry.path)}` }, html: escapeHtml(entry.name) });
 
     const $nameTextInput = $new({
       tag: 'input',

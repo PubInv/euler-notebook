@@ -35,7 +35,7 @@ import { assert, assertFalse, deepCopy, Html, Milliseconds } from "../shared/com
 import { ExpectedError } from "../shared/expected-error";
 import { CssSize, convertCssLength } from "../shared/css";
 import { LEFT_MARGIN, TOP_MARGIN, RIGHT_MARGIN, BOTTOM_MARGIN, PAGE_HEIGHT, PAGE_WIDTH } from "../shared/dimensions";
-import { Folder, NotebookPath, NOTEBOOK_PATH_RE, NotebookName, FolderPath, NotebookEntry } from "../shared/folder";
+import { Folder, NotebookPath, NOTEBOOK_PATH_RE, NotebookName, FolderPath, NotebookEntry, NOTEBOOK_DIR_SUFFIX } from "../shared/folder";
 import { Notebook, NotebookObject, PageMargins } from "../shared/notebook";
 import {
   NotebookChangeRequest, MoveCell, DeleteCell, ChangeNotebook, RequestId, NotebookRequest, OpenNotebook, CloseNotebook, InsertCell, DeleteStroke, InsertStroke, ResizeCell, TypesetFormula, TypesetText, TypesetFigure, RemoveSuggestion, AddSuggestion,
@@ -121,8 +121,6 @@ const SAVE_INACTIVITY_INTERVAL: Milliseconds = 5000; // How long the notebook is
 export class ServerNotebook extends Notebook {
 
   // Public Class Constants
-
-  public static NOTEBOOK_DIR_SUFFIX = '.enb';
 
   // Public Class Properties
 
@@ -793,7 +791,7 @@ export class ServerNotebook extends Notebook {
 // Exported Functions
 
 export function notebookPath(path: FolderPath, name: NotebookName): NotebookPath {
-  return <NotebookPath>`${path}${name}${ServerNotebook.NOTEBOOK_DIR_SUFFIX}`;
+  return <NotebookPath>`${path}${name}${NOTEBOOK_DIR_SUFFIX}`;
 }
 
 // Helper Functions
