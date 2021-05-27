@@ -35,6 +35,7 @@ export type Code =
   'cannotModifyNotebook' |
   'cannotReadFolder' |
   'cannotReadNotebook' |
+  'cannotRemoveNonemptyFolder' |
   'folderDoesntExist' |
   'invalidNotebookVersion' |
   'invalidUsername' |

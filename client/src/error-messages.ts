@@ -40,6 +40,7 @@ const ERROR_MESSAGES = new Map<ErrorCode, Html>([
   ['cannotModifyNotebook',   <Html>"You do not have permission to modify this notebook."],
   ['cannotReadFolder',       <Html>"This folder is not public and is not shared with you."],
   ['cannotReadNotebook',     <Html>"This notebook is not public and is not shared with you."],
+  ['cannotRemoveNonemptyFolder', <Html>"Folder is not empty."],
   ['folderDoesntExist',      <Html>"Folder doesn't exist."],
   ['invalidNotebookVersion', <Html>"Invalid notebook version #{actualVersion}. Expect version #{expectedVersion}"],
   ['invalidUsername',        <Html>"Invalid username."],

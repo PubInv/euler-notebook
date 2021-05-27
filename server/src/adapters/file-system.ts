@@ -30,6 +30,7 @@ const debug = debug1(`server:${MODULE}`);
 import * as rimraf from "rimraf";
 
 import { FolderPath, NotebookPath } from "../shared/folder";
+import { logWarning } from "../error-handler";
 
 const fsStat = promisify(stat);
 const fsMkdir = promisify(mkdir);
@@ -47,6 +48,11 @@ export type AbsolutePath = '{AbsolutePath}';  // Absolute path to a directory or
 export type FileName = '{FileName}';
 export type UserFilePath = '{UserFilePath}';
 type Path = UserFilePath|FolderPath|NotebookPath;
+
+interface DeleteFileOptions {
+  ignoreIfDoesntExist?: boolean;
+  warnIfDoesntExist?: boolean;
+}
 
 // Constants
 
@@ -109,9 +115,20 @@ export async function deleteDirectory(path: Path, recursive?: boolean): Promise<
   }
 }
 
-export async function deleteFile(path: Path, fileName: FileName): Promise<void> {
+export async function deleteFile(path: Path, fileName: FileName, options: DeleteFileOptions = {}): Promise<void> {
   const absPath = absolutePathToFile(path, fileName);
-  await fsUnlink(absPath);
+  try {
+    await fsUnlink(absPath);
+  } catch(err) {
+    if (err.code == 'ENOENT') {
+      if (options.ignoreIfDoesntExist) { return; }
+      if (options.warnIfDoesntExist) {
+        logWarning(MODULE, `Deleting file that doesn't exist: ${absPath}`);
+        return;
+      }
+    }
+    throw err;
+  }
 }
 
 export async function readDirectory(path: Path): Promise<Map<FileName, Stats>> {

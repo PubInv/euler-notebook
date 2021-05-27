@@ -26,6 +26,7 @@ import { Folder, FolderEntry, FolderName, NotebookEntry, NotebookName } from "..
 import { svgIconReferenceMarkup, CLOSE_X_ENTITY, PENCIL_ENTITY, CHECKMARK_ENTITY, $new, DOTTED_CIRCLE_ENTITY } from "../../../dom";
 import { ClientFolder } from "../../../models/client-folder";
 import { HtmlElement } from "../../../html-element";
+import { errorMessageForUser } from "../../../error-messages";
 
 // Types
 
@@ -61,68 +62,47 @@ export class EntryRow extends HtmlElement<'tr'> {
       },
     });
 
-    const $nameError = $new({ tag: 'div', class: <CssClass>'error' });
-
-    const $pencilButton = $new({
+    const $renameButton = $new({
       tag: 'button',
       class: <CssClass>'iconButton',
       html: PENCIL_ENTITY,
-      syncButtonHandler: (e: MouseEvent)=>this.onPencilButtonClicked(e),
+      syncButtonHandler: (e: MouseEvent)=>this.onRenameButtonClicked(e),
     });
 
-    const $checkmarkButton = $new({
+    const $renameFinishedButton = $new({
       tag: 'button',
       class: <CssClass>'iconButton',
       style: 'display:none',
       html: CHECKMARK_ENTITY,
-      asyncButtonHandler: (e: MouseEvent)=>this.onCheckmarkButtonClicked(e),
+      asyncButtonHandler: (e: MouseEvent)=>this.onRenameFinishedButtonClicked(e),
     });
 
-    const $xButton = $new({
+    const $removeButton = $new({
       tag: 'button',
       class: <CssClass>'iconButton',
       html: CLOSE_X_ENTITY,
       asyncButtonHandler: (e: MouseEvent)=>this.onRemoveButtonClicked(e),
     });
 
+    const $errorCell = $new({ tag: 'td', class: <CssClass>'error' });
+
     super({
       tag: 'tr',
-      class: <CssClass>'folderListing',
+      class: <CssClass>'folderRow',
       children: [
-        // File or folder icon
         { tag: 'td', html: svgIconReferenceMarkup(type==EntryType.Folder?'iconMonstrFolder2':'iconMonstrBook14') },
-
-        // Name cell.
-        // Contains a link, an input box, and an error message.
-        // Input box starts out hidden, and error message is empty.
-        {
-          tag: 'td',
-          class: <CssClass>'name',
-          children: [
-            $nameLink,
-            $nameTextInput,
-            $nameError,
-          ],
-        },
-
-        // Edit and delete buttons
-        {
-          tag: 'td',
-          children: [
-            $pencilButton,
-            $checkmarkButton,
-            $xButton,
-          ]
-        }
+        { tag: 'td', class: <CssClass>'name', children: [ $nameLink, $nameTextInput ] },
+        { tag: 'td', children: [ $renameButton, $renameFinishedButton, $removeButton ] },
+        $errorCell,
       ],
     });
 
-    this.$checkmarkButton = $checkmarkButton;
-    this.$nameError = $nameError;
+    this.$renameFinishedButton = $renameFinishedButton;
+    this.$errorCell = $errorCell;
     this.$nameInput = $nameTextInput;
     this.$nameLink = $nameLink;
-    this.$pencilButton = $pencilButton;
-    this.$xButton = $xButton;
+    this.$renameButton = $renameButton;
+    this.$removeButton = $removeButton;
 
     this.entry = entry;
     this.folder = folder;
@@ -134,10 +114,10 @@ export class EntryRow extends HtmlElement<'tr'> {
 
   public enterEditMode(): void {
     this.$nameLink.style.display = 'none';
-    this.$pencilButton.style.display = 'none';
+    this.$renameButton.style.display = 'none';
 
     this.$nameInput.style.display = 'block';
-    this.$checkmarkButton.style.display = 'inline';
+    this.$renameFinishedButton.style.display = 'inline';
 
     this.$nameInput.focus();
     this.$nameInput.select();
@@ -157,12 +137,12 @@ export class EntryRow extends HtmlElement<'tr'> {
 
   // Private Instance Properties
 
-  private $checkmarkButton: HTMLButtonElement;
-  private $nameError: HTMLDivElement;
+  private $renameFinishedButton: HTMLButtonElement;
+  private $errorCell: HTMLTableCellElement;
   private $nameInput: HTMLInputElement;
   private $nameLink: HTMLAnchorElement;
-  private $pencilButton: HTMLButtonElement;
-  private $xButton: HTMLButtonElement;
+  private $renameButton: HTMLButtonElement;
+  private $removeButton: HTMLButtonElement;
 
   private entry: Entry;
   private folder: ClientFolder;
@@ -180,30 +160,29 @@ export class EntryRow extends HtmlElement<'tr'> {
 
   // Private Instance Methods
 
-  private clearNameError(): void {
+  private clearErrorMessage(): void {
     // See also setrNameError.
-    this.$nameError.innerHTML = "";
-    this.$checkmarkButton.disabled = false;
+    this.$errorCell.innerHTML = "";
   }
 
   private exitNameEditMode(): void {
-    this.clearNameError();
+    this.clearErrorMessage();
 
     // REVIEW: Set focus elsewhere?
-    // Hide the name input text box and checkmark button.
+    // Hide the name input text box and finished button.
     this.$nameInput.style.display = 'none';
-    this.$checkmarkButton.style.display = 'none';
+    this.$renameFinishedButton.style.display = 'none';
 
     // Show the name in link form and the pencil button.
     this.$nameLink.style.display = 'inline';
-    this.$pencilButton.style.display = 'inline';
+    this.$renameButton.style.display = 'inline';
 
   }
 
   private async removeFromFolder(): Promise<void> {
     let removeError: Error|undefined = undefined;
-    this.$xButton.disabled = true;
-    this.$xButton.innerHTML = DOTTED_CIRCLE_ENTITY;
+    this.$removeButton.disabled = true;
+    this.$removeButton.innerHTML = DOTTED_CIRCLE_ENTITY;
     try {
       if (this.type == EntryType.Folder) {
         await this.folder.removeFolderRequest(<FolderName>this.entry.name);
@@ -213,15 +192,11 @@ export class EntryRow extends HtmlElement<'tr'> {
     } catch(err) {
       removeError = err;
     } finally {
-      this.$xButton.disabled = false;
-      this.$xButton.innerHTML = CLOSE_X_ENTITY;
+      this.$removeButton.disabled = false;
+      this.$removeButton.innerHTML = CLOSE_X_ENTITY;
     }
-    if (!removeError) {
-      this.destroy();
-    } else {
-      // REVIEW: Is the name field the approprite place to show this error message?
-      this.setNameError(removeError.message);
-    }
+    if (!removeError) { this.destroy(); }
+    else { this.showError(removeError); }
   }
 
   private async renameEntryAndExitEditMode(): Promise<void> {
@@ -231,40 +206,38 @@ export class EntryRow extends HtmlElement<'tr'> {
       // console.log("Name changed. Submitting change.");
       this.renaming = true;
       this.$nameInput.disabled = true;
-      this.$checkmarkButton.disabled = true;
-      this.$checkmarkButton.innerHTML = DOTTED_CIRCLE_ENTITY;
+      this.$renameFinishedButton.disabled = true;
+      this.$renameFinishedButton.innerHTML = DOTTED_CIRCLE_ENTITY;
       try {
         if (this.type == EntryType.Folder) {
-          /* const newEntry = */ await this.folder.renameFolderRequest(<FolderName>this.entry.name, <FolderName>newName);
+          await this.folder.renameFolderRequest(<FolderName>this.entry.name, <FolderName>newName);
         } else {
-          /* const newEntry = */ await this.folder.renameNotebookRequest(<NotebookName>this.entry.name, <NotebookName>newName);
+          await this.folder.renameNotebookRequest(<NotebookName>this.entry.name, <NotebookName>newName);
         }
-      } catch(err) {
-        console.error(`Error renaming folder: ${err.message}`);
-        renameError = err;
-      } finally {
+      } catch(err) { renameError = err; }
+      finally {
         this.$nameInput.disabled = false;
-        this.$checkmarkButton.innerHTML = CHECKMARK_ENTITY;
-        this.$checkmarkButton.disabled = false;
+        this.$renameFinishedButton.innerHTML = CHECKMARK_ENTITY;
+        this.$renameFinishedButton.disabled = false;
       }
       this.renaming = false;
     }
-    if (!renameError) {
-      this.exitNameEditMode();
-    } else {
-      this.setNameError(renameError.message);
-    }
+    if (!renameError) { this.exitNameEditMode(); }
+    else { this.showError(renameError); }
   }
 
-  private setNameError(message: string): void {
-    // See also clearNameError.
-    this.$nameError.innerHTML = escapeHtml(message);
-    this.$checkmarkButton.disabled = true;
+  private showError(err: Error): void {
+    const message = errorMessageForUser(err);
+    this.showErrorMessage(message);
+  }
+
+  private showErrorMessage(message: string): void {
+    this.$errorCell.innerHTML = escapeHtml(message);
   }
 
   // Private Event Handlers
 
-  private async onCheckmarkButtonClicked(_event: MouseEvent): Promise<void> {
+  private async onRenameFinishedButtonClicked(_event: MouseEvent): Promise<void> {
     // console.log(`Edit name finish clicked`);
     this.renameEntryAndExitEditMode();
   }
@@ -278,21 +251,17 @@ export class EntryRow extends HtmlElement<'tr'> {
 
   private onNameInputInput(e: InputEvent): void {
     const newName = (<HTMLInputElement>e.target!).value;
-    // console.log(`Name input input: (${e.inputType}) to ${newName}`);
-    // console.dir(e);
-
     const invalid = (this.type == EntryType.Folder ?
                                     !Folder.isValidFolderName(<FolderName>newName) :
                                     !Folder.isValidNotebookName(<NotebookName>newName));
-
-    let duplicate: boolean = (newName != this.entry.name) && this.anotherFolderOrNotebookHasSameName(newName);
-
-    if (invalid) {
-      this.setNameError(`Invalid ${this.type==EntryType.Folder?"folder":"notebook"} name.`);
-    } else if (duplicate) {
-      this.setNameError(`Duplicate ${this.type==EntryType.Folder?"folder":"notebook"} name.`);
+    const duplicate: boolean = (newName != this.entry.name) && this.anotherFolderOrNotebookHasSameName(newName);
+    if (invalid || duplicate) {
+      const message = invalid ? `Invalid name.` : `Duplicate name.`;
+      this.showErrorMessage(message);
+      this.$renameFinishedButton.disabled = true;
     } else {
-      this.clearNameError();
+      this.clearErrorMessage();
+      this.$renameFinishedButton.disabled = false;
     }
   }
 
@@ -301,7 +270,7 @@ export class EntryRow extends HtmlElement<'tr'> {
     switch (e.code) {
       case "Escape": this.exitNameEditMode(); break;
       case "Enter":
-        if (!this.$checkmarkButton.disabled) {
+        if (!this.$renameFinishedButton.disabled) {
           this.renameEntryAndExitEditMode();
         } else {
           // LATER: Beep and/or flash error message.
@@ -310,7 +279,7 @@ export class EntryRow extends HtmlElement<'tr'> {
     }
   }
 
-  private onPencilButtonClicked(_event: MouseEvent): void {
+  private onRenameButtonClicked(_event: MouseEvent): void {
     console.log(`Edit name clicked`);
     this.enterEditMode();
   }

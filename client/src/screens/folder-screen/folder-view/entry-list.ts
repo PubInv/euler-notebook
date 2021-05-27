@@ -21,13 +21,14 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 // Requirements
 
-import { assert, ElementId } from "../../../shared/common";
+import { assert } from "../../../shared/common";
 import { NotebookName, FolderName, FolderEntry, NotebookEntry } from "../../../shared/folder";
 
 import { ClientFolder } from "../../../models/client-folder";
 import { HtmlElement } from "../../../html-element";
 
 import { EntryRow, EntryType } from "./entry-row";
+import { CssClass } from "../../../shared/css";
 
 // Types
 
@@ -39,7 +40,7 @@ export class EntryList extends HtmlElement<'table'> {
   // Public Constructor
 
   public constructor(folder: ClientFolder, type: EntryType) {
-    super({ tag: 'table', id: <ElementId>'folderList' });
+    super({ tag: 'table', class: <CssClass>'folderList' });
     this.type = type;
     this.entries = new Map();
 

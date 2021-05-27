@@ -193,7 +193,7 @@ export class ServerNotebook extends Notebook {
     // Called by ServerSocket when a client sends a notebook request.
     const info = this.openMap.get(msg.path);
     const instance = await(info ? info.promise : this.open(msg.path));
-    instance.onClientRequest(socket, msg);
+    await instance.onClientRequest(socket, msg);
   }
 
   public static onSocketClosed(socket: ServerSocket): void {
@@ -653,18 +653,19 @@ export class ServerNotebook extends Notebook {
 
   // Private Event Handlers
 
-  private  onClientRequest(socket: ServerSocket, msg: NotebookRequest): void {
+  private async onClientRequest(socket: ServerSocket, msg: NotebookRequest): Promise<void> {
     assert(!this.terminated);
     switch(msg.operation) {
-      case 'change': this.onClientChangeRequest(socket, msg); break;
+      case 'change': await this.onClientChangeRequest(socket, msg); break;
       case 'close':  this.onClientCloseRequest(socket, msg); break;
-      case 'open':  this.onClientOpenRequest(socket, msg); break;
+      case 'open':   this.onClientOpenRequest(socket, msg); break;
       default: assert(false); break;
     }
   }
 
-  private onClientChangeRequest(socket: ServerSocket, msg: ChangeNotebook): void {
-
+  private async onClientChangeRequest(socket: ServerSocket, msg: ChangeNotebook): Promise<void> {
+    // REVIEW: This is an async function but nothing inside it is asynchronous.
+    //         We may have change requests in the future that need to complete asynchronously?
     // Verify the user has permission to modify the notebook.
     const user = socket.user;
     const permissions = this.permissions.getUserPermissions(user);

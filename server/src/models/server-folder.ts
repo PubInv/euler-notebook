@@ -89,7 +89,14 @@ export class ServerFolder extends Folder {
     //         Would it be better to "close" only on successful deletion?
     await this.close(path, "Folder is being deleted"); // no-op if the folder is not open.
     await Permissions.deleteOnDisk(path);
-    await deleteDirectory(path); // Note: not recursive. Will fail if directory not empty.
+    try {
+      await deleteDirectory(path); // Note: not recursive. Will fail if directory not empty.
+    } catch (err) {
+      if (err.code == 'ENOTEMPTY') {
+        throw new ExpectedError('cannotRemoveNonemptyFolder');
+      }
+      throw err;
+    }
   }
 
   public static async move(oldPath: FolderPath, newPath: FolderPath): Promise<FolderEntry> {
@@ -123,7 +130,7 @@ export class ServerFolder extends Folder {
     // Called by ServerSocket when a client sends a folder request.
     const info = this.openMap.get(msg.path);
     const instance = await(info ? info.promise : this.open(msg.path));
-    instance.onClientRequest(socket, msg);
+    await instance.onClientRequest(socket, msg);
   }
 
   public static onSocketClosed(socket: ServerSocket): void {
@@ -316,10 +323,10 @@ export class ServerFolder extends Folder {
 
   // Private Instance Event Handlers
 
-  private onClientRequest(socket: ServerSocket, msg: FolderRequest): void {
+  private async onClientRequest(socket: ServerSocket, msg: FolderRequest): Promise<void> {
     assert(!this.terminated);
     switch(msg.operation) {
-      case 'change': this.onClientChangeRequest(socket, msg); break;
+      case 'change': await this.onClientChangeRequest(socket, msg); break;
       case 'close':  this.onClientCloseRequest(socket, msg); break;
       case 'open':   this.onClientOpenRequest(socket, msg); break;
       default:       assert(false); break;
@@ -443,7 +450,6 @@ export class ServerFolder extends Folder {
     socket.sendMessage(response);
 
     this.sendCollaboratorConnectedMessage(socket);
-
   }
 
   private onSocketClosed(socket: ServerSocket): void {

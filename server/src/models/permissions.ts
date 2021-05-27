@@ -51,7 +51,7 @@ export class Permissions {
   }
 
   public static async deleteOnDisk(path: Path): Promise<void> {
-    await deleteFile(path, PERMISSIONS_FILENAME);
+    await deleteFile(path, PERMISSIONS_FILENAME, { warnIfDoesntExist: true });
   }
 
   public static async load(path: Path): Promise<Permissions> {
