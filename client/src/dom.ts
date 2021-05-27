@@ -287,7 +287,7 @@ export function $svg<K extends keyof SVGElementTagNameMap>(root: Element|Documen
 //   return $outerSvg<'svg'>(svgIconReferenceMarkup(id));
 // }
 
-export function addAsyncEventListener<E extends Event>(target: EventTarget, type: string, listener: AsyncListener<E>, message: Html): SyncListener<E> {
+export function addAsyncEventListener<E extends Event>(target: EventTarget, type: string, listener: AsyncListener<E>, message?: Html): SyncListener<E> {
   // Returns the actual listener added, in case the caller wants to remove it later.
   // TODO: Type this so that callers don't have to specify the type of the event.
   //       It should be inferred from the type parameter.
@@ -300,7 +300,7 @@ export function addAsyncEventListener<E extends Event>(target: EventTarget, type
   return wrappedListener;
 }
 
-export function addSyncEventListener<E extends Event>(target: EventTarget, type: string, listener: SyncListener<E>, message: Html): SyncListener<E> {
+export function addSyncEventListener<E extends Event>(target: EventTarget, type: string, listener: SyncListener<E>, message?: Html): SyncListener<E> {
   // Returns the actual listener added, in case the caller wants to remove it later.
   // TODO: Type this so that callers don't have to specify the type of the event.
   //       It should be inferred from the type parameter.
@@ -344,11 +344,12 @@ function attachAttributes($elt: Element, attrs: Attributes): void {
 
 function attachAsyncButtonHandler($elt: HTMLButtonElement, handler: AsyncListener<MouseEvent>): void {
   const specifier = elementSpecifier($elt);
-  addSyncEventListener($elt, 'mousedown', preventDefaultListener, <Html>`Internal error processing ${specifier} mousedown event.`);
+  // Prevent button capturing focus by preventing the default action on mousedown.
+  addSyncEventListener($elt, 'mousedown', preventDefaultListener);
   addAsyncEventListener($elt, 'click', async (event: MouseEvent)=>{
     $elt.disabled = true;
-    await handler(event);
-    $elt.disabled = false;
+    try { await handler(event); }
+    finally { $elt.disabled = false; }
   }, <Html>`Internal error processing ${specifier} click event.`);
 }
 
@@ -363,7 +364,8 @@ function attachAsyncListeners($elt: Element, listeners: AsyncListeners): void {
 
 function attachSyncButtonHandler($elt: HTMLButtonElement, handler: SyncListener<MouseEvent>): void {
   const specifier = elementSpecifier($elt);
-  addSyncEventListener($elt, 'mousedown', preventDefaultListener, <Html>`Internal error processing ${specifier} mousedown event.`);
+  // Prevent button capturing focus by preventing the default action on mousedown.
+  addSyncEventListener($elt, 'mousedown', preventDefaultListener);
   addSyncEventListener($elt, 'click', handler, <Html>`Internal error processing ${specifier} click event.`);
 }
 
@@ -387,6 +389,4 @@ function elementSpecifier($elt: Element): string {
   return specifier;
 }
 
-function preventDefaultListener(event: Event): void {
-  event.preventDefault();
-}
+function preventDefaultListener(event: Event): void { event.preventDefault(); }

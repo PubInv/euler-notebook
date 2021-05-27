@@ -67,7 +67,7 @@ export function logWarning(message: string): void {
   console.warn(message);
 }
 
-export function monitorPromise(promise: Promise<any>, message: Html): void {
+export function monitorPromise(promise: Promise<any>, message?: Html): void {
   promise.catch(err=>showError(err, message));
 }
 

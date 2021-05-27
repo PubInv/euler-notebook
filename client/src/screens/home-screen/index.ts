@@ -29,6 +29,7 @@ import { Screen } from "..";
 import { $, $attach } from "../../dom";
 import { appInstance } from "../../app";
 import { FolderPath } from "../../shared/folder";
+import { errorMessageForUser } from "../../error-messages";
 
 // Types
 
@@ -86,7 +87,7 @@ export class HomeScreen extends Screen {
     const formElements = <LoginFormElements><unknown>$target.elements;
 
     // Clear any pre-existing error message
-    const $formErrorMessage = $<'div'>($target, '.errorMessage');
+    const $formErrorMessage = $<'td'>($target, '.errorMessage');
     $formErrorMessage.innerHTML = '';
 
     // Fetch and normalize the user inputs
@@ -101,7 +102,9 @@ export class HomeScreen extends Screen {
       const user = await ClientUser.loginWithPassword(userName, password);
       window.location.href = `/#${user.homePath}`;
     } catch(err) {
-      if (err instanceof ExpectedError) { $formErrorMessage.innerHTML = err.message; }
+      if (err instanceof ExpectedError) {
+        $formErrorMessage.innerHTML = errorMessageForUser(err);
+      }
       else { throw err; }
     }
   }

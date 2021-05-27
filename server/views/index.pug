@@ -20,14 +20,24 @@ include iconmonstr
 
 mixin homeScreen
   #homeScreen.screen(style="display:none")
-    h1 Euler Notebook
     form#loginForm
-      label Username
-      input(type='text', name='userName', maxlength=12, autocapitalize="off")
-      label Password
-      input(type='password', name='password')
-      input(type='submit', value="Log in")
-      div.errorMessage
+      table
+        tr
+          td(align='right')
+            label Username
+          td
+            input(type='text', name='userName', maxlength=12, autocapitalize="off")
+        tr
+          td(align='right')
+            label Password
+          td
+            input(type='password', name='password')
+        tr
+          td
+          td
+            input(type='submit', value="Log in")
+        tr
+          td.errorMessage(colspan=2)
 
 doctype html
 html(lang='en')
