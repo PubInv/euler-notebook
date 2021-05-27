@@ -28,6 +28,7 @@ import { NextFunction, Request, Response, Router } from "express";
 import { NotebookPath, NOTEBOOK_PATH_RE } from "../shared/folder";
 
 import { ServerNotebook } from "../models/server-notebook";
+import { ServerFolder } from "../models/server-folder";
 
 // import { NotebookName, NotebookChangeRequest } from "./shared/euler-notebook-api";
 
@@ -67,7 +68,7 @@ async function onExportPage(req: Request, res: Response, next: NextFunction): Pr
     // TODO: validate export format
     debug(`Exporting ${exportFormat} ${notebookPath}`);
 
-    if (!ServerNotebook.isValidNotebookPath(notebookPath)) { return next(); }
+    if (!ServerFolder.isValidNotebookPath(notebookPath)) { return next(); }
 
     const fileExtension = FILE_EXTENSIONS.get(exportFormat);
     if (!fileExtension) {
@@ -86,7 +87,7 @@ async function onExportPage(req: Request, res: Response, next: NextFunction): Pr
         case 'latex':
           // LaTeX source requested.
           // REVIEW: Shouldn't we have notebook.name property?
-          const downloadFilename = `${ServerNotebook.nameFromPath(notebookPath)}.${fileExtension}`;
+          const downloadFilename = `${ServerFolder.notebookNameFromNotebookPath(notebookPath)}.${fileExtension}`;
           res.set('Content-Type', LATEX_MIME_TYPE);
           res.set('Content-Disposition', `attachment; filename="${downloadFilename}"`);
           res.send(latex);

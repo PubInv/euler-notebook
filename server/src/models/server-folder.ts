@@ -31,7 +31,7 @@ import { assert } from "../shared/common";
 import { ExpectedError } from "../shared/expected-error";
 import {
   Folder, FolderEntry, FolderName, FolderObject, FolderPath, NotebookEntry,
-  NotebookName, NotebookPath, NOTEBOOK_DIR_SUFFIX,
+  NotebookName, NotebookPath, NOTEBOOK_DIR_SUFFIX, NOTEBOOK_DIR_SUFFIX_LENGTH,
 } from "../shared/folder";
 import { ChangeFolder, CloseFolder, FolderRequest, OpenFolder, RequestId } from "../shared/client-requests";
 import { FolderUpdated, FolderOpened, FolderResponse, FolderUpdate, FolderCollaboratorDisconnected, FolderCollaboratorConnected } from "../shared/server-responses";
@@ -195,8 +195,6 @@ export class ServerFolder extends Folder {
 
     const notebooks: NotebookEntry[] = [];
     const folders: FolderEntry[] = [];
-    const suffix = NOTEBOOK_DIR_SUFFIX;
-    const suffixLen = suffix.length;
     for (const [filename, stats] of dirMap.entries()) {
 
       // Skip hidden files and folders
@@ -207,8 +205,8 @@ export class ServerFolder extends Folder {
 
       // Notebooks are directories that end with .enb.
       // Folders are all other directories.
-      if (filename.endsWith(suffix)) {
-        const nameWithoutSuffix: NotebookName = <NotebookName>filename.slice(0, -suffixLen);
+      if (filename.endsWith(NOTEBOOK_DIR_SUFFIX)) {
+        const nameWithoutSuffix: NotebookName = <NotebookName>filename.slice(0, -NOTEBOOK_DIR_SUFFIX_LENGTH);
         if (!Folder.isValidNotebookName(nameWithoutSuffix)) {
           logWarning(MODULE, `Skipping notebook with invalid name: '${filename}'`);
           continue;
@@ -344,6 +342,7 @@ export class ServerFolder extends Folder {
       let change: FolderUpdate;
       switch (changeRequest.type) {
         case 'createFolder': {
+          // REVIEW: Check if another folder of the same name exists?
           const name = changeRequest.name;
           ServerFolder.validateFolderName(name)
           const path = childFolderPath(this.path, name);
@@ -353,8 +352,9 @@ export class ServerFolder extends Folder {
           break;
         }
         case 'createNotebook': {
+          // REVIEW: Check if another notebook of the same name exists?
           const name = changeRequest.name;
-          ServerNotebook.validateNotebookName(name);
+          ServerFolder.validateNotebookName(name);
           const path = notebookPath(this.path, name);
           debug(`Creating notebook: ${path}`);
           await ServerNotebook.createOnDisk(path, this.permissions);

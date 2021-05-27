@@ -113,7 +113,7 @@ export class Folder {
     if (!NOTEBOOK_PATH_RE.test(path)) { return false; }
     const segments = path.split('/').slice(1);
     if (!segments.slice(0,-1).every(n=>this.isValidFolderName(n))) { return false; }
-    const name = segments[segments.length-1].slice(0, -NOTEBOOK_DIR_SUFFIX.length);
+    const name = segments[segments.length-1].slice(0, -NOTEBOOK_DIR_SUFFIX_LENGTH);
     if (!this.isValidNotebookName(name)) { return false };
     return true;
   }
@@ -130,13 +130,20 @@ export class Folder {
     return { path, view };
   }
 
-  // public static notebookNameFromNotebookPath(path: NotebookPath): NotebookName {
-  // }
+  public static notebookNameFromNotebookPath(path: NotebookPath): NotebookName {
+    const segments = path.split('/');
+    assert(segments.length>0);
+    return <NotebookName>segments[segments.length-1].slice(0, -NOTEBOOK_DIR_SUFFIX_LENGTH);
+  }
 
   // Public Class Methods
 
   public static validateFolderName(name: FolderName): void {
-    if (!Folder.isValidFolderName(name)) { throw new Error(`Invalid folder name: ${name}`); }
+    if (!this.isValidFolderName(name)) { throw new Error(`Invalid folder name: ${name}`); }
+  }
+
+  public static validateNotebookName(name: NotebookName): void {
+    if (!this.isValidNotebookName(name)) { throw new Error(`Invalid notebook name: ${name}`); }
   }
 
   // Public Class Event Handlers

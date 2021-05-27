@@ -35,7 +35,7 @@ import { assert, assertFalse, deepCopy, Html, Milliseconds } from "../shared/com
 import { ExpectedError } from "../shared/expected-error";
 import { CssSize, convertCssLength } from "../shared/css";
 import { LEFT_MARGIN, TOP_MARGIN, RIGHT_MARGIN, BOTTOM_MARGIN, PAGE_HEIGHT, PAGE_WIDTH } from "../shared/dimensions";
-import { Folder, NotebookPath, NOTEBOOK_PATH_RE, NotebookName, FolderPath, NotebookEntry, NOTEBOOK_DIR_SUFFIX } from "../shared/folder";
+import { NotebookPath, NotebookName, FolderPath, NotebookEntry, NOTEBOOK_DIR_SUFFIX } from "../shared/folder";
 import { Notebook, NotebookObject, PageMargins } from "../shared/notebook";
 import {
   NotebookChangeRequest, MoveCell, DeleteCell, ChangeNotebook, RequestId, NotebookRequest, OpenNotebook, CloseNotebook, InsertCell, DeleteStroke, InsertStroke, ResizeCell, TypesetFormula, TypesetText, TypesetFigure, RemoveSuggestion, AddSuggestion,
@@ -59,6 +59,7 @@ import { createDirectory, deleteDirectory, FileName, readJsonFile, renameDirecto
 import { Permissions } from "./permissions";
 import { FigureCellObject } from "../shared/figure";
 import { StrokeId } from "../shared/stylus";
+import { ServerFolder } from "./server-folder";
 
 // Types
 
@@ -126,20 +127,6 @@ export class ServerNotebook extends Notebook {
 
   // Public Class Property Functions
 
-  public static isValidNotebookPath(path: NotebookPath): boolean {
-    return NOTEBOOK_PATH_RE.test(path);
-  }
-
-  public static nameFromPath(path: NotebookPath): NotebookName {
-    const match = NOTEBOOK_PATH_RE.exec(path);
-    if (!match) { throw new Error(`Invalid notebook path: ${path}`); }
-    return <NotebookName>match[3];
-  }
-
-  public static validateNotebookName(name: NotebookName): void {
-    if (!Folder.isValidNotebookName(name)) { throw new Error(`Invalid notebook name: ${name}`); }
-  }
-
   // Public Class Property Functions
 
   public static get allInstances(): IterableIterator<ServerNotebook> {
@@ -156,7 +143,7 @@ export class ServerNotebook extends Notebook {
   }
 
   public static async createOnDisk(path: NotebookPath, permissions: Permissions): Promise<void> {
-    assert(ServerNotebook.isValidNotebookPath(path));
+    assert(ServerFolder.isValidNotebookPath(path));
     try {
       await createDirectory(path);
     } catch(err) {
@@ -176,16 +163,12 @@ export class ServerNotebook extends Notebook {
   }
 
   public static async move(oldPath: NotebookPath, newPath: NotebookPath): Promise<NotebookEntry> {
-    // TODO: If notebook is open?
-
     // Called by the containing ServerFolder when one of its notebooks is renamed.
-
-    this.close(oldPath, `Notebook is moving to ${newPath}.`)
-
+    await this.close(oldPath, `Notebook is moving to ${newPath}.`);
     // REVIEW: If there is an existing *file* (not directory) at the new path then it will be overwritten silently.
     //         However, we don't expect random files to be floating around out notebook storage filesystem.
     await renameDirectory(oldPath, newPath);
-    return { path: newPath, name: this.nameFromPath(newPath) }
+    return { path: newPath, name: ServerFolder.notebookNameFromNotebookPath(newPath) }
   }
 
   public static open(path: NotebookPath): Promise<ServerNotebook> {
@@ -345,7 +328,7 @@ export class ServerNotebook extends Notebook {
   // Private Class Methods
 
   private static async openFirst(path: NotebookPath): Promise<ServerNotebook> {
-    assert(ServerNotebook.isValidNotebookPath(path));
+    assert(ServerFolder.isValidNotebookPath(path));
     let obj: PersistentServerNotebookObject;
     try {
       obj = await readJsonFile<PersistentServerNotebookObject>(path, NOTEBOOK_FILENAME);

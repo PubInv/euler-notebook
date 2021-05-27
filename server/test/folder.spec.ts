@@ -21,7 +21,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 import { assert } from "chai";
 
-import { Folder, FolderName, FolderPath, NotebookPath, NotebookView } from "../src/shared/folder";
+import { Folder, FolderName, FolderPath, NotebookName, NotebookPath, NotebookView } from "../src/shared/folder";
 
 // Constants
 
@@ -103,15 +103,21 @@ const INVALID_NOTEBOOK_PATHS_WITH_VIEW = [
   "/foo.enb?view=edit*",  // Invalid view
 ];
 
+const NOTEBOOK_NAMES_FROM_PATHS: [ NotebookPath, NotebookName ][] = [
+  [ <NotebookPath>"/foo.enb", <NotebookName>"foo" ],
+  [ <NotebookPath>"/foo/bar.enb", <NotebookName>"bar" ],
+  [ <NotebookPath>"/Algebra I/Chapter 2/Section 2.4/Problem 17.enb", <NotebookName>"Problem 17" ],
+];
+
 // Unit Tests
 
 describe("folder", function(){
 
   describe("class methods", function(){
 
-    describe.only("folderNameFromFolderPath", function(){
+    describe("folderNameFromFolderPath", function(){
       for (const [path, expected] of FOLDER_NAMES_FROM_PATHS) {
-        it(`Correctly processes '${path}'`, function(){
+        it(`Correctly handles '${path}'`, function(){
           const actual = Folder.folderNameFromFolderPath(path);
           assert.equal(actual, expected);
         });
@@ -120,12 +126,12 @@ describe("folder", function(){
 
     describe("isValidFolderName", function(){
       for (const name of VALID_FOLDER_NAMES) {
-        it(`Succeeds for '${name}'`, function(){
+        it(`Returns true for '${name}'`, function(){
           assert(Folder.isValidFolderName(name));
         });
       }
       for (const name of INVALID_FOLDER_NAMES) {
-        it(`Fails for '${name}'`, function(){
+        it(`Returns false for '${name}'`, function(){
           assert(!Folder.isValidFolderName(name));
         });
       }
@@ -133,12 +139,12 @@ describe("folder", function(){
 
     describe("isValidFolderPath", function(){
       for (const path of VALID_FOLDER_PATHS) {
-        it(`Succeeds for '${path}'`, function(){
+        it(`Returns true for '${path}'`, function(){
           assert(Folder.isValidFolderPath(path));
         });
       }
       for (const path of INVALID_FOLDER_PATHS) {
-        it(`Fails for '${path}'`, function(){
+        it(`Returns false for '${path}'`, function(){
           assert(!Folder.isValidFolderPath(path));
         });
       }
@@ -146,12 +152,12 @@ describe("folder", function(){
 
     describe("isValidNotebookName", function(){
       for (const name of VALID_NOTEBOOK_NAMES) {
-        it(`Succeeds for '${name}'`, function(){
+        it(`Returns true for '${name}'`, function(){
           assert(Folder.isValidNotebookName(name));
         });
       }
       for (const name of INVALID_NOTEBOOK_NAMES) {
-        it(`Fails for '${name}'`, function(){
+        it(`Returns false for '${name}'`, function(){
           assert(!Folder.isValidNotebookName(name));
         });
       }
@@ -159,12 +165,12 @@ describe("folder", function(){
 
     describe("isValidNotebookPath", function(){
       for (const path of VALID_NOTEBOOK_PATHS) {
-        it(`Succeeds for '${path}'`, function(){
+        it(`Returns true for '${path}'`, function(){
           assert(Folder.isValidNotebookPath(path));
         });
       }
       for (const path of INVALID_NOTEBOOK_PATHS) {
-        it(`Fails for '${path}'`, function(){
+        it(`Returns false for '${path}'`, function(){
           assert(!Folder.isValidNotebookPath(path));
         });
       }
@@ -172,17 +178,27 @@ describe("folder", function(){
 
     describe("isValidNotebookPathWithView", function(){
       for (const [ pathWithView, expected ] of VALID_NOTEBOOK_PATHS_WITH_VIEW) {
-        it(`Succeeds for '${pathWithView}'`, function(){
+        it(`Returns true for '${pathWithView}'`, function(){
           const actual = Folder.isValidNotebookPathWithView(pathWithView);
           assert.deepEqual(actual, expected);
         });
       }
       for (const pathWithView of INVALID_NOTEBOOK_PATHS_WITH_VIEW) {
-        it(`Fails for '${pathWithView}'`, function(){
+        it(`Returns false for '${pathWithView}'`, function(){
           assert(!Folder.isValidNotebookPathWithView(pathWithView));
         });
       }
     });
+
+    describe("notebookNameFromFolderPath", function(){
+      for (const [path, expected] of NOTEBOOK_NAMES_FROM_PATHS) {
+        it(`Correctly handles '${path}'`, function(){
+          const actual = Folder.notebookNameFromNotebookPath(path);
+          assert.equal(actual, expected);
+        });
+      }
+    });
+
 
   });
 });

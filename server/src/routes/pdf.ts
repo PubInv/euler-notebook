@@ -35,6 +35,7 @@ import { ServerNotebook } from "../models/server-notebook";
 import * as PDFDocument from "pdfkit";
 // @ts-ignore
 import * as SVGtoPDF from "svg-to-pdfkit";
+import { ServerFolder } from '../models/server-folder';
 
 
 // This is a fun extention suggested by the SVGtoPDF makers...
@@ -62,7 +63,7 @@ router.get(NOTEBOOK_PATH_RE, onPdfPage);
 async function onPdfPage(req: Request, res: Response, next: NextFunction): Promise<void> {
   const notebookPath = <NotebookPath>req.path;
   try {
-    if (!ServerNotebook.isValidNotebookPath(notebookPath)) { return next(); }
+    if (!ServerFolder.isValidNotebookPath(notebookPath)) { return next(); }
     debug(`Exporting PDF of ${notebookPath}`);
     const notebook: ServerNotebook = await ServerNotebook.open(notebookPath);
     try {

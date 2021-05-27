@@ -27,6 +27,7 @@ import { NextFunction, Request, Response, Router } from "express";
 import { NotebookPath, NOTEBOOK_PATH_RE } from "../shared/folder";
 
 import { ServerNotebook } from "../models/server-notebook";
+import { ServerFolder } from "../models/server-folder";
 
 // import { NotebookName, NotebookChangeRequest } from "./shared/euler-notebook-api";
 
@@ -81,7 +82,7 @@ async function onXrayPage(req: Request, res: Response, next: NextFunction): Prom
   const notebookPath = <NotebookPath>req.path;
   try {
     debug(`Debug rendering: ${notebookPath}`);
-    if (!ServerNotebook.isValidNotebookPath(notebookPath)) { return next(); }
+    if (!ServerFolder.isValidNotebookPath(notebookPath)) { return next(); }
     const notebook: ServerNotebook = await ServerNotebook.open(notebookPath);
     try {
       const notebookHtml = await notebook.toHtml();
