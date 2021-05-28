@@ -19,7 +19,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 // Requirements
 
-import { CssLength } from "./css";
+import { CssLength, LengthInPixels } from "./css";
 
 // Constants
 
@@ -46,3 +46,4 @@ export const PLOT_CELL_HEIGHT = <CssLength>'3in';
 
 export const TEXT_CELL_HEIGHT = <CssLength>'1in';
 
+export const MINIMUM_CELL_HEIGHT: LengthInPixels = 12

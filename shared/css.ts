@@ -50,7 +50,7 @@ interface LengthConversion2 {
 
 // Constants
 
-const CSS_LENGTH_RE = /^(\d+(\.\d+)?)(em|ex|in|pt|px)$/;  // NOTE: Does not handle case of CSS length of "0".
+const CSS_LENGTH_RE = /^(-?\d+(\.\d+)?)(em|ex|in|pt|px)$/;  // NOTE: Does not handle case of CSS length of "0".
 
 export const PIXELS_PER_INCH = 96;
 const POINTS_PER_INCH = 72;

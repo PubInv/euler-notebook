@@ -27,6 +27,7 @@ const debug = debug1('client:resizer-bar');
 import { CssClass, LengthInPixels, PositionInPixels } from "../../../../shared/css";
 import { svgIconReferenceMarkup } from "../../../../dom";
 import { HtmlElement } from "../../../../html-element";
+import { MINIMUM_CELL_HEIGHT } from "../../../../shared/dimensions";
 
 // Types
 
@@ -149,7 +150,7 @@ export class ResizerBar extends HtmlElement<'div'>  {
     if (!pi) { /* Pointer is not down */ return; }
 
     // Call the resize callback unless the vertical displacement hasn't changed.
-    const deltaY = Math.round(event.clientY-pi.clientY);
+    const deltaY = Math.max(MINIMUM_CELL_HEIGHT, Math.round(event.clientY-pi.clientY));
     if (deltaY != pi.lastDeltaY) {
       pi.lastDeltaY = deltaY;
       this.callbackFunctions.move(deltaY);
