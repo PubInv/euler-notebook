@@ -494,6 +494,9 @@ body
   margin 0
   overscroll-behavior none
   user-select none
+  // -webkit-user-select prevents a long touch from popping up a "Copy|Look Up|Share" on iPad.
+  // user-select by itself doesn't.
+  -webkit-user-select none
 
 button:disabled
   >svg
