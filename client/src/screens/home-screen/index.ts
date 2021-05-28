@@ -98,14 +98,20 @@ export class HomeScreen extends Screen {
 
     // Attempt the login.
     // A login failure will throw an exception.
+    let user: ClientUser|undefined;
     try {
-      const user = await ClientUser.loginWithPassword(userName, password);
-      window.location.href = `/#${user.homePath}`;
+      user = await ClientUser.loginWithPassword(userName, password);
     } catch(err) {
       if (err instanceof ExpectedError) {
         $formErrorMessage.innerHTML = errorMessageForUser(err);
       }
       else { throw err; }
+    }
+
+    if (user) {
+      // Login succeeded
+      formElements.password.value = '';
+      window.location.href = `/#${user.homePath}`;
     }
   }
 }
