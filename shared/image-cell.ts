@@ -21,26 +21,30 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 import { CellObject, CellType, renderBaseCell } from "./cell";
 import { SvgMarkup, translateSvgMarkup } from "./svg";
-import { cssLengthInPixels, LengthInPixels } from "./css";
+import { cssLengthInPixels, LengthInPixels, RectangleInPixels, SizeInPixels } from "./css";
 import { AbsoluteUrl, DataUrl } from "./common";
 
 // Types
 
 export type ImageUrl = AbsoluteUrl | DataUrl;
 
+// See https://developer.mozilla.org/en-US/docs/Web/CSS/transform-function/matrix().
+export type TransformationMatrix = [ number, number, number, number, number, number ];
+
 export interface ImageInfo {
   url: ImageUrl,            // Image data URL or absolute URL to publicly available image.
-  width: LengthInPixels,    // Original size of image
-  height: LengthInPixels,
-  x: LengthInPixels;        // Position in cell of top-left corner of image
-  y: LengthInPixels;
-  magnification: number;    // 1.0 = 100%
-  // LATER: rotation
+  size: SizeInPixels,
+}
+
+export interface PositionInfo {
+  cropBox: RectangleInPixels;
+  transformationMatrix: TransformationMatrix;
 }
 
 export interface ImageCellObject extends CellObject {
-  type: CellType.Image,
-  info?: ImageInfo,
+  type: CellType.Image;
+  imageInfo?: ImageInfo;
+  positionInfo?: PositionInfo;
 }
 
 // Constants
@@ -52,8 +56,8 @@ const ICONMONSTR_PICTURE9 = <SvgMarkup>'<path fill="black" stroke="none" d="M19.
 
 export function renderImageCell(x: LengthInPixels, y: LengthInPixels, obj: ImageCellObject): SvgMarkup {
   let imageMarkup: SvgMarkup;
-  if (obj.info) {
-    imageMarkup = <SvgMarkup>`<image href="${obj.info.url}" />`;
+  if (obj.imageInfo) {
+    imageMarkup = <SvgMarkup>`<image href="${obj.imageInfo.url}" />`;
   } else {
     const cellWidth = cssLengthInPixels(obj.cssSize.width);
     const cellHeight = cssLengthInPixels(obj.cssSize.height);
@@ -63,4 +67,10 @@ export function renderImageCell(x: LengthInPixels, y: LengthInPixels, obj: Image
     imageMarkup = <SvgMarkup>`${rectSvg}${translateSvgMarkup(iconX, iconY, ICONMONSTR_PICTURE9)}`;
   }
   return renderBaseCell(x, y, obj, imageMarkup);
+}
+
+// Exported Functions
+
+export function transformationMatrixValue(matrix: TransformationMatrix): string {
+  return `matrix(${matrix.map(e=>e.toString()).join(',')})`;
 }

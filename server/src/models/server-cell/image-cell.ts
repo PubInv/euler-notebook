@@ -83,12 +83,12 @@ export class ImageCell extends ServerCell<ImageCellObject> {
   // Private Instance Methods
 
   protected async generateInitialSuggestions(): Promise<SuggestionObject[]> {
-    if (!this.obj.info) { return []; }
+    if (!this.obj.imageInfo) { return []; }
 
     debug(`Recognizing strokes`);
 
     // Send the image to the recognizer and get a list of alternatives back.
-    const results = await recognizeImage(this.obj.info.url);
+    const results = await recognizeImage(this.obj.imageInfo.url);
     const { alternatives } = results;
 
     // For each alternative, generate a suggestion object that has

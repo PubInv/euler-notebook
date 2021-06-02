@@ -115,6 +115,8 @@ export function notebookChangeRequestSynopsis(request: NotebookChangeRequest): s
   let rval: string = request.type;
   switch(request.type) {
     case 'addSuggestion':       rval += ` C${request.cellId} TODO: suggestionSynopsis`; break;
+    case 'changeImage':         rval += ` C${request.cellId}`; break;
+    case 'changeImagePosition': rval += ` C${request.cellId}`; break;
     case 'deleteCell':          rval += ` C${request.cellId}`; break;
     case 'deleteStroke':        rval += ` C${request.cellId} S${request.strokeId}`; break;
     case 'insertCell':          rval += ` C${request.cellObject.type} after ${request.afterId}`; break;
@@ -137,6 +139,8 @@ export function notebookUpdateSynopsis(update: NotebookUpdate): string {
     case 'cellResized':        rval += ` C${update.cellId} ${JSON.stringify(update.cssSize)}`; break;
     case 'figureTypeset':      rval += ` C${update.cellId}`; break;
     case 'formulaTypeset':     rval += ` C${update.cellId}`; break;
+    case 'imageChanged':       rval += ` C${update.cellId}`; break;
+    case 'imagePositionChanged': rval += ` C${update.cellId}`; break;
     case 'strokeInserted':     rval += ` C${update.cellId} ${strokeSynopsis(update.stroke)}`; break;
     case 'strokeDeleted':      rval += ` C${update.cellId} S${update.strokeId}`; break;
     case 'suggestionAdded':    rval += ` C${update.cellId} TODO: suggestionSynopsis`; break;

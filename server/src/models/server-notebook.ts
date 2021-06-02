@@ -38,10 +38,16 @@ import { LEFT_MARGIN, TOP_MARGIN, RIGHT_MARGIN, BOTTOM_MARGIN, PAGE_HEIGHT, PAGE
 import { NotebookPath, NotebookName, FolderPath, NotebookEntry, NOTEBOOK_DIR_SUFFIX } from "../shared/folder";
 import { Notebook, NotebookObject, PageMargins } from "../shared/notebook";
 import {
-  NotebookChangeRequest, MoveCell, DeleteCell, ChangeNotebook, RequestId, NotebookRequest, OpenNotebook, CloseNotebook, InsertCell, DeleteStroke, InsertStroke, ResizeCell, TypesetFormula, TypesetText, TypesetFigure, RemoveSuggestion, AddSuggestion,
+  NotebookChangeRequest, MoveCell, DeleteCell, ChangeNotebook, RequestId, NotebookRequest,
+  OpenNotebook, CloseNotebook, InsertCell, DeleteStroke, InsertStroke, ResizeCell,
+  TypesetFormula, TypesetText, TypesetFigure, RemoveSuggestion, AddSuggestion, ChangeImage,
+  ChangeImagePosition,
 } from "../shared/client-requests";
 import {
-  NotebookUpdated, NotebookOpened, NotebookUpdate, CellInserted, CellDeleted, CellMoved, NotebookCollaboratorConnected, NotebookCollaboratorDisconnected, ServerResponse, StrokeInserted, StrokeDeleted, CellResized, FormulaTypeset, TextTypeset, FigureTypeset, SuggestionAdded, SuggestionRemoved,
+  NotebookUpdated, NotebookOpened, NotebookUpdate, CellInserted, CellDeleted, CellMoved,
+  NotebookCollaboratorConnected, NotebookCollaboratorDisconnected, ServerResponse,
+  StrokeInserted, StrokeDeleted, CellResized, FormulaTypeset, TextTypeset, FigureTypeset,
+  SuggestionAdded, SuggestionRemoved, ImageChanged, ImagePositionChanged,
 } from "../shared/server-responses";
 import { notebookChangeRequestSynopsis, notebookUpdateSynopsis } from "../shared/debug-synopsis";
 import { UserPermission } from "../shared/permissions";
@@ -60,6 +66,7 @@ import { Permissions } from "./permissions";
 import { FigureCellObject } from "../shared/figure";
 import { StrokeId } from "../shared/stylus";
 import { ServerFolder } from "./server-folder";
+import { ImageCellObject } from "../shared/image-cell";
 
 // Types
 
@@ -101,7 +108,7 @@ const DEFAULT_LETTER_MARGINS: PageMargins = {
 //            At this point, if you change this number, then users will get an error opening their
 //            existing notebooks. This is fine as long as it is only David and Rob, but as soon as
 //            other people starting using the program then we need to implement the upgrading.
-const FORMAT_VERSION = "0.0.29";
+const FORMAT_VERSION = "0.0.30";
 
 const EMPTY_NOTEBOOK_OBJ: PersistentServerNotebookObject = {
   formatVersion: FORMAT_VERSION,
@@ -416,32 +423,63 @@ export class ServerNotebook extends Notebook {
         undoChangeRequests.unshift(undoChangeRequest);
         break;
       }
+      case 'changeImage': {
+        const { cellId, imageInfo, positionInfo, cssSize } = request;
+        assert(!!imageInfo == !!positionInfo);
+        const cellObject = this.getCellObject<ImageCellObject>(cellId);
+        const oldImageInfo = cellObject.imageInfo;
+        const oldPositionInfo = cellObject.positionInfo;
+        const oldCssSize = cellObject.cssSize;
+
+        if (cssSize) {
+          const update1: CellResized = { type: 'cellResized', cellId, cssSize };
+          updates.push(update1);
+        }
+        const update2: ImageChanged = { type: 'imageChanged', cellId, imageInfo, positionInfo };
+        updates.push(update2, update2);
+
+        if (cssSize) {
+          const undoChangeRequest1: ResizeCell = { type: 'resizeCell', cellId, cssSize: oldCssSize }
+          undoChangeRequests.unshift(undoChangeRequest1);
+        }
+        const undoChangeRequest2: ChangeImage = { type: 'changeImage', cellId, imageInfo: oldImageInfo, positionInfo: oldPositionInfo }
+        undoChangeRequests.unshift(undoChangeRequest2);
+        break;
+      }
+      case 'changeImagePosition': {
+        const { cellId, positionInfo } = request;
+        const cellObject = this.getCellObject<ImageCellObject>(cellId);
+        assert(cellObject.imageInfo && cellObject.positionInfo);
+        const oldPositionInfo = cellObject.positionInfo!;
+
+        const update: ImagePositionChanged = { type: 'imagePositionChanged', cellId, positionInfo };
+        updates.push(update);
+
+        const undoChangeRequest: ChangeImagePosition = { type: 'changeImagePosition', cellId, positionInfo: oldPositionInfo }
+        undoChangeRequests.unshift(undoChangeRequest);
+        break;
+      }
       case 'deleteCell': {
         const { cellId } = request;
+        const cellObject = this.getCellObject(cellId);
+
         const update: CellDeleted = { type: 'cellDeleted', cellId };
         updates.push(update);
 
         const afterId: CellRelativePosition = this.afterIdForCell(cellId);
-        const undoChangeRequest: InsertCell = {
-          type: 'insertCell',
-          afterId,
-          cellObject: this.getCellObject(cellId),
-        };
+        const undoChangeRequest: InsertCell = { type: 'insertCell', afterId, cellObject };
         undoChangeRequests.unshift(undoChangeRequest);
         break;
       }
       case 'deleteStroke': {
         const { cellId, strokeId } = request;
-        const update: StrokeDeleted = {
-          type: 'strokeDeleted',
-          cellId,
-          strokeId,
-        };
-        updates.push(update);
-
         const cellObject = this.getCellObject(cellId);
         const stroke = cellObject.strokeData.strokes.find(stroke=>stroke.id==strokeId)!
         assert(stroke);
+
+        const update: StrokeDeleted = { type: 'strokeDeleted', cellId, strokeId };
+        updates.push(update);
+
         const undoChangeRequest: InsertStroke = { type: 'insertStroke', cellId, stroke };
         undoChangeRequests.unshift(undoChangeRequest);
         break;

@@ -25,21 +25,21 @@ import * as debug1 from "debug";
 const debug = debug1('client:client-notebook');
 
 import { CellId, CellObject, CellPosition, CellRelativePosition, CellType } from "../shared/cell";
-import { assert, assertFalse, ClientId, DataUrl, Html, PlainText } from "../shared/common";
-import { CssSize, cssSizeFromPixels, LengthInPixels } from "../shared/css";
+import { assert, assertFalse, ClientId, Html } from "../shared/common";
+import { CssSize } from "../shared/css";
 import { notebookUpdateSynopsis } from "../shared/debug-synopsis";
 import { NotebookPath } from "../shared/folder";
-import { ImageCellObject, ImageInfo } from "../shared/image-cell";
+import { ImageInfo, PositionInfo as ImagePositionInfo } from "../shared/image-cell";
 import { Notebook } from "../shared/notebook";
 import {
   NotebookChangeRequest, ChangeNotebook, OpenNotebook, DeleteCell, ResizeCell,
-  InsertStroke, MoveCell, DeleteStroke, InsertEmptyCell, InsertCell
+  InsertStroke, MoveCell, DeleteStroke, InsertEmptyCell, InsertCell, ChangeImage
 } from "../shared/client-requests";
 import {
   NotebookUpdated, NotebookOpened, NotebookResponse, NotebookClosed, NotebookUpdate,
   NotebookCollaboratorConnected, NotebookCollaboratorDisconnected
 } from "../shared/server-responses";
-import { EMPTY_STROKE_DATA, Stroke, StrokeId } from "../shared/stylus";
+import { Stroke, StrokeId } from "../shared/stylus";
 import { CollaboratorObject } from "../shared/user";
 
 import { appInstance } from "../app";
@@ -155,6 +155,11 @@ export class ClientNotebook extends Notebook {
     }
   }
 
+  public async changeImageRequest(cellId: CellId, imageInfo: ImageInfo, positionInfo: ImagePositionInfo, cssSize?: CssSize): Promise<void> {
+    const changeRequest: ChangeImage = { type: 'changeImage', cellId, imageInfo, positionInfo, cssSize };
+    await this.sendUndoableChangeRequest(changeRequest);
+  }
+
   public async deleteCellRequest(cellId: CellId): Promise<void> {
     const changeRequest: DeleteCell = { type: 'deleteCell', cellId };
     await this.sendUndoableChangeRequest(changeRequest);
@@ -173,27 +178,6 @@ export class ClientNotebook extends Notebook {
   public async insertEmptyCellRequest(cellType: CellType, afterId: CellRelativePosition): Promise<void> {
     const changeRequest: InsertEmptyCell = { type: 'insertEmptyCell', cellType, afterId };
     await this.sendUndoableChangeRequest(changeRequest);
-  }
-
-  public insertPhotoCell(url: DataUrl, width: LengthInPixels, height: LengthInPixels): void {
-    const afterId = CellPosition.Top;
-    const cellWidth = this.defaultCellWidth();
-    const info: ImageInfo = { url, width, height, x: 0, y: 0, magnification: 1.0, };
-    const cellObject: ImageCellObject = {
-      type: CellType.Image,
-      id: -1,
-      cssSize: cssSizeFromPixels(cellWidth, height),
-      inputText: <PlainText>'',
-      info,
-      source: 'USER',
-      strokeData: EMPTY_STROKE_DATA, // REVIEW: deep copy this?
-      suggestions: [],
-    };
-    this.insertCellRequest(cellObject, afterId)
-    .catch(err=>{
-      console.error("ERROR inserting image cell");
-      console.dir(err);
-    });
   }
 
   public async insertStrokeIntoCellRequest(cellId: CellId, stroke: Stroke): Promise<void> {

@@ -30,6 +30,7 @@ import { Code as ErrorCode } from "./expected-error";
 import { FigureObject } from "./figure";
 import { FolderObject, FolderPath, NotebookPath, FolderEntry, FolderName, NotebookEntry, NotebookName } from "./folder";
 import { FormulaObject } from "./formula";
+import { ImageInfo, PositionInfo as ImagePositionInfo } from "./image-cell";
 import { NotebookObject } from "./notebook";
 import { UserPermissions } from "./permissions";
 import { StrokeId, Stroke, StrokeData } from "./stylus";
@@ -173,6 +174,8 @@ export type NotebookUpdate =
               CellResized |
               FigureTypeset |
               FormulaTypeset |
+              ImageChanged |
+              ImagePositionChanged |
               StrokeInserted |
               StrokeDeleted |
               SuggestionAdded |
@@ -208,6 +211,17 @@ export interface FormulaTypeset {
   cellId: CellId;
   formula: FormulaObject;
   strokeData: StrokeData;
+}
+export interface ImageChanged {
+  type: 'imageChanged';
+  cellId: CellId;
+  imageInfo?: ImageInfo;
+  positionInfo?: ImagePositionInfo;
+}
+export interface ImagePositionChanged {
+  type: 'imagePositionChanged';
+  cellId: CellId;
+  positionInfo: ImagePositionInfo;
 }
 export interface StrokeDeleted {
   type: 'strokeDeleted';

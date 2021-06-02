@@ -21,7 +21,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 import {  PlainText } from "./common";
 import { CssSize, LengthInPixels } from "./css";
-import { convertStrokeToPath, StrokeData } from "./stylus";
+import { renderStrokesToSvg, StrokeData } from "./stylus";
 import { Suggestions } from "./suggestions";
 import { SvgMarkup, translateSvgMarkup } from "./svg";
 
@@ -64,6 +64,6 @@ export interface CellObject {
 // Exported Functions
 
 export function renderBaseCell(x: LengthInPixels, y: LengthInPixels, obj: CellObject, inheritedMarkup: SvgMarkup): SvgMarkup {
-  const strokeMarkup = <SvgMarkup>obj.strokeData.strokes.map(stroke=>convertStrokeToPath(obj.id, stroke)).join('\n');
+  const strokeMarkup = renderStrokesToSvg(obj.strokeData, obj.id);
   return <SvgMarkup>translateSvgMarkup(x, y, <SvgMarkup>(inheritedMarkup + strokeMarkup));
 }

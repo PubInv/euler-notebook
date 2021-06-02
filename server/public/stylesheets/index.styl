@@ -251,20 +251,15 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
             stroke black
             top 0
 
-        >.leftMargin
-          width 30px
+        >.imageCell
+          >.cropBox
+            overflow hidden
 
+        >.leftMargin
         >.rightMargin
           align-items center
           display flex
           justify-content flex-end
-
-          >.deleteButton
-            color lightgray
-
-          >.dragIcon
-            color lightgray
-            cursor grab
 
           >.iconButton
             padding 6px
@@ -272,6 +267,18 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
             >.icon
                width 12px
                height 12px
+
+        >.leftMargin
+          width 30px
+
+        >.rightMargin
+
+          >.deleteButton
+            color lightgray
+
+          >.dragIcon
+            color lightgray
+            cursor grab
 
       >.resizeBar
         border-top 1px dotted  #F0F0F0

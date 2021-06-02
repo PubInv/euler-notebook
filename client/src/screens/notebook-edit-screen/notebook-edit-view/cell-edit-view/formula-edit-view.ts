@@ -25,7 +25,7 @@ import * as debug1 from "debug";
 const debug = debug1('client:formula-edit-view');
 
 import { CssClass } from "../../../../shared/css";
-import { FormulaCellObject } from "../../../../shared/formula";
+import { FormulaCellObject, renderFormulaCell } from "../../../../shared/formula";
 import { NotebookUpdate } from "../../../../shared/server-responses";
 import { notebookUpdateSynopsis } from "../../../../shared/debug-synopsis";
 
@@ -34,6 +34,8 @@ import { FormulaCell } from "../../../../models/client-cell/formula-cell";
 import { NotebookEditView } from "..";
 
 import { CellEditView } from "./index";
+import { $, $new, $newSvg } from "../../../../dom";
+import { convertStrokeToPath, strokePathId } from "../../../../shared/stylus";
 
 // Types
 
@@ -48,8 +50,29 @@ export class FormulaEditView extends CellEditView<FormulaCellObject> {
   // Public Constructor
 
   public constructor(notebookEditView: NotebookEditView, cell: FormulaCell) {
+
+    const $displaySvg = $newSvg<'svg'>({
+      tag: 'svg',
+      class: <CssClass>'displaySvg',
+      attrs: { height: "100%", width: "100%" },
+    });
+
+    const $content = $new<'div'>({
+      tag: 'div',
+      classes: [ <CssClass>'content', <CssClass>'formulaCell' ],
+      styles: {
+        width: cell.obj.cssSize.width,
+        height: cell.obj.cssSize.height,
+      },
+      children: [ $displaySvg ]
+    });
+
     debug(`Creating instance: style ${cell.obj.id}`);
-    super(notebookEditView, cell, <CssClass>'formulaCell');
+    super(notebookEditView, cell, $content);
+
+    this.$displaySvg = $displaySvg;
+
+    this.refreshDisplay();
   }
 
   // Public Instance Methods
@@ -58,7 +81,26 @@ export class FormulaEditView extends CellEditView<FormulaCellObject> {
     debug(`onUpdate C${this.id} ${notebookUpdateSynopsis(update)}`);
     super.onUpdate(update, ownRequest);
     switch(update.type) {
+      case 'cellResized': {
+        this.refreshDisplay();
+        break;
+      }
       case 'formulaTypeset': this.refreshDisplay(); break;
+      case 'strokeDeleted': {
+        const { strokeId } = update;
+        const elementId = strokePathId(this.id, strokeId);
+        $(this.$displaySvg, `#${elementId}`).remove();
+        break;
+      }
+      case 'strokeInserted': {
+        const { stroke } = update;
+        const svgMarkup = convertStrokeToPath(this.id, stroke);
+        const $svg = $newSvg<'svg'>({ tag: 'svg', html: svgMarkup });
+        while ($svg.childNodes.length > 0) {
+          this.$displaySvg.appendChild($svg.childNodes[0]);
+        }
+        break;
+      }
     }
     return false;
   }
@@ -67,9 +109,16 @@ export class FormulaEditView extends CellEditView<FormulaCellObject> {
 
   // Private Instance Properties
 
+  private $displaySvg: SVGSVGElement;
+
   // Private Instance Property Functions
 
   // Private Instance Methods
+
+  protected refreshDisplay(): void {
+    const svgMarkup = renderFormulaCell(0, 0, this.cell.obj, this.cell.id /* TODO */);
+    this.$displaySvg.innerHTML = svgMarkup;
+  }
 
   // Private Instance Event Handlers
 

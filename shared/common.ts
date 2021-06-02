@@ -35,6 +35,7 @@ export type Timestamp = number;     // Number of milliseconds since Jan 1, 1970 
 type StackTrace = '{StackTrace}';
 
 export interface BoundingBox {
+  // REVIEW: Use RectangleInPixels from css.ts instead?
   x: number,
   y: number,
   width: number,
@@ -53,7 +54,6 @@ export interface PromiseResolver<T> {
   resolve: (s: T)=>void;
   reject: (err: Error)=>void
 }
-
 
 // Constants
 

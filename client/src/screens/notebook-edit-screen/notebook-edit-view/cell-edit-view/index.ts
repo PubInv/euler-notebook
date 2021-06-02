@@ -17,8 +17,6 @@ You should have received a copy of the GNU Affero General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-// REVIEW: Files exporting a class should be named after the class exported. Rename this to cell-view.ts?
-
 // Requirements
 
 import * as debug1 from "debug";
@@ -28,13 +26,13 @@ import { CellObject, CellId, CellRelativePosition, CellPosition } from "../../..
 import { assert, Html, ElementId } from "../../../../shared/common";
 import { CssClass, CssLength, CssSize, LengthInPixels, joinCssLength } from "../../../../shared/css";
 import { CellDeleted, NotebookUpdate } from "../../../../shared/server-responses";
-import { convertStrokeToPath, Stroke, StrokeId, strokePathId } from "../../../../shared/stylus";
+import { Stroke, StrokeId } from "../../../../shared/stylus";
 import { notebookUpdateSynopsis } from "../../../../shared/debug-synopsis";
 
 // import { DebugConsole } from "../../components/debug-console";
 import { HtmlElement } from "../../../../html-element";
 import {
-  $new, $newSvg, CELL_ICONS, svgIconReferenceMarkup, HtmlElementOrSpecification, $,
+  $new, CELL_ICONS, svgIconReferenceMarkup, HtmlElementOrSpecification,
 } from "../../../../dom";
 import { showError } from "../../../../error-handler";
 
@@ -45,7 +43,6 @@ import { NotebookEditView } from "..";
 
 import { CallbackFunctions as ResizerCallbackFunctions, ResizerBar } from "./resizer-bar";
 import { SuggestionPanel } from "./suggestion-panel";
-import { Notebook } from "../../../../shared/notebook";
 
 // Types
 
@@ -55,7 +52,7 @@ interface CellDragData {
 
 // Constants
 
-const CELL_MIME_TYPE = 'application/vnd.mathtablet.cell';
+const CELL_MIME_TYPE = 'application/vnd.eulernotebook.cell';
 
 // Exported Class
 
@@ -109,22 +106,6 @@ export abstract class CellEditView<O extends CellObject> extends HtmlElement<'di
       case 'cellResized': {
         this.$content.style.height = update.cssSize.height;
         this.$content.style.width = update.cssSize.width;
-        this.refreshDisplay();
-        break;
-      }
-      case 'strokeDeleted': {
-        const { strokeId } = update;
-        const elementId = strokePathId(this.id, strokeId);
-        $(this.$displaySvg, `#${elementId}`).remove();
-        break;
-      }
-      case 'strokeInserted': {
-        const { stroke } = update;
-        const svgMarkup = convertStrokeToPath(this.id, stroke);
-        const $svg = $newSvg<'svg'>({ tag: 'svg', html: svgMarkup });
-        while ($svg.childNodes.length > 0) {
-          this.$displaySvg.appendChild($svg.childNodes[0]);
-        }
         break;
       }
       case 'suggestionAdded':
@@ -152,8 +133,7 @@ export abstract class CellEditView<O extends CellObject> extends HtmlElement<'di
   protected constructor(
     notebookEditView: NotebookEditView,
     cell: ClientCell<O>,
-    cssClass: CssClass,
-    rightMarginButton?: HtmlElementOrSpecification,
+    $content: HTMLDivElement,
   ) {
 
     const iconId = CELL_ICONS.get(cell.obj.type)!;
@@ -162,14 +142,15 @@ export abstract class CellEditView<O extends CellObject> extends HtmlElement<'di
     const $leftMargin = $new<'div'>({
       tag: 'div',
       class: <CssClass>'leftMargin',
+      children: [{
+        tag: 'div',
+        classes: [ <CssClass>'cellIcon', <CssClass>'iconButton' ],
+        html: svgIconReferenceMarkup(iconId),
+      }],
     });
 
     const rightMarginChildren: HtmlElementOrSpecification[] = [
       {
-        tag: 'div',
-        classes: [ <CssClass>'cellIcon', <CssClass>'iconButton' ],
-        html: svgIconReferenceMarkup(iconId),
-      }, {
         tag: 'button',
         class: <CssClass>'iconButton',
         attrs: { tabindex: -1 },
@@ -192,39 +173,16 @@ export abstract class CellEditView<O extends CellObject> extends HtmlElement<'di
         asyncButtonHandler: e=>this.onDeleteButtonClicked(e),
       }
     ];
-    if (rightMarginButton) {
-      rightMarginChildren.unshift(rightMarginButton);
-    }
     const $rightMargin = $new<'div'>({
       tag: 'div',
       class: <CssClass>'rightMargin',
       children: rightMarginChildren,
     });
 
-    const $displaySvg = $newSvg<'svg'>({
-      tag: 'svg',
-      class: <CssClass>'displaySvg',
-      attrs: { height: "100%", width: "100%" },
-    });
-
-    const $content = $new<'div'>({
-      tag: 'div',
-      classes: [ <CssClass>'content', cssClass ],
-      styles: {
-        width: cell.obj.cssSize.width,
-        height: cell.obj.cssSize.height,
-      },
-      children: [ $displaySvg ]
-    });
-
     const $main = $new({
       tag: 'div',
       class: <CssClass>'main',
-      children: [
-        $leftMargin,
-        $content,
-        $rightMargin,
-      ],
+      children: [ $leftMargin, $content, $rightMargin ],
     });
 
     const resizerCallbackFunctions: ResizerCallbackFunctions = {
@@ -259,7 +217,6 @@ export abstract class CellEditView<O extends CellObject> extends HtmlElement<'di
     });
 
     this.$content = $content;
-    this.$displaySvg = $displaySvg;
     this.$main = $main;
     this.suggestionPanel = suggestionPanel;
     this.cell = cell;
@@ -277,14 +234,11 @@ export abstract class CellEditView<O extends CellObject> extends HtmlElement<'di
     $content.append(this.strokePanel.$elt);
 
     cell.addView(this);
-
-    this.refreshDisplay();
   }
 
   // Private Instance Properties
 
   protected $content: HTMLDivElement;
-  private $displaySvg: SVGSVGElement;
   private $main: HTMLDivElement;
   private resizingInitialHeight?: LengthInPixels;
   protected suggestionPanel: SuggestionPanel<O>;
@@ -294,11 +248,6 @@ export abstract class CellEditView<O extends CellObject> extends HtmlElement<'di
   // Private Instance Property Functions
 
   // Private Instance Methods
-
-  protected refreshDisplay(): void {
-    const svgMarkup = Notebook.renderCellToSvg(0, 0, this.cell.obj, this.cell.id /* TODO */);
-    this.$displaySvg.innerHTML = svgMarkup;
-  }
 
   // Private Instance Event Handlers
 

@@ -272,6 +272,7 @@ export class Notebook {
       case 'figureTypeset': {
         const { cellId, figure, strokeData } = update;
         const cellObject = this.getCellObject<FigureCellObject>(cellId);
+        assert(cellObject.type == CellType.Figure);
         cellObject.figure = figure;
         cellObject.strokeData = strokeData;
         break;
@@ -279,8 +280,17 @@ export class Notebook {
       case 'formulaTypeset': {
         const { cellId, formula, strokeData } = update;
         const cellObject = this.getCellObject<FormulaCellObject>(cellId);
+        assert(cellObject.type == CellType.Formula);
         cellObject.formula = formula;
         cellObject.strokeData = strokeData;
+        break;
+      }
+      case 'imageChanged': {
+        const { cellId, imageInfo, positionInfo } = update;
+        const cellObject = this.getCellObject<ImageCellObject>(cellId);
+        assert(cellObject.type == CellType.Image);
+        cellObject.imageInfo = imageInfo;
+        cellObject.positionInfo = positionInfo;
         break;
       }
       case 'strokeDeleted': {
@@ -319,6 +329,7 @@ export class Notebook {
       case 'textTypeset': {
         const { cellId, text, strokeData } = update;
         const cellObject = this.getCellObject(cellId);
+        assert(cellObject.type == CellType.Text);
         cellObject.inputText = text;
         cellObject.strokeData = strokeData;
         break;

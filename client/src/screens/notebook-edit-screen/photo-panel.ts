@@ -31,6 +31,7 @@ import { $new, svgIconReferenceMarkup } from "../../dom";
 import { HtmlElement } from "../../html-element";
 
 import { NotebookEditScreen } from ".";
+import { ImageInfo, PositionInfo } from "../../shared/image-cell";
 
 // Types
 
@@ -78,7 +79,7 @@ export class PhotoPanel extends HtmlElement<'div'> {
       class: <CssClass>'smallIconButton',
       type: 'submit',
       title: "Accept photo",
-      syncButtonHandler: e=>this.onAcceptButtonClicked(e),
+      asyncButtonHandler: e=>this.onAcceptButtonClicked(e),
       html: svgIconReferenceMarkup('iconMonstrCheckMark2'),
       hidden: true,
     });
@@ -228,10 +229,28 @@ export class PhotoPanel extends HtmlElement<'div'> {
     this.stopCameraIfRunning();
   }
 
-  private onAcceptButtonClicked(_event: MouseEvent): void {
-    const pi = this.photoInfo;
+  private async onAcceptButtonClicked(_event: MouseEvent): Promise<void> {
+
+    const pi = this.photoInfo!;
     assert(pi);
-    this.screen.notebook.insertPhotoCell(pi!.url, pi!.width, pi!.height);
+
+    const cellId = 0; // TODO:
+    const imageInfo: ImageInfo = {
+      url: pi.url,
+      size: { width: pi.width, height: pi.height },
+     };
+     const cellWidth = 6.5*96; // TODO:
+     const cellHeight = 1.5*96; // TODO:
+     const scaleX = cellWidth/pi.width;
+     const scaleY = scaleX;
+     const translateX = 0;
+     const translateY = 0;
+     const positionInfo: PositionInfo = {
+      cropBox: { x: 0, y: 0, width: cellWidth, height: cellHeight },
+      transformationMatrix: [ scaleX, 0, 0, scaleY, translateX, translateY ],
+     };
+    await this.screen.notebook.changeImageRequest(cellId, imageInfo, positionInfo);
+
     this.hide();
     this.switchToRecordMode(false);
   }

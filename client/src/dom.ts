@@ -19,7 +19,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 // Requirements
 
-import { AbsoluteUrl, assert, ElementId, Html, RelativeUrl } from "./shared/common";
+import { AbsoluteUrl, assert, DataUrl, ElementId, Html, RelativeUrl } from "./shared/common";
 import { CssClass, CssSelector } from "./shared/css";
 import { SvgMarkup } from "./shared/svg";
 import { showError, monitorPromise } from "./error-handler";
@@ -88,7 +88,7 @@ interface NewCommonOptions {
   id?: ElementId;
   hidden?: boolean;
   listeners?: SyncListeners;
-  src?: AbsoluteUrl|RelativeUrl;
+  src?: AbsoluteUrl|DataUrl|RelativeUrl;
   style?: string;
   styles?: Styles;
   syncButtonHandler?: SyncListener<MouseEvent>;

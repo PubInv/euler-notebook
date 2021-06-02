@@ -69,6 +69,10 @@ export function convertStrokeToPathShape(stroke: Stroke): PathDAttribute {
   return shape;
 }
 
+export function renderStrokesToSvg(strokeData: StrokeData, cellId: CellId): SvgMarkup {
+  return <SvgMarkup>strokeData.strokes.map(stroke=>convertStrokeToPath(cellId, stroke)).join('\n');
+}
+
 export function strokePathId(cellId: CellId, strokeId?: StrokeId): ElementId {
   return <ElementId>`c${cellId}s${strokeId}`;
 }

@@ -24,7 +24,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 import * as debug1 from "debug";
 const debug = debug1('client:resizer-bar');
 
-import { CssClass, LengthInPixels, PositionInPixels } from "../../../../shared/css";
+import { CssClass, LengthInPixels } from "../../../../shared/css";
 import { svgIconReferenceMarkup } from "../../../../dom";
 import { HtmlElement } from "../../../../html-element";
 import { MINIMUM_CELL_HEIGHT } from "../../../../shared/dimensions";
@@ -45,7 +45,7 @@ export interface CallbackFunctions {
 }
 
 interface PointerInfo {
-  clientY: PositionInPixels;
+  clientY: LengthInPixels;
   lastDeltaY: LengthInPixels;
 }
 

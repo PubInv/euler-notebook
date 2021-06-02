@@ -29,7 +29,6 @@ export type CssLengthUnit = 'in'|'pt'|'px';
 export type CssSelector = '{CssSelector}';
 
 export type LengthInPixels = number;
-export type PositionInPixels = number;
 
 export interface CssLengthMetrics {
   em?: number, // Length of an em in pixels
@@ -46,6 +45,18 @@ interface LengthConversion {
 }
 interface LengthConversion2 {
   [ unit: string /* CssLengthUnit */]: number;
+}
+
+export interface PositionInPixels {
+  x: LengthInPixels;
+  y: LengthInPixels;
+}
+
+export interface RectangleInPixels extends PositionInPixels, SizeInPixels { }
+
+export interface SizeInPixels {
+  width: LengthInPixels;
+  height: LengthInPixels;
 }
 
 // Constants
@@ -86,10 +97,18 @@ export function cssLengthInPixels(cssLength: CssLength, metrics?: CssLengthMetri
 }
 
 export function cssSizeFromPixels(width: LengthInPixels, height: LengthInPixels): CssSize {
+  // REVIEW: Should have single argument of type SizeInPixels.
   return {
     width: joinCssLength(width, 'px'),
     height: joinCssLength(height, 'px'),
   };
+}
+
+export function cssSizeInPixels(cssSize: CssSize, metrics?: CssLengthMetrics): SizeInPixels {
+  return {
+    width: cssLengthInPixels(cssSize.width, metrics),
+    height: cssLengthInPixels(cssSize.height, metrics),
+  }
 }
 
 export function joinCssLength(length: number, unit: CssLengthUnit): CssLength {

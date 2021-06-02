@@ -24,7 +24,7 @@ const debug = debug1('client:client-cell');
 
 import { CellId, CellObject, CellType } from "../../shared/cell";
 import { escapeHtml, Html } from "../../shared/common";
-import { CssSize } from "../../shared/css";
+import { CssSize, cssSizeInPixels, SizeInPixels } from "../../shared/css";
 import { cellBriefSynopsis, cellSynopsis, notebookUpdateSynopsis } from "../../shared/debug-synopsis";
 import { NotebookUpdate } from "../../shared/server-responses";
 import { Stroke, StrokeId } from "../../shared/stylus";
@@ -64,6 +64,8 @@ export abstract class ClientCell<O extends CellObject> {
   public get type(): CellType { return this.obj.type; }
 
   public isLastCell(): boolean { return this.id == this.notebook.lastCellId() };
+
+  public sizeInPixels(): SizeInPixels { return cssSizeInPixels(this.obj.cssSize); }
 
   public toDebugHtml(): Html {
     return <Html>`<div>

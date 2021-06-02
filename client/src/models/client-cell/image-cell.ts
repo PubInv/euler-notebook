@@ -22,7 +22,8 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 // import * as debug1 from "debug";
 // const debug = debug1('client:plot-cell');
 
-import { ImageCellObject } from "../../shared/image-cell";
+import { CssSize, cssSizeFromPixels } from "../../shared/css";
+import { ImageCellObject, ImageInfo, PositionInfo as ImagePositionInfo } from "../../shared/image-cell";
 
 import { ClientNotebook } from "../client-notebook";
 
@@ -39,6 +40,27 @@ export class ImageCell extends ClientCell<ImageCellObject> {
   }
 
   // Public Instance Property Functions
+
+  public async acquireImage(imageInfo: ImageInfo, resizeCell: boolean): Promise<void> {
+    const cellSize = this.sizeInPixels();
+    const scaleX = cellSize.width/imageInfo.size.width;
+    const scaleY = scaleX;
+
+    let cssSize: CssSize | undefined;
+    if (resizeCell) {
+      cellSize.height = Math.round(imageInfo.size.height * scaleY);
+      cssSize = cssSizeFromPixels(cellSize.width, cellSize.height);
+    }
+
+    const translateX = 0;
+    const translateY = 0;
+    const positionInfo: ImagePositionInfo = {
+     cropBox: { x: 0, y: 0, ...cellSize },
+     transformationMatrix: [ scaleX, 0, 0, scaleY, translateX, translateY ],
+    };
+
+    return this.notebook.changeImageRequest(this.id, imageInfo, positionInfo, cssSize);
+  }
 
   // Public Instance Methods
 

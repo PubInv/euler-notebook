@@ -31,6 +31,7 @@ import { UserName, UserPassword } from "./user";
 import { FormulaObject } from "./formula";
 import { FigureObject } from "./figure";
 import { SuggestionId, SuggestionObject } from "./suggestions";
+import { ImageInfo, PositionInfo as ImagePositionInfo } from "./image-cell";
 
 // Types
 
@@ -142,6 +143,8 @@ export interface NotebookRenameRequest {
 
 export type NotebookChangeRequest =
   AddSuggestion |
+  ChangeImage |
+  ChangeImagePosition |
   DeleteCell |
   DeleteStroke |
   InsertCell |
@@ -158,6 +161,19 @@ export interface AddSuggestion {
   type: 'addSuggestion';
   cellId: CellId,
   suggestionObject: SuggestionObject;
+}
+export interface ChangeImage {
+  type: 'changeImage';
+  cellId: CellId;
+  // Either both imageInfo and positionInfo specified, or neither.
+  imageInfo?: ImageInfo;
+  positionInfo?: ImagePositionInfo;
+  cssSize?: CssSize;
+}
+export interface ChangeImagePosition {
+  type: 'changeImagePosition';
+  cellId: CellId;
+  positionInfo: ImagePositionInfo;
 }
 export interface DeleteCell {
   type: 'deleteCell';
