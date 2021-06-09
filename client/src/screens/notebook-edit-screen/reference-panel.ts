@@ -23,9 +23,10 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 import { AbsoluteUrl, assert } from "../../shared/common";
 import { CssClass } from "../../shared/css";
-import { $new, svgIconReferenceMarkup } from "../../dom";
+import { $new } from "../../dom";
 
 import { HtmlElement } from "../../html-element";
+import { svgIcon } from "../../svg-icons";
 
 // import { NotebookEditScreen } from "./index";
 
@@ -70,20 +71,20 @@ export class ReferencePanel extends HtmlElement<'div'> {
 
     const $backButton = $new({
       tag: 'button',
-      class: <CssClass>'smallIconButton',
+      class: <CssClass>'iconButton',
       type: 'submit',
       title: "Go back",
       syncButtonHandler: e=>this.onBackButtonClicked(e),
-      html: svgIconReferenceMarkup('iconMonstrArrow72'),
+      html: svgIcon('iconMonstrArrow72'),
     });
 
     const $forwardButton = $new({
       tag: 'button',
-      class: <CssClass>'smallIconButton',
+      class: <CssClass>'iconButton',
       type: 'submit',
       title: "Go forward",
       syncButtonHandler: e=>this.onForwardButtonClicked(e),
-      html: svgIconReferenceMarkup('iconMonstrArrow71'),
+      html: svgIcon('iconMonstrArrow71'),
     });
 
     super({
@@ -99,18 +100,18 @@ export class ReferencePanel extends HtmlElement<'div'> {
             $forwardButton,
             {
               tag: 'button',
-              class: <CssClass>'smallIconButton',
+              class: <CssClass>'iconButton',
               type: 'submit',
               title: "Go home",
               syncButtonHandler: e=>this.onHomeButtonClicked(e),
-              html: svgIconReferenceMarkup('iconMonstrHome6'),
+              html: svgIcon('iconMonstrHome6'),
             }, {
               tag: 'button',
-              class: <CssClass>'smallIconButton',
+              class: <CssClass>'iconButton',
               type: 'submit',
               title: "Go to URL",
               syncButtonHandler: e=>this.onGoButtonClicked(e),
-              html: svgIconReferenceMarkup('iconMonstrBook17'),
+              html: svgIcon('iconMonstrBook17'),
             },
           ],
           asyncListeners: {

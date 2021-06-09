@@ -30,13 +30,14 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 import { escapeHtml, Html, PlainText } from "../../shared/common";
 import { CssClass } from "../../shared/css";
-import { $, $new, svgIconReferenceMarkup } from "../../dom";
+import { $, $new } from "../../dom";
 
 import { HtmlElement } from "../../html-element";
 
 import { NotebookEditScreen } from "./index";
 import { apiSearch } from "../../api";
 import { SearchParams, SearchResult } from "../../shared/api-calls";
+import { svgIcon } from "../../svg-icons";
 
 // Types
 
@@ -73,10 +74,10 @@ export class SearchPanel extends HtmlElement<'div'> {
             $queryInput,
             {
               tag: 'button',
-              class: <CssClass>'smallIconButton',
+              class: <CssClass>'iconButton',
               type: 'submit',
               title: "Search",
-              html: svgIconReferenceMarkup('iconMonstrMagnifier6'),
+              html: svgIcon('iconMonstrMagnifier6'),
             }
           ],
           asyncListeners: {

@@ -24,10 +24,10 @@ import { assert } from "./common";
 // Types
 
 export type CssClass = '{CssClass}';
+export type CssColor = 'black' | 'red';  // Many others that we don't use.
 export type CssLength = '{CssLength}';
 export type CssLengthUnit = 'in'|'pt'|'px';
 export type CssSelector = '{CssSelector}';
-
 export type LengthInPixels = number;
 
 export interface CssLengthMetrics {
@@ -89,6 +89,10 @@ export function convertCssLength(cssLength: CssLength, newUnit: CssLengthUnit, m
   return joinCssLength(newLength, newUnit);
 }
 
+export function cssLengthFromPixels(length: LengthInPixels): CssLength {
+  return joinCssLength(length, 'px')
+}
+
 export function cssLengthInPixels(cssLength: CssLength, metrics?: CssLengthMetrics): LengthInPixels {
   // NOTE: Depending on your application, you may need to round (or floor or ceil) the result.
   if (cssLength == <CssLength>"0") { return 0; }
@@ -96,11 +100,10 @@ export function cssLengthInPixels(cssLength: CssLength, metrics?: CssLengthMetri
   return convertLength(length, unitIn, 'px', metrics);
 }
 
-export function cssSizeFromPixels(width: LengthInPixels, height: LengthInPixels): CssSize {
-  // REVIEW: Should have single argument of type SizeInPixels.
+export function cssSizeFromPixels(size: SizeInPixels): CssSize {
   return {
-    width: joinCssLength(width, 'px'),
-    height: joinCssLength(height, 'px'),
+    width: cssLengthFromPixels(size.width),
+    height: cssLengthFromPixels(size.height),
   };
 }
 

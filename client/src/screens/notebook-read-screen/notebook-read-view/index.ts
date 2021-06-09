@@ -23,7 +23,7 @@ import * as debug1 from "debug";
 const debug = debug1('client:notebook-read-view');
 
 import { assert, assertFalse } from "../../../shared/common";
-import { CssClass, cssSizeFromPixels, cssLengthInPixels } from "../../../shared/css";
+import { CssClass, cssSizeFromPixels, cssLengthInPixels, SizeInPixels } from "../../../shared/css";
 
 import { HtmlElement } from "../../../html-element";
 
@@ -119,11 +119,13 @@ export class NotebookReadView extends HtmlElement<'div'> {
     assert(viewWidth>0);
     const pageAspectRatio = cssLengthInPixels(this.notebook.pageSize.width) / cssLengthInPixels(this.notebook.pageSize.height);
     const w = viewWidth / (this.pagesPerRow + (this.pagesPerRow+1)*this.marginPercent);
-    const pageWidth = Math.round(w);
-    const pageHeight = Math.round(w / pageAspectRatio);
+    const pageSize: SizeInPixels = {
+      width: Math.round(w),
+      height: Math.round(w / pageAspectRatio),
+    };
     const pageMargin = Math.round(w * this.marginPercent);
 
-    const cssSize = cssSizeFromPixels(pageWidth, pageHeight);
+    const cssSize = cssSizeFromPixels(pageSize);
     for (const pageView of this.pageViews) {
       pageView.resizeViaStyle(cssSize);
       pageView.$elt.style.margin = `${pageMargin}px 0 0 ${pageMargin}px`;

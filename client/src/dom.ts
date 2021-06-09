@@ -19,11 +19,11 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 // Requirements
 
-import { AbsoluteUrl, assert, DataUrl, ElementId, Html, RelativeUrl } from "./shared/common";
+import { AbsoluteUrl, assert, DataUrl, ElementId, Html, PlainText, RelativeUrl } from "./shared/common";
 import { CssClass, CssSelector } from "./shared/css";
 import { SvgMarkup } from "./shared/svg";
 import { showError, monitorPromise } from "./error-handler";
-import { CellType } from "./shared/cell";
+import { svgIcon, SvgIconId, SvgIconOptions } from "./svg-icons";
 
 // Types
 
@@ -73,6 +73,16 @@ interface Attributes {
   [name: string]: boolean | number | string,
 }
 
+export interface ButtonSpec {
+  disabled?: boolean;
+  iconId: SvgIconId;
+  iconOptions?: SvgIconOptions;
+  title: PlainText;
+  cssClass?: CssClass;
+  asyncHandler?: AsyncListener<MouseEvent>;
+  syncHandler?: SyncListener<MouseEvent>;
+}
+
 interface DataAttributes {
   [name: string]: string,
 }
@@ -88,6 +98,7 @@ interface NewCommonOptions {
   id?: ElementId;
   hidden?: boolean;
   listeners?: SyncListeners;
+  show?: boolean;
   src?: AbsoluteUrl|DataUrl|RelativeUrl;
   style?: string;
   styles?: Styles;
@@ -121,24 +132,7 @@ interface Styles {
   [style: string]: string,
 }
 
-// Keep this list in sync with server/views/iconmonstr.pug.
-export type SvgIconId =
-  'iconMonstrArrow49' | 'iconMonstrArrow71' | 'iconMonstrArrow72' |'iconMonstrBook14' | 'iconMonstrBook17' |
-  'iconMonstrBug12' | 'iconMonstrCalculator2' | 'iconMonstrCheckMark2' | 'iconMonstrClothing18' | 'iconMonstrCursor19' | 'iconMonstrEdit9Modified' |
-  'iconMonstrEraser2' | 'iconMonstrFile5' | 'iconMonstrFile12' | 'iconMonstrFile15' | 'iconMonstrFolder2' |
-  'iconMonstrFolder5' | 'iconMonstrFullScreen7' | 'iconMonstrHome6' | 'iconMonstrInfo6' | 'iconMonstrMagnifier6' |
-  'iconMonstrPencil9' | 'iconMonstrPhotoCamera5' | 'iconMonstrPicture1' | 'iconMonstrPrinter6' | 'iconMonstrRedo4' | 'iconMonstrRefresh2' |
-  'iconMonstrRuler30' | 'iconMonstrText1' | 'iconMonstrTrashcan2' | 'iconMonstrUndo4' | 'iconMonstrUser1' | 'iconMonstrChart20' | 'iconMonstrXMark2' ;
-
 // Constants
-
-export const CELL_ICONS: Map<CellType, SvgIconId> = new Map([
-  [ CellType.Figure,  'iconMonstrRuler30' ],
-  [ CellType.Formula, 'iconMonstrCalculator2' ],
-  [ CellType.Image,   'iconMonstrPicture1' ],
-  [ CellType.Plot,    'iconMonstrChart20' ],
-  [ CellType.Text,    'iconMonstrText1' ],
-]);
 
 const SVG_NS = 'http://www.w3.org/2000/svg';
 
@@ -214,7 +208,8 @@ export function $configure($elt: HTMLElement|SVGElement, options: NewCommonOptio
   }
   if (options.style) { style += options.style; }
   if (style.length>0) { $elt.setAttribute('style', style); }
-  if (options.hidden) { $elt.style.display = 'none'; }
+  // REVIEW: what if both hidden and show specified, and they differ?
+  if (options.hidden || options.show===false) { $elt.style.display = 'none'; }
 
   if (options.listeners) { attachSyncListeners($elt, options.listeners); }
   if (options.syncButtonHandler) {
@@ -283,9 +278,39 @@ export function $svg<K extends keyof SVGElementTagNameMap>(root: Element|Documen
   return $elts[0];
 }
 
-// export function $svgIconReference(id: SvgIconId): SVGSVGElement {
-//   return $outerSvg<'svg'>(svgIconReferenceMarkup(id));
-// }
+export function asyncButtonSpecification(
+  title: PlainText,
+  svgIconId: SvgIconId,
+  asyncButtonHandler: AsyncListener<MouseEvent>,
+  svgIconOptions?: SvgIconOptions,
+): HtmlElementSpecification<'button'> {
+  return {
+    tag: 'button',
+    class: <CssClass>'iconButton',
+    html: svgIcon(svgIconId, svgIconOptions),
+    asyncButtonHandler,
+    title,
+  };
+}
+
+export function $button(buttonSpec: ButtonSpec): HTMLButtonElement {
+  const elementSpec = buttonSpecification(buttonSpec);
+  return $new(elementSpec);
+}
+
+export function buttonSpecification(spec: ButtonSpec): HtmlElementSpecification<'button'> {
+  const classes: CssClass[] = [ <CssClass>'iconButton' ];
+  if (spec.cssClass) { classes.push(spec.cssClass); }
+  return {
+    tag: 'button',
+    classes,
+    html: svgIcon(spec.iconId, spec.iconOptions),
+    asyncButtonHandler: spec.asyncHandler,
+    syncButtonHandler: spec.syncHandler,
+    title: spec.title,
+    disabled: spec.disabled,
+  };
+}
 
 export function addAsyncEventListener<E extends Event>(target: EventTarget, type: string, listener: AsyncListener<E>, message?: Html): SyncListener<E> {
   // Returns the actual listener added, in case the caller wants to remove it later.
@@ -319,10 +344,6 @@ export function addSyncEventListener<E extends Event>(target: EventTarget, type:
 //   $div.appendChild(document.createTextNode(str));
 //   return <Html>$div.innerHTML;
 // }
-
-export function svgIconReferenceMarkup(id: SvgIconId): SvgMarkup {
-  return <SvgMarkup>`<svg class="icon"><use href="#${id}"/></svg>`
-}
 
 // HELPER FUNCTIONS
 

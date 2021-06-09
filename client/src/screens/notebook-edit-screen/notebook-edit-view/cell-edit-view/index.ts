@@ -31,18 +31,17 @@ import { notebookUpdateSynopsis } from "../../../../shared/debug-synopsis";
 
 // import { DebugConsole } from "../../components/debug-console";
 import { HtmlElement } from "../../../../html-element";
-import {
-  $new, CELL_ICONS, svgIconReferenceMarkup, HtmlElementOrSpecification,
-} from "../../../../dom";
+import { $new, HtmlElementOrSpecification, } from "../../../../dom";
 import { showError } from "../../../../error-handler";
 
 import { CellView, ClientCell } from "../../../../models/client-cell";
-import { StrokePanel, StrokePanelCallbacks, StylusMode } from "../../../../components/stroke-panel";
+import { StrokePanel, StrokePanelCallbacks, StylusMode } from "./stroke-panel";
 
 import { NotebookEditView } from "..";
 
 import { CallbackFunctions as ResizerCallbackFunctions, ResizerBar } from "./resizer-bar";
 import { SuggestionPanel } from "./suggestion-panel";
+import { CELL_ICONS, smallSvgIcon } from "../../../../svg-icons";
 
 // Types
 
@@ -80,8 +79,10 @@ export abstract class CellEditView<O extends CellObject> extends HtmlElement<'di
     return this.$elt.classList.contains('selected');
   }
 
-  public set stylusMode(value: StylusMode) {
-    this.strokePanel.stylusMode = value;
+  public /* overridable */ set stylusMode(value: StylusMode) {
+    if (this.strokePanel) {
+      this.strokePanel.stylusMode = value;
+    }
   }
 
   // Public Instance Methods
@@ -116,7 +117,9 @@ export abstract class CellEditView<O extends CellObject> extends HtmlElement<'di
       default: /* Nothing to do. */ break;
     }
 
-    this.strokePanel.onUpdate(update, ownRequest);
+    if (this.strokePanel) {
+      this.strokePanel.onUpdate(update, ownRequest);
+    }
   };
 
   // Public Instance Event Handlers
@@ -134,6 +137,7 @@ export abstract class CellEditView<O extends CellObject> extends HtmlElement<'di
     notebookEditView: NotebookEditView,
     cell: ClientCell<O>,
     $content: HTMLDivElement,
+    includeStrokePanel: boolean = true,
   ) {
 
     const iconId = CELL_ICONS.get(cell.obj.type)!;
@@ -145,7 +149,7 @@ export abstract class CellEditView<O extends CellObject> extends HtmlElement<'di
       children: [{
         tag: 'div',
         classes: [ <CssClass>'cellIcon', <CssClass>'iconButton' ],
-        html: svgIconReferenceMarkup(iconId),
+        html: smallSvgIcon(iconId),
       }],
     });
 
@@ -154,13 +158,13 @@ export abstract class CellEditView<O extends CellObject> extends HtmlElement<'di
         tag: 'button',
         class: <CssClass>'iconButton',
         attrs: { tabindex: -1 },
-        html: svgIconReferenceMarkup('iconMonstrInfo6'),
+        html: smallSvgIcon('iconMonstrInfo6'),
         syncButtonHandler: (e: MouseEvent)=>this.onSuggestionsButtonClicked(e),
       }, {
         tag: 'div',
         attrs: { draggable: true },
         classes: [ <CssClass>'dragIcon', <CssClass>'iconButton' ],
-        html: svgIconReferenceMarkup('iconMonstrCursor19'),
+        html: smallSvgIcon('iconMonstrCursor19'),
         listeners: {
           dragend: e=>this.onDragEnd(e),
           dragstart: e=>this.onDragStart(e),
@@ -169,7 +173,7 @@ export abstract class CellEditView<O extends CellObject> extends HtmlElement<'di
         tag: 'button',
         classes:[ <CssClass>'deleteButton', <CssClass>'iconButton' ],
         attrs: { tabindex: -1 },
-        html: svgIconReferenceMarkup('iconMonstrTrashcan2'),
+        html: smallSvgIcon('iconMonstrTrashcan2'),
         asyncButtonHandler: e=>this.onDeleteButtonClicked(e),
       }
     ];
@@ -222,16 +226,18 @@ export abstract class CellEditView<O extends CellObject> extends HtmlElement<'di
     this.cell = cell;
     this.notebookEditView = notebookEditView;
 
-    // Create a "stroke panel" for displaying and capturing stylus strokes
-    const drawStroke = async (stroke: Stroke): Promise<void>=>{
-      await this.cell.insertStrokeRequest(stroke)
-    };
-    const eraseStroke = async (strokeId: StrokeId): Promise<void>=>{
-      await this.cell.deleteStrokeRequest(strokeId);
-    };
-    const callbacks: StrokePanelCallbacks = { drawStroke, eraseStroke };
-    this.strokePanel = new StrokePanel(cell.obj, callbacks, notebookEditView.stylusMode);
-    $content.append(this.strokePanel.$elt);
+    if (includeStrokePanel) {
+      // Create a "stroke panel" for displaying and capturing stylus strokes
+      const drawStroke = async (stroke: Stroke): Promise<void>=>{
+        await this.cell.insertStrokeRequest(stroke)
+      };
+      const eraseStroke = async (strokeId: StrokeId): Promise<void>=>{
+        await this.cell.deleteStrokeRequest(strokeId);
+      };
+      const callbacks: StrokePanelCallbacks = { drawStroke, eraseStroke };
+      this.strokePanel = new StrokePanel(cell.obj, callbacks, notebookEditView.stylusMode);
+      $content.append(this.strokePanel.$elt);
+    }
 
     cell.addView(this);
   }
@@ -239,11 +245,12 @@ export abstract class CellEditView<O extends CellObject> extends HtmlElement<'di
   // Private Instance Properties
 
   protected $content: HTMLDivElement;
+  protected suggestionPanel: SuggestionPanel<O>;
+  protected notebookEditView: NotebookEditView;
+
   private $main: HTMLDivElement;
   private resizingInitialHeight?: LengthInPixels;
-  protected suggestionPanel: SuggestionPanel<O>;
-  private notebookEditView: NotebookEditView;
-  private strokePanel: StrokePanel;
+  private strokePanel?: StrokePanel;
 
   // Private Instance Property Functions
 

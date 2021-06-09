@@ -21,14 +21,16 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 import { CssClass } from "../../../../../shared/css";
 
-import { svgIconReferenceMarkup } from "../../../../../dom";
+import { $button, $new } from "../../../../../dom";
 import { HtmlElement } from "../../../../../html-element";
-import { DataUrl } from "../../../../../shared/common";
-import { ImageInfo } from "../../../../../shared/image-cell";
+import { DataUrl, PlainText } from "../../../../../shared/common";
+import { ImageInfo, PositionInfo } from "../../../../../shared/image-cell";
+import { ImageCell } from "../../../../../models/client-cell/image-cell";
+import { IconSize } from "../../../../../svg-icons";
 
 // Types
 
-type Callback = (imageInfo: ImageInfo, resizeCell: boolean)=>Promise<void>;
+type CameraCallback = ()=>void;
 
 // Constants
 
@@ -36,7 +38,7 @@ type Callback = (imageInfo: ImageInfo, resizeCell: boolean)=>Promise<void>;
 
 // Exported Class
 
-export class ImageAcquisitionPanel extends HtmlElement<'div'>{
+export class AcquisitionOptionsPanel extends HtmlElement<'div'>{
 
   // Public Class Properties
   // Public Class Property Functions
@@ -45,30 +47,45 @@ export class ImageAcquisitionPanel extends HtmlElement<'div'>{
 
   // Public Constructor
 
-  public constructor(callback: Callback) {
+  public constructor(cell: ImageCell, show: boolean, cameraCallback: CameraCallback) {
+
+    const $fileInput = $new({
+      tag: 'input',
+      type: 'file',
+      asyncListeners: { change: e=>this.onFileInputChange(e) },
+      hidden: true
+    });
 
     super({
       tag: 'div',
-      class: <CssClass>'imageAcquisitionPanel',
+      classes: [ <CssClass>'panel', <CssClass>'optionsPanel' ],
       children: [
-        {
-          // camera
-          tag: 'button',
-          class: <CssClass>'iconButton',
-          html: svgIconReferenceMarkup('iconMonstrPhotoCamera5'),
-          syncButtonHandler: (_e: MouseEvent)=>{ alert("Image capture TODO:"); },
-          title: "Image capture",
-        }, {
-          tag: 'input',
-          type: 'file',
-          asyncListeners: {
-            change: e=>this.onFileInputChange(e),
-          }
-        }
-      ]
+        $button({
+          title: <PlainText>"Take photo",
+          iconId: 'iconMonstrPhotoCamera5',
+          iconOptions: { size: IconSize.Large },
+          syncHandler: _e=>this.cameraCallback(),
+        }),
+        $button({
+          title: <PlainText>"Upload image",
+          iconId: 'iconMonstrUpload5',
+          iconOptions: { size: IconSize.Large },
+          syncHandler: e=>this.onUploadButtonPressed(e),
+        }),
+        $button({
+          title: <PlainText>"Link to image",
+          iconId: 'iconMonstrGlobe3',
+          syncHandler: e=>this.onUrlButtonPressed(e),
+          iconOptions: { size: IconSize.Large },
+        }),
+        $fileInput,
+      ],
+      show,
     });
 
-    this.callback = callback;
+    this.$fileInput = $fileInput;
+    this.cameraCallback = cameraCallback;
+    this.cell = cell;
   }
 
   // Public Instance Properties
@@ -79,18 +96,30 @@ export class ImageAcquisitionPanel extends HtmlElement<'div'>{
   // --- PRIVATE ---
 
   // Private Class Properties
+
+  private $fileInput: HTMLInputElement;
+
   // Private Class Property Functions
   // Private Class Methods
   // Private Class Event Handlers
 
   // Private Instance Properties
 
-  private callback: Callback;
+  private cameraCallback: CameraCallback;
+  private cell: ImageCell;
 
   // Private Instance Property Functions
   // Private Instance Methods
 
   // Private Instance Event Handlers
+
+  private onUploadButtonPressed(_event: MouseEvent): void {
+    this.$fileInput.click();
+  }
+
+  private onUrlButtonPressed(_event: MouseEvent): void {
+    alert("Adding image via URL not yet implemented.");
+  }
 
   private async onFileInputChange(event: InputEvent): Promise<void> {
     const $input = <HTMLInputElement>event.target!;
@@ -101,8 +130,18 @@ export class ImageAcquisitionPanel extends HtmlElement<'div'>{
     const imageInfo: ImageInfo = {
       url,
       size: { width: image.width, height: image.height },
-    }
-    await this.callback(imageInfo, true);
+    };
+    const cellSize = this.cell.sizeInPixels();
+    const scaleX = cellSize.width/imageInfo.size.width;
+    const scaleY = scaleX;
+    const newCellHeight = Math.round(imageInfo.size.height * scaleY);
+    const translateX = 0;
+    const translateY = 0;
+    const positionInfo: PositionInfo = {
+     cropBox: { x: 0, y: 0, ...cellSize },
+     transformationMatrix: [ scaleX, 0, 0, scaleY, translateX, translateY ],
+    };
+    await this.cell.changeImageRequest(imageInfo, positionInfo, newCellHeight);
   }
 }
 

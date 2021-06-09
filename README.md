@@ -151,7 +151,7 @@ For server debug information, set the DEBUG environment variable to turn on debu
 DEBUG="server:*" npx nodemon
 ```
 
-For client debug information, use the console to set localStorage.debug:
+For client debug information, use the browser console to set localStorage.debug:
 
 ```
 localStorage.debug="client:*"

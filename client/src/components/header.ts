@@ -31,16 +31,17 @@ import { Path } from "../shared/folder";
 import { CollaboratorObject, UserName } from "../shared/user";
 
 import { ButtonBar } from "./button-bar";
-import { $new, svgIconReferenceMarkup, HtmlElementSpecification, $, EULER_NUMBER_ENTITY } from "../dom";
+import { $new, HtmlElementSpecification, $, EULER_NUMBER_ENTITY } from "../dom";
 import { monitorPromise } from "../error-handler";
 // import { userSettingsInstance, InputMode } from "../user-settings";
 import { ClientUser } from "../client-user";
+import { svgIcon } from "../svg-icons";
 
 // Types
 
 // Constants
 
-const LOGGED_OUT_ICON = svgIconReferenceMarkup('iconMonstrUser1');
+const LOGGED_OUT_ICON = svgIcon('iconMonstrUser1');
 
 // Global Variables
 
@@ -62,7 +63,7 @@ export class Header extends ButtonBar {
       tag: 'button',
       class: <CssClass>'iconButton',
       title: "Refresh page",
-      html: svgIconReferenceMarkup('iconMonstrRefresh2'),
+      html: svgIcon('iconMonstrRefresh2'),
       syncButtonHandler: _e=>window.location.reload(),
     };
 
@@ -70,7 +71,7 @@ export class Header extends ButtonBar {
       tag: 'button',
       class: <CssClass>'iconButton',
       title: "Full screen",
-      html: svgIconReferenceMarkup('iconMonstrFullScreen7'),
+      html: svgIcon('iconMonstrFullScreen7'),
       disabled: !document.fullscreenEnabled,
       syncButtonHandler: e=>this.onFullscreenButtonClicked(e),
     };

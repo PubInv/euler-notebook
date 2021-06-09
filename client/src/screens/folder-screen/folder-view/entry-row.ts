@@ -23,10 +23,11 @@ import { escapeHtml } from "../../../shared/common"
 import { CssClass } from "../../../shared/css"
 import { Folder, FolderEntry, FolderName, NotebookEntry, NotebookName } from "../../../shared/folder";
 
-import { svgIconReferenceMarkup, CLOSE_X_ENTITY, PENCIL_ENTITY, CHECKMARK_ENTITY, $new, DOTTED_CIRCLE_ENTITY } from "../../../dom";
+import { CLOSE_X_ENTITY, PENCIL_ENTITY, CHECKMARK_ENTITY, $new, DOTTED_CIRCLE_ENTITY } from "../../../dom";
 import { ClientFolder } from "../../../models/client-folder";
 import { HtmlElement } from "../../../html-element";
 import { errorMessageForUser } from "../../../error-messages";
+import { svgIcon } from "../../../svg-icons";
 
 // Types
 
@@ -90,7 +91,7 @@ export class EntryRow extends HtmlElement<'tr'> {
       tag: 'tr',
       class: <CssClass>'folderRow',
       children: [
-        { tag: 'td', html: svgIconReferenceMarkup(type==EntryType.Folder?'iconMonstrFolder2':'iconMonstrBook14') },
+        { tag: 'td', html: svgIcon(type==EntryType.Folder?'iconMonstrFolder2':'iconMonstrBook14') },
         { tag: 'td', class: <CssClass>'name', children: [ $nameLink, $nameTextInput ] },
         { tag: 'td', children: [ $renameButton, $renameFinishedButton, $removeButton ] },
         $errorCell,

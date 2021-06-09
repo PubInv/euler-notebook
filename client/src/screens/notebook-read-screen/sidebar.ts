@@ -20,9 +20,9 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 // Requirements
 
 import { CssClass } from "../../shared/css";
-import { svgIconReferenceMarkup } from "../../dom";
 import { ButtonBar } from "../../components/button-bar";
 import { Mode, NotebookReadScreen } from "./index";
+import { largeSvgIcon } from "../../svg-icons";
 
 // Types
 
@@ -51,7 +51,7 @@ export class Sidebar extends ButtonBar {
           // search
           tag: 'button',
           class: <CssClass>'iconButton',
-          html: svgIconReferenceMarkup('iconMonstrMagnifier6'),
+          html: largeSvgIcon('iconMonstrMagnifier6'),
           //syncButtonHandler: (_e: MouseEvent): void =>{ this.screen.toggleSearchPanel(); },
           title: "Search",
           disabled: true,
@@ -59,7 +59,7 @@ export class Sidebar extends ButtonBar {
           // reference
           tag: 'button',
           class: <CssClass>'iconButton',
-          html: svgIconReferenceMarkup('iconMonstrBook17'),
+          html: largeSvgIcon('iconMonstrBook17'),
           //syncButtonHandler: (_e: MouseEvent): void =>{ this.screen.toggleReferencePanel(); },
           title: "Reference",
           disabled: true,
@@ -69,7 +69,7 @@ export class Sidebar extends ButtonBar {
           // thumbnail view
           tag: 'button',
           class: <CssClass>'iconButton',
-          html: svgIconReferenceMarkup('iconMonstrFile12'),
+          html: largeSvgIcon('iconMonstrFile12'),
           syncButtonHandler: (_e: MouseEvent)=>{ window.location.href = `/#${screen.notebook.path}`; },
           title: "Thumbnail view",
           disabled: mode == Mode.Thumbnails,
@@ -77,7 +77,7 @@ export class Sidebar extends ButtonBar {
           // reading view
           tag: 'button',
           class: <CssClass>'iconButton',
-          html: svgIconReferenceMarkup('iconMonstrFile5'),
+          html: largeSvgIcon('iconMonstrFile5'),
           syncButtonHandler: (_e: MouseEvent)=>{ window.location.href = `/#${screen.notebook.path}?view=read`; },
           title: "Reading view",
           disabled: mode == Mode.Reading,
@@ -85,7 +85,7 @@ export class Sidebar extends ButtonBar {
           // edit view
           tag: 'button',
           class: <CssClass>'iconButton',
-          html: svgIconReferenceMarkup('iconMonstrEdit9Modified'),
+          html: largeSvgIcon('iconMonstrEdit9Modified'),
           syncButtonHandler: (_e: MouseEvent)=>{ window.location.href = `/#${screen.notebook.path}?view=edit`; },
           title: "Editing view",
         },
@@ -93,7 +93,7 @@ export class Sidebar extends ButtonBar {
         {
           tag: 'button',
           class: <CssClass>'iconButton',
-          html: svgIconReferenceMarkup('iconMonstrPrinter6'),
+          html: largeSvgIcon('iconMonstrPrinter6'),
           syncButtonHandler: e=>this.onExportToPdf(e),
           title: "Print notebook",
         },

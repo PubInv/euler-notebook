@@ -22,8 +22,9 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 // import * as debug1 from "debug";
 // const debug = debug1('client:plot-cell');
 
-import { CssSize, cssSizeFromPixels } from "../../shared/css";
-import { ImageCellObject, ImageInfo, PositionInfo as ImagePositionInfo } from "../../shared/image-cell";
+import { deepCopy } from "../../shared/common";
+import { cssLengthFromPixels, CssSize } from "../../shared/css";
+import { ImageCellObject, ImageInfo, PositionInfo } from "../../shared/image-cell";
 
 import { ClientNotebook } from "../client-notebook";
 
@@ -41,24 +42,12 @@ export class ImageCell extends ClientCell<ImageCellObject> {
 
   // Public Instance Property Functions
 
-  public async acquireImage(imageInfo: ImageInfo, resizeCell: boolean): Promise<void> {
-    const cellSize = this.sizeInPixels();
-    const scaleX = cellSize.width/imageInfo.size.width;
-    const scaleY = scaleX;
-
+  public async changeImageRequest(imageInfo: ImageInfo, positionInfo: PositionInfo, newCellHeight?: number): Promise<void> {
     let cssSize: CssSize | undefined;
-    if (resizeCell) {
-      cellSize.height = Math.round(imageInfo.size.height * scaleY);
-      cssSize = cssSizeFromPixels(cellSize.width, cellSize.height);
+    if (newCellHeight) {
+      cssSize = deepCopy(this.obj.cssSize);
+      cssSize.height = cssLengthFromPixels(newCellHeight);
     }
-
-    const translateX = 0;
-    const translateY = 0;
-    const positionInfo: ImagePositionInfo = {
-     cropBox: { x: 0, y: 0, ...cellSize },
-     transformationMatrix: [ scaleX, 0, 0, scaleY, translateX, translateY ],
-    };
-
     return this.notebook.changeImageRequest(this.id, imageInfo, positionInfo, cssSize);
   }
 

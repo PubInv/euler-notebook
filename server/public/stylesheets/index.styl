@@ -22,11 +22,11 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 :root
   --cell-left-margin 60px
   --header-button-padding 2px
-  --header-height 30px
+  --header-height 28px
   // --page-aspect-ratio calc(8.5 / 11)
   --searchbar-height 30px
   --sidebar-button-padding 4px
-  --sidebar-width 60px
+  --sidebar-width 56px
   --svg-left-offset 6px
   --svg-top-offset 0px
   --tools-height 20%
@@ -77,10 +77,6 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
     height var(--header-height)
     padding var(--header-button-padding)
     width var(--header-height)
-
-    .icon
-      height 26px // why not?: calc(var(--header-height)-2*var(--header-button-padding))
-      width 26px // why not?: calc(var(--header-height)-2*var(--header-button-padding))
 
   button:disabled
     svg
@@ -190,11 +186,6 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
           color red
           font-size small
 
-    .icon
-      height 24px
-      width 24px
-
-
 .iconButton
   background none
   border none
@@ -206,31 +197,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 .notebookEditScreen
 
-  .tools
-    background-color transparent
-    border-top 1px solid gray
-    bottom 0
-    left 0
-    position fixed
-    padding 20px
-    right 0
-    height var(--tools-height)
-
-    .tool
-      color blue
-      background-color transparent
-      border none
-      display block
-      padding-right 0
-      padding-left 2px
-      text-decoration underline
-
   >.content
-
-    >.insertCellAtTopButton
-      >.icon
-        width 12px
-        height 12px
 
     >.cell
       position relative
@@ -252,8 +219,29 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
             top 0
 
         >.imageCell
-          >.cropBox
-            overflow hidden
+
+          >.panel
+            height 100%
+            width 100%
+
+          >.cameraPanel
+
+            >video
+              height 100%
+              width 100%
+
+            >.shutterButton
+              bottom 0
+              position absolute
+              right 0
+
+          >.imagePanel
+
+            >.cropBox
+              overflow hidden
+
+              >img
+                transform-origin top left
 
         >.leftMargin
         >.rightMargin
@@ -263,10 +251,6 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
           >.iconButton
             padding 6px
-
-            >.icon
-               width 12px
-               height 12px
 
         >.leftMargin
           width 30px
@@ -295,10 +279,6 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
           top -5pt
           color gray
           position absolute
-
-          >.icon
-            width 12px
-            height 12px
 
       >.suggestionPanel
         background-color #F0F0F0
@@ -331,17 +311,6 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
     position fixed
     top var(--header-height)
     width calc(75% - var(--sidebar-width))
-
-  >.photoPanel
-    >img
-      display block
-      width 100%
-      // height 240px
-    >video
-      display block
-      width 100%
-      // height 240px
-
 
   >.referencePanel
     >.referenceForm
@@ -442,22 +411,6 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
     padding var(--sidebar-button-padding)
     width var(--sidebar-width)
 
-    .icon
-      height 52px // why not? doesn't work!: calc(var(--sidebar-width) - 2 * var(--sidebar-button-padding))
-      width 52px // why not? doesn't work!: calc(var(--sidebar-width)- 2 * var(--sidebar-button-padding))
-
-.smallIconButton
-  background none
-  border none
-  color inherit
-  height var(--header-height)
-  padding var(--header-button-padding)
-  width var(--header-height)
-
-  >.icon
-    height 26px // why not? doesn't work!: calc(var(--header-height) - 2 * var(--header-width))
-    width 26px // why not? doesn't work! calc(var(--header-height) - 2 * var(--header-width))
-
 .strokePanel
 
   >.strokeDrawingPanel
@@ -511,3 +464,15 @@ button:disabled
 
 html
   height 100%
+
+svg.largeIcon
+  width 48px
+  height 48px
+
+svg.mediumIcon
+  width 24px
+  height 24px
+
+svg.smallIcon
+  width 12px
+  height 12px

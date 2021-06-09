@@ -26,7 +26,7 @@ import * as debug1 from "debug";
 const debug = debug1(`server:server-cell`);
 
 import { escapeHtml, Html, Milliseconds } from "../../shared/common";
-import { CssLength, CssSize, cssLengthInPixels, cssSizeFromPixels, LengthInPixels } from "../../shared/css";
+import { CssLength, CssSize, cssLengthInPixels, LengthInPixels, cssLengthFromPixels } from "../../shared/css";
 import { CellId, CellObject, CellType } from "../../shared/cell";
 
 import { ServerNotebook } from "../server-notebook";
@@ -111,10 +111,11 @@ export abstract class ServerCell<O extends CellObject> {
 
   // Private Class Methods
 
-  protected static initialCellSize(notebook: ServerNotebook, cssHeight: CssLength): CssSize {
-    const width = notebook.defaultCellWidth();
-    const height = cssLengthInPixels(cssHeight);
-    return cssSizeFromPixels(width, height);
+  protected static initialCellSize(notebook: ServerNotebook, height: CssLength): CssSize {
+    return {
+      width: cssLengthFromPixels(notebook.defaultCellWidth()),
+      height,
+    };
   }
 
   // Private Instance Properties

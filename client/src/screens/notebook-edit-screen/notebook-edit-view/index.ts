@@ -31,16 +31,17 @@ import { CssClass } from "../../../shared/css";
 import { notebookUpdateSynopsis } from "../../../shared/debug-synopsis";
 import { CellDeleted, CellInserted, CellMoved, NotebookUpdate } from "../../../shared/server-responses";
 
-import { StylusMode } from "../../../components/stroke-panel";
+import { StylusMode } from "./cell-edit-view/stroke-panel";
 
 import { NotebookEditScreen } from "..";
 
 import { HtmlElement } from "../../../html-element";
 import { ClientNotebook } from "../../../models/client-notebook";
-import { $new, svgIconReferenceMarkup } from "../../../dom";
+import { $new } from "../../../dom";
 
 import { CellEditView } from "./cell-edit-view";
 import { createCellView } from "./cell-edit-view/instantiator";
+import { smallSvgIcon } from "../../../svg-icons";
 
 // Exported Class
 
@@ -57,8 +58,8 @@ export class NotebookEditView extends HtmlElement<'div'> {
     const $topBoundary = $new({
       tag: 'button',
       attrs: { tabindex: -1 },
-      classes: [ <CssClass>'insertCellAtTopButton', <CssClass>'iconButton' ],
-      html: svgIconReferenceMarkup('iconMonstrArrow49'),
+      classes: [ <CssClass>'iconButton' ],
+      html: smallSvgIcon('iconMonstrArrow49'),
       asyncButtonHandler: e=>this.onInsertCellAtTopButtonClicked(e),
     });
 

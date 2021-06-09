@@ -22,7 +22,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 import * as debug1 from "debug";
 const debug = debug1('client:formula-cell');
 
-import { ImageCellObject, ImageInfo, PositionInfo as ImagePositionInfo, transformationMatrixValue } from "../../../../../shared/image-cell";
+import { ImageCellObject } from "../../../../../shared/image-cell";
 import { CssClass } from "../../../../../shared/css";
 import { notebookUpdateSynopsis } from "../../../../../shared/debug-synopsis";
 import { NotebookUpdate } from "../../../../../shared/server-responses";
@@ -32,10 +32,10 @@ import { ImageCell } from "../../../../../models/client-cell/image-cell";
 import { NotebookEditView } from "../..";
 
 import { CellEditView } from "../index";
-import { ImageAcquisitionPanel } from "./image-acquisition-panel";
-import { $, $new, $newSvg } from "../../../../../dom";
-import { convertStrokeToPath, renderStrokesToSvg, strokePathId } from "../../../../../shared/stylus";
-import { assert } from "../../../../../shared/common";
+import { AcquisitionOptionsPanel } from "./acquisition-options-panel";
+import { $new } from "../../../../../dom";
+import { CameraPanel } from "./camera-panel";
+import { ImagePanel } from "./image-panel";
 
 // Types
 
@@ -50,6 +50,11 @@ export class ImageEditView extends CellEditView<ImageCellObject> {
   // Public Constructor
 
   public  constructor(notebookEditView: NotebookEditView, cell: ImageCell) {
+    const hasImage = !!cell.obj.imageInfo;
+
+    const imagePanel = new ImagePanel(cell, hasImage);
+    const optionsPanel = new AcquisitionOptionsPanel(cell, !hasImage, ()=>this.switchToCamera());
+    const cameraPanel = new CameraPanel(cell, false);
 
     const $content = $new<'div'>({
       tag: 'div',
@@ -58,14 +63,13 @@ export class ImageEditView extends CellEditView<ImageCellObject> {
         width: cell.obj.cssSize.width,
         height: cell.obj.cssSize.height,
       },
+      children: [ imagePanel.$elt, optionsPanel.$elt, cameraPanel.$elt ],
     });
+    super(notebookEditView, cell, $content, false);
 
-    super(notebookEditView, cell, $content);
-
-    console.dir(cell.obj);
-    const { imageInfo, positionInfo } = cell.obj;
-    this.updateImage(imageInfo);
-    this.updatePosition(positionInfo);
+    this.imagePanel = imagePanel;
+    this.optionsPanel = optionsPanel;
+    this.cameraPanel = cameraPanel;
   }
 
   // CellView Methods
@@ -73,30 +77,23 @@ export class ImageEditView extends CellEditView<ImageCellObject> {
   public onUpdate(update: NotebookUpdate, ownRequest: boolean): void {
     debug(`onUpdate C${this.id} ${notebookUpdateSynopsis(update)}`);
     super.onUpdate(update, ownRequest);
-    switch (update.type) {
+    this.imagePanel.onUpdate(update, ownRequest);
+
+    switch(update.type) {
       case 'imageChanged': {
-        const { imageInfo, positionInfo } = update;
-        this.updateImage(imageInfo);
-        this.updatePosition(positionInfo);
-        break;
-      }
-      case 'imagePositionChanged': {
-        const { positionInfo } = update;
-        this.updatePosition(positionInfo);
-        break;
-      }
-      case 'strokeDeleted': {
-        const { strokeId } = update;
-        const elementId = strokePathId(this.id, strokeId);
-        $(this.$strokeSvg!, `#${elementId}`).remove();
-        break;
-      }
-      case 'strokeInserted': {
-        const { stroke } = update;
-        const svgMarkup = convertStrokeToPath(this.id, stroke);
-        const $svg = $newSvg<'svg'>({ tag: 'svg', html: svgMarkup });
-        while ($svg.childNodes.length > 0) {
-          this.$strokeSvg!.appendChild($svg.childNodes[0]);
+        if (update.imageInfo) {
+          // image added for first time or changed.
+          if (this.optionsPanel.isShown) {
+            this.imagePanel.show();
+            this.optionsPanel.hide();
+          } else if (this.cameraPanel.isShown) {
+            this.imagePanel.show();
+            this.cameraPanel.hide();
+          } else { /* Image panel shown. Nothing to do. */ }
+        } else {
+          // image removed.
+          this.imagePanel.hide();
+          this.optionsPanel.show();
         }
         break;
       }
@@ -107,60 +104,20 @@ export class ImageEditView extends CellEditView<ImageCellObject> {
 
   // Private Instance Properties
 
-  private $cropBox?: HTMLDivElement;
-  private $imageElt?: HTMLImageElement;
-  private $strokeSvg?: SVGSVGElement;
-  private acquisitionPanel?: ImageAcquisitionPanel;
+  private optionsPanel: AcquisitionOptionsPanel;
+  private cameraPanel: CameraPanel;
+  private imagePanel: ImagePanel;
 
   // Private Instance Property Functions
 
-  private get imageCell(): ImageCell { return <ImageCell>this.cell; }
+  // private get imageCell(): ImageCell { return <ImageCell>this.cell; }
 
   // Private Instance Methods
 
-  private updateImage(imageInfo?: ImageInfo): void {
-    if (imageInfo) {
-      // Adding image to empty image cell, or replacing image in nonempty image cell.
-      if (this.$imageElt) {
-        this.$imageElt.src = imageInfo.url;
-      } else {
-        this.$imageElt = $new<'img'>({ tag: 'img', src: imageInfo.url, styles: { 'transform-origin': 'top left' } });
-        this.$cropBox = $new<'div'>({ tag: 'div', class: <CssClass>'cropBox', children: [ this.$imageElt ] });
-        this.$strokeSvg = $newSvg<'svg'>({
-          tag: 'svg',
-          class: <CssClass>'displaySvg',
-          attrs: { height: "100%", width: "100%" },
-          html: renderStrokesToSvg(this.cell.obj.strokeData, this.cell.id),
-        });
-
-        if (this.acquisitionPanel) {
-          this.acquisitionPanel.remove();
-          delete this.acquisitionPanel;
-        }
-        this.$content.append(this.$cropBox, this.$strokeSvg);
-      }
-    } else {
-      // Removing image from cell. (e.g. undo of add image operation)
-      if (this.$cropBox && this.$strokeSvg) {
-        this.$cropBox!.remove();
-        this.$strokeSvg!.remove();
-      }
-
-      assert(!this.acquisitionPanel);
-      this.acquisitionPanel = new ImageAcquisitionPanel(async (imageInfo, resizeCell)=>{
-        await this.imageCell.acquireImage(imageInfo, resizeCell)
-      });
-      this.$content.append(this.acquisitionPanel.$elt);
-    }
-  }
-
-  private updatePosition(positionInfo?: ImagePositionInfo): void {
-    if (!positionInfo) { return; }
-    this.$cropBox!.style.width = `${positionInfo.cropBox.width}px`;
-    this.$cropBox!.style.height = `${positionInfo.cropBox.height}px`;
-    this.$imageElt!.style.transform = transformationMatrixValue(positionInfo.transformationMatrix);
+  private switchToCamera(): void {
+    this.optionsPanel.hide();
+    this.cameraPanel.show();
   }
 
   // Private Instance Event Handlers
-
 }
