@@ -24,15 +24,10 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 // Requirements
 
-import { Html, PlainText } from "./shared/common";
+import { PlainText } from "./shared/common";
 import { ExpectedError } from "./shared/expected-error";
 
 // Types
-
-export interface ShowErrorDetail {
-  err: Error,
-  message?: Html,
-}
 
 // Constants
 
@@ -40,7 +35,7 @@ export interface ShowErrorDetail {
 
 // Exported Functions
 
-export function logError(err: Error, message?: string): void {
+export function logError(err: Error, message?: PlainText): void {
   // Makes a record of the error.
   // If the error might be an ExpectedError, then call logErrorIfUnexpected instead.
   // Currently it just writes the error to the browser console.
@@ -57,29 +52,13 @@ export function logError(err: Error, message?: string): void {
   console.dir(err);
 }
 
-export function logErrorIfUnexpected(err: Error, message?: string): void {
+export function logErrorIfUnexpected(err: Error, message?: PlainText): void {
   // Makes a record of the error if it is not an instance of ExpectedError.
   if (err instanceof ExpectedError) { return; }
   logError(err, message);
 }
 
-export function logWarning(message: string): void {
+export function logWarning(message: PlainText): void {
   console.warn(message);
 }
 
-export function monitorPromise(promise: Promise<any>, message?: Html): void {
-  promise.catch(err=>showError(err, message));
-}
-
-export function showError(err: Error, message?: Html): void {
-  // Shows the error to the user, and logs it if appropriate.
-  logErrorIfUnexpected(err, /* BUGBUG */<PlainText>message);
-  // messageDisplayInstance.addError(err, message);
-
-  // To avoid circular dependencies on high-level error display code
-  // we dispatch the error as a custom event, which is listened for
-  // in the approprate place.
-  const detail: ShowErrorDetail = { err, message};
-  const event = new CustomEvent('showError', { detail });
-  document.body.dispatchEvent(event);
-}

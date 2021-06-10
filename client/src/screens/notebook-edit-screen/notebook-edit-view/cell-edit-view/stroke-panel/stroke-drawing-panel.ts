@@ -28,7 +28,7 @@ import { CssClass } from "../../../../../shared/css";
 // import { DebugConsole } from "../../components/debug-console";
 
 import { SvgStroke } from "../../../../../svg-stroke";
-import { showError } from "../../../../../error-handler";
+import { showError } from "../../../../../user-message-dispatch";
 import { SvgElement } from "../../../../../svg-element";
 import { notebookUpdateSynopsis } from "../../../../../shared/debug-synopsis";
 import { NotebookUpdate } from "../../../../../shared/server-responses";

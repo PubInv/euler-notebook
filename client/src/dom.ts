@@ -22,7 +22,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 import { AbsoluteUrl, assert, DataUrl, ElementId, Html, PlainText, RelativeUrl } from "./shared/common";
 import { CssClass, CssSelector } from "./shared/css";
 import { SvgMarkup } from "./shared/svg";
-import { showError, monitorPromise } from "./error-handler";
+import { showError, monitorPromise } from "./user-message-dispatch";
 import { svgIcon, SvgIconId, SvgIconOptions } from "./svg-icons";
 
 // Types
@@ -312,7 +312,7 @@ export function buttonSpecification(spec: ButtonSpec): HtmlElementSpecification<
   };
 }
 
-export function addAsyncEventListener<E extends Event>(target: EventTarget, type: string, listener: AsyncListener<E>, message?: Html): SyncListener<E> {
+export function addAsyncEventListener<E extends Event>(target: EventTarget, type: string, listener: AsyncListener<E>, message: Html): SyncListener<E> {
   // Returns the actual listener added, in case the caller wants to remove it later.
   // TODO: Type this so that callers don't have to specify the type of the event.
   //       It should be inferred from the type parameter.
@@ -325,7 +325,7 @@ export function addAsyncEventListener<E extends Event>(target: EventTarget, type
   return wrappedListener;
 }
 
-export function addSyncEventListener<E extends Event>(target: EventTarget, type: string, listener: SyncListener<E>, message?: Html): SyncListener<E> {
+export function addSyncEventListener<E extends Event>(target: EventTarget, type: string, listener: SyncListener<E>, message: Html): SyncListener<E> {
   // Returns the actual listener added, in case the caller wants to remove it later.
   // TODO: Type this so that callers don't have to specify the type of the event.
   //       It should be inferred from the type parameter.
@@ -366,7 +366,7 @@ function attachAttributes($elt: Element, attrs: Attributes): void {
 function attachAsyncButtonHandler($elt: HTMLButtonElement, handler: AsyncListener<MouseEvent>): void {
   const specifier = elementSpecifier($elt);
   // Prevent button capturing focus by preventing the default action on mousedown.
-  addSyncEventListener($elt, 'mousedown', preventDefaultListener);
+  addSyncEventListener($elt, 'mousedown', preventDefaultListener, <Html>`Internal error processing ${specifier} mousedown event.`);
   addAsyncEventListener($elt, 'click', async (event: MouseEvent)=>{
     $elt.disabled = true;
     try { await handler(event); }
@@ -386,7 +386,7 @@ function attachAsyncListeners($elt: Element, listeners: AsyncListeners): void {
 function attachSyncButtonHandler($elt: HTMLButtonElement, handler: SyncListener<MouseEvent>): void {
   const specifier = elementSpecifier($elt);
   // Prevent button capturing focus by preventing the default action on mousedown.
-  addSyncEventListener($elt, 'mousedown', preventDefaultListener);
+  addSyncEventListener($elt, 'mousedown', preventDefaultListener, <Html>`Internal error processing ${specifier} mousedown event.`);
   addSyncEventListener($elt, 'click', handler, <Html>`Internal error processing ${specifier} click event.`);
 }
 

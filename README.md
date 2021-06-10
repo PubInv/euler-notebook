@@ -161,6 +161,8 @@ To get debugging information from a specific file, specify the filename instead 
 `DEBUG="server:client-socket`. You can specify multiple files by comma-separating them, and exclude debug
 messages from a specific file by prefixing it with a minus sign. See the documentation for [debug](https://www.npmjs.com/package/debug).
 
+To see JavaScript console messages in Chrome on an iPad, open another tab to [chrome://inspect](chrome://inspect).
+
 ## Testing
 
 To run a specific file of unit tests, in the server directory:

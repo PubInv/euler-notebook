@@ -24,7 +24,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 import * as debug1 from "debug";
 const debug = debug1('client:photo-panel');
 
-import { assert, DataUrl, JPEG_MIME_TYPE, PlainText } from "../../../../../shared/common";
+import { assert, DataUrl, Html, JPEG_MIME_TYPE, PlainText } from "../../../../../shared/common";
 import { CssClass } from "../../../../../shared/css";
 
 import { $new, $button } from "../../../../../dom";
@@ -32,6 +32,7 @@ import { HtmlElement } from "../../../../../html-element";
 
 import { ImageInfo, PositionInfo } from "../../../../../shared/image-cell";
 import { ImageCell } from "../../../../../models/client-cell/image-cell";
+import { showDebugMessage, showError, showWarningMessage } from "../../../../../user-message-dispatch";
 
 // Types
 
@@ -90,34 +91,25 @@ export class CameraPanel extends HtmlElement<'div'> {
   private $video: HTMLVideoElement;
 
   private cell: ImageCell;
-  private imageCapture?: ImageCapture;
 
   // private transformationMatrix?: TransformationMatrix;
   // private videoSize?: SizeInPixels;
 
   // Private Instance Property Functions
 
-  private stream(): MediaStream|null { return <MediaStream>this.$video.srcObject; }
-
   // Private Instance Methods
 
   private startCamera(): void {
     this.startCamera2()
-    .catch(_err=>{
-      // TODO: display error to user.
-      console.error("ERROR: Error starting camera.");
-    });
+    .catch(err=>{ showError(err, <Html>err.message/* "Error starting camera" */); });
   }
 
   private async startCamera2(): Promise<void> {
-    let stream = this.stream();
-    if (stream) {
-      debug("Starting camera... but camera is already running.");
-      // TODO: Throw error? Log?
-      console.warn("WARNING: Starting camera that is not stopped.");
+    if (!this.$video.srcObject) {
+      showWarningMessage(<Html>"Starting camera that is already started.");
       return;
     }
-    debug("Starting camera.");
+    showDebugMessage(<Html>"Starting camera.");
     const cellSize = this.cell.sizeInPixels();
     const constraints: MediaStreamConstraints = {
       audio: false,
@@ -128,49 +120,15 @@ export class CameraPanel extends HtmlElement<'div'> {
         width: { exact: cellSize.width },
       },
     };
-    stream = await navigator.mediaDevices.getUserMedia(constraints);
-
-    // // Get the dimensions of the video from the stream.
-    // const videoTracks = stream.getVideoTracks();
-    // assert(videoTracks.length == 1);
-    // const videoTrack = videoTracks[0];
-    // const capabilities = videoTrack.getCapabilities();
-    // // const constraints = videoTrack.getConstraints();
-    // // const settings = videoTrack.getSettings();
-    // assert(capabilities.width && capabilities.width.max);
-    // assert(capabilities.height && capabilities.height.max);
-    // /* const videoSize = */ this.videoSize = {
-    //   width: capabilities.width!.max!,
-    //   height: capabilities.height!.max!,
-    // };
-    // console.log("STREAM CAPABILITIES:");
-    // console.dir(capabilities);
-
-    // // TODO: Recompute if cell size changes!
-    // const scaleFactor = cellSize.width/videoSize.width;
-    // const scaledVideoHeight = videoSize.height * scaleFactor;
-    // const translateY = Math.round((cellSize.height - scaledVideoHeight)/2);
-    // this.transformationMatrix = [ scaleFactor, 0, 0, scaleFactor, 0, translateY ];
-
-    // this.$video.style.width = `${videoSize.width}px`;
-    // this.$video.style.height = `${videoSize.height}px`;
-    // this.$video.style.transform = transformationMatrixValue(this.transformationMatrix);
-
-    // this.$video.addEventListener('loadedmetadata', e=>{
-    //   console.dir(e);
-    //   console.log(`${this.$video.videoWidth}x${this.$video.videoHeight}`);
-    //   console.log(`${this.$video.width}x${this.$video.height}`);
-    // });
+    const stream = await navigator.mediaDevices.getUserMedia(constraints);
     this.$video.srcObject = stream;
 
-    const track = stream.getVideoTracks()[0];
-    this.imageCapture = new ImageCapture(track);
-
+    // TODO: Enable button on 'canplay'? event?
     this.$shutterButton.disabled = false;
   }
 
   private stopCameraIfRunning(): void {
-    const stream = this.stream();
+    const stream = <MediaStream>this.$video.srcObject;
     if (!stream) { return }
     debug("Stopping camera.");
     for (const track of stream.getTracks()) {
@@ -194,10 +152,11 @@ export class CameraPanel extends HtmlElement<'div'> {
 
   private async onShutterButtonClicked(_event: MouseEvent): Promise<void> {
     this.$shutterButton.disabled = true;
-
-    // Convert the current video frame to an image via a canvas element.
-    assert(this.imageCapture);
-    const blob =  await this.imageCapture!.takePhoto();
+    const stream = <MediaStream>this.$video.srcObject!;
+    assert(stream);
+    const track = stream.getVideoTracks()[0];
+    const imageCapture = new ImageCapture(track);
+    const blob =  await imageCapture.takePhoto();
     const imageBitmap = await createImageBitmap(blob);
     const imageSize = { width: imageBitmap.width, height: imageBitmap.height };
     const cellSize = this.cell.sizeInPixels();
@@ -206,7 +165,6 @@ export class CameraPanel extends HtmlElement<'div'> {
     // console.log(`Image size: ${imageSize.width}x${imageSize.height}`);
     // console.log(`Cell size: ${cellSize.width}x${cellSize.height}`);
 
-    //const url = URL.createObjectURL(blob);
     const sWidth = imageSize.width;
     const sHeight = Math.round(sWidth/aspectRatio);
     const sx = 0;

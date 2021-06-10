@@ -32,7 +32,7 @@ import { notebookUpdateSynopsis } from "../../../../shared/debug-synopsis";
 // import { DebugConsole } from "../../components/debug-console";
 import { HtmlElement } from "../../../../html-element";
 import { $new, HtmlElementOrSpecification, } from "../../../../dom";
-import { showError } from "../../../../error-handler";
+import { showError } from "../../../../user-message-dispatch";
 
 import { CellView, ClientCell } from "../../../../models/client-cell";
 import { StrokePanel, StrokePanelCallbacks, StylusMode } from "./stroke-panel";

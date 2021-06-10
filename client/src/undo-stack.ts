@@ -17,7 +17,7 @@ You should have received a copy of the GNU Affero General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-import { showError } from "./error-handler";
+import { showError } from "./user-message-dispatch";
 import { Html } from "./shared/common";
 
 // TODO: Undo needs to scroll the changed region into view.

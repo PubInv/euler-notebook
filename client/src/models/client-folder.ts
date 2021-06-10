@@ -24,7 +24,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 import * as debug1 from "debug";
 const debug = debug1('client:client-notebook');
 
-import { assert, assertFalse, ClientId } from "../shared/common";
+import { assert, assertFalse, ClientId, PlainText } from "../shared/common";
 import { FolderPath, NotebookName, FolderName, FolderEntry, NotebookEntry, Folder } from "../shared/folder";
 import {
   FolderChangeRequest, ChangeFolder, OpenFolder,
@@ -285,7 +285,7 @@ export class ClientFolder extends Folder {
     // Message from the server indicating a user has connected to the notebook.
     const clientId = msg.obj.clientId;
     if (this.collaboratorMap.has(clientId)) {
-      logWarning(`Ignoring duplicate collaborator connected message for folder: ${clientId} ${this.path}`);
+      logWarning(<PlainText>`Ignoring duplicate collaborator connected message for folder: ${clientId} ${this.path}`);
       return;
     }
     this.collaboratorMap.set(clientId, msg.obj);
@@ -296,7 +296,7 @@ export class ClientFolder extends Folder {
     // Message from the server indicating a user has connected to the notebook.
     const clientId = msg.clientId;
     if (!this.collaboratorMap.has(clientId)) {
-      logWarning(`Ignoring duplicate collaborator disconnected message for folder: ${clientId} ${this.path}`);
+      logWarning(<PlainText>`Ignoring duplicate collaborator disconnected message for folder: ${clientId} ${this.path}`);
       return;
     }
     this.collaboratorMap.delete(clientId);

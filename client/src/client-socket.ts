@@ -31,10 +31,9 @@ import { clientMessageSynopsis, serverMessageSynopsis } from "./shared/debug-syn
 import { ClientRequest, RequestId } from "./shared/client-requests";
 import { ResponseBase, ServerResponse, } from "./shared/server-responses";
 
-import { MessageDisplay } from "./message-display";
 import { ClientFolder } from "./models/client-folder";
 import { ClientNotebook } from "./models/client-notebook";
-import { showError } from "./error-handler";
+import { showError, showErrorMessage } from "./user-message-dispatch";
 import { ClientUser } from "./client-user";
 import { errorTemplateForCode } from "./error-messages";
 
@@ -129,7 +128,7 @@ export class ClientSocket {
     // For terminating server: code = 1006, reason = "";
     debug(`Socket closed: ${event.code} ${event.reason}`);
     // console.dir(event);
-    MessageDisplay.addErrorMessage(<Html>`Socket closed by server. Refresh this page in your browser to reconnect.`);
+    showErrorMessage(<Html>`Socket closed by server. Refresh this page in your browser to reconnect.`);
     // LATER: Attempt to reconnect after a few seconds with exponential backoff.
   }
 
@@ -142,7 +141,7 @@ export class ClientSocket {
     this.connectPromise.reject(new Error(`Cannot connect to server.`));
 
     // REVIEW: Is the socket stull usable? Is the socket closed? Will we also get a close event?
-    MessageDisplay.addErrorMessage(<Html>`Socket error. Refresh this page in your browser to reconnect.`);
+    showErrorMessage(<Html>`Socket error. Refresh this page in your browser to reconnect.`);
   }
 
   private onWsMessage(event: MessageEvent): void {
@@ -170,7 +169,7 @@ export class ClientSocket {
             // An error from the server that we were not expecting.
             // Display it to the user.
             const message = errorTemplateForCode(msg.code)
-            MessageDisplay.addErrorMessage(message);
+            showErrorMessage(message);
           }
           break;
         }

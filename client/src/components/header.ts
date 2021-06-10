@@ -32,7 +32,7 @@ import { CollaboratorObject, UserName } from "../shared/user";
 
 import { ButtonBar } from "./button-bar";
 import { $new, HtmlElementSpecification, $, EULER_NUMBER_ENTITY } from "../dom";
-import { monitorPromise } from "../error-handler";
+import { monitorPromise } from "../user-message-dispatch";
 // import { userSettingsInstance, InputMode } from "../user-settings";
 import { ClientUser } from "../client-user";
 import { svgIcon } from "../svg-icons";

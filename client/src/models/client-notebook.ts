@@ -25,7 +25,7 @@ import * as debug1 from "debug";
 const debug = debug1('client:client-notebook');
 
 import { CellId, CellObject, CellPosition, CellRelativePosition, CellType } from "../shared/cell";
-import { assert, assertFalse, ClientId, Html } from "../shared/common";
+import { assert, assertFalse, ClientId, Html, PlainText } from "../shared/common";
 import { CssSize } from "../shared/css";
 import { notebookUpdateSynopsis } from "../shared/debug-synopsis";
 import { NotebookPath } from "../shared/folder";
@@ -400,7 +400,7 @@ export class ClientNotebook extends Notebook {
     // Message from the server indicating a user has connected to the notebook.
     const clientId = msg.obj.clientId;
     if (this.collaboratorMap.has(clientId)) {
-      logWarning(`Ignoring duplicate collaborator connected message for notebook: ${clientId} ${this.path}`);
+      logWarning(<PlainText>`Ignoring duplicate collaborator connected message for notebook: ${clientId} ${this.path}`);
       return;
     }
     this.collaboratorMap.set(clientId, msg.obj);
@@ -411,7 +411,7 @@ export class ClientNotebook extends Notebook {
     // Message from the server indicating a user has connected to the notebook.
     const clientId = msg.clientId;
     if (!this.collaboratorMap.has(clientId)) {
-      logWarning(`Ignoring duplicate collaborator disconnected message for notebook: ${clientId} ${this.path}`);
+      logWarning(<PlainText>`Ignoring duplicate collaborator disconnected message for notebook: ${clientId} ${this.path}`);
       return;
     }
     this.collaboratorMap.delete(clientId);

@@ -28,11 +28,11 @@ import { initialize as initializeFormula } from "./shared/formula";
 import { Header } from "./components/header";
 
 import { addAsyncEventListener, addSyncEventListener } from "./dom";
-import { showError, ShowErrorDetail } from "./error-handler";
+import { showError } from "./user-message-dispatch";
 import { Pathname, ScreenManager } from "./screens/screen-manager";
 import { ClientSocket } from "./client-socket";
 import { ClientUser } from "./client-user";
-import { MessageDisplay } from "./message-display";
+import { UserMessageDisplay } from "./user-message-display";
 import { MathJaxTypesetter } from "./adapters/mathjax-typesetter";
 
 // Types
@@ -82,22 +82,12 @@ class App {
   private async onDomContentLoaded(_event: Event): Promise<void> {
 
     // Add the top-level components to body that are not on a 'screen'.
-    // This includes the header bar and error message ticker.
-    const $body = <HTMLBodyElement>window.document.body;
-    const messageDisplay = new MessageDisplay();
+    // This includes the header bar and user message ticker.
+    const messageDisplay = new UserMessageDisplay();
     // const debugConsole = new DebugConsole();
     this.header = new Header();
+    const $body = <HTMLBodyElement>window.document.body;
     $body.append(messageDisplay.$elt, /* debugConsole.$elt, */ this.header.$elt);
-
-    // Listen for low-level error messages on the body element,
-    // and display any in the message ticker.
-    // These are dispatched in error-handler.ts.
-    $body.addEventListener('showError', (e: Event)=>{
-      try {
-        const detail = <ShowErrorDetail>(<CustomEvent>e).detail;
-        messageDisplay.addError(detail.err, detail.message);
-      } catch (err) { console.dir(err); }
-    });
 
     // Initialize the math typesetter
     initializeFormula(MathJaxTypesetter.create());

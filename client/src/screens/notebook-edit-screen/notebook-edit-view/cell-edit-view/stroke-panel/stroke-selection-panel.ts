@@ -30,7 +30,7 @@ import { notebookUpdateSynopsis } from "../../../../../shared/debug-synopsis";
 
 import { SvgElement } from "../../../../../svg-element";
 import { $newSvg, $svg } from "../../../../../dom";
-import { showError } from "../../../../../error-handler";
+import { showError } from "../../../../../user-message-dispatch";
 
 // Types
 
