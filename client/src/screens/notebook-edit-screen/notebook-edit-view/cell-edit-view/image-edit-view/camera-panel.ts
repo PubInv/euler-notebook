@@ -19,6 +19,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 // TODO: Handle case where user disallows camera.
 // TODO: Cancel camera button.
+
 // Requirements
 
 import * as debug1 from "debug";
@@ -35,16 +36,13 @@ import { ImageCell } from "../../../../../models/client-cell/image-cell";
 import { showWarningMessage } from "../../../../../user-message-dispatch";
 import { ExpectedError } from "../../../../../shared/expected-error";
 import { errorMessageForUser } from "../../../../../error-messages";
+import { MediaDeviceId, PersistentSettings } from "../../../../../persistent-settings";
 
 // Types
-
-type MediaDeviceId = '{MediaDeviceId}';
-type UsedCameras = MediaDeviceId[];
 
 // Constants
 
 const MAX_USED_CAMERAS = 4;
-const USED_CAMERAS_KEY = 'usedCameras';
 
 // Global Variables
 
@@ -134,25 +132,15 @@ export class CameraPanel extends HtmlElement<'div'> {
 
   // Private Instance Property Functions
 
-  private getUsedCameras(): UsedCameras {
-    const json = window.localStorage.getItem(USED_CAMERAS_KEY);
-    if (!json) { return []; }
-    const rval = <UsedCameras>JSON.parse(json);
-    assert(rval instanceof Array);
-    assert(rval.every(id=>typeof id == 'string'));
-    return rval;
-  }
-
   private markCameraAsUsed(cameraId: MediaDeviceId): void {
-    const usedCameras = this.getUsedCameras();
+    const usedCameras = PersistentSettings.usedCameras;
     const index = usedCameras.indexOf(cameraId);
     if (index>=0) { usedCameras.splice(index, 1); }
     usedCameras.unshift(cameraId);
     if (usedCameras.length > MAX_USED_CAMERAS) {
       usedCameras.slice(0, MAX_USED_CAMERAS);
     }
-    const json = JSON.stringify(usedCameras);
-    window.localStorage.setItem(USED_CAMERAS_KEY, json);
+    PersistentSettings.usedCameras = usedCameras;
   }
 
   // Private Instance Methods
@@ -161,7 +149,7 @@ export class CameraPanel extends HtmlElement<'div'> {
 
     // Look through the list of cameras that were used, most recent first.
     // If the camera is in the list of available cameras, then select it.
-    const usedCameraIds = this.getUsedCameras();
+    const usedCameraIds = PersistentSettings.usedCameras;
     for (const usedCameraId of usedCameraIds) {
       const camera = cameras.find(c=>c.deviceId==usedCameraId);
       if (camera) { return usedCameraId; }

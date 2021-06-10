@@ -42,6 +42,7 @@ import { $new } from "../../../dom";
 import { CellEditView } from "./cell-edit-view";
 import { createCellView } from "./cell-edit-view/instantiator";
 import { smallSvgIcon } from "../../../svg-icons";
+import { PersistentSettings } from "../../../persistent-settings";
 
 // Exported Class
 
@@ -79,8 +80,6 @@ export class NotebookEditView extends HtmlElement<'div'> {
 
     this.cellViewMap = new Map();
     // this.container = _container;
-    this.insertMode = CellType.Formula;
-    this._stylusMode = StylusMode.Draw;
     this.notebook = notebook;
 
     this.$topBoundary = $topBoundary;
@@ -96,18 +95,15 @@ export class NotebookEditView extends HtmlElement<'div'> {
 
   // Public Instance Properties
 
-  public insertMode: CellType;
-  private _stylusMode: StylusMode;
-
   // Public Instance Property Functions
 
-  public get stylusMode(): StylusMode {
-    return this._stylusMode;
-  }
+  public get insertMode(): CellType { return PersistentSettings.insertMode; }
+  public set insertMode(value: CellType) { PersistentSettings.insertMode = value; }
 
+  public get stylusMode(): StylusMode { return PersistentSettings.stylusMode; }
   public set stylusMode(value: StylusMode) {
     // REVIEW: Warn if setting mode to same as existing?
-    this._stylusMode = value;
+    PersistentSettings.stylusMode = value;
     for (const cellView of this.cellViewMap.values()) {
       cellView.stylusMode = value;
     }
