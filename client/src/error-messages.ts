@@ -48,6 +48,7 @@ const ERROR_MESSAGES = new Map<ErrorCode, Html>([
   ['logInToModifyNotebook',  <Html>`This public notebook is read-only. ${LOGIN_MSG}`],
   ['logInToReadFolder',      <Html>`This folder is not public. ${LOGIN_MSG}`],
   ['logInToReadNotebook',    <Html>`This notebook is not public. ${LOGIN_MSG}`],
+  ['noCamerasFound',         <Html>"No cameras available."],
   ['notebookAlreadyExists',  <Html>"Notebook '#{path}' already exists."],
   ['notebookDoesntExist',    <Html>"Notebook doesn't exist."],
   ['passwordIncorrect',      <Html>"Password incorrect"],
@@ -55,7 +56,7 @@ const ERROR_MESSAGES = new Map<ErrorCode, Html>([
   ['sessionTokenNotFound',   <Html>"Session token not found."],
   ['specifyPassword',        <Html>"Please specify password."],
   ['specifyUsername',        <Html>"Please specify username."],
-  ['unexpectedError',        <Html>"An unexpected error occurred."],
+  ['unexpectedError',        <Html>"An unexpected error occurred:<br/><pre>#{message}</pre>"],
   ['userDoesNotExist',       <Html>"User does not exist."],
 ]);
 
@@ -82,10 +83,8 @@ export function errorMessageForUser(err: Error): Html {
       return (info.hasOwnProperty(itemName) ? escapeHtml(info[itemName]!.toString()) : "???");
     })
   } else {
-    rval = errorTemplateForCode('unexpectedError');
+    const template = errorTemplateForCode('unexpectedError');
+    rval = <Html>template.replace('#{message}', escapeHtml(err.message))
   }
   return rval;
 }
-
-// Helper Functions
-

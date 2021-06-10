@@ -93,7 +93,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
   user-select text
   z-index 10
 
-  .message
+  >.message
     border-radius 6px
     display flex
     font-size x-small
@@ -101,25 +101,25 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
     margin-bottom 4px
     padding 6px
 
-    .close
+    >.close
       user-select none
 
-    pre
+    >pre
       margin 0
 
-  .debug
+  >.debug
     background-color blue
     color white
 
-  .error
+  >.error
     background-color red
     color white
 
-  .success
+  >.success
     background-color green
     color white
 
-  .warning
+  >.warning
     background-color yellow
     color black
 
@@ -233,6 +233,20 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
             >video
               height 100%
               width 100%
+
+            >.cameraSelector
+              bottom 0
+              left 0
+              opacity 50%
+              position absolute
+
+            >.errorMessage
+              position absolute
+              top 0
+              left 0
+
+              >pre
+                margin 0
 
             >.shutterButton
               bottom 0

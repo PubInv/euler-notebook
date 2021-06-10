@@ -43,6 +43,7 @@ export type Code =
   'logInToModifyNotebook' |
   'logInToReadFolder' |
   'logInToReadNotebook' |
+  'noCamerasFound' |
   'notebookAlreadyExists' |
   'notebookDoesntExist' |
   'passwordIncorrect' |

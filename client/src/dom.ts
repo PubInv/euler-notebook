@@ -44,6 +44,7 @@ interface AsyncListeners {
 interface SyncListeners {
   // REVIEW: Can we populate this automatically from the standard DOM types?
   blur?: SyncListener<FocusEvent>;
+  canplay?: SyncListener<Event>;
   change?: SyncListener<InputEvent>;
   click?: SyncListener<MouseEvent>;
   dblclick?: SyncListener<MouseEvent>;
@@ -78,7 +79,7 @@ export interface ButtonSpec {
   iconId: SvgIconId;
   iconOptions?: SvgIconOptions;
   title: PlainText;
-  cssClass?: CssClass;
+  class?: CssClass;
   asyncHandler?: AsyncListener<MouseEvent>;
   syncHandler?: SyncListener<MouseEvent>;
 }
@@ -300,7 +301,7 @@ export function $button(buttonSpec: ButtonSpec): HTMLButtonElement {
 
 export function buttonSpecification(spec: ButtonSpec): HtmlElementSpecification<'button'> {
   const classes: CssClass[] = [ <CssClass>'iconButton' ];
-  if (spec.cssClass) { classes.push(spec.cssClass); }
+  if (spec.class) { classes.push(spec.class); }
   return {
     tag: 'button',
     classes,
