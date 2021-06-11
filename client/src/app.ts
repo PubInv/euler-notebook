@@ -24,7 +24,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 import { Html } from "./shared/common";
 import { initialize as initializeFormula } from "./shared/formula";
 
-// import { DebugConsole } from "./components/debug-console";
+import { DebugConsole } from "./components/debug-console";
 import { Header } from "./components/header";
 
 import { addAsyncEventListener, addSyncEventListener } from "./dom";
@@ -84,10 +84,10 @@ class App {
     // Add the top-level components to body that are not on a 'screen'.
     // This includes the header bar and user message ticker.
     const messageDisplay = new UserMessageDisplay();
-    // const debugConsole = new DebugConsole();
+    const debugConsole = DebugConsole.initialize();
     this.header = new Header();
     const $body = <HTMLBodyElement>window.document.body;
-    $body.append(messageDisplay.$elt, /* debugConsole.$elt, */ this.header.$elt);
+    $body.append(messageDisplay.$elt, debugConsole.$elt, this.header.$elt);
 
     // Initialize the math typesetter
     initializeFormula(MathJaxTypesetter.create());

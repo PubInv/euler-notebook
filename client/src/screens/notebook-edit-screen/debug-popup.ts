@@ -87,10 +87,7 @@ export class DebugPopup extends HtmlElement<'div'>{
     this.$content.innerHTML = this.screen.notebook.toDebugHtml();
   }
 
-  private onCloseClick(_event: MouseEvent): void {
-    this.hide();
-    this.screen.sidebar.$bugButton.disabled = false;
-  }
+  private onCloseClick(_event: MouseEvent): void { this.hide(); }
 
   private onContentClick(event: MouseEvent): void {
     const $target: HTMLElement = <HTMLElement>event.target;

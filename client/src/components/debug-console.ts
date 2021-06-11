@@ -22,7 +22,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 // import * as debug1 from "debug";
 // const debug = debug1('client:debug-console');
 
-import { assert, ElementId, Html } from "../shared/common";
+import { assert, ElementId, escapeHtml } from "../shared/common";
 
 import { HtmlElement } from "../html-element";
 import { $new } from "../dom";
@@ -35,42 +35,49 @@ import { $new } from "../dom";
 
 // Global Variables
 
+export let debugConsole: DebugConsole;
+
+// Exported Functions
+
 // Class
 
 export class DebugConsole extends HtmlElement<'div'> {
 
   // Public Class Properties
 
-  public static singleton?: DebugConsole;
-
   // Public Class Methods
 
-  // Public Constructor
-
-  public static addMessage(html: Html): void {
-    assert(this.singleton);
-    this.singleton!.addMessage(html);
+  public static initialize(): DebugConsole {
+    assert(!debugConsole);
+    debugConsole = new this();
+    return debugConsole;
   }
 
   // Public Constructor
 
+  // Public Constructor
+
   public constructor() {
-    assert(!DebugConsole.singleton);
-    super({
-      tag: 'div',
-      id: <ElementId>'debugConsole',
-    });
-    DebugConsole.singleton = this;
+    super({ tag: 'div', id: <ElementId>'debugConsole', hidden: true });
   }
 
   // Public Instance Property Functions
 
   // Public Instance Methods
 
-  public addMessage(html: Html): void {
-    const $message = $new<'div'>({ tag: 'div', html });
+  public emit(message: string): void {
+    const $message = $new<'div'>({ tag: 'div', html: escapeHtml(message) });
     this.$elt.append($message);
     this.scrollToBottom();
+  }
+
+  public emitObject(obj: /* TYPESCRIPT: JsonObject? */any, prefix?: string): void {
+    const json = JSON.stringify(obj);
+    if (prefix) {
+      this.emit(`${prefix}: ${json}`);
+    } else {
+      this.emit(json);
+    }
   }
 
   // Public Instance Event Handlers
@@ -88,5 +95,3 @@ export class DebugConsole extends HtmlElement<'div'> {
   // Private Instance Event Handlers
 
 }
-
-// Helper Functions

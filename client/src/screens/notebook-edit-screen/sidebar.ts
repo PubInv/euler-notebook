@@ -20,14 +20,17 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 // Requirements
 
 import { CssClass } from "../../shared/css";
-import { ButtonBar } from "../../components/button-bar";
 import { CellType } from "../../shared/cell";
 
+import { ButtonBar } from "../../components/button-bar";
+import { debugConsole } from "../../components/debug-console";
+
 import { $new } from "../../dom";
+import { CELL_ICONS, largeSvgIcon } from "../../svg-icons";
+
 import { StylusMode } from "./notebook-edit-view/cell-edit-view/stroke-panel";
 
 import { NotebookEditScreen } from "./index";
-import { CELL_ICONS, largeSvgIcon } from "../../svg-icons";
 
 // Types
 
@@ -112,17 +115,6 @@ export class Sidebar extends ButtonBar {
 
     // Other Buttons
 
-    const $debugButton = $new({
-      tag: 'button',
-      class: <CssClass>'iconButton',
-      html: largeSvgIcon('iconMonstrBug12'),
-      syncButtonHandler: (_e)=>{
-        this.$bugButton.disabled = true;
-        this.screen.debugPopup.show();
-      },
-      title: "Debug popup",
-    });
-
     const $redoButton = $new({
       tag: 'button',
       class: <CssClass>'iconButton',
@@ -202,15 +194,20 @@ export class Sidebar extends ButtonBar {
           html: largeSvgIcon('iconMonstrPrinter6'),
           syncButtonHandler: e=>this.onExportToPdf(e),
           title: "Print notebook",
+        }, {
+          tag: 'button',
+          class: <CssClass>'iconButton',
+          html: largeSvgIcon('iconMonstrBug12'),
+          syncButtonHandler: (_e)=>{ this.screen.debugPopup.toggleVisibility(); },
+          title: "Debug popup",
         },
-        $debugButton,
         SEPARATOR,
         {
           // "underwear" for dev use only
           tag: 'button',
           class: <CssClass>'iconButton',
           html: largeSvgIcon('iconMonstrClothing18'),
-          syncButtonHandler: async (_e: MouseEvent)=>this.screen.debugPopup.toggleVisibility(),
+          syncButtonHandler: async (_e: MouseEvent)=>debugConsole.toggleVisibility(),
           title: "Development use only",
         },
       ],
@@ -218,7 +215,6 @@ export class Sidebar extends ButtonBar {
 
     this.screen = screen;
 
-    this.$bugButton = $debugButton;
     this.$redoButton = $redoButton;
     this.$undoButton = $undoButton;
     this.$formulaModeButton = $formulaModeButton;
@@ -231,7 +227,6 @@ export class Sidebar extends ButtonBar {
 
   // Public Instance Properties
 
-  public $bugButton: HTMLButtonElement;
   public $redoButton: HTMLButtonElement;
   public $undoButton: HTMLButtonElement;
 

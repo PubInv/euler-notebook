@@ -25,7 +25,7 @@ const debug = debug1('client:stylus-drawing-panel');
 import { Html } from "../../../../../shared/common";
 import { CssClass } from "../../../../../shared/css";
 
-// import { DebugConsole } from "../../components/debug-console";
+// import { debugConsole } from "../../components/debug-console";
 
 import { SvgStroke } from "../../../../../svg-stroke";
 import { showError } from "../../../../../user-message-dispatch";
@@ -108,7 +108,7 @@ export class StrokeDrawingPanel extends SvgElement<'svg'> {
     const pointerId = event.pointerId;
     const message = `${event.pointerType} ${pointerId} ${event.type}`;
     debug(message);
-    // DebugConsole.addMessage(<Html>message);
+    // debugConsole.emit(<Html>message);
 
     this.pointerMap.delete(pointerId);
     this.$elt.releasePointerCapture(pointerId);
@@ -119,7 +119,7 @@ export class StrokeDrawingPanel extends SvgElement<'svg'> {
     // Don't draw strokes with touch
     // so we don't get stray marks when the user tries to scroll.
     if (event.pointerType === 'touch') {
-      // DebugConsole.addMessage(<Html>`Ignoring touch ${event.type} ${event.pointerId}`);
+      // debugConsole.emit(<Html>`Ignoring touch ${event.type} ${event.pointerId}`);
       return;
     }
 
@@ -127,7 +127,7 @@ export class StrokeDrawingPanel extends SvgElement<'svg'> {
     const pointerId = event.pointerId;
     const message = `${event.pointerType} ${pointerId} ${event.type}`;
     debug(message);
-    // DebugConsole.addMessage(<Html>message);
+    // debugConsole.emit(<Html>message);
 
     // Ensure there is not already a stroke in progress for this pointer.
     // If there is, warn and discard it.
@@ -163,7 +163,7 @@ export class StrokeDrawingPanel extends SvgElement<'svg'> {
     // // Log the event for debugging
     // const message = `${event.pointerType} ${event.pointerId} ${event.type}`;
     // debug(message);
-    // // DebugConsole.addMessage(<Html>message);
+    // // debugConsole.emit(<Html>message);
 
     // Extend the stroke to the new (x,y) position
     const clientRect = this.$elt.getBoundingClientRect();
@@ -190,7 +190,7 @@ export class StrokeDrawingPanel extends SvgElement<'svg'> {
     // Log the event for debugging
     const message = `${event.pointerType} ${pointerId} ${event.type}`;
     debug(message);
-    // DebugConsole.addMessage(<Html>message);
+    // debugConsole.emit(<Html>message);
 
     // Complete the stroke
     const stroke = pi.stroke;

@@ -27,14 +27,15 @@ const debug = debug1('client:photo-panel');
 
 import { assert, DataUrl, Html, JPEG_MIME_TYPE, PlainText } from "../../../../../shared/common";
 import { CssClass } from "../../../../../shared/css";
+import { ExpectedError } from "../../../../../shared/expected-error";
+import { ImageInfo, PositionInfo } from "../../../../../shared/image-cell";
+
+import { debugConsole } from "../../../../../components/debug-console";
+import { ImageCell } from "../../../../../models/client-cell/image-cell";
 
 import { $new, $button } from "../../../../../dom";
 import { HtmlElement } from "../../../../../html-element";
-
-import { ImageInfo, PositionInfo } from "../../../../../shared/image-cell";
-import { ImageCell } from "../../../../../models/client-cell/image-cell";
 import { showWarningMessage } from "../../../../../user-message-dispatch";
-import { ExpectedError } from "../../../../../shared/expected-error";
 import { errorMessageForUser } from "../../../../../error-messages";
 import { MediaDeviceId, PersistentSettings } from "../../../../../persistent-settings";
 
@@ -164,6 +165,7 @@ export class CameraPanel extends HtmlElement<'div'> {
 
     // Get the list of media devices
     const mediaDevices = await navigator.mediaDevices.enumerateDevices();
+    debugConsole_emitMediaDevices(mediaDevices);
     const cameras = mediaDevices.filter(m=>m.kind == 'videoinput');
 
     const numCameras = cameras.length;
@@ -201,7 +203,7 @@ export class CameraPanel extends HtmlElement<'div'> {
       showWarningMessage(<Html>"Starting camera that is already started.");
       return;
     }
-    debug("Starting camera.");
+    debugConsole.emit(`Starting camera ${deviceId}`);
     const cellSize = this.cell.sizeInPixels();
     const constraints: MediaStreamConstraints = {
       audio: false,
@@ -212,7 +214,10 @@ export class CameraPanel extends HtmlElement<'div'> {
         width: { exact: cellSize.width },
       },
     };
+    debugConsole.emitObject(constraints, "Requested constraints");
+    // TODO: Handle NotAllowedError and NotFoundError.
     const stream = await navigator.mediaDevices.getUserMedia(constraints);
+    debugConsole_emitStreamInfo(stream);
     this.$video.srcObject = stream;
     // NOTE: $shutterButton will be enabled on the 'canplay' event.
   }
@@ -317,5 +322,27 @@ export class CameraPanel extends HtmlElement<'div'> {
 
   private onVideoCanPlay(_event: Event): void {
     this.$shutterButton.disabled = false;
+  }
+}
+
+// Helper Functions
+
+function debugConsole_emitMediaDevices(mediaDevices: MediaDeviceInfo[]): void {
+  debugConsole.emit(`Media Device Info:`);
+  for (const mediaDevice of mediaDevices) {
+    debugConsole.emitObject(mediaDevice);
+  }
+}
+
+function debugConsole_emitStreamInfo(stream: MediaStream): void {
+  debugConsole.emit(`Media Stream ${stream.id}, active: ${stream.active}`);
+  for (const track of stream.getTracks()) {
+    debugConsole.emit(`Track ${track.id} ${track.kind} ${track.label} ${track.readyState}`);
+    const capabilities = track.getCapabilities();
+    debugConsole.emitObject(capabilities, "Capabilities");
+    const constraints = track.getConstraints();
+    debugConsole.emitObject(constraints, "Constraints");
+    const settings = track.getSettings();
+    debugConsole.emitObject(settings, "Settings");
   }
 }
