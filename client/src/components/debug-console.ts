@@ -26,6 +26,7 @@ import { assert, ElementId, escapeHtml, Html } from "../shared/common";
 
 import { HtmlElement } from "../html-element";
 import { $new } from "../dom";
+import { PersistentSettings } from "../persistent-settings";
 
 // import { userSettingsInstance, InputMode } from "../user-settings";
 
@@ -58,7 +59,11 @@ export class DebugConsole extends HtmlElement<'div'> {
   // Public Constructor
 
   public constructor() {
-    super({ tag: 'div', id: <ElementId>'debugConsole', hidden: true });
+    super({
+      tag: 'div',
+      id: <ElementId>'debugConsole',
+      hidden: !PersistentSettings.showDebugConsole,
+    });
   }
 
   // Public Instance Property Functions
@@ -76,9 +81,10 @@ export class DebugConsole extends HtmlElement<'div'> {
     if (prefix) {
       $table.append($new({ tag: 'tr', html: <Html>`<td colspan="2">${escapeHtml(prefix)}</td>`}));
     }
-    $table.append($new({ tag: 'tr', html: <Html>`<td colspan="2">${escapeHtml(JSON.stringify(obj))}</td>`}));
-    for (const key of Object.keys(obj)) {
+    // $table.append($new({ tag: 'tr', html: <Html>`<td colspan="2">${escapeHtml(JSON.stringify(obj))}</td>`}));
+    for (const key in obj) {
       const val = obj[key];
+      if (typeof val == 'function') { continue; }
       const json = JSON.stringify(val);
       $table.append($new({ tag: 'tr', html: <Html>`<td>${escapeHtml(key)}</td><td>${escapeHtml(json)}</td>`}));
     }
@@ -106,4 +112,6 @@ export class DebugConsole extends HtmlElement<'div'> {
 
   // Private Instance Event Handlers
 
+  protected /* override */ onAfterShow(): void { PersistentSettings.showDebugConsole = true; }
+  protected /* override */ onBeforeHide(): void { PersistentSettings.showDebugConsole = false; }
 }

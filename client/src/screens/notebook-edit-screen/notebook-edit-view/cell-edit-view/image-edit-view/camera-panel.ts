@@ -191,7 +191,7 @@ export class CameraPanel extends HtmlElement<'div'> {
         width: { exact: cellSize.width },
       },
     };
-
+    debugConsole.emitObject(constraints, "Starting camera constraints");
     // TODO: Handle NotAllowedError and NotFoundError.
     const stream = await navigator.mediaDevices.getUserMedia(constraints);
     debugConsole_emitStreamInfo(stream);

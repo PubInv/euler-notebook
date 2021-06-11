@@ -37,6 +37,7 @@ type UsedCameras = MediaDeviceId[];
 // Constants
 
 const INSERT_MODE_KEY = <StorageKey>'insertMode';
+const SHOW_DEBUG_CONSOLE = <StorageKey>'showDebugConsole';
 const STYLUS_MODE_KEY = <StorageKey>'stylusMode';
 const USED_CAMERAS_KEY = <StorageKey>'usedCameras';
 
@@ -52,6 +53,14 @@ export class PersistentSettings {
 
   public static set insertMode(value: CellType) {
     this.setObject<CellType>(INSERT_MODE_KEY, value);
+  }
+
+  public static get showDebugConsole(): boolean {
+    return this.getObject<boolean>(SHOW_DEBUG_CONSOLE) || false;
+  }
+
+  public static set showDebugConsole(value: boolean) {
+    this.setObject<boolean>(SHOW_DEBUG_CONSOLE, value);
   }
 
   public static get stylusMode(): StylusMode {
