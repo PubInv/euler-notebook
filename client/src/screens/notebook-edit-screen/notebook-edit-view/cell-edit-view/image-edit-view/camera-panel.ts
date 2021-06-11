@@ -181,17 +181,27 @@ export class CameraPanel extends HtmlElement<'div'> {
     assert(!this.$video.srcObject);
 
     const cellSize = this.cell.sizeInPixels();
-    const constraints: MediaStreamConstraints = {
-      audio: false,
-      video: {
-        // TODO: What if "exact" video size not available?
-        deviceId: (deviceId ? { exact: deviceId }: PersistentSettings.usedCameras),
-        facingMode: 'environment',
-        height: { exact: cellSize.height },
-        width: { exact: cellSize.width },
-      },
+    debugConsole.emitObject(cellSize, "Cell size");
+    const preferredDeviceIds = PersistentSettings.usedCameras;
+
+    // TODO: What if "exact" video size not available?
+    const videoConstraints: MediaTrackConstraints = {
+      aspectRatio: cellSize.width/cellSize.height,
+      // height: { exact: cellSize.height },
+      // width: { exact: cellSize.width },
     };
-    debugConsole.emitObject(constraints, "Starting camera constraints");
+    if (deviceId) {
+      videoConstraints.deviceId = { exact: deviceId };
+    } else {
+      if (preferredDeviceIds.length>0) {
+        videoConstraints.deviceId = preferredDeviceIds;
+      } else {
+        // No preferred cameras. Use the camera looking away from the user.
+        videoConstraints.facingMode = 'environment';
+      }
+    }
+    const constraints: MediaStreamConstraints = { audio: false, video: videoConstraints };
+    debugConsole.emitObject(videoConstraints, "Starting camera constraints");
     // TODO: Handle NotAllowedError and NotFoundError.
     const stream = await navigator.mediaDevices.getUserMedia(constraints);
     debugConsole_emitStreamInfo(stream);
