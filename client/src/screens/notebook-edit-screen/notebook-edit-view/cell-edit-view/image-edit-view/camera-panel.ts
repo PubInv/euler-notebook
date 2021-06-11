@@ -27,7 +27,6 @@ const debug = debug1('client:photo-panel');
 
 import { assert, DataUrl, Html, JPEG_MIME_TYPE, PlainText } from "../../../../../shared/common";
 import { CssClass } from "../../../../../shared/css";
-import { ExpectedError } from "../../../../../shared/expected-error";
 import { ImageInfo, PositionInfo } from "../../../../../shared/image-cell";
 
 import { debugConsole } from "../../../../../components/debug-console";
@@ -35,7 +34,6 @@ import { ImageCell } from "../../../../../models/client-cell/image-cell";
 
 import { $new, $button } from "../../../../../dom";
 import { HtmlElement } from "../../../../../html-element";
-import { showWarningMessage } from "../../../../../user-message-dispatch";
 import { errorMessageForUser } from "../../../../../error-messages";
 import { MediaDeviceId, PersistentSettings } from "../../../../../persistent-settings";
 
@@ -127,17 +125,18 @@ export class CameraPanel extends HtmlElement<'div'> {
   private $video: HTMLVideoElement;
 
   private cell: ImageCell;
+  private selectedDeviceId?: MediaDeviceId;
 
   // private transformationMatrix?: TransformationMatrix;
   // private videoSize?: SizeInPixels;
 
   // Private Instance Property Functions
 
-  private markCameraAsUsed(cameraId: MediaDeviceId): void {
+  private markCameraAsUsed(deviceId: MediaDeviceId): void {
     const usedCameras = PersistentSettings.usedCameras;
-    const index = usedCameras.indexOf(cameraId);
+    const index = usedCameras.indexOf(deviceId);
     if (index>=0) { usedCameras.splice(index, 1); }
-    usedCameras.unshift(cameraId);
+    usedCameras.unshift(deviceId);
     if (usedCameras.length > MAX_USED_CAMERAS) {
       usedCameras.slice(0, MAX_USED_CAMERAS);
     }
@@ -146,48 +145,30 @@ export class CameraPanel extends HtmlElement<'div'> {
 
   // Private Instance Methods
 
-  private selectCamera(cameras: MediaDeviceInfo[]): MediaDeviceId {
-
-    // Look through the list of cameras that were used, most recent first.
-    // If the camera is in the list of available cameras, then select it.
-    const usedCameraIds = PersistentSettings.usedCameras;
-    for (const usedCameraId of usedCameraIds) {
-      const camera = cameras.find(c=>c.deviceId==usedCameraId);
-      if (camera) { return usedCameraId; }
-    }
-
-    // No used camera found. Use the first camera on the list.
-    // LATER: Look for a camera with facingMode: "environment"?
-    return <MediaDeviceId>cameras[0].deviceId;
-  }
-
-  private async populateCameraList(): Promise<MediaDeviceId> {
-
+  private async getListOfCameras(): Promise<MediaDeviceInfo[]> {
     // Get the list of media devices
     const mediaDevices = await navigator.mediaDevices.enumerateDevices();
-    debugConsole_emitMediaDevices(mediaDevices);
-    const cameras = mediaDevices.filter(m=>m.kind == 'videoinput');
+    const rval = mediaDevices.filter(m=>m.kind == 'videoinput');
+    debugConsole_emitMediaDevices(rval);
+    return rval;
+  }
 
+  private populateCameraList(cameras: MediaDeviceInfo[], deviceId: MediaDeviceId|undefined): void {
     const numCameras = cameras.length;
-    if (numCameras == 0) {
+    if (numCameras < 2) {
       this.$cameraSelector.style.display = 'none';
-      throw new ExpectedError('noCamerasFound');
-    } else if (numCameras == 1) {
-      this.$cameraSelector.style.display = 'none';
-      return <MediaDeviceId>cameras[0].deviceId;
-    } else {
-      // Multiple cameras available.
-      const selectedCameraId = this.selectCamera(cameras);
-      const optionElements = cameras.map((c,i)=>$new({
-        tag: 'option',
-        value: c.deviceId,
-        selected: (c.deviceId == selectedCameraId),
-        html: <Html>(c.label || `Camera ${i+1}`),
-      }));
-      this.$cameraSelector.append(...optionElements);
-      this.$cameraSelector.style.display = '';
-      return selectedCameraId;
+      return;
     }
+
+    // Multiple cameras available.
+    const optionElements = cameras.map((c,i)=>$new({
+      tag: 'option',
+      value: c.deviceId,
+      selected: (c.deviceId == deviceId),
+      html: <Html>(c.label || `Camera ${i+1}`),
+    }));
+    this.$cameraSelector.append(...optionElements);
+    this.$cameraSelector.style.display = '';
   }
 
   private showError(err: Error): void {
@@ -196,29 +177,29 @@ export class CameraPanel extends HtmlElement<'div'> {
     this.$errorMessage.style.display = '';
   }
 
-  private async startCamera(deviceId: MediaDeviceId): Promise<void> {
-    const existingStream = this.$video.srcObject;
-    if (existingStream) {
-      // TODO: Should just be a logged warning.
-      showWarningMessage(<Html>"Starting camera that is already started.");
-      return;
-    }
-    debugConsole.emit(`Starting camera ${deviceId}`);
+  private async startCamera(deviceId: MediaDeviceId|undefined): Promise<MediaDeviceId> {
+    assert(!this.$video.srcObject);
+
     const cellSize = this.cell.sizeInPixels();
     const constraints: MediaStreamConstraints = {
       audio: false,
       video: {
-        // TODO: Handle if "exact" not available.
-        deviceId,
+        // TODO: What if "exact" video size not available?
+        deviceId: (deviceId ? { exact: deviceId }: PersistentSettings.usedCameras),
+        facingMode: 'environment',
         height: { exact: cellSize.height },
         width: { exact: cellSize.width },
       },
     };
-    debugConsole.emitObject(constraints, "Requested constraints");
+
     // TODO: Handle NotAllowedError and NotFoundError.
     const stream = await navigator.mediaDevices.getUserMedia(constraints);
     debugConsole_emitStreamInfo(stream);
     this.$video.srcObject = stream;
+    const track = stream.getVideoTracks()[0];
+    deviceId = <MediaDeviceId>track.getSettings().deviceId!;
+    this.selectedDeviceId = deviceId;
+    return deviceId;
     // NOTE: $shutterButton will be enabled on the 'canplay' event.
   }
 
@@ -242,8 +223,9 @@ export class CameraPanel extends HtmlElement<'div'> {
   }
 
   private async onAfterShowAsync(): Promise<void> {
-    const cameraId = await this.populateCameraList();
-    await this.startCamera(cameraId);
+    const deviceId = await this.startCamera(this.selectedDeviceId);
+    const cameras = await this.getListOfCameras();
+    this.populateCameraList(cameras, deviceId);
   }
 
   protected /* override */ onBeforeHide(): void {
@@ -257,9 +239,9 @@ export class CameraPanel extends HtmlElement<'div'> {
   }
 
   private async onCameraSelectChangeAsync(_event: Event): Promise<void> {
-    const cameraId = <MediaDeviceId>this.$cameraSelector.value;
+    const deviceId = <MediaDeviceId>this.$cameraSelector.value;
     this.stopCameraIfRunning();
-    await this.startCamera(cameraId);
+    await this.startCamera(deviceId);
   }
 
   private onShutterButtonClicked(event: MouseEvent): void {
@@ -328,10 +310,7 @@ export class CameraPanel extends HtmlElement<'div'> {
 // Helper Functions
 
 function debugConsole_emitMediaDevices(mediaDevices: MediaDeviceInfo[]): void {
-  debugConsole.emit(`Media Device Info:`);
-  for (const mediaDevice of mediaDevices) {
-    debugConsole.emitObject(mediaDevice);
-  }
+  debugConsole.emitObjectTable(mediaDevices, `Media Device Info`);
 }
 
 function debugConsole_emitStreamInfo(stream: MediaStream): void {

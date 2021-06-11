@@ -22,7 +22,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 // import * as debug1 from "debug";
 // const debug = debug1('client:debug-console');
 
-import { assert, ElementId, escapeHtml } from "../shared/common";
+import { assert, ElementId, escapeHtml, Html } from "../shared/common";
 
 import { HtmlElement } from "../html-element";
 import { $new } from "../dom";
@@ -71,12 +71,24 @@ export class DebugConsole extends HtmlElement<'div'> {
     this.scrollToBottom();
   }
 
-  public emitObject(obj: /* TYPESCRIPT: JsonObject? */any, prefix?: string): void {
-    const json = JSON.stringify(obj);
+  public emitObject(obj: /* TYPESCRIPT: ? */any, prefix?: string): void {
+    const $table = $new<'table'>({ tag: 'table' });
     if (prefix) {
-      this.emit(`${prefix}: ${json}`);
-    } else {
-      this.emit(json);
+      $table.append($new({ tag: 'tr', html: <Html>`<td colspan="2">${escapeHtml(prefix)}</td>`}));
+    }
+    $table.append($new({ tag: 'tr', html: <Html>`<td colspan="2">${escapeHtml(JSON.stringify(obj))}</td>`}));
+    for (const key of Object.keys(obj)) {
+      const val = obj[key];
+      const json = JSON.stringify(val);
+      $table.append($new({ tag: 'tr', html: <Html>`<td>${escapeHtml(key)}</td><td>${escapeHtml(json)}</td>`}));
+    }
+    this.$elt.append($table);
+    this.scrollToBottom();
+  }
+
+  public emitObjectTable(objs: /* TYPESCRIPT: ? */any[], prefix?: string): void {
+    for (const obj of objs) {
+      this.emitObject(obj, prefix);
     }
   }
 
