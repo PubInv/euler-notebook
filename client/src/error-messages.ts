@@ -48,6 +48,7 @@ const ERROR_MESSAGES = new Map<ErrorCode, Html>([
   ['logInToModifyNotebook',  <Html>`This public notebook is read-only. ${LOGIN_MSG}`],
   ['logInToReadFolder',      <Html>`This folder is not public. ${LOGIN_MSG}`],
   ['logInToReadNotebook',    <Html>`This notebook is not public. ${LOGIN_MSG}`],
+  ['noCameraPermission',     <Html>"Camera access not allowed."],
   ['noCamerasFound',         <Html>"No cameras available."],
   ['notebookAlreadyExists',  <Html>"Notebook '#{path}' already exists."],
   ['notebookDoesntExist',    <Html>"Notebook doesn't exist."],

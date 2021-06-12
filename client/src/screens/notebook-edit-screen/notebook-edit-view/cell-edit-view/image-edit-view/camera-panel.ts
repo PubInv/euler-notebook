@@ -36,12 +36,21 @@ import { $new, $button } from "../../../../../dom";
 import { HtmlElement } from "../../../../../html-element";
 import { errorMessageForUser } from "../../../../../error-messages";
 import { MediaDeviceId, PersistentSettings } from "../../../../../persistent-settings";
+import { Code as ErrorCode, ExpectedError } from "../../../../../shared/expected-error";
+import { logWarning } from "../../../../../error-handler";
 
 // Types
 
+type ErrorName = 'NotFoundError' | 'NotAllowedError';
+
 // Constants
 
-const MAX_USED_CAMERAS = 4;
+const ERROR_NAME_TO_CODE_MAPPING = new Map<ErrorName, ErrorCode>([
+  [ 'NotAllowedError', 'noCameraPermission' ],
+  [ 'NotFoundError', 'noCamerasFound' ],
+]);
+
+const MAX_PREFERRED_CAMERAS = 4;
 
 // Global Variables
 
@@ -132,18 +141,18 @@ export class CameraPanel extends HtmlElement<'div'> {
 
   // Private Instance Property Functions
 
-  private markCameraAsUsed(deviceId: MediaDeviceId): void {
-    const usedCameras = PersistentSettings.usedCameras;
-    const index = usedCameras.indexOf(deviceId);
-    if (index>=0) { usedCameras.splice(index, 1); }
-    usedCameras.unshift(deviceId);
-    if (usedCameras.length > MAX_USED_CAMERAS) {
-      usedCameras.slice(0, MAX_USED_CAMERAS);
-    }
-    PersistentSettings.usedCameras = usedCameras;
-  }
-
   // Private Instance Methods
+
+  private addPreferredCamera(deviceId: MediaDeviceId): void {
+    const deviceIds = PersistentSettings.preferredCameras;
+    const index = deviceIds.indexOf(deviceId);
+    if (index>=0) { deviceIds.splice(index, 1); }
+    deviceIds.unshift(deviceId);
+    if (deviceIds.length > MAX_PREFERRED_CAMERAS) {
+      deviceIds.slice(0, MAX_PREFERRED_CAMERAS);
+    }
+    PersistentSettings.preferredCameras = deviceIds;
+  }
 
   private async getListOfCameras(): Promise<MediaDeviceInfo[]> {
     // Get the list of media devices
@@ -181,8 +190,7 @@ export class CameraPanel extends HtmlElement<'div'> {
     assert(!this.$video.srcObject);
 
     const cellSize = this.cell.sizeInPixels();
-    debugConsole.emitObject(cellSize, "Cell size");
-    const preferredDeviceIds = PersistentSettings.usedCameras;
+    const preferredDeviceIds = PersistentSettings.preferredCameras;
 
     // TODO: What if "exact" video size not available?
     const videoConstraints: MediaTrackConstraints = {
@@ -202,8 +210,21 @@ export class CameraPanel extends HtmlElement<'div'> {
     }
     const constraints: MediaStreamConstraints = { audio: false, video: videoConstraints };
     debugConsole.emitObject(videoConstraints, "Starting camera constraints");
+
+    // When accessing an server on a local network (e.g. myserver.local)
+    // from an iPad, mediaDevices doesn't exist on the navigator object.
+    const mediaDevices = navigator.mediaDevices
+    if (!mediaDevices) { throw new ExpectedError('noCameraPermission'); }
+
     // TODO: Handle NotAllowedError and NotFoundError.
-    const stream = await navigator.mediaDevices.getUserMedia(constraints);
+    let stream: MediaStream;
+    try {
+      stream = await mediaDevices.getUserMedia(constraints);
+    } catch(err) {
+      const code = ERROR_NAME_TO_CODE_MAPPING.get(err.name);
+      if (err.name && !code) { logWarning(<PlainText>`Unknown getUserMedia error '${err.name}'`); }
+      throw code ? new ExpectedError(code) : err;
+    }
     debugConsole_emitStreamInfo(stream);
     this.$video.srcObject = stream;
     const track = stream.getVideoTracks()[0];
@@ -252,6 +273,7 @@ export class CameraPanel extends HtmlElement<'div'> {
     const deviceId = <MediaDeviceId>this.$cameraSelector.value;
     this.stopCameraIfRunning();
     await this.startCamera(deviceId);
+    this.addPreferredCamera(deviceId);
   }
 
   private onShutterButtonClicked(event: MouseEvent): void {
@@ -262,47 +284,26 @@ export class CameraPanel extends HtmlElement<'div'> {
   private async onShutterButtonClickedAsync(_event: MouseEvent): Promise<void> {
     this.$shutterButton.disabled = true;
 
-    // Capture a bitmap image from the camera.
+    // Capture the camera image into a data URL
+    const cellSize = this.cell.sizeInPixels();
     const stream = <MediaStream>this.$video.srcObject!;
     assert(stream);
     const track = stream.getVideoTracks()[0];
-    const imageCapture = new ImageCapture(track);
-    const blob =  await imageCapture.takePhoto();
-    const imageBitmap = await createImageBitmap(blob);
-
-    // Make this camera the preferred camera in the future.
-    const cameraId = <MediaDeviceId>track.getSettings().deviceId!;
-    assert(cameraId);
-    this.markCameraAsUsed(cameraId);
-
-    // Extract a section of the bitmap into an image data URL.
-    // The section is the part that was visible within the cell.
-    const imageSize = { width: imageBitmap.width, height: imageBitmap.height };
-    const cellSize = this.cell.sizeInPixels();
-    const aspectRatio = cellSize.width/cellSize.height;
-    // c-nsole.log(`Image size: ${imageSize.width}x${imageSize.height}`);
-    // c-nsole.log(`Cell size: ${cellSize.width}x${cellSize.height}`);
-    const sWidth = imageSize.width;
-    const sHeight = Math.round(sWidth/aspectRatio);
-    const sx = 0;
-    const sy = Math.round((imageSize.height - sHeight)/2);
-    const dx = 0;
-    const dy = 0;
-    const dWidth = sWidth;
-    const dHeight = sHeight;
+    const trackSettings = track.getSettings();
+    const imageSize = { width: trackSettings.width!, height: trackSettings.height! };
     const $canvas = $new({ tag: 'canvas' });
-    $canvas.width = dWidth;
-    $canvas.height = dHeight;
+    $canvas.width = imageSize.width;
+    $canvas.height = imageSize.height;
     const context = $canvas.getContext("2d")!;
     assert(context);
-    context.drawImage(imageBitmap, sx, sy, sWidth, sHeight, dx, dy, dWidth, dHeight);
-    // Other image formats: "image/webp", "image/png"
+    context.drawImage(this.$video, 0, 0);
+    // REVIEW: Would it be better to use image formats? "image/webp", "image/png"
     const url = <DataUrl>$canvas.toDataURL(JPEG_MIME_TYPE)!;
 
     // Change the image on the current cell.
-    const scaleX = cellSize.width / dWidth;
+    const scaleX = cellSize.width / imageSize.width;
     const scaleY = scaleX;
-    const imageInfo: ImageInfo = { url, size: { width: dWidth, height: dHeight } };
+    const imageInfo: ImageInfo = { url, size: imageSize };
     const positionInfo: PositionInfo = {
       cropBox: { x: 0, y: 0, ...this.cell.sizeInPixels() },
       transformationMatrix: [ scaleX, 0, 0, scaleY, 0, 0 ],

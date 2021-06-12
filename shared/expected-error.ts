@@ -44,6 +44,7 @@ export type Code =
   'logInToReadFolder' |
   'logInToReadNotebook' |
   'noCamerasFound' |
+  'noCameraPermission' |
   'notebookAlreadyExists' |
   'notebookDoesntExist' |
   'passwordIncorrect' |

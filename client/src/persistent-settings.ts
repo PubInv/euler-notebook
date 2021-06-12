@@ -31,15 +31,15 @@ type StorageKey = '{StorageKey}';
 
 // REVIEW: Do these belong somewhere else?
 export type MediaDeviceId = '{MediaDeviceId}';
-type UsedCameras = MediaDeviceId[];
+type PreferredCameras = MediaDeviceId[];
 
 
 // Constants
 
 const INSERT_MODE_KEY = <StorageKey>'insertMode';
+const PREFERRED_CAMERAS_KEY = <StorageKey>'preferredCameras';
 const SHOW_DEBUG_CONSOLE = <StorageKey>'showDebugConsole';
 const STYLUS_MODE_KEY = <StorageKey>'stylusMode';
-const USED_CAMERAS_KEY = <StorageKey>'usedCameras';
 
 // Exported Class
 
@@ -53,6 +53,14 @@ export class PersistentSettings {
 
   public static set insertMode(value: CellType) {
     this.setObject<CellType>(INSERT_MODE_KEY, value);
+  }
+
+  public static get preferredCameras(): PreferredCameras {
+    return this.getObject<PreferredCameras>(PREFERRED_CAMERAS_KEY) || [];
+  }
+
+  public static set preferredCameras(value: PreferredCameras) {
+    this.setObject<PreferredCameras>(PREFERRED_CAMERAS_KEY, value);
   }
 
   public static get showDebugConsole(): boolean {
@@ -69,14 +77,6 @@ export class PersistentSettings {
 
   public static set stylusMode(value: StylusMode) {
     this.setObject<StylusMode>(STYLUS_MODE_KEY, value);
-  }
-
-  public static get usedCameras(): UsedCameras {
-    return this.getObject<UsedCameras>(USED_CAMERAS_KEY) || [];
-  }
-
-  public static set usedCameras(value: UsedCameras) {
-    this.setObject<UsedCameras>(USED_CAMERAS_KEY, value);
   }
 
   // --- PRIVATE ---
