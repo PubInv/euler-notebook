@@ -29,7 +29,7 @@
     "sinon": "^7.4.1",
     "stylus": "0.54.5",
     "svg-to-pdfkit": "^0.1.8",
-    "svg2img": "^0.6.1",
+    "svg2img": "^1.0.0-beta.2",
     "uuid": "^3.3.3",
     "wolfram-alpha-node": "0.0.3",
     "ws": "^7.4.6",
