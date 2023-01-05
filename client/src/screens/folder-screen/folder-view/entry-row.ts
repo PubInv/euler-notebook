@@ -181,7 +181,7 @@ export class EntryRow extends HtmlElement<'tr'> {
   }
 
   private async removeFromFolder(): Promise<void> {
-    let removeError: Error|undefined = undefined;
+    let removeError: any = undefined;
     this.$removeButton.disabled = true;
     this.$removeButton.innerHTML = DOTTED_CIRCLE_ENTITY;
     try {
@@ -201,7 +201,7 @@ export class EntryRow extends HtmlElement<'tr'> {
   }
 
   private async renameEntryAndExitEditMode(): Promise<void> {
-    let renameError: Error|undefined = undefined;
+    let renameError: unknown = undefined;
     const newName = this.$nameInput.value;
     if (newName != this.entry.name) {
       // console.log("Name changed. Submitting change.");
@@ -227,7 +227,7 @@ export class EntryRow extends HtmlElement<'tr'> {
     else { this.showError(renameError); }
   }
 
-  private showError(err: Error): void {
+  private showError(err: unknown): void {
     const message = errorMessageForUser(err);
     this.showErrorMessage(message);
   }

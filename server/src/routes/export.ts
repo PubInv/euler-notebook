@@ -25,6 +25,7 @@ import * as debug1 from "debug";
 
 import { NextFunction, Request, Response, Router } from "express";
 
+import { errorMessage } from "../shared/common";
 import { NotebookPath, NOTEBOOK_PATH_RE } from "../shared/folder";
 
 import { ServerNotebook } from "../models/server-notebook";
@@ -124,7 +125,7 @@ async function onExportPage(req: Request, res: Response, next: NextFunction): Pr
   } catch(err) {
       // TODO: If opening notebook fails then give a graceful error message.
       // // REVIEW: Is this still the error that is generated if the notebook file doesn't exist?
-      // if (err.code == 'ENOENT') {
+      // if (errorHasCode(err, 'ENOENT')) {
       //   const locals = {
       //     title: "Notebook Not Found",
       //     messageHtml: `Notebook <tt>${notebookPath}</tt> not found for export.`,
@@ -132,7 +133,7 @@ async function onExportPage(req: Request, res: Response, next: NextFunction): Pr
       //   return res.status(404).render('expected-error', locals);
       // }
 
-    res.status(404).send(`Can't export '${notebookPath}': ${err.message}`);
+    res.status(404).send(`Can't export '${notebookPath}': ${errorMessage(err)}`);
   }
 }
 

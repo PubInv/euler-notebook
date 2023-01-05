@@ -35,7 +35,7 @@ import { ExpectedError } from "./shared/expected-error";
 
 // Exported Functions
 
-export function logError(err: Error, message?: PlainText): void {
+export function logError(errorOfUnknownType: unknown, message?: PlainText): void {
   // Makes a record of the error.
   // If the error might be an ExpectedError, then call logErrorIfUnexpected instead.
   // Currently it just writes the error to the browser console.
@@ -49,7 +49,7 @@ export function logError(err: Error, message?: PlainText): void {
   if (message) { console.error(message); }
   // Uncomment the following line to see interpreted stack trace:
   //   throw err;
-  console.dir(err);
+  console.dir(errorOfUnknownType);
 }
 
 export function logErrorIfUnexpected(err: Error, message?: PlainText): void {

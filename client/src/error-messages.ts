@@ -75,7 +75,7 @@ export function errorTemplateForCode(code: ErrorCode): Html {
   return message;
 }
 
-export function errorMessageForUser(err: Error): Html {
+export function errorMessageForUser(err: unknown): Html {
   let rval: Html;
   if (err instanceof ExpectedError) {
     const template = errorTemplateForCode(err.code);
@@ -83,9 +83,12 @@ export function errorMessageForUser(err: Error): Html {
     rval = <Html>template.replace(/\#{(.*?)}/g, (_m,itemName)=>{
       return (info.hasOwnProperty(itemName) ? escapeHtml(info[itemName]!.toString()) : "???");
     })
-  } else {
+  } else if (err instanceof Error) {
     const template = errorTemplateForCode('unexpectedError');
     rval = <Html>template.replace('#{message}', escapeHtml(err.message))
+  } else {
+    // TODO: Give some information about error of unknown type. See user-message-dispatch.ts/showError
+    rval = <Html>"Error thrown that is not of type Error.";
   }
   return rval;
 }

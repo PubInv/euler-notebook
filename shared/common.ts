@@ -107,6 +107,18 @@ export function escapeHtml(str: string): Html {
             .replace(/</g, "&lt;");
 }
 
+export function errorCode(err: unknown): string {
+  return (err instanceof Error && 'code' in err && typeof err.code == 'string') ? err.code : 'NOCODE';
+}
+
+export function errorMessage(err: unknown): string {
+  return err instanceof Error ? err.message : "Unexpected: Error is not an Error object.";
+}
+
+export function errorStack(err: unknown): string {
+  return (err instanceof Error && !!err.stack) ? err.stack : "No stack for non-Error object.";
+}
+
 // export function isEmptyOrSpaces(str: string) : boolean{
 //   return str === null || str.match(/^ *$/) !== null;
 // }
@@ -137,7 +149,7 @@ export function sleep(ms: Milliseconds): Promise<void> {
 export function stackTrace(): StackTrace {
   let rval: StackTrace;
   try { throw new Error('StackTrace'); }
-  catch(err) { rval = <StackTrace>err.stack; }
+  catch(err) { rval = <StackTrace>(<Error>err).stack; }
   return rval;
 }
 

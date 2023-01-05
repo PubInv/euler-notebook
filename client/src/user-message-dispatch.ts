@@ -62,8 +62,10 @@ export function showErrorMessage(html: Html, options?: Options): void {
   showMessage({ level: Level.Error, html: html, options })
 }
 
-export function showError(err: Error, html: Html, options?: Options): void {
+export function showError(errorOfUnknownType: any, html: Html, options?: Options): void {
   // Shows the error to the user, and logs it if appropriate.
+  // TODO: Give some information about error of unknown type.
+  const err = (errorOfUnknownType instanceof Error) ? errorOfUnknownType : new Error("Error thrown that is not of type Error.");
   logErrorIfUnexpected(err, /* TODO: Html->PlainText??? */<PlainText>html);
   const html2 = <Html>`${html}: ${errorMessageForUser(err)}`;
   const info: Info = { level: Level.Error, html: html2, options };

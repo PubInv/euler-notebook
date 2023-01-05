@@ -67,7 +67,8 @@ export async function maybeReadFile(path: AbsolutePath): Promise<string|undefine
   try {
      buffer = await fsReadFile(path);
   } catch(err) {
-    if (err.code == 'ENOENT') { return undefined; }
+    // REVIEW: Is this a good way to check for a code property? What if err is not an object?
+    if ('code' in <any>err && (<any>err).code == 'ENOENT') { return undefined; }
     else { throw err; }
   }
   return buffer.toString();
@@ -120,7 +121,8 @@ export async function deleteFile(path: Path, fileName: FileName, options: Delete
   try {
     await fsUnlink(absPath);
   } catch(err) {
-    if (err.code == 'ENOENT') {
+    // REVIEW: Is this a good way to check for a code property? What if err is not an object?
+    if ('code' in <any>err && (<any>err).code == 'ENOENT') {
       if (options.ignoreIfDoesntExist) { return; }
       if (options.warnIfDoesntExist) {
         logWarning(MODULE, `Deleting file that doesn't exist: ${absPath}`);
@@ -185,7 +187,12 @@ async function readJsonFileFromAbsolutePath<T>(absPath: AbsolutePath): Promise<T
     rval = <T>JSON.parse(json);
   } catch (err) {
     // TODO: How to log this properly?
-    console.warn(`Invalid JSON: ${err.message}`);
+    if (err instanceof Error) {
+      console.warn(`Invalid JSON: ${err.message}`);
+    } else {
+      console.warn("Invalid JSON. Error is not of type Error");
+      // TODO: Give some info about the error.
+    }
     console.dir(json);
     throw err;
   }

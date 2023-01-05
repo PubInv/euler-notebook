@@ -221,9 +221,14 @@ export class CameraPanel extends HtmlElement<'div'> {
     try {
       stream = await mediaDevices.getUserMedia(constraints);
     } catch(err) {
-      const code = ERROR_NAME_TO_CODE_MAPPING.get(err.name);
-      if (err.name && !code) { logWarning(<PlainText>`Unknown getUserMedia error '${err.name}'`); }
-      throw code ? new ExpectedError(code) : err;
+      if (err instanceof Error) {
+        const code = ERROR_NAME_TO_CODE_MAPPING.get(<ErrorName>err.name);
+        if (err.name && !code) { logWarning(<PlainText>`Unknown getUserMedia error '${err.name}'`); }
+        throw code ? new ExpectedError(code) : err;
+      } else {
+        logWarning(<PlainText>"Unknown getUserMedia error that is not of type Error.");
+        throw err;
+      }
     }
     debugConsole_emitStreamInfo(stream);
     this.$video.srcObject = stream;

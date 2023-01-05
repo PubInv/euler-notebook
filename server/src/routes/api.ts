@@ -26,6 +26,7 @@ const debug = debug1(`server:${MODULE}`);
 import { NextFunction, Request, Response, Router } from "express";
 
 import { DebugParams, DebugResults, SearchParams } from "../shared/api-calls";
+import { errorMessage, errorStack } from "../shared/common";
 
 import { ServerNotebook } from "../models/server-notebook";
 import { search_full as wolframAlphaSearch } from "../adapters/wolframalpha";
@@ -62,9 +63,9 @@ router.post('/debug', async function(req: Request, res: Response, _next: NextFun
     }
   } catch (err) {
     // TODO: Distinguish 400 from 500 responses
-    console.error(`Error in /debug API: ${err.message}`)
-    debug(err.stack);
-    res.status(500).json({ ok: false, message: err.message });
+    console.error(`Error in /debug API: ${errorMessage(err)}`)
+    debug(errorStack(err));
+    res.status(500).json({ ok: false, message: errorMessage(err) });
   }
 });
 
@@ -91,9 +92,9 @@ router.post('/search', async function(req: Request, res: Response, _next: NextFu
     }
   } catch (err) {
     // TODO: Distinguish 400 from 500 responses
-    console.error(`Error in /debug API: ${err.message}`)
-    debug(err.stack);
-    res.status(500).json({ ok: false, message: err.message });
+    console.error(`Error in /debug API: ${errorMessage(err)}`)
+    debug(errorStack(err));
+    res.status(500).json({ ok: false, message: errorMessage(err) });
   }
 });
 

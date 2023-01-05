@@ -23,11 +23,16 @@ import { ExpectedError } from "./shared/expected-error";
 
 // Exported Functions
 
-export function logError(/* TODO: component, */ err: Error, message?: string /* TYPESCRIPT: Html type? */, info?: /* TYPESCRIPT: type? */object): void {
-  if (err instanceof ExpectedError) { return; }
-  console.error(message || err.message);
-  console.dir(err);
-  if (info) { console.dir(info, { depth: null }); }
+export function logError(/* TODO: component, */ err: unknown, message?: string /* TYPESCRIPT: Html type? */, info?: /* TYPESCRIPT: type? */object): void {
+  if (err instanceof Error) {
+    if (err instanceof ExpectedError) { return; }
+    console.error(message || err.message);
+    console.dir(err);
+    if (info) { console.dir(info, { depth: null }); }
+  } else {
+    console.log("Error thrown that is not an Error object:");
+    console.dir(err)
+  }
 }
 
 export function logErrorMessage(message: string): void {

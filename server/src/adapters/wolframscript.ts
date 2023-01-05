@@ -86,8 +86,12 @@ export async function initialize(): Promise<boolean> {
   try {
     gConfig = await readConfigFile(CONFIG_FILENAME);
   } catch(err) {
-    // LATER: A more helpful error message would indicate the exact location when the file is expected.
-    logWarning(MODULE, `Cannot read ${CONFIG_FILENAME} config file: ${err.code}. Suggestions from Wolfram Engine disabled.`);
+    // LATER: A more helpful error message would indicate the exact location when the file is expected
+    if ('code' in <any>err) {
+      logWarning(MODULE, `Cannot read ${CONFIG_FILENAME} config file: ${(<any>err).code}. Suggestions from Wolfram Engine disabled.`);
+    } else {
+      logWarning(MODULE, `Cannot read ${CONFIG_FILENAME} config file: Error without code. Suggestions from Wolfram Engine disabled.`);
+    }
   }
   return !!gConfig;
 }

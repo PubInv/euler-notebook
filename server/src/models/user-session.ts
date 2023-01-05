@@ -25,7 +25,7 @@ import { randomBytes } from "crypto";
 
 import { deleteConfigFile, FileName, readConfigFile, writeConfigFile } from "../adapters/file-system";
 
-import { assert, SessionToken } from "../shared/common";
+import { assert, errorCode, SessionToken } from "../shared/common";
 import { UserName } from "../shared/user";
 import { logError } from "../error-handler";
 
@@ -78,7 +78,7 @@ export class UserSession {
     try {
       obj = await readConfigFile<UserSessionsObject>(SESSIONS_FILENAME);
     } catch (err) {
-      if (err.code == 'ENOENT') {
+      if (errorCode(err) ==  'ENOENT') {
         debug("Sessions file not present.");
         return;
       } else if (err instanceof SyntaxError) {

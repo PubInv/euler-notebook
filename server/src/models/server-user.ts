@@ -21,7 +21,7 @@ import * as debug1 from "debug";
 const MODULE = __filename.split(/[/\\]/).slice(-1)[0].slice(0,-3);
 const debug = debug1(`server:${MODULE}`);
 
-import { assert, assertFalse, SessionToken } from "../shared/common";
+import { assert, assertFalse, errorCode, SessionToken } from "../shared/common";
 import { ExpectedError } from "../shared/expected-error";
 import { LoginUserWithPassword, LoginUserWithToken, LogoutUser, RequestId, UserRequest } from "../shared/client-requests";
 import { clientUserMessageSynopsis } from "../shared/debug-synopsis";
@@ -130,7 +130,7 @@ export class ServerUser {
     try {
       obj = await readJsonFile<ServerUserObject>(path, USER_INFO_FILENAME);
     } catch (err) {
-      if (err.code === 'ENOENT') { throw new ExpectedError('userDoesNotExist'); }
+      if (errorCode(err) == 'ENOENT') { throw new ExpectedError('userDoesNotExist'); }
       else { throw err; }
     }
     obj.clientObj.userName = userName;

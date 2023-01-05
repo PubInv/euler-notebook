@@ -17,6 +17,7 @@ You should have received a copy of the GNU Affero General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
+import { errorCode } from "../shared/common";
 import { Path } from "../shared/folder";
 import { UserPermission, UserPermissions } from "../shared/permissions";
 
@@ -59,7 +60,7 @@ export class Permissions {
     try {
       obj = await readJsonFile<PermissionsObject>(path, PERMISSIONS_FILENAME);
     } catch(err) {
-      if (err.code == 'ENOENT') { obj = {}; }
+      if (errorCode(err) == 'ENOENT') { obj = {}; }
       else { throw err; }
     }
     const instance = new this(path, obj);

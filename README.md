@@ -39,7 +39,7 @@ You need to turn off the iPad's Scribble feature when using Euler Notebook (Sett
 
 ## Running Locally
 
-Step 1: Install [node](https://nodejs.org/en/).
+Step 1: Install [node](https://nodejs.org/en/). We are using version 18.12.1 LTS.
 
 Step 2: Create a configuration directory and a directory to store user notebooks:
 

@@ -31,7 +31,7 @@ const debug = debug1(`server:${MODULE}`);
 // import { readdirSync, unlink, writeFileSync } from "fs"; // LATER: Eliminate synchronous file operations.
 
 import { CellObject, CellSource, CellId, CellType, CellRelativePosition } from "../shared/cell";
-import { assert, assertFalse, deepCopy, Html, Milliseconds } from "../shared/common";
+import { assert, assertFalse, deepCopy, errorCode, Html, Milliseconds } from "../shared/common";
 import { ExpectedError } from "../shared/expected-error";
 import { CssSize, convertCssLength } from "../shared/css";
 import { LEFT_MARGIN, TOP_MARGIN, RIGHT_MARGIN, BOTTOM_MARGIN, PAGE_HEIGHT, PAGE_WIDTH } from "../shared/dimensions";
@@ -154,7 +154,7 @@ export class ServerNotebook extends Notebook {
     try {
       await createDirectory(path);
     } catch(err) {
-      if (err.code == 'EEXIST') {
+      if (errorCode(err) == 'EEXIST') {
         err = new ExpectedError('notebookAlreadyExists', { path });
       }
       throw err;
@@ -340,7 +340,7 @@ export class ServerNotebook extends Notebook {
     try {
       obj = await readJsonFile<PersistentServerNotebookObject>(path, NOTEBOOK_FILENAME);
     } catch(err) {
-      if (err.code == 'ENOENT') { throw new ExpectedError('notebookDoesntExist'); }
+      if (errorCode(err) == 'ENOENT') { throw new ExpectedError('notebookDoesntExist'); }
       else { throw err; }
     }
     ServerNotebook.validateObject(obj);

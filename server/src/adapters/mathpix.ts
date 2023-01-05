@@ -130,7 +130,11 @@ export async function initialize(): Promise<boolean> {
     gConfig = await readConfigFile(CONFIG_FILENAME);
   } catch(err) {
     // LATER: A more helpful error message would indicate the exact location when the file is expected.
-    logWarning(MODULE, `Cannot read ${CONFIG_FILENAME} config file: ${err.code}. Typesetting of formula and text from images disabled.`);
+    if ('code' in <any>err) {
+      logWarning(MODULE, `Cannot read ${CONFIG_FILENAME} config file: ${(<any>err).code}. Typesetting of formula and text from images disabled.`);
+    } else {
+      logWarning(MODULE, `Cannot read ${CONFIG_FILENAME} config file: Error without code. Typesetting of formula and text from images disabled.`);
+    }
   }
   return !!gConfig;
 }

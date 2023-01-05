@@ -24,6 +24,7 @@ import * as debug1 from "debug";
 
 import { NextFunction, Request, Response, Router } from "express";
 
+import { errorMessage } from "../shared/common";
 import { NotebookPath, NOTEBOOK_PATH_RE } from "../shared/folder";
 
 import { ServerNotebook } from "../models/server-notebook";
@@ -95,7 +96,7 @@ async function onXrayPage(req: Request, res: Response, next: NextFunction): Prom
     }
   } catch(err) {
     // TODO: Graceful error message if notebook not found.
-    // if (err.code == 'ENOENT') {
+    // if (errorHasCode(err, 'ENOENT')) {
     //   const locals = {
     //     title: "Notebook Not Found",
     //     messageHtml: `Notebook <tt>${notebookPath}</tt> not found for debug rendering.`,
@@ -103,7 +104,7 @@ async function onXrayPage(req: Request, res: Response, next: NextFunction): Prom
     //   return res.status(404).render('expected-error', locals);
     // }
 
-    res.status(404).send(`Can't render debug '${notebookPath}': ${err.message}`);
+    res.status(404).send(`Can't render debug '${notebookPath}': ${errorMessage(err)}`);
   }
 }
 

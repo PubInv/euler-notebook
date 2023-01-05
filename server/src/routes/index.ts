@@ -29,7 +29,7 @@ import { NotebookPath } from "../shared/folder";
 import { ServerSocket } from "../models/server-socket";
 import { ServerNotebook } from "../models/server-notebook";
 import { ServerFolder } from "../models/server-folder";
-import { ClientId } from "../shared/common";
+import { ClientId, errorMessage, errorStack } from "../shared/common";
 
 const MODULE = __filename.split(/[/\\]/).slice(-1)[0].slice(0,-3);
 const debug = debug1(`server:${MODULE}`);
@@ -84,9 +84,9 @@ async function onDashboard(req: Request, res: Response) {
 
     res.render('dashboard', { clientSockets, folders, notebooks });
   } catch(err) {
-    console.error(err.message);
-    debug(err.stack);
-    res.send(`Server crash in onDashboard: ${err.message}`);
+    console.error(errorMessage(err));
+    debug(errorStack(err));
+    res.send(`Server crash in onDashboard: ${errorMessage(err)}`);
   }
 }
 

@@ -27,7 +27,7 @@ import * as debug1 from "debug";
 const MODULE = __filename.split(/[/\\]/).slice(-1)[0].slice(0,-3);
 const debug = debug1(`server:${MODULE}`);
 
-import { assert } from "../shared/common";
+import { assert, errorCode } from "../shared/common";
 import { ExpectedError } from "../shared/expected-error";
 import {
   Folder, FolderEntry, FolderName, FolderObject, FolderPath, NotebookEntry,
@@ -92,7 +92,7 @@ export class ServerFolder extends Folder {
     try {
       await deleteDirectory(path); // Note: not recursive. Will fail if directory not empty.
     } catch (err) {
-      if (err.code == 'ENOTEMPTY') {
+      if (errorCode(err) == 'ENOTEMPTY') {
         throw new ExpectedError('cannotRemoveNonemptyFolder');
       }
       throw err;
@@ -196,7 +196,7 @@ export class ServerFolder extends Folder {
     try {
       dirMap = await readDirectory(path);
     } catch(err) {
-      if (err.code == 'ENOENT') { throw new ExpectedError('folderDoesntExist'); }
+      if (errorCode(err) == 'ENOENT') { throw new ExpectedError('folderDoesntExist'); }
       else { throw err; }
     }
 

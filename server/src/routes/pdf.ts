@@ -36,6 +36,7 @@ import * as PDFDocument from "pdfkit";
 // @ts-ignore
 import * as SVGtoPDF from "svg-to-pdfkit";
 import { ServerFolder } from '../models/server-folder';
+import { errorMessage } from '../shared/common';
 
 
 // This is a fun extention suggested by the SVGtoPDF makers...
@@ -73,7 +74,7 @@ async function onPdfPage(req: Request, res: Response, next: NextFunction): Promi
       notebook.close();
     }
   } catch(err) {
-    res.status(404).send(`Can't export pdf of ${notebookPath}: ${err.message}`);
+    res.status(404).send(`Can't export pdf of ${notebookPath}: ${errorMessage(err)}`);
   }
 }
 

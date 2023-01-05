@@ -172,7 +172,8 @@ export async function initialize(): Promise<boolean> {
     gConfig = await readConfigFile(CONFIG_FILENAME);
   } catch(err) {
     // LATER: A more helpful error message would indicate the exact location when the file is expected.
-    logWarning(MODULE, `Cannot read ${CONFIG_FILENAME} config file: ${err.code}. Typesetting of formulas and text from handwriting disabled.`);
+    const codeString = (err instanceof Error && 'code' in err) ? err.code : 'Unexpected Error'; // TODO: More informative error message in this case.
+    logWarning(MODULE, `Cannot read ${CONFIG_FILENAME} config file: ${codeString}. Typesetting of formulas and text from handwriting disabled.`);
   }
   return !!gConfig;
 }
