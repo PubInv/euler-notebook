@@ -5,29 +5,27 @@ This directory contains the source code for the Euler Notebook, a project of
 
 ## Purpose
 
-Euler Notebook seeks to make a useful math assistant for stylus-based tablets and other hand-written input means.
-Our goal is have an expert assistant looking over our shoulder and helping as we do math the way we otherwise normally do,
-including drawing diagrams, performing calculations, and producing proofs.
+Euler Notebook seeks to make an electronic notebook for doing math with an emphasis on stylus (handwritten) input, with an "expert assistant" typesetting formulas, verifying the work, and making helpful suggestions.
+The notebook should also allow writing prose, drawing diagrams, performing calculations, plotting results, etc.
+
+Math has been done for 300 years in a conventional way with convential syntax, typography, and style. Using Euler Notebook should feel like doing math on paper, only better.
 
 ## Governance
 
 Euler Notebook was created by David Jeschke, and he is the Invention Coach and "Benevelont Dictator For Now" of this project.
 The project is currently licensed under the [Affero GPL](https://www.gnu.org/licenses/agpl-3.0.en.html).
-We are actively seeking volunteers and contributors.
-
-## Principles
-
-Euler Notebook aims to uphold certain principles:
-1. Math has been done for 300 years in a conventional way with convential syntax, typography, and style. Using Euler Notebook should feel like doing math on paper, only better.
-2. There are powerful computer programming systems; Euler Notebook is not one of them. We are not attempting to create a programming system, but a math system.
+We actively seek volunteers and contributors.
 
 ## Supported Browsers and Devices
 
 For Euler Notebook we use the __Google Chrome__ browser on computers and devices.
 There is a good chance that Euler Notebook will not work properly on other browsers because we currently do not test them.
 
-As for devices with a stylus, we test with the __Apple iPad Pro__ (12.9" 3rd gen) and __Microsoft Surface Pro__ (6).
-Note that Google Chrome is not the default browser on either of these devices, so you will need to install it.
+As for devices with a stylus, we test with the __Apple iPad Pro__ (12.9" 3rd gen).
+Note that Google Chrome is not the default browser on this device, so you will need to install it.
+You need to turn off the iPad's Scribble feature when using Euler Notebook (Settings -> Apple Pencil -> Scribble). If you don't turn it off, then when writing quickly with the Apple Pen every other stroke will be dropped.
+Tip: If you would like a more paper-like feel when using the Apple Pencil with the iPad
+you might consider a [Paperlike screen protector](https://paperlike.com).
 
 We run the server on Apple Mac computers with the latest version of OS X.
 
@@ -35,26 +33,55 @@ If you want Euler Notebook to support other browsers, devices, or operating syst
 
 ## Apple iPad Note
 
-You need to turn off the iPad's Scribble feature when using Euler Notebook (Settings -> Apple Pencil -> Scribble). If you don't turn it off, then when writing quickly with the Apple Pen every other stroke will be dropped.
 
 ## Running Locally
 
-Step 1: Install [node](https://nodejs.org/en/). We are using version 18.12.1 LTS.
+Step 1: Install [node](https://nodejs.org/en/) and [git](https://git-scm.com/downloads).
 
-Step 2: Create a configuration directory and a directory to store user notebooks:
+You may already have these on your computer.
+
+We use the most recent LTS release of node, version 18.12.1 as of this writing.
+
+Step 2: Clone the repository.
+
+```bash
+git clone git@github.com:PubInv/euler-notebook.git ~/euler-notebook
+```
+
+Step 3: Create a configuration directory and a directory to store user notebooks:
 
 ```bash
 mkdir ~/.euler-notebook
 mkdir ~/euler-notebook-usr
 ```
 
-Step 3: Install dependencies, build, run unit tests, and run the euler-notebook server:
+Step 4: Create a user account:
+
+_This is a temporary step required in the absence of program functionality to create user accounts._
+This step assumes a username of `sam`. Replace it with the username of your choice.
+
+```bash
+mkdir ~/euler-notebook-usr/sam
+cp ~/euler-notebook/server/config-dir/user-info.json ~/euler-notebook-usr/sam/.user-info.json
+```
+
+Also, obtain a 26-pixel square .PNG image for the user account and place it in `~/euler-notebook/server/public/images/profile-pics/sam-26x26.png`.
+
+In step 6, you will be able to log in to this account using username `sam` and password `abracadabra`.
+
+You can change the password by editing the `.user-info.json` file that you copied into the `sam` directory, above. _Yes, we know it is a bad practice to keep passwords in plain text_, and we will store the passwords encrypted when we implement functionality to create user accounts.
+
+If you add additional users, ensure `clientObj.id` is a unique integer in the `.user-info.json` file for each user.
+
+Step 5: Install dependencies, build, run unit tests, and run the euler-notebook server:
 
 ```bash
 scripts/go
 ```
 
-Step 4: Open a browser to [localhost](http://localhost) and enjoy!
+Step 6: Open a browser to [localhost](http://localhost). Log in with the username and password from step 4. Enjoy!
+
+We actively encourage you to send us feedback about these instructions and your experience with Euler Notebook.
 
 See the `Development` section below for more information about running locally.
 
@@ -104,9 +131,6 @@ then tap on the incomplete square icon to the right of "Zoom".
 To exit fullscreen mode, press `F11` again,
 or hover the mouse cursor at the top of the screen with pen or mouse,
 and a close button will appear.
-
-If you would like a more paper-like feel when using the Apple Pencil with the iPad
-you could consider a [Paperlike screen protector](https://paperlike.com).
 
 ## Development
 
