@@ -23,39 +23,40 @@ There is a good chance that Euler Notebook will not work properly on other brows
 
 As for devices with a stylus, we test with the __Apple iPad Pro__ (12.9" 3rd gen).
 Note that Google Chrome is not the default browser on this device, so you will need to install it.
+
 You need to turn off the iPad's Scribble feature when using Euler Notebook (Settings -> Apple Pencil -> Scribble). If you don't turn it off, then when writing quickly with the Apple Pen every other stroke will be dropped.
+
 Tip: If you would like a more paper-like feel when using the Apple Pencil with the iPad
-you might consider a [Paperlike screen protector](https://paperlike.com).
+you might consider a [Paperlike](https://paperlike.com) screen protector.
 
 We run the server on Apple Mac computers with the latest version of OS X.
 
 If you want Euler Notebook to support other browsers, devices, or operating systems, [let us know](https://www.pubinv.org/contact-us/).
 
-## Apple iPad Note
-
-
 ## Running Locally
 
-Step 1: Install [node](https://nodejs.org/en/) and [git](https://git-scm.com/downloads).
+### Step 1: Install node and git
 
-You may already have these on your computer.
+You may already have [node](https://nodejs.org/en/) and [git](https://git-scm.com/downloads) on your computer.
 
 We use the most recent LTS release of node, version 18.12.1 as of this writing.
 
-Step 2: Clone the repository.
+### Step 2: Clone the repository
 
 ```bash
 git clone git@github.com:PubInv/euler-notebook.git ~/euler-notebook
 ```
 
-Step 3: Create a configuration directory and a directory to store user notebooks:
+### Step 3: Create supporting directories
+
+This will create a configuration directory and a directory to store user notebooks.
 
 ```bash
 mkdir ~/.euler-notebook
 mkdir ~/euler-notebook-usr
 ```
 
-Step 4: Create a user account:
+### Step 4: Create a user account
 
 _This is a temporary step required in the absence of program functionality to create user accounts._
 This step assumes a username of `sam`. Replace it with the username of your choice.
@@ -73,15 +74,20 @@ You can change the password by editing the `.user-info.json` file that you copie
 
 If you add additional users, ensure `clientObj.id` is a unique integer in the `.user-info.json` file for each user.
 
-Step 5: Install dependencies, build, run unit tests, and run the euler-notebook server:
+### Step 5: Build and run
+
+This will install dependencies, build, run unit tests, and run the euler-notebook server.
 
 ```bash
 scripts/go
 ```
 
-Step 6: Open a browser to [localhost](http://localhost). Log in with the username and password from step 4. Enjoy!
+### Step 6: Open euler-notebook in a browser
 
-We actively encourage you to send us feedback about these instructions and your experience with Euler Notebook.
+Point your browser to [localhost](http://localhost).
+Log in with the username and password from step 4.
+
+We actively encourage you to send us feedback about these instructions and your experience with Euler Notebook. Thank you!
 
 See the `Development` section below for more information about running locally.
 
