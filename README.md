@@ -82,7 +82,7 @@ This will install dependencies, build, run unit tests, and run the euler-noteboo
 scripts/go
 ```
 
-### Step 6: Open euler-notebook in a browser
+### Step 6: Open Euler Notebook in a browser
 
 Point your browser to [localhost](http://localhost).
 Log in with the username and password from step 4.

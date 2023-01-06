@@ -103,7 +103,7 @@ interface ImageConfiguration {
 interface JiixBlockBase {
   id: string;
   'bounding-box'?: BoundingBox;
-  version: '2';
+  version: '3';
 }
 
 export interface JiixDiagramBlock extends JiixBlockBase {
@@ -193,7 +193,8 @@ export async function postJiixRequest<T extends JiixBlockBase>(
   const batchRequest = batchRequestFromStrokes(width, height, strokeGroups, contentType, JIIX_MIME_TYPE);
   const bodyText = await postRequest(gConfig!, JIIX_MIME_TYPE, batchRequest);
   const jiix = <T>JSON.parse(bodyText);
-  assert(jiix.version == '2');
+  console.dir(jiix);
+  assert(jiix.version == '3');
   return jiix;
 }
 
